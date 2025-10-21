@@ -1,12 +1,16 @@
 import * as React from 'react';
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
-import { useSignUp } from '@clerk/clerk-expo';
+import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { useSignUp, useOAuth } from '@clerk/clerk-expo';
 import { Link, useRouter } from 'expo-router';
 import { lightColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as WebBrowser from 'expo-web-browser';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp();
+  const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' });
   const router = useRouter();
 
   const [emailAddress, setEmailAddress] = React.useState('');
@@ -15,6 +19,7 @@ export default function SignUpScreen() {
   const [pendingVerification, setPendingVerification] = React.useState(false);
   const [code, setCode] = React.useState('');
   const [error, setError] = React.useState('');
+  const [isLoadingOAuth, setIsLoadingOAuth] = React.useState(false);
 
   const onSignUpPress = async () => {
     if (!isLoaded) return;
@@ -64,6 +69,22 @@ export default function SignUpScreen() {
       console.error(JSON.stringify(err, null, 2));
     }
   };
+
+  const onGoogleSignUpPress = React.useCallback(async () => {
+    setIsLoadingOAuth(true);
+    try {
+      const { createdSessionId, setActive: oauthSetActive } = await startOAuthFlow();
+
+      if (createdSessionId) {
+        await oauthSetActive!({ session: createdSessionId });
+        router.replace('/');
+      }
+    } catch (err) {
+      console.error(JSON.stringify(err, null, 2));
+    } finally {
+      setIsLoadingOAuth(false);
+    }
+  }, [startOAuthFlow, router]);
 
   if (pendingVerification) {
     return (
@@ -121,6 +142,30 @@ export default function SignUpScreen() {
           </View>
           <Text style={styles.title}>Create your account</Text>
           <Text style={styles.subtitle}>Sign up to get started</Text>
+          
+          <TouchableOpacity 
+            onPress={onGoogleSignUpPress} 
+            style={styles.googleButton}
+            disabled={isLoadingOAuth}
+          >
+            {isLoadingOAuth ? (
+              <ActivityIndicator color="#1F1F1F" />
+            ) : (
+              <>
+                <View style={styles.googleIcon}>
+                  <Text style={styles.googleIconText}>G</Text>
+                </View>
+                <Text style={styles.googleButtonText}>Continue with Google</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
           <TextInput
             autoCapitalize="none"
@@ -233,5 +278,50 @@ const styles = StyleSheet.create({
     color: lightColors.primary,
     fontSize: 14,
     fontWeight: '600',
+  },
+  googleButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  googleIcon: {
+    width: 24,
+    height: 24,
+    backgroundColor: '#4285F4',
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  googleIconText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F1F1F',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E5E5',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: lightColors.textSecondary,
+    fontSize: 14,
   },
 });
