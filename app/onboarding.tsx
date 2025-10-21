@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Heart, Shield, Users, Leaf, Building2, Globe, User, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { Heart, Shield, Users, Building2, Globe, User, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   View,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -114,8 +115,12 @@ export default function OnboardingScreen() {
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 + insets.bottom }]}>
         <View style={styles.header}>
-          <View style={[styles.iconContainer, { backgroundColor: colors.neutralLight }]}>
-            <Leaf size={48} color={colors.primaryLight} strokeWidth={2} />
+          <View style={styles.logoContainer}>
+            <Image 
+              source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/ohh0oqrvnuowj1apebwt9' }} 
+              style={styles.logo}
+              resizeMode="contain"
+            />
           </View>
           <Text style={[styles.title, { color: colors.text }]}>Identify Your Values</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
@@ -250,13 +255,16 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     alignItems: 'center',
   },
-  iconContainer: {
-    width: 80,
+  logoContainer: {
+    width: 200,
     height: 80,
-    borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
+  },
+  logo: {
+    width: '100%',
+    height: '100%',
   },
   title: {
     fontSize: 32,
