@@ -1,12 +1,14 @@
 import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { Cause, UserProfile } from '@/types';
 
 const USER_PROFILE_KEY = '@user_profile';
 const DARK_MODE_KEY = '@dark_mode';
 
 export const [UserProvider, useUser] = createContextHook(() => {
+  const { user: clerkUser, isLoaded: isClerkLoaded } = useClerkUser();
   const [profile, setProfile] = useState<UserProfile>({
     causes: [],
     searchHistory: [],
@@ -14,7 +16,6 @@ export const [UserProvider, useUser] = createContextHook(() => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [isSignedIn] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -92,13 +93,13 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
   return useMemo(() => ({
     profile,
-    isLoading,
+    isLoading: isLoading || !isClerkLoaded,
     hasCompletedOnboarding,
     addCauses,
     addToSearchHistory,
     resetProfile,
     isDarkMode,
     toggleDarkMode,
-    isSignedIn,
-  }), [profile, isLoading, hasCompletedOnboarding, addCauses, addToSearchHistory, resetProfile, isDarkMode, toggleDarkMode, isSignedIn]);
+    clerkUser,
+  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, addCauses, addToSearchHistory, resetProfile, isDarkMode, toggleDarkMode, clerkUser]);
 });
