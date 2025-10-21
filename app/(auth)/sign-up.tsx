@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { useSignUp } from '@clerk/clerk-expo';
 import { Link, useRouter } from 'expo-router';
 import { lightColors } from '@/constants/colors';
@@ -11,11 +11,25 @@ export default function SignUpScreen() {
 
   const [emailAddress, setEmailAddress] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [confirmPassword, setConfirmPassword] = React.useState('');
   const [pendingVerification, setPendingVerification] = React.useState(false);
   const [code, setCode] = React.useState('');
+  const [error, setError] = React.useState('');
 
   const onSignUpPress = async () => {
     if (!isLoaded) return;
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
+    setError('');
 
     try {
       await signUp.create({
@@ -26,8 +40,9 @@ export default function SignUpScreen() {
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
 
       setPendingVerification(true);
-    } catch (err) {
+    } catch (err: any) {
       console.error(JSON.stringify(err, null, 2));
+      setError(err.errors?.[0]?.message || 'An error occurred during sign up');
     }
   };
 
@@ -61,6 +76,13 @@ export default function SignUpScreen() {
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
           >
+            <View style={styles.logoContainer}>
+              <Image 
+                source={require('@/assets/images/icon.png')} 
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </View>
             <Text style={styles.title}>Verify your email</Text>
             <Text style={styles.subtitle}>Enter the verification code sent to your email</Text>
             <TextInput
@@ -90,8 +112,16 @@ export default function SignUpScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
+          <View style={styles.logoContainer}>
+            <Image 
+              source={require('@/assets/images/icon.png')} 
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
           <Text style={styles.title}>Create your account</Text>
           <Text style={styles.subtitle}>Sign up to get started</Text>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
           <TextInput
             autoCapitalize="none"
             value={emailAddress}
@@ -105,6 +135,13 @@ export default function SignUpScreen() {
             placeholder="Password"
             secureTextEntry={true}
             onChangeText={(password) => setPassword(password)}
+            style={styles.input}
+          />
+          <TextInput
+            value={confirmPassword}
+            placeholder="Confirm Password"
+            secureTextEntry={true}
+            onChangeText={(confirmPassword) => setConfirmPassword(confirmPassword)}
             style={styles.input}
           />
           <TouchableOpacity onPress={onSignUpPress} style={styles.button}>
@@ -137,6 +174,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
   },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+  },
   title: {
     fontSize: 32,
     fontWeight: '700',
@@ -147,6 +192,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: lightColors.textSecondary,
     marginBottom: 32,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 14,
+    marginBottom: 16,
+    textAlign: 'center',
   },
   input: {
     backgroundColor: '#fff',
