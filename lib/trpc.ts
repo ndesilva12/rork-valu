@@ -2,6 +2,7 @@ import { createTRPCReact } from "@trpc/react-query";
 import { httpLink } from "@trpc/client";
 import type { AppRouter } from "@/backend/trpc/app-router";
 import superjson from "superjson";
+import * as SecureStore from "expo-secure-store";
 
 export const trpc = createTRPCReact<AppRouter>();
 
@@ -15,11 +16,25 @@ const getBaseUrl = () => {
   );
 };
 
+const getAuthToken = async () => {
+  try {
+    const token = await SecureStore.getItemAsync("__clerk_client_jwt");
+    return token;
+  } catch (error) {
+    console.error("Failed to get auth token:", error);
+    return null;
+  }
+};
+
 export const trpcClient = trpc.createClient({
   links: [
     httpLink({
       url: `${getBaseUrl()}/api/trpc`,
       transformer: superjson,
+      async headers() {
+        const token = await getAuthToken();
+        return token ? { authorization: `Bearer ${token}` } : {};
+      },
     }),
   ],
 });

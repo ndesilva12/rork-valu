@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Settings, Moon, Sun, RefreshCw } from 'lucide-react-native';
+import { Settings, Moon, Sun, RefreshCw, LogOut } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -7,16 +7,19 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
+import { useClerk } from '@clerk/clerk-expo';
 
 export default function ValuesScreen() {
   const router = useRouter();
-  const { profile, resetProfile, isDarkMode, toggleDarkMode } = useUser();
+  const { profile, resetProfile, isDarkMode, toggleDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const insets = useSafeAreaInsets();
+  const { signOut } = useClerk();
 
   const supportCauses = profile.causes
     .filter(c => c.type === 'support')
@@ -31,6 +34,25 @@ export default function ValuesScreen() {
 
   const handleReset = async () => {
     await resetProfile();
+  };
+
+  const handleSignOut = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            await signOut();
+            router.replace('/sign-in');
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   return (
@@ -120,6 +142,30 @@ export default function ValuesScreen() {
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Account Settings</Text>
         
         <View style={[styles.settingsCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+          {clerkUser && (
+            <>
+              <View style={styles.settingItem}>
+                <View style={styles.settingLeft}>
+                  <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
+                    <Text style={[styles.avatarText, { color: colors.white }]}>
+                      {clerkUser.firstName?.charAt(0) || clerkUser.emailAddresses[0].emailAddress.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={[styles.settingTitle, { color: colors.text }]}>
+                      {clerkUser.firstName ? `${clerkUser.firstName} ${clerkUser.lastName || ''}` : 'User'}
+                    </Text>
+                    <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>
+                      {clerkUser.emailAddresses[0].emailAddress}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={[styles.settingDivider, { backgroundColor: colors.border }]} />
+            </>
+          )}
+
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>
               {isDarkMode ? (
@@ -139,6 +185,18 @@ export default function ValuesScreen() {
               thumbColor={colors.white}
             />
           </View>
+
+          <View style={[styles.settingDivider, { backgroundColor: colors.border }]} />
+
+          <TouchableOpacity style={styles.settingItem} onPress={handleSignOut} activeOpacity={0.7}>
+            <View style={styles.settingLeft}>
+              <LogOut size={20} color={colors.danger} strokeWidth={2} />
+              <View>
+                <Text style={[styles.settingTitle, { color: colors.danger }]}>Sign Out</Text>
+                <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>Log out of your account</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -276,6 +334,17 @@ const styles = StyleSheet.create({
   settingDivider: {
     height: 1,
     marginLeft: 48,
+  },
+  avatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontSize: 18,
+    fontWeight: '700' as const,
   },
   infoSection: {
     backgroundColor: Colors.backgroundSecondary,

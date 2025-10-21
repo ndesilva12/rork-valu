@@ -4,7 +4,7 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 
 export default function Index() {
-  const { hasCompletedOnboarding, isLoading, isDarkMode } = useUser();
+  const { hasCompletedOnboarding, isLoading, isDarkMode, isSignedIn } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
   if (isLoading) {
@@ -13,6 +13,10 @@ export default function Index() {
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
+  }
+
+  if (!isSignedIn) {
+    return <Redirect href="/sign-in" />;
   }
 
   if (hasCompletedOnboarding) {
