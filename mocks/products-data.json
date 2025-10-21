@@ -1,0 +1,390 @@
+{
+  "libertarian": {
+    "support": ["Uber", "Airbnb", "Coinbase", "Whole Foods", "Overstock", "Virgin Group", "Tesla", "Black Rifle Coffee Company", "Proton", "BlackRock"],
+    "oppose": ["Vanguard", "JPMorgan Chase", "Boeing", "ExxonMobil", "Comcast", "AT&T", "Pfizer", "General Electric", "Walmart", "Comcast"]
+  },
+  "conservative": {
+    "support": ["Hobby Lobby", "Chick-fil-A", "MyPillow", "Goya Foods", "Fox Corporation", "Newsmax", "ExxonMobil", "Walmart", "Lowe's", "The Walt Disney Company"],
+    "oppose": ["Nike", "Levi Strauss & Co.", "Target", "Anheuser-Busch", "Procter & Gamble", "Apple", "Amazon", "Netflix", "Starbucks", "Levi Strauss & Co."]
+  },
+  "liberal": {
+    "support": ["The Walt Disney Company", "Nike", "Levi Strauss & Co.", "Target", "Anheuser-Busch", "Procter & Gamble", "Apple", "Amazon", "Hobby Lobby", "Starbucks"],
+    "oppose": ["Chick-fil-A", "Hobby Lobby", "MyPillow", "Goya Foods", "Fox Corporation", "Newsmax", "ExxonMobil", "Walmart", "Lowe's", "Uber"]
+  },
+  "elon-musk": {
+    "support": ["Tesla", "SpaceX", "xAI", "Neuralink", "The Boring Company", "X", "Panasonic", "Nvidia", "TSMC", "CATL"],
+    "oppose": ["BYD", "Ford", "General Motors", "Blue Origin", "Boeing", "OpenAI", "Google", "Meta", "Apple", "Meta"]
+  },
+  "lebron-james": {
+    "support": ["Nike", "SpringHill Company", "Liverpool FC", "Blaze Pizza", "Beats by Dre", "Coca-Cola", "Kia", "Samsung", "Ladder", "Under Armour"],
+    "oppose": ["Puma", "Domino's", "Netflix", "Disney", "Papa John's", "Amazon", "New Balance", "Manchester United", "Under Armour", "Puma"]
+  },
+  "taylor-swift": {
+    "support": ["Universal Music Group", "Live Nation", "Ticketmaster", "Coca-Cola", "AT&T", "Capital One", "Target", "CoverGirl", "Keds", "Spotify"],
+    "oppose": ["HYBE", "Sony Music", "Warner Music Group", "PepsiCo", "Verizon", "JPMorgan Chase", "Walmart", "Amazon", "Netflix", "Verizon"]
+  },
+  "joe-rogan": {
+    "support": ["Spotify", "Onnit", "Athletic Greens", "Black Rifle Coffee Company", "Manscaped", "SimpliSafe", "Squarespace", "ExpressVPN", "UFC", "Happy Dad Seltzer"],
+    "oppose": ["Apple", "Amazon", "Google", "iHeartMedia", "SiriusXM", "Netflix", "Disney", "New York Times", "Crooked Media", "iHeartMedia"]
+  },
+  "donald-trump": {
+    "support": ["Trump Organization", "Trump Media & Technology Group", "Fox Corporation", "Newsmax", "ExxonMobil", "Lockheed Martin", "Uber", "Coca-Cola", "Pfizer", "MP Materials"],
+    "oppose": ["Amazon", "Alphabet", "Warner Bros. Discovery", "The New York Times Company", "Netflix", "The Walt Disney Company", "Starbucks", "Tesla", "BYD", "Huawei"]
+  },
+  "alexandria-ocasio-cortez": {
+    "support": ["Costco Wholesale", "Kaiser Permanente", "Google", "Apple", "Microsoft", "Intel", "CeraVe", "Patagonia", "Ben & Jerry's", "REI"],
+    "oppose": ["Goya Foods", "Hobby Lobby", "ExxonMobil", "Chevron", "Robinhood", "Palantir Technologies", "JPMorgan Chase", "ExxonMobil", "Wells Fargo", "Uber"]
+  },
+  "abortion": {
+    "support": ["Apple", "Amazon", "Alphabet", "Nike", "Levi Strauss & Co.", "Starbucks", "Ben & Jerry's", "Patagonia", "Target", "Chick-fil-A"],
+    "oppose": ["Hobby Lobby", "Goya Foods", "ExxonMobil", "Chevron", "Home Depot", "AT&T", "Pfizer", "Cigna", "Target", "ExxonMobil"]
+  },
+  "gun-rights": {
+    "support": ["Smith & Wesson", "Sturm, Ruger & Co.", "Bass Pro Shops", "Cabela's", "Daniel Defense", "Colt", "Vista Outdoor", "Brownells", "Academy Sports + Outdoors", "Black Rifle Coffee Company"],
+    "oppose": ["Dick's Sporting Goods", "Walmart", "Levi Strauss & Co.", "Target", "Kroger", "CVS Health", "Bank of America", "Citigroup", "Delta Air Lines", "TOMS Shoes"]
+  },
+  "climate-change": {
+    "support": ["NextEra Energy", "Ørsted", "Vestas Wind Systems", "First Solar", "Enphase Energy", "Iberdrola", "GE Vernova", "Brookfield Renewable", "JinkoSolar", "Siemens Energy"],
+    "oppose": ["ExxonMobil", "Chevron", "Shell", "Saudi Aramco", "BP", "TotalEnergies", "Gazprom", "Coal India", "Pemex", "Peabody Energy"]
+  },
+  "government-spending": {
+    "support": ["Lockheed Martin", "Boeing", "RTX", "Northrop Grumman", "General Dynamics", "BAE Systems", "Intel", "Ford", "General Motors", "Archer Daniels Midland"],
+    "oppose": ["REI", "Ben & Jerry's", "Patagonia", "Costco", "Mondragon Corporation", "Equal Exchange", "Ocean Spray", "Land O'Lakes", "New Belgium Brewing", "Seventh Generation"]
+  },
+  "socialism": {
+    "support": ["REI", "Ben & Jerry's", "Patagonia", "Costco", "Equal Exchange", "Mondragon Corporation", "Ocean Spray", "Land O'Lakes", "King Arthur Baking Company", "Seventh Generation"],
+    "oppose": ["Amazon", "Walmart", "ExxonMobil", "Tesla", "McDonald's", "Meta", "Starbucks", "Target", "Chick-fil-A", "PepsiCo"]
+  },
+  "christians": {
+    "support": ["Chick-fil-A", "Hobby Lobby", "In-N-Out Burger", "Tyson Foods", "Forever 21", "Wendy's", "George Foreman Grills", "Interstate Batteries", "Pure Flix", "Dayspring"],
+    "oppose": ["Target", "The Walt Disney Company", "Nike", "Starbucks", "Anheuer-Busch", "Netflix", "Levi Strauss & Co.", "Procter & Gamble", "Amazon", "McDonald's"]
+  },
+  "muslims": {
+    "support": ["Huda Beauty", "Ben & Jerry's", "Wardah Cosmetics", "INIKA Organic", "PHB Ethical Beauty", "FARSÁLI", "PaliRoots", "Zaytoun", "Al'Ard", "Starbucks"],
+    "oppose": ["McDonald's", "Coca-Cola", "PepsiCo", "Nestlé", "Unilever", "Mars", "Mondelez", "Procter & Gamble", "KFC", "Mars"]
+  },
+  "judaism": {
+    "support": ["Estée Lauder", "Levi Strauss & Co.", "Coca-Cola", "Starbucks", "McDonald's", "Nike", "Apple", "Amazon", "Alphabet", "The Walt Disney Company"],
+    "oppose": ["Ben & Jerry's", "Puma", "Veolia", "Supreme", "G4S", "Orange S.A.", "Ford Motor Company", "Airbnb", "Adidas", "Booking.com"]
+  },
+  "buddhism": {
+    "support": ["Headspace", "Patagonia", "PrAna", "DharmaCrafts", "Buddha Groove", "Phat Buddha", "Bosatsu Brand", "Eileen Fisher", "Toad&Co", "Lotus Sky"],
+    "oppose": ["Amazon", "Alphabet", "Supreme", "Arc'teryx", "Lockheed Martin", "Tyson Foods", "Anheuser-Busch", "Nestlé", "ExxonMobil", "McDonald's"]
+  },
+  "us-veterans": {
+    "support": ["USAA", "The Home Depot", "Amazon", "Lowe's", "Walmart", "AT&T", "Boeing", "Lockheed Martin", "Black Rifle Coffee Company", "SpaceX"],
+    "oppose": ["Purdue Pharma", "Johnson & Johnson", "Philip Morris International", "Monsanto", "Dow Chemical", "Halliburton", "KBR", "Constellis (Academi)", "UnitedHealth Group", "Humana"]
+  },
+  "war": {
+    "support": ["Lockheed Martin", "Boeing", "RTX", "Northrop Grumman", "General Dynamics", "BAE Systems", "L3Harris", "Huntington Ingalls Industries", "Honeywell", "Leidos"],
+    "oppose": ["Ben & Jerry's", "Patagonia", "Lush Cosmetics", "Uniqlo", "Coca-Cola", "TOMS", "The Body Shop", "Unilever", "Eileen Fisher", "Everlane"]
+  },
+  "size-of-government": {
+    "support": ["Nike", "REI", "Peloton", "MasterClass", "Duolingo", "Etsy", "Robinhood", "Headspace", "Betterment", "Upwork"],
+    "oppose": ["McDonald's", "Meta Platforms", "Netflix", "DoorDash", "DraftKings", "Anheuser-Busch", "PayPal (high-fee services)", "Juul Labs", "Shein", "DoorDash"]
+  },
+  "individual-responsibility": {
+    "support": ["Nike", "Peloton", "MasterClass", "Duolingo", "Robinhood", "Etsy", "Headspace", "MyFitnessPal", "Betterment", "Upwork"],
+    "oppose": ["McDonald's", "Meta Platforms", "Netflix", "DoorDash", "DraftKings", "Anheuser-Busch", "PayPal (high-fee services)", "Juul Labs", "Shein", "DoorDash"]
+  },
+  "collective-responsibility": {
+    "support": ["REI", "Ben & Jerry's", "Patagonia", "Costco Wholesale", "Equal Exchange", "Mondragon Corporation", "Ocean Spray", "Land O'Lakes", "New Belgium Brewing", "Seventh Generation"],
+    "oppose": ["Amazon", "Uber", "Meta Platforms", "McDonald's", "Walmart", "ExxonMobil", "Philip Morris International", "DraftKings", "Juul Labs", "ExxonMobil"]
+  },
+  "fitness": {
+    "support": ["Nike", "Peloton", "Lululemon", "Planet Fitness", "Under Armour", "Fitbit", "MyFitnessPal", "Gatorade", "Apple", "CrossFit"],
+    "oppose": ["McDonald's", "Coca-Cola", "Netflix", "Philip Morris International", "Mars", "Uber", "Hershey", "DoorDash", "Activision Blizzard", "Anheuser-Busch"]
+  },
+  "personal-health": {
+    "support": ["Nike", "Peloton", "Whole Foods Market", "Planet Fitness", "Apple", "MyFitnessPal", "Lululemon Athletica", "Calm", "Whole Foods Market", "Fitbit"],
+    "oppose": ["McDonald's", "Coca-Cola", "Philip Morris International", "Mars", "Uber", "Anheuser-Busch", "DoorDash", "Hershey", "Activision Blizzard", "Snapchat"]
+  },
+  "mental-health": {
+    "support": ["Headspace", "Calm", "Talkspace", "BetterHelp", "Peloton", "Lululemon Athletica", "Whole Foods Market", "Apple (mental health features)", "Nike", "MyFitnessPal"],
+    "oppose": ["Meta Platforms", "ByteDance (TikTok)", "Netflix", "Activision Blizzard", "McDonald's", "Philip Morris International", "Instagram", "Snapchat", "Instagram", "Philip Morris International"]
+  },
+  "lgbtq": {
+    "support": ["Procter & Gamble", "Kroger", "Amazon", "Apple", "Microsoft", "Alphabet", "Levi Strauss & Co.", "Nike", "Starbucks", "Patagonia"],
+    "oppose": ["Chick-fil-A", "Hobby Lobby", "Anheuser-Busch", "Target", "Harley-Davidson", "Lowe's", "Mastercard", "Ford", "Comcast", "PepsiCo"]
+  },
+  "freedom-of-speech": {
+    "support": ["X", "Rumble", "Substack", "Telegram", "Signal", "Brave", "Gab", "Odysee", "Truth Social", "Proton"],
+    "oppose": ["Meta", "Alphabet", "Apple", "Amazon", "Microsoft", "TikTok", "Disney", "Comcast", "Warner Bros. Discovery", "Paramount Global"]
+  },
+  "privacy": {
+    "support": ["Proton", "Signal", "DuckDuckGo", "Brave", "Mullvad", "ExpressVPN", "NordVPN", "Apple", "Purism", "Tutanota"],
+    "oppose": ["Alphabet", "Meta", "Amazon", "Microsoft", "ByteDance", "Oracle", "Palantir", "Equifax", "Experian", "Acxiom"]
+  },
+  "china": {
+    "support": ["Apple", "Nike", "Tesla", "Walmart", "Alibaba", "Huawei", "BYD", "Lenovo", "DJI", "Shein"],
+    "oppose": ["TSMC", "Samsung", "Intel", "Micron", "Boeing", "Lockheed Martin", "Applied Materials", "Lam Research", "KLA", "ASML"]
+  },
+  "russia": {
+    "support": ["Gazprom", "Rosneft", "Lukoil", "Sberbank", "Novatek", "Nornickel", "Polyus", "Tatneft", "Gazpromneft", "PepsiCo"],
+    "oppose": ["McDonald's", "Starbucks", "Coca-Cola", "IKEA", "H&M", "Nike", "Apple", "Alphabet", "Meta", "BP"]
+  },
+  "israel": {
+    "support": ["Elbit Systems", "Rafael Advanced Defense Systems", "Israel Aerospace Industries (IAI)", "Teva Pharmaceutical Industries", "Lockheed Martin", "Raytheon Technologies", "Boeing", "Intel", "Google", "Microsoft"],
+    "oppose": ["Ben & Jerry's", "Airbnb", "Booking.com", "Expedia Group", "Veolia", "Orange", "Puma", "Tripadvisor", "SodaStream", "Unilever"]
+  },
+  "france": {
+    "support": ["LVMH", "Airbus", "TotalEnergies", "L'Oréal", "Renault", "BNP Paribas", "Sanofi", "Orange", "Pernod Ricard", "Veolia"],
+    "oppose": ["Boeing", "Alphabet", "Amazon", "ExxonMobil", "Uber", "McDonald's", "Huawei", "Tesla", "Nestlé", "Ryanair"]
+  },
+  "italy": {
+    "support": ["Eni", "Ferrari", "Stellantis", "EssilorLuxottica", "Enel", "Intesa Sanpaolo", "UniCredit", "Barilla", "Pirelli", "Leonardo"],
+    "oppose": ["Amazon", "Boeing", "Uber", "ExxonMobil", "Ryanair", "Apple", "McDonald's", "Volkswagen", "Nestlé", "Huawei"]
+  },
+  "japan": {
+    "support": ["Toyota", "Sony", "Honda", "Nintendo", "Panasonic", "Canon", "Hitachi", "Fast Retailing (Uniqlo)", "Mitsubishi", "SoftBank"],
+    "oppose": ["Tesla", "Samsung", "Boeing", "Apple", "Volkswagen", "Huawei", "ExxonMobil", "Chevron", "Alibaba", "TSMC"]
+  },
+  "nba": {
+    "support": ["Nike", "The Walt Disney Company", "PepsiCo", "Anheuser-Busch", "State Farm", "Kia", "American Express", "FanDuel", "Adidas", "Comcast"],
+    "oppose": ["Under Armour", "Puma", "Anta Sports", "Li-Ning", "Netflix", "Amazon", "Apple", "ByteDance", "Comcast", "ByteDance"]
+  },
+  "nfl": {
+    "support": ["Nike", "PepsiCo", "The Walt Disney Company", "Anheuser-Busch", "Fox Corporation", "Paramount Global", "Microsoft", "State Farm", "NBCUniversal", "Verizon"],
+    "oppose": ["Adidas", "Under Armour", "Coca-Cola", "Monster Beverage", "Netflix", "Apple", "Alphabet", "Meta Platforms", "Amazon", "PepsiCo"]
+  },
+  "mlb": {
+    "support": ["Nike", "The Walt Disney Company", "Warner Bros. Discovery", "Fox Corporation", "Mastercard", "Bank of America", "FanDuel", "Ticketmaster", "Rogers Communications", "Nike"],
+    "oppose": ["Adidas", "Puma", "Netflix", "Amazon", "Apple", "Coca-Cola", "Monster Beverage", "ByteDance", "Comcast", "Molson Coors"]
+  },
+  "nhl": {
+    "support": ["Adidas", "The Walt Disney Company", "Warner Bros. Discovery", "Verizon", "Molson Coors", "PepsiCo", "Rogers Communications", "Fanatics", "Betway", "Wayfair"],
+    "oppose": ["Nike", "Under Armour", "Puma", "Netflix", "Amazon", "Apple", "Monster Beverage", "Netflix", "Amazon", "Comcast"]
+  },
+  "massachusetts": {
+    "support": ["Fidelity Investments", "RTX (Raytheon Technologies)", "Biogen", "Vertex Pharmaceuticals", "Dunkin' Brands", "Wayfair", "HubSpot", "TJX Companies", "Liberty Mutual", "DraftKings"],
+    "oppose": ["ExxonMobil", "Chevron", "3M", "DuPont", "Purdue Pharma", "Amazon", "Walmart", "Uber", "National Grid", "Eversource"]
+  },
+  "texas": {
+    "support": ["ExxonMobil", "H-E-B", "RTX", "Comcast", "Dell Technologies", "Southwest Airlines", "AT&T", "Valero Energy", "Occidental Petroleum", "Sysco"],
+    "oppose": ["BlackRock", "PepsiCo", "Coca-Cola", "Nestlé", "Unilever", "Amazon", "The Walt Disney Company", "Nike", "Starbucks", "Coca-Cola"]
+  },
+  "florida": {
+    "support": ["The Walt Disney Company", "Comcast", "Publix Super Markets", "Carnival Corporation", "Royal Caribbean International", "NextEra Energy", "Lockheed Martin", "Darden Restaurants", "AutoNation", "Lennar Corporation"],
+    "oppose": ["BlackRock", "Allstate", "State Farm", "Florida Crystals", "Duke Energy", "ExxonMobil", "Chevron", "The Mosaic Company", "Invitation Homes", "Zillow"]
+  },
+  "new-york": {
+    "support": ["JPMorgan Chase", "Verizon", "Pfizer", "Citigroup", "NVIDIA", "The Walt Disney Company", "Alphabet", "Meta Platforms", "Apple", "Goldman Sachs"],
+    "oppose": ["ExxonMobil", "Chevron", "BlackRock", "Allstate", "Amazon", "Walmart", "ExxonMobil", "Uber", "Southern California Edison", "Exelon"]
+  },
+  "california": {
+    "support": ["Apple", "Alphabet", "Meta Platforms", "NVIDIA", "The Walt Disney Company", "Netflix", "Salesforce", "Oracle", "Cisco Systems", "Intuit"],
+    "oppose": ["ExxonMobil", "Chevron", "Amazon", "Chevron", "Amazon", "PG&E", "Southern California Edison", "Monsanto (Bayer)", "Purdue Pharma", "Purdue Pharma"]
+  },
+  "illinois": {
+    "support": ["Caterpillar", "McDonald's", "Boeing", "Abbott Laboratories", "Walgreens Boots Alliance", "Deere & Company", "Motorola Solutions", "United Airlines", "The Kraft Heinz Company", "Altria Group"],
+    "oppose": ["Amazon", "Walmart", "ExxonMobil", "Purdue Pharma", "Uber", "Monsanto (Bayer)", "Nestlé", "Monsanto (Bayer)", "Purdue Pharma", "Uber"]
+  },
+  "ohio": {
+    "support": ["Procter & Gamble", "Kroger", "Nationwide", "Goodyear", "Marathon Petroleum", "FirstEnergy", "Cardinal Health", "Progressive", "KeyCorp", "Huntington Bancshares"],
+    "oppose": ["Amazon", "Walmart", "ExxonMobil", "Comcast", "BlackRock", "Chevron", "Nestlé", "Monsanto (Bayer)", "Altria Group", "Nestlé"]
+  },
+  "pennsylvania": {
+    "support": ["Hershey Company", "Comcast", "UPMC", "PNC Financial Services", "PPG Industries", "Giant Eagle", "Wawa", "Apple", "Rite Aid", "BNY Mellon"],
+    "oppose": ["Purdue Pharma", "ExxonMobil", "Chevron", "Amazon", "Walmart", "Peabody Energy", "Johnson & Johnson", "PECO", "McDonald's", "Chevron"]
+  },
+  "nancy-pelosi": {
+    "support": ["NVIDIA", "NextEra Energy", "Vanguard", "Boeing", "L3Harris", "Wells Fargo", "Lockheed Martin", "Amazon", "Alphabet", "Intel"],
+    "oppose": ["ExxonMobil", "Chevron", "Fox Corporation", "Newsmax", "AT&T", "Chick-fil-A", "Verizon", "Hobby Lobby", "Walmart", "Coinbase"]
+  },
+  "chuck-schumer": {
+    "support": ["NextEra Energy", "L3Harris", "Vanguard", "Wells Fargo", "Blackstone", "RTX", "Lockheed Martin", "Amazon", "Alphabet", "Pfizer"],
+    "oppose": ["ExxonMobil", "Chevron", "Fox Corporation", "Newsmax", "AT&T", "Verizon", "Chick-fil-A", "Hobby Lobby", "Smith & Wesson", "Walmart"]
+  },
+  "mitch-mcconnell": {
+    "support": ["Vanguard", "Boeing", "Wells Fargo", "Lockheed Martin", "RTX", "Blackstone Group", "Eli Lilly", "AT&T", "Humana", "United Parcel Service"],
+    "oppose": ["Meta Platforms", "Amazon", "Alphabet", "Apple", "Netflix", "The Walt Disney Company", "Apple", "Nike", "Starbucks", "Coca-Cola"]
+  },
+  "lindsay-graham": {
+    "support": ["Boeing", "Lockheed Martin", "Tucker Carlson Network", "RTX", "Northrop Grumman", "The Daily Wire", "Goldman Sachs", "PublicSquare", "AT&T", "Wells Fargo"],
+    "oppose": ["The Walt Disney Company", "Comcast", "Warner Bros. Discovery", "Alphabet", "Meta Platforms", "Apple", "Amazon", "Nike", "Starbucks", "Levi Strauss & Co."]
+  },
+  "tucker-carlson": {
+    "support": ["Tucker Carlson Network", "Rumble", "X", "MyPillow", "Black Rifle Coffee Company", "PureTalk", "Turning Point Brands", "Newsmax", "The Daily Wire", "Fox Corporation"],
+    "oppose": ["The Walt Disney Company", "Comcast", "YouTube", "Warner Bros. Discovery", "Fox Corporation", "Alphabet", "Meta Platforms", "Comcast", "Warner Bros. Discovery", "Alphabet"]
+  },
+  "russell-brand": {
+    "support": ["Rumble", "X", "MyPillow", "Black Rifle Coffee Company", "Newsmax", "PublicSquare", "PureTalk", "X", "Turning Point USA", "Tucker Carlson Network"],
+    "oppose": ["YouTube", "Burger King", "Comcast", "Fox Corporation", "HelloFresh", "The Walt Disney Company", "Warner Bros. Discovery", "ASOS", "Alphabet", "Sticker Mule"]
+  },
+  "rachel-maddow": {
+    "support": ["Comcast", "Netflix", "Apple", "Spotify", "Ford Motor Company", "The Home Depot", "Procter & Gamble", "Hewlett-Packard", "Allstate", "Vivobarefoot"],
+    "oppose": ["Fox Corporation", "Newsmax", "The Walt Disney Company", "Trump Media & Technology Group", "Warner Bros. Discovery", "MyPillow", "Alphabet", "Goya Foods", "Meta Platforms", "Apple"]
+  },
+  "sean-hannity": {
+    "support": ["Fox Corporation", "MyPillow", "Black Rifle Coffee Company", "Chick-fil-A", "ExxonMobil", "Turning Point Brands", "Goya Foods", "Procter & Gamble", "Black Rifle Coffee Company", "ExxonMobil"],
+    "oppose": ["Comcast", "The Walt Disney Company", "Warner Bros. Discovery", "Newsmax", "Alphabet", "Meta Platforms", "Apple", "Alphabet", "Netflix", "Meta Platforms"]
+  },
+  "rupert-murdoch": {
+    "support": ["Fox Corporation", "News Corporation", "The Wall Street Journal", "MyPillow", "Sky Group", "ExxonMobil", "New York Post", "Chick-fil-A", "HarperCollins", "ExxonMobil"],
+    "oppose": ["Newsmax", "Goya Foods", "Chick-fil-A", "Comcast", "Black Rifle Coffee Company", "The Walt Disney Company", "Newsmax", "Warner Bros. Discovery", "Alphabet", "JD.com"]
+  },
+  "george-soros": {
+    "support": ["Smurfit WestRock", "Goldman Sachs", "GFL Environmental", "JPMorgan Chase", "First Solar", "Citigroup", "Liberty Broadband", "Alphabet", "AstraZeneca", "Novo Nordisk"],
+    "oppose": ["Fox Corporation", "Comcast", "Newsmax", "News Corporation", "The Walt Disney Company", "Warner Bros. Discovery", "Newsmax", "Alphabet", "Meta Platforms", "The Walt Disney Company"]
+  },
+  "hillary-clinton": {
+    "support": ["Boeing", "Coca-Cola", "Goldman Sachs", "JPMorgan Chase", "Fox Corporation", "Morgan Stanley", "Palantir Technologies", "Citigroup", "Lockheed Martin", "Palantir Technologies"],
+    "oppose": ["Alphabet", "Fox Corporation", "Goldman Sachs", "Newsmax", "Netflix", "JPMorgan Chase", "Boeing", "Barclays", "Coca-Cola", "Goldman Sachs"]
+  },
+  "the-clinton-foundation": {
+    "support": ["Boeing", "Palantir Technologies", "Coca-Cola", "Fox Corporation", "Goldman Sachs", "Lockheed Martin", "JPMorgan Chase", "Alphabet", "Microsoft", "Boeing"],
+    "oppose": ["Alphabet", "Newsmax", "Fox Corporation", "MyPillow", "Sinclair Broadcast Group", "Alphabet", "Chick-fil-A", "Amazon", "ExxonMobil", "Chevron"]
+  },
+  "jd-vance": {
+    "support": ["Palantir Technologies", "BlackRock", "Fox Corporation", "JPMorgan Chase", "Newsmax", "Alphabet", "Trump Media & Technology Group", "Apple", "Rumble", "MetLife"],
+    "oppose": ["Fox Corporation", "Newsmax", "Alphabet", "ExxonMobil", "Apple", "Meta Platforms", "Amazon", "Chevron", "Netflix", "MyPillow"]
+  },
+  "hakeem-jeffries": {
+    "support": ["BlackRock", "JPMorgan Chase", "Alphabet", "Apple", "Netflix", "MetLife", "Apollo Global Management", "The Walt Disney Company", "Nike", "Pfizer"],
+    "oppose": ["Fox Corporation", "Newsmax", "ExxonMobil", "Chevron", "MyPillow", "Goya Foods", "Chick-fil-A", "Hobby Lobby", "Goya Foods", "Chick-fil-A"]
+  },
+  "feminism": {
+    "support": ["Nike", "Levi Strauss & Co.", "Patagonia", "Universal Standard", "Girlfriend Collective", "Reformation", "The Body Shop", "Good American", "Estée Lauder", "Fenty Beauty"],
+    "oppose": ["Hobby Lobby", "Chick-fil-A", "MyPillow", "Goya Foods", "UnitedHealth Group", "Heritage Foundation", "Focus on the Family", "National Right to Life", "Susie B. Anthony Suite", "Thomas More Society"]
+  },
+  "pro-life": {
+    "support": ["Hobby Lobby", "Chick-fil-A", "MyPillow", "National Right to Life", "Priests for Life", "Susie B. Anthony Suite", "Thomas More Society", "Live Action", "American Life League", "Heritage Studies"],
+    "oppose": ["Amazon", "Apple", "Alphabet", "Netflix", "Starbucks", "Nike", "Patagonia", "Ben & Jerry's", "Levi Strauss & Co.", "The Walt Disney Company"]
+  },
+  "environmentalism": {
+    "support": ["Patagonia", "Ben & Jerry's", "REI", "Stella McCartney", "Allbirds", "Eileen Fisher", "Adidas", "The Body Shop", "Levi Strauss & Co.", "Unilever"],
+    "oppose": ["ExxonMobil", "Chevron", "Shell", "BP", "TotalEnergies", "Saudi Aramco", "Gazprom", "Peabody Energy", "Coal India", "Pemex"]
+  },
+  "cryptocurrency": {
+    "support": ["Coinbase", "Binance", "Kraken", "Bitfinex", "Uniswap", "Polkadot", "Chainlink", "Cardano", "Ethereum", "Ripple"],
+    "oppose": ["Bank of America", "JPMorgan Chase", "Goldman Sachs", "BlackRock", "Wells Fargo", "Citigroup", "Morgan Stanley", "Bank of New York Mellon", "State Street", "Bank of America"]
+  },
+  "veganism": {
+    "support": ["Beyond Meat", "Impossible Foods", "Oatly", "Daiya Foods", "Gardein", "Follow Your Heart", "Violife", "Clif Bar", "So Delicious", "Lightlife"],
+    "oppose": ["Tyson Foods", "JBS", "Cargill", "Smithfield Foods", "Hormel Foods", "Conagra Brands", "Perdue Farms", "McDonald's", "Burger King", "KFC"]
+  },
+  "home-schooling": {
+    "support": ["Abeka", "Sonlight", "Timberdoodle", "Alpha Omega", "Apologia", "Calvert Education", "Christian Light", "Foundation Worldview", "Heritage Studies", "Apologia Educational Ministries"],
+    "oppose": ["Public Schools", "Teachers Unions", "Department of Education", "State Education", "Public Schools", "Teachers Unions", "Department of Education", "State Education", "Public Schools", "Department of Education"]
+  },
+  "public-transportation": {
+    "support": ["Keolis", "Transdev", "First Transit", "ComfortDelGro", "Go-Ahead Group", "RATP Dev", "National Express", "FirstGroup", "Arriva", "ComfortDelGro"],
+    "oppose": ["Private Car Services", "Uber", "Waymo", "Airbnb", "Tesla", "Zipcar", "Private Jets", "Waymo", "Private Car Services", "Zipcar"]
+  },
+  "minimalism": {
+    "support": ["The Row", "COS", "Totême", "Peter Do", "Filippa K", "Jil Sander", "Arket", "Uniqlo", "& Other Stories", "Zara"],
+    "oppose": ["Amazon", "Walmart", "Target", "Costco", "Best Buy", "IKEA", "Home Depot", "Lowe's", "Kohl's", "Macy's"]
+  },
+  "entrepreneurship": {
+    "support": ["Shopify", "Stripe", "Airbnb", "Etsy", "Robinhood", "Square", "Everlane", "DoorDash", "Fiverr", "Instacart"],
+    "oppose": ["Amazon", "Walmart", "Disney", "Chevron", "ExxonMobil", "BlackRock", "Bank of America", "Publix", "ExxonMobil", "Chevron"]
+  },
+  "bernie-sanders": {
+    "support": ["Netflix", "TOMS", "Patagonia", "Ben & Jerry's", "Whole Foods", "REI", "Starbucks", "Disney", "Ben & Jerry's", "Whole Foods"],
+    "oppose": ["ExxonMobil", "Chevron", "Blackstone", "Goldman Sachs", "JPMorgan Chase", "Bank of America", "Wells Fargo", "Citigroup", "Morgan Stanley", "BlackRock"]
+  },
+  "ron-desantis": {
+    "support": ["Publix", "ExxonMobil", "Chobani", "Blackstone", "Google", "Microsoft", "Disney", "Chevron", "ExxonMobil", "Publix"],
+    "oppose": ["The Walt Disney Company", "Chevron", "Shell", "BP", "Bank of America", "Bank of New York Mellon", "Bank of America", "ExxonMobil", "Chevron", "Disney"]
+  },
+  "kamala-harris": {
+    "support": ["Yelp", "Meta Platforms", "Instagram", "Facebook", "WhatsApp", "Instagram", "Meta Platforms", "Oculus", "Instagram", "Facebook"],
+    "oppose": ["Chevron", "ExxonMobil", "Shell", "BP", "TotalEnergies", "Shell", "Chevron", "ExxonMobil", "Shell", "BP"]
+  },
+  "mark-zuckerberg": {
+    "support": ["Meta Platforms", "Instagram", "Facebook", "WhatsApp", "Oculus", "CTRL-labs", "Instagram", "WhatsApp", "Beluga", "CTRL-labs"],
+    "oppose": ["Apple", "Amazon", "Alphabet", "Microsoft", "Netflix", "TikTok", "ByteDance", "Snapchat", "Twitter/X", "LinkedIn"]
+  },
+  "greta-thunberg": {
+    "support": ["Patagonia", "The Body Shop", "Allbirds", "REI", "Unilever", "Stella McCartney", "Levi Strauss", "Lush", "People Tree", "Unilever"],
+    "oppose": ["ExxonMobil", "Chevron", "Shell", "BP", "TotalEnergies", "Coal India", "Gazprom", "Saudi Aramco", "Peabody Energy", "Shell"]
+  },
+  "hollywood": {
+    "support": ["The Walt Disney Company", "Warner Bros. Discovery", "Universal Pictures", "Paramount Global", "Sony Pictures", "Lionsgate", "Amazon MGM Studios", "Netflix", "A24", "Blumhouse"],
+    "oppose": ["Amazon", "Apple", "Meta", "ByteDance", "Alphabet", "Netflix", "Amazon MGM Studios", "Paramount Global", "Universal Pictures", "Sony Pictures"]
+  },
+  "wall-street": {
+    "support": ["Goldman Sachs", "JPMorgan Chase", "BlackRock", "Morgan Stanley", "Bank of America", "Citigroup", "Bank of New York Mellon", "Wells Fargo", "State Street", "Morgan Stanley"],
+    "oppose": ["Coinbase", "Binance", "Kraken", "Robinhood", "Tesla", "GameStop", "AMC", "Reddit", "WallStreetBets", "Stripe"]
+  },
+  "silicon-valley": {
+    "support": ["Google", "Apple", "Microsoft", "Salesforce", "Intel", "Nvidia", "Cisco", "Oracle", "Adobe", "Meta"],
+    "oppose": ["ExxonMobil", "Chevron", "Walmart", "Amazon", "BlackRock", "JPMorgan Chase", "Bank of America", "Wells Fargo", "Citigroup", "BP"]
+  },
+  "nuclear-energy": {
+    "support": ["Constellation Energy", "Exelon", "NextEra Energy", "GE Hitachi", "Westinghouse", "Framatome", "Orano", "EDF", "KEPCO", "CGN"],
+    "oppose": ["Greenpeace", "Sierra Club", "Friends of the Earth", "Sierra Club", "Friends of the Earth", "Greenpeace", "Sierra Club", "Greenpeace", "Friends of the Earth", "Sierra Club"]
+  },
+  "telehealth": {
+    "support": ["Teladoc Health", "Amwell", "MDLIVE", "Doctor on Demand", "Included Health", "SimplePractice", "HealthTap", "Talkspace", "Doxy.me", "Amazon Clinic"],
+    "oppose": ["Pearson", "Houghton Mifflin Harcourt", "McGraw-Hill", "Houghton Mifflin", "McGraw-Hill Education", "Scholastic", "Pearson Education", "Scholastic Inc.", "Cengage Learning", "Wiley"]
+  },
+  "atheism": {
+    "support": ["Disney", "Netflix", "Apple", "Amazon", "Starbucks", "Nike", "Levi Strauss & Co.", "Patagonia", "Ben & Jerry's", "The Walt Disney Company"],
+    "oppose": ["Hobby Lobby", "Chick-fil-A", "MyPillow", "Goya Foods", "In-N-Out Burger", "Forever 21", "Tyson Foods", "Pure Flix", "Dayspring", "Interstate Batteries"]
+  },
+  "globalism": {
+    "support": ["Pearson", "Houghton Mifflin Harcourt", "McGraw-Hill Education", "Scholastic", "Cengage Learning", "Wiley", "McGraw-Hill", "Pearson Education", "Houghton Mifflin", "Scholastic Inc."],
+    "oppose": ["Heritage Foundation", "Focus on the Family", "National Right to Life", "Hobby Lobby", "Chick-fil-A", "MyPillow", "Liberty University Online", "American Heritage Academy", "George Washington University Online", "National University"]
+  },
+  "school-choice": {
+    "support": ["Liberty University Online", "Stride", "Connections Academy", "Excelsior Academy", "K12", "American Heritage Academy", "Charter Schools USA", "George Washington University Online", "University of Phoenix", "National University"],
+    "oppose": ["Teachers Unions", "Public Schools", "Department of Education", "State Education", "Public Schools", "Teachers Unions", "Department of Education", "Public Schools", "State Education", "Public Schools"]
+  },
+  "remote-work": {
+    "support": ["Zoom", "Slack", "Microsoft Teams", "Google Workspace", "Asana", "LogMeIn", "RingCentral", "Cisco Webex", "WeWork", "Dropbox"],
+    "oppose": ["Office Depot", "Corporate Express", "FedEx Office", "UPS Store", "Staples", "OfficeMax", "DHL", "Pitney Bowes", "XPO Logistics", "Ryder"]
+  },
+  "gig-economy": {
+    "support": ["Upwork", "Fiverr", "Toptal", "Freelancer.com", "Guru", "TaskRabbit", "99designs", "PeoplePerHour", "Thumbtack", "Etsy"],
+    "oppose": ["Amazon", "Walmart", "McDonald's", "Starbucks", "Target", "Costco", "Home Depot", "Best Buy", "IKEA", "Lowe's"]
+  },
+  "electric-vehicles": {
+    "support": ["Tesla", "Rivian", "Lucid Motors", "Fisker", "NIO", "Polestar", "Hyundai Ioniq", "Volkswagen ID", "Ford Mustang Mach-E", "GM Ultium"],
+    "oppose": ["ExxonMobil", "Chevron", "Shell", "BP", "TotalEnergies", "Saudi Aramco", "Gazprom", "ConocoPhillips", "Eni", "Wintershall"]
+  },
+  "body-positivity": {
+    "support": ["Fenty Beauty", "Dove", "Aerie", "Old Navy", "Target", "Nike", "Adidas", "Puma", "Lane Bryant", "Eloquii"],
+    "oppose": ["Victoria's Secret", "Abercrombie & Fitch", "Hollister", "Forever 21", "H&M", "Gap", "Calvin Klein", "American Eagle", "Guess", "American Eagle"]
+  },
+  "oprah-winfrey": {
+    "support": ["OWN", "Harpo Productions", "Weight Watchers", "Starbucks", "Discovery Channel", "Discovery Inc", "Whole Foods", "Calvin Klein", "Apple", "Starbucks"],
+    "oppose": ["Disney", "Warner Bros.", "Paramount", "NBCUniversal", "CBS", "Fox", "ABC", "HBO", "MTV", "ESPN"]
+  },
+  "jeff-bezos": {
+    "support": ["Amazon", "Whole Foods", "Washington Post", "Blue Origin", "Audible", "Amazon Studios", "Ring", "Zoox", "Bezos Expeditions", "Perplexity AI"],
+    "oppose": ["Walmart", "Target", "Costco", "Best Buy", "Home Depot", "Lowe's", "IKEA", "Macy's", "Kohl's", "Sears"]
+  },
+  "vladimir-putin": {
+    "support": ["Gazprom", "Rosneft", "Lukoil", "Sberbank", "Novatek", "Gazpromneft", "Tatneft", "Transneft", "Surgutneftegas", "Lenta"],
+    "oppose": ["McDonald's", "Starbucks", "Coca-Cola", "PepsiCo", "Nike", "Apple", "Microsoft", "Amazon", "Meta", "Alphabet"]
+  },
+  "xi-jinping": {
+    "support": ["Alibaba", "Huawei", "ByteDance", "WeChat", "China Mobile", "China Telecom", "Tencent", "JD.com", "Alipay", "Weibo"],
+    "oppose": ["Google", "Meta", "Apple", "Microsoft", "Amazon", "Netflix", "Twitter/X", "Facebook", "Instagram", "WhatsApp"]
+  },
+  "aclu": {
+    "support": ["Apple", "Google", "Microsoft", "Amazon", "Disney", "Netflix", "Starbucks", "Nike", "Levi Strauss", "Patagonia"],
+    "oppose": ["Hobby Lobby", "Chick-fil-A", "MyPillow", "Goya Foods", "Fox Corporation", "Newsmax", "ExxonMobil", "Chevron", "Walmart", "Bass Pro Shops"]
+  },
+  "mexico": {
+    "support": ["Telmex", "Grupo Bimbo", "FEMSA", "Grupo Modelo", "Grupo Carso", "Oxxo", "CEMEX", "Wal-Mart de Mexico", "America Movil", "PepsiCo"],
+    "oppose": ["ExxonMobil", "Chevron", "Walmart", "Amazon", "McDonald's", "Coca-Cola", "Starbucks", "Home Depot", "Nike", "Apple"]
+  },
+  "canada": {
+    "support": ["Tim Hortons", "Shoppers Drug Mart", "Rogers Communications", "Loblaws", "Canadian Tire", "Royal Bank of Canada", "TD Bank", "Scotiabank", "WestJet", "Air Canada"],
+    "oppose": ["ExxonMobil", "Chevron", "Walmart", "Amazon", "McDonald's", "Starbucks", "Nike", "Apple", "Target", "Home Depot"]
+  },
+  "uk": {
+    "support": ["HSBC", "Barclays", "Unilever", "GlaxoSmithKline", "AstraZeneca", "BP", "BAE Systems", "Rolls-Royce", "Vodafone", "HSBC Holdings"],
+    "oppose": ["ExxonMobil", "Chevron", "Walmart", "Amazon", "McDonald's", "Starbucks", "Nike", "Apple", "Target", "Home Depot"]
+  },
+  "germany": {
+    "support": ["Volkswagen", "Adidas", "BMW", "Adidas Group", "Mercedes-Benz", "Deutsche Telekom", "Bayer", "Siemens", "Volkswagen Group", "BMW i"],
+    "oppose": ["ExxonMobil", "Chevron", "Walmart", "Amazon", "McDonald's", "Nike", "Starbucks", "Apple", "Tesla", "Boeing"]
+  },
+  "india": {
+    "support": ["Tata Group", "Reliance Industries", "Infosys", "Wipro", "TCS", "Reliance Retail", "Flipkart", "Zee Entertainment", "HCL Technologies", "D-Mart"],
+    "oppose": ["ExxonMobil", "Chevron", "Walmart", "Amazon", "McDonald's", "Coca-Cola", "Nike", "Starbucks", "Apple", "Microsoft"]
+  }
+}
