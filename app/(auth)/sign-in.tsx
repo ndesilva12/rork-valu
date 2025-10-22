@@ -1,6 +1,6 @@
 import { useSignIn, useOAuth } from '@clerk/clerk-expo';
 import { Link, useRouter } from 'expo-router';
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
+import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Image } from 'react-native';
 import React from 'react';
 import { lightColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -63,6 +63,13 @@ export default function SignInScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
+          <View style={styles.logoContainer}>
+            <Image 
+              source={require('@/assets/images/icon.png')} 
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
           <Text style={styles.title}>Welcome back</Text>
           <Text style={styles.subtitle}>Sign in to your account</Text>
           
@@ -133,6 +140,16 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: 24,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 48,
+    paddingTop: 20,
+  },
+  logo: {
+    width: '60%',
+    aspectRatio: 1,
+    maxWidth: 300,
   },
   title: {
     fontSize: 32,
