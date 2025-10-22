@@ -181,7 +181,7 @@ export default function ValueDetailScreen() {
           {drivers.supports.length > 0 ? (
             <View style={styles.driversContainer}>
               {drivers.supports.map((driver, index) => (
-                <View key={`${id}-support-${driver.name}-${index}`} style={[styles.driverCard, styles.supportingCard, { backgroundColor: colors.successLight, borderColor: colors.success }]}>
+                <View key={`${id}-support-${driver.name}-${index}`} style={[styles.driverCard, styles.supportingCard, { borderColor: colors.success }]}>
                   <View style={styles.cardContent}>
                     <View style={styles.leftContent}>
                       {driver.imageUrl ? (
@@ -222,7 +222,7 @@ export default function ValueDetailScreen() {
           {drivers.opposes.length > 0 ? (
             <View style={styles.driversContainer}>
               {drivers.opposes.map((driver, index) => (
-                <View key={`${id}-oppose-${driver.name}-${index}`} style={[styles.driverCard, styles.opposingCard, { backgroundColor: colors.dangerLight, borderColor: colors.danger }]}>
+                <View key={`${id}-oppose-${driver.name}-${index}`} style={[styles.driverCard, styles.opposingCard, { borderColor: colors.danger }]}>
                   <View style={styles.cardContent}>
                     <View style={styles.leftContent}>
                       {driver.imageUrl ? (
