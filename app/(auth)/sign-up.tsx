@@ -18,27 +18,24 @@ export default function SignUpScreen() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   React.useEffect(() => {
-    if (authLoaded && isSignedIn) {
+    if (authLoaded && isSignedIn && !pendingVerification) {
       console.log('[Sign Up] Already signed in, redirecting to home');
       router.replace('/');
     }
-  }, [authLoaded, isSignedIn, router]);
+  }, [authLoaded, isSignedIn, router, pendingVerification]);
 
   React.useEffect(() => {
     if (isLoaded && signUp) {
       console.log('[Sign Up] Component mounted, checking sign-up state');
       console.log('[Sign Up] Current status:', signUp.status);
       
-      if (signUp.status === 'complete') {
-        console.log('[Sign Up] Sign-up already complete');
+      if (signUp.status === 'complete' && !pendingVerification) {
+        console.log('[Sign Up] Sign-up already complete, redirecting');
         router.replace('/');
-      } else {
-        console.log('[Sign Up] Clean state, ready for new sign-up');
-        setPendingVerification(false);
       }
       setError('');
     }
-  }, [isLoaded, signUp, router]);
+  }, [isLoaded, signUp, router, pendingVerification]);
 
   const onSignUpPress = async () => {
     console.log('[Sign Up] Button pressed, isLoaded:', isLoaded, 'isSubmitting:', isSubmitting);
@@ -145,12 +142,16 @@ export default function SignUpScreen() {
       });
 
       console.log('[Sign Up] Verification attempt result:', signUpAttempt.status);
+      console.log('[Sign Up] Created session ID:', signUpAttempt.createdSessionId);
 
       if (signUpAttempt.status === 'complete') {
+        console.log('[Sign Up] Setting active session...');
         await setActive({ session: signUpAttempt.createdSessionId });
+        console.log('[Sign Up] Session set successfully');
         
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 500));
         
+        console.log('[Sign Up] Redirecting to onboarding...');
         router.replace('/onboarding');
       } else {
         console.error('[Sign Up] Verification incomplete:', JSON.stringify(signUpAttempt, null, 2));

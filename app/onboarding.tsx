@@ -45,7 +45,7 @@ interface SelectedValue {
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { addCauses, profile, isDarkMode } = useUser();
+  const { addCauses, profile, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const [selectedValues, setSelectedValues] = useState<SelectedValue[]>(() => {
     return profile.causes.map(c => ({
@@ -84,6 +84,7 @@ export default function OnboardingScreen() {
   };
 
   const handleContinue = async () => {
+    console.log('[Onboarding] Continue pressed with', selectedValues.length, 'values');
     if (selectedValues.length > 0) {
       const causes: Cause[] = selectedValues.map(v => ({
         id: v.id,
@@ -92,7 +93,9 @@ export default function OnboardingScreen() {
         type: v.type,
         description: v.description,
       }));
+      console.log('[Onboarding] Saving causes for user:', clerkUser?.id);
       await addCauses(causes);
+      console.log('[Onboarding] Causes saved, redirecting to home');
       router.replace('/(tabs)/home');
     }
   };

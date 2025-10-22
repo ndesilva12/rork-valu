@@ -38,7 +38,6 @@ export const [UserProvider, useUser] = createContextHook(() => {
       }
 
       try {
-        setIsLoading(true);
         const userId = clerkUser.id;
         const userProfileKey = getUserProfileKey(userId);
         console.log('[UserContext] Loading profile for user:', userId);
@@ -47,7 +46,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
         const stored = await AsyncStorage.getItem(userProfileKey);
         console.log('[UserContext] Stored profile exists:', !!stored);
         if (stored) {
-          console.log('[UserContext] Raw stored data:', stored);
+          console.log('[UserContext] Raw stored data length:', stored.length);
         }
         
         if (stored && mounted) {
