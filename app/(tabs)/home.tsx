@@ -74,6 +74,7 @@ export default function HomeScreen() {
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
     const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
     const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
+    const totalUserValues = profile.causes.length;
     
     const scored = MOCK_PRODUCTS.map(product => {
       let totalSupportScore = 0;
@@ -109,8 +110,10 @@ export default function HomeScreen() {
         }
       });
       
-      const avgPosition = positionSum.length > 0 ? positionSum.reduce((a, b) => a + b, 0) / positionSum.length : 10;
-      const alignmentStrength = Math.round((1 - ((avgPosition - 1) / 9)) * 50 + 50);
+      const valuesWhereNotAppears = totalUserValues - matchingValues.size;
+      const totalPositionSum = positionSum.reduce((a, b) => a + b, 0) + (valuesWhereNotAppears * 11);
+      const avgPosition = totalUserValues > 0 ? totalPositionSum / totalUserValues : 11;
+      const alignmentStrength = Math.round((1 - ((avgPosition - 1) / 10)) * 50 + 50);
       
       return { 
         product, 
