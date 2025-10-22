@@ -82,16 +82,27 @@ export default function SignUpScreen() {
         throw new Error('Clerk SignUp not initialized');
       }
       
-      const newSignUp = await signUp.create({
+      const result = await signUp.create({
         emailAddress,
         password,
       });
 
       console.log('[Sign Up] Account created successfully');
-      console.log('[Sign Up] New sign-up status:', newSignUp.status);
+      console.log('[Sign Up] Sign-up status:', result.status);
+      console.log('[Sign Up] Verification needed:', result.verifications.emailAddress.status);
+      
+      if (result.verifications.emailAddress.status === 'verified') {
+        console.log('[Sign Up] Email already verified, completing sign-up');
+        if (result.status === 'complete') {
+          await setActive({ session: result.createdSessionId });
+          setIsSubmitting(false);
+          router.replace('/onboarding');
+          return;
+        }
+      }
       
       console.log('[Sign Up] Preparing verification...');
-      await newSignUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      await result.prepareEmailAddressVerification({ strategy: 'email_code' });
 
       console.log('[Sign Up] Verification email sent');
       setPendingVerification(true);
@@ -113,19 +124,10 @@ export default function SignUpScreen() {
       }
       
       if (err?.errors?.[0]?.code === 'client_state_invalid') {
-        console.log('[Sign Up] Invalid client state, reloading page...');
-        setError('Session expired. Please try again.');
+        console.log('[Sign Up] Invalid client state detected');
+        setError('Session error. Please refresh and try again.');
         setIsSubmitting(false);
-        setTimeout(() => {
-          setEmailAddress('');
-          setPassword('');
-          setConfirmPassword('');
-          setPendingVerification(false);
-          setError('');
-          if (Platform.OS === 'web') {
-            window.location.reload();
-          }
-        }, 2000);
+        setPendingVerification(false);
         return;
       }
       
@@ -138,6 +140,11 @@ export default function SignUpScreen() {
 
   const onVerifyPress = async () => {
     if (!isLoaded || isSubmitting) return;
+    
+    if (!code || code.length < 6) {
+      setError('Please enter a valid verification code');
+      return;
+    }
 
     setIsSubmitting(true);
     setError('');
@@ -148,28 +155,30 @@ export default function SignUpScreen() {
         console.error('[Sign Up] No signUp instance available');
         setError('Session expired. Please start sign up again.');
         setPendingVerification(false);
+        setIsSubmitting(false);
         return;
       }
       
-      const signUpAttempt = await signUp.attemptEmailAddressVerification({
+      const result = await signUp.attemptEmailAddressVerification({
         code,
       });
 
-      console.log('[Sign Up] Verification attempt result:', signUpAttempt.status);
-      console.log('[Sign Up] Created session ID:', signUpAttempt.createdSessionId);
+      console.log('[Sign Up] Verification attempt result:', result.status);
+      console.log('[Sign Up] Created session ID:', result.createdSessionId);
 
-      if (signUpAttempt.status === 'complete') {
-        console.log('[Sign Up] Setting active session...');
-        await setActive({ session: signUpAttempt.createdSessionId });
+      if (result.status === 'complete') {
+        console.log('[Sign Up] Verification complete, setting active session...');
+        await setActive({ session: result.createdSessionId });
         console.log('[Sign Up] Session set successfully');
         
-        await new Promise(resolve => setTimeout(resolve, 500));
+        setIsSubmitting(false);
         
         console.log('[Sign Up] Redirecting to onboarding...');
         router.replace('/onboarding');
       } else {
-        console.error('[Sign Up] Verification incomplete:', JSON.stringify(signUpAttempt, null, 2));
-        setError('Verification failed. Please try again.');
+        console.error('[Sign Up] Verification incomplete:', JSON.stringify(result, null, 2));
+        setError('Verification incomplete. Please try again.');
+        setIsSubmitting(false);
       }
     } catch (err: any) {
       console.error('[Sign Up] Verification error:', JSON.stringify(err, null, 2));
@@ -182,14 +191,15 @@ export default function SignUpScreen() {
         setPassword('');
         setConfirmPassword('');
         setCode('');
-        if (Platform.OS === 'web') {
-          setTimeout(() => window.location.reload(), 1500);
-        }
+        setIsSubmitting(false);
         return;
       }
       
-      setError(err.errors?.[0]?.message || 'Verification failed. Please check your code.');
-    } finally {
+      if (err?.errors?.[0]?.code === 'form_code_incorrect') {
+        setError('Incorrect verification code. Please try again.');
+      } else {
+        setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Verification failed. Please check your code.');
+      }
       setIsSubmitting(false);
     }
   };
