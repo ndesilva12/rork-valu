@@ -626,6 +626,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 2,
+    marginTop: 32,
     marginBottom: 16,
   },
   searchPromptContent: {
