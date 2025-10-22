@@ -24,6 +24,25 @@ export default function SignUpScreen() {
     }
   }, [authLoaded, isSignedIn, router]);
 
+  React.useEffect(() => {
+    if (isLoaded && signUp) {
+      console.log('[Sign Up] Component mounted, checking sign-up state');
+      console.log('[Sign Up] Current status:', signUp.status);
+      
+      if (signUp.status === 'missing_requirements' && signUp.missingFields?.length === 0) {
+        console.log('[Sign Up] Found pending verification state');
+        setPendingVerification(true);
+      } else if (signUp.status === 'complete') {
+        console.log('[Sign Up] Sign-up already complete');
+        router.replace('/');
+      } else {
+        console.log('[Sign Up] Clean state, ready for new sign-up');
+        setPendingVerification(false);
+      }
+      setError('');
+    }
+  }, [isLoaded, signUp, router]);
+
   const onSignUpPress = async () => {
     if (!isLoaded || isSubmitting) return;
 
@@ -47,14 +66,18 @@ export default function SignUpScreen() {
 
     try {
       console.log('[Sign Up] Creating account for:', emailAddress);
+      console.log('[Sign Up] Current signUp status:', signUp?.status);
       
-      await signUp.create({
+      const newSignUp = await signUp.create({
         emailAddress,
         password,
       });
 
-      console.log('[Sign Up] Account created, preparing verification');
-      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      console.log('[Sign Up] Account created successfully');
+      console.log('[Sign Up] New sign-up status:', newSignUp.status);
+      
+      console.log('[Sign Up] Preparing verification...');
+      await newSignUp.prepareEmailAddressVerification({ strategy: 'email_code' });
 
       console.log('[Sign Up] Verification email sent');
       setPendingVerification(true);
@@ -69,6 +92,16 @@ export default function SignUpScreen() {
       
       if (err?.errors?.[0]?.code === 'form_identifier_exists') {
         setError('This email is already registered. Please sign in instead.');
+        return;
+      }
+      
+      if (err?.errors?.[0]?.code === 'client_state_invalid') {
+        console.log('[Sign Up] Invalid client state, resetting...');
+        setEmailAddress('');
+        setPassword('');
+        setConfirmPassword('');
+        setPendingVerification(false);
+        setError('Please try again.');
         return;
       }
       
