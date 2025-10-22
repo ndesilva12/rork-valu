@@ -238,7 +238,7 @@ export default function HomeScreen() {
             <Image 
               source={{ uri: product.imageUrl }} 
               style={styles.brandLogo} 
-              contentFit="contain"
+              contentFit="cover"
               transition={200}
               cachePolicy="memory-disk"
             />
@@ -400,7 +400,7 @@ export default function HomeScreen() {
                     <Image 
                       source={{ uri: product.imageUrl }} 
                       style={styles.folderBrandImage} 
-                      contentFit="contain"
+                      contentFit="cover"
                       transition={200}
                       cachePolicy="memory-disk"
                     />
