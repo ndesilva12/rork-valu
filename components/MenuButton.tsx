@@ -61,11 +61,11 @@ export default function MenuButton() {
   return (
     <>
       <TouchableOpacity
-        style={[styles.menuButton, { backgroundColor: colors.primaryLight + '20' }]}
+        style={styles.menuButton}
         onPress={() => setIsMenuVisible(true)}
         activeOpacity={0.7}
       >
-        <Menu size={24} color={colors.primary} strokeWidth={2} />
+        <Menu size={32} color={colors.primary} strokeWidth={2.5} />
       </TouchableOpacity>
 
       <Modal
@@ -118,7 +118,7 @@ export default function MenuButton() {
                 activeOpacity={0.7}
               >
                 <View style={styles.menuItemLeft}>
-                  <Settings size={20} color={colors.primary} strokeWidth={2} />
+                  <Settings size={24} color={colors.primary} strokeWidth={2} />
                   <Text style={[styles.menuItemTitle, { color: colors.text }]}>Update My Values</Text>
                 </View>
               </TouchableOpacity>
@@ -129,7 +129,7 @@ export default function MenuButton() {
                 activeOpacity={0.7}
               >
                 <View style={styles.menuItemLeft}>
-                  <RefreshCw size={20} color={colors.primary} strokeWidth={2} />
+                  <RefreshCw size={24} color={colors.primary} strokeWidth={2} />
                   <Text style={[styles.menuItemTitle, { color: colors.text }]}>Reset My Values</Text>
                 </View>
               </TouchableOpacity>
@@ -137,9 +137,9 @@ export default function MenuButton() {
               <View style={[styles.menuItem, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
                 <View style={styles.menuItemLeft}>
                   {isDarkMode ? (
-                    <Moon size={20} color={colors.primary} strokeWidth={2} />
+                    <Moon size={24} color={colors.primary} strokeWidth={2} />
                   ) : (
-                    <Sun size={20} color={colors.primary} strokeWidth={2} />
+                    <Sun size={24} color={colors.primary} strokeWidth={2} />
                   )}
                   <Text style={[styles.menuItemTitle, { color: colors.text }]}>Dark Mode</Text>
                 </View>
@@ -157,7 +157,7 @@ export default function MenuButton() {
                 activeOpacity={0.7}
               >
                 <View style={styles.menuItemLeft}>
-                  <SearchIcon size={20} color={colors.primary} strokeWidth={2} />
+                  <SearchIcon size={24} color={colors.primary} strokeWidth={2} />
                   <Text style={[styles.menuItemTitle, { color: colors.text }]}>Search</Text>
                 </View>
               </TouchableOpacity>
@@ -168,7 +168,7 @@ export default function MenuButton() {
                 activeOpacity={0.7}
               >
                 <View style={styles.menuItemLeft}>
-                  <LogOut size={20} color={colors.danger} strokeWidth={2} />
+                  <LogOut size={24} color={colors.danger} strokeWidth={2} />
                   <Text style={[styles.menuItemTitle, { color: colors.danger }]}>Logout</Text>
                 </View>
               </TouchableOpacity>
@@ -182,9 +182,7 @@ export default function MenuButton() {
 
 const styles = StyleSheet.create({
   menuButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    padding: 8,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'absolute' as const,
@@ -194,25 +192,27 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop: 90,
+    paddingRight: 12,
   },
   menuContainer: {
-    width: '85%',
-    maxWidth: 400,
+    width: '90%',
+    maxWidth: 500,
     borderRadius: 20,
     overflow: 'hidden',
-    maxHeight: '80%',
+    maxHeight: '85%',
   },
   logoContainer: {
-    padding: 24,
+    padding: 32,
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   menuLogo: {
-    width: 200,
-    height: 60,
+    width: 280,
+    height: 80,
   },
   menuContent: {
     maxHeight: 500,
@@ -221,21 +221,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: 22,
+    paddingHorizontal: 28,
   },
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 16,
     flex: 1,
   },
   menuItemTitle: {
-    fontSize: 16,
+    fontSize: 19,
     fontWeight: '600' as const,
   },
   menuItemSubtitle: {
-    fontSize: 13,
+    fontSize: 15,
     marginTop: 2,
   },
   avatarPlaceholder: {
