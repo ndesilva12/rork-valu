@@ -45,7 +45,7 @@ export default function MenuButton() {
           onPress: async () => {
             setIsMenuVisible(false);
             await signOut();
-            router.replace('/sign-in');
+            router.replace('/(auth)/sign-in');
           },
         },
       ],

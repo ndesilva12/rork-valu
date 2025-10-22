@@ -763,6 +763,7 @@ const styles = StyleSheet.create({
     height: 64,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.08)',
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
   },
   brandCardInner: {
     flexDirection: 'row',
