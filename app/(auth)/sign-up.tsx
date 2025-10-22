@@ -27,6 +27,11 @@ export default function SignUpScreen() {
   const onSignUpPress = async () => {
     if (!isLoaded || isSubmitting) return;
 
+    if (!emailAddress || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -41,22 +46,35 @@ export default function SignUpScreen() {
     setIsSubmitting(true);
 
     try {
+      console.log('[Sign Up] Creating account for:', emailAddress);
+      
       await signUp.create({
         emailAddress,
         password,
       });
 
+      console.log('[Sign Up] Account created, preparing verification');
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
 
+      console.log('[Sign Up] Verification email sent');
       setPendingVerification(true);
     } catch (err: any) {
       console.error('[Sign Up] Error:', JSON.stringify(err, null, 2));
+      
       if (err?.errors?.[0]?.code === 'session_exists') {
         console.log('[Sign Up] Session exists, redirecting to home');
         router.replace('/');
-      } else {
-        setError(err.errors?.[0]?.message || 'An error occurred during sign up');
+        return;
       }
+      
+      if (err?.errors?.[0]?.code === 'form_identifier_exists') {
+        setError('This email is already registered. Please sign in instead.');
+        return;
+      }
+      
+      const errorMessage = err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || 'An error occurred during sign up';
+      console.error('[Sign Up] Setting error message:', errorMessage);
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
