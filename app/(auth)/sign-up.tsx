@@ -215,17 +215,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    flexGrow: 1,
     padding: 24,
     paddingTop: 12,
+    justifyContent: 'center',
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   logo: {
-    width: '60%',
-    aspectRatio: 1,
-    maxWidth: 300,
+    width: 80,
+    height: 80,
   },
   title: {
     fontSize: 28,
