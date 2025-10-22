@@ -139,6 +139,7 @@ export default function ValueDetailScreen() {
             backgroundColor: colors.background,
           },
           headerTintColor: colors.text,
+          headerShadowVisible: false,
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
               <ArrowLeft size={24} color={colors.text} strokeWidth={2} />

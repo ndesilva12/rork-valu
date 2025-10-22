@@ -17,7 +17,7 @@ export default function SignInScreen() {
       const isOAuthCallback = params.has('__clerk_handshake') || params.has('__clerk_status');
       
       if (isOAuthCallback && window.opener) {
-        console.log('[Sign In] OAuth callback detected in popup - closing immediately');
+        console.log('[Sign In] OAuth callback detected in popup - closing after message sent');
         setIsOAuthPopup(true);
         try {
           window.opener.postMessage({ 
@@ -25,8 +25,9 @@ export default function SignInScreen() {
             url: window.location.href 
           }, window.location.origin);
           setTimeout(() => {
+            console.log('[Sign In] Closing OAuth popup');
             window.close();
-          }, 100);
+          }, 1000);
         } catch (error) {
           console.error('[Sign In] Error closing popup:', error);
         }
@@ -99,8 +100,8 @@ export default function SignInScreen() {
                 const token = await getToken();
                 if (token && isSignedIn) {
                   console.log('[Sign In] Session synced successfully, redirecting');
-                  router.replace('/');
                   setIsLoadingOAuth(false);
+                  router.replace('/');
                   return;
                 }
               } catch (err) {
@@ -110,6 +111,7 @@ export default function SignInScreen() {
             
             console.error('[Sign In] Session sync timeout');
             setIsLoadingOAuth(false);
+            window.location.reload();
           };
           
           waitForSession();
