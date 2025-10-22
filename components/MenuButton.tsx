@@ -9,7 +9,6 @@ import {
   Modal,
   ScrollView,
   Switch,
-  Alert,
   Image,
 } from 'react-native';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -33,47 +32,28 @@ export default function MenuButton() {
     await resetProfile();
   };
 
-  const handleSignOut = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { 
-          text: 'Cancel', 
-          style: 'cancel',
-          onPress: () => {
-            console.log('[MenuButton] Sign out cancelled');
-          }
-        },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            console.log('[MenuButton] User confirmed sign out');
-            setIsMenuVisible(false);
-            
-            setTimeout(async () => {
-              try {
-                console.log('[MenuButton] Signing out from Clerk...');
-                await signOut();
-                console.log('[MenuButton] Sign out successful');
-                
-                setTimeout(() => {
-                  console.log('[MenuButton] Navigating to sign-in page...');
-                  router.replace('/(auth)/sign-in');
-                }, 100);
-              } catch (error) {
-                console.error('[MenuButton] Sign out error:', error);
-                setTimeout(() => {
-                  router.replace('/(auth)/sign-in');
-                }, 100);
-              }
-            }, 200);
-          },
-        },
-      ],
-      { cancelable: true }
-    );
+  const handleSignOut = async () => {
+    try {
+      console.log('[MenuButton] Starting sign out process...');
+      console.log('[MenuButton] Menu visible: false');
+      setIsMenuVisible(false);
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      console.log('[MenuButton] Calling Clerk signOut...');
+      await signOut();
+      console.log('[MenuButton] Clerk signOut complete');
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      console.log('[MenuButton] Navigating to sign-in...');
+      router.replace('/(auth)/sign-in');
+      console.log('[MenuButton] Navigation complete');
+    } catch (error) {
+      console.error('[MenuButton] Sign out error:', error);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      router.replace('/(auth)/sign-in');
+    }
   };
 
   const handleNavigateToSearch = () => {

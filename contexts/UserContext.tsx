@@ -38,14 +38,17 @@ export const [UserProvider, useUser] = createContextHook(() => {
         const userId = clerkUser.id;
         const userProfileKey = getUserProfileKey(userId);
         console.log('[UserContext] Loading profile for user:', userId);
+        console.log('[UserContext] Profile key:', userProfileKey);
         
         const stored = await AsyncStorage.getItem(userProfileKey);
-        console.log('[UserContext] Stored profile:', !!stored);
+        console.log('[UserContext] Stored profile exists:', !!stored);
         if (stored && mounted) {
           const parsed = JSON.parse(stored);
+          console.log('[UserContext] Loaded profile with', parsed.causes.length, 'causes');
           setProfile(parsed);
           setHasCompletedOnboarding(parsed.causes.length > 0);
         } else if (mounted) {
+          console.log('[UserContext] No stored profile, initializing empty');
           setProfile({ causes: [], searchHistory: [] });
           setHasCompletedOnboarding(false);
         }
@@ -76,15 +79,17 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
   const addCauses = useCallback((causes: Cause[]) => {
     if (!clerkUser) {
-      console.error('Cannot save causes: User not logged in');
+      console.error('[UserContext] Cannot save causes: User not logged in');
       return;
     }
     const newProfile = { ...profile, causes };
+    console.log('[UserContext] Saving', causes.length, 'causes for user:', clerkUser.id);
     setProfile(newProfile);
     setHasCompletedOnboarding(newProfile.causes.length > 0);
     const userProfileKey = getUserProfileKey(clerkUser.id);
     AsyncStorage.setItem(userProfileKey, JSON.stringify(newProfile))
-      .catch(error => console.error('Failed to save profile:', error));
+      .then(() => console.log('[UserContext] Profile saved successfully'))
+      .catch(error => console.error('[UserContext] Failed to save profile:', error));
   }, [profile, clerkUser]);
 
   const addToSearchHistory = useCallback((query: string) => {
