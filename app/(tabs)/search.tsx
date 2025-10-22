@@ -214,21 +214,16 @@ export default function SearchScreen() {
   };
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          title: 'Search',
-          headerShown: true,
-          headerRight: () => (
-            <Image
-              source={require('@/assets/images/icon.png')}
-              style={{ width: 32, height: 32, marginRight: 8 }}
-              resizeMode="contain"
-            />
-          ),
-        }}
-      />
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: colors.primary }]}>Search</Text>
+        <Image
+          source={require('@/assets/images/icon.png')}
+          style={styles.headerLogo}
+          resizeMode="contain"
+        />
+      </View>
+      
       <View style={[styles.searchContainer, { backgroundColor: colors.backgroundSecondary, borderBottomColor: colors.primaryLight }]}>
         <View style={[styles.searchInputContainer, { backgroundColor: isDarkMode ? colors.backgroundSecondary : colors.white, borderColor: colors.primaryLight }]}>
           <SearchIcon size={20} color={colors.primaryLight} strokeWidth={2} />
@@ -461,8 +456,7 @@ export default function SearchScreen() {
           ) : null}
         </View>
       </Modal>
-      </View>
-    </>
+    </View>
   );
 }
 
@@ -471,13 +465,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
+    marginTop: 16,
+    marginBottom: 8,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700' as const,
+  },
+  headerLogo: {
+    width: 32,
+    height: 32,
   },
   searchContainer: {
     paddingHorizontal: 16,

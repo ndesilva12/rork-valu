@@ -57,21 +57,15 @@ export default function ValuesScreen() {
   };
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          title: 'Values',
-          headerShown: true,
-          headerRight: () => (
-            <Image
-              source={require('@/assets/images/icon.png')}
-              style={{ width: 32, height: 32, marginRight: 8 }}
-              resizeMode="contain"
-            />
-          ),
-        }}
-      />
-      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: colors.primary }]}>Values</Text>
+        <Image
+          source={require('@/assets/images/icon.png')}
+          style={styles.headerLogo}
+          resizeMode="contain"
+        />
+      </View>
 
       <View style={styles.actionSection}>
         <View style={[styles.settingsCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
@@ -224,8 +218,7 @@ export default function ValuesScreen() {
           public records, donations, and stated positions.
         </Text>
       </View>
-      </ScrollView>
-    </>
+    </ScrollView>
   );
 }
 
@@ -239,13 +232,20 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 0,
-    marginBottom: 0,
+    marginBottom: 24,
+    marginTop: 16,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700' as const,
-    color: Colors.primary,
+  },
+  headerLogo: {
+    width: 32,
+    height: 32,
   },
   section: {
     marginBottom: 32,

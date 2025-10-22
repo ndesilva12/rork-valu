@@ -448,26 +448,20 @@ export default function HomeScreen() {
   }
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          title: 'Playbook',
-          headerShown: true,
-          headerRight: () => (
-            <Image
-              source={require('@/assets/images/icon.png')}
-              style={{ width: 32, height: 32, marginRight: 8 }}
-              resizeMode="contain"
-            />
-          ),
-        }}
-      />
-      <ScrollView
-        ref={scrollViewRef}
-        style={[styles.container, { backgroundColor: colors.background }]}
-        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}
-        {...panResponder.panHandlers}
-      >
+    <ScrollView
+      ref={scrollViewRef}
+      style={[styles.container, { backgroundColor: colors.background }]}
+      contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}
+      {...panResponder.panHandlers}
+    >
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
+        <Image
+          source={require('@/assets/images/icon.png')}
+          style={styles.headerLogo}
+          resizeMode="contain"
+        />
+      </View>
 
       {renderViewModeSelector()}
 
@@ -491,8 +485,7 @@ export default function HomeScreen() {
           <ChevronRight size={24} color={isDarkMode ? colors.white : colors.primary} strokeWidth={2} />
         </TouchableOpacity>
       )}
-      </ScrollView>
-    </>
+    </ScrollView>
   );
 }
 
@@ -508,12 +501,20 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 0,
-    marginBottom: 0,
+    marginBottom: 24,
+    marginTop: 16,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700' as const,
+  },
+  headerLogo: {
+    width: 32,
+    height: 32,
   },
   section: {
     marginBottom: 40,

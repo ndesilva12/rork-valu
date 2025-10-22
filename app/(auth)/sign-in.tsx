@@ -153,10 +153,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   logo: {
-    width: '50%',
-    height: undefined,
-    aspectRatio: 1,
-    maxWidth: 200,
+    width: 180,
+    height: 180,
   },
   title: {
     fontSize: 28,
