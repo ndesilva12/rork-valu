@@ -483,8 +483,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerLogo: {
-    height: 48,
-    width: 180,
+    height: 32,
+    width: 120,
   },
   searchContainer: {
     paddingHorizontal: 16,
