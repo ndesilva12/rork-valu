@@ -113,7 +113,15 @@ export default function HomeScreen() {
       const valuesWhereNotAppears = totalUserValues - matchingValues.size;
       const totalPositionSum = positionSum.reduce((a, b) => a + b, 0) + (valuesWhereNotAppears * 11);
       const avgPosition = totalUserValues > 0 ? totalPositionSum / totalUserValues : 11;
-      const alignmentStrength = Math.round((1 - ((avgPosition - 1) / 10)) * 50 + 50);
+      
+      const isNegativelyAligned = totalAvoidScore > totalSupportScore && totalAvoidScore > 0;
+      
+      let alignmentStrength: number;
+      if (isNegativelyAligned) {
+        alignmentStrength = Math.round(((avgPosition - 1) / 10) * 50);
+      } else {
+        alignmentStrength = Math.round((1 - ((avgPosition - 1) / 10)) * 50 + 50);
+      }
       
       return { 
         product, 
@@ -131,7 +139,7 @@ export default function HomeScreen() {
 
     const allAvoidSorted = scored
       .filter(s => s.totalAvoidScore > s.totalSupportScore && s.totalAvoidScore > 0)
-      .sort((a, b) => b.alignmentStrength - a.alignmentStrength);
+      .sort((a, b) => a.alignmentStrength - b.alignmentStrength);
 
     const scoredMap = new Map(scored.map(s => [s.product.id, s.alignmentStrength]));
 
