@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useSignUp, useOAuth } from '@clerk/clerk-expo';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { lightColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
@@ -80,10 +80,14 @@ export default function SignUpScreen() {
         router.replace('/');
       }
     } catch (err: any) {
+      console.error('[Sign Up] OAuth Error:', JSON.stringify(err, null, 2));
       if (err.clerkError && err.errors?.[0]?.code === 'session_exists') {
+        console.log('[Sign Up] Session already exists, redirecting to home');
         router.replace('/');
+      } else if (err.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
+        console.log('[Sign Up] OAuth cancelled by user');
       } else {
-        console.error(JSON.stringify(err, null, 2));
+        console.error('[Sign Up] Unexpected OAuth error:', err);
       }
     } finally {
       setIsLoadingOAuth(false);
@@ -214,7 +218,7 @@ export default function SignUpScreen() {
           </TouchableOpacity>
           <View style={styles.linkContainer}>
             <Text style={styles.linkText}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => router.push('/sign-in')}>
+            <TouchableOpacity onPress={() => router.push('/(auth)/sign-in')}>
               <Text style={styles.link}>Sign in</Text>
             </TouchableOpacity>
           </View>
