@@ -12,6 +12,7 @@ export default function SignInScreen() {
   const [emailAddress, setEmailAddress] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [error, setError] = React.useState('');
 
   React.useEffect(() => {
     if (authLoaded && isSignedIn) {
@@ -23,7 +24,13 @@ export default function SignInScreen() {
   const onSignInPress = async () => {
     if (!isLoaded || isSubmitting) return;
 
+    if (!emailAddress || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+
     setIsSubmitting(true);
+    setError('');
     try {
       const signInAttempt = await signIn.create({
         identifier: emailAddress,
@@ -36,13 +43,29 @@ export default function SignInScreen() {
         router.replace('/');
       } else {
         console.error('[Sign In] Incomplete:', JSON.stringify(signInAttempt, null, 2));
+        setError('Sign in incomplete. Please try again.');
       }
     } catch (err: any) {
       console.error('[Sign In] Error:', JSON.stringify(err, null, 2));
+      
       if (err?.errors?.[0]?.code === 'session_exists') {
         console.log('[Sign In] Session exists, redirecting to home');
         router.replace('/');
+        return;
       }
+      
+      if (err?.errors?.[0]?.code === 'form_identifier_not_found') {
+        setError("Account not found. Please check your email or sign up to create a new account.");
+        return;
+      }
+      
+      if (err?.errors?.[0]?.code === 'form_password_incorrect') {
+        setError('Incorrect password. Please try again.');
+        return;
+      }
+      
+      const errorMessage = err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || err?.message || 'An error occurred during sign in';
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -70,6 +93,7 @@ export default function SignInScreen() {
           <Text style={styles.title}>Welcome back</Text>
           <Text style={styles.subtitle}>Sign in to your account</Text>
 
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>
             <TextInput
@@ -187,5 +211,19 @@ const styles = StyleSheet.create({
     color: darkColors.primary,
     fontSize: 14,
     fontWeight: '600',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 14,
+    marginBottom: 16,
+    marginTop: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    textAlign: 'left',
+    lineHeight: 20,
   },
 });
