@@ -1,4 +1,4 @@
-import { useRouter, Stack } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Settings, Moon, Sun, RefreshCw, LogOut } from 'lucide-react-native';
 import {
   View,
@@ -19,7 +19,7 @@ export default function ValuesScreen() {
   const router = useRouter();
   const { profile, resetProfile, isDarkMode, toggleDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
-  const insets = useSafeAreaInsets();
+
   const { signOut } = useClerk();
 
   const supportCauses = profile.causes
@@ -251,8 +251,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerLogo: {
-    height: 32,
-    width: 120,
+    height: 48,
+    width: 180,
   },
   section: {
     marginBottom: 32,

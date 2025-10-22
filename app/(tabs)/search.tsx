@@ -1,4 +1,4 @@
-import { useRouter, Stack } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Search as SearchIcon, TrendingUp, TrendingDown, Minus, ScanBarcode, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
@@ -25,7 +25,7 @@ export default function SearchScreen() {
   const router = useRouter();
   const { profile, addToSearchHistory, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
-  const insets = useSafeAreaInsets();
+
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Product[]>([]);
   const [scannerVisible, setScannerVisible] = useState(false);
@@ -483,8 +483,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerLogo: {
-    height: 32,
-    width: 120,
+    height: 48,
+    width: 180,
   },
   searchContainer: {
     paddingHorizontal: 16,

@@ -453,13 +453,16 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
-        <Image
-          source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/zsgxybag0kclnh2l8fjd8' }}
-          style={styles.headerLogo}
-          resizeMode="contain"
-        />
+      <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
+          <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
+          <Image
+            source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/zsgxybag0kclnh2l8fjd8' }}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
+        </View>
+        {renderViewModeSelector()}
       </View>
       <ScrollView
         ref={scrollViewRef}
@@ -467,8 +470,6 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}
         {...panResponder.panHandlers}
       >
-
-      {renderViewModeSelector()}
 
       {viewMode === 'playbook' && renderPlaybookView()}
       {viewMode === 'browse' && renderFoldersView()}
@@ -504,11 +505,16 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
+    paddingTop: 16,
   },
   webContent: {
     maxWidth: 768,
     alignSelf: 'center' as const,
     width: '100%',
+  },
+  stickyHeaderContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
   },
   header: {
     flexDirection: 'row',
@@ -517,8 +523,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 50,
     paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
   },
   headerTitle: {
     fontSize: 32,
@@ -682,7 +686,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: 12,
     padding: 4,
-    marginBottom: 24,
+    marginHorizontal: 16,
+    marginBottom: 16,
     borderWidth: 1,
   },
   viewModeButton: {
