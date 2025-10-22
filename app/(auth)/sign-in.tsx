@@ -1,4 +1,4 @@
-import { useSignIn, useOAuth, useAuth } from '@clerk/clerk-expo';
+import { useSignIn, useOAuth, useAuth, useSessionList } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Image } from 'react-native';
 import React from 'react';
@@ -23,6 +23,7 @@ export default function SignInScreen() {
     redirectUrl,
   });
   const { isSignedIn } = useAuth();
+  const { sessions } = useSessionList();
   const router = useRouter();
 
   const [emailAddress, setEmailAddress] = React.useState('');
@@ -89,16 +90,34 @@ export default function SignInScreen() {
       if (err.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
         console.log('[Sign In] OAuth cancelled by user');
       } else if (err.errors && err.errors[0]?.code === 'session_exists') {
-        console.log('[Sign In] Session exists - user already signed in, redirecting');
-        await new Promise(resolve => setTimeout(resolve, 300));
-        router.replace('/');
+        console.log('[Sign In] Session exists - activating existing session');
+        try {
+          if (sessions && sessions.length > 0) {
+            const activeSession = sessions[0];
+            console.log('[Sign In] Found active session:', activeSession.id);
+            if (setActive) {
+              await setActive({ session: activeSession.id });
+              console.log('[Sign In] Existing session activated, redirecting');
+              await new Promise(resolve => setTimeout(resolve, 300));
+              router.replace('/');
+            }
+          } else {
+            console.log('[Sign In] No sessions found, redirecting anyway');
+            await new Promise(resolve => setTimeout(resolve, 300));
+            router.replace('/');
+          }
+        } catch (activationErr) {
+          console.error('[Sign In] Failed to activate session:', activationErr);
+          await new Promise(resolve => setTimeout(resolve, 300));
+          router.replace('/');
+        }
       } else {
         console.error('[Sign In] Unexpected OAuth error:', err);
       }
     } finally {
       setIsLoadingOAuth(false);
     }
-  }, [startOAuthFlow, setActive, router, isSignedIn, redirectUrl]);
+  }, [startOAuthFlow, setActive, router, isSignedIn, redirectUrl, sessions]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
