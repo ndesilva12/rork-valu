@@ -85,7 +85,7 @@ export default function MenuButton() {
           >
             <View style={styles.logoContainer}>
               <Image
-                source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/zsgxybag0kclnh2l8fjd8' }}
+                source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/01zd2yjl9h93g2cu0yb3u' }}
                 style={styles.menuLogo}
                 resizeMode="contain"
               />
@@ -204,14 +204,14 @@ const styles = StyleSheet.create({
     maxHeight: '85%',
   },
   logoContainer: {
-    padding: 48,
+    padding: 32,
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   menuLogo: {
-    width: 420,
-    height: 120,
+    width: 480,
+    height: 140,
   },
   menuContent: {
     maxHeight: 500,
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 22,
+    paddingVertical: 18,
     paddingHorizontal: 28,
   },
   menuItemLeft: {
