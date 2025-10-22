@@ -56,6 +56,11 @@ export default function SignUpScreen() {
       return;
     }
 
+    if (!emailAddress.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -73,6 +78,10 @@ export default function SignUpScreen() {
       console.log('[Sign Up] Creating account for:', emailAddress);
       console.log('[Sign Up] Current signUp status:', signUp?.status);
       
+      if (!signUp) {
+        throw new Error('Clerk SignUp not initialized');
+      }
+      
       const newSignUp = await signUp.create({
         emailAddress,
         password,
@@ -86,38 +95,43 @@ export default function SignUpScreen() {
 
       console.log('[Sign Up] Verification email sent');
       setPendingVerification(true);
+      setIsSubmitting(false);
     } catch (err: any) {
       console.error('[Sign Up] Error:', JSON.stringify(err, null, 2));
       
       if (err?.errors?.[0]?.code === 'session_exists') {
         console.log('[Sign Up] Session exists, redirecting to home');
+        setIsSubmitting(false);
         router.replace('/');
         return;
       }
       
       if (err?.errors?.[0]?.code === 'form_identifier_exists') {
         setError('This email is already registered. Please sign in instead.');
+        setIsSubmitting(false);
         return;
       }
       
       if (err?.errors?.[0]?.code === 'client_state_invalid') {
         console.log('[Sign Up] Invalid client state, reloading page...');
-        if (Platform.OS === 'web') {
-          window.location.reload();
-        } else {
+        setError('Session expired. Please try again.');
+        setIsSubmitting(false);
+        setTimeout(() => {
           setEmailAddress('');
           setPassword('');
           setConfirmPassword('');
           setPendingVerification(false);
-          setError('Please try again.');
-        }
+          setError('');
+          if (Platform.OS === 'web') {
+            window.location.reload();
+          }
+        }, 2000);
         return;
       }
       
-      const errorMessage = err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || 'An error occurred during sign up';
+      const errorMessage = err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || err?.message || 'An error occurred during sign up';
       console.error('[Sign Up] Setting error message:', errorMessage);
       setError(errorMessage);
-    } finally {
       setIsSubmitting(false);
     }
   };
