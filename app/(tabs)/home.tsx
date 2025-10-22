@@ -441,21 +441,31 @@ export default function HomeScreen() {
 
   if (profile.causes.length === 0) {
     return (
-      <View style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
-        <View style={[styles.emptyIconContainer, { backgroundColor: colors.neutralLight }]}>
-          <Target size={48} color={colors.textLight} strokeWidth={1.5} />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar
+          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+          backgroundColor={colors.background}
+        />
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
+          <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
+          <MenuButton />
         </View>
-        <Text style={[styles.emptyTitle, { color: colors.text }]}>Set Your Values First</Text>
-        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-          Complete your profile to see personalized brand recommendations
-        </Text>
-        <TouchableOpacity
-          style={[styles.emptyButton, { backgroundColor: colors.primary }]}
-          onPress={() => router.push('/onboarding')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.emptyButtonText, { color: colors.white }]}>Get Started</Text>
-        </TouchableOpacity>
+        <View style={styles.emptyContainer}>
+          <View style={[styles.emptyIconContainer, { backgroundColor: colors.neutralLight }]}>
+            <Target size={48} color={colors.textLight} strokeWidth={1.5} />
+          </View>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>Set Your Values First</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+            Complete your profile to see personalized brand recommendations
+          </Text>
+          <TouchableOpacity
+            style={[styles.emptyButton, { backgroundColor: colors.primary }]}
+            onPress={() => router.push('/onboarding')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.emptyButtonText, { color: colors.white }]}>Get Started</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -654,9 +664,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   emptyContainer: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 32,
-    minHeight: 600,
   },
   emptyIconContainer: {
     width: 96,

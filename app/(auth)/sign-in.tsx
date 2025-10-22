@@ -5,7 +5,6 @@ import React from 'react';
 import { darkColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
-import { useUser } from '@/contexts/UserContext';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -14,7 +13,6 @@ export default function SignInScreen() {
   const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' });
   const { isSignedIn } = useAuth();
   const router = useRouter();
-  const { hasCompletedOnboarding, isLoading: userLoading } = useUser();
 
   const [emailAddress, setEmailAddress] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -31,14 +29,7 @@ export default function SignInScreen() {
 
       if (signInAttempt.status === 'complete') {
         await setActive({ session: signInAttempt.createdSessionId });
-        
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        if (hasCompletedOnboarding) {
-          router.replace('/(tabs)/home');
-        } else {
-          router.replace('/onboarding');
-        }
+        router.replace('/(tabs)/home');
       } else {
         console.error(JSON.stringify(signInAttempt, null, 2));
       }
@@ -50,12 +41,7 @@ export default function SignInScreen() {
   const onGoogleSignInPress = React.useCallback(async () => {
     if (isSignedIn) {
       console.log('[Sign In] Already signed in, navigating directly');
-      await new Promise(resolve => setTimeout(resolve, 300));
-      if (hasCompletedOnboarding) {
-        router.replace('/(tabs)/home');
-      } else {
-        router.replace('/onboarding');
-      }
+      router.replace('/(tabs)/home');
       return;
     }
 
@@ -70,26 +56,14 @@ export default function SignInScreen() {
         await oauthSetActive!({ session: createdSessionId });
         console.log('[Sign In] OAuth success, session set');
         
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        if (hasCompletedOnboarding) {
-          router.replace('/(tabs)/home');
-        } else {
-          router.replace('/onboarding');
-        }
+        router.replace('/(tabs)/home');
       } else {
         const session = signIn?.createdSessionId || signUp?.createdSessionId;
         if (session && setActive) {
           await setActive({ session });
           console.log('[Sign In] OAuth session activated');
           
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          if (hasCompletedOnboarding) {
-            router.replace('/(tabs)/home');
-          } else {
-            router.replace('/onboarding');
-          }
+          router.replace('/(tabs)/home');
         }
       }
     } catch (err: any) {
@@ -98,21 +72,14 @@ export default function SignInScreen() {
         console.log('[Sign In] OAuth cancelled by user');
       } else if (err.errors && err.errors[0]?.code === 'session_exists') {
         console.log('[Sign In] Session already exists, navigating');
-        
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        if (hasCompletedOnboarding) {
-          router.replace('/(tabs)/home');
-        } else {
-          router.replace('/onboarding');
-        }
+        router.replace('/(tabs)/home');
       } else {
         console.error('[Sign In] Unexpected OAuth error:', err);
       }
     } finally {
       setIsLoadingOAuth(false);
     }
-  }, [startOAuthFlow, setActive, router, hasCompletedOnboarding, isSignedIn]);
+  }, [startOAuthFlow, setActive, router, isSignedIn]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>

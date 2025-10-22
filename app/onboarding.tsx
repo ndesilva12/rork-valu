@@ -83,7 +83,7 @@ export default function OnboardingScreen() {
     return found.type;
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (selectedValues.length > 0) {
       const causes: Cause[] = selectedValues.map(v => ({
         id: v.id,
@@ -92,7 +92,7 @@ export default function OnboardingScreen() {
         type: v.type,
         description: v.description,
       }));
-      addCauses(causes);
+      await addCauses(causes);
       router.replace('/(tabs)/home');
     }
   };

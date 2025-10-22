@@ -77,7 +77,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
     };
   }, [isClerkLoaded, clerkUser]);
 
-  const addCauses = useCallback((causes: Cause[]) => {
+  const addCauses = useCallback(async (causes: Cause[]) => {
     if (!clerkUser) {
       console.error('[UserContext] Cannot save causes: User not logged in');
       return;
@@ -87,9 +87,12 @@ export const [UserProvider, useUser] = createContextHook(() => {
     setProfile(newProfile);
     setHasCompletedOnboarding(newProfile.causes.length > 0);
     const userProfileKey = getUserProfileKey(clerkUser.id);
-    AsyncStorage.setItem(userProfileKey, JSON.stringify(newProfile))
-      .then(() => console.log('[UserContext] Profile saved successfully'))
-      .catch(error => console.error('[UserContext] Failed to save profile:', error));
+    try {
+      await AsyncStorage.setItem(userProfileKey, JSON.stringify(newProfile));
+      console.log('[UserContext] Profile saved successfully');
+    } catch (error) {
+      console.error('[UserContext] Failed to save profile:', error);
+    }
   }, [profile, clerkUser]);
 
   const addToSearchHistory = useCallback((query: string) => {
