@@ -519,7 +519,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 50,
     paddingBottom: 4,
@@ -533,6 +532,7 @@ const styles = StyleSheet.create({
     width: 270,
     position: 'absolute' as const,
     right: 16,
+    top: 50,
   },
   section: {
     marginBottom: 40,
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
     padding: 4,
     marginHorizontal: 16,
     marginBottom: 8,
-    marginTop: 4,
+    marginTop: 12,
     borderWidth: 1,
   },
   viewModeButton: {
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   viewModeText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600' as const,
   },
   compactSection: {

@@ -71,12 +71,12 @@ export default function ValuesScreen() {
         <View style={styles.actionSection}>
           <View style={styles.actionButtonsRow}>
             <TouchableOpacity 
-              style={[styles.actionButton, styles.updateButton, { backgroundColor: colors.primary, borderColor: colors.primary }]} 
+              style={[styles.actionButton, styles.updateButton, { backgroundColor: 'transparent', borderColor: colors.primary }]} 
               onPress={handleUpdate} 
               activeOpacity={0.7}
             >
-              <Settings size={18} color={colors.white} strokeWidth={2} />
-              <Text style={[styles.actionButtonText, { color: colors.white }]}>Update My Values</Text>
+              <Settings size={18} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.actionButtonText, { color: colors.primary }]}>Update My Values</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -242,7 +242,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 50,
     paddingBottom: 4,
@@ -256,6 +255,7 @@ const styles = StyleSheet.create({
     width: 270,
     position: 'absolute' as const,
     right: 16,
+    top: 50,
   },
   section: {
     marginBottom: 32,
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
   },
   actionSection: {
     paddingHorizontal: 16,
-    paddingTop: 4,
+    paddingTop: 12,
     paddingBottom: 12,
   },
   actionButtonsRow: {

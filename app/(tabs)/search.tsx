@@ -472,7 +472,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 50,
     paddingBottom: 4,
@@ -486,10 +485,11 @@ const styles = StyleSheet.create({
     width: 270,
     position: 'absolute' as const,
     right: 16,
+    top: 50,
   },
   searchContainer: {
     paddingHorizontal: 16,
-    paddingTop: 4,
+    paddingTop: 12,
     paddingBottom: 12,
     borderBottomWidth: 2,
   },
