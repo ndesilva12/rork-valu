@@ -9,10 +9,12 @@ export const SignOutButton = () => {
 
   const handleSignOut = async () => {
     try {
+      console.log('[SignOutButton] Signing out...');
       await signOut();
-      router.replace('/(auth)/sign-in');
+      console.log('[SignOutButton] Sign out complete, navigating to sign-in');
+      router.replace('/');
     } catch (err) {
-      console.error(JSON.stringify(err, null, 2));
+      console.error('[SignOutButton] Error signing out:', JSON.stringify(err, null, 2));
     }
   };
 

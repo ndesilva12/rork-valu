@@ -40,11 +40,19 @@ export default function SignInScreen() {
   const onGoogleSignInPress = React.useCallback(async () => {
     setIsLoadingOAuth(true);
     try {
-      const { createdSessionId, setActive: oauthSetActive } = await startOAuthFlow();
+      const { createdSessionId, setActive: oauthSetActive, signIn, signUp } = await startOAuthFlow();
 
       if (createdSessionId) {
         await oauthSetActive!({ session: createdSessionId });
+        console.log('[Sign In] OAuth success, redirecting to home');
         router.replace('/');
+      } else if (setActive) {
+        const session = signIn?.createdSessionId || signUp?.createdSessionId;
+        if (session) {
+          await setActive({ session });
+          console.log('[Sign In] OAuth session activated, redirecting to home');
+          router.replace('/');
+        }
       }
     } catch (err: any) {
       console.error('[Sign In] OAuth Error:', JSON.stringify(err, null, 2));
