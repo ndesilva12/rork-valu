@@ -5,12 +5,23 @@ import { useRouter } from 'expo-router';
 import { darkColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp();
-  const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' });
+  const redirectUrl = React.useMemo(() => {
+    if (Platform.OS === 'web') {
+      return `${window.location.origin}/`;
+    }
+    return Linking.createURL('/');
+  }, []);
+  
+  const { startOAuthFlow } = useOAuth({ 
+    strategy: 'oauth_google',
+    redirectUrl,
+  });
   const { isSignedIn } = useAuth();
   const router = useRouter();
 
@@ -83,20 +94,26 @@ export default function SignUpScreen() {
 
     setIsLoadingOAuth(true);
     try {
-      console.log('[Sign Up] Starting OAuth flow');
-      const { createdSessionId, setActive: oauthSetActive, signIn, signUp } = await startOAuthFlow();
+      console.log('[Sign Up] Starting OAuth flow with redirectUrl:', redirectUrl);
+      const { createdSessionId, setActive: oauthSetActive, signIn: oauthSignIn, signUp: oauthSignUp } = await startOAuthFlow();
+
+      console.log('[Sign Up] OAuth flow completed:', { createdSessionId, hasSignIn: !!oauthSignIn, hasSignUp: !!oauthSignUp });
 
       if (createdSessionId) {
         await oauthSetActive!({ session: createdSessionId });
         console.log('[Sign Up] OAuth success, session set, redirecting to index');
-        
+        await new Promise(resolve => setTimeout(resolve, 100));
         router.replace('/');
       } else {
-        const session = signIn?.createdSessionId || signUp?.createdSessionId;
+        const session = oauthSignIn?.createdSessionId || oauthSignUp?.createdSessionId;
         if (session && setActive) {
           await setActive({ session });
           console.log('[Sign Up] OAuth session activated, redirecting to index');
-          
+          await new Promise(resolve => setTimeout(resolve, 100));
+          router.replace('/');
+        } else {
+          console.log('[Sign Up] No session created, checking auth state');
+          await new Promise(resolve => setTimeout(resolve, 300));
           router.replace('/');
         }
       }
@@ -106,6 +123,7 @@ export default function SignUpScreen() {
         console.log('[Sign Up] OAuth cancelled by user');
       } else if (err.errors && err.errors[0]?.code === 'session_exists') {
         console.log('[Sign Up] Session already exists, navigating to index');
+        await new Promise(resolve => setTimeout(resolve, 300));
         router.replace('/');
       } else {
         console.error('[Sign Up] Unexpected OAuth error:', err);
@@ -113,7 +131,7 @@ export default function SignUpScreen() {
     } finally {
       setIsLoadingOAuth(false);
     }
-  }, [startOAuthFlow, setActive, router, isSignedIn]);
+  }, [startOAuthFlow, setActive, router, isSignedIn, redirectUrl]);
 
   if (pendingVerification) {
     return (

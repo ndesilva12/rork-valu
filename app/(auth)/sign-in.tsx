@@ -5,12 +5,23 @@ import React from 'react';
 import { darkColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
   const { signIn, setActive, isLoaded } = useSignIn();
-  const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' });
+  const redirectUrl = React.useMemo(() => {
+    if (Platform.OS === 'web') {
+      return `${window.location.origin}/`;
+    }
+    return Linking.createURL('/');
+  }, []);
+  
+  const { startOAuthFlow } = useOAuth({ 
+    strategy: 'oauth_google',
+    redirectUrl,
+  });
   const { isSignedIn } = useAuth();
   const router = useRouter();
 
@@ -48,10 +59,12 @@ export default function SignInScreen() {
 
     setIsLoadingOAuth(true);
     try {
-      console.log('[Sign In] Starting OAuth flow');
+      console.log('[Sign In] Starting OAuth flow with redirectUrl:', redirectUrl);
       console.log('[Sign In] Platform:', Platform.OS);
       
-      const { createdSessionId, setActive: oauthSetActive, signIn, signUp } = await startOAuthFlow();
+      const { createdSessionId, setActive: oauthSetActive, signIn: oauthSignIn, signUp: oauthSignUp } = await startOAuthFlow();
+
+      console.log('[Sign In] OAuth flow completed:', { createdSessionId, hasSignIn: !!oauthSignIn, hasSignUp: !!oauthSignUp });
 
       if (createdSessionId) {
         await oauthSetActive!({ session: createdSessionId });
@@ -59,11 +72,15 @@ export default function SignInScreen() {
         await new Promise(resolve => setTimeout(resolve, 100));
         router.replace('/');
       } else {
-        const session = signIn?.createdSessionId || signUp?.createdSessionId;
+        const session = oauthSignIn?.createdSessionId || oauthSignUp?.createdSessionId;
         if (session && setActive) {
           await setActive({ session });
           console.log('[Sign In] OAuth session activated, redirecting to index');
           await new Promise(resolve => setTimeout(resolve, 100));
+          router.replace('/');
+        } else {
+          console.log('[Sign In] No session created, checking auth state');
+          await new Promise(resolve => setTimeout(resolve, 300));
           router.replace('/');
         }
       }
@@ -81,7 +98,7 @@ export default function SignInScreen() {
     } finally {
       setIsLoadingOAuth(false);
     }
-  }, [startOAuthFlow, setActive, router, isSignedIn]);
+  }, [startOAuthFlow, setActive, router, isSignedIn, redirectUrl]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
