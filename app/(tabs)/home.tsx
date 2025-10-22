@@ -522,18 +522,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 50,
-    paddingBottom: 8,
+    paddingBottom: 4,
   },
   headerTitle: {
     fontSize: 32,
     fontWeight: '700' as const,
-    flex: 1,
   },
   headerLogo: {
     height: 72,
     width: 270,
-    marginLeft: 'auto',
-    marginRight: 8,
+    position: 'absolute' as const,
+    right: 16,
   },
   section: {
     marginBottom: 40,
@@ -690,7 +689,7 @@ const styles = StyleSheet.create({
     padding: 4,
     marginHorizontal: 16,
     marginBottom: 8,
-    marginTop: 8,
+    marginTop: 4,
     borderWidth: 1,
   },
   viewModeButton: {

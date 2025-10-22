@@ -80,12 +80,12 @@ export default function ValuesScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[styles.actionButton, styles.resetButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]} 
+              style={[styles.actionButton, styles.resetButton, { backgroundColor: 'transparent', borderColor: colors.primary }]} 
               onPress={handleReset} 
               activeOpacity={0.7}
             >
-              <RefreshCw size={18} color={colors.textSecondary} strokeWidth={2} />
-              <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>Reset All</Text>
+              <RefreshCw size={18} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.actionButtonText, { color: colors.primary }]}>Reset All</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -245,18 +245,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 50,
-    paddingBottom: 8,
+    paddingBottom: 4,
   },
   title: {
     fontSize: 32,
     fontWeight: '700' as const,
-    flex: 1,
   },
   headerLogo: {
     height: 72,
     width: 270,
-    marginLeft: 'auto',
-    marginRight: 8,
+    position: 'absolute' as const,
+    right: 16,
   },
   section: {
     marginBottom: 32,
@@ -325,7 +324,7 @@ const styles = StyleSheet.create({
   },
   actionSection: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 4,
     paddingBottom: 12,
   },
   actionButtonsRow: {
