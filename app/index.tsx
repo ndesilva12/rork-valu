@@ -10,14 +10,17 @@ export default function Index() {
   const { isSignedIn, isLoaded } = useAuth();
   const colors = isDarkMode ? darkColors : lightColors;
 
+  const { profile } = useUser();
+
   useEffect(() => {
     console.log('[Index] Render state:', {
       isLoaded,
       userLoading,
       isSignedIn,
       hasCompletedOnboarding,
+      causeCount: profile.causes.length,
     });
-  }, [isLoaded, userLoading, isSignedIn, hasCompletedOnboarding]);
+  }, [isLoaded, userLoading, isSignedIn, hasCompletedOnboarding, profile.causes.length]);
 
   if (!isLoaded || userLoading) {
     console.log('[Index] Showing loading state');
@@ -35,11 +38,11 @@ export default function Index() {
   }
 
   if (hasCompletedOnboarding) {
-    console.log('[Index] Redirecting to home');
+    console.log('[Index] Redirecting to home (causes:', profile.causes.length, ')');
     return <Redirect href="/(tabs)/home" />;
   }
 
-  console.log('[Index] Redirecting to onboarding');
+  console.log('[Index] Redirecting to onboarding (hasCompletedOnboarding:', hasCompletedOnboarding, ', causes:', profile.causes.length, ')');
   return <Redirect href="/onboarding" />;
 }
 

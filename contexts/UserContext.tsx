@@ -47,15 +47,19 @@ export const [UserProvider, useUser] = createContextHook(() => {
         console.log('[UserContext] Stored profile exists:', !!stored);
         if (stored) {
           console.log('[UserContext] Raw stored data length:', stored.length);
+          console.log('[UserContext] First 200 chars:', stored.substring(0, 200));
         }
         
         if (stored && mounted) {
           try {
             const parsed = JSON.parse(stored);
-            console.log('[UserContext] Loaded profile with', parsed.causes?.length || 0, 'causes');
-            console.log('[UserContext] Parsed profile:', JSON.stringify(parsed, null, 2));
+            const causesCount = parsed.causes?.length || 0;
+            console.log('[UserContext] Loaded profile with', causesCount, 'causes');
+            console.log('[UserContext] Causes:', JSON.stringify(parsed.causes, null, 2));
+            const hasOnboarded = causesCount > 0;
+            console.log('[UserContext] Setting hasCompletedOnboarding to:', hasOnboarded);
             setProfile(parsed);
-            setHasCompletedOnboarding((parsed.causes?.length || 0) > 0);
+            setHasCompletedOnboarding(hasOnboarded);
           } catch (parseError) {
             console.error('[UserContext] Failed to parse stored profile, clearing corrupt data:', parseError);
             await AsyncStorage.removeItem(userProfileKey);
@@ -107,18 +111,28 @@ export const [UserProvider, useUser] = createContextHook(() => {
       console.error('[UserContext] Cannot save causes: User not logged in');
       return;
     }
-    const newProfile = { ...profile, causes };
-    console.log('[UserContext] Saving', causes.length, 'causes for user:', clerkUser.id);
-    setProfile(newProfile);
-    setHasCompletedOnboarding(newProfile.causes.length > 0);
-    const userProfileKey = getUserProfileKey(clerkUser.id);
-    try {
-      await AsyncStorage.setItem(userProfileKey, JSON.stringify(newProfile));
-      console.log('[UserContext] Profile saved successfully');
-    } catch (error) {
-      console.error('[UserContext] Failed to save profile:', error);
-    }
-  }, [profile, clerkUser]);
+    
+    setProfile(currentProfile => {
+      const newProfile = { ...currentProfile, causes };
+      console.log('[UserContext] Saving', causes.length, 'causes for user:', clerkUser.id);
+      const userProfileKey = getUserProfileKey(clerkUser.id);
+      
+      AsyncStorage.setItem(userProfileKey, JSON.stringify(newProfile))
+        .then(() => {
+          console.log('[UserContext] Profile saved successfully to AsyncStorage');
+          console.log('[UserContext] Saved data:', JSON.stringify(newProfile, null, 2));
+        })
+        .catch(error => {
+          console.error('[UserContext] Failed to save profile:', error);
+        });
+      
+      return newProfile;
+    });
+    
+    const hasOnboarded = causes.length > 0;
+    console.log('[UserContext] Setting hasCompletedOnboarding to:', hasOnboarded);
+    setHasCompletedOnboarding(hasOnboarded);
+  }, [clerkUser]);
 
   const addToSearchHistory = useCallback((query: string) => {
     if (!clerkUser) {

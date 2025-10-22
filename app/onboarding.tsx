@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { Heart, Shield, Users, Building2, Globe, User, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -45,7 +45,7 @@ interface SelectedValue {
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { addCauses, profile, isDarkMode, clerkUser } = useUser();
+  const { addCauses, profile, isDarkMode, clerkUser, isLoading } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const [selectedValues, setSelectedValues] = useState<SelectedValue[]>(() => {
     return profile.causes.map(c => ({
@@ -58,6 +58,20 @@ export default function OnboardingScreen() {
   });
   const [expandedCategories, setExpandedCategories] = useState<Set<CauseCategory>>(new Set());
   const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    console.log('[Onboarding] Profile causes updated:', profile.causes.length);
+    if (profile.causes.length > 0) {
+      console.log('[Onboarding] Syncing selected values from profile');
+      setSelectedValues(profile.causes.map(c => ({
+        id: c.id,
+        name: c.name,
+        category: c.category,
+        type: c.type,
+        description: c.description,
+      })));
+    }
+  }, [profile.causes]);
 
   const toggleValue = (valueId: string, name: string, category: CauseCategory, description?: string) => {
     setSelectedValues(prev => {
@@ -94,8 +108,13 @@ export default function OnboardingScreen() {
         description: v.description,
       }));
       console.log('[Onboarding] Saving causes for user:', clerkUser?.id);
+      console.log('[Onboarding] Causes to save:', JSON.stringify(causes.map(c => c.name), null, 2));
       await addCauses(causes);
-      console.log('[Onboarding] Causes saved, redirecting to home');
+      console.log('[Onboarding] addCauses completed');
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      console.log('[Onboarding] Redirecting to home');
       router.replace('/(tabs)/home');
     }
   };
