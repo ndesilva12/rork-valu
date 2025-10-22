@@ -241,6 +241,7 @@ const styles = StyleSheet.create({
   logo: {
     width: 180,
     height: 180,
+    tintColor: undefined,
   },
   title: {
     fontSize: 28,
