@@ -21,9 +21,11 @@ export const [UserProvider, useUser] = createContextHook(() => {
     let mounted = true;
 
     const init = async () => {
+      console.log('[UserContext] Init - isClerkLoaded:', isClerkLoaded, 'mounted:', mounted, 'clerkUser:', !!clerkUser);
       if (!isClerkLoaded || !mounted) return;
       
       if (!clerkUser) {
+        console.log('[UserContext] No clerk user, resetting state');
         if (mounted) {
           setProfile({ causes: [], searchHistory: [] });
           setHasCompletedOnboarding(false);
@@ -35,8 +37,10 @@ export const [UserProvider, useUser] = createContextHook(() => {
       try {
         const userId = clerkUser.id;
         const userProfileKey = getUserProfileKey(userId);
+        console.log('[UserContext] Loading profile for user:', userId);
         
         const stored = await AsyncStorage.getItem(userProfileKey);
+        console.log('[UserContext] Stored profile:', !!stored);
         if (stored && mounted) {
           const parsed = JSON.parse(stored);
           setProfile(parsed);
@@ -54,9 +58,10 @@ export const [UserProvider, useUser] = createContextHook(() => {
           await AsyncStorage.setItem(DARK_MODE_KEY, JSON.stringify(true));
         }
       } catch (error) {
-        console.error('Failed to load user data:', error);
+        console.error('[UserContext] Failed to load user data:', error);
       } finally {
         if (mounted) {
+          console.log('[UserContext] Init complete, setting isLoading to false');
           setIsLoading(false);
         }
       }

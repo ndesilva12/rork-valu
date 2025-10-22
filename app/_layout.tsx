@@ -7,28 +7,53 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { UserProvider } from "@/contexts/UserContext";
 import { trpc, trpcClient } from "@/lib/trpc";
 import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
-const tokenCache = {
-  async getToken(key: string) {
-    try {
-      return await SecureStore.getItemAsync(key);
-    } catch (err) {
-      console.error("Error getting token:", err);
-      return null;
-    }
-  },
-  async saveToken(key: string, value: string) {
-    try {
-      return await SecureStore.setItemAsync(key, value);
-    } catch (err) {
-      console.error("Error saving token:", err);
-    }
-  },
+const createTokenCache = () => {
+  if (Platform.OS === 'web') {
+    return {
+      async getToken(key: string) {
+        try {
+          return localStorage.getItem(key);
+        } catch (err) {
+          console.error("Error getting token:", err);
+          return null;
+        }
+      },
+      async saveToken(key: string, value: string) {
+        try {
+          localStorage.setItem(key, value);
+        } catch (err) {
+          console.error("Error saving token:", err);
+        }
+      },
+    };
+  }
+  
+  return {
+    async getToken(key: string) {
+      try {
+        return await SecureStore.getItemAsync(key);
+      } catch (err) {
+        console.error("Error getting token:", err);
+        return null;
+      }
+    },
+    async saveToken(key: string, value: string) {
+      try {
+        return await SecureStore.setItemAsync(key, value);
+      } catch (err) {
+        console.error("Error saving token:", err);
+      }
+    },
+  };
 };
+
+const tokenCache = createTokenCache();
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || "pk_test_c2F2ZWQtbWFsYW11dGUtOTkuY2xlcmsuYWNjb3VudHMuZGV2JA";
 

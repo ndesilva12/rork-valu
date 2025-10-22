@@ -3,6 +3,7 @@ import { httpLink } from "@trpc/client";
 import type { AppRouter } from "@/backend/trpc/app-router";
 import superjson from "superjson";
 import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 
 export const trpc = createTRPCReact<AppRouter>();
 
@@ -18,6 +19,10 @@ const getBaseUrl = () => {
 
 const getAuthToken = async () => {
   try {
+    if (Platform.OS === 'web') {
+      const token = localStorage.getItem("__clerk_client_jwt");
+      return token;
+    }
     const token = await SecureStore.getItemAsync("__clerk_client_jwt");
     return token;
   } catch (error) {
