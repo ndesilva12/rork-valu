@@ -34,22 +34,31 @@ export default function MenuButton() {
   };
 
   const handleSignOut = async () => {
-    try {
+    setIsMenuVisible(false);
+    
+    setTimeout(() => {
       Alert.alert(
         'Sign Out',
         'Are you sure you want to sign out?',
         [
-          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Cancel', 
+            style: 'cancel',
+            onPress: () => {
+              console.log('[MenuButton] Sign out cancelled');
+            }
+          },
           {
             text: 'Sign Out',
             style: 'destructive',
             onPress: async () => {
-              setIsMenuVisible(false);
+              console.log('[MenuButton] Starting sign out...');
               try {
                 await signOut();
+                console.log('[MenuButton] Sign out successful, navigating...');
                 router.replace('/(auth)/sign-in');
               } catch (error) {
-                console.error('Sign out error:', error);
+                console.error('[MenuButton] Sign out error:', error);
                 router.replace('/(auth)/sign-in');
               }
             },
@@ -57,9 +66,7 @@ export default function MenuButton() {
         ],
         { cancelable: true }
       );
-    } catch (error) {
-      console.error('Sign out alert error:', error);
-    }
+    }, 300);
   };
 
   const handleNavigateToSearch = () => {
