@@ -50,11 +50,18 @@ export const [UserProvider, useUser] = createContextHook(() => {
         }
         
         if (stored && mounted) {
-          const parsed = JSON.parse(stored);
-          console.log('[UserContext] Loaded profile with', parsed.causes?.length || 0, 'causes');
-          console.log('[UserContext] Parsed profile:', JSON.stringify(parsed, null, 2));
-          setProfile(parsed);
-          setHasCompletedOnboarding((parsed.causes?.length || 0) > 0);
+          try {
+            const parsed = JSON.parse(stored);
+            console.log('[UserContext] Loaded profile with', parsed.causes?.length || 0, 'causes');
+            console.log('[UserContext] Parsed profile:', JSON.stringify(parsed, null, 2));
+            setProfile(parsed);
+            setHasCompletedOnboarding((parsed.causes?.length || 0) > 0);
+          } catch (parseError) {
+            console.error('[UserContext] Failed to parse stored profile, clearing corrupt data:', parseError);
+            await AsyncStorage.removeItem(userProfileKey);
+            setProfile({ causes: [], searchHistory: [] });
+            setHasCompletedOnboarding(false);
+          }
         } else if (mounted) {
           console.log('[UserContext] No stored profile, initializing empty');
           setProfile({ causes: [], searchHistory: [] });
@@ -63,7 +70,13 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
         const darkModeStored = await AsyncStorage.getItem(DARK_MODE_KEY);
         if (darkModeStored !== null && mounted) {
-          setIsDarkMode(JSON.parse(darkModeStored));
+          try {
+            setIsDarkMode(JSON.parse(darkModeStored));
+          } catch (parseError) {
+            console.error('[UserContext] Failed to parse dark mode, using default:', parseError);
+            setIsDarkMode(true);
+            await AsyncStorage.setItem(DARK_MODE_KEY, JSON.stringify(true));
+          }
         } else if (mounted) {
           setIsDarkMode(true);
           await AsyncStorage.setItem(DARK_MODE_KEY, JSON.stringify(true));
