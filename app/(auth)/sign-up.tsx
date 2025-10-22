@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
 import { useSignUp, useAuth, useClerk } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { darkColors } from '@/constants/colors';
@@ -24,6 +24,16 @@ export default function SignUpScreen() {
       router.replace('/');
     }
   }, [authLoaded, isSignedIn, router, pendingVerification]);
+
+  const resetForm = React.useCallback(() => {
+    setEmailAddress('');
+    setPassword('');
+    setConfirmPassword('');
+    setCode('');
+    setPendingVerification(false);
+    setError('');
+    setIsSubmitting(false);
+  }, []);
 
   React.useEffect(() => {
     if (isLoaded && signUp) {
@@ -125,56 +135,42 @@ export default function SignUpScreen() {
       }
       
       if (err?.errors?.[0]?.code === 'client_state_invalid') {
-        console.log('[Sign Up] Invalid client state detected, clearing any existing session and retrying...');
-        try {
-          await signOut();
-          console.log('[Sign Up] Cleared any existing session, waiting before retry...');
-          
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          const freshResult = await signUp.create({
-            emailAddress,
-            password,
-          });
-          console.log('[Sign Up] Fresh account created successfully');
-          
-          if (freshResult.verifications.emailAddress.status === 'verified') {
-            console.log('[Sign Up] Email already verified, completing sign-up');
-            if (freshResult.status === 'complete') {
-              await setActive({ session: freshResult.createdSessionId });
-              setIsSubmitting(false);
-              router.replace('/onboarding');
-              return;
-            }
-          }
-          
-          await freshResult.prepareEmailAddressVerification({ strategy: 'email_code' });
-          console.log('[Sign Up] Verification email sent after retry');
-          setPendingVerification(true);
-          setIsSubmitting(false);
-          return;
-        } catch (retryErr: any) {
-          console.error('[Sign Up] Retry failed:', JSON.stringify(retryErr, null, 2));
-          
-          if (retryErr?.errors?.[0]?.code === 'session_exists') {
-            console.log('[Sign Up] Session exists after retry, user may be logged in, redirecting...');
-            setError('You are already signed in. Redirecting...');
-            setIsSubmitting(false);
-            setTimeout(() => router.replace('/'), 1000);
-            return;
-          }
-          
-          if (retryErr?.errors?.[0]?.code === 'form_identifier_exists') {
-            setError('This email is already registered. Please sign in instead.');
-            setIsSubmitting(false);
-            return;
-          }
-          
-          const retryErrorMessage = retryErr?.errors?.[0]?.longMessage || retryErr?.errors?.[0]?.message || 'Session error. Please refresh the page and try again.';
-          setError(retryErrorMessage);
-          setIsSubmitting(false);
-          return;
+        console.log('[Sign Up] Invalid client state - likely session conflict');
+        setIsSubmitting(false);
+        
+        if (Platform.OS === 'web') {
+          setError('Session error detected. Please refresh this page and try again.');
+        } else {
+          Alert.alert(
+            'Session Error',
+            'There was a problem with your sign-up session. Would you like to clear your session and try again?',
+            [
+              {
+                text: 'Cancel',
+                style: 'cancel',
+                onPress: () => {
+                  setError('Sign up cancelled. Please try again later.');
+                }
+              },
+              {
+                text: 'Clear & Retry',
+                onPress: async () => {
+                  try {
+                    console.log('[Sign Up] Clearing session...');
+                    await signOut();
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    resetForm();
+                    setError('Session cleared. Please try signing up again.');
+                  } catch (clearErr: any) {
+                    console.error('[Sign Up] Clear failed:', clearErr);
+                    setError('Could not clear session. Please close and reopen the app.');
+                  }
+                }
+              }
+            ]
+          );
         }
+        return;
       }
       
       if (err?.errors?.[0]?.code === 'form_password_pwned') {
