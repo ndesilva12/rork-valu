@@ -1,44 +1,11 @@
 import * as React from 'react';
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
-import { useSignUp, useOAuth, useAuth } from '@clerk/clerk-expo';
+import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+import { useSignUp } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { darkColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
-
-WebBrowser.maybeCompleteAuthSession();
-
 export default function SignUpScreen() {
-  React.useEffect(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const isOAuthCallback = params.has('__clerk_handshake') || params.has('__clerk_status');
-      
-      if (isOAuthCallback && window.opener) {
-        console.log('[Sign Up] OAuth callback detected in popup, notifying parent');
-        try {
-          window.opener.postMessage({ type: 'clerk-oauth-callback' }, window.location.origin);
-          window.close();
-        } catch (error) {
-          console.error('[Sign Up] Error closing popup:', error);
-        }
-      }
-    }
-  }, []);
   const { isLoaded, signUp, setActive } = useSignUp();
-  const redirectUrl = React.useMemo(() => {
-    if (Platform.OS === 'web') {
-      return `${window.location.origin}/`;
-    }
-    return Linking.createURL('/');
-  }, []);
-  
-  const { startOAuthFlow } = useOAuth({ 
-    strategy: 'oauth_google',
-    redirectUrl,
-  });
-  const { isSignedIn } = useAuth();
   const router = useRouter();
 
   const [emailAddress, setEmailAddress] = React.useState('');
@@ -47,7 +14,6 @@ export default function SignUpScreen() {
   const [pendingVerification, setPendingVerification] = React.useState(false);
   const [code, setCode] = React.useState('');
   const [error, setError] = React.useState('');
-  const [isLoadingOAuth, setIsLoadingOAuth] = React.useState(false);
 
   const onSignUpPress = async () => {
     if (!isLoaded) return;
@@ -101,79 +67,7 @@ export default function SignUpScreen() {
     }
   };
 
-  const { getToken } = useAuth();
 
-  React.useEffect(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const handleMessage = async (event: MessageEvent) => {
-        if (event.origin !== window.location.origin) return;
-        if (event.data?.type === 'clerk-oauth-callback') {
-          console.log('[Sign Up] Received OAuth callback message from popup');
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          await getToken();
-          router.replace('/');
-        }
-      };
-      
-      window.addEventListener('message', handleMessage);
-      return () => window.removeEventListener('message', handleMessage);
-    }
-  }, [getToken, router]);
-
-  const onGoogleSignUpPress = React.useCallback(async () => {
-    if (isSignedIn) {
-      console.log('[Sign Up] Already signed in, navigating to index');
-      router.replace('/');
-      return;
-    }
-
-    setIsLoadingOAuth(true);
-    try {
-      console.log('[Sign Up] Starting OAuth flow with redirectUrl:', redirectUrl);
-      const { createdSessionId, setActive: oauthSetActive, signIn: oauthSignIn, signUp: oauthSignUp } = await startOAuthFlow();
-
-      console.log('[Sign Up] OAuth flow completed:', { createdSessionId, hasSignIn: !!oauthSignIn, hasSignUp: !!oauthSignUp });
-
-      if (createdSessionId) {
-        await oauthSetActive!({ session: createdSessionId });
-        console.log('[Sign Up] OAuth success, session set');
-        await new Promise(resolve => setTimeout(resolve, 500));
-        await getToken();
-        console.log('[Sign Up] Token refreshed, redirecting');
-        router.replace('/');
-      } else {
-        const session = oauthSignIn?.createdSessionId || oauthSignUp?.createdSessionId;
-        if (session && setActive) {
-          await setActive({ session });
-          console.log('[Sign Up] OAuth session activated');
-          await new Promise(resolve => setTimeout(resolve, 500));
-          await getToken();
-          console.log('[Sign Up] Token refreshed, redirecting');
-          router.replace('/');
-        } else {
-          console.log('[Sign Up] No session created, checking auth state');
-          await new Promise(resolve => setTimeout(resolve, 500));
-          await getToken();
-          router.replace('/');
-        }
-      }
-    } catch (err: any) {
-      console.error('[Sign Up] OAuth Error:', JSON.stringify(err, null, 2));
-      if (err.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
-        console.log('[Sign Up] OAuth cancelled by user');
-      } else if (err.errors && err.errors[0]?.code === 'session_exists') {
-        console.log('[Sign Up] Session already exists - user is already signed in');
-        await new Promise(resolve => setTimeout(resolve, 500));
-        await getToken();
-        console.log('[Sign Up] Token refreshed, redirecting to index');
-        router.replace('/');
-      } else {
-        console.error('[Sign Up] Unexpected OAuth error:', err);
-      }
-    } finally {
-      setIsLoadingOAuth(false);
-    }
-  }, [startOAuthFlow, setActive, router, isSignedIn, redirectUrl, getToken]);
 
   if (pendingVerification) {
     return (
@@ -235,29 +129,6 @@ export default function SignUpScreen() {
           </View>
           <Text style={styles.title}>Create your account</Text>
           <Text style={styles.subtitle}>Sign up to get started</Text>
-          
-          <TouchableOpacity 
-            onPress={onGoogleSignUpPress} 
-            style={styles.googleButton}
-            disabled={isLoadingOAuth}
-          >
-            {isLoadingOAuth ? (
-              <ActivityIndicator color={darkColors.text} />
-            ) : (
-              <>
-                <View style={styles.googleIcon}>
-                  <Text style={styles.googleIconText}>G</Text>
-                </View>
-                <Text style={styles.googleButtonText}>Continue with Google</Text>
-              </>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
           <View style={styles.inputContainer}>
@@ -390,50 +261,5 @@ const styles = StyleSheet.create({
     color: darkColors.primary,
     fontSize: 14,
     fontWeight: '600',
-  },
-  googleButton: {
-    backgroundColor: darkColors.backgroundSecondary,
-    borderWidth: 1,
-    borderColor: darkColors.border,
-    borderRadius: 12,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  googleIcon: {
-    width: 24,
-    height: 24,
-    backgroundColor: '#4285F4',
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  googleIconText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  googleButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: darkColors.text,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: darkColors.border,
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    color: darkColors.textSecondary,
-    fontSize: 14,
   },
 });

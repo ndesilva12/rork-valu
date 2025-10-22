@@ -22,7 +22,10 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
     const init = async () => {
       console.log('[UserContext] Init - isClerkLoaded:', isClerkLoaded, 'mounted:', mounted, 'clerkUser:', !!clerkUser);
-      if (!isClerkLoaded || !mounted) return;
+      if (!isClerkLoaded || !mounted) {
+        console.log('[UserContext] Waiting for Clerk to load...');
+        return;
+      }
       
       if (!clerkUser) {
         console.log('[UserContext] No clerk user, resetting state');
@@ -35,6 +38,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
       }
 
       try {
+        setIsLoading(true);
         const userId = clerkUser.id;
         const userProfileKey = getUserProfileKey(userId);
         console.log('[UserContext] Loading profile for user:', userId);
@@ -42,11 +46,16 @@ export const [UserProvider, useUser] = createContextHook(() => {
         
         const stored = await AsyncStorage.getItem(userProfileKey);
         console.log('[UserContext] Stored profile exists:', !!stored);
+        if (stored) {
+          console.log('[UserContext] Raw stored data:', stored);
+        }
+        
         if (stored && mounted) {
           const parsed = JSON.parse(stored);
-          console.log('[UserContext] Loaded profile with', parsed.causes.length, 'causes');
+          console.log('[UserContext] Loaded profile with', parsed.causes?.length || 0, 'causes');
+          console.log('[UserContext] Parsed profile:', JSON.stringify(parsed, null, 2));
           setProfile(parsed);
-          setHasCompletedOnboarding(parsed.causes.length > 0);
+          setHasCompletedOnboarding((parsed.causes?.length || 0) > 0);
         } else if (mounted) {
           console.log('[UserContext] No stored profile, initializing empty');
           setProfile({ causes: [], searchHistory: [] });
@@ -62,6 +71,10 @@ export const [UserProvider, useUser] = createContextHook(() => {
         }
       } catch (error) {
         console.error('[UserContext] Failed to load user data:', error);
+        if (mounted) {
+          setProfile({ causes: [], searchHistory: [] });
+          setHasCompletedOnboarding(false);
+        }
       } finally {
         if (mounted) {
           console.log('[UserContext] Init complete, setting isLoading to false');
