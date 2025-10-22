@@ -105,6 +105,7 @@ export default function SignInScreen() {
       console.log('[Sign In] OAuth flow completed:', { createdSessionId, hasSignIn: !!oauthSignIn, hasSignUp: !!oauthSignUp });
 
       if (createdSessionId) {
+        console.log('[Sign In] Setting active session:', createdSessionId);
         await oauthSetActive!({ session: createdSessionId });
         console.log('[Sign In] OAuth success, session set');
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -113,18 +114,21 @@ export default function SignInScreen() {
         router.replace('/');
       } else {
         const session = oauthSignIn?.createdSessionId || oauthSignUp?.createdSessionId;
-        if (session && setActive) {
-          await setActive({ session });
+        if (session) {
+          console.log('[Sign In] Found session from signIn/signUp:', session);
+          if (oauthSetActive) {
+            await oauthSetActive({ session });
+          } else if (setActive) {
+            await setActive({ session });
+          }
           console.log('[Sign In] OAuth session activated');
           await new Promise(resolve => setTimeout(resolve, 500));
           await getToken();
           console.log('[Sign In] Token refreshed, redirecting');
           router.replace('/');
         } else {
-          console.log('[Sign In] No session created, checking auth state');
-          await new Promise(resolve => setTimeout(resolve, 500));
-          await getToken();
-          router.replace('/');
+          console.log('[Sign In] No session created from OAuth flow');
+          throw new Error('No session created from OAuth flow');
         }
       }
     } catch (err: any) {
@@ -132,13 +136,25 @@ export default function SignInScreen() {
       if (err.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
         console.log('[Sign In] OAuth cancelled by user');
       } else if (err.errors && err.errors[0]?.code === 'session_exists') {
-        console.log('[Sign In] Session already exists - user is already signed in');
-        await new Promise(resolve => setTimeout(resolve, 500));
-        await getToken();
-        console.log('[Sign In] Token refreshed, redirecting to index');
-        router.replace('/');
+        console.log('[Sign In] Session already exists - attempting to use existing session');
+        try {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const token = await getToken();
+          console.log('[Sign In] Token obtained:', !!token);
+          if (token) {
+            console.log('[Sign In] Token refreshed, redirecting to index');
+            router.replace('/');
+          } else {
+            console.log('[Sign In] No token available, session might be stale');
+            throw new Error('Could not authenticate - please try again');
+          }
+        } catch (tokenErr) {
+          console.error('[Sign In] Error getting token:', tokenErr);
+          throw new Error('Authentication failed - please try again');
+        }
       } else {
         console.error('[Sign In] Unexpected OAuth error:', err);
+        throw err;
       }
     } finally {
       setIsLoadingOAuth(false);

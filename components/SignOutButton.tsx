@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { Text, TouchableOpacity, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { lightColors } from '@/constants/colors';
 import { useState } from 'react';
+import * as SecureStore from 'expo-secure-store';
 
 export const SignOutButton = () => {
   const { signOut } = useClerk();
@@ -29,9 +30,21 @@ export const SignOutButton = () => {
           const name = eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
           document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
         }
+      } else {
+        console.log('[SignOutButton] Clearing mobile secure storage...');
+        try {
+          const keys = ['__clerk_client_jwt', '__clerk_client', '__clerk_session_token'];
+          for (const key of keys) {
+            await SecureStore.deleteItemAsync(key).catch(() => {});
+          }
+        } catch (err) {
+          console.log('[SignOutButton] Error clearing secure store:', err);
+        }
       }
       
       console.log('[SignOutButton] Sign out complete');
+      
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       router.replace('/(auth)/sign-in');
       
