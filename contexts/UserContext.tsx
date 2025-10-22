@@ -37,6 +37,8 @@ export const [UserProvider, useUser] = createContextHook(() => {
         return;
       }
 
+      setIsLoading(true);
+
       try {
         const userId = clerkUser.id;
         const userProfileKey = getUserProfileKey(userId);
@@ -58,8 +60,8 @@ export const [UserProvider, useUser] = createContextHook(() => {
             console.log('[UserContext] Causes:', JSON.stringify(parsed.causes, null, 2));
             const hasOnboarded = causesCount > 0;
             console.log('[UserContext] Setting hasCompletedOnboarding to:', hasOnboarded);
-            setProfile(parsed);
             setHasCompletedOnboarding(hasOnboarded);
+            setProfile(parsed);
           } catch (parseError) {
             console.error('[UserContext] Failed to parse stored profile, clearing corrupt data:', parseError);
             await AsyncStorage.removeItem(userProfileKey);
@@ -104,7 +106,8 @@ export const [UserProvider, useUser] = createContextHook(() => {
     return () => {
       mounted = false;
     };
-  }, [isClerkLoaded, clerkUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isClerkLoaded, clerkUser?.id]);
 
   const addCauses = useCallback(async (causes: Cause[]) => {
     if (!clerkUser) {

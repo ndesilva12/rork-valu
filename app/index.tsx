@@ -22,6 +22,12 @@ export default function Index() {
     });
   }, [isLoaded, userLoading, isSignedIn, hasCompletedOnboarding, profile.causes.length]);
 
+  useEffect(() => {
+    if (isSignedIn && !userLoading && profile.causes.length > 0 && !hasCompletedOnboarding) {
+      console.log('[Index] Detected mismatch: has causes but hasCompletedOnboarding is false');
+    }
+  }, [isSignedIn, userLoading, profile.causes.length, hasCompletedOnboarding]);
+
   if (!isLoaded || userLoading) {
     console.log('[Index] Showing loading state');
     return (
