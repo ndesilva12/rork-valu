@@ -40,32 +40,41 @@ export default function SignInScreen() {
   const onGoogleSignInPress = React.useCallback(async () => {
     setIsLoadingOAuth(true);
     try {
+      console.log('[Sign In] Starting OAuth flow');
       const { createdSessionId, setActive: oauthSetActive, signIn, signUp } = await startOAuthFlow();
 
       if (createdSessionId) {
         await oauthSetActive!({ session: createdSessionId });
-        console.log('[Sign In] OAuth success, redirecting to home');
-        router.replace('/');
+        console.log('[Sign In] OAuth success with createdSessionId, redirecting to home');
+        setTimeout(() => router.replace('/'), 100);
       } else if (setActive) {
         const session = signIn?.createdSessionId || signUp?.createdSessionId;
         if (session) {
           await setActive({ session });
-          console.log('[Sign In] OAuth session activated, redirecting to home');
-          router.replace('/');
+          console.log('[Sign In] OAuth session activated with setActive, redirecting to home');
+          setTimeout(() => router.replace('/'), 100);
+        } else {
+          console.log('[Sign In] No session ID found, redirecting to home anyway');
+          setTimeout(() => router.replace('/'), 100);
         }
+      } else {
+        console.log('[Sign In] No setActive or createdSessionId, redirecting to home');
+        setTimeout(() => router.replace('/'), 100);
       }
     } catch (err: any) {
       console.error('[Sign In] OAuth Error:', JSON.stringify(err, null, 2));
       if (err.clerkError && err.errors?.[0]?.code === 'session_exists') {
         console.log('[Sign In] Session already exists, redirecting to home');
-        router.replace('/');
+        setTimeout(() => router.replace('/'), 100);
       } else if (err.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
         console.log('[Sign In] OAuth cancelled by user');
+        setIsLoadingOAuth(false);
+        return;
       } else {
         console.error('[Sign In] Unexpected OAuth error:', err);
       }
     } finally {
-      setIsLoadingOAuth(false);
+      setTimeout(() => setIsLoadingOAuth(false), 150);
     }
   }, [startOAuthFlow, router]);
 

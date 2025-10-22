@@ -33,40 +33,47 @@ export default function MenuButton() {
     await resetProfile();
   };
 
-  const handleSignOut = async () => {
-    setIsMenuVisible(false);
-    
-    setTimeout(() => {
-      Alert.alert(
-        'Sign Out',
-        'Are you sure you want to sign out?',
-        [
-          { 
-            text: 'Cancel', 
-            style: 'cancel',
-            onPress: () => {
-              console.log('[MenuButton] Sign out cancelled');
-            }
-          },
-          {
-            text: 'Sign Out',
-            style: 'destructive',
-            onPress: async () => {
-              console.log('[MenuButton] Starting sign out...');
+  const handleSignOut = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { 
+          text: 'Cancel', 
+          style: 'cancel',
+          onPress: () => {
+            console.log('[MenuButton] Sign out cancelled');
+          }
+        },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            console.log('[MenuButton] User confirmed sign out');
+            setIsMenuVisible(false);
+            
+            setTimeout(async () => {
               try {
+                console.log('[MenuButton] Signing out from Clerk...');
                 await signOut();
-                console.log('[MenuButton] Sign out successful, navigating...');
-                router.replace('/(auth)/sign-in');
+                console.log('[MenuButton] Sign out successful');
+                
+                setTimeout(() => {
+                  console.log('[MenuButton] Navigating to sign-in page...');
+                  router.replace('/(auth)/sign-in');
+                }, 100);
               } catch (error) {
                 console.error('[MenuButton] Sign out error:', error);
-                router.replace('/(auth)/sign-in');
+                setTimeout(() => {
+                  router.replace('/(auth)/sign-in');
+                }, 100);
               }
-            },
+            }, 200);
           },
-        ],
-        { cancelable: true }
-      );
-    }, 300);
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   const handleNavigateToSearch = () => {
