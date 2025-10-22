@@ -89,7 +89,7 @@ export default function SignInScreen() {
       if (err.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
         console.log('[Sign In] OAuth cancelled by user');
       } else if (err.errors && err.errors[0]?.code === 'session_exists') {
-        console.log('[Sign In] Session already exists, waiting for auth state update');
+        console.log('[Sign In] Session exists - user already signed in, redirecting');
         await new Promise(resolve => setTimeout(resolve, 300));
         router.replace('/');
       } else {
