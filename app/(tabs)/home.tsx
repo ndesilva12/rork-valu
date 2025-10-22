@@ -71,7 +71,7 @@ export default function HomeScreen() {
     })
   ).current;
 
-  const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull } = useMemo(() => {
+  const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
     const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
     const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
     
@@ -79,7 +79,7 @@ export default function HomeScreen() {
       let totalSupportScore = 0;
       let totalAvoidScore = 0;
       const matchingValues = new Set<string>();
-      const matchingValueDetails: { valueId: string; isSupport: boolean; position: number }[] = [];
+      const positionSum: number[] = [];
       
       product.valueAlignments.forEach(alignment => {
         const isUserSupporting = supportedCauses.includes(alignment.valueId);
@@ -88,11 +88,7 @@ export default function HomeScreen() {
         if (!isUserSupporting && !isUserAvoiding) return;
         
         matchingValues.add(alignment.valueId);
-        matchingValueDetails.push({
-          valueId: alignment.valueId,
-          isSupport: alignment.isSupport,
-          position: alignment.position
-        });
+        positionSum.push(alignment.position);
         
         const score = alignment.isSupport ? (100 - alignment.position * 5) : -(100 - alignment.position * 5);
         
@@ -113,40 +109,36 @@ export default function HomeScreen() {
         }
       });
       
+      const avgPosition = positionSum.length > 0 ? positionSum.reduce((a, b) => a + b, 0) / positionSum.length : 10;
+      const alignmentStrength = Math.round((1 - ((avgPosition - 1) / 9)) * 50 + 50);
+      
       return { 
         product, 
         totalSupportScore, 
         totalAvoidScore, 
         matchingValuesCount: matchingValues.size,
         matchingValues,
-        matchingValueDetails
+        alignmentStrength
       };
     });
 
     const allSupportSorted = scored
       .filter(s => s.totalSupportScore > s.totalAvoidScore && s.totalSupportScore > 0)
-      .sort((a, b) => {
-        if (b.matchingValuesCount !== a.matchingValuesCount) {
-          return b.matchingValuesCount - a.matchingValuesCount;
-        }
-        return b.totalSupportScore - a.totalSupportScore;
-      });
+      .sort((a, b) => b.alignmentStrength - a.alignmentStrength);
 
     const allAvoidSorted = scored
       .filter(s => s.totalAvoidScore > s.totalSupportScore && s.totalAvoidScore > 0)
-      .sort((a, b) => {
-        if (b.matchingValuesCount !== a.matchingValuesCount) {
-          return b.matchingValuesCount - a.matchingValuesCount;
-        }
-        return b.totalAvoidScore - a.totalAvoidScore;
-      });
+      .sort((a, b) => b.alignmentStrength - a.alignmentStrength);
+
+    const scoredMap = new Map(scored.map(s => [s.product.id, s.alignmentStrength]));
 
     return { 
       topSupport: allSupportSorted.slice(0, 10).map(s => s.product), 
       topAvoid: allAvoidSorted.slice(0, 10).map(s => s.product),
       allSupport: allSupportSorted.map(s => s.product),
       allSupportFull: allSupportSorted.map(s => s.product),
-      allAvoidFull: allAvoidSorted.map(s => s.product)
+      allAvoidFull: allAvoidSorted.map(s => s.product),
+      scoredBrands: scoredMap
     };
   }, [profile.causes]);
 
@@ -212,9 +204,10 @@ export default function HomeScreen() {
 
 
 
-  const renderBrandCard = (product: Product, type: 'support' | 'avoid', position: number) => {
+  const renderBrandCard = (product: Product, type: 'support' | 'avoid') => {
     const isSupport = type === 'support';
     const titleColor = isSupport ? '#22C55E' : '#EF4444';
+    const alignmentScore = scoredBrands.get(product.id) || 0;
     
     return (
       <TouchableOpacity 
@@ -236,7 +229,7 @@ export default function HomeScreen() {
             <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>{product.category}</Text>
           </View>
           <View style={styles.brandScoreContainer}>
-            <Text style={[styles.brandScore, { color: titleColor }]}>{position}</Text>
+            <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -315,7 +308,7 @@ export default function HomeScreen() {
           {showAllAligned ? `All ${allSupportFull.length} brands that align with your values` : 'Top 5 brands that align with your values'}
         </Text>
         <View style={styles.brandsContainer}>
-          {(showAllAligned ? allSupportFull : topSupport.slice(0, 5)).map((product, index) => renderBrandCard(product, 'support', index + 1))}
+          {(showAllAligned ? allSupportFull : topSupport.slice(0, 5)).map((product) => renderBrandCard(product, 'support'))}
         </View>
       </View>
 
@@ -338,7 +331,7 @@ export default function HomeScreen() {
           {showAllLeast ? `All ${allAvoidFull.length} brands that do not align with your values` : 'Top 5 brands that do not align with your values'}
         </Text>
         <View style={styles.brandsContainer}>
-          {(showAllLeast ? allAvoidFull : topAvoid.slice(0, 5)).map((product, index) => renderBrandCard(product, 'avoid', index + 1))}
+          {(showAllLeast ? allAvoidFull : topAvoid.slice(0, 5)).map((product) => renderBrandCard(product, 'avoid'))}
         </View>
       </View>
     </>
