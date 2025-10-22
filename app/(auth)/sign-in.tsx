@@ -29,7 +29,8 @@ export default function SignInScreen() {
 
       if (signInAttempt.status === 'complete') {
         await setActive({ session: signInAttempt.createdSessionId });
-        router.replace('/(tabs)/home');
+        console.log('[Sign In] Email sign-in successful, redirecting to index');
+        router.replace('/');
       } else {
         console.error(JSON.stringify(signInAttempt, null, 2));
       }
@@ -40,8 +41,8 @@ export default function SignInScreen() {
 
   const onGoogleSignInPress = React.useCallback(async () => {
     if (isSignedIn) {
-      console.log('[Sign In] Already signed in, navigating directly');
-      router.replace('/(tabs)/home');
+      console.log('[Sign In] Already signed in, navigating to index');
+      router.replace('/');
       return;
     }
 
@@ -54,16 +55,16 @@ export default function SignInScreen() {
 
       if (createdSessionId) {
         await oauthSetActive!({ session: createdSessionId });
-        console.log('[Sign In] OAuth success, session set');
+        console.log('[Sign In] OAuth success, session set, redirecting to index');
         
-        router.replace('/(tabs)/home');
+        router.replace('/');
       } else {
         const session = signIn?.createdSessionId || signUp?.createdSessionId;
         if (session && setActive) {
           await setActive({ session });
-          console.log('[Sign In] OAuth session activated');
+          console.log('[Sign In] OAuth session activated, redirecting to index');
           
-          router.replace('/(tabs)/home');
+          router.replace('/');
         }
       }
     } catch (err: any) {
@@ -71,8 +72,8 @@ export default function SignInScreen() {
       if (err.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
         console.log('[Sign In] OAuth cancelled by user');
       } else if (err.errors && err.errors[0]?.code === 'session_exists') {
-        console.log('[Sign In] Session already exists, navigating');
-        router.replace('/(tabs)/home');
+        console.log('[Sign In] Session already exists, navigating to index');
+        router.replace('/');
       } else {
         console.error('[Sign In] Unexpected OAuth error:', err);
       }
