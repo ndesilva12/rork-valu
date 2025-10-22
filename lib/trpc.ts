@@ -40,6 +40,46 @@ export const trpcClient = trpc.createClient({
         const token = await getAuthToken();
         return token ? { authorization: `Bearer ${token}` } : {};
       },
+      fetch: async (url, options) => {
+        try {
+          const response = await fetch(url, options);
+          
+          if (!response.ok) {
+            const text = await response.text();
+            console.error('[tRPC] Non-OK response:', response.status, text);
+            
+            try {
+              JSON.parse(text);
+              return new Response(text, {
+                status: response.status,
+                statusText: response.statusText,
+                headers: response.headers,
+              });
+            } catch {
+              return new Response(
+                JSON.stringify({
+                  error: {
+                    json: {
+                      message: text || `HTTP ${response.status}`,
+                      code: -32000,
+                      data: { httpStatus: response.status },
+                    },
+                  },
+                }),
+                {
+                  status: response.status,
+                  headers: { 'content-type': 'application/json' },
+                }
+              );
+            }
+          }
+          
+          return response;
+        } catch (error) {
+          console.error('[tRPC] Fetch error:', error);
+          throw error;
+        }
+      },
     }),
   ],
 });
