@@ -84,17 +84,30 @@ export default function SignUpScreen() {
       console.log('[Sign Up] Sign-up status:', result.status);
       console.log('[Sign Up] Verification needed:', result.verifications.emailAddress.status);
       
-      if (result.verifications.emailAddress.status === 'verified') {
-        console.log('[Sign Up] Email already verified, completing sign-up');
-        if (result.status === 'complete' && result.createdSessionId) {
+      if (result.status === 'complete') {
+        console.log('[Sign Up] Sign-up complete automatically');
+        if (result.createdSessionId) {
           console.log('[Sign Up] Setting active session:', result.createdSessionId);
           await setActive({ session: result.createdSessionId });
           console.log('[Sign Up] Session activated, waiting before redirect');
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          console.log('[Sign Up] Redirecting to home (index will handle routing)');
-          router.replace('/');
-          return;
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
+        console.log('[Sign Up] Redirecting to home (index will handle routing)');
+        router.replace('/');
+        return;
+      }
+      
+      if (result.verifications.emailAddress.status === 'verified') {
+        console.log('[Sign Up] Email already verified but status not complete');
+        if (result.createdSessionId) {
+          console.log('[Sign Up] Setting active session:', result.createdSessionId);
+          await setActive({ session: result.createdSessionId });
+          console.log('[Sign Up] Session activated, waiting before redirect');
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        console.log('[Sign Up] Redirecting to home (index will handle routing)');
+        router.replace('/');
+        return;
       }
       
       console.log('[Sign Up] Preparing verification...');
@@ -109,6 +122,7 @@ export default function SignUpScreen() {
       if (err?.errors?.[0]?.code === 'session_exists') {
         console.log('[Sign Up] Session exists, redirecting to home');
         setIsSubmitting(false);
+        await new Promise(resolve => setTimeout(resolve, 500));
         router.replace('/');
         return;
       }
@@ -147,7 +161,8 @@ export default function SignUpScreen() {
       }
       
       if (err?.errors?.[0]?.code === 'client_state_invalid') {
-        console.log('[Sign Up] Invalid client state - account may already exist');
+        console.log('[Sign Up] Invalid client state - attempting to recover');
+        await new Promise(resolve => setTimeout(resolve, 500));
         setIsSubmitting(false);
         router.replace('/');
         return;
