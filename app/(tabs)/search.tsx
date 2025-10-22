@@ -490,7 +490,8 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 8,
+    paddingBottom: 12,
     borderBottomWidth: 2,
   },
   searchInputContainer: {

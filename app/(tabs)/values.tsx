@@ -58,41 +58,40 @@ export default function ValuesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
-        <Text style={[styles.title, { color: colors.primary }]}>Values</Text>
-        <Image
-          source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/zsgxybag0kclnh2l8fjd8' }}
-          style={styles.headerLogo}
-          resizeMode="contain"
-        />
-      </View>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
+          <Text style={[styles.title, { color: colors.primary }]}>Values</Text>
+          <Image
+            source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/zsgxybag0kclnh2l8fjd8' }}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
+        </View>
 
-      <View style={styles.actionSection}>
-        <View style={[styles.settingsCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-          <TouchableOpacity style={styles.settingItem} onPress={handleUpdate} activeOpacity={0.7}>
-            <View style={styles.settingLeft}>
-              <Settings size={20} color={colors.primary} strokeWidth={2} />
-              <View>
-                <Text style={[styles.settingTitle, { color: colors.text }]}>Update My Values</Text>
-                <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>Modify your preferences</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
+        <View style={styles.actionSection}>
+          <View style={styles.actionButtonsRow}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.updateButton, { backgroundColor: colors.primary, borderColor: colors.primary }]} 
+              onPress={handleUpdate} 
+              activeOpacity={0.7}
+            >
+              <Settings size={18} color={colors.white} strokeWidth={2} />
+              <Text style={[styles.actionButtonText, { color: colors.white }]}>Update My Values</Text>
+            </TouchableOpacity>
 
-          <View style={[styles.settingDivider, { backgroundColor: colors.border }]} />
-
-          <TouchableOpacity style={styles.settingItem} onPress={handleReset} activeOpacity={0.7}>
-            <View style={styles.settingLeft}>
-              <RefreshCw size={20} color={colors.textSecondary} strokeWidth={2} />
-              <View>
-                <Text style={[styles.settingTitle, { color: colors.textSecondary }]}>Reset All Values</Text>
-                <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>Clear all selections</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.resetButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]} 
+              onPress={handleReset} 
+              activeOpacity={0.7}
+            >
+              <RefreshCw size={18} color={colors.textSecondary} strokeWidth={2} />
+              <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>Reset All</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
+
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
 
       {supportCauses.length > 0 && (
         <View style={styles.section}>
@@ -234,7 +233,11 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
+    paddingTop: 16,
     paddingBottom: 20,
+  },
+  stickyHeaderContainer: {
+    borderBottomWidth: 1,
   },
   header: {
     flexDirection: 'row',
@@ -242,8 +245,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 50,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
+    paddingBottom: 8,
   },
   title: {
     fontSize: 32,
@@ -322,7 +324,32 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   actionSection: {
-    marginBottom: 32,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    gap: 8,
+    borderWidth: 1,
+  },
+  updateButton: {
+  },
+  resetButton: {
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   settingsSection: {
     marginBottom: 32,

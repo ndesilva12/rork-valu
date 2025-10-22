@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 50,
-    paddingBottom: 16,
+    paddingBottom: 8,
   },
   headerTitle: {
     fontSize: 32,
@@ -689,7 +689,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 4,
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 8,
+    marginTop: 8,
     borderWidth: 1,
   },
   viewModeButton: {
