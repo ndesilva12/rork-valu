@@ -29,10 +29,7 @@ export default function SignUpScreen() {
       console.log('[Sign Up] Component mounted, checking sign-up state');
       console.log('[Sign Up] Current status:', signUp.status);
       
-      if (signUp.status === 'missing_requirements' && signUp.missingFields?.length === 0) {
-        console.log('[Sign Up] Found pending verification state');
-        setPendingVerification(true);
-      } else if (signUp.status === 'complete') {
+      if (signUp.status === 'complete') {
         console.log('[Sign Up] Sign-up already complete');
         router.replace('/');
       } else {
@@ -107,12 +104,16 @@ export default function SignUpScreen() {
       }
       
       if (err?.errors?.[0]?.code === 'client_state_invalid') {
-        console.log('[Sign Up] Invalid client state, resetting...');
-        setEmailAddress('');
-        setPassword('');
-        setConfirmPassword('');
-        setPendingVerification(false);
-        setError('Please try again.');
+        console.log('[Sign Up] Invalid client state, reloading page...');
+        if (Platform.OS === 'web') {
+          window.location.reload();
+        } else {
+          setEmailAddress('');
+          setPassword('');
+          setConfirmPassword('');
+          setPendingVerification(false);
+          setError('Please try again.');
+        }
         return;
       }
       
@@ -128,10 +129,22 @@ export default function SignUpScreen() {
     if (!isLoaded || isSubmitting) return;
 
     setIsSubmitting(true);
+    setError('');
     try {
+      console.log('[Sign Up] Attempting verification with code:', code);
+      
+      if (!signUp) {
+        console.error('[Sign Up] No signUp instance available');
+        setError('Session expired. Please start sign up again.');
+        setPendingVerification(false);
+        return;
+      }
+      
       const signUpAttempt = await signUp.attemptEmailAddressVerification({
         code,
       });
+
+      console.log('[Sign Up] Verification attempt result:', signUpAttempt.status);
 
       if (signUpAttempt.status === 'complete') {
         await setActive({ session: signUpAttempt.createdSessionId });
@@ -145,6 +158,21 @@ export default function SignUpScreen() {
       }
     } catch (err: any) {
       console.error('[Sign Up] Verification error:', JSON.stringify(err, null, 2));
+      
+      if (err?.errors?.[0]?.code === 'client_state_invalid') {
+        console.log('[Sign Up] Invalid client state during verification');
+        setError('Session expired. Please start sign up again.');
+        setPendingVerification(false);
+        setEmailAddress('');
+        setPassword('');
+        setConfirmPassword('');
+        setCode('');
+        if (Platform.OS === 'web') {
+          setTimeout(() => window.location.reload(), 1500);
+        }
+        return;
+      }
+      
       setError(err.errors?.[0]?.message || 'Verification failed. Please check your code.');
     } finally {
       setIsSubmitting(false);
