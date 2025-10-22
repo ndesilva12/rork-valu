@@ -159,6 +159,8 @@ export default function SignUpScreen() {
       if (err?.errors?.[0]?.code === 'form_password_pwned') {
         const pwnedMessage = 'This password has been found in a data breach. Please use a different, more secure password.';
         console.error('[Sign Up] Password pwned error:', pwnedMessage);
+        setPassword('');
+        setConfirmPassword('');
         setError(pwnedMessage);
         setIsSubmitting(false);
         return;
