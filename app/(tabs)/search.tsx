@@ -218,15 +218,8 @@ export default function SearchScreen() {
       <View style={[styles.stickyHeader, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Search</Text>
-          {clerkUser && (
-            <View style={styles.userInfoContainer}>
-              <Text style={[styles.userEmail, { color: colors.textSecondary }]} numberOfLines={1}>
-                {clerkUser.primaryEmailAddress?.emailAddress || clerkUser.username || 'User'}
-              </Text>
-            </View>
-          )}
           <Image
-            source={require('@/assets/images/icon.png')}
+            source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/zsgxybag0kclnh2l8fjd8' }}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -490,18 +483,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerLogo: {
-    width: 32,
     height: 32,
-  },
-  userInfoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginRight: 12,
-  },
-  userEmail: {
-    fontSize: 12,
-    maxWidth: 150,
+    width: 120,
   },
   searchContainer: {
     paddingHorizontal: 16,
