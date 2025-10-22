@@ -2,9 +2,10 @@ import * as React from 'react';
 import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useSignUp, useOAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { lightColors } from '@/constants/colors';
+import { darkColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
+import { useUser } from '@/contexts/UserContext';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -12,6 +13,7 @@ export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp();
   const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' });
   const router = useRouter();
+  const { hasCompletedOnboarding } = useUser();
 
   const [emailAddress, setEmailAddress] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -61,7 +63,10 @@ export default function SignUpScreen() {
 
       if (signUpAttempt.status === 'complete') {
         await setActive({ session: signUpAttempt.createdSessionId });
-        router.replace('/');
+        
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        router.replace('/onboarding');
       } else {
         console.error(JSON.stringify(signUpAttempt, null, 2));
       }
@@ -79,24 +84,50 @@ export default function SignUpScreen() {
       if (createdSessionId) {
         await oauthSetActive!({ session: createdSessionId });
         console.log('[Sign Up] OAuth success, session set');
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (hasCompletedOnboarding) {
+          router.replace('/(tabs)/home');
+        } else {
+          router.replace('/onboarding');
+        }
       } else {
         const session = signIn?.createdSessionId || signUp?.createdSessionId;
         if (session && setActive) {
           await setActive({ session });
           console.log('[Sign Up] OAuth session activated');
+          
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          if (hasCompletedOnboarding) {
+            router.replace('/(tabs)/home');
+          } else {
+            router.replace('/onboarding');
+          }
         }
       }
     } catch (err: any) {
       console.error('[Sign Up] OAuth Error:', JSON.stringify(err, null, 2));
       if (err.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
         console.log('[Sign Up] OAuth cancelled by user');
+      } else if (err.errors && err.errors[0]?.code === 'session_exists') {
+        console.log('[Sign Up] Session already exists, navigating');
+        
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        if (hasCompletedOnboarding) {
+          router.replace('/(tabs)/home');
+        } else {
+          router.replace('/onboarding');
+        }
       } else {
         console.error('[Sign Up] Unexpected OAuth error:', err);
       }
     } finally {
       setIsLoadingOAuth(false);
     }
-  }, [startOAuthFlow, setActive]);
+  }, [startOAuthFlow, setActive, router, hasCompletedOnboarding]);
 
   if (pendingVerification) {
     return (
@@ -123,7 +154,7 @@ export default function SignUpScreen() {
               <TextInput
                 value={code}
                 placeholder="Enter verification code"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={darkColors.textSecondary}
                 onChangeText={(code) => setCode(code)}
                 style={styles.input}
                 keyboardType="number-pad"
@@ -165,7 +196,7 @@ export default function SignUpScreen() {
             disabled={isLoadingOAuth}
           >
             {isLoadingOAuth ? (
-              <ActivityIndicator color="#1F1F1F" />
+              <ActivityIndicator color={darkColors.text} />
             ) : (
               <>
                 <View style={styles.googleIcon}>
@@ -189,7 +220,7 @@ export default function SignUpScreen() {
               autoCapitalize="none"
               value={emailAddress}
               placeholder="Enter your email"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={darkColors.textSecondary}
               onChangeText={(email) => setEmailAddress(email)}
               style={styles.input}
               keyboardType="email-address"
@@ -200,7 +231,7 @@ export default function SignUpScreen() {
             <TextInput
               value={password}
               placeholder="Enter your password"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={darkColors.textSecondary}
               secureTextEntry={true}
               onChangeText={(password) => setPassword(password)}
               style={styles.input}
@@ -211,7 +242,7 @@ export default function SignUpScreen() {
             <TextInput
               value={confirmPassword}
               placeholder="Re-enter your password"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={darkColors.textSecondary}
               secureTextEntry={true}
               onChangeText={(confirmPassword) => setConfirmPassword(confirmPassword)}
               style={styles.input}
@@ -235,7 +266,7 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: lightColors.background,
+    backgroundColor: darkColors.background,
   },
   flex: {
     flex: 1,
@@ -256,12 +287,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: lightColors.text,
+    color: darkColors.text,
     marginBottom: 6,
   },
   subtitle: {
     fontSize: 15,
-    color: lightColors.textSecondary,
+    color: darkColors.textSecondary,
     marginBottom: 24,
   },
   errorText: {
@@ -276,19 +307,20 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: lightColors.text,
+    color: darkColors.text,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: darkColors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderColor: darkColors.border,
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
+    color: darkColors.text,
   },
   button: {
-    backgroundColor: lightColors.primary,
+    backgroundColor: darkColors.primary,
     borderRadius: 12,
     padding: 14,
     alignItems: 'center',
@@ -305,18 +337,18 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   linkText: {
-    color: lightColors.textSecondary,
+    color: darkColors.textSecondary,
     fontSize: 14,
   },
   link: {
-    color: lightColors.primary,
+    color: darkColors.primary,
     fontSize: 14,
     fontWeight: '600',
   },
   googleButton: {
-    backgroundColor: '#fff',
+    backgroundColor: darkColors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderColor: darkColors.border,
     borderRadius: 12,
     padding: 14,
     flexDirection: 'row',
@@ -341,7 +373,7 @@ const styles = StyleSheet.create({
   googleButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F1F1F',
+    color: darkColors.text,
   },
   divider: {
     flexDirection: 'row',
@@ -351,11 +383,11 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E5E5E5',
+    backgroundColor: darkColors.border,
   },
   dividerText: {
     marginHorizontal: 16,
-    color: lightColors.textSecondary,
+    color: darkColors.textSecondary,
     fontSize: 14,
   },
 });
