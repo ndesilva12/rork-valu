@@ -57,8 +57,8 @@ export default function ValuesScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <Text style={[styles.title, { color: colors.primary }]}>Values</Text>
         <Image
           source={require('@/assets/images/icon.png')}
@@ -66,6 +66,7 @@ export default function ValuesScreen() {
           resizeMode="contain"
         />
       </View>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
 
       <View style={styles.actionSection}>
         <View style={[styles.settingsCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
@@ -218,7 +219,8 @@ export default function ValuesScreen() {
           public records, donations, and stated positions.
         </Text>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -226,6 +228,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  scrollView: {
+    flex: 1,
   },
   content: {
     paddingHorizontal: 16,
@@ -235,9 +240,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 0,
-    marginBottom: 24,
-    marginTop: 40,
+    paddingHorizontal: 16,
+    paddingTop: 50,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
   },
   title: {
     fontSize: 32,

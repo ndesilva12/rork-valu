@@ -215,16 +215,17 @@ export default function SearchScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: colors.primary }]}>Search</Text>
-        <Image
-          source={require('@/assets/images/icon.png')}
-          style={styles.headerLogo}
-          resizeMode="contain"
-        />
-      </View>
-      
-      <View style={[styles.searchContainer, { backgroundColor: colors.backgroundSecondary, borderBottomColor: colors.primaryLight }]}>
+      <View style={[styles.stickyHeader, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
+        <View style={styles.header}>
+          <Text style={[styles.headerTitle, { color: colors.primary }]}>Search</Text>
+          <Image
+            source={require('@/assets/images/icon.png')}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
+        </View>
+        
+        <View style={[styles.searchContainer, { backgroundColor: colors.backgroundSecondary, borderBottomColor: colors.primaryLight }]}>
         <View style={[styles.searchInputContainer, { backgroundColor: isDarkMode ? colors.backgroundSecondary : colors.white, borderColor: colors.primaryLight }]}>
           <SearchIcon size={20} color={colors.primaryLight} strokeWidth={2} />
           <TextInput
@@ -243,6 +244,7 @@ export default function SearchScreen() {
           >
             <ScanBarcode size={20} color={colors.white} strokeWidth={2} />
           </TouchableOpacity>
+        </View>
         </View>
       </View>
 
@@ -464,13 +466,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  stickyHeader: {
+    borderBottomWidth: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    marginTop: 40,
-    marginBottom: 8,
+    paddingTop: 50,
+    paddingBottom: 8,
   },
   headerTitle: {
     fontSize: 32,

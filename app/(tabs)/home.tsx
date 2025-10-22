@@ -448,13 +448,8 @@ export default function HomeScreen() {
   }
 
   return (
-    <ScrollView
-      ref={scrollViewRef}
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}
-      {...panResponder.panHandlers}
-    >
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
         <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
         <Image
           source={require('@/assets/images/icon.png')}
@@ -462,6 +457,12 @@ export default function HomeScreen() {
           resizeMode="contain"
         />
       </View>
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}
+        {...panResponder.panHandlers}
+      >
 
       {renderViewModeSelector()}
 
@@ -485,12 +486,17 @@ export default function HomeScreen() {
           <ChevronRight size={24} color={isDarkMode ? colors.white : colors.primary} strokeWidth={2} />
         </TouchableOpacity>
       )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
   },
   content: {
     paddingHorizontal: 16,
@@ -504,9 +510,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 0,
-    marginBottom: 24,
-    marginTop: 40,
+    paddingHorizontal: 16,
+    paddingTop: 50,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
   },
   headerTitle: {
     fontSize: 32,
