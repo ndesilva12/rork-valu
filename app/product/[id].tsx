@@ -48,9 +48,11 @@ export default function ProductDetailScreen() {
         matchingValues: [],
         avgPosition: 0,
         totalSupportScore: 0,
-        totalAvoidScore: 0
+        totalAvoidScore: 0,
+        alignmentStrength: 0
       };
     }
+    const totalUserValues = profile.causes.length;
     let totalSupportScore = 0;
     let totalAvoidScore = 0;
     const matchingValues = new Set<string>();
@@ -84,9 +86,10 @@ export default function ProductDetailScreen() {
       }
     });
 
-    const avgPosition = positionSum.length > 0 
-      ? positionSum.reduce((a, b) => a + b, 0) / positionSum.length 
-      : 0;
+    const valuesWhereNotAppears = totalUserValues - matchingValues.size;
+    const totalPositionSum = positionSum.reduce((a, b) => a + b, 0) + (valuesWhereNotAppears * 11);
+    const avgPosition = totalUserValues > 0 ? totalPositionSum / totalUserValues : 11;
+    const alignmentStrength = Math.round((1 - ((avgPosition - 1) / 10)) * 50 + 50);
 
     const isAligned = totalSupportScore > totalAvoidScore && totalSupportScore > 0;
     
@@ -95,9 +98,10 @@ export default function ProductDetailScreen() {
       matchingValues: Array.from(matchingValues),
       avgPosition: Math.round(avgPosition * 10) / 10,
       totalSupportScore,
-      totalAvoidScore
+      totalAvoidScore,
+      alignmentStrength
     };
-  }, [product, supportedCauses, avoidedCauses]);
+  }, [product, supportedCauses, avoidedCauses, profile.causes.length]);
 
   const alignmentColor = alignmentData.isAligned ? colors.success : colors.danger;
   const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;
@@ -203,7 +207,7 @@ export default function ProductDetailScreen() {
             <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.backgroundSecondary }]}>
               <AlignmentIcon size={24} color={alignmentColor} strokeWidth={2.5} />
               <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
-                {(100 - ((alignmentData.avgPosition - 1) / 9) * 50).toFixed(0)}
+                {alignmentData.alignmentStrength}
               </Text>
             </View>
           </View>
