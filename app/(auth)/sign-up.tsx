@@ -44,7 +44,18 @@ export default function SignUpScreen() {
   }, [isLoaded, signUp, router]);
 
   const onSignUpPress = async () => {
-    if (!isLoaded || isSubmitting) return;
+    console.log('[Sign Up] Button pressed, isLoaded:', isLoaded, 'isSubmitting:', isSubmitting);
+    
+    if (!isLoaded) {
+      console.log('[Sign Up] Clerk not loaded yet');
+      setError('Please wait, loading...');
+      return;
+    }
+    
+    if (isSubmitting) {
+      console.log('[Sign Up] Already submitting');
+      return;
+    }
 
     if (!emailAddress || !password) {
       setError('Please fill in all fields');
@@ -243,7 +254,7 @@ export default function SignUpScreen() {
               style={styles.input}
             />
           </View>
-          <TouchableOpacity onPress={onSignUpPress} style={styles.button} disabled={isSubmitting}>
+          <TouchableOpacity onPress={onSignUpPress} style={styles.button} disabled={isSubmitting || !isLoaded}>
             {isSubmitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
