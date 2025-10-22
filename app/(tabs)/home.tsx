@@ -236,7 +236,7 @@ export default function HomeScreen() {
             <Image 
               source={{ uri: product.imageUrl }} 
               style={styles.brandLogo} 
-              contentFit="contain"
+              contentFit="cover"
               transition={200}
               cachePolicy="memory-disk"
             />
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'web' ? 16 : 50,
     paddingBottom: 4,
   },
   headerTitle: {
@@ -782,6 +782,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 8,
   },
   brandLogo: {
     width: '100%',
