@@ -186,7 +186,7 @@ export default function ProductDetailScreen() {
           <Image 
             source={{ uri: product.imageUrl }} 
             style={styles.heroImage} 
-            contentFit="cover"
+            contentFit="contain"
             transition={200}
             cachePolicy="memory-disk"
           />
