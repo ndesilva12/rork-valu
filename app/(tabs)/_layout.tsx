@@ -19,9 +19,6 @@ export default function TabLayout() {
         headerShown: false,
         tabBarPosition: isTabletOrLarger ? 'top' : 'bottom',
         tabBarStyle: {
-          height: isTabletOrLarger ? undefined : 70,
-          paddingBottom: isTabletOrLarger ? undefined : 8,
-          paddingTop: isTabletOrLarger ? undefined : 8,
           borderTopWidth: isTabletOrLarger ? 0 : 1,
           borderBottomWidth: isTabletOrLarger ? 1 : 0,
           borderTopColor: colors.border,
