@@ -1,4 +1,4 @@
-import { useSignIn, useOAuth, useAuth } from '@clerk/clerk-expo';
+import { useSignIn, useOAuth, useAuth, useClerk } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Image } from 'react-native';
 import React from 'react';
@@ -11,17 +11,19 @@ WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
   const [isOAuthPopup, setIsOAuthPopup] = React.useState(false);
-
   React.useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const isOAuthCallback = params.has('__clerk_handshake') || params.has('__clerk_status');
       
       if (isOAuthCallback && window.opener) {
-        console.log('[Sign In] OAuth callback detected in popup, notifying parent');
+        console.log('[Sign In] OAuth callback detected in popup - closing immediately');
         setIsOAuthPopup(true);
         try {
-          window.opener.postMessage({ type: 'clerk-oauth-callback' }, window.location.origin);
+          window.opener.postMessage({ 
+            type: 'clerk-oauth-complete',
+            url: window.location.href 
+          }, window.location.origin);
           setTimeout(() => {
             window.close();
           }, 100);
@@ -31,7 +33,9 @@ export default function SignInScreen() {
       }
     }
   }, []);
+
   const { signIn, setActive, isLoaded } = useSignIn();
+  const clerk = useClerk();
   const redirectUrl = React.useMemo(() => {
     if (Platform.OS === 'web') {
       return `${window.location.origin}/`;
@@ -75,18 +79,47 @@ export default function SignInScreen() {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const handleMessage = async (event: MessageEvent) => {
         if (event.origin !== window.location.origin) return;
-        if (event.data?.type === 'clerk-oauth-callback') {
-          console.log('[Sign In] Received OAuth callback message from popup');
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          await getToken();
-          router.replace('/');
+        if (event.data?.type === 'clerk-oauth-complete') {
+          console.log('[Sign In] Received OAuth complete message from popup, waiting for session sync');
+          setIsLoadingOAuth(true);
+          
+          let attempts = 0;
+          const maxAttempts = 10;
+          const checkInterval = 300;
+          
+          const waitForSession = async () => {
+            while (attempts < maxAttempts) {
+              attempts++;
+              console.log('[Sign In] Checking for session, attempt', attempts);
+              
+              await new Promise(resolve => setTimeout(resolve, checkInterval));
+              
+              try {
+                await clerk.session?.touch();
+                const token = await getToken();
+                if (token && isSignedIn) {
+                  console.log('[Sign In] Session synced successfully, redirecting');
+                  router.replace('/');
+                  setIsLoadingOAuth(false);
+                  return;
+                }
+              } catch (err) {
+                console.log('[Sign In] Session not ready yet:', err);
+              }
+            }
+            
+            console.error('[Sign In] Session sync timeout');
+            setIsLoadingOAuth(false);
+          };
+          
+          waitForSession();
         }
       };
       
       window.addEventListener('message', handleMessage);
       return () => window.removeEventListener('message', handleMessage);
     }
-  }, [getToken, router]);
+  }, [clerk, getToken, isSignedIn, router]);
 
   const onGoogleSignInPress = React.useCallback(async () => {
     if (isSignedIn) {
@@ -99,6 +132,17 @@ export default function SignInScreen() {
     try {
       console.log('[Sign In] Starting OAuth flow with redirectUrl:', redirectUrl);
       console.log('[Sign In] Platform:', Platform.OS);
+      
+      if (Platform.OS === 'web') {
+        console.log('[Sign In] Using popup OAuth flow for web');
+        await startOAuthFlow({
+          redirectUrl,
+        });
+
+        console.log('[Sign In] OAuth flow returned (should not reach here for popup)');
+        
+        return;
+      }
       
       const { createdSessionId, setActive: oauthSetActive, signIn: oauthSignIn, signUp: oauthSignUp } = await startOAuthFlow();
 
@@ -132,32 +176,16 @@ export default function SignInScreen() {
         }
       }
     } catch (err: any) {
-      console.error('[Sign In] OAuth Error:', JSON.stringify(err, null, 2));
-      if (err.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
+      console.error('[Sign In] OAuth Error:', err);
+      if (err?.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
         console.log('[Sign In] OAuth cancelled by user');
-      } else if (err.errors && err.errors[0]?.code === 'session_exists') {
-        console.log('[Sign In] Session already exists - attempting to use existing session');
-        try {
-          await new Promise(resolve => setTimeout(resolve, 500));
-          const token = await getToken();
-          console.log('[Sign In] Token obtained:', !!token);
-          if (token) {
-            console.log('[Sign In] Token refreshed, redirecting to index');
-            router.replace('/');
-          } else {
-            console.log('[Sign In] No token available, session might be stale');
-            throw new Error('Could not authenticate - please try again');
-          }
-        } catch (tokenErr) {
-          console.error('[Sign In] Error getting token:', tokenErr);
-          throw new Error('Authentication failed - please try again');
-        }
       } else {
         console.error('[Sign In] Unexpected OAuth error:', err);
-        throw err;
       }
     } finally {
-      setIsLoadingOAuth(false);
+      if (Platform.OS !== 'web') {
+        setIsLoadingOAuth(false);
+      }
     }
   }, [startOAuthFlow, setActive, router, isSignedIn, redirectUrl, getToken]);
 
