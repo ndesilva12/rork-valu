@@ -1,19 +1,29 @@
-import { useSignIn } from '@clerk/clerk-expo';
+import { useSignIn, useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
 import React from 'react';
 import { darkColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 export default function SignInScreen() {
   const { signIn, setActive, isLoaded } = useSignIn();
+  const { isSignedIn, isLoaded: authLoaded } = useAuth();
   const router = useRouter();
 
   const [emailAddress, setEmailAddress] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    if (authLoaded && isSignedIn) {
+      console.log('[Sign In] Already signed in, redirecting to home');
+      router.replace('/');
+    }
+  }, [authLoaded, isSignedIn, router]);
 
   const onSignInPress = async () => {
-    if (!isLoaded) return;
+    if (!isLoaded || isSubmitting) return;
 
+    setIsSubmitting(true);
     try {
       const signInAttempt = await signIn.create({
         identifier: emailAddress,
@@ -25,10 +35,16 @@ export default function SignInScreen() {
         console.log('[Sign In] Email sign-in successful, redirecting to index');
         router.replace('/');
       } else {
-        console.error(JSON.stringify(signInAttempt, null, 2));
+        console.error('[Sign In] Incomplete:', JSON.stringify(signInAttempt, null, 2));
       }
-    } catch (err) {
-      console.error(JSON.stringify(err, null, 2));
+    } catch (err: any) {
+      console.error('[Sign In] Error:', JSON.stringify(err, null, 2));
+      if (err?.errors?.[0]?.code === 'session_exists') {
+        console.log('[Sign In] Session exists, redirecting to home');
+        router.replace('/');
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -79,8 +95,12 @@ export default function SignInScreen() {
               style={styles.input}
             />
           </View>
-          <TouchableOpacity onPress={onSignInPress} style={styles.button}>
-            <Text style={styles.buttonText}>Continue</Text>
+          <TouchableOpacity onPress={onSignInPress} style={styles.button} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Continue</Text>
+            )}
           </TouchableOpacity>
           <View style={styles.linkContainer}>
             <Text style={styles.linkText}>Don&apos;t have an account? </Text>

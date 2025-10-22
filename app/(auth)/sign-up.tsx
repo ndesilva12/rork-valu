@@ -1,11 +1,12 @@
 import * as React from 'react';
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
-import { useSignUp } from '@clerk/clerk-expo';
+import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { useSignUp, useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { darkColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp();
+  const { isSignedIn, isLoaded: authLoaded } = useAuth();
   const router = useRouter();
 
   const [emailAddress, setEmailAddress] = React.useState('');
@@ -14,9 +15,17 @@ export default function SignUpScreen() {
   const [pendingVerification, setPendingVerification] = React.useState(false);
   const [code, setCode] = React.useState('');
   const [error, setError] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    if (authLoaded && isSignedIn) {
+      console.log('[Sign Up] Already signed in, redirecting to home');
+      router.replace('/');
+    }
+  }, [authLoaded, isSignedIn, router]);
 
   const onSignUpPress = async () => {
-    if (!isLoaded) return;
+    if (!isLoaded || isSubmitting) return;
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -29,6 +38,7 @@ export default function SignUpScreen() {
     }
 
     setError('');
+    setIsSubmitting(true);
 
     try {
       await signUp.create({
@@ -40,14 +50,22 @@ export default function SignUpScreen() {
 
       setPendingVerification(true);
     } catch (err: any) {
-      console.error(JSON.stringify(err, null, 2));
-      setError(err.errors?.[0]?.message || 'An error occurred during sign up');
+      console.error('[Sign Up] Error:', JSON.stringify(err, null, 2));
+      if (err?.errors?.[0]?.code === 'session_exists') {
+        console.log('[Sign Up] Session exists, redirecting to home');
+        router.replace('/');
+      } else {
+        setError(err.errors?.[0]?.message || 'An error occurred during sign up');
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const onVerifyPress = async () => {
-    if (!isLoaded) return;
+    if (!isLoaded || isSubmitting) return;
 
+    setIsSubmitting(true);
     try {
       const signUpAttempt = await signUp.attemptEmailAddressVerification({
         code,
@@ -60,10 +78,14 @@ export default function SignUpScreen() {
         
         router.replace('/onboarding');
       } else {
-        console.error(JSON.stringify(signUpAttempt, null, 2));
+        console.error('[Sign Up] Verification incomplete:', JSON.stringify(signUpAttempt, null, 2));
+        setError('Verification failed. Please try again.');
       }
-    } catch (err) {
-      console.error(JSON.stringify(err, null, 2));
+    } catch (err: any) {
+      console.error('[Sign Up] Verification error:', JSON.stringify(err, null, 2));
+      setError(err.errors?.[0]?.message || 'Verification failed. Please check your code.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -101,8 +123,13 @@ export default function SignUpScreen() {
                 autoCapitalize="none"
               />
             </View>
-            <TouchableOpacity onPress={onVerifyPress} style={styles.button}>
-              <Text style={styles.buttonText}>Verify</Text>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            <TouchableOpacity onPress={onVerifyPress} style={styles.button} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Verify</Text>
+              )}
             </TouchableOpacity>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -165,8 +192,12 @@ export default function SignUpScreen() {
               style={styles.input}
             />
           </View>
-          <TouchableOpacity onPress={onSignUpPress} style={styles.button}>
-            <Text style={styles.buttonText}>Continue</Text>
+          <TouchableOpacity onPress={onSignUpPress} style={styles.button} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Continue</Text>
+            )}
           </TouchableOpacity>
           <View style={styles.linkContainer}>
             <Text style={styles.linkText}>Already have an account? </Text>
