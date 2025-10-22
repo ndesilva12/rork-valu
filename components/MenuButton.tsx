@@ -21,15 +21,25 @@ export default function MenuButton() {
   const colors = isDarkMode ? darkColors : lightColors;
   const { signOut } = useClerk();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const handleUpdate = () => {
     setIsMenuVisible(false);
     router.push('/onboarding');
   };
 
-  const handleReset = async () => {
+  const handleReset = () => {
+    setShowResetConfirm(true);
+  };
+
+  const handleConfirmReset = async () => {
+    setShowResetConfirm(false);
     setIsMenuVisible(false);
     await resetProfile();
+  };
+
+  const handleCancelReset = () => {
+    setShowResetConfirm(false);
   };
 
   const handleSignOut = async () => {
@@ -179,6 +189,38 @@ export default function MenuButton() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      <Modal
+        visible={showResetConfirm}
+        animationType="fade"
+        transparent
+        onRequestClose={handleCancelReset}
+      >
+        <View style={styles.confirmOverlay}>
+          <View style={[styles.confirmContainer, { backgroundColor: colors.background }]}>
+            <Text style={[styles.confirmTitle, { color: colors.text }]}>Reset Your Values?</Text>
+            <Text style={[styles.confirmMessage, { color: colors.textSecondary }]}>
+              This will permanently delete all your selected values and search history. This action cannot be undone.
+            </Text>
+            <View style={styles.confirmButtons}>
+              <TouchableOpacity
+                style={[styles.confirmButton, styles.cancelButton, { backgroundColor: colors.backgroundSecondary }]}
+                onPress={handleCancelReset}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.confirmButtonText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.confirmButton, styles.resetButton, { backgroundColor: colors.danger }]}
+                onPress={handleConfirmReset}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.confirmButtonText, { color: colors.white }]}>Reset</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -247,5 +289,51 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 16,
     fontWeight: '700' as const,
+  },
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  confirmContainer: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 20,
+    padding: 24,
+  },
+  confirmTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  confirmMessage: {
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  confirmButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  confirmButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    borderWidth: 0,
+  },
+  resetButton: {
+    borderWidth: 0,
+  },
+  confirmButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
 });
