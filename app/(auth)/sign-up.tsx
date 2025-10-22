@@ -129,8 +129,35 @@ export default function SignUpScreen() {
       }
       
       if (err?.errors?.[0]?.code === 'form_identifier_exists') {
-        setError('This email is already registered. Please sign in instead.');
-        setIsSubmitting(false);
+        console.log('[Sign Up] Email already exists, showing sign-in option');
+        setPassword('');
+        setConfirmPassword('');
+        
+        if (Platform.OS === 'web') {
+          setError('This email is already registered. Please sign in instead.');
+          setIsSubmitting(false);
+        } else {
+          setIsSubmitting(false);
+          Alert.alert(
+            'Email Already Registered',
+            'This email address is already associated with an account. Would you like to sign in instead?',
+            [
+              {
+                text: 'Stay Here',
+                style: 'cancel',
+                onPress: () => {
+                  setError('This email is already registered. Please use a different email or sign in.');
+                }
+              },
+              {
+                text: 'Go to Sign In',
+                onPress: () => {
+                  router.push('/(auth)/sign-in');
+                }
+              }
+            ]
+          );
+        }
         return;
       }
       
@@ -368,7 +395,10 @@ export default function SignUpScreen() {
           </TouchableOpacity>
           <View style={styles.linkContainer}>
             <Text style={styles.linkText}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/sign-in')}>
+            <TouchableOpacity onPress={() => {
+              resetForm();
+              router.push('/(auth)/sign-in');
+            }}>
               <Text style={styles.link}>Sign in</Text>
             </TouchableOpacity>
           </View>
