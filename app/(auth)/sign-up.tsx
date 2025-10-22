@@ -1,12 +1,11 @@
 import * as React from 'react';
 import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
-import { useSignUp, useClerk } from '@clerk/clerk-expo';
+import { useSignUp } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { darkColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp();
-  const { signOut } = useClerk();
   const router = useRouter();
 
   const [emailAddress, setEmailAddress] = React.useState('');
@@ -91,10 +90,9 @@ export default function SignUpScreen() {
           console.log('[Sign Up] Setting active session:', result.createdSessionId);
           await setActive({ session: result.createdSessionId });
           console.log('[Sign Up] Session activated, waiting before redirect');
-          await new Promise(resolve => setTimeout(resolve, 500));
-          setIsSubmitting(false);
-          console.log('[Sign Up] Redirecting to onboarding');
-          router.replace('/onboarding');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          console.log('[Sign Up] Redirecting to home (index will handle routing)');
+          router.replace('/');
           return;
         }
       }
@@ -109,9 +107,9 @@ export default function SignUpScreen() {
       console.error('[Sign Up] Error:', JSON.stringify(err, null, 2));
       
       if (err?.errors?.[0]?.code === 'session_exists') {
-        console.log('[Sign Up] Session exists, redirecting');
+        console.log('[Sign Up] Session exists, redirecting to home');
         setIsSubmitting(false);
-        router.replace('/onboarding');
+        router.replace('/');
         return;
       }
       
@@ -149,41 +147,9 @@ export default function SignUpScreen() {
       }
       
       if (err?.errors?.[0]?.code === 'client_state_invalid') {
-        console.log('[Sign Up] Invalid client state - likely session conflict');
+        console.log('[Sign Up] Invalid client state - account may already exist');
         setIsSubmitting(false);
-        
-        if (Platform.OS === 'web') {
-          setError('Session error detected. Please refresh this page and try again.');
-        } else {
-          Alert.alert(
-            'Session Error',
-            'There was a problem with your sign-up session. Would you like to clear your session and try again?',
-            [
-              {
-                text: 'Cancel',
-                style: 'cancel',
-                onPress: () => {
-                  setError('Sign up cancelled. Please try again later.');
-                }
-              },
-              {
-                text: 'Clear & Retry',
-                onPress: async () => {
-                  try {
-                    console.log('[Sign Up] Clearing session...');
-                    await signOut();
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    resetForm();
-                    setError('Session cleared. Please try signing up again.');
-                  } catch (clearErr: any) {
-                    console.error('[Sign Up] Clear failed:', clearErr);
-                    setError('Could not clear session. Please close and reopen the app.');
-                  }
-                }
-              }
-            ]
-          );
-        }
+        router.replace('/');
         return;
       }
       
@@ -236,12 +202,10 @@ export default function SignUpScreen() {
         console.log('[Sign Up] Verification complete, setting active session:', result.createdSessionId);
         await setActive({ session: result.createdSessionId });
         console.log('[Sign Up] Session set successfully, waiting before redirect');
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        setIsSubmitting(false);
-        
-        console.log('[Sign Up] Redirecting to onboarding...');
-        router.replace('/onboarding');
+        console.log('[Sign Up] Redirecting to home (index will handle routing)');
+        router.replace('/');
       } else {
         console.error('[Sign Up] Verification incomplete:', JSON.stringify(result, null, 2));
         setError('Verification incomplete. Please try again.');
@@ -251,14 +215,8 @@ export default function SignUpScreen() {
       console.error('[Sign Up] Verification error:', JSON.stringify(err, null, 2));
       
       if (err?.errors?.[0]?.code === 'client_state_invalid') {
-        console.log('[Sign Up] Invalid client state during verification, restarting signup');
-        setError('Session expired. Please sign up again.');
-        setPendingVerification(false);
-        setEmailAddress('');
-        setPassword('');
-        setConfirmPassword('');
-        setCode('');
-        setIsSubmitting(false);
+        console.log('[Sign Up] Invalid client state during verification, redirecting to home');
+        router.replace('/');
         return;
       }
       
