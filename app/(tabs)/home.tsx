@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'web' ? 16 : 50,
+    paddingTop: Platform.OS === 'web' ? 0 : 50,
     paddingBottom: 4,
   },
   headerTitle: {
@@ -782,7 +782,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 8,
   },
   brandLogo: {
     width: '100%',
