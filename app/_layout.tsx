@@ -26,7 +26,11 @@ const createTokenCache = () => {
       },
       async saveToken(key: string, value: string) {
         try {
-          localStorage.setItem(key, value);
+          if (value) {
+            localStorage.setItem(key, value);
+          } else {
+            localStorage.removeItem(key);
+          }
         } catch (err) {
           console.error("Error saving token:", err);
         }
@@ -45,7 +49,11 @@ const createTokenCache = () => {
     },
     async saveToken(key: string, value: string) {
       try {
-        return await SecureStore.setItemAsync(key, value);
+        if (value) {
+          return await SecureStore.setItemAsync(key, value);
+        } else {
+          return await SecureStore.deleteItemAsync(key);
+        }
       } catch (err) {
         console.error("Error saving token:", err);
       }

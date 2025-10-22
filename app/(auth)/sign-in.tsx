@@ -41,29 +41,36 @@ export default function SignInScreen() {
     setIsLoadingOAuth(true);
     try {
       console.log('[Sign In] Starting OAuth flow');
+      console.log('[Sign In] Platform:', Platform.OS);
+      
       const { createdSessionId, setActive: oauthSetActive, signIn, signUp } = await startOAuthFlow();
 
       if (createdSessionId) {
         await oauthSetActive!({ session: createdSessionId });
         console.log('[Sign In] OAuth success, session set');
+        router.replace('/');
       } else {
         const session = signIn?.createdSessionId || signUp?.createdSessionId;
         if (session && setActive) {
           await setActive({ session });
           console.log('[Sign In] OAuth session activated');
+          router.replace('/');
         }
       }
     } catch (err: any) {
       console.error('[Sign In] OAuth Error:', JSON.stringify(err, null, 2));
       if (err.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
         console.log('[Sign In] OAuth cancelled by user');
+      } else if (err.errors && err.errors[0]?.code === 'session_exists') {
+        console.log('[Sign In] Session already exists, navigating to home');
+        router.replace('/');
       } else {
         console.error('[Sign In] Unexpected OAuth error:', err);
       }
     } finally {
       setIsLoadingOAuth(false);
     }
-  }, [startOAuthFlow, setActive]);
+  }, [startOAuthFlow, setActive, router]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>

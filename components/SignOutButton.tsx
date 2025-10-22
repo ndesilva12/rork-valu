@@ -1,11 +1,12 @@
-import { useClerk } from '@clerk/clerk-expo';
+import { useClerk, useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { Text, TouchableOpacity, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { lightColors } from '@/constants/colors';
 import { useState } from 'react';
 
 export const SignOutButton = () => {
   const { signOut } = useClerk();
+  const { isSignedIn } = useAuth();
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
@@ -13,12 +14,32 @@ export const SignOutButton = () => {
     try {
       setIsSigningOut(true);
       console.log('[SignOutButton] Signing out...');
-      await signOut();
-      console.log('[SignOutButton] Sign out complete, navigating to sign-in');
+      console.log('[SignOutButton] Currently signed in:', isSignedIn);
       
-      setTimeout(() => {
-        router.replace('/(auth)/sign-in');
-      }, 100);
+      await signOut();
+      
+      if (Platform.OS === 'web') {
+        console.log('[SignOutButton] Clearing web storage...');
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        const cookies = document.cookie.split(';');
+        for (const cookie of cookies) {
+          const eqPos = cookie.indexOf('=');
+          const name = eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
+          document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+        }
+      }
+      
+      console.log('[SignOutButton] Sign out complete');
+      
+      router.replace('/(auth)/sign-in');
+      
+      if (Platform.OS === 'web') {
+        setTimeout(() => {
+          window.location.href = '/(auth)/sign-in';
+        }, 100);
+      }
     } catch (err) {
       console.error('[SignOutButton] Error signing out:', JSON.stringify(err, null, 2));
       setIsSigningOut(false);
