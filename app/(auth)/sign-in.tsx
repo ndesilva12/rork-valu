@@ -10,6 +10,22 @@ import * as Linking from 'expo-linking';
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
+  React.useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const isOAuthCallback = params.has('__clerk_handshake') || params.has('__clerk_status');
+      
+      if (isOAuthCallback && window.opener) {
+        console.log('[Sign In] OAuth callback detected in popup, notifying parent');
+        try {
+          window.opener.postMessage({ type: 'clerk-oauth-callback' }, window.location.origin);
+          window.close();
+        } catch (error) {
+          console.error('[Sign In] Error closing popup:', error);
+        }
+      }
+    }
+  }, []);
   const { signIn, setActive, isLoaded } = useSignIn();
   const redirectUrl = React.useMemo(() => {
     if (Platform.OS === 'web') {
@@ -49,6 +65,23 @@ export default function SignInScreen() {
       console.error(JSON.stringify(err, null, 2));
     }
   };
+
+  React.useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const handleMessage = async (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+        if (event.data?.type === 'clerk-oauth-callback') {
+          console.log('[Sign In] Received OAuth callback message from popup');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          await getToken();
+          router.replace('/');
+        }
+      };
+      
+      window.addEventListener('message', handleMessage);
+      return () => window.removeEventListener('message', handleMessage);
+    }
+  }, [getToken, router]);
 
   const onGoogleSignInPress = React.useCallback(async () => {
     if (isSignedIn) {
