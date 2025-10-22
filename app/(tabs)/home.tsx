@@ -1,4 +1,4 @@
-import { useRouter, Stack } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { TrendingUp, TrendingDown, ChevronRight, Target, FolderOpen, MapPin, Fuel, Utensils, Coffee, ShoppingCart, Tv, Smartphone, Shield, Car, Laptop, Store, DollarSign, Shirt } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import {
@@ -11,8 +11,6 @@ import {
   PanResponder,
   Image,
 } from 'react-native';
-
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { MOCK_PRODUCTS } from '@/mocks/products';
@@ -44,9 +42,8 @@ const FOLDER_CATEGORIES: FolderCategory[] = [
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { profile, isDarkMode } = useUser();
+  const { profile, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
-  const insets = useSafeAreaInsets();
   const [viewMode, setViewMode] = useState<ViewMode>('playbook');
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
@@ -215,7 +212,7 @@ export default function HomeScreen() {
 
 
 
-  const renderBrandCard = (product: Product, type: 'support' | 'avoid') => {
+  const renderBrandCard = (product: Product, type: 'support' | 'avoid', position: number) => {
     const isSupport = type === 'support';
     const titleColor = isSupport ? '#22C55E' : '#EF4444';
     
@@ -237,6 +234,9 @@ export default function HomeScreen() {
           <View style={styles.brandCardContent}>
             <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>{product.brand}</Text>
             <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>{product.category}</Text>
+          </View>
+          <View style={styles.brandScoreContainer}>
+            <Text style={[styles.brandScore, { color: titleColor }]}>{position}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -315,7 +315,7 @@ export default function HomeScreen() {
           {showAllAligned ? `All ${allSupportFull.length} brands that align with your values` : 'Top 5 brands that align with your values'}
         </Text>
         <View style={styles.brandsContainer}>
-          {(showAllAligned ? allSupportFull : topSupport.slice(0, 5)).map(product => renderBrandCard(product, 'support'))}
+          {(showAllAligned ? allSupportFull : topSupport.slice(0, 5)).map((product, index) => renderBrandCard(product, 'support', index + 1))}
         </View>
       </View>
 
@@ -338,7 +338,7 @@ export default function HomeScreen() {
           {showAllLeast ? `All ${allAvoidFull.length} brands that do not align with your values` : 'Top 5 brands that do not align with your values'}
         </Text>
         <View style={styles.brandsContainer}>
-          {(showAllLeast ? allAvoidFull : topAvoid.slice(0, 5)).map(product => renderBrandCard(product, 'avoid'))}
+          {(showAllLeast ? allAvoidFull : topAvoid.slice(0, 5)).map((product, index) => renderBrandCard(product, 'avoid', index + 1))}
         </View>
       </View>
     </>
@@ -451,6 +451,13 @@ export default function HomeScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.background }]}>
         <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
+        {clerkUser && (
+          <View style={styles.userInfoContainer}>
+            <Text style={[styles.userEmail, { color: colors.textSecondary }]} numberOfLines={1}>
+              {clerkUser.primaryEmailAddress?.emailAddress || clerkUser.username || 'User'}
+            </Text>
+          </View>
+        )}
         <Image
           source={require('@/assets/images/icon.png')}
           style={styles.headerLogo}
@@ -519,10 +526,21 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 32,
     fontWeight: '700' as const,
+    flex: 1,
   },
   headerLogo: {
     width: 32,
     height: 32,
+  },
+  userInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginRight: 12,
+  },
+  userEmail: {
+    fontSize: 12,
+    maxWidth: 150,
   },
   section: {
     marginBottom: 40,
@@ -781,6 +799,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
+  },
+  brandScoreContainer: {
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  brandScore: {
+    fontSize: 20,
+    fontWeight: '700' as const,
   },
   brandName: {
     fontSize: 15,

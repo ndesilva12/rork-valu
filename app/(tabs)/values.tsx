@@ -60,6 +60,13 @@ export default function ValuesScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <Text style={[styles.title, { color: colors.primary }]}>Values</Text>
+        {clerkUser && (
+          <View style={styles.userInfoContainer}>
+            <Text style={[styles.userEmail, { color: colors.textSecondary }]} numberOfLines={1}>
+              {clerkUser.primaryEmailAddress?.emailAddress || clerkUser.username || 'User'}
+            </Text>
+          </View>
+        )}
         <Image
           source={require('@/assets/images/icon.png')}
           style={styles.headerLogo}
@@ -248,10 +255,21 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700' as const,
+    flex: 1,
   },
   headerLogo: {
     width: 32,
     height: 32,
+  },
+  userInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginRight: 12,
+  },
+  userEmail: {
+    fontSize: 12,
+    maxWidth: 150,
   },
   section: {
     marginBottom: 32,

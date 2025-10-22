@@ -133,6 +133,7 @@ export default function ValueDetailScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen
         options={{
+          headerShown: true,
           title: userCause.name,
           headerStyle: {
             backgroundColor: colors.background,

@@ -23,7 +23,7 @@ import { lookupBarcode, findBrandInDatabase, getBrandProduct } from '@/mocks/bar
 
 export default function SearchScreen() {
   const router = useRouter();
-  const { profile, addToSearchHistory, isDarkMode } = useUser();
+  const { profile, addToSearchHistory, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
@@ -218,6 +218,13 @@ export default function SearchScreen() {
       <View style={[styles.stickyHeader, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Search</Text>
+          {clerkUser && (
+            <View style={styles.userInfoContainer}>
+              <Text style={[styles.userEmail, { color: colors.textSecondary }]} numberOfLines={1}>
+                {clerkUser.primaryEmailAddress?.emailAddress || clerkUser.username || 'User'}
+              </Text>
+            </View>
+          )}
           <Image
             source={require('@/assets/images/icon.png')}
             style={styles.headerLogo}
@@ -480,10 +487,21 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 32,
     fontWeight: '700' as const,
+    flex: 1,
   },
   headerLogo: {
     width: 32,
     height: 32,
+  },
+  userInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginRight: 12,
+  },
+  userEmail: {
+    fontSize: 12,
+    maxWidth: 150,
   },
   searchContainer: {
     paddingHorizontal: 16,
