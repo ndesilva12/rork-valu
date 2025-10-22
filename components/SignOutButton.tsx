@@ -12,7 +12,7 @@ export const SignOutButton = () => {
       console.log('[SignOutButton] Signing out...');
       await signOut();
       console.log('[SignOutButton] Sign out complete, navigating to sign-in');
-      router.replace('/');
+      router.replace('/(auth)/sign-in');
     } catch (err) {
       console.error('[SignOutButton] Error signing out:', JSON.stringify(err, null, 2));
     }
