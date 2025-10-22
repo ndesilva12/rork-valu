@@ -1,12 +1,13 @@
 import * as React from 'react';
 import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
-import { useSignUp, useAuth } from '@clerk/clerk-expo';
+import { useSignUp, useAuth, useClerk } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { darkColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp();
   const { isSignedIn, isLoaded: authLoaded } = useAuth();
+  const { signOut } = useClerk();
   const router = useRouter();
 
   const [emailAddress, setEmailAddress] = React.useState('');
@@ -124,8 +125,13 @@ export default function SignUpScreen() {
       }
       
       if (err?.errors?.[0]?.code === 'client_state_invalid') {
-        console.log('[Sign Up] Invalid client state detected, retrying with fresh signup...');
+        console.log('[Sign Up] Invalid client state detected, clearing any existing session and retrying...');
         try {
+          await signOut();
+          console.log('[Sign Up] Cleared any existing session, waiting before retry...');
+          
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           const freshResult = await signUp.create({
             emailAddress,
             password,
@@ -149,7 +155,22 @@ export default function SignUpScreen() {
           return;
         } catch (retryErr: any) {
           console.error('[Sign Up] Retry failed:', JSON.stringify(retryErr, null, 2));
-          const retryErrorMessage = retryErr?.errors?.[0]?.longMessage || retryErr?.errors?.[0]?.message || 'Session error. Please try again.';
+          
+          if (retryErr?.errors?.[0]?.code === 'session_exists') {
+            console.log('[Sign Up] Session exists after retry, user may be logged in, redirecting...');
+            setError('You are already signed in. Redirecting...');
+            setIsSubmitting(false);
+            setTimeout(() => router.replace('/'), 1000);
+            return;
+          }
+          
+          if (retryErr?.errors?.[0]?.code === 'form_identifier_exists') {
+            setError('This email is already registered. Please sign in instead.');
+            setIsSubmitting(false);
+            return;
+          }
+          
+          const retryErrorMessage = retryErr?.errors?.[0]?.longMessage || retryErr?.errors?.[0]?.message || 'Session error. Please refresh the page and try again.';
           setError(retryErrorMessage);
           setIsSubmitting(false);
           return;
