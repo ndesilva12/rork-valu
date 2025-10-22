@@ -10,6 +10,7 @@ import {
   Platform,
   PanResponder,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -45,6 +46,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+  const insets = useSafeAreaInsets();
   const [viewMode, setViewMode] = useState<ViewMode>('playbook');
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
@@ -461,7 +463,7 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
+      <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
           <MenuButton />
@@ -523,13 +525,15 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'web' ? 0 : 50,
+    paddingTop: 16,
     paddingBottom: 4,
   },
   headerTitle: {
     fontSize: 32,
     fontWeight: '700' as const,
+    flex: 1,
   },
 
   section: {
