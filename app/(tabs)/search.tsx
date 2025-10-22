@@ -9,11 +9,11 @@ import {
   TextInput,
   FlatList,
   TouchableOpacity,
-  Image,
   Modal,
   Platform,
   Alert,
 } from 'react-native';
+import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -186,7 +186,13 @@ export default function SearchScreen() {
         onPress={() => handleProductPress(item)}
         activeOpacity={0.7}
       >
-        <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
+        <Image 
+          source={{ uri: item.imageUrl }} 
+          style={styles.productImage}
+          contentFit="cover"
+          transition={200}
+          cachePolicy="memory-disk"
+        />
         <View style={styles.productInfo}>
           <View style={styles.productHeader}>
             <View style={styles.productTitleContainer}>
@@ -339,6 +345,9 @@ export default function SearchScreen() {
                 <Image
                   source={{ uri: scannedProduct.imageUrl }}
                   style={styles.resultImage}
+                  contentFit="cover"
+                  transition={200}
+                  cachePolicy="memory-disk"
                 />
 
                 <Text style={[styles.resultBrand, { color: colors.primary }]}>
@@ -416,6 +425,9 @@ export default function SearchScreen() {
                   <Image
                     source={{ uri: scannedInfo.imageUrl }}
                     style={styles.resultImage}
+                    contentFit="cover"
+                    transition={200}
+                    cachePolicy="memory-disk"
                   />
                 )}
 

@@ -9,8 +9,8 @@ import {
   PanResponder,
   Linking,
   Platform,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
 import { MOCK_PRODUCTS } from '@/mocks/products';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
@@ -186,7 +186,9 @@ export default function ProductDetailScreen() {
           <Image 
             source={{ uri: product.imageUrl }} 
             style={styles.heroImage} 
-            resizeMode="cover"
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
           />
           <TouchableOpacity
             style={[styles.visitButton, { backgroundColor: colors.primary }]}

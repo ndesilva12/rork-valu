@@ -9,8 +9,8 @@ import {
   TouchableOpacity,
   Platform,
   PanResponder,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -236,7 +236,9 @@ export default function HomeScreen() {
             <Image 
               source={{ uri: product.imageUrl }} 
               style={styles.brandLogo} 
-              resizeMode="contain"
+              contentFit="contain"
+              transition={200}
+              cachePolicy="memory-disk"
             />
           </View>
           <View style={styles.brandCardContent}>
@@ -396,7 +398,9 @@ export default function HomeScreen() {
                     <Image 
                       source={{ uri: product.imageUrl }} 
                       style={styles.folderBrandImage} 
-                      resizeMode="cover"
+                      contentFit="cover"
+                      transition={200}
+                      cachePolicy="memory-disk"
                     />
                     <View style={styles.folderBrandContent}>
                       <Text style={[styles.folderBrandName, { color: colors.text }]} numberOfLines={2}>{product.brand}</Text>
