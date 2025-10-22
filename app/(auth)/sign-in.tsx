@@ -1,13 +1,15 @@
 import { useSignIn, useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
 import React from 'react';
 import { darkColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useUser } from '@/contexts/UserContext';
 export default function SignInScreen() {
   const { signIn, setActive, isLoaded } = useSignIn();
   const { isSignedIn, isLoaded: authLoaded } = useAuth();
   const router = useRouter();
+  const { clearAllStoredData } = useUser();
 
   const [emailAddress, setEmailAddress] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -45,6 +47,48 @@ export default function SignInScreen() {
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleClearData = () => {
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(
+        'Clear All Local Data?\n\n' +
+        'This will remove all locally stored user data including:\n' +
+        '- User profiles\n' +
+        '- Selected values\n' +
+        '- Search history\n' +
+        '- App settings\n\n' +
+        'This is useful if you\'ve deleted users from Clerk and want to sync the local data.'
+      );
+      if (confirmed) {
+        clearAllStoredData();
+        window.alert('All local data has been cleared!');
+      }
+    } else {
+      Alert.alert(
+        'Clear All Local Data?',
+        'This will remove all locally stored user data including:\n\n' +
+        '• User profiles\n' +
+        '• Selected values\n' +
+        '• Search history\n' +
+        '• App settings\n\n' +
+        'This is useful if you\'ve deleted users from Clerk and want to sync the local data.',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Clear Data',
+            style: 'destructive',
+            onPress: async () => {
+              await clearAllStoredData();
+              Alert.alert('Success', 'All local data has been cleared!');
+            },
+          },
+        ]
+      );
     }
   };
 
@@ -108,6 +152,9 @@ export default function SignInScreen() {
               <Text style={styles.link}>Sign up</Text>
             </TouchableOpacity>
           </View>
+          <TouchableOpacity onPress={handleClearData} style={styles.clearDataButton}>
+            <Text style={styles.clearDataText}>Clear All Local Data</Text>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -189,5 +236,20 @@ const styles = StyleSheet.create({
     color: darkColors.primary,
     fontSize: 14,
     fontWeight: '600',
+  },
+  clearDataButton: {
+    marginTop: 32,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  clearDataText: {
+    color: '#EF4444',
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

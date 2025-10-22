@@ -136,6 +136,19 @@ export const [UserProvider, useUser] = createContextHook(() => {
     }
   }, [clerkUser]);
 
+  const clearAllStoredData = useCallback(async () => {
+    try {
+      console.log('[UserContext] Clearing ALL AsyncStorage data');
+      await AsyncStorage.clear();
+      setProfile({ causes: [], searchHistory: [] });
+      setHasCompletedOnboarding(false);
+      setIsDarkMode(true);
+      console.log('[UserContext] All data cleared successfully');
+    } catch (error) {
+      console.error('[UserContext] Failed to clear all data:', error);
+    }
+  }, []);
+
   const toggleDarkMode = useCallback(async () => {
     try {
       const newValue = !isDarkMode;
@@ -153,8 +166,9 @@ export const [UserProvider, useUser] = createContextHook(() => {
     addCauses,
     addToSearchHistory,
     resetProfile,
+    clearAllStoredData,
     isDarkMode,
     toggleDarkMode,
     clerkUser,
-  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, addCauses, addToSearchHistory, resetProfile, isDarkMode, toggleDarkMode, clerkUser]);
+  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, addCauses, addToSearchHistory, resetProfile, clearAllStoredData, isDarkMode, toggleDarkMode, clerkUser]);
 });
