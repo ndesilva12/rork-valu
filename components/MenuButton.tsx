@@ -29,13 +29,22 @@ export default function MenuButton() {
   };
 
   const handleReset = () => {
-    setShowResetConfirm(true);
+    console.log('[MenuButton] Opening reset confirmation');
+    setIsMenuVisible(false);
+    setTimeout(() => {
+      setShowResetConfirm(true);
+    }, 300);
   };
 
   const handleConfirmReset = async () => {
-    setShowResetConfirm(false);
-    setIsMenuVisible(false);
-    await resetProfile();
+    console.log('[MenuButton] Confirming reset');
+    try {
+      setShowResetConfirm(false);
+      await resetProfile();
+      console.log('[MenuButton] Reset completed successfully');
+    } catch (error) {
+      console.error('[MenuButton] Reset failed:', error);
+    }
   };
 
   const handleCancelReset = () => {
@@ -92,9 +101,10 @@ export default function MenuButton() {
           activeOpacity={1}
           onPress={() => setIsMenuVisible(false)}
         >
-          <View
+          <TouchableOpacity
             style={[styles.menuContainer, { backgroundColor: colors.background }]}
-            onStartShouldSetResponder={() => true}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
           >
             <View style={styles.logoContainer}>
               <Image
@@ -186,7 +196,7 @@ export default function MenuButton() {
                 </View>
               </TouchableOpacity>
             </ScrollView>
-          </View>
+          </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
 
