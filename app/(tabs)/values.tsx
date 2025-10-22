@@ -251,8 +251,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerLogo: {
-    height: 48,
-    width: 180,
+    height: 72,
+    width: 270,
+    marginLeft: 'auto',
+    marginRight: 8,
   },
   section: {
     marginBottom: 32,
