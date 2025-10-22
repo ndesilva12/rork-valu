@@ -193,9 +193,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-start',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     paddingTop: 90,
-    paddingRight: 12,
   },
   menuContainer: {
     width: '90%',
@@ -205,14 +204,14 @@ const styles = StyleSheet.create({
     maxHeight: '85%',
   },
   logoContainer: {
-    padding: 32,
+    padding: 48,
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   menuLogo: {
-    width: 280,
-    height: 80,
+    width: 420,
+    height: 120,
   },
   menuContent: {
     maxHeight: 500,
