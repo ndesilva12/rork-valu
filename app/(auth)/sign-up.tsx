@@ -142,7 +142,7 @@ export default function SignUpScreen() {
           >
             <View style={styles.logoContainer}>
               <Image 
-                source={require('@/assets/images/icon.png')} 
+                source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/vm8mawdqlu8xi5ltc0lcb' }} 
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -182,7 +182,7 @@ export default function SignUpScreen() {
         >
           <View style={styles.logoContainer}>
             <Image 
-              source={require('@/assets/images/icon.png')} 
+              source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/vm8mawdqlu8xi5ltc0lcb' }} 
               style={styles.logo}
               resizeMode="contain"
             />
