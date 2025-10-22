@@ -1,4 +1,4 @@
-import { useSignIn, useOAuth, useAuth, useSessionList } from '@clerk/clerk-expo';
+import { useSignIn, useOAuth, useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Image } from 'react-native';
 import React from 'react';
@@ -22,8 +22,7 @@ export default function SignInScreen() {
     strategy: 'oauth_google',
     redirectUrl,
   });
-  const { isSignedIn } = useAuth();
-  const { sessions } = useSessionList();
+  const { isSignedIn, getToken } = useAuth();
   const router = useRouter();
 
   const [emailAddress, setEmailAddress] = React.useState('');
@@ -69,19 +68,24 @@ export default function SignInScreen() {
 
       if (createdSessionId) {
         await oauthSetActive!({ session: createdSessionId });
-        console.log('[Sign In] OAuth success, session set, redirecting to index');
-        await new Promise(resolve => setTimeout(resolve, 100));
+        console.log('[Sign In] OAuth success, session set');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await getToken();
+        console.log('[Sign In] Token refreshed, redirecting');
         router.replace('/');
       } else {
         const session = oauthSignIn?.createdSessionId || oauthSignUp?.createdSessionId;
         if (session && setActive) {
           await setActive({ session });
-          console.log('[Sign In] OAuth session activated, redirecting to index');
-          await new Promise(resolve => setTimeout(resolve, 100));
+          console.log('[Sign In] OAuth session activated');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          await getToken();
+          console.log('[Sign In] Token refreshed, redirecting');
           router.replace('/');
         } else {
           console.log('[Sign In] No session created, checking auth state');
-          await new Promise(resolve => setTimeout(resolve, 300));
+          await new Promise(resolve => setTimeout(resolve, 500));
+          await getToken();
           router.replace('/');
         }
       }
@@ -90,34 +94,18 @@ export default function SignInScreen() {
       if (err.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
         console.log('[Sign In] OAuth cancelled by user');
       } else if (err.errors && err.errors[0]?.code === 'session_exists') {
-        console.log('[Sign In] Session exists - activating existing session');
-        try {
-          if (sessions && sessions.length > 0) {
-            const activeSession = sessions[0];
-            console.log('[Sign In] Found active session:', activeSession.id);
-            if (setActive) {
-              await setActive({ session: activeSession.id });
-              console.log('[Sign In] Existing session activated, redirecting');
-              await new Promise(resolve => setTimeout(resolve, 300));
-              router.replace('/');
-            }
-          } else {
-            console.log('[Sign In] No sessions found, redirecting anyway');
-            await new Promise(resolve => setTimeout(resolve, 300));
-            router.replace('/');
-          }
-        } catch (activationErr) {
-          console.error('[Sign In] Failed to activate session:', activationErr);
-          await new Promise(resolve => setTimeout(resolve, 300));
-          router.replace('/');
-        }
+        console.log('[Sign In] Session already exists - user is already signed in');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await getToken();
+        console.log('[Sign In] Token refreshed, redirecting to index');
+        router.replace('/');
       } else {
         console.error('[Sign In] Unexpected OAuth error:', err);
       }
     } finally {
       setIsLoadingOAuth(false);
     }
-  }, [startOAuthFlow, setActive, router, isSignedIn, redirectUrl, sessions]);
+  }, [startOAuthFlow, setActive, router, isSignedIn, redirectUrl, getToken]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>

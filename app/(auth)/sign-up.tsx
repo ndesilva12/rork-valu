@@ -85,6 +85,8 @@ export default function SignUpScreen() {
     }
   };
 
+  const { getToken } = useAuth();
+
   const onGoogleSignUpPress = React.useCallback(async () => {
     if (isSignedIn) {
       console.log('[Sign Up] Already signed in, navigating to index');
@@ -101,19 +103,24 @@ export default function SignUpScreen() {
 
       if (createdSessionId) {
         await oauthSetActive!({ session: createdSessionId });
-        console.log('[Sign Up] OAuth success, session set, redirecting to index');
-        await new Promise(resolve => setTimeout(resolve, 100));
+        console.log('[Sign Up] OAuth success, session set');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await getToken();
+        console.log('[Sign Up] Token refreshed, redirecting');
         router.replace('/');
       } else {
         const session = oauthSignIn?.createdSessionId || oauthSignUp?.createdSessionId;
         if (session && setActive) {
           await setActive({ session });
-          console.log('[Sign Up] OAuth session activated, redirecting to index');
-          await new Promise(resolve => setTimeout(resolve, 100));
+          console.log('[Sign Up] OAuth session activated');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          await getToken();
+          console.log('[Sign Up] Token refreshed, redirecting');
           router.replace('/');
         } else {
           console.log('[Sign Up] No session created, checking auth state');
-          await new Promise(resolve => setTimeout(resolve, 300));
+          await new Promise(resolve => setTimeout(resolve, 500));
+          await getToken();
           router.replace('/');
         }
       }
@@ -122,8 +129,10 @@ export default function SignUpScreen() {
       if (err.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
         console.log('[Sign Up] OAuth cancelled by user');
       } else if (err.errors && err.errors[0]?.code === 'session_exists') {
-        console.log('[Sign Up] Session already exists, navigating to index');
-        await new Promise(resolve => setTimeout(resolve, 300));
+        console.log('[Sign Up] Session already exists - user is already signed in');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await getToken();
+        console.log('[Sign Up] Token refreshed, redirecting to index');
         router.replace('/');
       } else {
         console.error('[Sign Up] Unexpected OAuth error:', err);
@@ -131,7 +140,7 @@ export default function SignUpScreen() {
     } finally {
       setIsLoadingOAuth(false);
     }
-  }, [startOAuthFlow, setActive, router, isSignedIn, redirectUrl]);
+  }, [startOAuthFlow, setActive, router, isSignedIn, redirectUrl, getToken]);
 
   if (pendingVerification) {
     return (
