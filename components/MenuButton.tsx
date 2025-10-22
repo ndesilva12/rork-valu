@@ -33,24 +33,33 @@ export default function MenuButton() {
     await resetProfile();
   };
 
-  const handleSignOut = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            setIsMenuVisible(false);
-            await signOut();
-            router.replace('/(auth)/sign-in');
+  const handleSignOut = async () => {
+    try {
+      Alert.alert(
+        'Sign Out',
+        'Are you sure you want to sign out?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Sign Out',
+            style: 'destructive',
+            onPress: async () => {
+              setIsMenuVisible(false);
+              try {
+                await signOut();
+                router.replace('/(auth)/sign-in');
+              } catch (error) {
+                console.error('Sign out error:', error);
+                router.replace('/(auth)/sign-in');
+              }
+            },
           },
-        },
-      ],
-      { cancelable: true }
-    );
+        ],
+        { cancelable: true }
+      );
+    } catch (error) {
+      console.error('Sign out alert error:', error);
+    }
   };
 
   const handleNavigateToSearch = () => {
@@ -210,8 +219,8 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   menuLogo: {
-    width: 480,
-    height: 140,
+    width: 360,
+    height: 105,
   },
   menuContent: {
     maxHeight: 500,

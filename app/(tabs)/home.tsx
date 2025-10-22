@@ -224,7 +224,10 @@ export default function HomeScreen() {
     return (
       <TouchableOpacity 
         key={product.id} 
-        style={[styles.brandCard, { backgroundColor: colors.backgroundSecondary }]}
+        style={[
+          styles.brandCard,
+          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' }
+        ]}
         onPress={() => handleProductPress(product)}
         activeOpacity={0.7}
       >
@@ -763,7 +766,6 @@ const styles = StyleSheet.create({
     height: 64,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.08)',
-    backgroundColor: 'rgba(0, 0, 0, 0.03)',
   },
   brandCardInner: {
     flexDirection: 'row',
