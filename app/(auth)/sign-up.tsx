@@ -215,14 +215,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
     padding: 24,
+    paddingTop: 12,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 48,
-    paddingTop: 20,
+    marginBottom: 24,
   },
   logo: {
     width: '60%',
@@ -230,20 +228,20 @@ const styles = StyleSheet.create({
     maxWidth: 300,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700',
     color: lightColors.text,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: lightColors.textSecondary,
-    marginBottom: 32,
+    marginBottom: 24,
   },
   errorText: {
     color: '#EF4444',
     fontSize: 14,
-    marginBottom: 16,
+    marginBottom: 12,
     textAlign: 'center',
   },
   input: {
@@ -251,16 +249,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E5E5',
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     fontSize: 16,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   button: {
     backgroundColor: lightColors.primary,
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 4,
   },
   buttonText: {
     color: '#fff',
@@ -270,7 +268,7 @@ const styles = StyleSheet.create({
   linkContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 16,
   },
   linkText: {
     color: lightColors.textSecondary,
@@ -286,11 +284,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E5E5',
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   googleIcon: {
     width: 24,
@@ -314,7 +312,7 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   dividerLine: {
     flex: 1,
