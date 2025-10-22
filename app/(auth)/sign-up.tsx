@@ -124,11 +124,36 @@ export default function SignUpScreen() {
       }
       
       if (err?.errors?.[0]?.code === 'client_state_invalid') {
-        console.log('[Sign Up] Invalid client state detected');
-        setError('Session error. Please refresh and try again.');
-        setIsSubmitting(false);
-        setPendingVerification(false);
-        return;
+        console.log('[Sign Up] Invalid client state detected, retrying with fresh signup...');
+        try {
+          const freshResult = await signUp.create({
+            emailAddress,
+            password,
+          });
+          console.log('[Sign Up] Fresh account created successfully');
+          
+          if (freshResult.verifications.emailAddress.status === 'verified') {
+            console.log('[Sign Up] Email already verified, completing sign-up');
+            if (freshResult.status === 'complete') {
+              await setActive({ session: freshResult.createdSessionId });
+              setIsSubmitting(false);
+              router.replace('/onboarding');
+              return;
+            }
+          }
+          
+          await freshResult.prepareEmailAddressVerification({ strategy: 'email_code' });
+          console.log('[Sign Up] Verification email sent after retry');
+          setPendingVerification(true);
+          setIsSubmitting(false);
+          return;
+        } catch (retryErr: any) {
+          console.error('[Sign Up] Retry failed:', JSON.stringify(retryErr, null, 2));
+          const retryErrorMessage = retryErr?.errors?.[0]?.longMessage || retryErr?.errors?.[0]?.message || 'Session error. Please try again.';
+          setError(retryErrorMessage);
+          setIsSubmitting(false);
+          return;
+        }
       }
       
       const errorMessage = err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || err?.message || 'An error occurred during sign up';
@@ -184,8 +209,8 @@ export default function SignUpScreen() {
       console.error('[Sign Up] Verification error:', JSON.stringify(err, null, 2));
       
       if (err?.errors?.[0]?.code === 'client_state_invalid') {
-        console.log('[Sign Up] Invalid client state during verification');
-        setError('Session expired. Please start sign up again.');
+        console.log('[Sign Up] Invalid client state during verification, restarting signup');
+        setError('Session expired. Please sign up again.');
         setPendingVerification(false);
         setEmailAddress('');
         setPassword('');
