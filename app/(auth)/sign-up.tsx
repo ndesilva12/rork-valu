@@ -106,14 +106,18 @@ export default function SignUpScreen() {
             </View>
             <Text style={styles.title}>Verify your email</Text>
             <Text style={styles.subtitle}>Enter the verification code sent to your email</Text>
-            <TextInput
-              value={code}
-              placeholder="Verification code"
-              onChangeText={(code) => setCode(code)}
-              style={styles.input}
-              keyboardType="number-pad"
-              autoCapitalize="none"
-            />
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Verification Code</Text>
+              <TextInput
+                value={code}
+                placeholder="Enter verification code"
+                placeholderTextColor="#9CA3AF"
+                onChangeText={(code) => setCode(code)}
+                style={styles.input}
+                keyboardType="number-pad"
+                autoCapitalize="none"
+              />
+            </View>
             <TouchableOpacity onPress={onVerifyPress} style={styles.button}>
               <Text style={styles.buttonText}>Verify</Text>
             </TouchableOpacity>
@@ -167,28 +171,40 @@ export default function SignUpScreen() {
           </View>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          <TextInput
-            autoCapitalize="none"
-            value={emailAddress}
-            placeholder="Email"
-            onChangeText={(email) => setEmailAddress(email)}
-            style={styles.input}
-            keyboardType="email-address"
-          />
-          <TextInput
-            value={password}
-            placeholder="Password"
-            secureTextEntry={true}
-            onChangeText={(password) => setPassword(password)}
-            style={styles.input}
-          />
-          <TextInput
-            value={confirmPassword}
-            placeholder="Confirm Password"
-            secureTextEntry={true}
-            onChangeText={(confirmPassword) => setConfirmPassword(confirmPassword)}
-            style={styles.input}
-          />
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              autoCapitalize="none"
+              value={emailAddress}
+              placeholder="Enter your email"
+              placeholderTextColor="#9CA3AF"
+              onChangeText={(email) => setEmailAddress(email)}
+              style={styles.input}
+              keyboardType="email-address"
+            />
+          </View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              value={password}
+              placeholder="Enter your password"
+              placeholderTextColor="#9CA3AF"
+              secureTextEntry={true}
+              onChangeText={(password) => setPassword(password)}
+              style={styles.input}
+            />
+          </View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Confirm Password</Text>
+            <TextInput
+              value={confirmPassword}
+              placeholder="Re-enter your password"
+              placeholderTextColor="#9CA3AF"
+              secureTextEntry={true}
+              onChangeText={(confirmPassword) => setConfirmPassword(confirmPassword)}
+              style={styles.input}
+            />
+          </View>
           <TouchableOpacity onPress={onSignUpPress} style={styles.button}>
             <Text style={styles.buttonText}>Continue</Text>
           </TouchableOpacity>
@@ -215,18 +231,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    flexGrow: 1,
     padding: 24,
-    paddingTop: 12,
-    justifyContent: 'center',
+    paddingTop: 20,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: '50%',
+    height: undefined,
+    aspectRatio: 1,
+    maxWidth: 200,
   },
   title: {
     fontSize: 28,
@@ -245,6 +261,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textAlign: 'center',
   },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: lightColors.text,
+    marginBottom: 6,
+  },
   input: {
     backgroundColor: '#fff',
     borderWidth: 1,
@@ -252,7 +277,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    marginBottom: 12,
   },
   button: {
     backgroundColor: lightColors.primary,

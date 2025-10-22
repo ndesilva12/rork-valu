@@ -96,21 +96,29 @@ export default function SignInScreen() {
             <View style={styles.dividerLine} />
           </View>
 
-          <TextInput
-            autoCapitalize="none"
-            value={emailAddress}
-            placeholder="Email"
-            onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
-            style={styles.input}
-            keyboardType="email-address"
-          />
-          <TextInput
-            value={password}
-            placeholder="Password"
-            secureTextEntry={true}
-            onChangeText={(password) => setPassword(password)}
-            style={styles.input}
-          />
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              autoCapitalize="none"
+              value={emailAddress}
+              placeholder="Enter your email"
+              placeholderTextColor="#9CA3AF"
+              onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
+              style={styles.input}
+              keyboardType="email-address"
+            />
+          </View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              value={password}
+              placeholder="Enter your password"
+              placeholderTextColor="#9CA3AF"
+              secureTextEntry={true}
+              onChangeText={(password) => setPassword(password)}
+              style={styles.input}
+            />
+          </View>
           <TouchableOpacity onPress={onSignInPress} style={styles.button}>
             <Text style={styles.buttonText}>Continue</Text>
           </TouchableOpacity>
@@ -137,18 +145,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    flexGrow: 1,
     padding: 24,
-    paddingTop: 12,
-    justifyContent: 'center',
+    paddingTop: 20,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: '50%',
+    height: undefined,
+    aspectRatio: 1,
+    maxWidth: 200,
   },
   title: {
     fontSize: 28,
@@ -161,6 +169,15 @@ const styles = StyleSheet.create({
     color: lightColors.textSecondary,
     marginBottom: 24,
   },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: lightColors.text,
+    marginBottom: 6,
+  },
   input: {
     backgroundColor: '#fff',
     borderWidth: 1,
@@ -168,7 +185,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    marginBottom: 12,
   },
   button: {
     backgroundColor: lightColors.primary,
