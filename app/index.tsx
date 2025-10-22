@@ -37,12 +37,12 @@ export default function Index() {
     return <Redirect href="/(auth)/sign-in" />;
   }
 
-  if (profile.causes.length > 0) {
-    console.log('[Index] User has', profile.causes.length, 'causes, redirecting to home');
+  if (hasCompletedOnboarding) {
+    console.log('[Index] User has completed onboarding, redirecting to home');
     return <Redirect href="/(tabs)/home" />;
   }
 
-  console.log('[Index] User has no causes, redirecting to onboarding');
+  console.log('[Index] User has not completed onboarding, redirecting to onboarding');
   return <Redirect href="/onboarding" />;
 }
 
