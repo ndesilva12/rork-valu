@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { TrendingUp, TrendingDown, ChevronRight, Target, FolderOpen, MapPin, Fuel, Utensils, Coffee, ShoppingCart, Tv, Smartphone, Shield, Car, Laptop, Store, DollarSign, Shirt } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import {
@@ -448,15 +448,26 @@ export default function HomeScreen() {
   }
 
   return (
-    <ScrollView
-      ref={scrollViewRef}
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}
-      {...panResponder.panHandlers}
-    >
-      <View style={[styles.header, { paddingTop: insets.top + 16, paddingBottom: 8 }]}>
-        <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
-      </View>
+    <>
+      <Stack.Screen
+        options={{
+          title: 'Playbook',
+          headerShown: true,
+          headerRight: () => (
+            <Image
+              source={require('@/assets/images/icon.png')}
+              style={{ width: 32, height: 32, marginRight: 8 }}
+              resizeMode="contain"
+            />
+          ),
+        }}
+      />
+      <ScrollView
+        ref={scrollViewRef}
+        style={[styles.container, { backgroundColor: colors.background }]}
+        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}
+        {...panResponder.panHandlers}
+      >
 
       {renderViewModeSelector()}
 
@@ -480,7 +491,8 @@ export default function HomeScreen() {
           <ChevronRight size={24} color={isDarkMode ? colors.white : colors.primary} strokeWidth={2} />
         </TouchableOpacity>
       )}
-    </ScrollView>
+      </ScrollView>
+    </>
   );
 }
 

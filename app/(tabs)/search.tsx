@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { Search as SearchIcon, TrendingUp, TrendingDown, Minus, ScanBarcode, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
@@ -214,10 +214,21 @@ export default function SearchScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={[styles.headerTitle, { color: colors.primary }]}>Search</Text>
-      </View>
+    <>
+      <Stack.Screen
+        options={{
+          title: 'Search',
+          headerShown: true,
+          headerRight: () => (
+            <Image
+              source={require('@/assets/images/icon.png')}
+              style={{ width: 32, height: 32, marginRight: 8 }}
+              resizeMode="contain"
+            />
+          ),
+        }}
+      />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.searchContainer, { backgroundColor: colors.backgroundSecondary, borderBottomColor: colors.primaryLight }]}>
         <View style={[styles.searchInputContainer, { backgroundColor: isDarkMode ? colors.backgroundSecondary : colors.white, borderColor: colors.primaryLight }]}>
           <SearchIcon size={20} color={colors.primaryLight} strokeWidth={2} />
@@ -450,7 +461,8 @@ export default function SearchScreen() {
           ) : null}
         </View>
       </Modal>
-    </View>
+      </View>
+    </>
   );
 }
 

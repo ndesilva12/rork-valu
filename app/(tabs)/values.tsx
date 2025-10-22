@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { Settings, Moon, Sun, RefreshCw, LogOut } from 'lucide-react-native';
 import {
   View,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
@@ -56,10 +57,21 @@ export default function ValuesScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <View style={[styles.header, { paddingTop: insets.top + 16, paddingBottom: 8 }]}>
-        <Text style={[styles.title, { color: colors.primary }]}>Values</Text>
-      </View>
+    <>
+      <Stack.Screen
+        options={{
+          title: 'Values',
+          headerShown: true,
+          headerRight: () => (
+            <Image
+              source={require('@/assets/images/icon.png')}
+              style={{ width: 32, height: 32, marginRight: 8 }}
+              resizeMode="contain"
+            />
+          ),
+        }}
+      />
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
 
       <View style={styles.actionSection}>
         <View style={[styles.settingsCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
@@ -212,7 +224,8 @@ export default function ValuesScreen() {
           public records, donations, and stated positions.
         </Text>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </>
   );
 }
 
