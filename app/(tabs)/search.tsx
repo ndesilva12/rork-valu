@@ -14,7 +14,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { searchProducts } from '@/mocks/products';
@@ -23,7 +23,7 @@ import { lookupBarcode, findBrandInDatabase, getBrandProduct } from '@/mocks/bar
 
 export default function SearchScreen() {
   const router = useRouter();
-  const { profile, addToSearchHistory, isDarkMode, clerkUser } = useUser();
+  const { profile, addToSearchHistory, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
   const [query, setQuery] = useState('');
@@ -218,11 +218,7 @@ export default function SearchScreen() {
       <View style={[styles.stickyHeader, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Search</Text>
-          <Image
-            source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/zsgxybag0kclnh2l8fjd8' }}
-            style={styles.headerLogo}
-            resizeMode="contain"
-          />
+          <MenuButton />
         </View>
         
         <View style={[styles.searchContainer, { backgroundColor: colors.backgroundSecondary, borderBottomColor: colors.primaryLight }]}>
@@ -480,13 +476,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700' as const,
   },
-  headerLogo: {
-    height: 72,
-    width: 270,
-    position: 'absolute' as const,
-    right: 16,
-    top: 50,
-  },
+
   searchContainer: {
     paddingHorizontal: 16,
     paddingTop: 12,

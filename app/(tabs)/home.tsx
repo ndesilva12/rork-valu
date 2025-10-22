@@ -11,6 +11,7 @@ import {
   PanResponder,
   Image,
 } from 'react-native';
+import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { MOCK_PRODUCTS } from '@/mocks/products';
@@ -42,7 +43,7 @@ const FOLDER_CATEGORIES: FolderCategory[] = [
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { profile, isDarkMode, clerkUser } = useUser();
+  const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const [viewMode, setViewMode] = useState<ViewMode>('playbook');
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
@@ -456,11 +457,7 @@ export default function HomeScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
-          <Image
-            source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/zsgxybag0kclnh2l8fjd8' }}
-            style={styles.headerLogo}
-            resizeMode="contain"
-          />
+          <MenuButton />
         </View>
         {renderViewModeSelector()}
       </View>
@@ -527,13 +524,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700' as const,
   },
-  headerLogo: {
-    height: 72,
-    width: 270,
-    position: 'absolute' as const,
-    right: 16,
-    top: 50,
-  },
+
   section: {
     marginBottom: 40,
   },

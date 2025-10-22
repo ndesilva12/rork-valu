@@ -1,26 +1,19 @@
 import { useRouter } from 'expo-router';
-import { Settings, Moon, Sun, RefreshCw, LogOut } from 'lucide-react-native';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Switch,
-  Alert,
-  Image,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
-import { useClerk } from '@clerk/clerk-expo';
 
 export default function ValuesScreen() {
   const router = useRouter();
-  const { profile, resetProfile, isDarkMode, toggleDarkMode, clerkUser } = useUser();
+  const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
-
-  const { signOut } = useClerk();
 
   const supportCauses = profile.causes
     .filter(c => c.type === 'support')
@@ -29,65 +22,14 @@ export default function ValuesScreen() {
     .filter(c => c.type === 'avoid')
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const handleUpdate = () => {
-    router.push('/onboarding');
-  };
 
-  const handleReset = async () => {
-    await resetProfile();
-  };
-
-  const handleSignOut = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            await signOut();
-            router.replace('/sign-in');
-          },
-        },
-      ],
-      { cancelable: true }
-    );
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Text style={[styles.title, { color: colors.primary }]}>Values</Text>
-          <Image
-            source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/zsgxybag0kclnh2l8fjd8' }}
-            style={styles.headerLogo}
-            resizeMode="contain"
-          />
-        </View>
-
-        <View style={styles.actionSection}>
-          <View style={styles.actionButtonsRow}>
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.updateButton, { backgroundColor: 'transparent', borderColor: colors.primary }]} 
-              onPress={handleUpdate} 
-              activeOpacity={0.7}
-            >
-              <Settings size={18} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.actionButtonText, { color: colors.primary }]}>Update My Values</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.resetButton, { backgroundColor: 'transparent', borderColor: colors.primary }]} 
-              onPress={handleReset} 
-              activeOpacity={0.7}
-            >
-              <RefreshCw size={18} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.actionButtonText, { color: colors.primary }]}>Reset All</Text>
-            </TouchableOpacity>
-          </View>
+          <MenuButton />
         </View>
       </View>
 
@@ -131,7 +73,7 @@ export default function ValuesScreen() {
 
       <View style={styles.statsSection}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact</Text>
-        <View style={[styles.statsCard, { backgroundColor: colors.primaryLight + '08', borderColor: colors.primaryLight }]}>
+        <View style={[styles.statsCard, { backgroundColor: 'transparent', borderColor: colors.primaryLight }]}>
           <View style={styles.statItem}>
             <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.primary }]}>{profile.causes.length}</Text>
             <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Active Values</Text>
@@ -144,67 +86,7 @@ export default function ValuesScreen() {
         </View>
       </View>
 
-      <View style={styles.settingsSection}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Account Settings</Text>
-        
-        <View style={[styles.settingsCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-          {clerkUser && (
-            <>
-              <View style={styles.settingItem}>
-                <View style={styles.settingLeft}>
-                  <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
-                    <Text style={[styles.avatarText, { color: colors.white }]}>
-                      {clerkUser.firstName?.charAt(0) || clerkUser.emailAddresses[0].emailAddress.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                  <View>
-                    <Text style={[styles.settingTitle, { color: colors.text }]}>
-                      {clerkUser.firstName ? `${clerkUser.firstName} ${clerkUser.lastName || ''}` : 'User'}
-                    </Text>
-                    <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>
-                      {clerkUser.emailAddresses[0].emailAddress}
-                    </Text>
-                  </View>
-                </View>
-              </View>
 
-              <View style={[styles.settingDivider, { backgroundColor: colors.border }]} />
-            </>
-          )}
-
-          <View style={styles.settingItem}>
-            <View style={styles.settingLeft}>
-              {isDarkMode ? (
-                <Moon size={20} color={colors.primary} strokeWidth={2} />
-              ) : (
-                <Sun size={20} color={colors.primary} strokeWidth={2} />
-              )}
-              <View>
-                <Text style={[styles.settingTitle, { color: colors.text }]}>Dark Mode</Text>
-                <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>Switch to {isDarkMode ? 'light' : 'dark'} theme</Text>
-              </View>
-            </View>
-            <Switch
-              value={isDarkMode}
-              onValueChange={toggleDarkMode}
-              trackColor={{ false: colors.neutralLight, true: colors.primaryLight }}
-              thumbColor={colors.white}
-            />
-          </View>
-
-          <View style={[styles.settingDivider, { backgroundColor: colors.border }]} />
-
-          <TouchableOpacity style={styles.settingItem} onPress={handleSignOut} activeOpacity={0.7}>
-            <View style={styles.settingLeft}>
-              <LogOut size={20} color={colors.danger} strokeWidth={2} />
-              <View>
-                <Text style={[styles.settingTitle, { color: colors.danger }]}>Sign Out</Text>
-                <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>Log out of your account</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </View>
-      </View>
 
       <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
         <Text style={[styles.infoTitle, { color: colors.text }]}>How it works</Text>
@@ -250,13 +132,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700' as const,
   },
-  headerLogo: {
-    height: 72,
-    width: 270,
-    position: 'absolute' as const,
-    right: 16,
-    top: 50,
-  },
+
   section: {
     marginBottom: 32,
   },
@@ -322,78 +198,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
     marginHorizontal: 16,
   },
-  actionSection: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-  },
-  actionButtonsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    gap: 8,
-    borderWidth: 1,
-  },
-  updateButton: {
-  },
-  resetButton: {
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  settingsSection: {
-    marginBottom: 32,
-  },
-  settingsCard: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-  },
-  settingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  settingTitle: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    marginBottom: 2,
-  },
-  settingSubtitle: {
-    fontSize: 13,
-  },
-  settingDivider: {
-    height: 1,
-    marginLeft: 48,
-  },
-  avatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-  },
+
+
   infoSection: {
     backgroundColor: Colors.backgroundSecondary,
     padding: 20,
