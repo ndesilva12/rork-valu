@@ -73,26 +73,22 @@ export default function SignUpScreen() {
   const onGoogleSignUpPress = React.useCallback(async () => {
     setIsLoadingOAuth(true);
     try {
+      console.log('[Sign Up] Starting OAuth flow');
       const { createdSessionId, setActive: oauthSetActive, signIn, signUp } = await startOAuthFlow();
 
       if (createdSessionId) {
         await oauthSetActive!({ session: createdSessionId });
-        console.log('[Sign Up] OAuth success, redirecting to home');
-        router.replace('/');
-      } else if (setActive) {
+        console.log('[Sign Up] OAuth success, session set');
+      } else {
         const session = signIn?.createdSessionId || signUp?.createdSessionId;
-        if (session) {
+        if (session && setActive) {
           await setActive({ session });
-          console.log('[Sign Up] OAuth session activated, redirecting to home');
-          router.replace('/');
+          console.log('[Sign Up] OAuth session activated');
         }
       }
     } catch (err: any) {
       console.error('[Sign Up] OAuth Error:', JSON.stringify(err, null, 2));
-      if (err.clerkError && err.errors?.[0]?.code === 'session_exists') {
-        console.log('[Sign Up] Session already exists, redirecting to home');
-        router.replace('/');
-      } else if (err.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
+      if (err.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
         console.log('[Sign Up] OAuth cancelled by user');
       } else {
         console.error('[Sign Up] Unexpected OAuth error:', err);
@@ -100,7 +96,7 @@ export default function SignUpScreen() {
     } finally {
       setIsLoadingOAuth(false);
     }
-  }, [startOAuthFlow, router]);
+  }, [startOAuthFlow, setActive]);
 
   if (pendingVerification) {
     return (

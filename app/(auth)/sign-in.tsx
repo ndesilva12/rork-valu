@@ -45,38 +45,25 @@ export default function SignInScreen() {
 
       if (createdSessionId) {
         await oauthSetActive!({ session: createdSessionId });
-        console.log('[Sign In] OAuth success with createdSessionId, redirecting to home');
-        setTimeout(() => router.replace('/'), 100);
-      } else if (setActive) {
-        const session = signIn?.createdSessionId || signUp?.createdSessionId;
-        if (session) {
-          await setActive({ session });
-          console.log('[Sign In] OAuth session activated with setActive, redirecting to home');
-          setTimeout(() => router.replace('/'), 100);
-        } else {
-          console.log('[Sign In] No session ID found, redirecting to home anyway');
-          setTimeout(() => router.replace('/'), 100);
-        }
+        console.log('[Sign In] OAuth success, session set');
       } else {
-        console.log('[Sign In] No setActive or createdSessionId, redirecting to home');
-        setTimeout(() => router.replace('/'), 100);
+        const session = signIn?.createdSessionId || signUp?.createdSessionId;
+        if (session && setActive) {
+          await setActive({ session });
+          console.log('[Sign In] OAuth session activated');
+        }
       }
     } catch (err: any) {
       console.error('[Sign In] OAuth Error:', JSON.stringify(err, null, 2));
-      if (err.clerkError && err.errors?.[0]?.code === 'session_exists') {
-        console.log('[Sign In] Session already exists, redirecting to home');
-        setTimeout(() => router.replace('/'), 100);
-      } else if (err.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
+      if (err.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
         console.log('[Sign In] OAuth cancelled by user');
-        setIsLoadingOAuth(false);
-        return;
       } else {
         console.error('[Sign In] Unexpected OAuth error:', err);
       }
     } finally {
-      setTimeout(() => setIsLoadingOAuth(false), 150);
+      setIsLoadingOAuth(false);
     }
-  }, [startOAuthFlow, router]);
+  }, [startOAuthFlow, setActive]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
