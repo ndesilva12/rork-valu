@@ -12,6 +12,7 @@ import {
   Modal,
   Platform,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
@@ -221,6 +222,10 @@ export default function SearchScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
+      />
       <View style={[styles.stickyHeader, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Search</Text>
@@ -481,12 +486,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 50,
-    paddingBottom: 4,
+    paddingTop: Platform.OS === 'web' ? 16 : 56,
+    paddingBottom: 12,
   },
   headerTitle: {
     fontSize: 32,
     fontWeight: '700' as const,
+    flex: 1,
   },
 
   searchContainer: {

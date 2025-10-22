@@ -194,9 +194,6 @@ const styles = StyleSheet.create({
     padding: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'absolute' as const,
-    right: 16,
-    top: 50,
   },
   modalOverlay: {
     flex: 1,
