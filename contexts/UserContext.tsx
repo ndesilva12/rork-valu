@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { Cause, UserProfile } from '@/types';
 
-const USER_PROFILE_KEY = '@user_profile';
+const getUserProfileKey = (userId: string) => `@user_profile_${userId}`;
 const DARK_MODE_KEY = '@dark_mode';
 
 export const [UserProvider, useUser] = createContextHook(() => {
@@ -21,14 +21,29 @@ export const [UserProvider, useUser] = createContextHook(() => {
     let mounted = true;
 
     const init = async () => {
-      if (!mounted) return;
+      if (!isClerkLoaded || !mounted) return;
       
+      if (!clerkUser) {
+        if (mounted) {
+          setProfile({ causes: [], searchHistory: [] });
+          setHasCompletedOnboarding(false);
+          setIsLoading(false);
+        }
+        return;
+      }
+
       try {
-        const stored = await AsyncStorage.getItem(USER_PROFILE_KEY);
+        const userId = clerkUser.id;
+        const userProfileKey = getUserProfileKey(userId);
+        
+        const stored = await AsyncStorage.getItem(userProfileKey);
         if (stored && mounted) {
           const parsed = JSON.parse(stored);
           setProfile(parsed);
           setHasCompletedOnboarding(parsed.causes.length > 0);
+        } else if (mounted) {
+          setProfile({ causes: [], searchHistory: [] });
+          setHasCompletedOnboarding(false);
         }
 
         const darkModeStored = await AsyncStorage.getItem(DARK_MODE_KEY);
@@ -52,34 +67,49 @@ export const [UserProvider, useUser] = createContextHook(() => {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [isClerkLoaded, clerkUser]);
 
   const addCauses = useCallback((causes: Cause[]) => {
+    if (!clerkUser) {
+      console.error('Cannot save causes: User not logged in');
+      return;
+    }
     const newProfile = { ...profile, causes };
     setProfile(newProfile);
     setHasCompletedOnboarding(newProfile.causes.length > 0);
-    AsyncStorage.setItem(USER_PROFILE_KEY, JSON.stringify(newProfile))
+    const userProfileKey = getUserProfileKey(clerkUser.id);
+    AsyncStorage.setItem(userProfileKey, JSON.stringify(newProfile))
       .catch(error => console.error('Failed to save profile:', error));
-  }, [profile]);
+  }, [profile, clerkUser]);
 
   const addToSearchHistory = useCallback((query: string) => {
+    if (!clerkUser) {
+      console.error('Cannot save search history: User not logged in');
+      return;
+    }
     const newHistory = [query, ...profile.searchHistory.filter(q => q !== query)].slice(0, 10);
     const newProfile = { ...profile, searchHistory: newHistory };
     setProfile(newProfile);
     setHasCompletedOnboarding(newProfile.causes.length > 0);
-    AsyncStorage.setItem(USER_PROFILE_KEY, JSON.stringify(newProfile))
+    const userProfileKey = getUserProfileKey(clerkUser.id);
+    AsyncStorage.setItem(userProfileKey, JSON.stringify(newProfile))
       .catch(error => console.error('Failed to save profile:', error));
-  }, [profile]);
+  }, [profile, clerkUser]);
 
   const resetProfile = useCallback(async () => {
+    if (!clerkUser) {
+      console.error('Cannot reset profile: User not logged in');
+      return;
+    }
     try {
-      await AsyncStorage.removeItem(USER_PROFILE_KEY);
+      const userProfileKey = getUserProfileKey(clerkUser.id);
+      await AsyncStorage.removeItem(userProfileKey);
       setProfile({ causes: [], searchHistory: [] });
       setHasCompletedOnboarding(false);
     } catch (error) {
       console.error('Failed to reset profile:', error);
     }
-  }, []);
+  }, [clerkUser]);
 
   const toggleDarkMode = useCallback(async () => {
     try {
