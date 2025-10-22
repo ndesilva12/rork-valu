@@ -10,6 +10,8 @@ import * as Linking from 'expo-linking';
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
+  const [isOAuthPopup, setIsOAuthPopup] = React.useState(false);
+
   React.useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -17,9 +19,12 @@ export default function SignInScreen() {
       
       if (isOAuthCallback && window.opener) {
         console.log('[Sign In] OAuth callback detected in popup, notifying parent');
+        setIsOAuthPopup(true);
         try {
           window.opener.postMessage({ type: 'clerk-oauth-callback' }, window.location.origin);
-          window.close();
+          setTimeout(() => {
+            window.close();
+          }, 100);
         } catch (error) {
           console.error('[Sign In] Error closing popup:', error);
         }
@@ -139,6 +144,15 @@ export default function SignInScreen() {
       setIsLoadingOAuth(false);
     }
   }, [startOAuthFlow, setActive, router, isSignedIn, redirectUrl, getToken]);
+
+  if (isOAuthPopup) {
+    return (
+      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={darkColors.primary} />
+        <Text style={{ color: darkColors.text, marginTop: 16 }}>Completing sign in...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
