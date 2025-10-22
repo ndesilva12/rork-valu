@@ -79,8 +79,12 @@ export default function SignUpScreen() {
         await oauthSetActive!({ session: createdSessionId });
         router.replace('/');
       }
-    } catch (err) {
-      console.error(JSON.stringify(err, null, 2));
+    } catch (err: any) {
+      if (err.clerkError && err.errors?.[0]?.code === 'session_exists') {
+        router.replace('/');
+      } else {
+        console.error(JSON.stringify(err, null, 2));
+      }
     } finally {
       setIsLoadingOAuth(false);
     }
