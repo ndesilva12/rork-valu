@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
-import { useSignUp, useOAuth } from '@clerk/clerk-expo';
+import { useSignUp, useOAuth, useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { darkColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ WebBrowser.maybeCompleteAuthSession();
 export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp();
   const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' });
+  const { isSignedIn } = useAuth();
   const router = useRouter();
   const { hasCompletedOnboarding } = useUser();
 
@@ -76,6 +77,17 @@ export default function SignUpScreen() {
   };
 
   const onGoogleSignUpPress = React.useCallback(async () => {
+    if (isSignedIn) {
+      console.log('[Sign Up] Already signed in, navigating directly');
+      await new Promise(resolve => setTimeout(resolve, 300));
+      if (hasCompletedOnboarding) {
+        router.replace('/(tabs)/home');
+      } else {
+        router.replace('/onboarding');
+      }
+      return;
+    }
+
     setIsLoadingOAuth(true);
     try {
       console.log('[Sign Up] Starting OAuth flow');
@@ -114,7 +126,7 @@ export default function SignUpScreen() {
       } else if (err.errors && err.errors[0]?.code === 'session_exists') {
         console.log('[Sign Up] Session already exists, navigating');
         
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         if (hasCompletedOnboarding) {
           router.replace('/(tabs)/home');
@@ -127,7 +139,7 @@ export default function SignUpScreen() {
     } finally {
       setIsLoadingOAuth(false);
     }
-  }, [startOAuthFlow, setActive, router, hasCompletedOnboarding]);
+  }, [startOAuthFlow, setActive, router, hasCompletedOnboarding, isSignedIn]);
 
   if (pendingVerification) {
     return (

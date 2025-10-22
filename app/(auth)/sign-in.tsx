@@ -1,4 +1,4 @@
-import { useSignIn, useOAuth } from '@clerk/clerk-expo';
+import { useSignIn, useOAuth, useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Image } from 'react-native';
 import React from 'react';
@@ -12,6 +12,7 @@ WebBrowser.maybeCompleteAuthSession();
 export default function SignInScreen() {
   const { signIn, setActive, isLoaded } = useSignIn();
   const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' });
+  const { isSignedIn } = useAuth();
   const router = useRouter();
   const { hasCompletedOnboarding, isLoading: userLoading } = useUser();
 
@@ -47,6 +48,17 @@ export default function SignInScreen() {
   };
 
   const onGoogleSignInPress = React.useCallback(async () => {
+    if (isSignedIn) {
+      console.log('[Sign In] Already signed in, navigating directly');
+      await new Promise(resolve => setTimeout(resolve, 300));
+      if (hasCompletedOnboarding) {
+        router.replace('/(tabs)/home');
+      } else {
+        router.replace('/onboarding');
+      }
+      return;
+    }
+
     setIsLoadingOAuth(true);
     try {
       console.log('[Sign In] Starting OAuth flow');
@@ -87,7 +99,7 @@ export default function SignInScreen() {
       } else if (err.errors && err.errors[0]?.code === 'session_exists') {
         console.log('[Sign In] Session already exists, navigating');
         
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         if (hasCompletedOnboarding) {
           router.replace('/(tabs)/home');
@@ -100,7 +112,7 @@ export default function SignInScreen() {
     } finally {
       setIsLoadingOAuth(false);
     }
-  }, [startOAuthFlow, setActive, router, hasCompletedOnboarding]);
+  }, [startOAuthFlow, setActive, router, hasCompletedOnboarding, isSignedIn]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
