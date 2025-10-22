@@ -156,6 +156,14 @@ export default function SignUpScreen() {
         }
       }
       
+      if (err?.errors?.[0]?.code === 'form_password_pwned') {
+        const pwnedMessage = 'This password has been found in a data breach. Please use a different, more secure password.';
+        console.error('[Sign Up] Password pwned error:', pwnedMessage);
+        setError(pwnedMessage);
+        setIsSubmitting(false);
+        return;
+      }
+      
       const errorMessage = err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || err?.message || 'An error occurred during sign up';
       console.error('[Sign Up] Setting error message:', errorMessage);
       setError(errorMessage);
@@ -386,8 +394,16 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#EF4444',
     fontSize: 14,
-    marginBottom: 12,
-    textAlign: 'center',
+    marginBottom: 16,
+    marginTop: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    textAlign: 'left',
+    lineHeight: 20,
   },
   inputContainer: {
     marginBottom: 16,
