@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 0,
     marginBottom: 24,
-    marginTop: 24,
+    marginTop: 40,
   },
   headerTitle: {
     fontSize: 32,

@@ -210,11 +210,9 @@ export default function SignUpScreen() {
           </TouchableOpacity>
           <View style={styles.linkContainer}>
             <Text style={styles.linkText}>Already have an account? </Text>
-            <Link href="/sign-in" asChild>
-              <TouchableOpacity>
-                <Text style={styles.link}>Sign in</Text>
-              </TouchableOpacity>
-            </Link>
+            <TouchableOpacity onPress={() => router.push('/sign-in')}>
+              <Text style={styles.link}>Sign in</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -232,7 +230,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 24,
-    paddingTop: 20,
+    paddingTop: 12,
   },
   logoContainer: {
     alignItems: 'center',

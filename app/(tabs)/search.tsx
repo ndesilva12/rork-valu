@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    marginTop: 24,
+    marginTop: 40,
     marginBottom: 8,
   },
   headerTitle: {
