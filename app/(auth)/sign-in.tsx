@@ -56,14 +56,14 @@ export default function SignInScreen() {
       if (createdSessionId) {
         await oauthSetActive!({ session: createdSessionId });
         console.log('[Sign In] OAuth success, session set, redirecting to index');
-        
+        await new Promise(resolve => setTimeout(resolve, 100));
         router.replace('/');
       } else {
         const session = signIn?.createdSessionId || signUp?.createdSessionId;
         if (session && setActive) {
           await setActive({ session });
           console.log('[Sign In] OAuth session activated, redirecting to index');
-          
+          await new Promise(resolve => setTimeout(resolve, 100));
           router.replace('/');
         }
       }
@@ -72,7 +72,8 @@ export default function SignInScreen() {
       if (err.code === 'ERR_OAUTHCALLBACK_CANCELLED') {
         console.log('[Sign In] OAuth cancelled by user');
       } else if (err.errors && err.errors[0]?.code === 'session_exists') {
-        console.log('[Sign In] Session already exists, navigating to index');
+        console.log('[Sign In] Session already exists, waiting for auth state update');
+        await new Promise(resolve => setTimeout(resolve, 300));
         router.replace('/');
       } else {
         console.error('[Sign In] Unexpected OAuth error:', err);
