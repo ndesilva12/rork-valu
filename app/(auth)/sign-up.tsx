@@ -1,12 +1,11 @@
 import * as React from 'react';
 import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
-import { useSignUp, useAuth, useClerk } from '@clerk/clerk-expo';
+import { useSignUp, useClerk } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { darkColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp();
-  const { isSignedIn, isLoaded: authLoaded } = useAuth();
   const { signOut } = useClerk();
   const router = useRouter();
 
@@ -18,12 +17,7 @@ export default function SignUpScreen() {
   const [error, setError] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  React.useEffect(() => {
-    if (authLoaded && isSignedIn && !pendingVerification) {
-      console.log('[Sign Up] Already signed in, redirecting to home');
-      router.replace('/');
-    }
-  }, [authLoaded, isSignedIn, router, pendingVerification]);
+
 
   const resetForm = React.useCallback(() => {
     setEmailAddress('');
@@ -35,18 +29,7 @@ export default function SignUpScreen() {
     setIsSubmitting(false);
   }, []);
 
-  React.useEffect(() => {
-    if (isLoaded && signUp) {
-      console.log('[Sign Up] Component mounted, checking sign-up state');
-      console.log('[Sign Up] Current status:', signUp.status);
-      
-      if (signUp.status === 'complete' && !pendingVerification) {
-        console.log('[Sign Up] Sign-up already complete, redirecting');
-        router.replace('/');
-      }
-      setError('');
-    }
-  }, [isLoaded, signUp, router, pendingVerification]);
+
 
   const onSignUpPress = async () => {
     console.log('[Sign Up] Button pressed, isLoaded:', isLoaded, 'isSubmitting:', isSubmitting);
@@ -104,9 +87,13 @@ export default function SignUpScreen() {
       
       if (result.verifications.emailAddress.status === 'verified') {
         console.log('[Sign Up] Email already verified, completing sign-up');
-        if (result.status === 'complete') {
+        if (result.status === 'complete' && result.createdSessionId) {
+          console.log('[Sign Up] Setting active session:', result.createdSessionId);
           await setActive({ session: result.createdSessionId });
+          console.log('[Sign Up] Session activated, waiting before redirect');
+          await new Promise(resolve => setTimeout(resolve, 500));
           setIsSubmitting(false);
+          console.log('[Sign Up] Redirecting to onboarding');
           router.replace('/onboarding');
           return;
         }
@@ -122,9 +109,9 @@ export default function SignUpScreen() {
       console.error('[Sign Up] Error:', JSON.stringify(err, null, 2));
       
       if (err?.errors?.[0]?.code === 'session_exists') {
-        console.log('[Sign Up] Session exists, redirecting to home');
+        console.log('[Sign Up] Session exists, redirecting');
         setIsSubmitting(false);
-        router.replace('/');
+        router.replace('/onboarding');
         return;
       }
       
@@ -245,10 +232,11 @@ export default function SignUpScreen() {
       console.log('[Sign Up] Verification attempt result:', result.status);
       console.log('[Sign Up] Created session ID:', result.createdSessionId);
 
-      if (result.status === 'complete') {
-        console.log('[Sign Up] Verification complete, setting active session...');
+      if (result.status === 'complete' && result.createdSessionId) {
+        console.log('[Sign Up] Verification complete, setting active session:', result.createdSessionId);
         await setActive({ session: result.createdSessionId });
-        console.log('[Sign Up] Session set successfully');
+        console.log('[Sign Up] Session set successfully, waiting before redirect');
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         setIsSubmitting(false);
         
