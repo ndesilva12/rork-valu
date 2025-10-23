@@ -42,7 +42,10 @@ export default function ValuesScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.content, { paddingBottom: isStandalone ? 0 : 16 }]}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent, { paddingBottom: isStandalone ? 0 : 16 }]}
+        />
 
       <View style={styles.statsSection}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact</Text>
