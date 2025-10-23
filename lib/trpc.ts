@@ -9,13 +9,17 @@ export const trpc = createTRPCReact<AppRouter>();
 
 const getBaseUrl = () => {
   if (typeof window !== 'undefined') {
-    return window.location.origin;
+    const origin = window.location.origin;
+    console.log('[tRPC] Using window origin:', origin);
+    return origin;
   }
 
   if (process.env.EXPO_PUBLIC_RORK_API_BASE_URL) {
+    console.log('[tRPC] Using EXPO_PUBLIC_RORK_API_BASE_URL:', process.env.EXPO_PUBLIC_RORK_API_BASE_URL);
     return process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
   }
 
+  console.log('[tRPC] Using fallback localhost:8081');
   return 'http://localhost:8081';
 };
 
@@ -44,7 +48,8 @@ export const trpcClient = trpc.createClient({
       },
       fetch: async (url, options) => {
         try {
-          console.log('[tRPC] Fetching:', url);
+          console.log('[tRPC] Request URL:', url);
+          console.log('[tRPC] Base URL:', getBaseUrl());
           const response = await fetch(url, options);
           
           if (!response.ok) {
