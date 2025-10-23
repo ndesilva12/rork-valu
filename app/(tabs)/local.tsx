@@ -385,7 +385,7 @@ export default function LocalScreen() {
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
-        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]} { paddingBottom: isStandalone ? 0 : 16 }
+        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent, { paddingBottom: isStandalone ? 0 : 16 }]}
         {...panResponder.panHandlers}
       >
         {viewMode === 'playbook' && renderPlaybookView()}
