@@ -21,11 +21,13 @@ import { useUser } from '@/contexts/UserContext';
 import { searchProducts } from '@/mocks/products';
 import { Product } from '@/types';
 import { lookupBarcode, findBrandInDatabase, getBrandProduct } from '@/mocks/barcode-products';
+import { useIsStandalone } from '@/hooks/useIsStandalone';
 
 export default function SearchScreen() {
   const router = useRouter();
   const { profile, addToSearchHistory, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+  const isStandalone = useIsStandalone();
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Product[]>([]);
@@ -224,7 +226,8 @@ export default function SearchScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={colors.background}
+        backgroundColor={isStandalone ? colors.background : 'transparent'}
+        translucent={isStandalone}
       />
       <View style={[styles.stickyHeader, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={styles.header}>
