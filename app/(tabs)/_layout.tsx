@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { BookOpen, Heart, Search } from "lucide-react-native";
+import { BookOpen, Heart, Search, ShoppingBag } from "lucide-react-native";
 import React from "react";
 import { Platform, useWindowDimensions } from "react-native";
 import { lightColors, darkColors } from "@/constants/colors";
@@ -50,6 +50,13 @@ export default function TabLayout() {
         options={{
           title: "Search",
           tabBarIcon: ({ color }) => <Search size={24} color={color} strokeWidth={2} />,
+        }}
+      />
+      <Tabs.Screen
+        name="shop"
+        options={{
+          title: "Shop",
+          tabBarIcon: ({ color }) => <ShoppingBag size={24} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen

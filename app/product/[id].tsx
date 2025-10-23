@@ -89,9 +89,15 @@ export default function ProductDetailScreen() {
     const valuesWhereNotAppears = totalUserValues - matchingValues.size;
     const totalPositionSum = positionSum.reduce((a, b) => a + b, 0) + (valuesWhereNotAppears * 11);
     const avgPosition = totalUserValues > 0 ? totalPositionSum / totalUserValues : 11;
-    const alignmentStrength = Math.round((1 - ((avgPosition - 1) / 10)) * 50 + 50);
-
+    
     const isAligned = totalSupportScore > totalAvoidScore && totalSupportScore > 0;
+    
+    let alignmentStrength: number;
+    if (isAligned) {
+      alignmentStrength = Math.round((1 - ((avgPosition - 1) / 10)) * 50 + 50);
+    } else {
+      alignmentStrength = Math.round(((avgPosition - 1) / 10) * 50);
+    }
     
     return {
       isAligned,
