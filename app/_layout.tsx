@@ -10,7 +10,6 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
