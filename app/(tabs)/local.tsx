@@ -11,6 +11,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { SafeAreaView } from 'expo-safe-area-context';
 import MenuButton from '@/components/MenuButton';
 import { useUser } from '@/contexts/UserContext';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
@@ -334,7 +335,7 @@ export default function LocalScreen() {
 
   if (profile.causes.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar
           barStyle={isDarkMode ? 'light-content' : 'dark-content'}
           backgroundColor={colors.background}
@@ -359,12 +360,12 @@ export default function LocalScreen() {
             <Text style={[styles.emptyButtonText, { color: colors.white }]}>Get Started</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
@@ -386,7 +387,7 @@ export default function LocalScreen() {
         {viewMode === 'browse' && renderBrowseView()}
         {viewMode === 'map' && renderMapView()}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
