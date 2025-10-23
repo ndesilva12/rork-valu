@@ -8,7 +8,8 @@ import { UserProvider } from "@/contexts/UserContext";
 import { trpc, trpcClient } from "@/lib/trpc";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
-import { SafeAreaProvider } from 'expo-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 
 SplashScreen.preventAutoHideAsync();
 
