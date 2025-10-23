@@ -41,6 +41,21 @@ export default function ValuesScreen() {
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
 
+      <View style={styles.statsSection}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact</Text>
+        <View style={[styles.statsCard, { backgroundColor: 'transparent', borderColor: colors.primaryLight }]}>
+          <View style={styles.statItem}>
+            <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.primary }]}>{profile.causes.length}</Text>
+            <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Active Values</Text>
+          </View>
+          <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.primary }]}>{profile.searchHistory.length}</Text>
+            <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Products Checked</Text>
+          </View>
+        </View>
+      </View>
+
       {supportCauses.length > 0 && (
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Supporting</Text>
@@ -76,21 +91,6 @@ export default function ValuesScreen() {
           </View>
         </View>
       )}
-
-      <View style={styles.statsSection}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact</Text>
-        <View style={[styles.statsCard, { backgroundColor: 'transparent', borderColor: colors.primaryLight }]}>
-          <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.primary }]}>{profile.causes.length}</Text>
-            <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Active Values</Text>
-          </View>
-          <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.primary }]}>{profile.searchHistory.length}</Text>
-            <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Products Checked</Text>
-          </View>
-        </View>
-      </View>
 
 
 
@@ -175,12 +175,12 @@ const styles = StyleSheet.create({
     color: Colors.danger,
   },
   statsSection: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   statsCard: {
     backgroundColor: Colors.primaryLight + '08',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 12,
+    padding: 16,
     flexDirection: 'row',
     borderWidth: 2,
     borderColor: Colors.primaryLight,
@@ -190,13 +190,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 36,
+    fontSize: 28,
     fontWeight: '700' as const,
     color: Colors.primary,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: Colors.textSecondary,
     textAlign: 'center',
   },

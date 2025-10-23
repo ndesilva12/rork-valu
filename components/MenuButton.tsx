@@ -77,7 +77,7 @@ export default function MenuButton() {
 
   const handleNavigateToSearch = () => {
     setIsMenuVisible(false);
-    router.push('/(tabs)/search');
+    router.push('/search');
   };
 
   return (
@@ -137,6 +137,17 @@ export default function MenuButton() {
 
               <TouchableOpacity
                 style={[styles.menuItem, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
+                onPress={handleNavigateToSearch}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemLeft}>
+                  <SearchIcon size={20} color={colors.primary} strokeWidth={2} />
+                  <Text style={[styles.menuItemTitle, { color: colors.text }]}>Search</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
                 onPress={handleUpdate}
                 activeOpacity={0.7}
               >
@@ -173,17 +184,6 @@ export default function MenuButton() {
                   thumbColor={colors.white}
                 />
               </View>
-
-              <TouchableOpacity
-                style={[styles.menuItem, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
-                onPress={handleNavigateToSearch}
-                activeOpacity={0.7}
-              >
-                <View style={styles.menuItemLeft}>
-                  <SearchIcon size={20} color={colors.primary} strokeWidth={2} />
-                  <Text style={[styles.menuItemTitle, { color: colors.text }]}>Search</Text>
-                </View>
-              </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.menuItem}
