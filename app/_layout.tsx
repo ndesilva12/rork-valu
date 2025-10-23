@@ -8,6 +8,7 @@ import { UserProvider } from "@/contexts/UserContext";
 import { trpc, trpcClient } from "@/lib/trpc";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
+import { SafeAreaProvider } from 'expo-safe-area-context';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -89,18 +90,20 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <ClerkProvider publishableKey={publishableKey!} tokenCache={tokenCache}>
-      <ClerkLoaded>
-        <trpc.Provider client={trpcClient} queryClient={queryClient}>
-          <QueryClientProvider client={queryClient}>
-            <UserProvider>
-              <GestureHandlerRootView>
-                <RootLayoutNav />
-              </GestureHandlerRootView>
-            </UserProvider>
-          </QueryClientProvider>
-        </trpc.Provider>
-      </ClerkLoaded>
-    </ClerkProvider>
+    <SafeAreaProvider>
+      <ClerkProvider publishableKey={publishableKey!} tokenCache={tokenCache}>
+        <ClerkLoaded>
+          <trpc.Provider client={trpcClient} queryClient={queryClient}>
+            <QueryClientProvider client={queryClient}>
+              <UserProvider>
+                <GestureHandlerRootView>
+                  <RootLayoutNav />
+                </GestureHandlerRootView>
+              </UserProvider>
+            </QueryClientProvider>
+          </trpc.Provider>
+        </ClerkLoaded>
+      </ClerkProvider>
+    </SafeAreaProvider>
   );
 }
