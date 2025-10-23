@@ -46,17 +46,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="search"
-        options={{
-          title: "Search",
-          tabBarIcon: ({ color }) => <Search size={24} color={color} strokeWidth={2} />,
-        }}
-      />
-      <Tabs.Screen
         name="shop"
         options={{
           title: "Shop",
           tabBarIcon: ({ color }) => <ShoppingBag size={24} color={color} strokeWidth={2} />,
+        }}
+      />
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: "Search",
+          tabBarIcon: ({ color }) => <Search size={24} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen

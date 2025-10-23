@@ -239,7 +239,7 @@ export default function ProductDetailScreen() {
     setReviews(prev => [newReview, ...prev]);
     setReviewText('');
     setUserRating(0);
-  }, [reviewText, userRating]);
+  }, [reviewText, userRating, clerkUser]);
 
   const handleSocialPress = async (platform: 'x' | 'instagram' | 'facebook') => {
     try {
@@ -388,6 +388,73 @@ export default function ProductDetailScreen() {
           </View>
 
           <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Money Flow</Text>
+            
+            <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
+              <View style={[styles.companyHeader, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.companyName, { color: colors.text }]}>{product.moneyFlow.company}</Text>
+              </View>
+              
+              <View style={styles.shareholdersContainer}>
+                <Text style={[styles.shareholdersTitle, { color: colors.textSecondary }]}>Top Stakeholders</Text>
+                {[
+                  { name: 'Vanguard Group', percentage: 8.2, alignment: 'aligned' as const },
+                  { name: 'BlackRock', percentage: 7.5, alignment: 'neutral' as const },
+                  { name: 'State Street Corporation', percentage: 4.8, alignment: 'aligned' as const },
+                  { name: 'Fidelity Investments', percentage: 3.9, alignment: 'neutral' as const },
+                  { name: 'Capital Research', percentage: 2.6, alignment: 'opposed' as const },
+                ].map((stakeholder, index) => {
+                  const shColor =
+                    stakeholder.alignment === 'aligned'
+                      ? colors.success
+                      : stakeholder.alignment === 'opposed'
+                      ? colors.danger
+                      : colors.neutral;
+
+                  return (
+                    <View key={`stakeholder-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
+                      <View style={styles.shareholderInfo}>
+                        <Text style={[styles.shareholderName, { color: colors.text }]}>{stakeholder.name}</Text>
+                        <Text style={[styles.shareholderPercentage, { color: colors.textSecondary }]}>
+                          {stakeholder.percentage}% stake
+                        </Text>
+                      </View>
+                      <View style={[styles.alignmentDot, { backgroundColor: shColor }]} />
+                    </View>
+                  );
+                })}
+              </View>
+
+              <View style={[styles.shareholdersContainer, { marginTop: 24 }]}>
+                <Text style={[styles.shareholdersTitle, { color: colors.textSecondary }]}>Endorsements</Text>
+                {[
+                  { name: 'Sierra Club', type: 'Environmental Organization', alignment: 'aligned' as const },
+                  { name: 'Fair Trade USA', type: 'Certification Body', alignment: 'aligned' as const },
+                  { name: 'B Corporation', type: 'Business Certification', alignment: 'aligned' as const },
+                  { name: 'Green America', type: 'Environmental Nonprofit', alignment: 'aligned' as const },
+                  { name: 'EcoWatch', type: 'Media & Watchdog', alignment: 'neutral' as const },
+                ].map((endorsement, index) => {
+                  const shColor = endorsement.alignment === 'aligned'
+                      ? colors.success
+                      : colors.neutral;
+
+                  return (
+                    <View key={`endorsement-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
+                      <View style={styles.shareholderInfo}>
+                        <Text style={[styles.shareholderName, { color: colors.text }]}>{endorsement.name}</Text>
+                        <Text style={[styles.shareholderPercentage, { color: colors.textSecondary }]}>
+                          {endorsement.type}
+                        </Text>
+                      </View>
+                      <View style={[styles.alignmentDot, { backgroundColor: shColor }]} />
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.section}>
             <View style={styles.reviewsHeader}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Reviews</Text>
               <View style={styles.sortButtons}>
@@ -496,73 +563,6 @@ export default function ProductDetailScreen() {
                 </TouchableOpacity>
               </View>
             ))}
-          </View>
-
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Money Flow</Text>
-            
-            <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
-              <View style={[styles.companyHeader, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.companyName, { color: colors.text }]}>{product.moneyFlow.company}</Text>
-              </View>
-              
-              <View style={styles.shareholdersContainer}>
-                <Text style={[styles.shareholdersTitle, { color: colors.textSecondary }]}>Top Stakeholders</Text>
-                {[
-                  { name: 'Vanguard Group', percentage: 8.2, alignment: 'aligned' as const },
-                  { name: 'BlackRock', percentage: 7.5, alignment: 'neutral' as const },
-                  { name: 'State Street Corporation', percentage: 4.8, alignment: 'aligned' as const },
-                  { name: 'Fidelity Investments', percentage: 3.9, alignment: 'neutral' as const },
-                  { name: 'Capital Research', percentage: 2.6, alignment: 'opposed' as const },
-                ].map((stakeholder, index) => {
-                  const shColor =
-                    stakeholder.alignment === 'aligned'
-                      ? colors.success
-                      : stakeholder.alignment === 'opposed'
-                      ? colors.danger
-                      : colors.neutral;
-
-                  return (
-                    <View key={`stakeholder-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
-                      <View style={styles.shareholderInfo}>
-                        <Text style={[styles.shareholderName, { color: colors.text }]}>{stakeholder.name}</Text>
-                        <Text style={[styles.shareholderPercentage, { color: colors.textSecondary }]}>
-                          {stakeholder.percentage}% stake
-                        </Text>
-                      </View>
-                      <View style={[styles.alignmentDot, { backgroundColor: shColor }]} />
-                    </View>
-                  );
-                })}
-              </View>
-
-              <View style={[styles.shareholdersContainer, { marginTop: 24 }]}>
-                <Text style={[styles.shareholdersTitle, { color: colors.textSecondary }]}>Endorsements</Text>
-                {[
-                  { name: 'Sierra Club', type: 'Environmental Organization', alignment: 'aligned' as const },
-                  { name: 'Fair Trade USA', type: 'Certification Body', alignment: 'aligned' as const },
-                  { name: 'B Corporation', type: 'Business Certification', alignment: 'aligned' as const },
-                  { name: 'Green America', type: 'Environmental Nonprofit', alignment: 'aligned' as const },
-                  { name: 'EcoWatch', type: 'Media & Watchdog', alignment: 'neutral' as const },
-                ].map((endorsement, index) => {
-                  const shColor = endorsement.alignment === 'aligned'
-                      ? colors.success
-                      : colors.neutral;
-
-                  return (
-                    <View key={`endorsement-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
-                      <View style={styles.shareholderInfo}>
-                        <Text style={[styles.shareholderName, { color: colors.text }]}>{endorsement.name}</Text>
-                        <Text style={[styles.shareholderPercentage, { color: colors.textSecondary }]}>
-                          {endorsement.type}
-                        </Text>
-                      </View>
-                      <View style={[styles.alignmentDot, { backgroundColor: shColor }]} />
-                    </View>
-                  );
-                })}
-              </View>
-            </View>
           </View>
         </View>
       </ScrollView>

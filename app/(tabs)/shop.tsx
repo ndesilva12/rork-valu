@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Heart, MessageCircle, SquareArrowOutUpRight, ExternalLink } from 'lucide-react-native';
+import { Heart, MessageCircle, Share2, ExternalLink } from 'lucide-react-native';
 import { useState, useMemo, useCallback } from 'react';
 import {
   View,
@@ -172,12 +172,25 @@ export default function ShopScreen() {
     
     try {
       if (Platform.OS === 'web') {
+        const textToCopy = `${message}\n${url}`;
+        
+        const textArea = document.createElement('textarea');
+        textArea.value = textToCopy;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
         try {
-          await navigator.clipboard.writeText(`${message}\n${url}`);
+          document.execCommand('copy');
           Alert.alert('Copied!', 'Link copied to clipboard');
-        } catch (clipboardError) {
-          console.error('Clipboard error:', clipboardError);
+        } catch (execError) {
+          console.error('Copy fallback error:', execError);
           Alert.alert('Error', 'Unable to copy to clipboard');
+        } finally {
+          textArea.remove();
         }
       } else {
         await RNShare.share({
@@ -278,7 +291,7 @@ export default function ShopScreen() {
               onPress={() => handleShare(item)}
               activeOpacity={0.7}
             >
-              <SquareArrowOutUpRight size={26} color={colors.text} strokeWidth={2} />
+              <Share2 size={28} color={colors.text} strokeWidth={2} />
             </TouchableOpacity>
           </View>
           <TouchableOpacity 
