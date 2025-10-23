@@ -42,6 +42,8 @@ export interface Product {
   brand: string;
   category: string;
   imageUrl: string;
+  productImageUrl?: string;
+  productDescription?: string;
   alignmentScore: number;
   moneyFlow: MoneyFlow;
   keyReasons: string[];

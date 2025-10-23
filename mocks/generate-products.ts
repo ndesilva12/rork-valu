@@ -1,6 +1,26 @@
 import { Product } from '@/types';
 import productsData from './products-data.json';
 
+const productImageMap: Record<string, { image: string, description: string }> = {
+  'Tesla': { image: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800', description: 'Model 3 - Premium electric sedan with autopilot features' },
+  'Apple': { image: 'https://images.unsplash.com/photo-1605236453806-6ff36851218e?w=800', description: 'iPhone 15 Pro - Latest smartphone with A17 Pro chip' },
+  'Nike': { image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800', description: 'Air Max 270 - Premium running shoes with superior comfort' },
+  'Patagonia': { image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800', description: 'Nano Puff Jacket - Lightweight insulated jacket made from recycled materials' },
+  'Microsoft': { image: 'https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?w=800', description: 'Surface Laptop 5 - Sleek and powerful laptop for professionals' },
+  'Starbucks': { image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=800', description: 'Pike Place Roast - Smooth, balanced medium roast coffee' },
+  'Adidas': { image: 'https://images.unsplash.com/photo-1542219550-37153d387c27?w=800', description: 'Ultraboost 22 - Running shoes with responsive cushioning' },
+  'Coca-Cola': { image: 'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=800', description: 'Coca-Cola Classic - Original cola soft drink' },
+  'Disney': { image: 'https://images.unsplash.com/photo-1576200499908-0d14c94e62c2?w=800', description: 'Disney+ Streaming - Access to exclusive shows and movies' },
+  'Amazon': { image: 'https://images.unsplash.com/photo-1605408499391-6368c628ef42?w=800', description: 'Echo Dot - Smart speaker with Alexa voice assistant' },
+  'Netflix': { image: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=800', description: 'Premium Subscription - 4K streaming on multiple devices' },
+  'Target': { image: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800', description: 'Home Essentials - Quality products for everyday living' },
+  'Walmart': { image: 'https://images.unsplash.com/photo-1601599561213-832382fd07ba?w=800', description: 'Grocery Essentials - Fresh produce and household items' },
+  'Whole Foods': { image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800', description: 'Organic Produce - Fresh, locally sourced fruits and vegetables' },
+  'Ben & Jerry\'s': { image: 'https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=800', description: 'Half Baked Ice Cream - Cookie dough and brownie chunks in vanilla and chocolate' },
+  'REI': { image: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=800', description: 'Trail Running Backpack - Durable pack for outdoor adventures' },
+  'Lululemon': { image: 'https://images.unsplash.com/photo-1522198648249-0657d7ff242a?w=800', description: 'Align Leggings - Buttery-soft yoga pants for maximum comfort' },
+};
+
 const itemImageMap: Record<string, string> = {
   'Tesla': 'https://logo.clearbit.com/tesla.com',
   'SpaceX': 'https://img.logo.dev/spacex.com?token=pk_X-zfRGHgT0uGJP8L9h6jyQ',
@@ -671,12 +691,19 @@ export function generateProducts(): Product[] {
     const alignmentScore = calculateAverageAlignmentScore(alignments);
     const isPrimarySupport = alignmentScore > 0;
     
+    const productData = productImageMap[itemName] || {
+      image: getDefaultImageForItem(itemName),
+      description: `Premium product from ${itemName}`
+    };
+
     products.push({
       id: itemId,
       name: itemName,
       brand: itemName,
       category: getCategoryForItem(itemName),
       imageUrl: getDefaultImageForItem(itemName),
+      productImageUrl: productData.image,
+      productDescription: productData.description,
       alignmentScore,
       moneyFlow: {
         company: itemName,

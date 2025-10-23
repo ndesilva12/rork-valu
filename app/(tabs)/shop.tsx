@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Heart, MessageCircle, Share2, ExternalLink } from 'lucide-react-native';
+import { Heart, MessageCircle, SquareArrowOutUpRight, ExternalLink } from 'lucide-react-native';
 import { useState, useMemo, useCallback } from 'react';
 import {
   View,
@@ -172,15 +172,12 @@ export default function ShopScreen() {
     
     try {
       if (Platform.OS === 'web') {
-        if (navigator.share) {
-          await navigator.share({
-            title: product.name,
-            text: message,
-            url: url,
-          });
-        } else {
+        try {
           await navigator.clipboard.writeText(`${message}\n${url}`);
           Alert.alert('Copied!', 'Link copied to clipboard');
+        } catch (clipboardError) {
+          console.error('Clipboard error:', clipboardError);
+          Alert.alert('Error', 'Unable to copy to clipboard');
         }
       } else {
         await RNShare.share({
@@ -247,7 +244,7 @@ export default function ShopScreen() {
           onPress={() => handleProductPress(item)}
         >
           <Image 
-            source={{ uri: item.imageUrl }} 
+            source={{ uri: item.productImageUrl || item.imageUrl }} 
             style={styles.postImage} 
             contentFit="cover"
             transition={200}
@@ -281,7 +278,7 @@ export default function ShopScreen() {
               onPress={() => handleShare(item)}
               activeOpacity={0.7}
             >
-              <Share2 size={26} color={colors.text} strokeWidth={2} />
+              <SquareArrowOutUpRight size={26} color={colors.text} strokeWidth={2} />
             </TouchableOpacity>
           </View>
           <TouchableOpacity 
@@ -302,7 +299,7 @@ export default function ShopScreen() {
           )}
           <View style={styles.descriptionContainer}>
             <Text style={[styles.productName, { color: colors.text }]}>
-              <Text style={styles.brandNameBold}>{item.brand}</Text> {item.name}
+              <Text style={styles.brandNameBold}>{item.brand}</Text> {item.productDescription || item.name}
             </Text>
           </View>
           {interaction.comments.length > 0 && (
@@ -499,7 +496,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   alignmentScore: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '700' as const,
   },
   postImage: {

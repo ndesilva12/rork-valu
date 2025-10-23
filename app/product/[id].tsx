@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, ThumbsUp } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -9,21 +9,84 @@ import {
   PanResponder,
   Linking,
   Platform,
+  TextInput,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
 import { MOCK_PRODUCTS } from '@/mocks/products';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { useUser } from '@/contexts/UserContext';
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState, useCallback } from 'react';
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { profile, isDarkMode } = useUser();
+  const { profile, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const product = MOCK_PRODUCTS.find(p => p.id === id);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  interface Review {
+    id: string;
+    userName: string;
+    rating: number;
+    text: string;
+    timestamp: Date;
+    likes: number;
+    userLiked: boolean;
+  }
+
+  const [reviews, setReviews] = useState<Review[]>([
+    {
+      id: '1',
+      userName: 'Sarah M.',
+      rating: 5,
+      text: 'Love this brand! They really walk the talk when it comes to their values. High quality products too.',
+      timestamp: new Date('2024-01-15'),
+      likes: 24,
+      userLiked: false
+    },
+    {
+      id: '2',
+      userName: 'Mike T.',
+      rating: 4,
+      text: 'Good company overall. A bit pricey but worth it for the ethical practices.',
+      timestamp: new Date('2024-01-20'),
+      likes: 15,
+      userLiked: false
+    },
+    {
+      id: '3',
+      userName: 'Jessica R.',
+      rating: 5,
+      text: 'Finally a brand that aligns with my values! Customer service is excellent too.',
+      timestamp: new Date('2024-01-10'),
+      likes: 42,
+      userLiked: false
+    },
+    {
+      id: '4',
+      userName: 'David L.',
+      rating: 3,
+      text: 'Decent brand but could do more in certain areas. Still better than most alternatives.',
+      timestamp: new Date('2024-01-22'),
+      likes: 8,
+      userLiked: false
+    },
+    {
+      id: '5',
+      userName: 'Emily K.',
+      rating: 5,
+      text: 'Outstanding commitment to sustainability! Will definitely purchase again.',
+      timestamp: new Date('2024-01-18'),
+      likes: 31,
+      userLiked: false
+    },
+  ]);
+
+  const [sortBy, setSortBy] = useState<'latest' | 'popular'>('latest');
+  const [reviewText, setReviewText] = useState('');
+  const [userRating, setUserRating] = useState(0);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -136,6 +199,47 @@ export default function ProductDetailScreen() {
       console.error('Error opening URL:', error);
     }
   };
+
+  const sortedReviews = useMemo(() => {
+    const sorted = [...reviews];
+    if (sortBy === 'latest') {
+      sorted.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    } else {
+      sorted.sort((a, b) => b.likes - a.likes);
+    }
+    return sorted;
+  }, [reviews, sortBy]);
+
+  const handleLikeReview = useCallback((reviewId: string) => {
+    setReviews(prev => prev.map(review => {
+      if (review.id === reviewId) {
+        return {
+          ...review,
+          userLiked: !review.userLiked,
+          likes: review.userLiked ? review.likes - 1 : review.likes + 1
+        };
+      }
+      return review;
+    }));
+  }, []);
+
+  const handleSubmitReview = useCallback(() => {
+    if (!reviewText.trim() || userRating === 0) return;
+
+    const newReview: Review = {
+      id: Date.now().toString(),
+      userName: clerkUser?.firstName || clerkUser?.username || 'Anonymous',
+      rating: userRating,
+      text: reviewText.trim(),
+      timestamp: new Date(),
+      likes: 0,
+      userLiked: false
+    };
+
+    setReviews(prev => [newReview, ...prev]);
+    setReviewText('');
+    setUserRating(0);
+  }, [reviewText, userRating]);
 
   const handleSocialPress = async (platform: 'x' | 'instagram' | 'facebook') => {
     try {
@@ -281,6 +385,117 @@ export default function ProductDetailScreen() {
                   })}
               </View>
             )}
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.reviewsHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Reviews</Text>
+              <View style={styles.sortButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.sortButton,
+                    sortBy === 'latest' && { backgroundColor: colors.primary + '15' }
+                  ]}
+                  onPress={() => setSortBy('latest')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.sortButtonText,
+                    { color: sortBy === 'latest' ? colors.primary : colors.textSecondary }
+                  ]}>Latest</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.sortButton,
+                    sortBy === 'popular' && { backgroundColor: colors.primary + '15' }
+                  ]}
+                  onPress={() => setSortBy('popular')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.sortButtonText,
+                    { color: sortBy === 'popular' ? colors.primary : colors.textSecondary }
+                  ]}>Popular</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={[styles.addReviewCard, { backgroundColor: colors.backgroundSecondary }]}>
+              <Text style={[styles.addReviewTitle, { color: colors.text }]}>Share Your Experience</Text>
+              <View style={styles.ratingSelector}>
+                {[1, 2, 3, 4, 5].map(star => (
+                  <TouchableOpacity
+                    key={star}
+                    onPress={() => setUserRating(star)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.starIcon}>
+                      {star <= userRating ? '★' : '☆'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TextInput
+                style={[
+                  styles.reviewInput,
+                  { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }
+                ]}
+                placeholder="Write your review..."
+                placeholderTextColor={colors.textSecondary}
+                value={reviewText}
+                onChangeText={setReviewText}
+                multiline
+                numberOfLines={3}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.submitReviewButton,
+                  { backgroundColor: reviewText.trim() && userRating > 0 ? colors.primary : colors.neutralLight }
+                ]}
+                onPress={handleSubmitReview}
+                disabled={!reviewText.trim() || userRating === 0}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.submitReviewText, { color: colors.white }]}>Post Review</Text>
+              </TouchableOpacity>
+            </View>
+
+            {sortedReviews.map(review => (
+              <View key={review.id} style={[styles.reviewCard, { backgroundColor: colors.backgroundSecondary }]}>
+                <View style={styles.reviewHeader}>
+                  <View style={styles.reviewUserInfo}>
+                    <Text style={[styles.reviewUserName, { color: colors.text }]}>{review.userName}</Text>
+                    <View style={styles.reviewRating}>
+                      {[...Array(review.rating)].map((_, i) => (
+                        <Text key={i} style={styles.reviewStar}>★</Text>
+                      ))}
+                    </View>
+                  </View>
+                  <Text style={[styles.reviewDate, { color: colors.textSecondary }]}>
+                    {review.timestamp.toLocaleDateString()}
+                  </Text>
+                </View>
+                <Text style={[styles.reviewText, { color: colors.text }]}>{review.text}</Text>
+                <TouchableOpacity
+                  style={styles.reviewLikeButton}
+                  onPress={() => handleLikeReview(review.id)}
+                  activeOpacity={0.7}
+                >
+                  <ThumbsUp 
+                    size={16} 
+                    color={review.userLiked ? colors.primary : colors.textSecondary}
+                    fill={review.userLiked ? colors.primary : 'none'}
+                    strokeWidth={2}
+                  />
+                  <Text style={[
+                    styles.reviewLikes,
+                    { color: review.userLiked ? colors.primary : colors.textSecondary }
+                  ]}>
+                    {review.likes}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ))}
           </View>
 
           <View style={styles.section}>
@@ -560,6 +775,106 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 18,
+    fontWeight: '600' as const,
+  },
+  reviewsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sortButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  sortButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  sortButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  addReviewCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  addReviewTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 12,
+  },
+  ratingSelector: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  starIcon: {
+    fontSize: 28,
+    color: '#FFD700',
+  },
+  reviewInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    minHeight: 80,
+    textAlignVertical: 'top' as const,
+    marginBottom: 12,
+  },
+  submitReviewButton: {
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  submitReviewText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  reviewCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  reviewUserInfo: {
+    flex: 1,
+  },
+  reviewUserName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 4,
+  },
+  reviewRating: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  reviewStar: {
+    fontSize: 14,
+    color: '#FFD700',
+  },
+  reviewDate: {
+    fontSize: 12,
+  },
+  reviewText: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  reviewLikeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  reviewLikes: {
+    fontSize: 13,
     fontWeight: '600' as const,
   },
 
