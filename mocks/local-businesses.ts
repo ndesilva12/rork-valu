@@ -22,10 +22,13 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Sources from local farms',
       'Supports environmental sustainability'
     ],
-    relatedValues: ['environmentalism', 'entrepreneurship'],
+    relatedValues: ['environmentalism', 'entrepreneurship', 'personal-health', 'individual-responsibility'],
     valueAlignments: [
       { valueId: 'environmentalism', position: 1, isSupport: true },
       { valueId: 'entrepreneurship', position: 2, isSupport: true },
+      { valueId: 'personal-health', position: 2, isSupport: true },
+      { valueId: 'individual-responsibility', position: 3, isSupport: true },
+      { valueId: 'climate-change', position: 2, isSupport: true },
     ],
     website: 'https://ming.com/blue-ginger',
   },
@@ -50,10 +53,14 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Fair trade coffee',
       'Community-focused business'
     ],
-    relatedValues: ['environmentalism', 'entrepreneurship'],
+    relatedValues: ['environmentalism', 'entrepreneurship', 'personal-health', 'veganism'],
     valueAlignments: [
       { valueId: 'environmentalism', position: 1, isSupport: true },
       { valueId: 'entrepreneurship', position: 1, isSupport: true },
+      { valueId: 'personal-health', position: 1, isSupport: true },
+      { valueId: 'veganism', position: 3, isSupport: true },
+      { valueId: 'climate-change', position: 2, isSupport: true },
+      { valueId: 'individual-responsibility', position: 2, isSupport: true },
     ],
     website: 'https://quebradabakery.com',
   },
@@ -78,10 +85,14 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Hosts community events',
       'Supports local education'
     ],
-    relatedValues: ['entrepreneurship', 'freedom-of-speech'],
+    relatedValues: ['entrepreneurship', 'freedom-of-speech', 'privacy', 'individual-responsibility'],
     valueAlignments: [
       { valueId: 'entrepreneurship', position: 1, isSupport: true },
       { valueId: 'freedom-of-speech', position: 2, isSupport: true },
+      { valueId: 'privacy', position: 2, isSupport: true },
+      { valueId: 'individual-responsibility', position: 2, isSupport: true },
+      { valueId: 'home-schooling', position: 3, isSupport: true },
+      { valueId: 'school-choice', position: 3, isSupport: true },
     ],
     website: 'https://wellesleybooks.com',
   },
@@ -106,10 +117,13 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Supports local artisans',
       'Community-focused'
     ],
-    relatedValues: ['feminism', 'entrepreneurship'],
+    relatedValues: ['feminism', 'entrepreneurship', 'individual-responsibility', 'body-positivity'],
     valueAlignments: [
       { valueId: 'feminism', position: 2, isSupport: true },
       { valueId: 'entrepreneurship', position: 1, isSupport: true },
+      { valueId: 'individual-responsibility', position: 2, isSupport: true },
+      { valueId: 'body-positivity', position: 2, isSupport: true },
+      { valueId: 'privacy', position: 3, isSupport: true },
     ],
     website: 'https://thecottagewellesley.com',
   },
@@ -134,11 +148,15 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Supports local farmers',
       'Eco-friendly practices'
     ],
-    relatedValues: ['environmentalism', 'personal-health', 'entrepreneurship'],
+    relatedValues: ['environmentalism', 'personal-health', 'entrepreneurship', 'veganism', 'fitness'],
     valueAlignments: [
       { valueId: 'environmentalism', position: 1, isSupport: true },
       { valueId: 'personal-health', position: 1, isSupport: true },
       { valueId: 'entrepreneurship', position: 2, isSupport: true },
+      { valueId: 'veganism', position: 2, isSupport: true },
+      { valueId: 'fitness', position: 2, isSupport: true },
+      { valueId: 'climate-change', position: 2, isSupport: true },
+      { valueId: 'individual-responsibility', position: 2, isSupport: true },
     ],
     website: 'https://wellesleynaturalmarket.com',
   },
@@ -163,10 +181,12 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Locally sourced ingredients',
       'Community gathering place'
     ],
-    relatedValues: ['entrepreneurship', 'individual-responsibility'],
+    relatedValues: ['entrepreneurship', 'individual-responsibility', 'personal-health'],
     valueAlignments: [
       { valueId: 'entrepreneurship', position: 1, isSupport: true },
       { valueId: 'individual-responsibility', position: 3, isSupport: true },
+      { valueId: 'personal-health', position: 3, isSupport: true },
+      { valueId: 'environmentalism', position: 3, isSupport: true },
     ],
     website: 'https://fiorellascucina.com',
   },
@@ -191,10 +211,12 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Supports regional producers',
       'Personalized service'
     ],
-    relatedValues: ['entrepreneurship', 'environmentalism'],
+    relatedValues: ['entrepreneurship', 'environmentalism', 'personal-health', 'individual-responsibility'],
     valueAlignments: [
       { valueId: 'entrepreneurship', position: 1, isSupport: true },
       { valueId: 'environmentalism', position: 2, isSupport: true },
+      { valueId: 'personal-health', position: 2, isSupport: true },
+      { valueId: 'individual-responsibility', position: 2, isSupport: true },
     ],
     website: 'https://lindenstore.com',
   },
@@ -219,10 +241,14 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Student-friendly environment',
       'Community hub'
     ],
-    relatedValues: ['entrepreneurship', 'environmentalism'],
+    relatedValues: ['entrepreneurship', 'environmentalism', 'personal-health', 'remote-work'],
     valueAlignments: [
       { valueId: 'entrepreneurship', position: 1, isSupport: true },
       { valueId: 'environmentalism', position: 2, isSupport: true },
+      { valueId: 'personal-health', position: 3, isSupport: true },
+      { valueId: 'remote-work', position: 2, isSupport: true },
+      { valueId: 'climate-change', position: 2, isSupport: true },
+      { valueId: 'individual-responsibility', position: 2, isSupport: true },
     ],
     website: 'https://babsoncoffee.com',
   },
@@ -247,11 +273,14 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Community wellness focus',
       'Affordable rates'
     ],
-    relatedValues: ['fitness', 'personal-health', 'entrepreneurship'],
+    relatedValues: ['fitness', 'personal-health', 'entrepreneurship', 'mental-health', 'individual-responsibility'],
     valueAlignments: [
       { valueId: 'fitness', position: 1, isSupport: true },
       { valueId: 'personal-health', position: 2, isSupport: true },
       { valueId: 'entrepreneurship', position: 2, isSupport: true },
+      { valueId: 'mental-health', position: 2, isSupport: true },
+      { valueId: 'individual-responsibility', position: 1, isSupport: true },
+      { valueId: 'body-positivity', position: 3, isSupport: true },
     ],
     website: 'https://centralfitnesswellesley.com',
   },
@@ -276,10 +305,12 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Uses local dairy and produce',
       'Community favorite'
     ],
-    relatedValues: ['entrepreneurship', 'individual-responsibility'],
+    relatedValues: ['entrepreneurship', 'individual-responsibility', 'personal-health'],
     valueAlignments: [
       { valueId: 'entrepreneurship', position: 1, isSupport: true },
       { valueId: 'individual-responsibility', position: 2, isSupport: true },
+      { valueId: 'personal-health', position: 3, isSupport: true },
+      { valueId: 'environmentalism', position: 4, isSupport: true },
     ],
     website: 'https://sliceofwellesley.com',
   },
@@ -304,10 +335,13 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Community-focused legal services',
       'Pro bono work for local families'
     ],
-    relatedValues: ['individual-responsibility', 'entrepreneurship'],
+    relatedValues: ['individual-responsibility', 'entrepreneurship', 'privacy', 'freedom-of-speech'],
     valueAlignments: [
       { valueId: 'individual-responsibility', position: 1, isSupport: true },
       { valueId: 'entrepreneurship', position: 3, isSupport: true },
+      { valueId: 'privacy', position: 2, isSupport: true },
+      { valueId: 'freedom-of-speech', position: 2, isSupport: true },
+      { valueId: 'pro-life', position: 4, isSupport: true },
     ],
     website: 'https://stevenslaw.com',
   },
@@ -332,10 +366,12 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Family-owned for 25 years',
       'Supports local suppliers'
     ],
-    relatedValues: ['entrepreneurship', 'individual-responsibility'],
+    relatedValues: ['entrepreneurship', 'individual-responsibility', 'privacy'],
     valueAlignments: [
       { valueId: 'entrepreneurship', position: 1, isSupport: true },
       { valueId: 'individual-responsibility', position: 2, isSupport: true },
+      { valueId: 'privacy', position: 3, isSupport: true },
+      { valueId: 'personal-health', position: 4, isSupport: true },
     ],
     website: 'https://precisionautowellesley.com',
   },
@@ -360,10 +396,13 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Sources from local bakeries',
       'Supports community events'
     ],
-    relatedValues: ['entrepreneurship', 'environmentalism'],
+    relatedValues: ['entrepreneurship', 'environmentalism', 'personal-health', 'remote-work'],
     valueAlignments: [
       { valueId: 'entrepreneurship', position: 1, isSupport: true },
       { valueId: 'environmentalism', position: 3, isSupport: true },
+      { valueId: 'personal-health', position: 3, isSupport: true },
+      { valueId: 'remote-work', position: 2, isSupport: true },
+      { valueId: 'individual-responsibility', position: 2, isSupport: true },
     ],
     website: 'https://dailygrindwellesley.com',
   },
@@ -388,10 +427,12 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Convenient local shopping',
       'Employs neighborhood residents'
     ],
-    relatedValues: ['entrepreneurship', 'individual-responsibility'],
+    relatedValues: ['entrepreneurship', 'individual-responsibility', 'privacy'],
     valueAlignments: [
       { valueId: 'entrepreneurship', position: 2, isSupport: true },
       { valueId: 'individual-responsibility', position: 2, isSupport: true },
+      { valueId: 'privacy', position: 3, isSupport: true },
+      { valueId: 'personal-health', position: 4, isSupport: true },
     ],
     website: 'https://cornerstorewellesley.com',
   },
@@ -417,8 +458,13 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Mixed ownership structure',
       'Standard corporate practices'
     ],
-    relatedValues: [],
-    valueAlignments: [],
+    relatedValues: ['entrepreneurship', 'government-spending'],
+    valueAlignments: [
+      { valueId: 'entrepreneurship', position: 7, isSupport: false },
+      { valueId: 'individual-responsibility', position: 8, isSupport: false },
+      { valueId: 'environmentalism', position: 7, isSupport: false },
+      { valueId: 'government-spending', position: 6, isSupport: true },
+    ],
     website: 'https://rochebros.com',
   },
   {
@@ -443,9 +489,13 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Limited local sourcing',
       'Corporate ownership model'
     ],
-    relatedValues: ['entrepreneurship'],
+    relatedValues: ['entrepreneurship', 'environmentalism', 'privacy'],
     valueAlignments: [
       { valueId: 'entrepreneurship', position: 8, isSupport: false },
+      { valueId: 'environmentalism', position: 8, isSupport: false },
+      { valueId: 'individual-responsibility', position: 9, isSupport: false },
+      { valueId: 'privacy', position: 7, isSupport: false },
+      { valueId: 'climate-change', position: 8, isSupport: false },
     ],
     website: 'https://corporatejava.com',
   },
@@ -470,10 +520,14 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Displaces local businesses',
       'Low wage structure'
     ],
-    relatedValues: ['entrepreneurship', 'environmentalism'],
+    relatedValues: ['entrepreneurship', 'environmentalism', 'individual-responsibility', 'privacy'],
     valueAlignments: [
       { valueId: 'entrepreneurship', position: 9, isSupport: false },
       { valueId: 'environmentalism', position: 7, isSupport: false },
+      { valueId: 'individual-responsibility', position: 8, isSupport: false },
+      { valueId: 'privacy', position: 8, isSupport: false },
+      { valueId: 'climate-change', position: 9, isSupport: false },
+      { valueId: 'personal-health', position: 7, isSupport: false },
     ],
     website: 'https://megamart.com',
   },
@@ -499,9 +553,12 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Limited local investment',
       'Standardized service'
     ],
-    relatedValues: ['entrepreneurship'],
+    relatedValues: ['entrepreneurship', 'individual-responsibility', 'environmentalism'],
     valueAlignments: [
       { valueId: 'entrepreneurship', position: 7, isSupport: false },
+      { valueId: 'individual-responsibility', position: 7, isSupport: false },
+      { valueId: 'environmentalism', position: 8, isSupport: false },
+      { valueId: 'privacy', position: 6, isSupport: false },
     ],
     website: 'https://quicklube.com',
   },
@@ -526,10 +583,12 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Minimal personalized service',
       'Displaces local attorneys'
     ],
-    relatedValues: ['entrepreneurship', 'individual-responsibility'],
+    relatedValues: ['entrepreneurship', 'individual-responsibility', 'privacy', 'freedom-of-speech'],
     valueAlignments: [
       { valueId: 'entrepreneurship', position: 8, isSupport: false },
       { valueId: 'individual-responsibility', position: 7, isSupport: false },
+      { valueId: 'privacy', position: 8, isSupport: false },
+      { valueId: 'freedom-of-speech', position: 7, isSupport: false },
     ],
     website: 'https://corporatelegal.com',
   },
@@ -554,10 +613,14 @@ export const LOCAL_BUSINESSES: Product[] = [
       'Low-cost, high-volume model',
       'Minimal community engagement'
     ],
-    relatedValues: ['fitness', 'entrepreneurship'],
+    relatedValues: ['fitness', 'entrepreneurship', 'personal-health', 'mental-health', 'individual-responsibility'],
     valueAlignments: [
       { valueId: 'fitness', position: 8, isSupport: false },
       { valueId: 'entrepreneurship', position: 9, isSupport: false },
+      { valueId: 'personal-health', position: 8, isSupport: false },
+      { valueId: 'mental-health', position: 9, isSupport: false },
+      { valueId: 'individual-responsibility', position: 9, isSupport: false },
+      { valueId: 'privacy', position: 7, isSupport: false },
     ],
     website: 'https://fastfitgym.com',
   },
