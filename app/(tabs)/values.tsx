@@ -11,11 +11,13 @@ import {
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
+import { useIsStandalone } from '@/hooks/useIsStandalone';
 
 export default function ValuesScreen() {
   const router = useRouter();
   const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+  const isStandalone = useIsStandalone();
 
   const supportCauses = profile.causes
     .filter(c => c.type === 'support')
@@ -30,7 +32,8 @@ export default function ValuesScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={colors.background}
+        backgroundColor={isStandalone ? colors.background : 'transparent'}
+        translucent={isStandalone}
       />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
@@ -39,7 +42,7 @@ export default function ValuesScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={ paddingBottom: isStandalone ? 0 : 16 }{styles.content}>
 
       <View style={styles.statsSection}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact</Text>
