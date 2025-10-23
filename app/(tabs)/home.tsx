@@ -11,6 +11,7 @@ import {
   PanResponder,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -18,6 +19,7 @@ import { useUser } from '@/contexts/UserContext';
 import { MOCK_PRODUCTS } from '@/mocks/products';
 import { Product } from '@/types';
 import { useMemo, useState, useRef } from 'react';
+import { useIsStandalone } from '@/hooks/useIsStandalone';
 
 type ViewMode = 'playbook' | 'browse' | 'map';
 
@@ -51,6 +53,7 @@ export default function HomeScreen() {
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
 
+  const isStandalone = useIsStandalone(); // Add this line
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -441,10 +444,11 @@ export default function HomeScreen() {
 
   if (profile.causes.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <SafeAreaView edges={isStandalone ? ['top'] : ['top', 'bottom']} style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar
           barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-          backgroundColor={colors.background}
+          backgroundColor={isStandalone ? colors.background : 'transparent'}
+          translucent={isStandalone}
         />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
@@ -466,15 +470,16 @@ export default function HomeScreen() {
             <Text style={[styles.emptyButtonText, { color: colors.white }]}>Get Started</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={isStandalone ? ['top'] : ['top', 'bottom']} style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={colors.background}
+        backgroundColor={isStandalone ? colors.background : 'transparent'}
+        translucent={isStandalone}
       />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
@@ -486,7 +491,11 @@ export default function HomeScreen() {
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
-        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}
+        contentContainerStyle={[
+          styles.content, 
+          Platform.OS === 'web' && styles.webContent,
+          { paddingBottom: isStandalone ? 0 : 16 }
+        ]}
         {...panResponder.panHandlers}
       >
 
@@ -511,7 +520,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
       )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
