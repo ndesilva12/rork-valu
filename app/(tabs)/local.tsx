@@ -17,8 +17,11 @@ import { useUser } from '@/contexts/UserContext';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
 import { Product } from '@/types';
 import { useMemo, useState, useRef } from 'react';
+import { useIsStandalone } from '@/hooks/useIsStandalone';
 
 type ViewMode = 'playbook' | 'browse' | 'map';
+
+const isStandalone = useIsStandalone();
 
 const localColors = {
   primary: '#84CC16',
@@ -335,10 +338,11 @@ export default function LocalScreen() {
 
   if (profile.causes.length === 0) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <SafeAreaView edges={isStandalone ? ['top'] : ['top', 'bottom']} style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar
           barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-          backgroundColor={colors.background}
+          backgroundColor={isStandalone ? colors.background : 'transparent'}
+          translucent={isStandalone}
         />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Local</Text>
@@ -365,10 +369,11 @@ export default function LocalScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={isStandalone ? ['top'] : ['top', 'bottom']} style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={colors.background}
+        backgroundColor={isStandalone ? colors.background : 'transparent'}
+        translucent={isStandalone}
       />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
@@ -380,7 +385,7 @@ export default function LocalScreen() {
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
-        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}
+        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]} { paddingBottom: isStandalone ? 0 : 16 }
         {...panResponder.panHandlers}
       >
         {viewMode === 'playbook' && renderPlaybookView()}
