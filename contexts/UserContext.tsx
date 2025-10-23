@@ -3,9 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { Cause, UserProfile } from '@/types';
-import { trpc } from '@/lib/trpc';
 
 const DARK_MODE_KEY = '@dark_mode';
+const PROFILE_KEY = '@user_profile';
 
 export const [UserProvider, useUser] = createContextHook(() => {
   const { user: clerkUser, isLoaded: isClerkLoaded } = useClerkUser();
@@ -15,29 +15,53 @@ export const [UserProvider, useUser] = createContextHook(() => {
   });
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
-
-  const profileQuery = trpc.user.getProfile.useQuery(undefined, {
-    enabled: !!clerkUser,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-  });
-
-  const saveProfileMutation = trpc.user.saveProfile.useMutation();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!clerkUser) {
-      console.log('[UserContext] No clerk user, resetting state');
-      setProfile({ causes: [], searchHistory: [] });
-      setHasCompletedOnboarding(false);
-      return;
-    }
+    let mounted = true;
+    const loadProfile = async () => {
+      if (!clerkUser) {
+        console.log('[UserContext] No clerk user, resetting state');
+        if (mounted) {
+          setProfile({ causes: [], searchHistory: [] });
+          setHasCompletedOnboarding(false);
+          setIsLoading(false);
+        }
+        return;
+      }
 
-    if (profileQuery.data) {
-      console.log('[UserContext] Loaded profile from backend with', profileQuery.data.causes.length, 'causes');
-      setProfile(profileQuery.data);
-      setHasCompletedOnboarding(profileQuery.data.causes.length > 0);
-    }
-  }, [clerkUser, profileQuery.data]);
+      try {
+        const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
+        const storedProfile = await AsyncStorage.getItem(storageKey);
+        
+        if (storedProfile && mounted) {
+          const parsedProfile = JSON.parse(storedProfile) as UserProfile;
+          console.log('[UserContext] Loaded profile from AsyncStorage with', parsedProfile.causes.length, 'causes');
+          setProfile(parsedProfile);
+          setHasCompletedOnboarding(parsedProfile.causes.length > 0);
+        } else if (mounted) {
+          console.log('[UserContext] No stored profile found, using empty profile');
+          setProfile({ causes: [], searchHistory: [] });
+          setHasCompletedOnboarding(false);
+        }
+      } catch (error) {
+        console.error('[UserContext] Failed to load profile:', error);
+        if (mounted) {
+          setProfile({ causes: [], searchHistory: [] });
+          setHasCompletedOnboarding(false);
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadProfile();
+    return () => {
+      mounted = false;
+    };
+  }, [clerkUser]);
 
   useEffect(() => {
     let mounted = true;
@@ -73,20 +97,21 @@ export const [UserProvider, useUser] = createContextHook(() => {
     }
     
     const newProfile = { ...profile, causes };
-    console.log('[UserContext] Saving', causes.length, 'causes to backend for user:', clerkUser.id);
+    console.log('[UserContext] Saving', causes.length, 'causes to AsyncStorage for user:', clerkUser.id);
     
     setProfile(newProfile);
     setHasCompletedOnboarding(causes.length > 0);
     
     try {
-      await saveProfileMutation.mutateAsync(newProfile);
-      console.log('[UserContext] Profile saved successfully to backend');
+      const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
+      await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
+      console.log('[UserContext] Profile saved successfully to AsyncStorage');
     } catch (error) {
-      console.error('[UserContext] Failed to save profile to backend:', error);
+      console.error('[UserContext] Failed to save profile to AsyncStorage:', error);
     }
-  }, [clerkUser, profile, saveProfileMutation]);
+  }, [clerkUser, profile]);
 
-  const addToSearchHistory = useCallback((query: string) => {
+  const addToSearchHistory = useCallback(async (query: string) => {
     if (!clerkUser) {
       console.error('Cannot save search history: User not logged in');
       return;
@@ -95,8 +120,13 @@ export const [UserProvider, useUser] = createContextHook(() => {
     const newProfile = { ...profile, searchHistory: newHistory };
     setProfile(newProfile);
     
-    saveProfileMutation.mutate(newProfile);
-  }, [profile, clerkUser, saveProfileMutation]);
+    try {
+      const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
+      await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
+    } catch (error) {
+      console.error('Failed to save search history:', error);
+    }
+  }, [profile, clerkUser]);
 
   const resetProfile = useCallback(async () => {
     if (!clerkUser) {
@@ -107,12 +137,13 @@ export const [UserProvider, useUser] = createContextHook(() => {
       const emptyProfile = { causes: [], searchHistory: [] };
       setProfile(emptyProfile);
       setHasCompletedOnboarding(false);
-      await saveProfileMutation.mutateAsync(emptyProfile);
+      const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
+      await AsyncStorage.setItem(storageKey, JSON.stringify(emptyProfile));
       console.log('[UserContext] Profile reset successfully');
     } catch (error) {
       console.error('Failed to reset profile:', error);
     }
-  }, [clerkUser, saveProfileMutation]);
+  }, [clerkUser]);
 
   const clearAllStoredData = useCallback(async () => {
     try {
@@ -139,7 +170,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
   return useMemo(() => ({
     profile,
-    isLoading: profileQuery.isLoading || !isClerkLoaded,
+    isLoading: isLoading || !isClerkLoaded,
     hasCompletedOnboarding,
     addCauses,
     addToSearchHistory,
@@ -148,5 +179,5 @@ export const [UserProvider, useUser] = createContextHook(() => {
     isDarkMode,
     toggleDarkMode,
     clerkUser,
-  }), [profile, profileQuery.isLoading, isClerkLoaded, hasCompletedOnboarding, addCauses, addToSearchHistory, resetProfile, clearAllStoredData, isDarkMode, toggleDarkMode, clerkUser]);
+  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, addCauses, addToSearchHistory, resetProfile, clearAllStoredData, isDarkMode, toggleDarkMode, clerkUser]);
 });
