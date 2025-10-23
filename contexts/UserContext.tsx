@@ -6,6 +6,7 @@ import { Cause, UserProfile } from '@/types';
 
 const DARK_MODE_KEY = '@dark_mode';
 const PROFILE_KEY = '@user_profile';
+const IS_NEW_USER_KEY = '@is_new_user';
 
 export const [UserProvider, useUser] = createContextHook(() => {
   const { user: clerkUser, isLoaded: isClerkLoaded } = useClerkUser();
@@ -16,6 +17,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [isNewUser, setIsNewUser] = useState<boolean | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -25,6 +27,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
         if (mounted) {
           setProfile({ causes: [], searchHistory: [] });
           setHasCompletedOnboarding(false);
+          setIsNewUser(null);
           setIsLoading(false);
         }
         return;
@@ -32,7 +35,12 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
       try {
         const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
-        const storedProfile = await AsyncStorage.getItem(storageKey);
+        const isNewUserKey = `${IS_NEW_USER_KEY}_${clerkUser.id}`;
+        
+        const [storedProfile, storedIsNewUser] = await Promise.all([
+          AsyncStorage.getItem(storageKey),
+          AsyncStorage.getItem(isNewUserKey)
+        ]);
         
         if (storedProfile && mounted) {
           const parsedProfile = JSON.parse(storedProfile) as UserProfile;
@@ -44,11 +52,23 @@ export const [UserProvider, useUser] = createContextHook(() => {
           setProfile({ causes: [], searchHistory: [] });
           setHasCompletedOnboarding(false);
         }
+        
+        if (mounted) {
+          if (storedIsNewUser === null) {
+            console.log('[UserContext] First time seeing this user - marking as new');
+            setIsNewUser(true);
+            await AsyncStorage.setItem(isNewUserKey, 'false');
+          } else {
+            console.log('[UserContext] User has logged in before - marking as existing');
+            setIsNewUser(false);
+          }
+        }
       } catch (error) {
         console.error('[UserContext] Failed to load profile:', error);
         if (mounted) {
           setProfile({ causes: [], searchHistory: [] });
           setHasCompletedOnboarding(false);
+          setIsNewUser(false);
         }
       } finally {
         if (mounted) {
@@ -172,6 +192,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
     profile,
     isLoading: isLoading || !isClerkLoaded,
     hasCompletedOnboarding,
+    isNewUser,
     addCauses,
     addToSearchHistory,
     resetProfile,
@@ -179,5 +200,5 @@ export const [UserProvider, useUser] = createContextHook(() => {
     isDarkMode,
     toggleDarkMode,
     clerkUser,
-  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, addCauses, addToSearchHistory, resetProfile, clearAllStoredData, isDarkMode, toggleDarkMode, clerkUser]);
+  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, addToSearchHistory, resetProfile, clearAllStoredData, isDarkMode, toggleDarkMode, clerkUser]);
 });

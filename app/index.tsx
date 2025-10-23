@@ -6,7 +6,7 @@ import { lightColors, darkColors } from '@/constants/colors';
 import { useEffect } from 'react';
 
 export default function Index() {
-  const { hasCompletedOnboarding, isLoading: userLoading, isDarkMode } = useUser();
+  const { hasCompletedOnboarding, isLoading: userLoading, isDarkMode, isNewUser } = useUser();
   const { isSignedIn, isLoaded } = useAuth();
   const colors = isDarkMode ? darkColors : lightColors;
 
@@ -18,9 +18,10 @@ export default function Index() {
       userLoading,
       isSignedIn,
       hasCompletedOnboarding,
+      isNewUser,
       causeCount: profile.causes.length,
     });
-  }, [isLoaded, userLoading, isSignedIn, hasCompletedOnboarding, profile.causes.length]);
+  }, [isLoaded, userLoading, isSignedIn, hasCompletedOnboarding, isNewUser, profile.causes.length]);
 
   useEffect(() => {
     if (isSignedIn && !userLoading && profile.causes.length > 0 && !hasCompletedOnboarding) {
@@ -48,8 +49,13 @@ export default function Index() {
     return <Redirect href="/(tabs)/home" />;
   }
 
-  console.log('[Index] User has not completed onboarding, redirecting to onboarding');
-  return <Redirect href="/onboarding" />;
+  if (isNewUser === true) {
+    console.log('[Index] New user without onboarding, redirecting to onboarding');
+    return <Redirect href="/onboarding" />;
+  }
+
+  console.log('[Index] Existing user without values, redirecting to home');
+  return <Redirect href="/(tabs)/home" />;
 }
 
 const styles = StyleSheet.create({
