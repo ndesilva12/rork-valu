@@ -202,9 +202,8 @@ export default function ProductDetailScreen() {
         <View style={styles.content}>
           <View style={styles.header}>
             <View style={styles.titleContainer}>
-              <Text style={[styles.brand, { color: colors.primary }]}>{product.brand}</Text>
               <Text style={[styles.productName, { color: colors.text }]}>{product.name}</Text>
-              <Text style={[styles.category, { color: colors.textSecondary }]}>{product.category}</Text>
+              <Text style={[styles.category, { color: colors.primary }]}>{product.category}</Text>
             </View>
             <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.backgroundSecondary }]}>
               <AlignmentIcon size={24} color={alignmentColor} strokeWidth={2.5} />
@@ -238,6 +237,10 @@ export default function ProductDetailScreen() {
             </TouchableOpacity>
           </View>
 
+          <Text style={[styles.brandDescription, { color: colors.textSecondary }]}>
+            A leading innovator in sustainable products, committed to reducing environmental impact through innovative design and ethical manufacturing practices.
+          </Text>
+
           <View style={[styles.alignmentCard, { backgroundColor: alignmentColor + '15' }]}>
             <Text style={[styles.alignmentLabel, { color: alignmentColor }]}>
               {alignmentLabel}
@@ -245,11 +248,7 @@ export default function ProductDetailScreen() {
             <Text style={[styles.alignmentDescription, { color: colors.textSecondary }]}>
               Based on your selected values and where your money flows
             </Text>
-          </View>
-
-          {alignmentData.matchingValues.length > 0 && (
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Related Values</Text>
+            {alignmentData.matchingValues.length > 0 && (
               <View style={styles.valueTagsContainer}>
                 {alignmentData.matchingValues.map((valueId) => {
                     const allValues = Object.values(AVAILABLE_VALUES).flat();
@@ -275,24 +274,11 @@ export default function ProductDetailScreen() {
                     );
                   })}
               </View>
-            </View>
-          )}
-
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Key Reasons</Text>
-            {product.keyReasons.map((reason, index) => (
-              <View key={`reason-${index}-${reason.substring(0, 20)}`} style={styles.reasonItem}>
-                <View style={[styles.reasonBullet, { backgroundColor: colors.primary }]} />
-                <Text style={[styles.reasonText, { color: colors.text }]}>{reason}</Text>
-              </View>
-            ))}
+            )}
           </View>
 
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Money Flow</Text>
-            <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-              Where your money goes when you buy from {product.brand}
-            </Text>
             
             <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
               <View style={[styles.companyHeader, { borderBottomColor: colors.border }]}>
@@ -300,21 +286,54 @@ export default function ProductDetailScreen() {
               </View>
               
               <View style={styles.shareholdersContainer}>
-                <Text style={[styles.shareholdersTitle, { color: colors.textSecondary }]}>Major Shareholders</Text>
-                {product.moneyFlow.shareholders.map((shareholder, index) => {
+                <Text style={[styles.shareholdersTitle, { color: colors.textSecondary }]}>Top Stakeholders</Text>
+                {[
+                  { name: 'Vanguard Group', percentage: 8.2, alignment: 'aligned' as const },
+                  { name: 'BlackRock', percentage: 7.5, alignment: 'neutral' as const },
+                  { name: 'State Street Corporation', percentage: 4.8, alignment: 'aligned' as const },
+                  { name: 'Fidelity Investments', percentage: 3.9, alignment: 'neutral' as const },
+                  { name: 'Capital Research', percentage: 2.6, alignment: 'opposed' as const },
+                ].map((stakeholder, index) => {
                   const shColor =
-                    shareholder.alignment === 'aligned'
+                    stakeholder.alignment === 'aligned'
                       ? colors.success
-                      : shareholder.alignment === 'opposed'
+                      : stakeholder.alignment === 'opposed'
                       ? colors.danger
                       : colors.neutral;
 
                   return (
-                    <View key={`shareholder-${product.id}-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
+                    <View key={`stakeholder-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
                       <View style={styles.shareholderInfo}>
-                        <Text style={[styles.shareholderName, { color: colors.text }]}>{shareholder.name}</Text>
+                        <Text style={[styles.shareholderName, { color: colors.text }]}>{stakeholder.name}</Text>
                         <Text style={[styles.shareholderPercentage, { color: colors.textSecondary }]}>
-                          {shareholder.percentage}% ownership
+                          {stakeholder.percentage}% stake
+                        </Text>
+                      </View>
+                      <View style={[styles.alignmentDot, { backgroundColor: shColor }]} />
+                    </View>
+                  );
+                })}
+              </View>
+
+              <View style={[styles.shareholdersContainer, { marginTop: 24 }]}>
+                <Text style={[styles.shareholdersTitle, { color: colors.textSecondary }]}>Endorsements</Text>
+                {[
+                  { name: 'Sierra Club', type: 'Environmental Organization', alignment: 'aligned' as const },
+                  { name: 'Fair Trade USA', type: 'Certification Body', alignment: 'aligned' as const },
+                  { name: 'B Corporation', type: 'Business Certification', alignment: 'aligned' as const },
+                  { name: 'Green America', type: 'Environmental Nonprofit', alignment: 'aligned' as const },
+                  { name: 'EcoWatch', type: 'Media & Watchdog', alignment: 'neutral' as const },
+                ].map((endorsement, index) => {
+                  const shColor = endorsement.alignment === 'aligned'
+                      ? colors.success
+                      : colors.neutral;
+
+                  return (
+                    <View key={`endorsement-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
+                      <View style={styles.shareholderInfo}>
+                        <Text style={[styles.shareholderName, { color: colors.text }]}>{endorsement.name}</Text>
+                        <Text style={[styles.shareholderPercentage, { color: colors.textSecondary }]}>
+                          {endorsement.type}
                         </Text>
                       </View>
                       <View style={[styles.alignmentDot, { backgroundColor: shColor }]} />
@@ -356,12 +375,12 @@ const styles = StyleSheet.create({
   },
   heroImageContainer: {
     width: '100%',
-    height: 300,
+    height: 150,
     position: 'relative' as const,
   },
   heroImage: {
     width: '100%',
-    height: 300,
+    height: 150,
   },
   visitButton: {
     position: 'absolute' as const,
@@ -393,22 +412,24 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 16,
   },
-  brand: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    marginBottom: 4,
-  },
+
   productName: {
     fontSize: 28,
     fontWeight: '700' as const,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   category: {
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '600' as const,
   },
   socialLinksContainer: {
     flexDirection: 'row',
     gap: 10,
+    marginBottom: 12,
+  },
+  brandDescription: {
+    fontSize: 14,
+    lineHeight: 20,
     marginBottom: 24,
   },
   socialButton: {
@@ -445,7 +466,7 @@ const styles = StyleSheet.create({
   alignmentCard: {
     padding: 20,
     borderRadius: 16,
-    marginBottom: 32,
+    marginBottom: 24,
   },
   alignmentLabel: {
     fontSize: 20,
@@ -455,36 +476,15 @@ const styles = StyleSheet.create({
   alignmentDescription: {
     fontSize: 14,
     lineHeight: 20,
+    marginBottom: 12,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 22,
     fontWeight: '700' as const,
-    marginBottom: 8,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
     marginBottom: 16,
-    lineHeight: 20,
-  },
-  reasonItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  reasonBullet: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginTop: 7,
-    marginRight: 12,
-  },
-  reasonText: {
-    flex: 1,
-    fontSize: 15,
-    lineHeight: 22,
   },
   moneyFlowCard: {
     borderRadius: 16,
@@ -534,15 +534,16 @@ const styles = StyleSheet.create({
   valueTagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
+    marginTop: 4,
   },
   valueTag: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   valueTagText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
   },
   errorContainer: {
