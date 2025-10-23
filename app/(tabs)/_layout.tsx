@@ -4,7 +4,7 @@ import React from "react";
 import { Platform, useWindowDimensions, StyleSheet } from "react-native";
 import { lightColors, darkColors } from "@/constants/colors";
 import { useUser } from "@/contexts/UserContext";
-import { SafeAreaView } from 'expo-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const localColor = '#84CC16';
 
