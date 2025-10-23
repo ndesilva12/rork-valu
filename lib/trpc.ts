@@ -8,17 +8,15 @@ import { Platform } from "react-native";
 export const trpc = createTRPCReact<AppRouter>();
 
 const getBaseUrl = () => {
-  if (process.env.EXPO_PUBLIC_RORK_API_BASE_URL) {
-    return process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
-  }
-
   if (typeof window !== 'undefined') {
     return window.location.origin;
   }
 
-  throw new Error(
-    "No base url found, please set EXPO_PUBLIC_RORK_API_BASE_URL"
-  );
+  if (process.env.EXPO_PUBLIC_RORK_API_BASE_URL) {
+    return process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
+  }
+
+  return 'http://localhost:8081';
 };
 
 const getAuthToken = async () => {
@@ -46,11 +44,12 @@ export const trpcClient = trpc.createClient({
       },
       fetch: async (url, options) => {
         try {
+          console.log('[tRPC] Fetching:', url);
           const response = await fetch(url, options);
           
           if (!response.ok) {
             const text = await response.text();
-            console.error('[tRPC] Non-OK response:', response.status, text);
+            console.error('[tRPC] Non-OK response:', response.status, text.substring(0, 200));
             
             try {
               JSON.parse(text);
@@ -80,7 +79,8 @@ export const trpcClient = trpc.createClient({
           
           return response;
         } catch (error) {
-          console.error('[tRPC] Fetch error:', error);
+          console.error('[tRPC] Fetch error. URL:', url, 'Error:', error);
+          console.error('[tRPC] Base URL:', getBaseUrl());
           throw error;
         }
       },
