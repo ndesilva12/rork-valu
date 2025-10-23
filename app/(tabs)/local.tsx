@@ -11,7 +11,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { SafeAreaView } from 'expo-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MenuButton from '@/components/MenuButton';
 import { useUser } from '@/contexts/UserContext';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
