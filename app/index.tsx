@@ -6,11 +6,9 @@ import { lightColors, darkColors } from '@/constants/colors';
 import { useEffect } from 'react';
 
 export default function Index() {
-  const { hasCompletedOnboarding, isLoading: userLoading, isDarkMode, isNewUser } = useUser();
+  const { hasCompletedOnboarding, isLoading: userLoading, isDarkMode, isNewUser, profile } = useUser();
   const { isSignedIn, isLoaded } = useAuth();
   const colors = isDarkMode ? darkColors : lightColors;
-
-  const { profile } = useUser();
 
   useEffect(() => {
     console.log('[Index] Render state:', {
