@@ -20,6 +20,7 @@ import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { MOCK_PRODUCTS } from '@/mocks/products';
+import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
 import { Product } from '@/types';
 
 interface Comment {
@@ -51,7 +52,9 @@ export default function ShopScreen() {
     const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
     const totalUserValues = profile.causes.length;
     
-    const scored = MOCK_PRODUCTS.map(product => {
+    const allProducts = [...MOCK_PRODUCTS, ...LOCAL_BUSINESSES];
+    
+    const scored = allProducts.map(product => {
       let totalSupportScore = 0;
       let totalAvoidScore = 0;
       const matchingValues = new Set<string>();
@@ -108,10 +111,30 @@ export default function ShopScreen() {
       };
     });
 
-    return scored
+    const alignedSorted = scored
       .filter(s => s.isPositivelyAligned)
       .sort((a, b) => b.alignmentStrength - a.alignmentStrength)
       .map(s => ({ ...s.product, alignmentScore: s.alignmentStrength }));
+    
+    const shuffled: Product[] = [];
+    const localItems = alignedSorted.filter(p => p.id.startsWith('local-'));
+    const regularItems = alignedSorted.filter(p => !p.id.startsWith('local-'));
+    
+    const localInterval = regularItems.length > 0 ? Math.floor(regularItems.length / Math.max(localItems.length, 1)) : 1;
+    
+    let localIndex = 0;
+    let regularIndex = 0;
+    
+    while (regularIndex < regularItems.length || localIndex < localItems.length) {
+      for (let i = 0; i < localInterval && regularIndex < regularItems.length; i++) {
+        shuffled.push(regularItems[regularIndex++]);
+      }
+      if (localIndex < localItems.length) {
+        shuffled.push(localItems[localIndex++]);
+      }
+    }
+    
+    return shuffled.length > 0 ? shuffled : alignedSorted;
   }, [profile.causes]);
 
   const getProductInteraction = useCallback((productId: string): ProductInteraction => {

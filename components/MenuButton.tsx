@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, useSegments } from 'expo-router';
 import { Menu, Moon, Sun, RefreshCw, LogOut, Settings, Search as SearchIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import {
@@ -15,10 +15,15 @@ import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useClerk } from '@clerk/clerk-expo';
 
+const localColor = '#84CC16';
+
 export default function MenuButton() {
   const router = useRouter();
+  const segments = useSegments();
   const { isDarkMode, toggleDarkMode, clerkUser, resetProfile } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+  const isLocalTab = segments[segments.length - 1] === 'local';
+  const menuColor = isLocalTab ? localColor : colors.primary;
   const { signOut } = useClerk();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -87,7 +92,7 @@ export default function MenuButton() {
         onPress={() => setIsMenuVisible(true)}
         activeOpacity={0.7}
       >
-        <Menu size={32} color={colors.primary} strokeWidth={2.5} />
+        <Menu size={32} color={menuColor} strokeWidth={2.5} />
       </TouchableOpacity>
 
       <Modal

@@ -1,21 +1,25 @@
-import { Tabs } from "expo-router";
+import { Tabs, useSegments } from "expo-router";
 import { BookOpen, Heart, MapPin, ShoppingBag } from "lucide-react-native";
 import React from "react";
 import { Platform, useWindowDimensions } from "react-native";
 import { lightColors, darkColors } from "@/constants/colors";
 import { useUser } from "@/contexts/UserContext";
 
+const localColor = '#84CC16';
+
 export default function TabLayout() {
   const { isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const { width } = useWindowDimensions();
+  const segments = useSegments();
+  const isLocalTab = segments[segments.length - 1] === 'local';
   
   const isTabletOrLarger = Platform.OS === 'web' && width >= 768;
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: isLocalTab ? localColor : colors.primary,
         headerShown: false,
         tabBarPosition: isTabletOrLarger ? 'top' : 'bottom',
         tabBarStyle: {
@@ -46,17 +50,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="local"
+        options={{
+          title: "Local",
+          tabBarIcon: ({ color, focused }) => <MapPin size={24} color={focused ? localColor : color} strokeWidth={2} />,
+        }}
+      />
+      <Tabs.Screen
         name="shop"
         options={{
           title: "Shop",
           tabBarIcon: ({ color }) => <ShoppingBag size={24} color={color} strokeWidth={2} />,
-        }}
-      />
-      <Tabs.Screen
-        name="local"
-        options={{
-          title: "Local",
-          tabBarIcon: ({ color }) => <MapPin size={24} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen

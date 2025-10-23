@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { TrendingUp, TrendingDown, ChevronRight, Target, FolderOpen, MapPin } from 'lucide-react-native';
+import { TrendingUp, TrendingDown, Target, FolderOpen, MapPin } from 'lucide-react-native';
 import {
   View,
   Text,
