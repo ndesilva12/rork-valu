@@ -1,5 +1,5 @@
 import { Tabs, useSegments } from "expo-router";
-import { BookOpen, Heart, MapPin, ShoppingBag } from "lucide-react-native";
+import { BookOpen, Heart, MapPin, ShoppingBag, Search, User } from "lucide-react-native";
 import React from "react";
 import { Platform, useWindowDimensions, StyleSheet, StatusBar } from "react-native";
 import { lightColors, darkColors } from "@/constants/colors";
@@ -63,19 +63,26 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+         name="index"
+         options={{
+           title: "Search",
+           tabBarIcon: ({ color }) => <Search size={24} color={color} strokeWidth={2} />,
+         }}
+        />
+        <Tabs.Screen
           name="shop"
           options={{
             title: "Shop",
             tabBarIcon: ({ color }) => <ShoppingBag size={24} color={color} strokeWidth={2} />,
           }}
         />
-        <Tabs.Screen
-          name="values"
-          options={{
-            title: "Values",
-            tabBarIcon: ({ color }) => <Heart size={24} color={color} strokeWidth={2} />,
-          }}
-        />
+         <Tabs.Screen
+         name="values"
+         options={{
+           title: "Profile",
+           tabBarIcon: ({ color }) => <User size={24} color={color} strokeWidth={2} />,
+         }}
+       />
       </Tabs>
     </SafeAreaView>
   );
