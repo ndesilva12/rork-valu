@@ -21,7 +21,7 @@ export default function TabLayout() {
   const isTabletOrLarger = Platform.OS === 'web' && width >= 768;
 
   return (
-    <SafeAreaView edges={isStandalone ? ['top'] : ['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={isStandalone ? colors.background : 'transparent'} translucent={isStandalone} />
       <Tabs
         screenOptions={{
