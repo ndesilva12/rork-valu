@@ -3,10 +3,10 @@ import hiRoute from "./routes/example/hi/route";
 import { getProfileProcedure } from "./routes/user/get-profile/route";
 import { saveProfileProcedure } from "./routes/user/save-profile/route";
 import { getCausesProcedure } from "./routes/data/get-causes/route";
-import { getProductsProcedure } from "./routes/data/get-products/route";
+import { getBrandsProcedure } from "./routes/data/get-brands/route";
 import { getLocalBusinessesProcedure } from "./routes/data/get-local-businesses/route";
-import { searchProductsProcedure } from "./routes/data/search-products/route";
-import { getProductProcedure } from "./routes/data/get-product/route";
+import { searchBrandsProcedure } from "./routes/data/search-brands/route";
+import { getBrandProcedure } from "./routes/data/get-brand/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -18,10 +18,10 @@ export const appRouter = createTRPCRouter({
   }),
   data: createTRPCRouter({
     getCauses: getCausesProcedure,
-    getProducts: getProductsProcedure,
+    getBrands: getBrandsProcedure,
     getLocalBusinesses: getLocalBusinessesProcedure,
-    searchProducts: searchProductsProcedure,
-    getProduct: getProductProcedure,
+    searchBrands: searchBrandsProcedure,
+    getBrand: getBrandProcedure,
   }),
 });
 

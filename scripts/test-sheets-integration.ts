@@ -9,7 +9,7 @@
 
 import {
   fetchCausesFromSheets,
-  fetchProductsFromSheets,
+  fetchBrandsFromSheets,
   fetchLocalBusinessesFromSheets,
 } from '../backend/services/google-sheets';
 
@@ -83,48 +83,48 @@ async function testGoogleSheetsIntegration() {
     process.exit(1);
   }
 
-  // Test 3: Fetch Products
-  console.log('\n📋 Step 3: Fetching Products');
+  // Test 3: Fetch Brands
+  console.log('\n📋 Step 3: Fetching Brands');
   console.log('-'.repeat(60));
 
   try {
-    const products = await fetchProductsFromSheets();
-    console.log(`✅ Successfully fetched ${products.length} products`);
+    const brands = await fetchBrandsFromSheets();
+    console.log(`✅ Successfully fetched ${brands.length} brands`);
 
-    if (products.length > 0) {
-      console.log('\nSample products:');
-      products.slice(0, 5).forEach((product) => {
-        console.log(`  - ${product.brand} ${product.name} (score: ${product.alignmentScore})`);
+    if (brands.length > 0) {
+      console.log('\nSample brands:');
+      brands.slice(0, 5).forEach((brand) => {
+        console.log(`  - ${brand.name} (score: ${brand.alignmentScore})`);
       });
 
       // Validate structure
-      const hasRequiredFields = products.every(
-        (p) => p.id && p.name && p.brand
+      const hasRequiredFields = brands.every(
+        (b) => b.id && b.name
       );
       if (hasRequiredFields) {
-        console.log('\n✅ All products have required fields (id, name, brand)');
+        console.log('\n✅ All brands have required fields (id, name)');
       } else {
-        console.log('\n⚠️  Warning: Some products are missing required fields');
+        console.log('\n⚠️  Warning: Some brands are missing required fields');
       }
 
       // Check alignment scores
-      const hasValidScores = products.every(
-        (p) => typeof p.alignmentScore === 'number' &&
-               p.alignmentScore >= -100 &&
-               p.alignmentScore <= 100
+      const hasValidScores = brands.every(
+        (b) => typeof b.alignmentScore === 'number' &&
+               b.alignmentScore >= -100 &&
+               b.alignmentScore <= 100
       );
       if (hasValidScores) {
-        console.log('✅ All products have valid alignment scores (-100 to +100)');
+        console.log('✅ All brands have valid alignment scores (-100 to +100)');
       } else {
-        console.log('⚠️  Warning: Some products have invalid alignment scores');
+        console.log('⚠️  Warning: Some brands have invalid alignment scores');
       }
     } else {
-      console.log('\n⚠️  Warning: No products found. Make sure your "Products" sheet has data.');
+      console.log('\n⚠️  Warning: No brands found. Make sure your "Brands" sheet has data.');
     }
   } catch (error: any) {
-    console.error('❌ Error fetching products:', error.message);
+    console.error('❌ Error fetching brands:', error.message);
     console.log('\nTroubleshooting:');
-    console.log('1. Check that you have a sheet named "Products" (case-sensitive)');
+    console.log('1. Check that you have a sheet named "Brands" (case-sensitive)');
     console.log('2. Verify the sheet is shared with your service account email');
     console.log('3. Make sure the sheet has data starting from row 2');
     process.exit(1);

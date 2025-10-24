@@ -36,22 +36,25 @@ export interface ValueAlignment {
   isSupport: boolean;
 }
 
-export interface Product {
+export interface Brand {
   id: string;
-  name: string;
-  brand: string;
+  name: string; // Brand name (e.g., "Apple", "Nike")
   category: string;
-  imageUrl: string;
-  productImageUrl?: string;
-  productDescription?: string;
+  imageUrl: string; // Brand logo
+  exampleImageUrl?: string; // Optional image of example product
+  description?: string; // Brand description
   alignmentScore: number;
   moneyFlow: MoneyFlow;
   keyReasons: string[];
   relatedValues: string[];
   valueAlignments: ValueAlignment[];
-  alternatives?: Product[];
+  alternatives?: Brand[];
   website?: string;
 }
+
+// For backwards compatibility during transition
+// TODO: Remove this once all code is migrated
+export type Product = Brand;
 
 export interface UserProfile {
   causes: Cause[];

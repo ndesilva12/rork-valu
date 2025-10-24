@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { Product } from '@/types';
+import { Brand } from '@/types';
 import { ValueItem } from '@/mocks/causes';
 
 // Cache configuration
@@ -108,12 +108,12 @@ function parseJsonField(value: string | undefined, defaultValue: any = []): any 
   }
 }
 
-// Fetch products from Google Sheets
-export async function fetchProductsFromSheets(): Promise<Product[]> {
-  return getCachedOrFetch('products', async () => {
+// Fetch brands from Google Sheets
+export async function fetchBrandsFromSheets(): Promise<Brand[]> {
+  return getCachedOrFetch('brands', async () => {
     const sheets = getGoogleSheetsClient();
     const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
-    const sheetName = process.env.SHEET_NAME_PRODUCTS || 'Products';
+    const sheetName = process.env.SHEET_NAME_BRANDS || 'Brands';
 
     if (!spreadsheetId) {
       throw new Error('GOOGLE_SPREADSHEET_ID not set in environment variables');
@@ -126,26 +126,26 @@ export async function fetchProductsFromSheets(): Promise<Product[]> {
       });
 
       const rows = response.data.values || [];
-      console.log(`[Sheets] Fetched ${rows.length} products from Google Sheets`);
+      console.log(`[Sheets] Fetched ${rows.length} brands from Google Sheets`);
 
-      const products: Product[] = rows
-        .filter((row) => row[0] && row[1] && row[2]) // Must have id, name, brand
+      const brands: Brand[] = rows
+        .filter((row) => row[0] && row[1]) // Must have id and name
         .map((row) => {
           const shareholders = parseJsonField(row[12], []);
+          const brandName = row[1]; // Brand name (e.g., "Apple", "Nike")
           const moneyFlow = {
-            company: row[11] || row[2], // Use moneyFlowCompany or brand
+            company: row[11] || brandName, // Use moneyFlowCompany or brand name
             shareholders,
             overallAlignment: parseFloat(row[7]) || 0,
           };
 
           return {
             id: row[0],
-            name: row[1],
-            brand: row[2],
+            name: brandName,
             category: row[3] || 'Uncategorized',
-            imageUrl: row[4] || '',
-            productImageUrl: row[5] || row[4] || '',
-            productDescription: row[6] || '',
+            imageUrl: row[4] || '', // Brand logo
+            exampleImageUrl: row[5] || row[4] || '', // Example product image
+            description: row[6] || '', // Brand description
             alignmentScore: parseFloat(row[7]) || 0,
             keyReasons: parseJsonField(row[8], []),
             relatedValues: parseJsonField(row[9], []),
@@ -155,16 +155,16 @@ export async function fetchProductsFromSheets(): Promise<Product[]> {
           };
         });
 
-      return products;
+      return brands;
     } catch (error: any) {
-      console.error('[Sheets] Error fetching products:', error.message);
-      throw new Error(`Failed to fetch products from Google Sheets: ${error.message}`);
+      console.error('[Sheets] Error fetching brands:', error.message);
+      throw new Error(`Failed to fetch brands from Google Sheets: ${error.message}`);
     }
   });
 }
 
 // Fetch local businesses from Google Sheets
-export async function fetchLocalBusinessesFromSheets(): Promise<Product[]> {
+export async function fetchLocalBusinessesFromSheets(): Promise<Brand[]> {
   return getCachedOrFetch('local-businesses', async () => {
     const sheets = getGoogleSheetsClient();
     const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
@@ -183,24 +183,24 @@ export async function fetchLocalBusinessesFromSheets(): Promise<Product[]> {
       const rows = response.data.values || [];
       console.log(`[Sheets] Fetched ${rows.length} local businesses from Google Sheets`);
 
-      const businesses: Product[] = rows
-        .filter((row) => row[0] && row[1] && row[2]) // Must have id, name, brand
+      const businesses: Brand[] = rows
+        .filter((row) => row[0] && row[1]) // Must have id and name
         .map((row) => {
           const shareholders = parseJsonField(row[12], []);
+          const brandName = row[1]; // Business/brand name
           const moneyFlow = {
-            company: row[11] || row[2],
+            company: row[11] || brandName,
             shareholders,
             overallAlignment: parseFloat(row[7]) || 0,
           };
 
           return {
             id: row[0],
-            name: row[1],
-            brand: row[2],
+            name: brandName,
             category: row[3] || 'Local Business',
             imageUrl: row[4] || '',
-            productImageUrl: row[5] || row[4] || '',
-            productDescription: row[6] || '',
+            exampleImageUrl: row[5] || row[4] || '',
+            description: row[6] || '',
             alignmentScore: parseFloat(row[7]) || 0,
             keyReasons: parseJsonField(row[8], []),
             relatedValues: parseJsonField(row[9], []),
@@ -218,15 +218,14 @@ export async function fetchLocalBusinessesFromSheets(): Promise<Product[]> {
   });
 }
 
-// Search products with user cause relevance
-export function searchProducts(products: Product[], query: string, userCauses: string[]): Product[] {
+// Search brands with user cause relevance
+export function searchBrands(brands: Brand[], query: string, userCauses: string[]): Brand[] {
   const lowerQuery = query.toLowerCase();
 
-  const filtered = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(lowerQuery) ||
-      product.brand.toLowerCase().includes(lowerQuery) ||
-      product.category.toLowerCase().includes(lowerQuery)
+  const filtered = brands.filter(
+    (brand) =>
+      brand.name.toLowerCase().includes(lowerQuery) ||
+      brand.category.toLowerCase().includes(lowerQuery)
   );
 
   return filtered.sort((a, b) => {
@@ -236,16 +235,16 @@ export function searchProducts(products: Product[], query: string, userCauses: s
   });
 }
 
-function calculateRelevance(product: Product, userCauses: string[]): number {
-  if (userCauses.length === 0) return Math.abs(product.alignmentScore);
+function calculateRelevance(brand: Brand, userCauses: string[]): number {
+  if (userCauses.length === 0) return Math.abs(brand.alignmentScore);
 
-  const hasMatchingCause = product.relatedValues.some((v) => userCauses.includes(v));
+  const hasMatchingCause = brand.relatedValues.some((v) => userCauses.includes(v));
 
   if (hasMatchingCause) {
-    return Math.abs(product.alignmentScore) + 100;
+    return Math.abs(brand.alignmentScore) + 100;
   }
 
-  return Math.abs(product.alignmentScore);
+  return Math.abs(brand.alignmentScore);
 }
 
 // Clear cache (useful for testing or manual refresh)

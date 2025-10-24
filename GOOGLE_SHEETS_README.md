@@ -1,12 +1,12 @@
 # Google Sheets Integration for Valu App
 
-This integration allows you to manage your app's product data, values/causes, and local business information in Google Sheets instead of hardcoded mock data files.
+This integration allows you to manage your app's brand data, values/causes, and local business information in Google Sheets instead of hardcoded mock data files.
 
 ## Why Use Google Sheets?
 
 ✅ **Easy Collaboration** - Multiple people can edit data
 ✅ **No App Updates** - Change data without rebuilding the app
-✅ **Scalable** - Add thousands of products easily
+✅ **Scalable** - Add thousands of brands easily
 ✅ **Familiar Interface** - Use spreadsheets, not code
 ✅ **Free** - Google Sheets is free with generous limits
 ✅ **Automatic Caching** - Built-in caching reduces API calls
@@ -19,15 +19,15 @@ This integration allows you to manage your app's product data, values/causes, an
 
 1. Go to [Google Sheets](https://sheets.google.com)
 2. Create a new spreadsheet: "Valu App Database"
-3. Create 3 tabs: `Causes`, `Products`, `Local Businesses`
+3. Create 3 tabs: `Causes`, `Brands`, `Local Businesses`
 4. Add column headers (see structure below)
 5. Add a few test rows
 
-**Minimum Viable Setup - Products Sheet:**
+**Minimum Viable Setup - Brands Sheet:**
 
-| id | name | brand | category | imageUrl | productImageUrl | productDescription | alignmentScore | keyReasons | relatedValues | website |
-|----|------|-------|----------|----------|-----------------|-------------------|----------------|------------|---------------|---------|
-| test-1 | iPhone 15 | Apple | Electronics | https://logo.clearbit.com/apple.com | https://images.unsplash.com/photo-1605236453806-6ff36851218e?w=800 | Latest smartphone | 68 | ["Privacy focused"] | ["privacy"] | https://apple.com |
+| id | name | category | imageUrl | exampleImageUrl | description | alignmentScore | keyReasons | relatedValues | website |
+|----|------|----------|----------|-----------------|-------------|----------------|------------|---------------|---------|
+| brand-apple | Apple | Electronics | https://logo.clearbit.com/apple.com | https://images.unsplash.com/photo-1605236453806-6ff36851218e?w=800 | Consumer electronics company | 68 | ["Privacy focused"] | ["privacy"] | https://apple.com |
 
 ### 2. Make Sheet Public
 
@@ -54,7 +54,7 @@ GOOGLE_SHEETS_API_KEY=AIzaSy...your_api_key_here
 
 # Optional: Custom sheet names (defaults shown)
 SHEET_NAME_CAUSES=Causes
-SHEET_NAME_PRODUCTS=Products
+SHEET_NAME_BRANDS=Brands
 SHEET_NAME_LOCAL_BUSINESSES=Local Businesses
 ```
 
@@ -80,10 +80,10 @@ The data is now automatically available via tRPC:
 import { trpc } from '@/lib/trpc';
 
 function MyComponent() {
-  const { data: products } = trpc.data.getProducts.useQuery();
+  const { data: brands } = trpc.data.getBrands.useQuery();
   const { data: causes } = trpc.data.getCauses.useQuery();
 
-  return <ProductList products={products} />;
+  return <BrandList brands={brands} />;
 }
 ```
 
@@ -118,17 +118,17 @@ function MyComponent() {
 
 **Categories:** `ideology`, `person`, `social_issue`, `religion`, `nation`, `organization`, `corporation`
 
-### Products Sheet
+### Brands Sheet
 
 | Column | Type | Required | Example |
 |--------|------|----------|---------|
-| A: id | Text | ✅ | `prod-001` |
-| B: name | Text | ✅ | `iPhone 15 Pro` |
-| C: brand | Text | ✅ | `Apple` |
+| A: id | Text | ✅ | `brand-apple` |
+| B: name | Text | ✅ | `Apple` (brand name) |
+| C: (unused) | Text | ❌ | Leave empty or use for notes |
 | D: category | Text | ❌ | `Electronics` |
-| E: imageUrl | Text | ❌ | `https://logo.clearbit.com/apple.com` |
-| F: productImageUrl | Text | ❌ | `https://images.unsplash.com/...` |
-| G: productDescription | Text | ❌ | `Latest smartphone` |
+| E: imageUrl | Text | ❌ | `https://logo.clearbit.com/apple.com` (brand logo) |
+| F: exampleImageUrl | Text | ❌ | `https://images.unsplash.com/...` (example product image) |
+| G: description | Text | ❌ | `Consumer electronics company` |
 | H: alignmentScore | Number | ✅ | `68` (between -100 and +100) |
 | I: keyReasons | JSON Array | ❌ | `["Privacy focused","Renewable energy"]` |
 | J: relatedValues | JSON Array | ❌ | `["privacy","climate-change"]` |
@@ -175,20 +175,20 @@ Your backend now exposes these tRPC endpoints:
 // Get all causes/values
 trpc.data.getCauses.useQuery()
 
-// Get all products
-trpc.data.getProducts.useQuery()
+// Get all brands
+trpc.data.getBrands.useQuery()
 
 // Get all local businesses
 trpc.data.getLocalBusinesses.useQuery()
 
-// Search products (with user cause relevance)
-trpc.data.searchProducts.useQuery({
+// Search brands (with user cause relevance)
+trpc.data.searchBrands.useQuery({
   query: "coffee",
   userCauses: ["environmentalism"]
 })
 
-// Get single product by ID
-trpc.data.getProduct.useQuery({ id: "prod-001" })
+// Get single brand by ID
+trpc.data.getBrand.useQuery({ id: "brand-starbucks" })
 ```
 
 ---
@@ -217,14 +217,14 @@ The integration includes **two layers of caching**:
 ```typescript
 import { MOCK_PRODUCTS } from '@/mocks/products';
 
-const products = MOCK_PRODUCTS;
+const brands = MOCK_PRODUCTS; // These were actually brands, not products
 ```
 
 ### After:
 ```typescript
 import { trpc } from '@/lib/trpc';
 
-const { data: products = [] } = trpc.data.getProducts.useQuery();
+const { data: brands = [] } = trpc.data.getBrands.useQuery();
 ```
 
 See [GOOGLE_SHEETS_USAGE.md](./GOOGLE_SHEETS_USAGE.md) for detailed migration examples.
@@ -253,7 +253,7 @@ This will:
 npm run start
 
 # In another terminal, test an endpoint
-curl http://localhost:8081/api/trpc/data.getProducts
+curl http://localhost:8081/api/trpc/data.getBrands
 ```
 
 ---
