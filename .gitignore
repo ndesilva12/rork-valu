@@ -31,6 +31,7 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
 
 # typescript
 *.tsbuildinfo
@@ -38,3 +39,7 @@ yarn-error.*
 
 # database
 .data/
+
+# Google Sheets credentials
+secrets/
+*service-account*.json
