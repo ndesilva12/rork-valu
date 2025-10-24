@@ -99,23 +99,21 @@ export default function ValuesScreen() {
       )}
 
 
-
-       <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]} key="info-section">
-          <Text style={[styles.infoTitle, { color: colors.text }]}>How it works</Text>
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            We analyze where your money flows when you purchase products - from the company to its
-            shareholders and beneficiaries. We then match these entities against your selected values
-            to provide alignment scores.
-          </Text>
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            Products are scored from -100 (strongly opposed) to +100 (strongly aligned) based on
-            public records, donations, and stated positions.
-          </Text>
-        </View>
-        </ScrollView>
-        </View>
-      );
-    }
+<View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]} key="info-section">
+  <Text style={[styles.infoTitle, { color: colors.text }]}>How it works</Text>
+  <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+    We analyze where your money flows when you purchase products - from the company to its
+    shareholders and beneficiaries. We then match these entities against your selected values
+    to provide alignment scores.
+  </Text>
+  <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+    Products are scored from -100 (strongly opposed) to +100 (strongly aligned) based on
+    public records, donations, and stated positions.
+  </Text>
+</View>
+</ScrollView>
+</View>
+);
 
 const styles = StyleSheet.create({
   container: {
