@@ -224,4 +224,3 @@ infoText: {
   marginBottom: 12,
 },
 });
-  /* trailing line fix */
