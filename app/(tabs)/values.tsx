@@ -217,10 +217,10 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: 12,
   },
-  infoText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-    marginBottom: 12,
-  },
+infoText: {
+  fontSize: 14,
+  color: Colors.textSecondary,
+  lineHeight: 22,
+  marginBottom: 12,
+},
 });
