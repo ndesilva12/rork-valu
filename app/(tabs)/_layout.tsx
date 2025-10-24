@@ -5,8 +5,14 @@ import { Platform, useWindowDimensions, StyleSheet } from "react-native";
 import { lightColors, darkColors } from "@/constants/colors";
 import { useUser } from "@/contexts/UserContext";
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useIsStandalone } from '@/hooks/useIsStandalone';
 
 const localColor = '#84CC16';
+const isStandalone = useIsStandalone(); 
+const { isDarkMode } = useUser(); 
+const colors = isDarkMode ? darkColors : lightColors;
+
+
 
 export default function TabLayout() {
   const { isDarkMode } = useUser();
@@ -18,7 +24,8 @@ export default function TabLayout() {
   const isTabletOrLarger = Platform.OS === 'web' && width >= 768;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={isStandalone ? ['top'] : ['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.background }}>
+  <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={isStandalone ? colors.background : 'transparent'} translucent={isStandalone} />
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: isLocalTab ? localColor : colors.primary,
