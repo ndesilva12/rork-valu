@@ -205,7 +205,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
 
-
   infoSection: {
     backgroundColor: Colors.backgroundSecondary,
     padding: 20,
