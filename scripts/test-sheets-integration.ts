@@ -7,6 +7,10 @@
  *   npm run test-sheets  (or bun run test-sheets)
  */
 
+// Load environment variables from .env file
+import dotenv from 'dotenv';
+dotenv.config();
+
 import {
   fetchCausesFromSheets,
   fetchBrandsFromSheets,
