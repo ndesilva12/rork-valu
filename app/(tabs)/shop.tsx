@@ -22,7 +22,6 @@ import { useUser } from '@/contexts/UserContext';
 import { MOCK_PRODUCTS } from '@/mocks/products';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
 import { Product } from '@/types';
-import { useIsStandalone } from '@/hooks/useIsStandalone';
 
 interface Comment {
   id: string;
@@ -42,7 +41,6 @@ export default function ShopScreen() {
   const router = useRouter();
   const { profile, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
-  const isStandalone = useIsStandalone();
 
   const [interactions, setInteractions] = useState<Map<string, ProductInteraction>>(new Map());
   const [commentModalVisible, setCommentModalVisible] = useState(false);
@@ -360,8 +358,6 @@ export default function ShopScreen() {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar
           barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-          backgroundColor={isStandalone ? colors.background : 'transparent'}
-          translucent={isStandalone}
         />
         <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Shop</Text>
