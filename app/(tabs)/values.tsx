@@ -223,4 +223,4 @@ infoText: {
   lineHeight: 22,
   marginBottom: 12,
 },
-});
+}); // End of styles—no trailing whitespace
