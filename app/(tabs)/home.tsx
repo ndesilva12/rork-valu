@@ -307,55 +307,47 @@ export default function HomeScreen() {
   );
 
   const renderPlaybookView = () => (
-    <>
-      <View style={styles.section}>
-        <View style={styles.sectionHeaderRow}>
-          <View style={styles.sectionHeader}>
-            <TrendingUp size={24} color={colors.success} strokeWidth={2} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Most Aligned Brands</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => setShowAllAligned(!showAllAligned)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.showAllButton, { color: colors.primary }]}>
-              {showAllAligned ? 'Hide' : 'Show All'}
-            </Text>
-          </TouchableOpacity>
+  <>
+    <View style={styles.section}>
+      <View style={styles.sectionHeaderRow}>
+        <View style={styles.sectionHeader}>
+          <TrendingUp size={24} color={colors.success} strokeWidth={2} />
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Aligned Brands</Text>
         </View>
-        <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-          {showAllAligned ? `All ${allSupportFull.length} brands that align with your values` : 'Top 5 brands that align with your values'}
-        </Text>
-        <View style={styles.brandsContainer}>
-          {(showAllAligned ? allSupportFull : topSupport.slice(0, 5)).map((product) => renderBrandCard(product, 'support'))}
-        </View>
+        <TouchableOpacity
+          onPress={() => setShowAllAligned(!showAllAligned)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.showAllButton, { color: colors.primary }]}>
+            {showAllAligned ? 'Hide' : 'Show All'}
+          </Text>
+        </TouchableOpacity>
       </View>
-
-      <View style={styles.section}>
-        <View style={styles.sectionHeaderRow}>
-          <View style={styles.sectionHeader}>
-            <TrendingDown size={24} color={colors.danger} strokeWidth={2} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Least Aligned Brands</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => setShowAllLeast(!showAllLeast)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.showAllButton, { color: colors.primary }]}>
-              {showAllLeast ? 'Hide' : 'Show All'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-          {showAllLeast ? `All ${allAvoidFull.length} brands that do not align with your values` : 'Top 5 brands that do not align with your values'}
-        </Text>
-        <View style={styles.brandsContainer}>
-          {(showAllLeast ? allAvoidFull : topAvoid.slice(0, 5)).map((product) => renderBrandCard(product, 'avoid'))}
-        </View>
+      <View style={styles.brandsContainer}>
+        {(showAllAligned ? allSupportFull : topSupport.slice(0, 5)).map((product) => renderBrandCard(product, 'support'))}
       </View>
-    </>
-  );
-
+    </View>
+    <View style={styles.section}>
+      <View style={styles.sectionHeaderRow}>
+        <View style={styles.sectionHeader}>
+          <TrendingDown size={24} color={colors.danger} strokeWidth={2} />
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Unaligned Brands</Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => setShowAllLeast(!showAllLeast)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.showAllButton, { color: colors.primary }]}>
+            {showAllLeast ? 'Hide' : 'Show All'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.brandsContainer}>
+        {(showAllLeast ? allAvoidFull : topAvoid.slice(0, 5)).map((product) => renderBrandCard(product, 'avoid'))}
+      </View>
+    </View>
+  </>
+);
   const renderFoldersView = () => (
     <View style={styles.foldersContainer}>
       {FOLDER_CATEGORIES.map(category => {
