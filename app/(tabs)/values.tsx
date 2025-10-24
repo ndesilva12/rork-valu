@@ -112,7 +112,6 @@ export default function ValuesScreen() {
   </Text>
 </View>
 </ScrollView>
-</View>
 );
 
 const styles = StyleSheet.create({
