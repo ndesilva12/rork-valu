@@ -30,7 +30,7 @@ export default function TabLayout() {
           tabBarPosition: isTabletOrLarger ? 'top' : 'bottom',
           tabBarStyle: {
             height: isTabletOrLarger ? undefined : 70,
-            paddingBottom: isTabletOrLarger ? undefined : 10,
+            paddingBottom: 0,
             paddingTop: isTabletOrLarger ? undefined : 10,
             borderTopWidth: isTabletOrLarger ? 0 : 1,
             borderBottomWidth: isTabletOrLarger ? 1 : 0,
@@ -53,6 +53,7 @@ export default function TabLayout() {
           options={{
             title: "Playbook",
             tabBarIcon: ({ color }) => <BookOpen size={24} color={color} strokeWidth={2} />,
+            tabBarShowLabel: false,
           }}
         />
         <Tabs.Screen
@@ -60,13 +61,15 @@ export default function TabLayout() {
           options={{
             title: "Local",
             tabBarIcon: ({ color, focused }) => <MapPin size={24} color={focused ? localColor : color} strokeWidth={2} />,
+            tabBarShowLabel: false,
           }}
         />
         <Tabs.Screen
-         name="index"
+         name="search"
          options={{
            title: "Search",
            tabBarIcon: ({ color }) => <Search size={24} color={color} strokeWidth={2} />,
+           tabBarShowLabel: false,
          }}
         />
         <Tabs.Screen
@@ -74,6 +77,7 @@ export default function TabLayout() {
           options={{
             title: "Shop",
             tabBarIcon: ({ color }) => <ShoppingBag size={24} color={color} strokeWidth={2} />,
+            tabBarShowLabel: false,
           }}
         />
          <Tabs.Screen
@@ -81,6 +85,7 @@ export default function TabLayout() {
          options={{
            title: "Profile",
            tabBarIcon: ({ color }) => <User size={24} color={color} strokeWidth={2} />,
+           tabBarShowLabel: false,
          }}
        />
       </Tabs>
