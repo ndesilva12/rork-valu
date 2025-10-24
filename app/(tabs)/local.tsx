@@ -338,6 +338,7 @@ export default function LocalScreen() {
       <view style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar
           barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+          backgroundColor={colors.background}
         />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Local</Text>
@@ -367,6 +368,7 @@ export default function LocalScreen() {
     <view style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
       />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
