@@ -467,7 +467,7 @@ export default function HomeScreen() {
             <Text style={[styles.emptyButtonText, { color: colors.white }]}>Get Started</Text>
           </TouchableOpacity>
         </View>
-      </view>
+      </View>
     );
   }
 
@@ -513,7 +513,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
       )}
       </ScrollView>
-    </view>
+    </View>
   );
 }
 
