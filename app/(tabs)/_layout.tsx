@@ -29,7 +29,7 @@ export default function TabLayout() {
           headerShown: false,
           tabBarPosition: isTabletOrLarger ? 'top' : 'bottom',
           tabBarStyle: {
-            height: isTabletOrLarger ? undefined : 60,
+            height: isTabletOrLarger ? undefined : 70,
             paddingBottom: 0,
             paddingTop: 0,
             borderTopWidth: isTabletOrLarger ? 0 : 1,
