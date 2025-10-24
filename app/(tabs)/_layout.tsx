@@ -1,21 +1,18 @@
 import { Tabs, useSegments } from "expo-router";
 import { BookOpen, Heart, MapPin, ShoppingBag } from "lucide-react-native";
 import React from "react";
-import { Platform, useWindowDimensions, StyleSheet } from "react-native";
+import { Platform, useWindowDimensions, StyleSheet, StatusBar } from "react-native";
 import { lightColors, darkColors } from "@/constants/colors";
 import { useUser } from "@/contexts/UserContext";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
 
 const localColor = '#84CC16';
-const isStandalone = useIsStandalone(); 
-const { isDarkMode } = useUser(); 
-const colors = isDarkMode ? darkColors : lightColors;
-
-
 
 export default function TabLayout() {
-  const { isDarkMode } = useUser();
+  // Move all hooks INSIDE the component
+  const isStandalone = useIsStandalone(); 
+  const { isDarkMode } = useUser(); 
   const colors = isDarkMode ? darkColors : lightColors;
   const { width } = useWindowDimensions();
   const segments = useSegments();
@@ -25,7 +22,7 @@ export default function TabLayout() {
 
   return (
     <SafeAreaView edges={isStandalone ? ['top'] : ['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.background }}>
-  <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={isStandalone ? colors.background : 'transparent'} translucent={isStandalone} />
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={isStandalone ? colors.background : 'transparent'} translucent={isStandalone} />
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: isLocalTab ? localColor : colors.primary,
