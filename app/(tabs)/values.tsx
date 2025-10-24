@@ -28,25 +28,24 @@ export default function ValuesScreen() {
 
 
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={isStandalone ? colors.background : 'transparent'}
-        translucent={isStandalone}
-      />
-      <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
-        <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <Text style={[styles.title, { color: colors.primary }]}>Values</Text>
-          <MenuButton />
-        </View>
+ return (
+  <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <StatusBar
+      barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+      backgroundColor={isStandalone ? colors.background : 'transparent'}
+      translucent={isStandalone}
+    />
+    <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
+        <Text style={[styles.title, { color: colors.primary }]}>Values</Text>
+        <MenuButton />
       </View>
+    </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.content, { paddingBottom: isStandalone ? 0 : 16 }]}
-        />
-
+    <ScrollView
+      style={styles.scrollView}
+      contentContainerStyle={[styles.content, { paddingBottom: isStandalone ? 0 : 16 }]}
+    >
       <View style={styles.statsSection}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact</Text>
         <View style={[styles.statsCard, { backgroundColor: 'transparent', borderColor: colors.primaryLight }]}>
@@ -98,22 +97,22 @@ export default function ValuesScreen() {
         </View>
       )}
 
-
-<View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]} key="info-section">
-  <Text style={[styles.infoTitle, { color: colors.text }]}>How it works</Text>
-  <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-    We analyze where your money flows when you purchase products - from the company to its
-    shareholders and beneficiaries. We then match these entities against your selected values
-    to provide alignment scores.
-  </Text>
-  <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-    Products are scored from -100 (strongly opposed) to +100 (strongly aligned) based on
-    public records, donations, and stated positions.
-  </Text>
-</View>
-</ScrollView>
+      <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]} key="info-section">
+        <Text style={[styles.infoTitle, { color: colors.text }]}>How it works</Text>
+        <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+          We analyze where your money flows when you purchase products - from the company to its
+          shareholders and beneficiaries. We then match these entities against your selected values
+          to provide alignment scores.
+        </Text>
+        <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+          Products are scored from -100 (strongly opposed) to +100 (strongly aligned) based on
+          public records, donations, and stated positions.
+        </Text>
+      </View>
+    </ScrollView>
+  </View>
 );
-
+  
 const styles = StyleSheet.create({
   container: {
     flex: 1,
