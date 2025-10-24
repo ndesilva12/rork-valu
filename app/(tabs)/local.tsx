@@ -11,7 +11,6 @@ import {
   StatusBar,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import MenuButton from '@/components/MenuButton';
 import { useUser } from '@/contexts/UserContext';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
@@ -20,8 +19,6 @@ import { useMemo, useState, useRef } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
 
 type ViewMode = 'playbook' | 'browse' | 'map';
-
-const isStandalone = useIsStandalone();
 
 const localColors = {
   primary: '#84CC16',
@@ -338,11 +335,9 @@ export default function LocalScreen() {
 
   if (profile.causes.length === 0) {
     return (
-      <SafeAreaView edges={isStandalone ? ['top'] : ['top', 'bottom']} style={[styles.container, { backgroundColor: colors.background }]}>
+      <view style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar
           barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-          backgroundColor={isStandalone ? colors.background : 'transparent'}
-          translucent={isStandalone}
         />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Local</Text>
@@ -364,16 +359,14 @@ export default function LocalScreen() {
             <Text style={[styles.emptyButtonText, { color: colors.white }]}>Get Started</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView edges={isStandalone ? ['top'] : ['top', 'bottom']} style={[styles.container, { backgroundColor: colors.background }]}>
+    <view style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={isStandalone ? colors.background : 'transparent'}
-        translucent={isStandalone}
       />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
@@ -385,14 +378,13 @@ export default function LocalScreen() {
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
-        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent, { paddingBottom: isStandalone ? 0 : 16 }]}
-        {...panResponder.panHandlers}
+        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}
       >
         {viewMode === 'playbook' && renderPlaybookView()}
         {viewMode === 'browse' && renderBrowseView()}
         {viewMode === 'map' && renderMapView()}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
