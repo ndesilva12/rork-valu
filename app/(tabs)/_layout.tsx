@@ -76,8 +76,6 @@ export default function TabLayout() {
       style={{
         flex: 1,
         backgroundColor: colors.background,
-        // ensure full viewport height on web so background reaches bottom of PWA
-        minHeight: Platform.OS === "web" ? "100vh" : undefined,
       }}
     >
       <StatusBar
@@ -94,7 +92,7 @@ export default function TabLayout() {
               tabBarActiveTintColor: isLocalTab ? localColor : colors.primary,
               headerShown: false,
               tabBarPosition: isTabletOrLarger ? "top" : "bottom",
-              // we render custom labels on wide screens; keep default labels off
+              // render custom labels on wide screens; keep default labels off
               tabBarShowLabel: false,
 
               // ensure the tab bar background covers the safe area on PWAs and native
@@ -104,10 +102,12 @@ export default function TabLayout() {
                 bottom: isTabletOrLarger ? undefined : 0,
                 left: 0,
                 right: 0,
+                // ensure the tab bar background covers the safe area (uses calc(...) on web PWAs)
                 height: tabBarCssHeight,
-                // Align children in the visible icon row area
+                // distribute icons evenly across the bar on mobile; keep flex-start on wide layouts
+                flexDirection: "row",
+                justifyContent: isTabletOrLarger ? "flex-start" : "space-around",
                 alignItems: "center",
-                justifyContent: "center",
                 paddingVertical: 6,
                 borderTopWidth: isTabletOrLarger ? 0 : 1,
                 borderBottomWidth: isTabletOrLarger ? 1 : 0,
@@ -124,11 +124,14 @@ export default function TabLayout() {
                 paddingBottom: contentPaddingBottom,
               },
 
+              // icon cell sizing to vertically center the icon in the visible row
+              // give each icon cell flexible space so icons spread evenly
               tabBarIconStyle: {
                 height: visibleRowHeight,
                 alignItems: "center",
                 justifyContent: "center",
                 marginTop: 0,
+                flex: Platform.OS === "web" && !isTabletOrLarger ? 1 : undefined,
               },
             }}
           >
