@@ -42,15 +42,16 @@ export default function TabLayout() {
     isTabletOrLarger ? visibleRowHeight + topInset : topInset;
 
   // helper to render icon + optional label beside it on wide screens
-  // Use explicit visible colors (active/inactive) so icons are always visible
+  // This uses the color parameter from tabBar (so inactive color set in screenOptions will be applied)
   const renderTabIconWithLabel = useMemo(
     () =>
       (Icon: React.ComponentType<any>, label: string, focusedColor: string) =>
       ({ color, focused }: { color: string; focused?: boolean }) => {
         const active = Boolean(focused);
-        // explicit inactive color to ensure visibility against background
-        const inactiveColor = colors.textLight ?? colors.text;
-        const useColor = active ? focusedColor : (color ?? inactiveColor);
+        // prefer the color parameter (tabBarInactiveTintColor / tabBarActiveTintColor),
+        // otherwise fall back to a high-contrast color from theme
+        const inactiveFallback = colors.text;
+        const useColor = active ? focusedColor : (color ?? inactiveFallback);
 
         if (isTabletOrLarger) {
           return (
@@ -69,10 +70,11 @@ export default function TabLayout() {
             </View>
           );
         }
-        // mobile: icon only (smaller for fitting in a shorter bar)
+
+        // mobile: icon only
         return <Icon size={22} color={useColor} strokeWidth={2} />;
       },
-    [isTabletOrLarger, colors.textLight, colors.text]
+    [isTabletOrLarger, colors.text]
   );
 
   return (
@@ -94,24 +96,20 @@ export default function TabLayout() {
         <View style={{ width: "100%", maxWidth: isTabletOrLarger ? "50%" : 768, flex: 1 }}>
           <Tabs
             screenOptions={{
-              // active and inactive tint explicitly set so the Icon receives a usable color
+              // explicit tint colors so the tabBar passes them to the icon renderer
               tabBarActiveTintColor: isLocalTab ? localColor : colors.primary,
-              tabBarInactiveTintColor: colors.textLight ?? colors.text, // use high-contrast text color
+              tabBarInactiveTintColor: colors.text, // ensure good contrast for inactive icons
               headerShown: false,
               tabBarPosition: isTabletOrLarger ? "top" : "bottom",
-              // render custom labels on wide screens; keep default labels off
               tabBarShowLabel: false,
 
-              // ensure the tab bar background covers the safe area on PWAs and native
               tabBarStyle: {
                 position: isTabletOrLarger ? "relative" : "absolute",
                 top: isTabletOrLarger ? 0 : undefined,
                 bottom: isTabletOrLarger ? undefined : 0,
                 left: 0,
                 right: 0,
-                // ensure the tab bar background covers the safe area (uses calc(...) on web PWAs)
                 height: tabBarCssHeight,
-                // distribute icons evenly across the bar on mobile; keep left/top layout on wide screens
                 flexDirection: "row",
                 justifyContent: isTabletOrLarger ? "flex-start" : "space-around",
                 alignItems: "center",
@@ -125,14 +123,11 @@ export default function TabLayout() {
                 elevation: isTabletOrLarger ? 10 : undefined,
               },
 
-              // reserve space so content doesn't go under the tab bar
               contentStyle: {
                 paddingTop: contentPaddingTop,
                 paddingBottom: contentPaddingBottom,
               },
 
-              // icon cell sizing to vertically center the icon in the visible row
-              // make mobile icon cells flexible so icons spread evenly
               tabBarIconStyle: {
                 height: visibleRowHeight,
                 alignItems: "center",
