@@ -229,7 +229,7 @@ export default function HomeScreen() {
           match = true;
         } else if (
           category.id === 'social-media' &&
-          (productBrand.includes('meta') ||
+            (productBrand.includes('meta') ||
             productBrand.includes('facebook') ||
             productBrand.includes('instagram') ||
             productBrand.includes('tiktok') ||
@@ -237,35 +237,35 @@ export default function HomeScreen() {
             productBrand.includes('x') ||
             productBrand.includes('twitter'))
         ) {
-          match = true;
-        } else if (
-          category.id === 'insurance' &&
-          (productCategory.includes('insurance') ||
-            productBrand.includes('state farm') ||
-            productBrand.includes('allstate') ||
-            productBrand.includes('progressive') ||
-            productBrand.includes('geico'))
-        ) {
-          match = true;
-        } else if (
-          category.id === 'vehicles' &&
-          (productCategory.includes('auto') ||
-            productBrand.includes('tesla') ||
-            productBrand.includes('ford') ||
-            productBrand.includes('toyota') ||
-            productBrand.includes('honda') ||
-            productBrand.includes('chevrolet'))
-        ) {
-          match = true;
-        } else if (category.id === 'technology' && productCategory.includes('tech')) {
-          match = true;
-        } else if (category.id === 'retail' && (productCategory.includes('retail') || productCategory.includes('store'))) {
-          match = true;
-        } else if (category.id === 'financial' && productCategory.includes('financial')) {
-          match = true;
-        } else if (category.id === 'fashion' && productCategory.includes('fashion')) {
-          match = true;
-        }
+    match = true;
+  } else if (
+    category.id === 'insurance' &&
+    (productCategory.includes('insurance') ||
+      productBrand.includes('state farm') ||
+      productBrand.includes('allstate') ||
+      productBrand.includes('progressive') ||
+      productBrand.includes('geico'))
+  ) {
+    match = true;
+  } else if (
+    category.id === 'vehicles' &&
+    (productCategory.includes('auto') ||
+      productBrand.includes('tesla') ||
+      productBrand.includes('ford') ||
+      productBrand.includes('toyota') ||
+      productBrand.includes('honda') ||
+      productBrand.includes('chevrolet'))
+  ) {
+    match = true;
+  } else if (category.id === 'technology' && productCategory.includes('tech')) {
+    match = true;
+  } else if (category.id === 'retail' && (productCategory.includes('retail') || productCategory.includes('store'))) {
+    match = true;
+  } else if (category.id === 'financial' && productCategory.includes('financial')) {
+    match = true;
+  } else if (category.id === 'fashion' && productCategory.includes('fashion')) {
+    match = true;
+  }
 
         if (match) {
           if (!categorized.has(category.id)) {
@@ -385,7 +385,7 @@ export default function HomeScreen() {
       </View>
 
       {/* Move Unaligned brands closer to Aligned brands: reduced marginTop + slightly reduced bottom spacing */}
-      <View style={[styles.section, { marginTop: 8, marginBottom: 28 }]}>
+      <View style={[styles.section, { marginTop: 4, marginBottom: 14 }]}>
         <View style={styles.sectionHeaderRow}>
           <View style={styles.sectionHeader}>
             <TrendingDown size={24} color={colors.danger} strokeWidth={2} />
@@ -704,7 +704,7 @@ const styles = StyleSheet.create({
   },
   searchPromptSubtitle: {
     fontSize: 14,
-  },
+    },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
