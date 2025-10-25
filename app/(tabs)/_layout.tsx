@@ -19,7 +19,7 @@ export default function TabLayout() {
 
   const isTabletOrLarger = Platform.OS === "web" && width >= 768;
 
-  // visible (icon row) height for the tab bar (adjust as desired)
+  // visible (icon row) height for the tab bar (tweak to taste)
   const visibleRowHeight = isTabletOrLarger ? 64 : 56;
 
   // safe area insets (native). For web PWAs we'll use env(safe-area-inset-bottom)
@@ -27,7 +27,7 @@ export default function TabLayout() {
   const bottomInset = insets.bottom || 0;
   const topInset = insets.top || 0;
 
-  // On web PWA we use CSS env() to extend the bar background into the home-indicator area.
+  // Tab bar height: On web PWA use calc(visibleRow + env(safe-area-inset-bottom)), on native add bottom inset numerically.
   const tabBarCssHeight: number | string =
     Platform.OS === "web" && isStandalone
       ? `calc(${visibleRowHeight}px + env(safe-area-inset-bottom))`
@@ -38,8 +38,7 @@ export default function TabLayout() {
       ? `calc(${visibleRowHeight}px + env(safe-area-inset-bottom))`
       : visibleRowHeight + bottomInset;
 
-  const contentPaddingTop: number =
-    isTabletOrLarger ? visibleRowHeight + topInset : topInset;
+  const contentPaddingTop: number = isTabletOrLarger ? visibleRowHeight + topInset : topInset;
 
   // helper to render icon + optional label beside it on wide screens
   const renderTabIconWithLabel = useMemo(
@@ -64,7 +63,7 @@ export default function TabLayout() {
             </View>
           );
         }
-        // mobile: icon only (smaller for fitting in a shorter bar)
+        // mobile: icon only (slightly smaller to fit shorter bar)
         return <Icon size={22} color={color} strokeWidth={2} />;
       },
     [isTabletOrLarger]
@@ -76,8 +75,12 @@ export default function TabLayout() {
       style={{
         flex: 1,
         backgroundColor: colors.background,
-        // ensure full viewport height on web so background reaches bottom of PWA
-        minHeight: Platform.OS === "web" ? "100vh" : undefined,
+        // Use the runtime css variable for web to avoid URL bar overlap; fallback to 100vh
+        // Also make this container positioned and sized so children using position:fixed/absolute behave relative to the visible viewport
+        position: "relative",
+        height: Platform.OS === "web" ? "calc(var(--vh, 1vh) * 100)" : "100%",
+        minHeight: Platform.OS === "web" ? "calc(var(--vh, 1vh) * 100)" : undefined,
+        overflow: "hidden",
       }}
     >
       <StatusBar
@@ -94,28 +97,36 @@ export default function TabLayout() {
               tabBarActiveTintColor: isLocalTab ? localColor : colors.primary,
               headerShown: false,
               tabBarPosition: isTabletOrLarger ? "top" : "bottom",
-              // we render custom labels on wide screens; keep default labels off
               tabBarShowLabel: false,
 
-              // ensure the tab bar background covers the safe area on PWAs and native
+              // Tab bar - ensure icon row is the visibleRowHeight and background extends into safe area on PWAs
               tabBarStyle: {
-                position: isTabletOrLarger ? "relative" : "absolute",
+                // On wide screens keep relative; on mobile web use fixed so it's anchored to the viewport bottom
+                position: isTabletOrLarger ? "relative" : Platform.OS === "web" ? "fixed" : "absolute",
                 top: isTabletOrLarger ? 0 : undefined,
                 bottom: isTabletOrLarger ? undefined : 0,
                 left: 0,
                 right: 0,
                 height: tabBarCssHeight,
-                // Align children in the visible icon row area
+                // distribute icons across the width (avoids icons being tightly grouped center)
+                flexDirection: "row",
+                justifyContent: isTabletOrLarger ? "flex-start" : "space-around",
                 alignItems: "center",
-                justifyContent: "center",
                 paddingVertical: 6,
+                // Add paddingBottom so tappable area sits above home indicator / url bar when possible
+                paddingBottom:
+                  Platform.OS === "web"
+                    ? isStandalone
+                      ? "env(safe-area-inset-bottom)"
+                      : undefined
+                    : bottomInset,
                 borderTopWidth: isTabletOrLarger ? 0 : 1,
                 borderBottomWidth: isTabletOrLarger ? 1 : 0,
                 borderTopColor: colors.border,
                 borderBottomColor: colors.border,
                 backgroundColor: colors.background,
-                zIndex: isTabletOrLarger ? 10 : undefined,
-                elevation: isTabletOrLarger ? 10 : undefined,
+                zIndex: 9999,
+                elevation: 9999,
               },
 
               // reserve space so content doesn't go under the tab bar
@@ -124,11 +135,13 @@ export default function TabLayout() {
                 paddingBottom: contentPaddingBottom,
               },
 
+              // icon cell sizing to vertically center the icon in the visible row
               tabBarIconStyle: {
                 height: visibleRowHeight,
                 alignItems: "center",
                 justifyContent: "center",
                 marginTop: 0,
+                paddingVertical: 6,
               },
             }}
           >
@@ -175,7 +188,5 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
 });
