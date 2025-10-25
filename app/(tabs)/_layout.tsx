@@ -104,10 +104,9 @@ export default function TabLayout() {
                 right: 0,
                 // ensure the tab bar background covers the safe area (uses calc(...) on web PWAs)
                 height: tabBarCssHeight,
-                // distribute icons evenly across the bar on mobile; keep flex-start on wide layouts
-                flexDirection: "row",
-                justifyContent: isTabletOrLarger ? "flex-start" : "space-around",
+                // center the icons vertically in the visibleRowHeight area
                 alignItems: "center",
+                justifyContent: "center",
                 paddingVertical: 6,
                 borderTopWidth: isTabletOrLarger ? 0 : 1,
                 borderBottomWidth: isTabletOrLarger ? 1 : 0,
@@ -124,14 +123,11 @@ export default function TabLayout() {
                 paddingBottom: contentPaddingBottom,
               },
 
-              // icon cell sizing to vertically center the icon in the visible row
-              // give each icon cell flexible space so icons spread evenly
               tabBarIconStyle: {
                 height: visibleRowHeight,
                 alignItems: "center",
                 justifyContent: "center",
                 marginTop: 0,
-                flex: Platform.OS === "web" && !isTabletOrLarger ? 1 : undefined,
               },
             }}
           >
