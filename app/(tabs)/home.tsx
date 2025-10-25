@@ -75,9 +75,9 @@ export default function HomeScreen() {
   ).current;
 
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
-    const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
-    const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
-    const totalUserValues = profile.causes.length;
+    const supportedValues = profile.values.filter(v => v.type === 'support').map(v => v.id);
+    const avoidedValues = profile.values.filter(v => v.type === 'avoid').map(v => v.id);
+    const totalUserValues = profile.values.length;
     
     const scored = MOCK_PRODUCTS.map(product => {
       let totalSupportScore = 0;
@@ -86,8 +86,8 @@ export default function HomeScreen() {
       const positionSum: number[] = [];
       
       product.valueAlignments.forEach(alignment => {
-        const isUserSupporting = supportedCauses.includes(alignment.valueId);
-        const isUserAvoiding = avoidedCauses.includes(alignment.valueId);
+        const isUserSupporting = supportedValues.includes(alignment.valueId);
+        const isUserAvoiding = avoidedValues.includes(alignment.valueId);
         
         if (!isUserSupporting && !isUserAvoiding) return;
         
@@ -154,7 +154,7 @@ export default function HomeScreen() {
       allAvoidFull: allAvoidSorted.map(s => s.product),
       scoredBrands: scoredMap
     };
-  }, [profile.causes]);
+  }, [profile.values]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
@@ -432,7 +432,7 @@ export default function HomeScreen() {
     );
   };
 
-  if (profile.causes.length === 0) {
+  if (profile.values.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar

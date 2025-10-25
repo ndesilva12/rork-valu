@@ -6,11 +6,11 @@ export const searchBrandsProcedure = publicProcedure
   .input(
     z.object({
       query: z.string(),
-      userCauses: z.array(z.string()).optional().default([]),
+      userValues: z.array(z.string()).optional().default([]),
     })
   )
   .query(async ({ input }) => {
     const allBrands = await fetchBrandsFromSheets();
-    const results = searchBrands(allBrands, input.query, input.userCauses);
+    const results = searchBrands(allBrands, input.query, input.userValues);
     return results;
   });

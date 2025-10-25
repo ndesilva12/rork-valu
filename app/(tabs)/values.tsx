@@ -17,11 +17,11 @@ export default function ValuesScreen() {
   const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
-  const supportCauses = profile.causes
-    .filter(c => c.type === 'support')
+  const supportValues = profile.values
+    .filter(v => v.type === 'support')
     .sort((a, b) => a.name.localeCompare(b.name));
-  const avoidCauses = profile.causes
-    .filter(c => c.type === 'avoid')
+  const avoidValues = profile.values
+    .filter(v => v.type === 'avoid')
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
@@ -45,7 +45,7 @@ export default function ValuesScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact</Text>
           <View style={[styles.statsCard, { backgroundColor: 'transparent', borderColor: colors.primaryLight }]}>
             <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.primary }]}>{profile.causes.length}</Text>
+              <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.primary }]}>{profile.values.length}</Text>
               <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Active Values</Text>
             </View>
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
@@ -56,36 +56,36 @@ export default function ValuesScreen() {
           </View>
         </View>
 
-        {supportCauses.length > 0 && (
+        {supportValues.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Supporting</Text>
             <View style={styles.causesGrid}>
-              {supportCauses.map(cause => (
+              {supportValues.map(value => (
                 <TouchableOpacity
-                  key={cause.id}
+                  key={value.id}
                   style={[styles.causeCard, styles.supportCard, { borderColor: colors.success, backgroundColor: colors.backgroundSecondary }]}
-                  onPress={() => router.push(`/value/${cause.id}`)}
+                  onPress={() => router.push(`/value/${value.id}`)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.causeName, { color: colors.success }]}>{cause.name}</Text>
+                  <Text style={[styles.causeName, { color: colors.success }]}>{value.name}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
         )}
 
-        {avoidCauses.length > 0 && (
+        {avoidValues.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Opposing</Text>
             <View style={styles.causesGrid}>
-              {avoidCauses.map(cause => (
+              {avoidValues.map(value => (
                 <TouchableOpacity
-                  key={cause.id}
+                  key={value.id}
                   style={[styles.causeCard, styles.avoidCard, { borderColor: colors.danger, backgroundColor: colors.backgroundSecondary }]}
-                  onPress={() => router.push(`/value/${cause.id}`)}
+                  onPress={() => router.push(`/value/${value.id}`)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.causeName, { color: colors.danger }]}>{cause.name}</Text>
+                  <Text style={[styles.causeName, { color: colors.danger }]}>{value.name}</Text>
                 </TouchableOpacity>
               ))}
             </View>

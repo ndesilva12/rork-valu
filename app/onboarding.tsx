@@ -12,10 +12,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
-import { AVAILABLE_VALUES } from '@/mocks/causes';
-import { Cause, CauseCategory, AlignmentType } from '@/types';
+import { AVAILABLE_VALUES } from '@/mocks/values';
+import { UserValue, ValueCategory, AlignmentType } from '@/types';
 
-const CATEGORY_ICONS: Record<CauseCategory, any> = {
+const CATEGORY_ICONS: Record<ValueCategory, any> = {
   social_issue: Heart,
   religion: Building2,
   ideology: Users,
@@ -25,7 +25,7 @@ const CATEGORY_ICONS: Record<CauseCategory, any> = {
   person: User,
 };
 
-const CATEGORY_LABELS: Record<CauseCategory, string> = {
+const CATEGORY_LABELS: Record<ValueCategory, string> = {
   social_issue: 'Social Issues',
   religion: 'Religion',
   ideology: 'Ideology',
@@ -38,42 +38,42 @@ const CATEGORY_LABELS: Record<CauseCategory, string> = {
 interface SelectedValue {
   id: string;
   name: string;
-  category: CauseCategory;
+  category: ValueCategory;
   type: AlignmentType;
   description?: string;
 }
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { addCauses, profile, isDarkMode, clerkUser, isLoading } = useUser();
+  const { addValues, profile, isDarkMode, clerkUser, isLoading } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const [selectedValues, setSelectedValues] = useState<SelectedValue[]>(() => {
-    return profile.causes.map(c => ({
-      id: c.id,
-      name: c.name,
-      category: c.category,
-      type: c.type,
-      description: c.description,
+    return profile.values.map(v => ({
+      id: v.id,
+      name: v.name,
+      category: v.category,
+      type: v.type,
+      description: v.description,
     }));
   });
-  const [expandedCategories, setExpandedCategories] = useState<Set<CauseCategory>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<ValueCategory>>(new Set());
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    console.log('[Onboarding] Profile causes updated:', profile.causes.length);
-    if (profile.causes.length > 0) {
+    console.log('[Onboarding] Profile values updated:', profile.values.length);
+    if (profile.values.length > 0) {
       console.log('[Onboarding] Syncing selected values from profile');
-      setSelectedValues(profile.causes.map(c => ({
-        id: c.id,
-        name: c.name,
-        category: c.category,
-        type: c.type,
-        description: c.description,
+      setSelectedValues(profile.values.map(v => ({
+        id: v.id,
+        name: v.name,
+        category: v.category,
+        type: v.type,
+        description: v.description,
       })));
     }
-  }, [profile.causes]);
+  }, [profile.values]);
 
-  const toggleValue = (valueId: string, name: string, category: CauseCategory, description?: string) => {
+  const toggleValue = (valueId: string, name: string, category: ValueCategory, description?: string) => {
     setSelectedValues(prev => {
       const existing = prev.find(v => v.id === valueId);
       
@@ -100,17 +100,17 @@ export default function OnboardingScreen() {
   const handleContinue = async () => {
     console.log('[Onboarding] Continue pressed with', selectedValues.length, 'values');
     if (selectedValues.length > 0) {
-      const causes: Cause[] = selectedValues.map(v => ({
+      const userValues: UserValue[] = selectedValues.map(v => ({
         id: v.id,
         name: v.name,
         category: v.category,
         type: v.type,
         description: v.description,
       }));
-      console.log('[Onboarding] Saving causes for user:', clerkUser?.id);
-      console.log('[Onboarding] Causes to save:', JSON.stringify(causes.map(c => c.name), null, 2));
-      await addCauses(causes);
-      console.log('[Onboarding] addCauses completed');
+      console.log('[Onboarding] Saving values for user:', clerkUser?.id);
+      console.log('[Onboarding] Values to save:', JSON.stringify(userValues.map(v => v.name), null, 2));
+      await addValues(userValues);
+      console.log('[Onboarding] addValues completed');
       
       await new Promise(resolve => setTimeout(resolve, 100));
       
@@ -119,7 +119,7 @@ export default function OnboardingScreen() {
     }
   };
 
-  const toggleCategoryExpanded = (category: CauseCategory) => {
+  const toggleCategoryExpanded = (category: ValueCategory) => {
     setExpandedCategories(prev => {
       const next = new Set(prev);
       if (next.has(category)) {
@@ -161,21 +161,21 @@ export default function OnboardingScreen() {
           </View>
         </View>
 
-        <View style={styles.causesContainer}>
-          {(['ideology', 'person', 'social_issue', 'religion', 'nation', 'organization'] as CauseCategory[]).map((category) => {
+        <View style={styles.valuesContainer}>
+          {(['ideology', 'person', 'social_issue', 'religion', 'nation', 'organization'] as ValueCategory[]).map((category) => {
             const values = AVAILABLE_VALUES[category];
             if (!values || values.length === 0) return null;
-            const Icon = CATEGORY_ICONS[category as CauseCategory];
+            const Icon = CATEGORY_ICONS[category as ValueCategory];
             const isExpanded = expandedCategories.has(category);
             const displayedValues = isExpanded ? values : values.slice(0, 3);
             const hasMore = values.length > 3;
-            
+
             return (
               <View key={category} style={styles.categorySection}>
                 <View style={styles.categoryHeader}>
                   <Icon size={20} color={colors.textSecondary} strokeWidth={2} />
                   <Text style={[styles.categoryTitle, { color: colors.text }]}>
-                    {CATEGORY_LABELS[category as CauseCategory]}
+                    {CATEGORY_LABELS[category as ValueCategory]}
                   </Text>
                 </View>
                 <View style={styles.valuesGrid}>
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
 
-  causesContainer: {
+  valuesContainer: {
     paddingHorizontal: 24,
   },
   categorySection: {

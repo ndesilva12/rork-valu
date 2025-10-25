@@ -3,8 +3,8 @@ import { publicProcedure } from '../../../create-context';
 import { fetchBrandsFromSheets } from '../../../../services/google-sheets';
 import { calculateAllBrandAlignments } from '../../../../services/calculate-alignment';
 
-// Schema for user causes
-const causeSchema = z.object({
+// Schema for user values
+const userValueSchema = z.object({
   id: z.string(),
   name: z.string(),
   category: z.enum(['social_issue', 'religion', 'ideology', 'corporation', 'nation', 'organization', 'person']),
@@ -13,11 +13,11 @@ const causeSchema = z.object({
 });
 
 /**
- * Get brands with calculated alignment scores based on user's causes
+ * Get brands with calculated alignment scores based on user's selected values
  *
  * This route:
  * 1. Fetches brands from Google Sheets (cached 5 min)
- * 2. Calculates alignment scores based on user's selected causes
+ * 2. Calculates alignment scores based on user's selected values
  * 3. Returns scored brands sorted by alignment
  *
  * Performance: Calculates scores server-side for all 764 brands
@@ -25,7 +25,7 @@ const causeSchema = z.object({
 export const getScoredBrandsProcedure = publicProcedure
   .input(
     z.object({
-      userCauses: z.array(causeSchema),
+      userValues: z.array(userValueSchema),
       filter: z.enum(['all', 'aligned', 'unaligned']).optional().default('all'),
     })
   )
@@ -33,8 +33,8 @@ export const getScoredBrandsProcedure = publicProcedure
     // Fetch brands from Google Sheets (uses 5-minute cache)
     const brands = await fetchBrandsFromSheets();
 
-    // If user has no causes selected, return unscored brands
-    if (input.userCauses.length === 0) {
+    // If user has no values selected, return unscored brands
+    if (input.userValues.length === 0) {
       return {
         scoredBrands: brands.map(b => ({
           ...b,
@@ -51,7 +51,7 @@ export const getScoredBrandsProcedure = publicProcedure
     }
 
     // Calculate alignment scores for all brands
-    const result = calculateAllBrandAlignments(brands, input.userCauses);
+    const result = calculateAllBrandAlignments(brands, input.userValues);
 
     // Return based on filter
     switch (input.filter) {

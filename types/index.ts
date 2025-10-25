@@ -1,4 +1,4 @@
-export type CauseCategory = 
+export type ValueCategory =
   | 'social_issue'
   | 'religion'
   | 'ideology'
@@ -9,10 +9,10 @@ export type CauseCategory =
 
 export type AlignmentType = 'support' | 'avoid';
 
-export interface Cause {
+export interface UserValue {
   id: string;
   name: string;
-  category: CauseCategory;
+  category: ValueCategory;
   type: AlignmentType;
   description?: string;
 }
@@ -57,6 +57,6 @@ export interface Brand {
 export type Product = Brand;
 
 export interface UserProfile {
-  causes: Cause[];
+  values: UserValue[];
   searchHistory: string[];
 }

@@ -231,8 +231,8 @@ export async function fetchLocalBusinessesFromSheets(): Promise<Brand[]> {
   });
 }
 
-// Search brands with user cause relevance
-export function searchBrands(brands: Brand[], query: string, userCauses: string[]): Brand[] {
+// Search brands with user value relevance
+export function searchBrands(brands: Brand[], query: string, userValues: string[]): Brand[] {
   const lowerQuery = query.toLowerCase();
 
   const filtered = brands.filter(
@@ -242,18 +242,18 @@ export function searchBrands(brands: Brand[], query: string, userCauses: string[
   );
 
   return filtered.sort((a, b) => {
-    const aRelevance = calculateRelevance(a, userCauses);
-    const bRelevance = calculateRelevance(b, userCauses);
+    const aRelevance = calculateRelevance(a, userValues);
+    const bRelevance = calculateRelevance(b, userValues);
     return bRelevance - aRelevance;
   });
 }
 
-function calculateRelevance(brand: Brand, userCauses: string[]): number {
-  if (userCauses.length === 0) return Math.abs(brand.alignmentScore);
+function calculateRelevance(brand: Brand, userValues: string[]): number {
+  if (userValues.length === 0) return Math.abs(brand.alignmentScore);
 
-  const hasMatchingCause = brand.relatedValues.some((v) => userCauses.includes(v));
+  const hasMatchingValue = brand.relatedValues.some((v) => userValues.includes(v));
 
-  if (hasMatchingCause) {
+  if (hasMatchingValue) {
     return Math.abs(brand.alignmentScore) + 100;
   }
 

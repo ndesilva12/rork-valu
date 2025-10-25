@@ -17,15 +17,15 @@ export default function Index() {
       isSignedIn,
       hasCompletedOnboarding,
       isNewUser,
-      causeCount: profile.causes.length,
+      valueCount: profile.values.length,
     });
-  }, [isLoaded, userLoading, isSignedIn, hasCompletedOnboarding, isNewUser, profile.causes.length]);
+  }, [isLoaded, userLoading, isSignedIn, hasCompletedOnboarding, isNewUser, profile.values.length]);
 
   useEffect(() => {
-    if (isSignedIn && !userLoading && profile.causes.length > 0 && !hasCompletedOnboarding) {
-      console.log('[Index] Detected mismatch: has causes but hasCompletedOnboarding is false');
+    if (isSignedIn && !userLoading && profile.values.length > 0 && !hasCompletedOnboarding) {
+      console.log('[Index] Detected mismatch: has values but hasCompletedOnboarding is false');
     }
-  }, [isSignedIn, userLoading, profile.causes.length, hasCompletedOnboarding]);
+  }, [isSignedIn, userLoading, profile.values.length, hasCompletedOnboarding]);
 
   if (!isLoaded || userLoading) {
     console.log('[Index] Showing loading state');

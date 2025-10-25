@@ -50,9 +50,9 @@ export default function ValueDetailScreen() {
     })
   ).current;
 
-  const userCause = profile.causes.find(c => c.id === id);
-  
-  if (!userCause) {
+  const userValue = profile.values.find(v => v.id === id);
+
+  if (!userValue) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Text style={[styles.errorText, { color: colors.textSecondary }]}>Value not found</Text>
@@ -60,7 +60,7 @@ export default function ValueDetailScreen() {
     );
   }
 
-  const isSupporting = userCause.type === 'support';
+  const isSupporting = userValue.type === 'support';
 
   const getWebsiteUrl = (brandName: string): string => {
     const domain = brandName
@@ -88,7 +88,7 @@ export default function ValueDetailScreen() {
         name: brandName,
         type: 'brand' as 'brand' | 'product' | 'behavior',
         description: product?.brand || brandName,
-        reason: `Directly supports ${userCause.name}`,
+        reason: `Directly supports ${userValue.name}`,
         position: index + 1,
         imageUrl: product?.imageUrl || '',
         websiteUrl: getWebsiteUrl(brandName),
@@ -103,7 +103,7 @@ export default function ValueDetailScreen() {
         name: brandName,
         type: 'brand' as 'brand' | 'product' | 'behavior',
         description: product?.brand || brandName,
-        reason: `Opposes ${userCause.name}`,
+        reason: `Opposes ${userValue.name}`,
         position: index + 1,
         imageUrl: product?.imageUrl || '',
         websiteUrl: getWebsiteUrl(brandName),
@@ -134,7 +134,7 @@ export default function ValueDetailScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: userCause.name,
+          title: userValue.name,
           headerStyle: {
             backgroundColor: colors.background,
           },
@@ -165,9 +165,9 @@ export default function ValueDetailScreen() {
               {isSupporting ? 'Supporting' : 'Opposing'}
             </Text>
           </View>
-          <Text style={[styles.title, { color: colors.text }]}>{userCause.name}</Text>
-          {userCause.description && (
-            <Text style={[styles.description, { color: colors.textSecondary }]}>{userCause.description}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{userValue.name}</Text>
+          {userValue.description && (
+            <Text style={[styles.description, { color: colors.textSecondary }]}>{userValue.description}</Text>
           )}
         </View>
 
@@ -177,7 +177,7 @@ export default function ValueDetailScreen() {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Supports This Value</Text>
           </View>
           <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-            Products, brands, and behaviors that align with {userCause.name.toLowerCase()}
+            Products, brands, and behaviors that align with {userValue.name.toLowerCase()}
           </Text>
           {drivers.supports.length > 0 ? (
             <View style={styles.driversContainer}>
@@ -218,7 +218,7 @@ export default function ValueDetailScreen() {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Opposes This Value</Text>
           </View>
           <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-            Products, brands, and behaviors that work against {userCause.name.toLowerCase()}
+            Products, brands, and behaviors that work against {userValue.name.toLowerCase()}
           </Text>
           {drivers.opposes.length > 0 ? (
             <View style={styles.driversContainer}>

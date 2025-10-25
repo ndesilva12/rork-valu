@@ -14,7 +14,7 @@ import {
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
 import { MOCK_PRODUCTS } from '@/mocks/products';
-import { AVAILABLE_VALUES } from '@/mocks/causes';
+import { AVAILABLE_VALUES } from '@/mocks/values';
 import { useUser } from '@/contexts/UserContext';
 import { useRef, useMemo, useState, useCallback } from 'react';
 
@@ -101,8 +101,8 @@ export default function ProductDetailScreen() {
     })
   ).current;
 
-  const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
-  const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
+  const supportedValues = profile.values.filter(v => v.type === 'support').map(v => v.id);
+  const avoidedValues = profile.values.filter(v => v.type === 'avoid').map(v => v.id);
 
   const alignmentData = useMemo(() => {
     if (!product) {
@@ -115,15 +115,15 @@ export default function ProductDetailScreen() {
         alignmentStrength: 0
       };
     }
-    const totalUserValues = profile.causes.length;
+    const totalUserValues = profile.values.length;
     let totalSupportScore = 0;
     let totalAvoidScore = 0;
     const matchingValues = new Set<string>();
     const positionSum: number[] = [];
-    
+
     product.valueAlignments.forEach(alignment => {
-      const isUserSupporting = supportedCauses.includes(alignment.valueId);
-      const isUserAvoiding = avoidedCauses.includes(alignment.valueId);
+      const isUserSupporting = supportedValues.includes(alignment.valueId);
+      const isUserAvoiding = avoidedValues.includes(alignment.valueId);
       
       if (!isUserSupporting && !isUserAvoiding) return;
       
@@ -170,7 +170,7 @@ export default function ProductDetailScreen() {
       totalAvoidScore,
       alignmentStrength
     };
-  }, [product, supportedCauses, avoidedCauses, profile.causes.length]);
+  }, [product, supportedValues, avoidedValues, profile.values.length]);
 
   const alignmentColor = alignmentData.isAligned ? colors.success : colors.danger;
   const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;
@@ -364,11 +364,11 @@ export default function ProductDetailScreen() {
                     const allValues = Object.values(AVAILABLE_VALUES).flat();
                     const value = allValues.find(v => v.id === valueId);
                     if (!value) return null;
-                    
-                    const userCause = profile.causes.find(c => c.id === valueId);
-                    if (!userCause) return null;
-                    
-                    const tagColor = userCause.type === 'support' ? colors.success : colors.danger;
+
+                    const userValue = profile.values.find(v => v.id === valueId);
+                    if (!userValue) return null;
+
+                    const tagColor = userValue.type === 'support' ? colors.success : colors.danger;
                     
                     return (
                       <TouchableOpacity

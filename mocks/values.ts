@@ -1,14 +1,14 @@
-import { CauseCategory } from '@/types';
+import { ValueCategory } from '@/types';
 
 export interface ValueItem {
   id: string;
   name: string;
-  category: CauseCategory;
+  category: ValueCategory;
   description?: string;
   imageUrl?: string;
 }
 
-export const AVAILABLE_VALUES: Record<CauseCategory, ValueItem[]> = {
+export const AVAILABLE_VALUES: Record<ValueCategory, ValueItem[]> = {
   ideology: [
     { id: 'libertarian', name: 'Libertarian', category: 'ideology' },
     { id: 'conservative', name: 'Conservative', category: 'ideology' },

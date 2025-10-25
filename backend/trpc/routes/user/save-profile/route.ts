@@ -2,7 +2,7 @@ import { z } from "zod";
 import { protectedProcedure } from "../../../create-context";
 import { saveUserProfile } from "../../../db";
 
-const CauseSchema = z.object({
+const UserValueSchema = z.object({
   id: z.string(),
   name: z.string(),
   category: z.enum(['social_issue', 'religion', 'ideology', 'corporation', 'nation', 'organization', 'person']),
@@ -11,7 +11,7 @@ const CauseSchema = z.object({
 });
 
 const ProfileSchema = z.object({
-  causes: z.array(CauseSchema),
+  values: z.array(UserValueSchema),
   searchHistory: z.array(z.string()),
 });
 

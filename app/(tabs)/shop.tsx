@@ -48,9 +48,9 @@ export default function ShopScreen() {
   const [commentText, setCommentText] = useState('');
   
   const alignedProducts = useMemo(() => {
-    const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
-    const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
-    const totalUserValues = profile.causes.length;
+    const supportedValues = profile.values.filter(v => v.type === 'support').map(v => v.id);
+    const avoidedValues = profile.values.filter(v => v.type === 'avoid').map(v => v.id);
+    const totalUserValues = profile.values.length;
     
     const allProducts = [...MOCK_PRODUCTS, ...LOCAL_BUSINESSES];
     
@@ -61,8 +61,8 @@ export default function ShopScreen() {
       const positionSum: number[] = [];
       
       product.valueAlignments.forEach(alignment => {
-        const isUserSupporting = supportedCauses.includes(alignment.valueId);
-        const isUserAvoiding = avoidedCauses.includes(alignment.valueId);
+        const isUserSupporting = supportedValues.includes(alignment.valueId);
+        const isUserAvoiding = avoidedValues.includes(alignment.valueId);
         
         if (!isUserSupporting && !isUserAvoiding) return;
         
@@ -133,9 +133,9 @@ export default function ShopScreen() {
         shuffled.push(localItems[localIndex++]);
       }
     }
-    
+
     return shuffled.length > 0 ? shuffled : alignedSorted;
-  }, [profile.causes]);
+  }, [profile.values]);
 
   const getProductInteraction = useCallback((productId: string): ProductInteraction => {
     return interactions.get(productId) || {
@@ -353,7 +353,7 @@ export default function ShopScreen() {
     );
   }, [colors, getProductInteraction, handleLike, handleOpenComments, handleShare, handleVisitBrand, handleProductPress]);
 
-  if (profile.causes.length === 0) {
+  if (profile.values.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar

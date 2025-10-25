@@ -1,4 +1,4 @@
-import { Brand, Cause } from '@/types';
+import { Brand, UserValue } from '@/types';
 
 export interface ScoredBrand extends Brand {
   alignmentStrength: number;
@@ -10,7 +10,7 @@ export interface ScoredBrand extends Brand {
 }
 
 /**
- * Calculates alignment score for a brand based on user's causes
+ * Calculates alignment score for a brand based on user's selected values
  *
  * Algorithm:
  * 1. For each user value, check if brand has alignment (position 1-10) or not (position 11)
@@ -21,11 +21,11 @@ export interface ScoredBrand extends Brand {
  */
 export function calculateBrandAlignment(
   brand: Brand,
-  userCauses: Cause[]
+  userValues: UserValue[]
 ): ScoredBrand {
-  const supportedCauses = userCauses.filter(c => c.type === 'support').map(c => c.id);
-  const avoidedCauses = userCauses.filter(c => c.type === 'avoid').map(c => c.id);
-  const totalUserValues = userCauses.length;
+  const supportedValues = userValues.filter(v => v.type === 'support').map(v => v.id);
+  const avoidedValues = userValues.filter(v => v.type === 'avoid').map(v => v.id);
+  const totalUserValues = userValues.length;
 
   let totalSupportScore = 0;
   let totalAvoidScore = 0;
@@ -34,8 +34,8 @@ export function calculateBrandAlignment(
 
   // Process each brand value alignment
   brand.valueAlignments.forEach(alignment => {
-    const isUserSupporting = supportedCauses.includes(alignment.valueId);
-    const isUserAvoiding = avoidedCauses.includes(alignment.valueId);
+    const isUserSupporting = supportedValues.includes(alignment.valueId);
+    const isUserAvoiding = avoidedValues.includes(alignment.valueId);
 
     // Skip if user doesn't care about this value
     if (!isUserSupporting && !isUserAvoiding) return;
@@ -95,12 +95,12 @@ export function calculateBrandAlignment(
 }
 
 /**
- * Calculates alignment scores for all brands based on user's causes
+ * Calculates alignment scores for all brands based on user's selected values
  * Returns brands sorted by alignment strength
  */
 export function calculateAllBrandAlignments(
   brands: Brand[],
-  userCauses: Cause[]
+  userValues: UserValue[]
 ): {
   scoredBrands: ScoredBrand[];
   alignedBrands: ScoredBrand[];
@@ -108,7 +108,7 @@ export function calculateAllBrandAlignments(
 } {
   // Calculate scores for all brands
   const scoredBrands = brands.map(brand =>
-    calculateBrandAlignment(brand, userCauses)
+    calculateBrandAlignment(brand, userValues)
   );
 
   // Split into aligned and unaligned

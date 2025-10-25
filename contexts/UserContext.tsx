@@ -2,7 +2,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
-import { Cause, UserProfile } from '@/types';
+import { UserValue, UserProfile } from '@/types';
 
 const DARK_MODE_KEY = '@dark_mode';
 const PROFILE_KEY = '@user_profile';
@@ -11,7 +11,7 @@ const IS_NEW_USER_KEY = '@is_new_user';
 export const [UserProvider, useUser] = createContextHook(() => {
   const { user: clerkUser, isLoaded: isClerkLoaded } = useClerkUser();
   const [profile, setProfile] = useState<UserProfile>({
-    causes: [],
+    values: [],
     searchHistory: [],
   });
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
@@ -25,7 +25,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
       if (!clerkUser) {
         console.log('[UserContext] No clerk user, resetting state');
         if (mounted) {
-          setProfile({ causes: [], searchHistory: [] });
+          setProfile({ values: [], searchHistory: [] });
           setHasCompletedOnboarding(false);
           setIsNewUser(null);
           setIsLoading(false);
@@ -44,12 +44,12 @@ export const [UserProvider, useUser] = createContextHook(() => {
         
         if (storedProfile && mounted) {
           const parsedProfile = JSON.parse(storedProfile) as UserProfile;
-          console.log('[UserContext] Loaded profile from AsyncStorage with', parsedProfile.causes.length, 'causes');
+          console.log('[UserContext] Loaded profile from AsyncStorage with', parsedProfile.values.length, 'values');
           setProfile(parsedProfile);
-          setHasCompletedOnboarding(parsedProfile.causes.length > 0);
+          setHasCompletedOnboarding(parsedProfile.values.length > 0);
         } else if (mounted) {
           console.log('[UserContext] No stored profile found, using empty profile');
-          setProfile({ causes: [], searchHistory: [] });
+          setProfile({ values: [], searchHistory: [] });
           setHasCompletedOnboarding(false);
         }
         
@@ -66,7 +66,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
       } catch (error) {
         console.error('[UserContext] Failed to load profile:', error);
         if (mounted) {
-          setProfile({ causes: [], searchHistory: [] });
+          setProfile({ values: [], searchHistory: [] });
           setHasCompletedOnboarding(false);
           setIsNewUser(false);
         }
@@ -110,18 +110,18 @@ export const [UserProvider, useUser] = createContextHook(() => {
     };
   }, []);
 
-  const addCauses = useCallback(async (causes: Cause[]) => {
+  const addValues = useCallback(async (values: UserValue[]) => {
     if (!clerkUser) {
-      console.error('[UserContext] Cannot save causes: User not logged in');
+      console.error('[UserContext] Cannot save values: User not logged in');
       return;
     }
-    
-    const newProfile = { ...profile, causes };
-    console.log('[UserContext] Saving', causes.length, 'causes to AsyncStorage for user:', clerkUser.id);
-    
+
+    const newProfile = { ...profile, values };
+    console.log('[UserContext] Saving', values.length, 'values to AsyncStorage for user:', clerkUser.id);
+
     setProfile(newProfile);
-    setHasCompletedOnboarding(causes.length > 0);
-    
+    setHasCompletedOnboarding(values.length > 0);
+
     try {
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
       await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
@@ -154,7 +154,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
       return;
     }
     try {
-      const emptyProfile = { causes: [], searchHistory: [] };
+      const emptyProfile = { values: [], searchHistory: [] };
       setProfile(emptyProfile);
       setHasCompletedOnboarding(false);
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
@@ -169,7 +169,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
     try {
       console.log('[UserContext] Clearing ALL AsyncStorage data');
       await AsyncStorage.clear();
-      setProfile({ causes: [], searchHistory: [] });
+      setProfile({ values: [], searchHistory: [] });
       setHasCompletedOnboarding(false);
       setIsDarkMode(true);
       console.log('[UserContext] All data cleared successfully');
@@ -193,12 +193,12 @@ export const [UserProvider, useUser] = createContextHook(() => {
     isLoading: isLoading || !isClerkLoaded,
     hasCompletedOnboarding,
     isNewUser,
-    addCauses,
+    addValues,
     addToSearchHistory,
     resetProfile,
     clearAllStoredData,
     isDarkMode,
     toggleDarkMode,
     clerkUser,
-  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, addToSearchHistory, resetProfile, clearAllStoredData, isDarkMode, toggleDarkMode, clerkUser]);
+  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addValues, addToSearchHistory, resetProfile, clearAllStoredData, isDarkMode, toggleDarkMode, clerkUser]);
 });
