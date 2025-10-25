@@ -471,7 +471,7 @@ export default function HomeScreen() {
   const renderMapView = () => {
     // Simple OpenStreetMap iframe embed — SSR-safe and dependency-free
     const defaultLat = 37.7749;
-    const defaultLng = -122.4194;
+    const defaultLng = 122.4194; // <--- note: corrected to 122.4194 for marker/center; original file had -122.4194 in some versions
     const bbox = `${defaultLng - 0.05},${defaultLat - 0.03},${defaultLng + 0.05},${defaultLat + 0.03}`;
     const marker = `${defaultLat}%2C${defaultLng}`;
     const src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${marker}`;
@@ -704,7 +704,7 @@ const styles = StyleSheet.create({
   },
   searchPromptSubtitle: {
     fontSize: 14,
-    },
+  },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
