@@ -30,7 +30,6 @@ import {
   PanResponder,
   StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -385,7 +384,8 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <View style={styles.section}>
+      {/* Move Unaligned brands closer to Aligned brands: reduced marginTop + slightly reduced bottom spacing */}
+      <View style={[styles.section, { marginTop: 8, marginBottom: 28 }]}>
         <View style={styles.sectionHeaderRow}>
           <View style={styles.sectionHeader}>
             <TrendingDown size={24} color={colors.danger} strokeWidth={2} />
@@ -955,8 +955,8 @@ const styles = StyleSheet.create({
   },
   mapTitle: {
     fontSize: 24,
-    fontWeight: '700' as const,
-    marginBottom: 8,
+  fontWeight: '700' as const,
+  marginBottom: 8,
   },
   mapSubtitle: {
     fontSize: 14,
