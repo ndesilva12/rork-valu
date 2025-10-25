@@ -37,10 +37,10 @@ export default function TabLayout() {
             borderTopColor: colors.border,
             borderBottomColor: colors.border,
             backgroundColor: colors.background,
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
+            position: isTabletOrLarger ? 'relative' as const : 'absolute' as const,
+            bottom: isTabletOrLarger ? undefined : 0,
+            left: isTabletOrLarger ? undefined : 0,
+            right: isTabletOrLarger ? undefined : 0,
           },
           contentStyle: {
             paddingBottom: isTabletOrLarger ? 0 : 50,
@@ -50,6 +50,7 @@ export default function TabLayout() {
             fontWeight: '600' as const,
             textTransform: 'none' as const,
           } : undefined,
+          tabBarShowLabel: isTabletOrLarger,
           tabBarIconStyle: isTabletOrLarger ? {
             marginTop: 4,
           } : undefined,
@@ -60,7 +61,6 @@ export default function TabLayout() {
           options={{
             title: "Playbook",
             tabBarIcon: ({ color }) => <BookOpen size={24} color={color} strokeWidth={2} />,
-            tabBarShowLabel: false,
           }}
         />
         <Tabs.Screen
@@ -68,7 +68,6 @@ export default function TabLayout() {
           options={{
             title: "Local",
             tabBarIcon: ({ color, focused }) => <MapPin size={24} color={focused ? localColor : color} strokeWidth={2} />,
-            tabBarShowLabel: false,
           }}
         />
         <Tabs.Screen
@@ -76,15 +75,13 @@ export default function TabLayout() {
          options={{
            title: "Search",
            tabBarIcon: ({ color }) => <Search size={24} color={color} strokeWidth={2} />,
-           tabBarShowLabel: false,
          }}
         />
         <Tabs.Screen
           name="shop"
           options={{
-            title: "Shop",
-            tabBarIcon: ({ color }) => <ShoppingBag size={24} color={color} strokeWidth={2} />,
-            tabBarShowLabel: false,
+            title: "Values",
+            tabBarIcon: ({ color }) => <Heart size={24} color={color} strokeWidth={2} />,
           }}
         />
          <Tabs.Screen
@@ -92,7 +89,6 @@ export default function TabLayout() {
          options={{
            title: "Profile",
            tabBarIcon: ({ color }) => <User size={24} color={color} strokeWidth={2} />,
-           tabBarShowLabel: false,
          }}
        />
       </Tabs>

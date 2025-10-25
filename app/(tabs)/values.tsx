@@ -1,4 +1,6 @@
 import { useRouter } from 'expo-router';
+import { Copy, Check } from 'lucide-react-native';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -7,22 +9,29 @@ import {
   TouchableOpacity,
   Platform,
   StatusBar,
+  Alert,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 
-export default function ValuesScreen() {
+export default function ProfileScreen() {
   const router = useRouter();
   const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+  const [copied, setCopied] = useState(false);
 
-  const supportValues = profile.values
-    .filter(v => v.type === 'support')
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const avoidValues = profile.values
-    .filter(v => v.type === 'avoid')
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const handleCopyCode = async () => {
+    if (profile.valuCode) {
+      await Clipboard.setStringAsync(profile.valuCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      if (Platform.OS === 'web') {
+        Alert.alert('Copied!', 'ValuCode copied to clipboard');
+      }
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -32,7 +41,7 @@ export default function ValuesScreen() {
       />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <Text style={[styles.title, { color: colors.primary }]}>Values</Text>
+          <Text style={[styles.title, { color: colors.primary }]}>Profile</Text>
           <MenuButton />
         </View>
       </View>
@@ -44,10 +53,38 @@ export default function ValuesScreen() {
         {/* ValuCode Section */}
         <View style={[styles.valuCodeSection, { backgroundColor: colors.backgroundSecondary, borderColor: colors.primary }]}>
           <Text style={[styles.valuCodeTitle, { color: colors.text }]}>Your Code</Text>
-          <Text style={[styles.valuCode, { color: colors.primary }]}>{profile.valuCode || 'Loading...'}</Text>
+
+          {/* ValuCode with Copy Button */}
+          <View style={styles.codeContainer}>
+            <Text style={[styles.valuCode, { color: colors.primary }]}>{profile.valuCode || 'Loading...'}</Text>
+            <TouchableOpacity
+              style={[styles.copyButton, { backgroundColor: copied ? colors.success : colors.primary }]}
+              onPress={handleCopyCode}
+              activeOpacity={0.7}
+            >
+              {copied ? (
+                <Check size={20} color={colors.white} strokeWidth={2.5} />
+              ) : (
+                <Copy size={20} color={colors.white} strokeWidth={2} />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Balance Counter */}
+          <View style={styles.balanceContainer}>
+            <Text style={[styles.balanceAmount, { color: colors.primary }]}>$0.00</Text>
+            <Text style={[styles.balanceSubtext, { color: colors.textSecondary }]}>
+              total contributed to your organizations
+            </Text>
+          </View>
+
           <Text style={[styles.valuCodeDescription, { color: colors.textSecondary }]}>
             This is your Valu Code. Use this everywhere you spend and we will match $1 for every transaction and contribute it to the charities and organizations you select below.
           </Text>
+        </View>
+
+        {/* Organizations Section - Outside ValuCode Box */}
+        <View style={styles.organizationsSection}>
           <TouchableOpacity
             style={[styles.selectOrganizationsButton, { backgroundColor: colors.primary }]}
             onPress={() => router.push('/select-organizations' as any)}
@@ -60,88 +97,29 @@ export default function ValuesScreen() {
             </Text>
           </TouchableOpacity>
 
-          {/* Display Selected Organizations */}
+          {/* Display Selected Organizations - Stacked Vertically Centered */}
           {(profile.selectedOrganizations?.length || 0) > 0 && (
             <View style={styles.selectedOrganizationsContainer}>
               <Text style={[styles.selectedOrganizationsTitle, { color: colors.text }]}>
                 Your Selected Organizations ({profile.selectedOrganizations?.length || 0}/3)
               </Text>
-              <View style={styles.organizationsGrid}>
+              <View style={styles.organizationsStack}>
                 {profile.selectedOrganizations?.map((org) => (
                   <View
                     key={org.id}
-                    style={[styles.organizationCard, { backgroundColor: colors.background, borderColor: colors.primary }]}
+                    style={[styles.organizationCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.primary }]}
                   >
                     <Text style={[styles.organizationName, { color: colors.primary }]}>{org.name}</Text>
+                    {org.description && (
+                      <Text style={[styles.organizationDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                        {org.description}
+                      </Text>
+                    )}
                   </View>
                 ))}
               </View>
             </View>
           )}
-        </View>
-
-        <View style={styles.statsSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact</Text>
-          <View style={[styles.statsCard, { backgroundColor: 'transparent', borderColor: colors.primaryLight }]}>
-            <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.primary }]}>{profile.values.length}</Text>
-              <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Active Values</Text>
-            </View>
-            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-            <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.primary }]}>{profile.searchHistory.length}</Text>
-              <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Products Checked</Text>
-            </View>
-          </View>
-        </View>
-
-        {supportValues.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Supporting</Text>
-            <View style={styles.causesGrid}>
-              {supportValues.map(value => (
-                <TouchableOpacity
-                  key={value.id}
-                  style={[styles.causeCard, styles.supportCard, { borderColor: colors.success, backgroundColor: colors.backgroundSecondary }]}
-                  onPress={() => router.push(`/value/${value.id}`)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.causeName, { color: colors.success }]}>{value.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {avoidValues.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Opposing</Text>
-            <View style={styles.causesGrid}>
-              {avoidValues.map(value => (
-                <TouchableOpacity
-                  key={value.id}
-                  style={[styles.causeCard, styles.avoidCard, { borderColor: colors.danger, backgroundColor: colors.backgroundSecondary }]}
-                  onPress={() => router.push(`/value/${value.id}`)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.causeName, { color: colors.danger }]}>{value.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
-
-        <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]} key="info-section">
-          <Text style={[styles.infoTitle, { color: colors.text }]}>How it works</Text>
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            We analyze where your money flows when you purchase products - from the company to its
-            shareholders and beneficiaries. We then match these entities against your selected values
-            to provide alignment scores.
-          </Text>
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            Products are scored from -100 (strongly opposed) to +100 (strongly aligned) based on
-            public records, donations, and stated positions.
-          </Text>
         </View>
       </ScrollView>
     </View>
@@ -159,7 +137,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 20,
+    paddingBottom: 40,
   },
   stickyHeaderContainer: {
     borderBottomWidth: 1,
@@ -176,148 +154,102 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     flex: 1,
   },
-  section: {
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    color: Colors.text,
-    marginBottom: 16,
-  },
-  causesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  causeCard: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 2,
-  },
-  supportCard: {
-    borderColor: Colors.success,
-  },
-  avoidCard: {
-    borderColor: Colors.danger,
-  },
-  causeName: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    color: Colors.text,
-  },
-  avoidText: {
-    color: Colors.danger,
-  },
   valuCodeSection: {
     marginBottom: 24,
-    padding: 20,
+    padding: 24,
     borderRadius: 16,
     borderWidth: 2,
   },
   valuCodeTitle: {
     fontSize: 16,
     fontWeight: '600' as const,
-    marginBottom: 8,
+    marginBottom: 12,
     textAlign: 'center',
+  },
+  codeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 20,
   },
   valuCode: {
     fontSize: 36,
     fontWeight: '700' as const,
     letterSpacing: 2,
+  },
+  copyButton: {
+    padding: 10,
+    borderRadius: 8,
+  },
+  balanceContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  balanceAmount: {
+    fontSize: 28,
+    fontWeight: '700' as const,
+    marginBottom: 6,
+  },
+  balanceSubtext: {
+    fontSize: 12,
     textAlign: 'center',
-    marginBottom: 16,
+    lineHeight: 16,
   },
   valuCodeDescription: {
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
-    marginBottom: 16,
+  },
+  organizationsSection: {
+    marginBottom: 24,
   },
   selectOrganizationsButton: {
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
     alignItems: 'center',
+    marginBottom: 20,
   },
   selectOrganizationsButtonText: {
     fontSize: 16,
     fontWeight: '600' as const,
   },
   selectedOrganizationsContainer: {
-    marginTop: 20,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  selectedOrganizationsTitle: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    marginBottom: 12,
-  },
-  organizationsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  organizationCard: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  organizationName: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  statsSection: {
-    marginBottom: 24,
-  },
-  statsCard: {
-    backgroundColor: Colors.primaryLight + '08',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    borderWidth: 2,
-    borderColor: Colors.primaryLight,
-  },
-  statItem: {
-    flex: 1,
     alignItems: 'center',
   },
-  statNumber: {
-    fontSize: 28,
-    fontWeight: '700' as const,
-    color: Colors.primary,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: Colors.textSecondary,
+  selectedOrganizationsTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 16,
     textAlign: 'center',
   },
-  statDivider: {
-    width: 1,
-    backgroundColor: Colors.border,
-    marginHorizontal: 16,
+  organizationsStack: {
+    width: '100%',
+    gap: 12,
+    alignItems: 'center',
   },
-  infoSection: {
-    backgroundColor: Colors.backgroundSecondary,
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 32,
+  organizationCard: {
+    width: '100%',
+    maxWidth: 400,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 2,
   },
-  infoTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    color: Colors.text,
-    marginBottom: 12,
+  organizationName: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    textAlign: 'center',
+    marginBottom: 4,
   },
-  infoText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-    marginBottom: 12,
+  organizationDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
   },
 });
