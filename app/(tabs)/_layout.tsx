@@ -76,6 +76,8 @@ export default function TabLayout() {
       style={{
         flex: 1,
         backgroundColor: colors.background,
+        // ensure full viewport height on web so background reaches bottom of PWA
+        minHeight: Platform.OS === "web" ? "100vh" : undefined,
       }}
     >
       <StatusBar
@@ -92,7 +94,7 @@ export default function TabLayout() {
               tabBarActiveTintColor: isLocalTab ? localColor : colors.primary,
               headerShown: false,
               tabBarPosition: isTabletOrLarger ? "top" : "bottom",
-              // render custom labels on wide screens; keep default labels off
+              // we render custom labels on wide screens; keep default labels off
               tabBarShowLabel: false,
 
               // ensure the tab bar background covers the safe area on PWAs and native
@@ -102,9 +104,8 @@ export default function TabLayout() {
                 bottom: isTabletOrLarger ? undefined : 0,
                 left: 0,
                 right: 0,
-                // ensure the tab bar background covers the safe area (uses calc(...) on web PWAs)
                 height: tabBarCssHeight,
-                // center the icons vertically in the visibleRowHeight area
+                // Align children in the visible icon row area
                 alignItems: "center",
                 justifyContent: "center",
                 paddingVertical: 6,
