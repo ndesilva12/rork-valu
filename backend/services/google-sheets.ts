@@ -60,10 +60,10 @@ async function getCachedOrFetch<T>(
   return data;
 }
 
-// Fetch causes/values from Google Sheets
-// NOTE: Fetches from Value-Brand-Matrix sheet (columns A-C contain cause data)
-export async function fetchCausesFromSheets(): Promise<ValueItem[]> {
-  return getCachedOrFetch('causes', async () => {
+// Fetch values from Google Sheets
+// NOTE: Fetches from Value-Brand-Matrix sheet (columns A-C contain value data)
+export async function fetchValuesFromSheets(): Promise<ValueItem[]> {
+  return getCachedOrFetch('values', async () => {
     const sheets = getGoogleSheetsClient();
     const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
     const sheetName = process.env.SHEET_NAME_VALUE_MATRIX || 'Value-Brand-Matrix';
@@ -79,9 +79,9 @@ export async function fetchCausesFromSheets(): Promise<ValueItem[]> {
       });
 
       const rows = response.data.values || [];
-      console.log(`[Sheets] Fetched ${rows.length} causes from Value-Brand-Matrix sheet`);
+      console.log(`[Sheets] Fetched ${rows.length} values from Value-Brand-Matrix sheet`);
 
-      const causes: ValueItem[] = rows
+      const values: ValueItem[] = rows
         .filter((row) => row[0] && row[1] && row[2]) // Must have id, name, category
         .map((row) => ({
           id: row[0].trim(),
@@ -89,10 +89,10 @@ export async function fetchCausesFromSheets(): Promise<ValueItem[]> {
           category: row[2] as any,
         }));
 
-      return causes;
+      return values;
     } catch (error: any) {
-      console.error('[Sheets] Error fetching causes:', error.message);
-      throw new Error(`Failed to fetch causes from Google Sheets: ${error.message}`);
+      console.error('[Sheets] Error fetching values:', error.message);
+      throw new Error(`Failed to fetch values from Google Sheets: ${error.message}`);
     }
   });
 }

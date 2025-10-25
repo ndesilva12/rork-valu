@@ -12,7 +12,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import {
-  fetchCausesFromSheets,
+  fetchValuesFromSheets,
   fetchBrandsFromSheets,
   fetchLocalBusinessesFromSheets,
 } from '../backend/services/google-sheets';
@@ -52,37 +52,37 @@ async function testGoogleSheetsIntegration() {
     process.exit(1);
   }
 
-  // Test 2: Fetch Causes
-  console.log('\n📋 Step 2: Fetching Causes');
+  // Test 2: Fetch Values
+  console.log('\n📋 Step 2: Fetching Values');
   console.log('-'.repeat(60));
 
   try {
-    const causes = await fetchCausesFromSheets();
-    console.log(`✅ Successfully fetched ${causes.length} causes`);
+    const values = await fetchValuesFromSheets();
+    console.log(`✅ Successfully fetched ${values.length} values`);
 
-    if (causes.length > 0) {
-      console.log('\nSample causes:');
-      causes.slice(0, 5).forEach((cause) => {
-        console.log(`  - ${cause.name} (${cause.category})`);
+    if (values.length > 0) {
+      console.log('\nSample values:');
+      values.slice(0, 5).forEach((value) => {
+        console.log(`  - ${value.name} (${value.category})`);
       });
 
       // Validate structure
-      const hasRequiredFields = causes.every(
-        (c) => c.id && c.name && c.category
+      const hasRequiredFields = values.every(
+        (v) => v.id && v.name && v.category
       );
       if (hasRequiredFields) {
-        console.log('\n✅ All causes have required fields (id, name, category)');
+        console.log('\n✅ All values have required fields (id, name, category)');
       } else {
-        console.log('\n⚠️  Warning: Some causes are missing required fields');
+        console.log('\n⚠️  Warning: Some values are missing required fields');
       }
     } else {
-      console.log('\n⚠️  Warning: No causes found. Make sure your "Causes" sheet has data.');
+      console.log('\n⚠️  Warning: No values found. Make sure your "Value-Brand-Matrix" sheet has data.');
     }
   } catch (error: any) {
-    console.error('❌ Error fetching causes:', error.message);
+    console.error('❌ Error fetching values:', error.message);
     console.log('\nTroubleshooting:');
-    console.log('1. Check that you have a sheet named "Causes" (case-sensitive)');
-    console.log('2. Verify the sheet is shared with your service account email');
+    console.log('1. Check that you have a sheet named "Value-Brand-Matrix" (case-sensitive)');
+    console.log('2. Verify the sheet is shared with your service account email or is publicly viewable');
     console.log('3. Make sure the sheet has data starting from row 2');
     process.exit(1);
   }

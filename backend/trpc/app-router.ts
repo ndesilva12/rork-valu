@@ -2,7 +2,7 @@ import { createTRPCRouter } from "./create-context";
 import hiRoute from "./routes/example/hi/route";
 import { getProfileProcedure } from "./routes/user/get-profile/route";
 import { saveProfileProcedure } from "./routes/user/save-profile/route";
-import { getCausesProcedure } from "./routes/data/get-causes/route";
+import { getValuesProcedure } from "./routes/data/get-values/route";
 import { getBrandsProcedure } from "./routes/data/get-brands/route";
 import { getLocalBusinessesProcedure } from "./routes/data/get-local-businesses/route";
 import { searchBrandsProcedure } from "./routes/data/search-brands/route";
@@ -18,7 +18,7 @@ export const appRouter = createTRPCRouter({
     saveProfile: saveProfileProcedure,
   }),
   data: createTRPCRouter({
-    getCauses: getCausesProcedure,
+    getValues: getValuesProcedure,
     getBrands: getBrandsProcedure,
     getLocalBusinesses: getLocalBusinessesProcedure,
     searchBrands: searchBrandsProcedure,
