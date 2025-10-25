@@ -42,21 +42,26 @@ export default function TabLayout() {
     isTabletOrLarger ? visibleRowHeight + topInset : topInset;
 
   // helper to render icon + optional label beside it on wide screens
+  // Use explicit visible colors (active/inactive) so icons are always visible
   const renderTabIconWithLabel = useMemo(
     () =>
       (Icon: React.ComponentType<any>, label: string, focusedColor: string) =>
       ({ color, focused }: { color: string; focused?: boolean }) => {
         const active = Boolean(focused);
+        // explicit inactive color to ensure visibility against background
+        const inactiveColor = colors.text; // more contrast than textSecondary
+        const useColor = active ? focusedColor : inactiveColor;
+
         if (isTabletOrLarger) {
           return (
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Icon size={24} color={active ? focusedColor : color} strokeWidth={2} />
+              <Icon size={24} color={useColor} strokeWidth={2} />
               <Text
                 style={{
                   marginLeft: 8,
                   fontSize: 14,
                   fontWeight: active ? "700" : "600",
-                  color: active ? focusedColor : color,
+                  color: useColor,
                 }}
               >
                 {label}
@@ -65,9 +70,9 @@ export default function TabLayout() {
           );
         }
         // mobile: icon only (smaller for fitting in a shorter bar)
-        return <Icon size={22} color={color} strokeWidth={2} />;
+        return <Icon size={22} color={useColor} strokeWidth={2} />;
       },
-    [isTabletOrLarger]
+    [isTabletOrLarger, colors.text]
   );
 
   return (
@@ -91,7 +96,7 @@ export default function TabLayout() {
             screenOptions={{
               // active and inactive tint explicitly set so the Icon receives a usable color
               tabBarActiveTintColor: isLocalTab ? localColor : colors.primary,
-              tabBarInactiveTintColor: colors.textSecondary,
+              tabBarInactiveTintColor: colors.text, // use text for better contrast
               headerShown: false,
               tabBarPosition: isTabletOrLarger ? "top" : "bottom",
               // render custom labels on wide screens; keep default labels off
