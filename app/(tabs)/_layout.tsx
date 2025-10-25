@@ -18,7 +18,9 @@ export default function TabLayout() {
   const isLocalTab = segments[segments.length - 1] === 'local';
 
   const isTabletOrLarger = Platform.OS === 'web' && width >= 768;
-  const tabBarHeight = isTabletOrLarger ? 64 : 70;
+  // reduce mobile bar height to bring icons visually closer to bottom and make the bar less tall
+  const tabBarHeight = isTabletOrLarger ? 64 : 52;
+  const visibleIconRow = isTabletOrLarger ? 64 : 48; // used to vertically center icons inside the bar
 
   // Use safe area insets to avoid content going under system UI (status bar / home indicator)
   const insets = useSafeAreaInsets();
@@ -44,8 +46,8 @@ export default function TabLayout() {
           </View>
         );
       }
-      // mobile: icon only
-      return <Icon size={24} color={color} strokeWidth={2} />;
+      // mobile: icon only (slightly smaller so it appears centered in the shorter bar)
+      return <Icon size={22} color={color} strokeWidth={2} />;
     };
   };
 
@@ -66,6 +68,7 @@ export default function TabLayout() {
           <Tabs
             screenOptions={{
               tabBarActiveTintColor: isLocalTab ? localColor : colors.primary,
+              tabBarInactiveTintColor: colors.text,
               headerShown: false,
               tabBarPosition: isTabletOrLarger ? 'top' : 'bottom',
               // we'll render our own label next to icons on wide screens
@@ -77,8 +80,14 @@ export default function TabLayout() {
                 left: 0,
                 right: 0,
                 height: tabBarHeight,
-                paddingBottom: 0,
-                paddingTop: 0,
+                // make the bar visually less tall while keeping tappable area (we reserve padded content)
+                paddingBottom: Platform.OS === 'web' && isStandalone ? undefined : bottomInset ? bottomInset : 6,
+                paddingTop: 6,
+                // distribute icons evenly across the width on mobile, keep left on large screens
+                flexDirection: 'row',
+                justifyContent: isTabletOrLarger ? 'flex-start' : 'space-around',
+                alignItems: 'center',
+                // border
                 borderTopWidth: isTabletOrLarger ? 0 : 1,
                 borderBottomWidth: isTabletOrLarger ? 1 : 0,
                 borderTopColor: colors.border,
@@ -91,7 +100,17 @@ export default function TabLayout() {
                 // Reserve space for the top tab bar + system top inset on wide screens,
                 // and reserve space for the bottom tab bar + bottom inset on mobile.
                 paddingTop: isTabletOrLarger ? (tabBarHeight + topInset) : topInset,
-                paddingBottom: isTabletOrLarger ? bottomInset : (tabBarHeight + bottomInset),
+                paddingBottom: isTabletOrLarger ? bottomInset : (tabBarHeight + bottomInset - 8),
+                // note: subtract a small amount so content sits slightly closer to the bar
+              },
+              // ensure each tab icon area centers the icon vertically
+              tabBarIconStyle: {
+                height: visibleIconRow,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: 0,
+                // give mobile tabs flexible width so they spread evenly
+                flex: Platform.OS === 'web' && !isTabletOrLarger ? 1 : undefined,
               },
             }}
           >
