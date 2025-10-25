@@ -269,20 +269,10 @@ export default function ProductDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Hide the navigation header and render our own header inside the page so it respects centered max-width */}
       <Stack.Screen
         options={{
-          headerShown: true,
-          headerTitle: '',
-          headerTransparent: true,
-          headerLeft: () => (
-            <TouchableOpacity
-              style={[styles.backButton, { backgroundColor: colors.backgroundSecondary }]}
-              onPress={() => router.back()}
-              activeOpacity={0.7}
-            >
-              <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
-            </TouchableOpacity>
-          ),
+          headerShown: false,
         }}
       />
       <ScrollView
@@ -310,7 +300,16 @@ export default function ProductDetailScreen() {
         </View>
         
         <View style={styles.content}>
+          {/* custom header: back button now inside the centered content */}
           <View style={styles.header}>
+            <TouchableOpacity
+              style={[styles.backButton, { backgroundColor: colors.backgroundSecondary, marginRight: 12 }]}
+              onPress={() => router.back()}
+              activeOpacity={0.7}
+            >
+              <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+
             <View style={styles.titleContainer}>
               <Text style={[styles.productName, { color: colors.text }]}>{product.name}</Text>
               <Text style={[styles.category, { color: colors.primary }]}>{product.category}</Text>
@@ -461,7 +460,8 @@ export default function ProductDetailScreen() {
                 <TouchableOpacity
                   style={[
                     styles.sortButton,
-                    sortBy === 'latest' && { backgroundColor: colors.primary + '15' }
+                    // Outline style when active: transparent background + border
+                    sortBy === 'latest' && { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.primary }
                   ]}
                   onPress={() => setSortBy('latest')}
                   activeOpacity={0.7}
@@ -474,7 +474,8 @@ export default function ProductDetailScreen() {
                 <TouchableOpacity
                   style={[
                     styles.sortButton,
-                    sortBy === 'popular' && { backgroundColor: colors.primary + '15' }
+                    // Outline style when active: transparent background + border
+                    sortBy === 'popular' && { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.primary }
                   ]}
                   onPress={() => setSortBy('popular')}
                   activeOpacity={0.7}
@@ -791,6 +792,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 8,
+    // default transparent border so switching to outlined active state doesn't shift layout
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   sortButtonText: {
     fontSize: 14,
