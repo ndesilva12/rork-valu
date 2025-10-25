@@ -1,7 +1,7 @@
 import { Tabs, useSegments } from "expo-router";
-import { BookOpen, Heart, MapPin, ShoppingBag, Search, User } from "lucide-react-native";
+import { BookOpen, MapPin, ShoppingBag, Search, User } from "lucide-react-native";
 import React from "react";
-import { Platform, useWindowDimensions, StyleSheet, StatusBar, View } from "react-native";
+import { Platform, useWindowDimensions, StyleSheet, StatusBar, View, Text } from "react-native";
 import { lightColors, darkColors } from "@/constants/colors";
 import { useUser } from "@/contexts/UserContext";
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,7 +10,6 @@ import { useIsStandalone } from '@/hooks/useIsStandalone';
 const localColor = '#84CC16';
 
 export default function TabLayout() {
-  // Move all hooks INSIDE the component
   const isStandalone = useIsStandalone(); 
   const { isDarkMode } = useUser(); 
   const colors = isDarkMode ? darkColors : lightColors;
@@ -19,6 +18,31 @@ export default function TabLayout() {
   const isLocalTab = segments[segments.length - 1] === 'local';
   
   const isTabletOrLarger = Platform.OS === 'web' && width >= 768;
+
+  // helper to render icon + label beside it on wide screens
+  const renderTabIconWithLabel = (Icon: React.ComponentType<any>, label: string, focusedColor: string) => {
+    return ({ color, focused }: { color: string; focused?: boolean }) => {
+      if (isTabletOrLarger) {
+        const active = Boolean(focused);
+        return (
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Icon size={24} color={active ? focusedColor : color} strokeWidth={2} />
+            <Text style={{
+              marginLeft: 8,
+              fontSize: 14,
+              fontWeight: active ? '700' : '600',
+              color: active ? focusedColor : color,
+            }}>
+              {label}
+            </Text>
+          </View>
+        );
+      }
+
+      // mobile: icon only
+      return <Icon size={24} color={color} strokeWidth={2} />;
+    };
+  };
 
   return (
     <SafeAreaView edges={isStandalone ? [] : ['top']} style={{ flex: 1, backgroundColor: colors.background }}>
@@ -32,8 +56,9 @@ export default function TabLayout() {
               tabBarActiveTintColor: isLocalTab ? localColor : colors.primary,
               headerShown: false,
               tabBarPosition: isTabletOrLarger ? 'top' : 'bottom',
+              // we'll render our own label next to icon on wide screens, so keep default labels off
+              tabBarShowLabel: false,
               tabBarStyle: {
-                // Position the tab bar differently for web/desktop (top) vs mobile (bottom)
                 position: isTabletOrLarger ? 'relative' : 'absolute',
                 top: isTabletOrLarger ? 0 : undefined,
                 bottom: isTabletOrLarger ? undefined : 0,
@@ -47,30 +72,20 @@ export default function TabLayout() {
                 borderTopColor: colors.border,
                 borderBottomColor: colors.border,
                 backgroundColor: colors.background,
-                // Ensure the top tab bar renders above content
                 zIndex: isTabletOrLarger ? 10 : undefined,
                 elevation: isTabletOrLarger ? 10 : undefined,
               },
               contentStyle: {
-                // Reserve space at the top when the tab bar is at the top
                 paddingBottom: isTabletOrLarger ? 0 : 50,
                 paddingTop: isTabletOrLarger ? 64 : 0,
               },
-              tabBarLabelStyle: isTabletOrLarger ? {
-                fontSize: 14,
-                fontWeight: '600' as const,
-                textTransform: 'none' as const,
-              } : undefined,
-              tabBarIconStyle: isTabletOrLarger ? {
-                marginTop: 4,
-              } : undefined,
             }}
           >
             <Tabs.Screen
               name="home"
               options={{
                 title: "Playbook",
-                tabBarIcon: ({ color }) => <BookOpen size={24} color={color} strokeWidth={2} />, 
+                tabBarIcon: renderTabIconWithLabel(BookOpen, "Playbook", colors.primary),
                 tabBarShowLabel: false,
               }}
             />
@@ -78,34 +93,34 @@ export default function TabLayout() {
               name="local"
               options={{
                 title: "Local",
-                tabBarIcon: ({ color, focused }) => <MapPin size={24} color={focused ? localColor : color} strokeWidth={2} />, 
+                tabBarIcon: renderTabIconWithLabel(MapPin, "Local", localColor),
                 tabBarShowLabel: false,
               }}
             />
             <Tabs.Screen
-             name="search"
-             options={{
-               title: "Search",
-               tabBarIcon: ({ color }) => <Search size={24} color={color} strokeWidth={2} />, 
-               tabBarShowLabel: false,
-             }}
+              name="search"
+              options={{
+                title: "Search",
+                tabBarIcon: renderTabIconWithLabel(Search, "Search", colors.primary),
+                tabBarShowLabel: false,
+              }}
             />
             <Tabs.Screen
               name="shop"
               options={{
                 title: "Shop",
-                tabBarIcon: ({ color }) => <ShoppingBag size={24} color={color} strokeWidth={2} />, 
+                tabBarIcon: renderTabIconWithLabel(ShoppingBag, "Shop", colors.primary),
                 tabBarShowLabel: false,
               }}
             />
-             <Tabs.Screen
-             name="values"
-             options={{
-               title: "Profile",
-               tabBarIcon: ({ color }) => <User size={24} color={color} strokeWidth={2} />, 
-               tabBarShowLabel: false,
-             }}
-           />
+            <Tabs.Screen
+              name="values"
+              options={{
+                title: "Profile",
+                tabBarIcon: renderTabIconWithLabel(User, "Profile", colors.primary),
+                tabBarShowLabel: false,
+              }}
+            />
           </Tabs>
         </View>
       </View>
