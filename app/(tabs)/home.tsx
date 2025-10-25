@@ -1,8 +1,25 @@
 import { useRouter } from 'expo-router';
-import { TrendingUp, TrendingDown, ChevronRight, Target, FolderOpen, MapPin, Fuel, Utensils, Coffee, ShoppingCart, Tv, Smartphone, Shield, Car, Laptop, Store, DollarSign, Shirt } from 'lucide-react-native';
+import {
+  TrendingUp,
+  TrendingDown,
+  ChevronRight,
+  Target,
+  FolderOpen,
+  MapPin,
+  Fuel,
+  Utensils,
+  Coffee,
+  ShoppingCart,
+  Tv,
+  Smartphone,
+  Shield,
+  Car,
+  Laptop,
+  Store,
+  DollarSign,
+  Shirt,
+} from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
-import UnifiedMap from '@/components/UnifiedMap';
-import PlatformImage from '@/components/PlatformImage'; // optional: to replace expo Image usages for logos
 import {
   View,
   Text,
@@ -58,7 +75,7 @@ export default function HomeScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
 
   const viewModes: ViewMode[] = ['playbook', 'browse', 'map'];
-  
+
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (evt, gestureState) => {
@@ -66,7 +83,7 @@ export default function HomeScreen() {
       },
       onPanResponderRelease: (evt, gestureState) => {
         const currentIndex = viewModes.indexOf(viewMode);
-        
+
         if (gestureState.dx < -100 && currentIndex < viewModes.length - 1) {
           setViewMode(viewModes[currentIndex + 1]);
         } else if (gestureState.dx > 100 && currentIndex > 0) {
@@ -77,27 +94,27 @@ export default function HomeScreen() {
   ).current;
 
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
-    const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
-    const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
+    const supportedCauses = profile.causes.filter((c) => c.type === 'support').map((c) => c.id);
+    const avoidedCauses = profile.causes.filter((c) => c.type === 'avoid').map((c) => c.id);
     const totalUserValues = profile.causes.length;
-    
-    const scored = MOCK_PRODUCTS.map(product => {
+
+    const scored = MOCK_PRODUCTS.map((product) => {
       let totalSupportScore = 0;
       let totalAvoidScore = 0;
       const matchingValues = new Set<string>();
       const positionSum: number[] = [];
-      
-      product.valueAlignments.forEach(alignment => {
+
+      product.valueAlignments.forEach((alignment) => {
         const isUserSupporting = supportedCauses.includes(alignment.valueId);
         const isUserAvoiding = avoidedCauses.includes(alignment.valueId);
-        
+
         if (!isUserSupporting && !isUserAvoiding) return;
-        
+
         matchingValues.add(alignment.valueId);
         positionSum.push(alignment.position);
-        
-        const score = alignment.isSupport ? (100 - alignment.position * 5) : -(100 - alignment.position * 5);
-        
+
+        const score = alignment.isSupport ? 100 - alignment.position * 5 : -(100 - alignment.position * 5);
+
         if (isUserSupporting) {
           if (score > 0) {
             totalSupportScore += score;
@@ -105,7 +122,7 @@ export default function HomeScreen() {
             totalAvoidScore += Math.abs(score);
           }
         }
-        
+
         if (isUserAvoiding) {
           if (score < 0) {
             totalSupportScore += Math.abs(score);
@@ -114,75 +131,132 @@ export default function HomeScreen() {
           }
         }
       });
-      
+
       const valuesWhereNotAppears = totalUserValues - matchingValues.size;
-      const totalPositionSum = positionSum.reduce((a, b) => a + b, 0) + (valuesWhereNotAppears * 11);
+      const totalPositionSum = positionSum.reduce((a, b) => a + b, 0) + valuesWhereNotAppears * 11;
       const avgPosition = totalUserValues > 0 ? totalPositionSum / totalUserValues : 11;
-      
+
       const isNegativelyAligned = totalAvoidScore > totalSupportScore && totalAvoidScore > 0;
-      
+
       let alignmentStrength: number;
       if (isNegativelyAligned) {
         alignmentStrength = Math.round(((avgPosition - 1) / 10) * 50);
       } else {
-        alignmentStrength = Math.round((1 - ((avgPosition - 1) / 10)) * 50 + 50);
+        alignmentStrength = Math.round((1 - (avgPosition - 1) / 10) * 50 + 50);
       }
-      
-      return { 
-        product, 
-        totalSupportScore, 
-        totalAvoidScore, 
+
+      return {
+        product,
+        totalSupportScore,
+        totalAvoidScore,
         matchingValuesCount: matchingValues.size,
         matchingValues,
-        alignmentStrength
+        alignmentStrength,
       };
     });
 
     const allSupportSorted = scored
-      .filter(s => s.totalSupportScore > s.totalAvoidScore && s.totalSupportScore > 0)
+      .filter((s) => s.totalSupportScore > s.totalAvoidScore && s.totalSupportScore > 0)
       .sort((a, b) => b.alignmentStrength - a.alignmentStrength);
 
     const allAvoidSorted = scored
-      .filter(s => s.totalAvoidScore > s.totalSupportScore && s.totalAvoidScore > 0)
+      .filter((s) => s.totalAvoidScore > s.totalSupportScore && s.totalAvoidScore > 0)
       .sort((a, b) => a.alignmentStrength - b.alignmentStrength);
 
-    const scoredMap = new Map(scored.map(s => [s.product.id, s.alignmentStrength]));
+    const scoredMap = new Map(scored.map((s) => [s.product.id, s.alignmentStrength]));
 
-    return { 
-      topSupport: allSupportSorted.slice(0, 10).map(s => s.product), 
-      topAvoid: allAvoidSorted.slice(0, 10).map(s => s.product),
-      allSupport: allSupportSorted.map(s => s.product),
-      allSupportFull: allSupportSorted.map(s => s.product),
-      allAvoidFull: allAvoidSorted.map(s => s.product),
-      scoredBrands: scoredMap
+    return {
+      topSupport: allSupportSorted.slice(0, 10).map((s) => s.product),
+      topAvoid: allAvoidSorted.slice(0, 10).map((s) => s.product),
+      allSupport: allSupportSorted.map((s) => s.product),
+      allSupportFull: allSupportSorted.map((s) => s.product),
+      allAvoidFull: allAvoidSorted.map((s) => s.product),
+      scoredBrands: scoredMap,
     };
   }, [profile.causes]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
-    
-    allSupport.forEach(product => {
-      FOLDER_CATEGORIES.forEach(category => {
+
+    allSupport.forEach((product) => {
+      FOLDER_CATEGORIES.forEach((category) => {
         const productCategory = product.category.toLowerCase();
         const productBrand = product.brand.toLowerCase();
-        
+
         let match = false;
-        
-        if (category.id === 'gas' && (productCategory.includes('energy') || productCategory.includes('petroleum') || productBrand.includes('exxon') || productBrand.includes('chevron') || productBrand.includes('shell') || productBrand.includes('bp'))) {
+
+        if (
+          category.id === 'gas' &&
+          (productCategory.includes('energy') ||
+            productCategory.includes('petroleum') ||
+            productBrand.includes('exxon') ||
+            productBrand.includes('chevron') ||
+            productBrand.includes('shell') ||
+            productBrand.includes('bp'))
+        ) {
           match = true;
-        } else if (category.id === 'fast-food' && (productBrand.includes('mcdonald') || productBrand.includes('burger king') || productBrand.includes('wendy') || productBrand.includes('kfc') || productBrand.includes('taco') || productBrand.includes('subway') || productBrand.includes('chick-fil-a'))) {
+        } else if (
+          category.id === 'fast-food' &&
+          (productBrand.includes('mcdonald') ||
+            productBrand.includes('burger king') ||
+            productBrand.includes('wendy') ||
+            productBrand.includes('kfc') ||
+            productBrand.includes('taco') ||
+            productBrand.includes('subway') ||
+            productBrand.includes('chick-fil-a'))
+        ) {
           match = true;
         } else if (category.id === 'restaurants' && (productCategory.includes('food') || productCategory.includes('restaurant'))) {
           match = true;
-        } else if (category.id === 'groceries' && (productBrand.includes('walmart') || productBrand.includes('target') || productBrand.includes('costco') || productBrand.includes('kroger') || productBrand.includes('whole foods') || productBrand.includes('publix'))) {
+        } else if (
+          category.id === 'groceries' &&
+          (productBrand.includes('walmart') ||
+            productBrand.includes('target') ||
+            productBrand.includes('costco') ||
+            productBrand.includes('kroger') ||
+            productBrand.includes('whole foods') ||
+            productBrand.includes('publix'))
+        ) {
           match = true;
-        } else if (category.id === 'streaming' && (productBrand.includes('netflix') || productBrand.includes('disney') || productBrand.includes('hulu') || productBrand.includes('spotify') || productBrand.includes('youtube') || productBrand.includes('amazon'))) {
+        } else if (
+          category.id === 'streaming' &&
+          (productBrand.includes('netflix') ||
+            productBrand.includes('disney') ||
+            productBrand.includes('hulu') ||
+            productBrand.includes('spotify') ||
+            productBrand.includes('youtube') ||
+            productBrand.includes('amazon'))
+        ) {
           match = true;
-        } else if (category.id === 'social-media' && (productBrand.includes('meta') || productBrand.includes('facebook') || productBrand.includes('instagram') || productBrand.includes('tiktok') || productBrand.includes('snapchat') || productBrand.includes('x') || productBrand.includes('twitter'))) {
+        } else if (
+          category.id === 'social-media' &&
+          (productBrand.includes('meta') ||
+            productBrand.includes('facebook') ||
+            productBrand.includes('instagram') ||
+            productBrand.includes('tiktok') ||
+            productBrand.includes('snapchat') ||
+            productBrand.includes('x') ||
+            productBrand.includes('twitter'))
+        ) {
           match = true;
-        } else if (category.id === 'insurance' && (productCategory.includes('insurance') || productBrand.includes('state farm') || productBrand.includes('allstate') || productBrand.includes('progressive') || productBrand.includes('geico'))) {
+        } else if (
+          category.id === 'insurance' &&
+          (productCategory.includes('insurance') ||
+            productBrand.includes('state farm') ||
+            productBrand.includes('allstate') ||
+            productBrand.includes('progressive') ||
+            productBrand.includes('geico'))
+        ) {
           match = true;
-        } else if (category.id === 'vehicles' && (productCategory.includes('auto') || productBrand.includes('tesla') || productBrand.includes('ford') || productBrand.includes('toyota') || productBrand.includes('honda') || productBrand.includes('chevrolet'))) {
+        } else if (
+          category.id === 'vehicles' &&
+          (productCategory.includes('auto') ||
+            productBrand.includes('tesla') ||
+            productBrand.includes('ford') ||
+            productBrand.includes('toyota') ||
+            productBrand.includes('honda') ||
+            productBrand.includes('chevrolet'))
+        ) {
           match = true;
         } else if (category.id === 'technology' && productCategory.includes('tech')) {
           match = true;
@@ -193,19 +267,19 @@ export default function HomeScreen() {
         } else if (category.id === 'fashion' && productCategory.includes('fashion')) {
           match = true;
         }
-        
+
         if (match) {
           if (!categorized.has(category.id)) {
             categorized.set(category.id, []);
           }
           const existing = categorized.get(category.id)!;
-          if (!existing.find(p => p.id === product.id)) {
+          if (!existing.find((p) => p.id === product.id)) {
             existing.push(product);
           }
         }
       });
     });
-    
+
     return categorized;
   }, [allSupport]);
 
@@ -216,37 +290,38 @@ export default function HomeScreen() {
     });
   };
 
-
-
-
-
   const renderBrandCard = (product: Product, type: 'support' | 'avoid') => {
     const isSupport = type === 'support';
     const titleColor = isSupport ? '#22C55E' : '#EF4444';
     const alignmentScore = scoredBrands.get(product.id) || 0;
-    
+
     return (
-      <TouchableOpacity 
-        key={product.id} 
+      <TouchableOpacity
+        key={product.id}
         style={[
           styles.brandCard,
-          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' }
+          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
         ]}
         onPress={() => handleProductPress(product)}
         activeOpacity={0.7}
       >
         <View style={styles.brandCardInner}>
           <View style={styles.brandLogoContainer}>
-            <PlatformImage uri={product.imageUrl} style={styles.brandLogo} alt={`${product.brand} logo`} />
-              style={styles.brandLogo} 
+            <Image
+              source={{ uri: product.imageUrl }}
+              style={styles.brandLogo}
               contentFit="cover"
               transition={200}
               cachePolicy="memory-disk"
             />
           </View>
           <View style={styles.brandCardContent}>
-            <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>{product.brand}</Text>
-            <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>{product.category}</Text>
+            <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>
+              {product.brand}
+            </Text>
+            <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+              {product.category}
+            </Text>
           </View>
           <View style={styles.brandScoreContainer}>
             <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
@@ -256,114 +331,88 @@ export default function HomeScreen() {
     );
   };
 
-
-
   const renderViewModeSelector = () => (
     <View style={[styles.viewModeSelector, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
       <TouchableOpacity
-        style={[
-          styles.viewModeButton,
-          viewMode === 'playbook' && { backgroundColor: colors.primary }
-        ]}
+        style={[styles.viewModeButton, viewMode === 'playbook' && { backgroundColor: colors.primary }]}
         onPress={() => setViewMode('playbook')}
         activeOpacity={0.7}
       >
         <Target size={18} color={viewMode === 'playbook' ? colors.white : colors.textSecondary} strokeWidth={2} />
-        <Text style={[
-          styles.viewModeText,
-          { color: viewMode === 'playbook' ? colors.white : colors.textSecondary }
-        ]}>Brands</Text>
+        <Text style={[styles.viewModeText, { color: viewMode === 'playbook' ? colors.white : colors.textSecondary }]}>
+          Brands
+        </Text>
       </TouchableOpacity>
-      
+
       <TouchableOpacity
-        style={[
-          styles.viewModeButton,
-          viewMode === 'browse' && { backgroundColor: colors.primary }
-        ]}
+        style={[styles.viewModeButton, viewMode === 'browse' && { backgroundColor: colors.primary }]}
         onPress={() => setViewMode('browse')}
         activeOpacity={0.7}
       >
         <FolderOpen size={18} color={viewMode === 'browse' ? colors.white : colors.textSecondary} strokeWidth={2} />
-        <Text style={[
-          styles.viewModeText,
-          { color: viewMode === 'browse' ? colors.white : colors.textSecondary }
-        ]}>Browse</Text>
+        <Text style={[styles.viewModeText, { color: viewMode === 'browse' ? colors.white : colors.textSecondary }]}>
+          Browse
+        </Text>
       </TouchableOpacity>
-      
+
       <TouchableOpacity
-        style={[
-          styles.viewModeButton,
-          viewMode === 'map' && { backgroundColor: colors.primary }
-        ]}
+        style={[styles.viewModeButton, viewMode === 'map' && { backgroundColor: colors.primary }]}
         onPress={() => setViewMode('map')}
         activeOpacity={0.7}
       >
         <MapPin size={18} color={viewMode === 'map' ? colors.white : colors.textSecondary} strokeWidth={2} />
-        <Text style={[
-          styles.viewModeText,
-          { color: viewMode === 'map' ? colors.white : colors.textSecondary }
-        ]}>Map</Text>
+        <Text style={[styles.viewModeText, { color: viewMode === 'map' ? colors.white : colors.textSecondary }]}>
+          Map
+        </Text>
       </TouchableOpacity>
     </View>
   );
 
   const renderPlaybookView = () => (
-  <>
-    <View style={styles.section}>
-      <View style={styles.sectionHeaderRow}>
-        <View style={styles.sectionHeader}>
-          <TrendingUp size={24} color={colors.success} strokeWidth={2} />
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Aligned Brands</Text>
+    <>
+      <View style={styles.section}>
+        <View style={styles.sectionHeaderRow}>
+          <View style={styles.sectionHeader}>
+            <TrendingUp size={24} color={colors.success} strokeWidth={2} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Aligned Brands</Text>
+          </View>
+          <TouchableOpacity onPress={() => setShowAllAligned(!showAllAligned)} activeOpacity={0.7}>
+            <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllAligned ? 'Hide' : 'Show All'}</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          onPress={() => setShowAllAligned(!showAllAligned)}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.showAllButton, { color: colors.primary }]}>
-            {showAllAligned ? 'Hide' : 'Show All'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.brandsContainer}>
-        {(showAllAligned ? allSupportFull : topSupport.slice(0, 5)).map((product) => renderBrandCard(product, 'support'))}
-      </View>
-    </View>
-    <View style={styles.section}>
-      <View style={styles.sectionHeaderRow}>
-        <View style={styles.sectionHeader}>
-          <TrendingDown size={24} color={colors.danger} strokeWidth={2} />
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Unaligned Brands</Text>
+        <View style={styles.brandsContainer}>
+          {(showAllAligned ? allSupportFull : topSupport.slice(0, 5)).map((product) => renderBrandCard(product, 'support'))}
         </View>
-        <TouchableOpacity
-          onPress={() => setShowAllLeast(!showAllLeast)}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.showAllButton, { color: colors.primary }]}>
-            {showAllLeast ? 'Hide' : 'Show All'}
-          </Text>
-        </TouchableOpacity>
       </View>
-      <View style={styles.brandsContainer}>
-        {(showAllLeast ? allAvoidFull : topAvoid.slice(0, 5)).map((product) => renderBrandCard(product, 'avoid'))}
+
+      <View style={styles.section}>
+        <View style={styles.sectionHeaderRow}>
+          <View style={styles.sectionHeader}>
+            <TrendingDown size={24} color={colors.danger} strokeWidth={2} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Unaligned Brands</Text>
+          </View>
+          <TouchableOpacity onPress={() => setShowAllLeast(!showAllLeast)} activeOpacity={0.7}>
+            <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllLeast ? 'Hide' : 'Show All'}</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.brandsContainer}>
+          {(showAllLeast ? allAvoidFull : topAvoid.slice(0, 5)).map((product) => renderBrandCard(product, 'avoid'))}
+        </View>
       </View>
-    </View>
-  </>
-);
+    </>
+  );
+
   const renderFoldersView = () => (
     <View style={styles.foldersContainer}>
-      {FOLDER_CATEGORIES.map(category => {
+      {FOLDER_CATEGORIES.map((category) => {
         const brands = categorizedBrands.get(category.id) || [];
         const isExpanded = expandedFolder === category.id;
-        
+
         if (brands.length === 0) return null;
-        
+
         return (
           <View key={category.id} style={[styles.folderCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-            <TouchableOpacity
-              style={styles.folderHeader}
-              onPress={() => setExpandedFolder(isExpanded ? null : category.id)}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.folderHeader} onPress={() => setExpandedFolder(isExpanded ? null : category.id)} activeOpacity={0.7}>
               <View style={styles.folderHeaderLeft}>
                 <View style={[styles.folderIconContainer, { backgroundColor: colors.primaryLight + '15' }]}>
                   <category.Icon size={24} color={isDarkMode ? colors.white : colors.primary} strokeWidth={2} />
@@ -380,25 +429,30 @@ export default function HomeScreen() {
                 style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}
               />
             </TouchableOpacity>
-            
+
             {isExpanded && (
               <View style={styles.folderContent}>
-                {brands.map(product => (
+                {brands.map((product) => (
                   <TouchableOpacity
                     key={product.id}
                     style={[styles.folderBrandCard, { backgroundColor: colors.background }]}
                     onPress={() => handleProductPress(product)}
                     activeOpacity={0.7}
                   >
-                    <PlatformImage uri={product.imageUrl} style={styles.brandLogo} alt={`${product.brand} logo`} />
-                      style={styles.folderBrandImage} 
+                    <Image
+                      source={{ uri: product.imageUrl }}
+                      style={styles.folderBrandImage}
                       contentFit="cover"
                       transition={200}
                       cachePolicy="memory-disk"
                     />
                     <View style={styles.folderBrandContent}>
-                      <Text style={[styles.folderBrandName, { color: colors.text }]} numberOfLines={2}>{product.brand}</Text>
-                      <Text style={[styles.folderBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>{product.category}</Text>
+                      <Text style={[styles.folderBrandName, { color: colors.text }]} numberOfLines={2}>
+                        {product.brand}
+                      </Text>
+                      <Text style={[styles.folderBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                        {product.category}
+                      </Text>
                     </View>
                     <View style={[styles.folderBrandBadge, { backgroundColor: colors.successLight }]}>
                       <TrendingUp size={12} color={colors.success} strokeWidth={2.5} />
@@ -414,33 +468,37 @@ export default function HomeScreen() {
     </View>
   );
 
-
-
-
-
-
-
-
-
   const renderMapView = () => {
-  // Example center: use first supported brand location if you have coords, otherwise default
-  const defaultLat = 37.7749;
-  const defaultLng = -122.4194;
+    // Simple OpenStreetMap iframe embed — SSR-safe and dependency-free
+    const defaultLat = 37.7749;
+    const defaultLng = -122.4194;
+    const bbox = `${defaultLng - 0.05},${defaultLat - 0.03},${defaultLng + 0.05},${defaultLat + 0.03}`;
+    const marker = `${defaultLat}%2C${defaultLng}`;
+    const src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${marker}`;
 
-  return (
-    <View style={{ marginBottom: 16 }}>
-      <UnifiedMap latitude={defaultLat} longitude={defaultLng} zoom={12} height={420} />
-    </View>
-  );
-};
+    return (
+      <View style={{ marginBottom: 16 }}>
+        {/* @ts-ignore */}
+        <iframe
+          title="map"
+          src={src}
+          style={{
+            border: 0,
+            width: '100%',
+            height: 420,
+            borderRadius: 12,
+            overflow: 'hidden',
+          }}
+          loading="lazy"
+        />
+      </View>
+    );
+  };
 
   if (profile.causes.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar
-          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-          backgroundColor={colors.background}
-        />
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
           <MenuButton />
@@ -453,11 +511,7 @@ export default function HomeScreen() {
           <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
             Complete your profile to see personalized brand recommendations
           </Text>
-          <TouchableOpacity
-            style={[styles.emptyButton, { backgroundColor: colors.primary }]}
-            onPress={() => router.push('/onboarding')}
-            activeOpacity={0.7}
-          >
+          <TouchableOpacity style={[styles.emptyButton, { backgroundColor: colors.primary }]} onPress={() => router.push('/onboarding')} activeOpacity={0.7}>
             <Text style={[styles.emptyButtonText, { color: colors.white }]}>Get Started</Text>
           </TouchableOpacity>
         </View>
@@ -467,10 +521,7 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={colors.background}
-      />
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
@@ -478,34 +529,30 @@ export default function HomeScreen() {
         </View>
         {renderViewModeSelector()}
       </View>
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.content, 
-          Platform.OS === 'web' && styles.webContent]}
-      >
+      <ScrollView ref={scrollViewRef} style={styles.scrollView} contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}>
+        {viewMode === 'playbook' && renderPlaybookView()}
+        {viewMode === 'browse' && renderFoldersView()}
+        {viewMode === 'map' && renderMapView()}
 
-      {viewMode === 'playbook' && renderPlaybookView()}
-      {viewMode === 'browse' && renderFoldersView()}
-      {viewMode === 'map' && renderMapView()}
-
-      {viewMode !== 'map' && (
-        <TouchableOpacity
-          style={[styles.searchPrompt, { 
-            backgroundColor: isDarkMode ? colors.backgroundSecondary : colors.background,
-            borderColor: isDarkMode ? colors.border : colors.primary
-          }]}
-          onPress={() => router.push('/(tabs)/search')}
-          activeOpacity={0.7}
-        >
-          <View style={styles.searchPromptContent}>
-            <Text style={[styles.searchPromptTitle, { color: isDarkMode ? colors.white : colors.primary }]}>Looking for something specific?</Text>
-            <Text style={[styles.searchPromptSubtitle, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Search our database of products</Text>
-          </View>
-          <ChevronRight size={24} color={isDarkMode ? colors.white : colors.primary} strokeWidth={2} />
-        </TouchableOpacity>
-      )}
+        {viewMode !== 'map' && (
+          <TouchableOpacity
+            style={[
+              styles.searchPrompt,
+              {
+                backgroundColor: isDarkMode ? colors.backgroundSecondary : colors.background,
+                borderColor: isDarkMode ? colors.border : colors.primary,
+              },
+            ]}
+            onPress={() => router.push('/(tabs)/search')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.searchPromptContent}>
+              <Text style={[styles.searchPromptTitle, { color: isDarkMode ? colors.white : colors.primary }]}>Looking for something specific?</Text>
+              <Text style={[styles.searchPromptSubtitle, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Search our database of products</Text>
+            </View>
+            <ChevronRight size={24} color={isDarkMode ? colors.white : colors.primary} strokeWidth={2} />
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </View>
   );
@@ -649,8 +696,7 @@ const styles = StyleSheet.create({
     marginTop: 32,
     marginBottom: 16,
   },
-  searchPromptContent: {
-  },
+  searchPromptContent: {},
   searchPromptTitle: {
     fontSize: 16,
     fontWeight: '700' as const,
@@ -876,8 +922,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 8,
   },
-  folderBrandContent: {
-  },
+  folderBrandContent: {},
   folderBrandName: {
     fontSize: 14,
     fontWeight: '600' as const,
