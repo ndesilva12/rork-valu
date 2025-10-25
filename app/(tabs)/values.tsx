@@ -41,6 +41,45 @@ export default function ValuesScreen() {
         style={styles.scrollView}
         contentContainerStyle={[styles.content]}
       >
+        {/* ValuCode Section */}
+        <View style={[styles.valuCodeSection, { backgroundColor: colors.backgroundSecondary, borderColor: colors.primary }]}>
+          <Text style={[styles.valuCodeTitle, { color: colors.text }]}>Your Code</Text>
+          <Text style={[styles.valuCode, { color: colors.primary }]}>{profile.valuCode || 'Loading...'}</Text>
+          <Text style={[styles.valuCodeDescription, { color: colors.textSecondary }]}>
+            This is your Valu Code. Use this everywhere you spend and we will match $1 for every transaction and contribute it to the charities and organizations you select below.
+          </Text>
+          <TouchableOpacity
+            style={[styles.selectOrganizationsButton, { backgroundColor: colors.primary }]}
+            onPress={() => router.push('/select-organizations' as any)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.selectOrganizationsButtonText, { color: colors.white }]}>
+              {(profile.selectedOrganizations?.length || 0) > 0
+                ? 'Edit Organizations'
+                : 'Select Organizations'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Display Selected Organizations */}
+          {(profile.selectedOrganizations?.length || 0) > 0 && (
+            <View style={styles.selectedOrganizationsContainer}>
+              <Text style={[styles.selectedOrganizationsTitle, { color: colors.text }]}>
+                Your Selected Organizations ({profile.selectedOrganizations?.length || 0}/3)
+              </Text>
+              <View style={styles.organizationsGrid}>
+                {profile.selectedOrganizations?.map((org) => (
+                  <View
+                    key={org.id}
+                    style={[styles.organizationCard, { backgroundColor: colors.background, borderColor: colors.primary }]}
+                  >
+                    <Text style={[styles.organizationName, { color: colors.primary }]}>{org.name}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
+
         <View style={styles.statsSection}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact</Text>
           <View style={[styles.statsCard, { backgroundColor: 'transparent', borderColor: colors.primaryLight }]}>
@@ -170,6 +209,67 @@ const styles = StyleSheet.create({
   },
   avoidText: {
     color: Colors.danger,
+  },
+  valuCodeSection: {
+    marginBottom: 24,
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+  },
+  valuCodeTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  valuCode: {
+    fontSize: 36,
+    fontWeight: '700' as const,
+    letterSpacing: 2,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  valuCodeDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  selectOrganizationsButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  selectOrganizationsButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  selectedOrganizationsContainer: {
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  selectedOrganizationsTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    marginBottom: 12,
+  },
+  organizationsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  organizationCard: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  organizationName: {
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
   statsSection: {
     marginBottom: 24,

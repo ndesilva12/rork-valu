@@ -56,7 +56,17 @@ export interface Brand {
 // TODO: Remove this once all code is migrated
 export type Product = Brand;
 
+export interface Organization {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  imageUrl?: string;
+}
+
 export interface UserProfile {
   values: UserValue[];
   searchHistory: string[];
+  valuCode?: string; // User's unique promo code (VALU + 6 chars)
+  selectedOrganizations?: Organization[]; // Max 3 organizations for donations
 }
