@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import { Brand } from '@/types';
 import { ValueItem } from '@/mocks/causes';
+import { fetchValueBrandMatrix, buildAllValueAlignments } from './value-brand-matrix';
 
 // Cache configuration
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
@@ -120,17 +121,25 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
     }
 
     try {
-      const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range: `${sheetName}!A2:N`, // Skip header row, columns A-N
-      });
+      // Fetch both brands data and value-brand matrix
+      const [brandsResponse, valueBrandMatrix] = await Promise.all([
+        sheets.spreadsheets.values.get({
+          spreadsheetId,
+          range: `${sheetName}!A2:M`, // Skip header row, columns A-M (no longer need N)
+        }),
+        fetchValueBrandMatrix(),
+      ]);
 
-      const rows = response.data.values || [];
+      const rows = brandsResponse.data.values || [];
       console.log(`[Sheets] Fetched ${rows.length} brands from Google Sheets`);
+
+      // Build valueAlignments map from matrix
+      const valueAlignmentsMap = buildAllValueAlignments(valueBrandMatrix);
 
       const brands: Brand[] = rows
         .filter((row) => row[0] && row[1]) // Must have id and name
         .map((row) => {
+          const brandId = row[0].trim();
           const shareholders = parseJsonField(row[12], []);
           const brandName = row[1]; // Brand name (e.g., "Apple", "Nike")
           const moneyFlow = {
@@ -139,8 +148,11 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
             overallAlignment: 0, // Deprecated: alignment is calculated per-user
           };
 
+          // Get valueAlignments from matrix (or empty array if brand not in matrix)
+          const valueAlignments = valueAlignmentsMap.get(brandId) || [];
+
           return {
-            id: row[0],
+            id: brandId,
             name: brandName,
             category: row[3] || 'Uncategorized',
             imageUrl: row[4] || '', // Brand logo
@@ -151,9 +163,11 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
             relatedValues: parseJsonField(row[9], []),
             website: row[10] || undefined,
             moneyFlow,
-            valueAlignments: parseJsonField(row[13], []),
+            valueAlignments, // Built from Value-Brand-Matrix sheet
           };
         });
+
+      console.log(`[Sheets] Built valueAlignments for ${brands.length} brands from matrix`);
 
       return brands;
     } catch (error: any) {
