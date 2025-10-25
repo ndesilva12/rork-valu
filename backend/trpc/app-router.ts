@@ -7,6 +7,7 @@ import { getBrandsProcedure } from "./routes/data/get-brands/route";
 import { getLocalBusinessesProcedure } from "./routes/data/get-local-businesses/route";
 import { searchBrandsProcedure } from "./routes/data/search-brands/route";
 import { getBrandProcedure } from "./routes/data/get-brand/route";
+import { getScoredBrandsProcedure } from "./routes/data/get-scored-brands/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -22,6 +23,7 @@ export const appRouter = createTRPCRouter({
     getLocalBusinesses: getLocalBusinessesProcedure,
     searchBrands: searchBrandsProcedure,
     getBrand: getBrandProcedure,
+    getScoredBrands: getScoredBrandsProcedure,
   }),
 });
 

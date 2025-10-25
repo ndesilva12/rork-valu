@@ -1,6 +1,12 @@
 # Migrating App from Mock Data to Google Sheets
 
-This guide shows you the EXACT format your Google Sheets needs to match what currently works in the app.
+This guide shows you the EXACT format your Google Sheets needs and how to migrate the app code.
+
+---
+
+## ⚡ IMPORTANT: Alignment Scores are Calculated Dynamically
+
+**Alignment scores are NOT stored in Google Sheets.** They are calculated in real-time based on each user's selected values. The server calculates scores for all 764 brands when you request them, ensuring maximum performance.
 
 ---
 
@@ -17,13 +23,13 @@ This guide shows you the EXACT format your Google Sheets needs to match what cur
 | **E** | `imageUrl` | URL | `https://logo.clearbit.com/apple.com` | Brand logo |
 | **F** | `exampleImageUrl` | URL | `https://images.unsplash.com/...` | Example product image |
 | **G** | `description` | Text | `Consumer electronics company` | Brand description |
-| **H** | `alignmentScore` | Number | `68` | **REQUIRED**: -100 to +100 |
+| **H** | ~~`alignmentScore`~~ | ~~Number~~ | - | **SKIP THIS - scores calculated per user** |
 | **I** | `keyReasons` | JSON Array | `["Privacy focused","Renewable energy"]` | Why aligned/unaligned |
 | **J** | `relatedValues` | JSON Array | `["privacy","climate-change"]` | Related cause IDs |
 | **K** | `website` | URL | `https://apple.com` | Brand website |
 | **L** | `moneyFlowCompany` | Text | `Apple Inc.` | Company name for money flow |
 | **M** | `shareholders` | JSON Array | See format below | Ownership structure |
-| **N** | `valueAlignments` | JSON Array | See format below | Detailed alignments |
+| **N** | `valueAlignments` | JSON Array | See format below | **MOST IMPORTANT - used for scoring** |
 
 ---
 
@@ -127,6 +133,20 @@ Here's a **complete, copy-paste ready example** for your Google Sheets:
 
 ## 🔧 Part 3: Code Changes (Making App Use Google Sheets)
 
+### **How Scoring Works Now**
+
+The new system calculates alignment scores **on the server** based on each user's causes:
+
+1. User selects their causes/values in the app
+2. App sends causes to server via `getScoredBrands` endpoint
+3. Server fetches brands from Google Sheets (cached 5 min)
+4. Server calculates alignment scores for all 764 brands
+5. Server returns pre-scored brands sorted by alignment
+
+**Performance:** First load calculates all brands (~500ms for 764 brands), subsequent loads use cache (instant).
+
+---
+
 ### **Current State (Using Mock Data)**
 
 Example from `app/(tabs)/home.tsx`:
@@ -135,37 +155,52 @@ Example from `app/(tabs)/home.tsx`:
 import { MOCK_PRODUCTS } from '@/mocks/products';
 
 export default function HomeScreen() {
-  const products = MOCK_PRODUCTS; // ← Local mock data
+  const { profile } = useUser();
 
-  const alignedBrands = products.filter(p => p.alignmentScore > 0);
-  const unalignedBrands = products.filter(p => p.alignmentScore < 0);
+  // Client-side scoring calculation
+  const scored = MOCK_PRODUCTS.map(product => {
+    // 50+ lines of alignment calculation logic
+    return { product, alignmentStrength };
+  });
 
+  const alignedBrands = scored.filter(s => s.isAligned);
   return <BrandList brands={alignedBrands} />;
 }
 ```
 
-### **New State (Using Google Sheets)**
+### **New State (Using Google Sheets with Server-Side Scoring)**
 
 ```typescript
-import { trpc } from '@/lib/trpc'; // ← Import tRPC client
+import { trpc } from '@/lib/trpc';
 import { ActivityIndicator } from 'react-native';
 
 export default function HomeScreen() {
-  // Fetch from Google Sheets
-  const { data: brands, isLoading } = trpc.data.getBrands.useQuery();
+  const { profile } = useUser();
 
-  // Show loading state while fetching
+  // Fetch brands with pre-calculated scores from server
+  const { data, isLoading } = trpc.data.getScoredBrands.useQuery({
+    userCauses: profile.causes,
+    filter: 'all', // or 'aligned' or 'unaligned'
+  });
+
   if (isLoading) {
     return <ActivityIndicator size="large" />;
   }
 
-  // Filter brands (same logic as before)
-  const alignedBrands = brands?.filter(b => b.alignmentScore > 0) || [];
-  const unalignedBrands = brands?.filter(b => b.alignmentScore < 0) || [];
+  // Brands already scored and sorted!
+  const alignedBrands = data?.alignedBrands || [];
+  const unalignedBrands = data?.unalignedBrands || [];
 
   return <BrandList brands={alignedBrands} />;
 }
 ```
+
+**Benefits:**
+- ✅ No client-side calculation needed
+- ✅ Scores calculated once on server (fast)
+- ✅ Results cached for 5 minutes
+- ✅ All screens get same scored brands
+- ✅ Works great with 764 brands
 
 ---
 
@@ -174,10 +209,11 @@ export default function HomeScreen() {
 ### Step 1: Format Your Google Sheets Data ✅
 
 In your Google Sheets "Brands" tab:
-- [ ] Column H (alignmentScore) has numbers (-100 to +100)
+- [ ] **Column N (valueAlignments)** - MOST IMPORTANT! Format as JSON array
 - [ ] Column I (keyReasons) uses JSON array format: `["Reason 1","Reason 2"]`
 - [ ] Column J (relatedValues) uses JSON array format: `["value-id-1","value-id-2"]`
-- [ ] All required columns (A, B, H) are filled
+- [ ] All required columns (A, B, N) are filled
+- [ ] **IGNORE Column H** - alignment scores are calculated dynamically
 
 ### Step 2: Test Data Fetch
 
@@ -186,7 +222,7 @@ Run this to verify data is loading correctly:
 npm run test-sheets
 ```
 
-Should show brands with alignment scores > 0.
+Should show brands loading from Google Sheets.
 
 ### Step 3: Update One Screen as Test
 
@@ -197,13 +233,22 @@ Pick ONE screen to migrate first (I recommend the Home screen):
 Change this:
 ```typescript
 import { MOCK_PRODUCTS } from '@/mocks/products';
-const products = MOCK_PRODUCTS;
+
+const scored = MOCK_PRODUCTS.map(product => {
+  // Alignment calculation logic...
+});
 ```
 
 To this:
 ```typescript
 import { trpc } from '@/lib/trpc';
-const { data: brands = [], isLoading } = trpc.data.getBrands.useQuery();
+const { profile } = useUser();
+
+const { data, isLoading } = trpc.data.getScoredBrands.useQuery({
+  userCauses: profile.causes,
+});
+
+// Use data.alignedBrands and data.unalignedBrands
 ```
 
 ### Step 4: Run Your App
@@ -234,30 +279,33 @@ Just add **ONE properly formatted row** to test:
 1. In your Google Sheets, Row 2, add:
    - **A**: `test-brand`
    - **B**: `Test Brand`
-   - **D**: `Test`
-   - **H**: `75`
+   - **D**: `Technology`
    - **I**: `["Great brand","Trustworthy"]`
    - **J**: `["privacy"]`
+   - **N**: `[{"valueId":"privacy","position":1,"isSupport":true}]`
 
 2. Run test:
    ```bash
    npm run test-sheets
    ```
 
-3. Should show "Test Brand" with score 75!
+3. Should show "Test Brand" loading successfully!
 
 ---
 
 ## ❓ Questions?
 
 **Q: Do I need ALL columns filled?**
-A: Minimum required: **A (id)**, **B (name)**, **H (alignmentScore)**. Others are optional.
+A: Minimum required: **A (id)**, **B (name)**, **N (valueAlignments)**. Others are optional but recommended.
 
 **Q: What if I don't have shareholder data?**
 A: Leave Column M empty or use: `[]`
 
 **Q: Can I test with just a few brands?**
 A: YES! Start with 3-5 properly formatted brands and test.
+
+**Q: Why isn't Column H (alignmentScore) needed?**
+A: Alignment scores are calculated dynamically per user. Each user sees different scores based on their selected causes. The server calculates this using the `valueAlignments` data in Column N.
 
 ---
 

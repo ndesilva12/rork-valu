@@ -136,7 +136,7 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
           const moneyFlow = {
             company: row[11] || brandName, // Use moneyFlowCompany or brand name
             shareholders,
-            overallAlignment: parseFloat(row[7]) || 0,
+            overallAlignment: 0, // Deprecated: alignment is calculated per-user
           };
 
           return {
@@ -146,7 +146,7 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
             imageUrl: row[4] || '', // Brand logo
             exampleImageUrl: row[5] || row[4] || '', // Example product image
             description: row[6] || '', // Brand description
-            alignmentScore: parseFloat(row[7]) || 0,
+            alignmentScore: 0, // Deprecated: use getScoredBrands endpoint for calculated scores
             keyReasons: parseJsonField(row[8], []),
             relatedValues: parseJsonField(row[9], []),
             website: row[10] || undefined,
