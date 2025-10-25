@@ -49,8 +49,8 @@ export default function TabLayout() {
       ({ color, focused }: { color: string; focused?: boolean }) => {
         const active = Boolean(focused);
         // explicit inactive color to ensure visibility against background
-        const inactiveColor = colors.text; // more contrast than textSecondary
-        const useColor = active ? focusedColor : inactiveColor;
+        const inactiveColor = colors.textLight ?? colors.text;
+        const useColor = active ? focusedColor : (color ?? inactiveColor);
 
         if (isTabletOrLarger) {
           return (
@@ -72,7 +72,7 @@ export default function TabLayout() {
         // mobile: icon only (smaller for fitting in a shorter bar)
         return <Icon size={22} color={useColor} strokeWidth={2} />;
       },
-    [isTabletOrLarger, colors.text]
+    [isTabletOrLarger, colors.textLight, colors.text]
   );
 
   return (
@@ -96,7 +96,7 @@ export default function TabLayout() {
             screenOptions={{
               // active and inactive tint explicitly set so the Icon receives a usable color
               tabBarActiveTintColor: isLocalTab ? localColor : colors.primary,
-              tabBarInactiveTintColor: colors.text, // use text for better contrast
+              tabBarInactiveTintColor: colors.textLight ?? colors.text, // use high-contrast text color
               headerShown: false,
               tabBarPosition: isTabletOrLarger ? "top" : "bottom",
               // render custom labels on wide screens; keep default labels off
