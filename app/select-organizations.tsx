@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -80,7 +81,7 @@ export default function SelectOrganizationsScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 + insets.bottom }]}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, Platform.OS === 'web' && styles.webContent, { paddingBottom: 120 + insets.bottom }]}>
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>Select Your Organizations</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
@@ -204,6 +205,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {},
+  webContent: {
+    maxWidth: 768,
+    alignSelf: 'center' as const,
+    width: '100%',
+  },
   header: {
     paddingHorizontal: 24,
     paddingTop: 32,

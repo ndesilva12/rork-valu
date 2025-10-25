@@ -39,19 +39,19 @@ export default function ValuesTabScreen() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.content]}
+        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}
       >
         <View style={styles.statsSection}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact</Text>
           <View style={[styles.statsCard, { backgroundColor: 'transparent', borderColor: colors.primaryLight }]}>
             <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.primary }]}>{profile.values.length}</Text>
-              <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Active Values</Text>
+              <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.success }]}>{supportValues.length}</Text>
+              <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Supporting</Text>
             </View>
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
             <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.primary }]}>{profile.searchHistory.length}</Text>
-              <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Products Checked</Text>
+              <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.danger }]}>{avoidValues.length}</Text>
+              <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Opposing</Text>
             </View>
           </View>
         </View>
@@ -121,6 +121,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 20,
+  },
+  webContent: {
+    maxWidth: 768,
+    alignSelf: 'center' as const,
+    width: '100%',
   },
   stickyHeaderContainer: {
     borderBottomWidth: 1,

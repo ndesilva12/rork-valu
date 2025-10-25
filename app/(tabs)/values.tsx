@@ -73,7 +73,7 @@ export default function ProfileScreen() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.content]}
+        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}
       >
         {/* ValuCode Section */}
         <View style={[styles.valuCodeSection, { backgroundColor: colors.backgroundSecondary, borderColor: colors.primary }]}>
@@ -163,6 +163,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 40,
+  },
+  webContent: {
+    maxWidth: 768,
+    alignSelf: 'center' as const,
+    width: '100%',
   },
   stickyHeaderContainer: {
     borderBottomWidth: 1,
