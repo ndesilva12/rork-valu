@@ -1,119 +1,3 @@
-import { Tabs, useSegments } from "expo-router";
-import { BookOpen, MapPin, ShoppingBag, Search, User } from "lucide-react-native";
-import React, { useMemo } from "react";
-import { Platform, useWindowDimensions, StyleSheet, StatusBar, View, Text } from "react-native";
-import { lightColors, darkColors } from "@/constants/colors";
-import { useUser } from "@/contexts/UserContext";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { useIsStandalone } from "@/hooks/useIsStandalone";
-
-const localColor = "#84CC16";
-
-export default function TabLayout() {
-  const isStandalone = useIsStandalone();
-  const { isDarkMode } = useUser();
-  const colors = isDarkMode ? darkColors : lightColors;
-  const { width } = useWindowDimensions();
-  const segments = useSegments();
-  const isLocalTab = segments[segments.length - 1] === "local";
-
-  const isTabletOrLarger = Platform.OS === "web" && width >= 768;
-
-  // visible (icon row) height for the tab bar (adjust as desired)
-  const visibleRowHeight = isTabletOrLarger ? 64 : 56;
-
-  // safe area insets (native). For web PWAs we'll use env(safe-area-inset-bottom)
-  const insets = useSafeAreaInsets();
-  const bottomInset = insets.bottom || 0;
-  const topInset = insets.top || 0;
-
-  // On web PWA we use CSS env() to extend the bar background into the home-indicator area.
-  const tabBarCssHeight: number | string =
-    Platform.OS === "web" && isStandalone
-      ? `calc(${visibleRowHeight}px + env(safe-area-inset-bottom))`
-      : visibleRowHeight + bottomInset;
-
-  const contentPaddingBottom: number | string =
-    Platform.OS === "web" && isStandalone
-      ? `calc(${visibleRowHeight}px + env(safe-area-inset-bottom))`
-      : visibleRowHeight + bottomInset;
-
-  const contentPaddingTop: number =
-    isTabletOrLarger ? visibleRowHeight + topInset : topInset;
-
-  // helper to render icon + optional label beside it on wide screens
-  // This uses the color parameter from tabBar (so inactive color set in screenOptions will be applied)
-  const renderTabIconWithLabel = useMemo(
-    () =>
-      (Icon: React.ComponentType<any>, label: string, focusedColor: string) =>
-      ({ color, focused }: { color: string; focused?: boolean }) => {
-        const active = Boolean(focused);
-        // prefer the color parameter (tabBarInactiveTintColor / tabBarActiveTintColor),
-        // otherwise fall back to a high-contrast color from theme
-        const inactiveFallback = colors.text;
-        const useColor = active ? focusedColor : (color ?? inactiveFallback);
-
-        if (isTabletOrLarger) {
-          return (
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Icon size={24} color={useColor} strokeWidth={2} />
-              <Text
-                style={{
-                  marginLeft: 8,
-                  fontSize: 14,
-                  fontWeight: active ? "700" : "600",
-                  color: useColor,
-                }}
-              >
-                {label}
-              </Text>
-            </View>
-          );
-        }
-
-        // mobile: icon only
-        return <Icon size={22} color={useColor} strokeWidth={2} />;
-      },
-    [isTabletOrLarger, colors.text]
-  );
-
-  return (
-    <SafeAreaView
-      edges={["top", "bottom"]}
-      style={{
-        flex: 1,
-        backgroundColor: colors.background,
-      }}
-    >
-      <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
-        translucent={false}
-        backgroundColor={colors.background}
-      />
-
-      {/* Center and constrain the app content on wide screens */}
-      <View style={{ flex: 1, alignItems: "center" }}>
-        <View style={{ width: "100%", maxWidth: isTabletOrLarger ? "50%" : 768, flex: 1 }}>
-          <Tabs
-            screenOptions={{
-              // explicit tint colors so the tabBar passes them to the icon renderer
-              tabBarActiveTintColor: isLocalTab ? localColor : colors.primary,
-              tabBarInactiveTintColor: colors.text, // ensure good contrast for inactive icons
-              headerShown: false,
-              tabBarPosition: isTabletOrLarger ? "top" : "bottom",
-              tabBarShowLabel: false,
-
-              tabBarStyle: {
-                position: isTabletOrLarger ? "relative" : "absolute",
-                top: isTabletOrLarger ? 0 : undefined,
-                bottom: isTabletOrLarger ? undefined : 0,
-                left: 0,
-                right: 0,
-                height: tabBarCssHeight,
-                flexDirection: "row",
-                justifyContent: isTabletOrLarger ? "flex-start" : "space-around",
-                alignItems: "center",
-                paddingVertical: 6,
                 borderTopWidth: isTabletOrLarger ? 0 : 1,
                 borderBottomWidth: isTabletOrLarger ? 1 : 0,
                 borderTopColor: colors.border,
@@ -123,6 +7,7 @@ export default function TabLayout() {
                 elevation: isTabletOrLarger ? 10 : undefined,
               },
 
+              // reserve space so content doesn't go under the tab bar
               contentStyle: {
                 paddingTop: contentPaddingTop,
                 paddingBottom: contentPaddingBottom,
@@ -133,7 +18,6 @@ export default function TabLayout() {
                 alignItems: "center",
                 justifyContent: "center",
                 marginTop: 0,
-                flex: Platform.OS === "web" && !isTabletOrLarger ? 1 : undefined,
               },
             }}
           >
