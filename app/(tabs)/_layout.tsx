@@ -29,7 +29,13 @@ export default function TabLayout() {
           headerShown: false,
           tabBarPosition: isTabletOrLarger ? 'top' : 'bottom',
           tabBarStyle: {
-            height: isTabletOrLarger ? undefined : 70,
+            // Position the tab bar differently for web/desktop (top) vs mobile (bottom)
+            position: isTabletOrLarger ? 'relative' : 'absolute',
+            top: isTabletOrLarger ? 0 : undefined,
+            bottom: isTabletOrLarger ? undefined : 0,
+            left: 0,
+            right: 0,
+            height: isTabletOrLarger ? 64 : 70,
             paddingBottom: 0,
             paddingTop: 0,
             borderTopWidth: isTabletOrLarger ? 0 : 1,
@@ -37,13 +43,14 @@ export default function TabLayout() {
             borderTopColor: colors.border,
             borderBottomColor: colors.border,
             backgroundColor: colors.background,
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
+            // Ensure the top tab bar renders above content
+            zIndex: isTabletOrLarger ? 10 : undefined,
+            elevation: isTabletOrLarger ? 10 : undefined,
           },
           contentStyle: {
+            // Reserve space at the top when the tab bar is at the top
             paddingBottom: isTabletOrLarger ? 0 : 50,
+            paddingTop: isTabletOrLarger ? 64 : 0,
           },
           tabBarLabelStyle: isTabletOrLarger ? {
             fontSize: 14,
@@ -59,7 +66,7 @@ export default function TabLayout() {
           name="home"
           options={{
             title: "Playbook",
-            tabBarIcon: ({ color }) => <BookOpen size={24} color={color} strokeWidth={2} />,
+            tabBarIcon: ({ color }) => <BookOpen size={24} color={color} strokeWidth={2} />, 
             tabBarShowLabel: false,
           }}
         />
@@ -67,7 +74,7 @@ export default function TabLayout() {
           name="local"
           options={{
             title: "Local",
-            tabBarIcon: ({ color, focused }) => <MapPin size={24} color={focused ? localColor : color} strokeWidth={2} />,
+            tabBarIcon: ({ color, focused }) => <MapPin size={24} color={focused ? localColor : color} strokeWidth={2} />, 
             tabBarShowLabel: false,
           }}
         />
@@ -75,7 +82,7 @@ export default function TabLayout() {
          name="search"
          options={{
            title: "Search",
-           tabBarIcon: ({ color }) => <Search size={24} color={color} strokeWidth={2} />,
+           tabBarIcon: ({ color }) => <Search size={24} color={color} strokeWidth={2} />, 
            tabBarShowLabel: false,
          }}
         />
@@ -83,7 +90,7 @@ export default function TabLayout() {
           name="shop"
           options={{
             title: "Shop",
-            tabBarIcon: ({ color }) => <ShoppingBag size={24} color={color} strokeWidth={2} />,
+            tabBarIcon: ({ color }) => <ShoppingBag size={24} color={color} strokeWidth={2} />, 
             tabBarShowLabel: false,
           }}
         />
@@ -91,7 +98,7 @@ export default function TabLayout() {
          name="values"
          options={{
            title: "Profile",
-           tabBarIcon: ({ color }) => <User size={24} color={color} strokeWidth={2} />,
+           tabBarIcon: ({ color }) => <User size={24} color={color} strokeWidth={2} />, 
            tabBarShowLabel: false,
          }}
        />
