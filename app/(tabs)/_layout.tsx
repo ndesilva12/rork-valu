@@ -89,7 +89,9 @@ export default function TabLayout() {
         <View style={{ width: "100%", maxWidth: isTabletOrLarger ? "50%" : 768, flex: 1 }}>
           <Tabs
             screenOptions={{
+              // active and inactive tint explicitly set so the Icon receives a usable color
               tabBarActiveTintColor: isLocalTab ? localColor : colors.primary,
+              tabBarInactiveTintColor: colors.textSecondary,
               headerShown: false,
               tabBarPosition: isTabletOrLarger ? "top" : "bottom",
               // render custom labels on wide screens; keep default labels off
@@ -104,7 +106,7 @@ export default function TabLayout() {
                 right: 0,
                 // ensure the tab bar background covers the safe area (uses calc(...) on web PWAs)
                 height: tabBarCssHeight,
-                // distribute icons evenly across the bar on mobile; keep flex-start on wide layouts
+                // distribute icons evenly across the bar on mobile; keep left/top layout on wide screens
                 flexDirection: "row",
                 justifyContent: isTabletOrLarger ? "flex-start" : "space-around",
                 alignItems: "center",
@@ -125,7 +127,7 @@ export default function TabLayout() {
               },
 
               // icon cell sizing to vertically center the icon in the visible row
-              // give each icon cell flexible space so icons spread evenly
+              // make mobile icon cells flexible so icons spread evenly
               tabBarIconStyle: {
                 height: visibleRowHeight,
                 alignItems: "center",
