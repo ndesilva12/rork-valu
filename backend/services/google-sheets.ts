@@ -61,11 +61,12 @@ async function getCachedOrFetch<T>(
 }
 
 // Fetch causes/values from Google Sheets
+// NOTE: Fetches from Value-Brand-Matrix sheet (columns A-C contain cause data)
 export async function fetchCausesFromSheets(): Promise<ValueItem[]> {
   return getCachedOrFetch('causes', async () => {
     const sheets = getGoogleSheetsClient();
     const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
-    const sheetName = process.env.SHEET_NAME_CAUSES || 'Causes';
+    const sheetName = process.env.SHEET_NAME_VALUE_MATRIX || 'Value-Brand-Matrix';
 
     if (!spreadsheetId) {
       throw new Error('GOOGLE_SPREADSHEET_ID not set in environment variables');
@@ -74,20 +75,18 @@ export async function fetchCausesFromSheets(): Promise<ValueItem[]> {
     try {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${sheetName}!A2:E`, // Skip header row
+        range: `${sheetName}!A2:C`, // Fetch id, name, category from matrix sheet
       });
 
       const rows = response.data.values || [];
-      console.log(`[Sheets] Fetched ${rows.length} causes from Google Sheets`);
+      console.log(`[Sheets] Fetched ${rows.length} causes from Value-Brand-Matrix sheet`);
 
       const causes: ValueItem[] = rows
         .filter((row) => row[0] && row[1] && row[2]) // Must have id, name, category
         .map((row) => ({
-          id: row[0],
-          name: row[1],
+          id: row[0].trim(),
+          name: row[1].trim(),
           category: row[2] as any,
-          description: row[3] || undefined,
-          imageUrl: row[4] || undefined,
         }));
 
       return causes;
