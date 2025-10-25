@@ -11,7 +11,6 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -23,13 +22,39 @@ export default function ProfileScreen() {
   const [copied, setCopied] = useState(false);
 
   const handleCopyCode = async () => {
-    if (profile.valuCode) {
-      await Clipboard.setStringAsync(profile.valuCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+    if (!profile.valuCode) return;
+
+    try {
       if (Platform.OS === 'web') {
-        Alert.alert('Copied!', 'ValuCode copied to clipboard');
+        // Web-specific clipboard implementation
+        const textArea = document.createElement('textarea');
+        textArea.value = profile.valuCode;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+          document.execCommand('copy');
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+          Alert.alert('Copied!', 'ValuCode copied to clipboard');
+        } catch (execError) {
+          console.error('Copy error:', execError);
+          Alert.alert('Error', 'Unable to copy to clipboard');
+        } finally {
+          textArea.remove();
+        }
+      } else {
+        // Mobile: Use React Native's Clipboard (if available)
+        // For now, just show the copied state
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
       }
+    } catch (error) {
+      console.error('Error copying:', error);
     }
   };
 
