@@ -4,26 +4,32 @@ import React from "react";
 import { Platform, useWindowDimensions, StyleSheet, StatusBar, View, Text } from "react-native";
 import { lightColors, darkColors } from "@/constants/colors";
 import { useUser } from "@/contexts/UserContext";
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useIsStandalone } from '@/hooks/useIsStandalone';
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useIsStandalone } from "@/hooks/useIsStandalone";
 
 const localColor = '#84CC16';
 
 export default function TabLayout() {
-  const isStandalone = useIsStandalone(); 
-  const { isDarkMode } = useUser(); 
+  const isStandalone = useIsStandalone();
+  const { isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const { width } = useWindowDimensions();
   const segments = useSegments();
   const isLocalTab = segments[segments.length - 1] === 'local';
-  
+
   const isTabletOrLarger = Platform.OS === 'web' && width >= 768;
+  const tabBarHeight = isTabletOrLarger ? 64 : 70;
+
+  // Use safe area insets to avoid content going under system UI (status bar / home indicator)
+  const insets = useSafeAreaInsets();
+  const topInset = insets.top || 0;
+  const bottomInset = insets.bottom || 0;
 
   // helper to render icon + label beside it on wide screens
   const renderTabIconWithLabel = (Icon: React.ComponentType<any>, label: string, focusedColor: string) => {
     return ({ color, focused }: { color: string; focused?: boolean }) => {
+      const active = Boolean(focused);
       if (isTabletOrLarger) {
-        const active = Boolean(focused);
         return (
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Icon size={24} color={active ? focusedColor : color} strokeWidth={2} />
@@ -38,25 +44,31 @@ export default function TabLayout() {
           </View>
         );
       }
-
       // mobile: icon only
       return <Icon size={24} color={color} strokeWidth={2} />;
     };
   };
 
   return (
-    <SafeAreaView edges={isStandalone ? [] : ['top']} style={{ flex: 1, backgroundColor: colors.background }}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={isStandalone ? colors.background : 'transparent'} translucent={isStandalone} />
+    // Always reserve safe area for top and bottom so content doesn't shift under system UI.
+    <SafeAreaView edges={['top','bottom']} style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        // Keep translucent false to avoid content being pushed under the status bar on many phones.
+        translucent={false}
+        backgroundColor={colors.background}
+      />
 
       {/* Center and constrain the app content on wide screens so nothing stretches beyond 50% of the viewport */}
       <View style={{ flex: 1, alignItems: 'center' }}>
-        <View style={{ width: '100%', maxWidth: isTabletOrLarger ? '50%' : 768 }}>
+        {/* Ensure this inner container fills vertical space so Tabs layout behaves correctly */}
+        <View style={{ width: '100%', maxWidth: isTabletOrLarger ? '50%' : 768, flex: 1 }}>
           <Tabs
             screenOptions={{
               tabBarActiveTintColor: isLocalTab ? localColor : colors.primary,
               headerShown: false,
               tabBarPosition: isTabletOrLarger ? 'top' : 'bottom',
-              // we'll render our own label next to icon on wide screens, so keep default labels off
+              // we'll render our own label next to icons on wide screens
               tabBarShowLabel: false,
               tabBarStyle: {
                 position: isTabletOrLarger ? 'relative' : 'absolute',
@@ -64,7 +76,7 @@ export default function TabLayout() {
                 bottom: isTabletOrLarger ? undefined : 0,
                 left: 0,
                 right: 0,
-                height: isTabletOrLarger ? 64 : 70,
+                height: tabBarHeight,
                 paddingBottom: 0,
                 paddingTop: 0,
                 borderTopWidth: isTabletOrLarger ? 0 : 1,
@@ -76,8 +88,10 @@ export default function TabLayout() {
                 elevation: isTabletOrLarger ? 10 : undefined,
               },
               contentStyle: {
-                paddingBottom: isTabletOrLarger ? 0 : 50,
-                paddingTop: isTabletOrLarger ? 64 : 0,
+                // Reserve space for the top tab bar + system top inset on wide screens,
+                // and reserve space for the bottom tab bar + bottom inset on mobile.
+                paddingTop: isTabletOrLarger ? (tabBarHeight + topInset) : topInset,
+                paddingBottom: isTabletOrLarger ? bottomInset : (tabBarHeight + bottomInset),
               },
             }}
           >
@@ -86,7 +100,6 @@ export default function TabLayout() {
               options={{
                 title: "Playbook",
                 tabBarIcon: renderTabIconWithLabel(BookOpen, "Playbook", colors.primary),
-                tabBarShowLabel: false,
               }}
             />
             <Tabs.Screen
@@ -94,7 +107,6 @@ export default function TabLayout() {
               options={{
                 title: "Local",
                 tabBarIcon: renderTabIconWithLabel(MapPin, "Local", localColor),
-                tabBarShowLabel: false,
               }}
             />
             <Tabs.Screen
@@ -102,7 +114,6 @@ export default function TabLayout() {
               options={{
                 title: "Search",
                 tabBarIcon: renderTabIconWithLabel(Search, "Search", colors.primary),
-                tabBarShowLabel: false,
               }}
             />
             <Tabs.Screen
@@ -110,7 +121,6 @@ export default function TabLayout() {
               options={{
                 title: "Shop",
                 tabBarIcon: renderTabIconWithLabel(ShoppingBag, "Shop", colors.primary),
-                tabBarShowLabel: false,
               }}
             />
             <Tabs.Screen
@@ -118,7 +128,6 @@ export default function TabLayout() {
               options={{
                 title: "Profile",
                 tabBarIcon: renderTabIconWithLabel(User, "Profile", colors.primary),
-                tabBarShowLabel: false,
               }}
             />
           </Tabs>
