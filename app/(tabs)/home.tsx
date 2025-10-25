@@ -1,6 +1,8 @@
 import { useRouter } from 'expo-router';
 import { TrendingUp, TrendingDown, ChevronRight, Target, FolderOpen, MapPin, Fuel, Utensils, Coffee, ShoppingCart, Tv, Smartphone, Shield, Car, Laptop, Store, DollarSign, Shirt } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
+import UnifiedMap from '@/components/UnifiedMap';
+import PlatformImage from '@/components/PlatformImage'; // optional: to replace expo Image usages for logos
 import {
   View,
   Text,
@@ -235,8 +237,7 @@ export default function HomeScreen() {
       >
         <View style={styles.brandCardInner}>
           <View style={styles.brandLogoContainer}>
-            <Image 
-              source={{ uri: product.imageUrl }} 
+            <PlatformImage uri={product.imageUrl} style={styles.brandLogo} alt={`${product.brand} logo`} />
               style={styles.brandLogo} 
               contentFit="cover"
               transition={200}
@@ -389,8 +390,7 @@ export default function HomeScreen() {
                     onPress={() => handleProductPress(product)}
                     activeOpacity={0.7}
                   >
-                    <Image 
-                      source={{ uri: product.imageUrl }} 
+                    <PlatformImage uri={product.imageUrl} style={styles.brandLogo} alt={`${product.brand} logo`} />
                       style={styles.folderBrandImage} 
                       contentFit="cover"
                       transition={200}
@@ -423,14 +423,16 @@ export default function HomeScreen() {
 
 
   const renderMapView = () => {
-    return (
-      <View style={[styles.mapPlaceholder, { backgroundColor: colors.backgroundSecondary }]}>
-        <MapPin size={48} color={colors.textSecondary} strokeWidth={1.5} />
-        <Text style={[styles.mapPlaceholderTitle, { color: colors.text }]}>Map Feature Coming Soon</Text>
-        <Text style={[styles.mapPlaceholderText, { color: colors.textSecondary }]}>We&apos;re working on bringing interactive maps to help you discover aligned brands near you.</Text>
-      </View>
-    );
-  };
+  // Example center: use first supported brand location if you have coords, otherwise default
+  const defaultLat = 37.7749;
+  const defaultLng = -122.4194;
+
+  return (
+    <View style={{ marginBottom: 16 }}>
+      <UnifiedMap latitude={defaultLat} longitude={defaultLng} zoom={12} height={420} />
+    </View>
+  );
+};
 
   if (profile.causes.length === 0) {
     return (
