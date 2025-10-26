@@ -124,7 +124,7 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
       const [brandsResponse, valueBrandMatrix] = await Promise.all([
         sheets.spreadsheets.values.get({
           spreadsheetId,
-          range: `${sheetName}!A2:P`, // Skip header row, columns A-P (16 columns: id, name, category, imageUrl, description, website, affiliate1-5, $affiliate1-5)
+          range: `${sheetName}!A2:P`, // Skip header row, columns A-P (id, name, category, imageUrl, description, website, affiliate1-5, $affiliate1-5)
         }),
         fetchValueBrandMatrix(),
       ]);
@@ -138,30 +138,49 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
       const brands: Brand[] = rows
         .filter((row) => row[0] && row[1]) // Must have id and name
         .map((row) => {
-          const brandId = row[0].trim();
-          const brandName = row[1]?.trim() || ''; // Brand name (e.g., "Apple", "Nike")
+          const brandId = String(row[0] || '').trim();
+          const brandName = String(row[1] || '').trim(); // Brand name (e.g., "Apple", "Nike")
 
           // Parse affiliate data from columns G-P (indices 6-15)
           // affiliate1 (6), $affiliate1 (7), affiliate2 (8), $affiliate2 (9), etc.
-          const affiliates = [];
+          const affiliates: Array<{ name: string; amount?: string }> = [];
           for (let i = 0; i < 5; i++) {
             const nameIndex = 6 + (i * 2);
             const amountIndex = 7 + (i * 2);
-            const affiliateName = row[nameIndex]?.trim();
-            const affiliateAmount = row[amountIndex]?.trim();
+            const rawName = row[nameIndex];
+            const rawAmount = row[amountIndex];
 
-            if (affiliateName && affiliateAmount) {
+            const affiliateName = typeof rawName === 'string' ? rawName.trim() : rawName != null ? String(rawName).trim() : '';
+            const affiliateAmount = typeof rawAmount === 'string' ? rawAmount.trim() : rawAmount != null ? String(rawAmount).trim() : '';
+
+            // Include pair if either name or amount exists (allows partial rows)
+            if (affiliateName || affiliateAmount) {
               affiliates.push({
                 name: affiliateName,
-                amount: affiliateAmount,
+                amount: affiliateAmount || undefined,
               });
             }
           }
 
+          // Also attempt to parse legacy shareholders JSON (column M, index 12)
+          const parsedShareholders = parseJsonField(row[12], []);
+
+          // For backward compatibility, if parsedShareholders is non-empty, prefer it for 'shareholders',
+          // otherwise use affiliates as the 'shareholders' field so other parts of the app expecting shareholders keep working.
+          const shareholders = Array.isArray(parsedShareholders) && parsedShareholders.length > 0 ? parsedShareholders : affiliates.map(a => ({
+            name: a.name,
+            // If $ value looks like a percentage or numeric, leave raw string as-is; further parsing can be added if needed
+            percentage: a.amount ? (isNaN(Number(a.amount)) ? a.amount : Number(a.amount)) : 0,
+            alignment: 'neutral',
+            causes: [],
+          }));
+
           const moneyFlow = {
             company: brandName,
-            shareholders: affiliates, // Using affiliates array instead of old shareholders format
+            shareholders,
             overallAlignment: 0, // Deprecated: alignment is calculated per-user
+            // Expose affiliates separately so UI can render Affiliate/Commitment pairs directly
+            affiliates,
           };
 
           // Get valueAlignments from matrix (or empty array if brand not in matrix)
@@ -172,15 +191,15 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
             name: brandName,
             category: row[2]?.trim() || 'Uncategorized',
             imageUrl: row[3]?.trim() || '', // Brand logo
-            exampleImageUrl: row[3]?.trim() || '', // Use same image for both
+            exampleImageUrl: row[3]?.trim() || '', // Use same image for both (preserve earlier behavior)
             description: row[4]?.trim() || '', // Brand description
             alignmentScore: 0, // Deprecated: use getScoredBrands endpoint for calculated scores
-            keyReasons: [], // Not in new sheet structure
-            relatedValues: [], // Not in new sheet structure
+            keyReasons: [], // Not present in this sheet structure
+            relatedValues: [], // Not present in this sheet structure
             website: row[5]?.trim() || undefined,
             moneyFlow,
             valueAlignments, // Built from Values sheet
-          };
+          } as Brand;
         });
 
       console.log(`[Sheets] Built valueAlignments for ${brands.length} brands from Values sheet`);
