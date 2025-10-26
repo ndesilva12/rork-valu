@@ -778,7 +778,7 @@ const styles = StyleSheet.create({
   brandCard: {
     borderRadius: 12,
     overflow: 'hidden',
-    height: 64,
+    height: 84,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.08)',
   },
@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   brandLogoContainer: {
-    width: 64,
+    width: 84,
     height: '100%',
     backgroundColor: '#FFFFFF',
     alignItems: 'center',

@@ -393,67 +393,33 @@ export default function ProductDetailScreen() {
 
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Money Flow</Text>
-            
+
             <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
               <View style={[styles.companyHeader, { borderBottomColor: colors.border }]}>
                 <Text style={[styles.companyName, { color: colors.text }]}>{product.moneyFlow.company}</Text>
               </View>
-              
-              <View style={styles.shareholdersContainer}>
-                <Text style={[styles.shareholdersTitle, { color: colors.textSecondary }]}>Top Stakeholders</Text>
+
+              {/* Two-column table */}
+              <View style={styles.tableContainer}>
+                {/* Table header */}
+                <View style={styles.tableHeaderRow}>
+                  <Text style={[styles.tableHeaderCell, styles.tableHeaderLeft, { color: colors.textSecondary }]}>Affiliates</Text>
+                  <Text style={[styles.tableHeaderCell, styles.tableHeaderRight, { color: colors.textSecondary }]}>Commitment</Text>
+                </View>
+
+                {/* Table rows */}
                 {[
-                  { name: 'Vanguard Group', percentage: 8.2, alignment: 'aligned' as const },
-                  { name: 'BlackRock', percentage: 7.5, alignment: 'neutral' as const },
-                  { name: 'State Street Corporation', percentage: 4.8, alignment: 'aligned' as const },
-                  { name: 'Fidelity Investments', percentage: 3.9, alignment: 'neutral' as const },
-                  { name: 'Capital Research', percentage: 2.6, alignment: 'opposed' as const },
-                ].map((stakeholder, index) => {
-                  const shColor =
-                    stakeholder.alignment === 'aligned'
-                      ? colors.success
-                      : stakeholder.alignment === 'opposed'
-                      ? colors.danger
-                      : colors.neutral;
-
-                  return (
-                    <View key={`stakeholder-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
-                      <View style={styles.shareholderInfo}>
-                        <Text style={[styles.shareholderName, { color: colors.text }]}>{stakeholder.name}</Text>
-                        <Text style={[styles.shareholderPercentage, { color: colors.textSecondary }]}>
-                          {stakeholder.percentage}% stake
-                        </Text>
-                      </View>
-                      <View style={[styles.alignmentDot, { backgroundColor: shColor }]} />
-                    </View>
-                  );
-                })}
-              </View>
-
-              <View style={[styles.shareholdersContainer, { marginTop: 24 }]}>
-                <Text style={[styles.shareholdersTitle, { color: colors.textSecondary }]}>Endorsements</Text>
-                {[
-                  { name: 'Sierra Club', type: 'Environmental Organization', alignment: 'aligned' as const },
-                  { name: 'Fair Trade USA', type: 'Certification Body', alignment: 'aligned' as const },
-                  { name: 'B Corporation', type: 'Business Certification', alignment: 'aligned' as const },
-                  { name: 'Green America', type: 'Environmental Nonprofit', alignment: 'aligned' as const },
-                  { name: 'EcoWatch', type: 'Media & Watchdog', alignment: 'neutral' as const },
-                ].map((endorsement, index) => {
-                  const shColor = endorsement.alignment === 'aligned'
-                      ? colors.success
-                      : colors.neutral;
-
-                  return (
-                    <View key={`endorsement-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
-                      <View style={styles.shareholderInfo}>
-                        <Text style={[styles.shareholderName, { color: colors.text }]}>{endorsement.name}</Text>
-                        <Text style={[styles.shareholderPercentage, { color: colors.textSecondary }]}>
-                          {endorsement.type}
-                        </Text>
-                      </View>
-                      <View style={[styles.alignmentDot, { backgroundColor: shColor }]} />
-                    </View>
-                  );
-                })}
+                  { affiliate: 'Environmental Defense Fund', commitment: '$2.5M annually' },
+                  { affiliate: 'Community Investment Fund', commitment: '$1.8M in grants' },
+                  { affiliate: 'Fair Trade Cooperative', commitment: '$950K partnership' },
+                  { affiliate: 'Green Energy Initiative', commitment: '$500K renewable' },
+                  { affiliate: 'Local Schools Program', commitment: '$350K education' },
+                ].map((row, index) => (
+                  <View key={`row-${index}`} style={[styles.tableRow, { borderBottomColor: colors.border }]}>
+                    <Text style={[styles.tableCell, styles.tableCellLeft, { color: colors.text }]} numberOfLines={2}>{row.affiliate}</Text>
+                    <Text style={[styles.tableCell, styles.tableCellRight, { color: colors.textSecondary }]} numberOfLines={2}>{row.commitment}</Text>
+                  </View>
+                ))}
               </View>
             </View>
           </View>
@@ -726,36 +692,47 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600' as const,
   },
-  shareholdersContainer: {},
-  shareholdersTitle: {
+  tableContainer: {
+    width: '100%',
+  },
+  tableHeaderRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 2,
+    borderBottomColor: '#E5E7EB',
+    paddingBottom: 8,
+    marginBottom: 8,
+  },
+  tableHeaderCell: {
     fontSize: 14,
-    fontWeight: '600' as const,
-    marginBottom: 12,
+    fontWeight: '700' as const,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
   },
-  shareholderItem: {
+  tableHeaderLeft: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  tableHeaderRight: {
+    flex: 1,
+    paddingLeft: 8,
+  },
+  tableRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
   },
-  shareholderInfo: {
+  tableCell: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  tableCellLeft: {
     flex: 1,
-  },
-  shareholderName: {
-    fontSize: 15,
+    paddingRight: 8,
     fontWeight: '600' as const,
-    marginBottom: 4,
   },
-  shareholderPercentage: {
-    fontSize: 13,
-  },
-  alignmentDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  tableCellRight: {
+    flex: 1,
+    paddingLeft: 8,
   },
   valueTagsContainer: {
     flexDirection: 'row',
