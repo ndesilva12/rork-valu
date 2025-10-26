@@ -10,12 +10,13 @@ import {
   Linking,
   Platform,
   TextInput,
-  useWindowDimensions,
+  FlatList,
+  Modal,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
 import { MOCK_PRODUCTS } from '@/mocks/products';
-import { AVAILABLE_VALUES } from '@/mocks/values';
+import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { useUser } from '@/contexts/UserContext';
 import { useRef, useMemo, useState, useCallback } from 'react';
 
@@ -26,8 +27,6 @@ export default function ProductDetailScreen() {
   const colors = isDarkMode ? darkColors : lightColors;
   const product = MOCK_PRODUCTS.find(p => p.id === id);
   const scrollViewRef = useRef<ScrollView>(null);
-  const { width } = useWindowDimensions();
-  const isTabletOrLarger = Platform.OS === 'web' && width >= 768;
 
   interface Review {
     id: string;
@@ -104,8 +103,8 @@ export default function ProductDetailScreen() {
     })
   ).current;
 
-  const supportedValues = profile.values.filter(v => v.type === 'support').map(v => v.id);
-  const avoidedValues = profile.values.filter(v => v.type === 'avoid').map(v => v.id);
+  const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
+  const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
 
   const alignmentData = useMemo(() => {
     if (!product) {
@@ -118,15 +117,15 @@ export default function ProductDetailScreen() {
         alignmentStrength: 0
       };
     }
-    const totalUserValues = profile.values.length;
+    const totalUserValues = profile.causes.length;
     let totalSupportScore = 0;
     let totalAvoidScore = 0;
     const matchingValues = new Set<string>();
     const positionSum: number[] = [];
-
+    
     product.valueAlignments.forEach(alignment => {
-      const isUserSupporting = supportedValues.includes(alignment.valueId);
-      const isUserAvoiding = avoidedValues.includes(alignment.valueId);
+      const isUserSupporting = supportedCauses.includes(alignment.valueId);
+      const isUserAvoiding = avoidedCauses.includes(alignment.valueId);
       
       if (!isUserSupporting && !isUserAvoiding) return;
       
@@ -173,7 +172,7 @@ export default function ProductDetailScreen() {
       totalAvoidScore,
       alignmentStrength
     };
-  }, [product, supportedValues, avoidedValues, profile.values.length]);
+  }, [product, supportedCauses, avoidedCauses, profile.causes.length]);
 
   const alignmentColor = alignmentData.isAligned ? colors.success : colors.danger;
   const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;
@@ -272,6 +271,7 @@ export default function ProductDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Hide the navigation header and render our own header inside the page so it respects centered max-width */}
       <Stack.Screen
         options={{
           headerShown: false,
@@ -280,23 +280,11 @@ export default function ProductDetailScreen() {
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
-        contentContainerStyle={{}}
+        contentContainerStyle={Platform.OS === 'web' ? styles.webContent : undefined}
         showsVerticalScrollIndicator={false}
         {...panResponder.panHandlers}
       >
-        {/* Centering wrapper */}
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <View style={{ width: '100%', maxWidth: isTabletOrLarger ? '50%' : 768 }}>
-            {/* Custom back button */}
-            <TouchableOpacity
-              style={[styles.backButton, { backgroundColor: colors.backgroundSecondary }]}
-              onPress={() => router.back()}
-              activeOpacity={0.7}
-            >
-              <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
-            </TouchableOpacity>
-
-            <View style={styles.heroImageContainer}>
+        <View style={styles.heroImageContainer}>
           <Image 
             source={{ uri: product.imageUrl }} 
             style={styles.heroImage} 
@@ -314,7 +302,16 @@ export default function ProductDetailScreen() {
         </View>
         
         <View style={styles.content}>
+          {/* custom header: back button now inside the centered content */}
           <View style={styles.header}>
+            <TouchableOpacity
+              style={[styles.backButton, { backgroundColor: colors.backgroundSecondary, marginRight: 12 }]}
+              onPress={() => router.back()}
+              activeOpacity={0.7}
+            >
+              <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+
             <View style={styles.titleContainer}>
               <Text style={[styles.productName, { color: colors.text }]}>{product.name}</Text>
               <Text style={[styles.category, { color: colors.primary }]}>{product.category}</Text>
@@ -368,11 +365,11 @@ export default function ProductDetailScreen() {
                     const allValues = Object.values(AVAILABLE_VALUES).flat();
                     const value = allValues.find(v => v.id === valueId);
                     if (!value) return null;
-
-                    const userValue = profile.values.find(v => v.id === valueId);
-                    if (!userValue) return null;
-
-                    const tagColor = userValue.type === 'support' ? colors.success : colors.danger;
+                    
+                    const userCause = profile.causes.find(c => c.id === valueId);
+                    if (!userCause) return null;
+                    
+                    const tagColor = userCause.type === 'support' ? colors.success : colors.danger;
                     
                     return (
                       <TouchableOpacity
@@ -393,38 +390,78 @@ export default function ProductDetailScreen() {
 
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Money Flow</Text>
-
+            
             <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
               <View style={[styles.companyHeader, { borderBottomColor: colors.border }]}>
                 <Text style={[styles.companyName, { color: colors.text }]}>{product.moneyFlow.company}</Text>
               </View>
 
-              {/* Two-column table */}
-              <View style={styles.tableContainer}>
-                {/* Table header */}
-                <View style={styles.tableHeaderRow}>
-                  <Text style={[styles.tableHeaderCell, styles.tableHeaderLeft, { color: colors.textSecondary }]}>Affiliates</Text>
-                  <Text style={[styles.tableHeaderCell, styles.tableHeaderRight, { color: colors.textSecondary }]}>Commitment</Text>
-                </View>
+              {/* Affiliates / Commitment table header */}
+              <View style={styles.moneyFlowTableHeader}>
+                <Text style={[styles.tableHeaderLeft, { color: colors.textSecondary }]}>Affiliates</Text>
+                <Text style={[styles.tableHeaderRight, { color: colors.textSecondary }]}>Commitment</Text>
+              </View>
 
-                {/* Table rows - using real data from Google Sheets */}
-                {product.moneyFlow.shareholders && product.moneyFlow.shareholders.length > 0 ? (
-                  product.moneyFlow.shareholders.map((affiliate: any, index: number) => (
-                    <View key={`row-${index}`} style={[styles.tableRow, { borderBottomColor: colors.border }]}>
-                      <Text style={[styles.tableCell, styles.tableCellLeft, { color: colors.text }]} numberOfLines={2}>
-                        {affiliate.name || affiliate}
-                      </Text>
-                      <Text style={[styles.tableCell, styles.tableCellRight, { color: colors.textSecondary }]} numberOfLines={2}>
-                        {affiliate.amount || (typeof affiliate === 'object' ? affiliate.percentage + '% stake' : '')}
-                      </Text>
-                    </View>
-                  ))
+              {/* Render exactly 5 rows populated from product.moneyFlow.affiliates (G/H, I/J, K/L, M/N, O/P) */}
+              <View style={styles.affiliatesContainer}>
+                {(() => {
+                  const affiliates = (product.moneyFlow && (product.moneyFlow as any).affiliates) || [];
+                  // Always render five rows for consistent layout
+                  return Array.from({ length: 5 }).map((_, i) => {
+                    const a = affiliates[i];
+                    const name = a && a.name ? a.name : '—';
+                    const commitment = a && a.commitment ? a.commitment : '—';
+
+                    return (
+                      <View key={`affiliate-row-${i}`} style={[styles.affiliateRow, { borderBottomColor: colors.border }]}>
+                        <View style={styles.affiliateLeft}>
+                          <Text style={[styles.affiliateName, { color: colors.text }]} numberOfLines={1}>
+                            {name}
+                          </Text>
+                        </View>
+                        <View style={styles.affiliateRight}>
+                          <Text style={[styles.affiliateCommitment, { color: colors.textSecondary }]} numberOfLines={1}>
+                            {commitment}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  });
+                })()}
+              </View>
+
+              {/* Optional: show shareholders under the affiliates table if present */}
+              <View style={[styles.shareholdersContainer, { marginTop: 12 }]}>
+                <Text style={[styles.shareholdersTitle, { color: colors.textSecondary }]}>Top Stakeholders</Text>
+
+                {(product.moneyFlow.shareholders || []).length > 0 ? (
+                  (product.moneyFlow.shareholders || []).map((stakeholder: any, index: number) => {
+                    const shColor =
+                      stakeholder.alignment === 'aligned'
+                        ? colors.success
+                        : stakeholder.alignment === 'opposed'
+                        ? colors.danger
+                        : colors.neutral;
+
+                    // Convert fractional percentages (0.02 -> 2.00) if used in sheet
+                    const rawPct = stakeholder.percentage ?? 0;
+                    const percentage =
+                      typeof rawPct === 'number' && rawPct <= 1 ? Math.round(rawPct * 100 * 100) / 100 : rawPct;
+
+                    return (
+                      <View key={`stakeholder-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
+                        <View style={styles.shareholderInfo}>
+                          <Text style={[styles.shareholderName, { color: colors.text }]}>{stakeholder.name}</Text>
+                          <Text style={[styles.shareholderPercentage, { color: colors.textSecondary }]}>
+                            {percentage}% stake
+                          </Text>
+                        </View>
+                        <View style={[styles.alignmentDot, { backgroundColor: shColor }]} />
+                      </View>
+                    );
+                  })
                 ) : (
-                  <View style={[styles.tableRow, { borderBottomWidth: 0 }]}>
-                    <Text style={[styles.tableCell, { color: colors.textSecondary, textAlign: 'center', paddingVertical: 16 }]}>
-                      No affiliate data available
-                    </Text>
-                  </View>
+                  <Text style={[styles.noShareholdersText, { color: colors.textSecondary }]}>No stakeholders listed</Text>
                 )}
               </View>
             </View>
@@ -437,7 +474,8 @@ export default function ProductDetailScreen() {
                 <TouchableOpacity
                   style={[
                     styles.sortButton,
-                    sortBy === 'latest' && { backgroundColor: colors.primary + '15' }
+                    // Outline style when active: transparent background + border
+                    sortBy === 'latest' && { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.primary }
                   ]}
                   onPress={() => setSortBy('latest')}
                   activeOpacity={0.7}
@@ -450,7 +488,8 @@ export default function ProductDetailScreen() {
                 <TouchableOpacity
                   style={[
                     styles.sortButton,
-                    sortBy === 'popular' && { backgroundColor: colors.primary + '15' }
+                    // Outline style when active: transparent background + border
+                    sortBy === 'popular' && { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.primary }
                   ]}
                   onPress={() => setSortBy('popular')}
                   activeOpacity={0.7}
@@ -541,8 +580,6 @@ export default function ProductDetailScreen() {
             ))}
           </View>
         </View>
-          </View>
-        </View>
       </ScrollView>
     </View>
   );
@@ -555,47 +592,39 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  webContent: {
+    maxWidth: 768,
+    alignSelf: 'center' as const,
+    width: '100%',
+  },
   backButton: {
-    position: 'absolute' as const,
-    top: 16,
-    left: 16,
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-    zIndex: 10,
   },
   heroImageContainer: {
-    width: '100%',
-    height: 150,
-    position: 'relative' as const,
+    position: 'relative',
+    height: 220,
+    marginBottom: 16,
   },
   heroImage: {
     width: '100%',
-    height: 150,
+    height: '100%',
+    borderRadius: 12,
   },
   visitButton: {
-    position: 'absolute' as const,
-    right: 16,
-    bottom: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 10,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    position: 'absolute',
+    right: 12,
+    bottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
   visitButtonText: {
-    fontSize: 16,
-    fontWeight: '700' as const,
+    color: '#ffffff',
+    fontWeight: '600',
   },
   content: {
     padding: 20,
@@ -610,7 +639,6 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 16,
   },
-
   productName: {
     fontSize: 28,
     fontWeight: '700' as const,
@@ -630,51 +658,35 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 24,
   },
-  socialButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  socialButtonText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  scoreCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scoreNumber: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    marginTop: 4,
-  },
   alignmentCard: {
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 24,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
   },
   alignmentLabel: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 6,
   },
   alignmentDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 12,
+    fontSize: 13,
+  },
+  valueTagsContainer: {
+    marginTop: 8,
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  valueTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  valueTagText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   section: {
     marginBottom: 24,
@@ -686,184 +698,77 @@ const styles = StyleSheet.create({
   },
   moneyFlowCard: {
     borderRadius: 16,
-    padding: 20,
-    borderWidth: 2,
+    padding: 0,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
   companyHeader: {
-    paddingBottom: 16,
-    borderBottomWidth: 2,
-    marginBottom: 16,
+    padding: 12,
+    borderBottomWidth: 1,
   },
   companyName: {
     fontSize: 18,
-    fontWeight: '600' as const,
-  },
-  tableContainer: {
-    width: '100%',
-  },
-  tableHeaderRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 2,
-    borderBottomColor: '#E5E7EB',
-    paddingBottom: 8,
-    marginBottom: 8,
-  },
-  tableHeaderCell: {
-    fontSize: 14,
     fontWeight: '700' as const,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
   },
-  tableHeaderLeft: {
-    flex: 1,
-    paddingRight: 8,
-  },
-  tableHeaderRight: {
-    flex: 1,
-    paddingLeft: 8,
-  },
-  tableRow: {
+  moneyFlowTableHeader: {
     flexDirection: 'row',
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderBottomWidth: 1,
   },
-  tableCell: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  tableCellLeft: {
-    flex: 1,
-    paddingRight: 8,
-    fontWeight: '600' as const,
-  },
-  tableCellRight: {
-    flex: 1,
-    paddingLeft: 8,
-  },
-  valueTagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-  },
-  valueTag: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  valueTagText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  errorContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  errorText: {
-    fontSize: 18,
-    fontWeight: '600' as const,
-  },
-  reviewsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sortButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  sortButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  sortButtonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  addReviewCard: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  addReviewTitle: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    marginBottom: 12,
-  },
-  ratingSelector: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  starIcon: {
-    fontSize: 28,
-    color: '#FFD700',
-  },
-  reviewInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    minHeight: 80,
-    textAlignVertical: 'top' as const,
-    marginBottom: 12,
-  },
-  submitReviewButton: {
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  submitReviewText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  reviewCard: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  reviewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  reviewUserInfo: {
-    flex: 1,
-  },
-  reviewUserName: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    marginBottom: 4,
-  },
-  reviewRating: {
-    flexDirection: 'row',
-    gap: 2,
-  },
-  reviewStar: {
-    fontSize: 14,
-    color: '#FFD700',
-  },
-  reviewDate: {
-    fontSize: 12,
-  },
-  reviewText: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  reviewLikeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  reviewLikes: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
+  tableHeaderLeft: { flex: 1, fontSize: 13, fontWeight: '600' },
+  tableHeaderRight: { width: 140, textAlign: 'right', fontSize: 13, fontWeight: '600' },
 
+  affiliatesContainer: {},
+  affiliateRow: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+  },
+  affiliateLeft: { flex: 1, paddingRight: 8 },
+  affiliateRight: { width: 140, alignItems: 'flex-end' },
+  affiliateName: { fontSize: 14 },
+  affiliateCommitment: { fontSize: 13 },
+
+  shareholdersContainer: { paddingTop: 12, paddingHorizontal: 12, paddingBottom: 12 },
+  shareholdersTitle: { fontSize: 13, fontWeight: '700', marginBottom: 8 },
+  shareholderItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1 },
+  shareholderInfo: { flex: 1 },
+  shareholderName: { fontSize: 14, fontWeight: '600' },
+  shareholderPercentage: { fontSize: 12, marginTop: 2 },
+  alignmentDot: { width: 12, height: 12, borderRadius: 6, marginLeft: 8 },
+
+  noShareholdersText: { fontSize: 13, fontStyle: 'italic', paddingHorizontal: 12, paddingVertical: 8, color: '#6b7280' },
+
+  reviewsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  sortButtons: { flexDirection: 'row', gap: 8 },
+  sortButton: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: 'transparent' },
+  sortButtonText: { fontSize: 13, fontWeight: '600' },
+  addReviewCard: { borderRadius: 12, padding: 12 },
+  addReviewTitle: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
+  ratingSelector: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  starIcon: { fontSize: 22 },
+  reviewInput: {
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
+    minHeight: 60,
+  },
+  submitReviewButton: { paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center' },
+  submitReviewText: { fontWeight: '700' },
+  reviewCard: { borderRadius: 12, padding: 12, marginBottom: 12 },
+  reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  reviewUserInfo: {},
+  reviewUserName: { fontSize: 14, fontWeight: '700' },
+  reviewRating: { flexDirection: 'row' },
+  reviewStar: { color: '#f59e0b' },
+  reviewDate: { fontSize: 12 },
+  reviewText: { fontSize: 14, marginBottom: 8 },
+  reviewLikeButton: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  reviewLikes: { marginLeft: 6 },
+
+  errorContainer: { alignItems: 'center', padding: 40 },
+  errorText: { color: '#ef4444' },
 });
