@@ -125,7 +125,7 @@ export default function ProductDetailScreen() {
         alignmentStrength: 0
       };
     }
-    const totalUserValues = profile.causes.length;
+    const totalUserValues = profileCauses.length;
     let totalSupportScore = 0;
     let totalAvoidScore = 0;
     const matchingValues = new Set<string>();
