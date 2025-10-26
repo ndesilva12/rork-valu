@@ -109,8 +109,10 @@ export default function ProductDetailScreen() {
     })
   ).current;
 
-  const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
-  const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
+  // Safe fallback if profile or profile.causes is undefined
+  const profileCauses = Array.isArray(profile?.causes) ? profile.causes : [];
+  const supportedCauses = profileCauses.filter(c => c.type === 'support').map(c => c.id);
+  const avoidedCauses = profileCauses.filter(c => c.type === 'avoid').map(c => c.id);
 
   const alignmentData = useMemo(() => {
     if (!product) {
@@ -129,7 +131,8 @@ export default function ProductDetailScreen() {
     const matchingValues = new Set<string>();
     const positionSum: number[] = [];
     
-    product.valueAlignments.forEach(alignment => {
+    const valueAlignments = Array.isArray(product?.valueAlignments) ? product.valueAlignments : [];
+    valueAlignments.forEach((alignment) => {
       const isUserSupporting = supportedCauses.includes(alignment.valueId);
       const isUserAvoiding = avoidedCauses.includes(alignment.valueId);
       
@@ -178,7 +181,7 @@ export default function ProductDetailScreen() {
       totalAvoidScore,
       alignmentStrength
     };
-  }, [product, supportedCauses, avoidedCauses, profile.causes.length]);
+  }, [product, supportedCauses, avoidedCauses, profileCauses.length]);
 
   const alignmentColor = alignmentData.isAligned ? colors.success : colors.danger;
   const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;
