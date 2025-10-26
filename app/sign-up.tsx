@@ -13,6 +13,7 @@ import {
   Platform,
   ScrollView,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -24,6 +25,8 @@ export default function SignUpScreen() {
   const { isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isTabletOrLarger = Platform.OS === 'web' && width >= 768;
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -115,7 +118,10 @@ export default function SignUpScreen() {
           contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 40 }]}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.logoContainer}>
+          {/* Centering wrapper */}
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <View style={{ width: '100%', maxWidth: isTabletOrLarger ? '50%' : 768 }}>
+              <View style={styles.logoContainer}>
             <Image
               source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/ohh0oqrvnuowj1apebwt9' }}
               style={styles.logo}
@@ -163,6 +169,8 @@ export default function SignUpScreen() {
           <TouchableOpacity onPress={() => setPendingVerification(false)}>
             <Text style={[styles.footerLink, { color: colors.primary, textAlign: 'center' }]}>Back to Sign Up</Text>
           </TouchableOpacity>
+            </View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     );
@@ -178,7 +186,10 @@ export default function SignUpScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 40 }]}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.logoContainer}>
+        {/* Centering wrapper */}
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <View style={{ width: '100%', maxWidth: isTabletOrLarger ? '50%' : 768 }}>
+            <View style={styles.logoContainer}>
           <Image
             source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/ohh0oqrvnuowj1apebwt9' }}
             style={styles.logo}
@@ -331,6 +342,8 @@ export default function SignUpScreen() {
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={[styles.footerLink, { color: colors.primary }]}>Sign In</Text>
           </TouchableOpacity>
+        </View>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
