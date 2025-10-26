@@ -55,6 +55,7 @@ async function getCachedOrFetch<T>(
 export interface ValueBrandMatrix {
   valueId: string;
   valueName: string;
+  valueCategory: string;
   aligned: string[]; // Brand IDs in rank order (position 1-10)
   unaligned: string[]; // Brand IDs in rank order (position 1-10)
 }
@@ -63,16 +64,17 @@ export interface ValueBrandMatrix {
  * Fetch value-brand matrix from Google Sheets
  *
  * Expected format:
- * Column A: valueId
- * Column B: valueName
- * Columns C-L: aligned1 through aligned10
- * Columns M-V: unaligned1 through unaligned10
+ * Column A: id
+ * Column B: name
+ * Column C: category
+ * Columns D-M: aligned1 through aligned10
+ * Columns N-W: unaligned1 through unaligned10
  */
 export async function fetchValueBrandMatrix(): Promise<ValueBrandMatrix[]> {
   return getCachedOrFetch('value-brand-matrix', async () => {
     const sheets = getGoogleSheetsClient();
     const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
-    const sheetName = process.env.SHEET_NAME_VALUE_MATRIX || 'Value-Brand-Matrix';
+    const sheetName = process.env.SHEET_NAME_VALUES || 'Values';
 
     if (!spreadsheetId) {
       throw new Error('GOOGLE_SPREADSHEET_ID not set in environment variables');
@@ -81,30 +83,31 @@ export async function fetchValueBrandMatrix(): Promise<ValueBrandMatrix[]> {
     try {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${sheetName}!A2:V`, // Skip header row, columns A-V (22 columns total)
+        range: `${sheetName}!A2:W`, // Skip header row, columns A-W (23 columns total)
       });
 
       const rows = response.data.values || [];
       console.log(`[Matrix] Fetched ${rows.length} value rows from Google Sheets`);
 
       const matrix: ValueBrandMatrix[] = rows
-        .filter((row) => row[0] && row[1]) // Must have valueId and valueName
+        .filter((row) => row[0] && row[1]) // Must have id and name
         .map((row) => {
-          // Columns C-L (indices 2-11) = aligned1-aligned10
+          // Columns D-M (indices 3-12) = aligned1-aligned10
           const aligned: string[] = [];
-          for (let i = 2; i <= 11; i++) {
+          for (let i = 3; i <= 12; i++) {
             if (row[i]) aligned.push(row[i].trim());
           }
 
-          // Columns M-V (indices 12-21) = unaligned1-unaligned10
+          // Columns N-W (indices 13-22) = unaligned1-unaligned10
           const unaligned: string[] = [];
-          for (let i = 12; i <= 21; i++) {
+          for (let i = 13; i <= 22; i++) {
             if (row[i]) unaligned.push(row[i].trim());
           }
 
           return {
             valueId: row[0].trim(),
             valueName: row[1].trim(),
+            valueCategory: row[2]?.trim() || 'General',
             aligned,
             unaligned,
           };

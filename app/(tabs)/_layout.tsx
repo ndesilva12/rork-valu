@@ -77,6 +77,7 @@ export default function TabLayout() {
           options={{
             title: "Local",
             tabBarIcon: ({ color, focused }) => <MapPin size={24} color={focused ? localColor : color} strokeWidth={2} />,
+            href: null, // This hides the tab
           }}
         />
         <Tabs.Screen

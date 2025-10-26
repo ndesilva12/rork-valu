@@ -61,12 +61,12 @@ async function getCachedOrFetch<T>(
 }
 
 // Fetch values from Google Sheets
-// NOTE: Fetches from Value-Brand-Matrix sheet (columns A-C contain value data)
+// NOTE: Fetches from Values sheet (columns A-C contain id, name, category)
 export async function fetchValuesFromSheets(): Promise<ValueItem[]> {
   return getCachedOrFetch('values', async () => {
     const sheets = getGoogleSheetsClient();
     const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
-    const sheetName = process.env.SHEET_NAME_VALUE_MATRIX || 'Value-Brand-Matrix';
+    const sheetName = process.env.SHEET_NAME_VALUES || 'Values';
 
     if (!spreadsheetId) {
       throw new Error('GOOGLE_SPREADSHEET_ID not set in environment variables');
@@ -75,11 +75,11 @@ export async function fetchValuesFromSheets(): Promise<ValueItem[]> {
     try {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${sheetName}!A2:C`, // Fetch id, name, category from matrix sheet
+        range: `${sheetName}!A2:C`, // Fetch id, name, category from Values sheet
       });
 
       const rows = response.data.values || [];
-      console.log(`[Sheets] Fetched ${rows.length} values from Value-Brand-Matrix sheet`);
+      console.log(`[Sheets] Fetched ${rows.length} values from Values sheet`);
 
       const values: ValueItem[] = rows
         .filter((row) => row[0] && row[1] && row[2]) // Must have id, name, category
@@ -124,7 +124,7 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
       const [brandsResponse, valueBrandMatrix] = await Promise.all([
         sheets.spreadsheets.values.get({
           spreadsheetId,
-          range: `${sheetName}!A2:M`, // Skip header row, columns A-M (no longer need N)
+          range: `${sheetName}!A2:P`, // Skip header row, columns A-P (16 columns: id, name, category, imageUrl, description, website, affiliate1-5, $affiliate1-5)
         }),
         fetchValueBrandMatrix(),
       ]);
@@ -139,11 +139,28 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
         .filter((row) => row[0] && row[1]) // Must have id and name
         .map((row) => {
           const brandId = row[0].trim();
-          const shareholders = parseJsonField(row[12], []);
-          const brandName = row[1]; // Brand name (e.g., "Apple", "Nike")
+          const brandName = row[1]?.trim() || ''; // Brand name (e.g., "Apple", "Nike")
+
+          // Parse affiliate data from columns G-P (indices 6-15)
+          // affiliate1 (6), $affiliate1 (7), affiliate2 (8), $affiliate2 (9), etc.
+          const affiliates = [];
+          for (let i = 0; i < 5; i++) {
+            const nameIndex = 6 + (i * 2);
+            const amountIndex = 7 + (i * 2);
+            const affiliateName = row[nameIndex]?.trim();
+            const affiliateAmount = row[amountIndex]?.trim();
+
+            if (affiliateName && affiliateAmount) {
+              affiliates.push({
+                name: affiliateName,
+                amount: affiliateAmount,
+              });
+            }
+          }
+
           const moneyFlow = {
-            company: row[11] || brandName, // Use moneyFlowCompany or brand name
-            shareholders,
+            company: brandName,
+            shareholders: affiliates, // Using affiliates array instead of old shareholders format
             overallAlignment: 0, // Deprecated: alignment is calculated per-user
           };
 
@@ -153,20 +170,20 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
           return {
             id: brandId,
             name: brandName,
-            category: row[3] || 'Uncategorized',
-            imageUrl: row[4] || '', // Brand logo
-            exampleImageUrl: row[5] || row[4] || '', // Example product image
-            description: row[6] || '', // Brand description
+            category: row[2]?.trim() || 'Uncategorized',
+            imageUrl: row[3]?.trim() || '', // Brand logo
+            exampleImageUrl: row[3]?.trim() || '', // Use same image for both
+            description: row[4]?.trim() || '', // Brand description
             alignmentScore: 0, // Deprecated: use getScoredBrands endpoint for calculated scores
-            keyReasons: parseJsonField(row[8], []),
-            relatedValues: parseJsonField(row[9], []),
-            website: row[10] || undefined,
+            keyReasons: [], // Not in new sheet structure
+            relatedValues: [], // Not in new sheet structure
+            website: row[5]?.trim() || undefined,
             moneyFlow,
-            valueAlignments, // Built from Value-Brand-Matrix sheet
+            valueAlignments, // Built from Values sheet
           };
         });
 
-      console.log(`[Sheets] Built valueAlignments for ${brands.length} brands from matrix`);
+      console.log(`[Sheets] Built valueAlignments for ${brands.length} brands from Values sheet`);
 
       return brands;
     } catch (error: any) {

@@ -407,19 +407,25 @@ export default function ProductDetailScreen() {
                   <Text style={[styles.tableHeaderCell, styles.tableHeaderRight, { color: colors.textSecondary }]}>Commitment</Text>
                 </View>
 
-                {/* Table rows */}
-                {[
-                  { affiliate: 'Environmental Defense Fund', commitment: '$2.5M annually' },
-                  { affiliate: 'Community Investment Fund', commitment: '$1.8M in grants' },
-                  { affiliate: 'Fair Trade Cooperative', commitment: '$950K partnership' },
-                  { affiliate: 'Green Energy Initiative', commitment: '$500K renewable' },
-                  { affiliate: 'Local Schools Program', commitment: '$350K education' },
-                ].map((row, index) => (
-                  <View key={`row-${index}`} style={[styles.tableRow, { borderBottomColor: colors.border }]}>
-                    <Text style={[styles.tableCell, styles.tableCellLeft, { color: colors.text }]} numberOfLines={2}>{row.affiliate}</Text>
-                    <Text style={[styles.tableCell, styles.tableCellRight, { color: colors.textSecondary }]} numberOfLines={2}>{row.commitment}</Text>
+                {/* Table rows - using real data from Google Sheets */}
+                {product.moneyFlow.shareholders && product.moneyFlow.shareholders.length > 0 ? (
+                  product.moneyFlow.shareholders.map((affiliate: any, index: number) => (
+                    <View key={`row-${index}`} style={[styles.tableRow, { borderBottomColor: colors.border }]}>
+                      <Text style={[styles.tableCell, styles.tableCellLeft, { color: colors.text }]} numberOfLines={2}>
+                        {affiliate.name || affiliate}
+                      </Text>
+                      <Text style={[styles.tableCell, styles.tableCellRight, { color: colors.textSecondary }]} numberOfLines={2}>
+                        {affiliate.amount || (typeof affiliate === 'object' ? affiliate.percentage + '% stake' : '')}
+                      </Text>
+                    </View>
+                  ))
+                ) : (
+                  <View style={[styles.tableRow, { borderBottomWidth: 0 }]}>
+                    <Text style={[styles.tableCell, { color: colors.textSecondary, textAlign: 'center', paddingVertical: 16 }]}>
+                      No affiliate data available
+                    </Text>
                   </View>
-                ))}
+                )}
               </View>
             </View>
           </View>
