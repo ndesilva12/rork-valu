@@ -1,4 +1,5 @@
-export type ValueCategory =
+// types/index.ts
+export type CauseCategory =
   | 'social_issue'
   | 'religion'
   | 'ideology'
@@ -9,10 +10,10 @@ export type ValueCategory =
 
 export type AlignmentType = 'support' | 'avoid';
 
-export interface UserValue {
+export interface Cause {
   id: string;
   name: string;
-  category: ValueCategory;
+  category: CauseCategory;
   type: AlignmentType;
   description?: string;
 }
@@ -24,10 +25,18 @@ export interface Shareholder {
   causes: string[];
 }
 
+// New: simple Affiliate structure (name + commitment text)
+export interface Affiliate {
+  name: string;
+  commitment?: string;
+}
+
 export interface MoneyFlow {
   company: string;
   shareholders: Shareholder[];
   overallAlignment: number;
+  // New optional affiliates field populated from columns G..P (pairs)
+  affiliates?: Affiliate[];
 }
 
 export interface ValueAlignment {
@@ -56,17 +65,7 @@ export interface Brand {
 // TODO: Remove this once all code is migrated
 export type Product = Brand;
 
-export interface Organization {
-  id: string;
-  name: string;
-  description?: string;
-  category: string;
-  imageUrl?: string;
-}
-
 export interface UserProfile {
-  values: UserValue[];
+  causes: Cause[];
   searchHistory: string[];
-  valuCode?: string; // User's unique promo code (VALU + 6 chars)
-  selectedOrganizations?: Organization[]; // Max 3 organizations for donations
 }
