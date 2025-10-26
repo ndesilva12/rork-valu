@@ -10,6 +10,7 @@ import {
   Linking,
   Platform,
   TextInput,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -25,6 +26,8 @@ export default function ProductDetailScreen() {
   const colors = isDarkMode ? darkColors : lightColors;
   const product = MOCK_PRODUCTS.find(p => p.id === id);
   const scrollViewRef = useRef<ScrollView>(null);
+  const { width } = useWindowDimensions();
+  const isTabletOrLarger = Platform.OS === 'web' && width >= 768;
 
   interface Review {
     id: string;
@@ -271,10 +274,20 @@ export default function ProductDetailScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen
         options={{
-          headerShown: true,
-          headerTitle: '',
-          headerTransparent: true,
-          headerLeft: () => (
+          headerShown: false,
+        }}
+      />
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        contentContainerStyle={{}}
+        showsVerticalScrollIndicator={false}
+        {...panResponder.panHandlers}
+      >
+        {/* Centering wrapper */}
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <View style={{ width: '100%', maxWidth: isTabletOrLarger ? '50%' : 768 }}>
+            {/* Custom back button */}
             <TouchableOpacity
               style={[styles.backButton, { backgroundColor: colors.backgroundSecondary }]}
               onPress={() => router.back()}
@@ -282,17 +295,8 @@ export default function ProductDetailScreen() {
             >
               <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
             </TouchableOpacity>
-          ),
-        }}
-      />
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.scrollView}
-        contentContainerStyle={Platform.OS === 'web' ? styles.webContent : undefined}
-        showsVerticalScrollIndicator={false}
-        {...panResponder.panHandlers}
-      >
-        <View style={styles.heroImageContainer}>
+
+            <View style={styles.heroImageContainer}>
           <Image 
             source={{ uri: product.imageUrl }} 
             style={styles.heroImage} 
@@ -565,6 +569,8 @@ export default function ProductDetailScreen() {
             ))}
           </View>
         </View>
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -577,12 +583,10 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  webContent: {
-    maxWidth: 768,
-    alignSelf: 'center' as const,
-    width: '100%',
-  },
   backButton: {
+    position: 'absolute' as const,
+    top: 16,
+    left: 16,
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -593,6 +597,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
+    zIndex: 10,
   },
   heroImageContainer: {
     width: '100%',

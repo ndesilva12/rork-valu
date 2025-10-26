@@ -9,6 +9,8 @@ import {
   Image,
   Linking,
   PanResponder,
+  Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -36,6 +38,8 @@ export default function ValueDetailScreen() {
   const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const scrollViewRef = useRef<ScrollView>(null);
+  const { width } = useWindowDimensions();
+  const isTabletOrLarger = Platform.OS === 'web' && width >= 768;
 
   const panResponder = useRef(
     PanResponder.create({
@@ -133,27 +137,28 @@ export default function ValueDetailScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen
         options={{
-          headerShown: true,
-          title: userValue.name,
-          headerStyle: {
-            backgroundColor: colors.background,
-          },
-          headerTintColor: colors.text,
-          headerShadowVisible: false,
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
-            </TouchableOpacity>
-          ),
+          headerShown: false,
         }}
       />
-      
+
       <ScrollView
         ref={scrollViewRef}
         contentContainerStyle={styles.content}
         {...panResponder.panHandlers}
       >
-        <View style={styles.header}>
+        {/* Centering wrapper */}
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <View style={{ width: '100%', maxWidth: isTabletOrLarger ? '50%' : 768 }}>
+            {/* Custom back button and title */}
+            <View style={styles.customHeader}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>{userValue.name}</Text>
+              <View style={styles.headerSpacer} />
+            </View>
+
+            <View style={styles.header}>
           <View style={[
             styles.badge,
             isSupporting ? styles.supportBadge : styles.avoidBadge
@@ -252,6 +257,8 @@ export default function ValueDetailScreen() {
             </View>
           )}
         </View>
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -261,9 +268,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
   backButton: {
     padding: 8,
-    marginLeft: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 40,
   },
   content: {
     padding: 20,

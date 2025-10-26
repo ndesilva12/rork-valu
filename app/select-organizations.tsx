@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -36,6 +37,8 @@ export default function SelectOrganizationsScreen() {
     profile.selectedOrganizations || []
   );
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isTabletOrLarger = Platform.OS === 'web' && width >= 768;
   const MAX_ORGANIZATIONS = 3;
 
   useEffect(() => {
@@ -81,8 +84,11 @@ export default function SelectOrganizationsScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, Platform.OS === 'web' && styles.webContent, { paddingBottom: 120 + insets.bottom }]}>
-        <View style={styles.header}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 + insets.bottom }]}>
+        {/* Centering wrapper */}
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <View style={{ width: '100%', maxWidth: isTabletOrLarger ? '50%' : 768 }}>
+            <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>Select Your Organizations</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Choose up to 3 charities and organizations that will receive your matched donations.
@@ -165,10 +171,15 @@ export default function SelectOrganizationsScreen() {
             );
           })}
         </View>
+          </View>
+        </View>
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: 32 + insets.bottom, backgroundColor: colors.backgroundSecondary, borderTopColor: colors.border }]}>
-        <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
+        {/* Centering wrapper for footer */}
+        <View style={{ alignItems: 'center' }}>
+          <View style={{ width: '100%', maxWidth: isTabletOrLarger ? '50%' : 768 }}>
+            <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
           {selectedOrgs.length} organization{selectedOrgs.length !== 1 ? 's' : ''} selected
         </Text>
         <View style={styles.footerButtons}>
@@ -192,6 +203,8 @@ export default function SelectOrganizationsScreen() {
             <Text style={[styles.saveButtonText, { color: colors.white }]}>Save</Text>
           </TouchableOpacity>
         </View>
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -205,11 +218,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {},
-  webContent: {
-    maxWidth: 768,
-    alignSelf: 'center' as const,
-    width: '100%',
-  },
   header: {
     paddingHorizontal: 24,
     paddingTop: 32,
