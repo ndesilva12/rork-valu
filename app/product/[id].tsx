@@ -16,7 +16,7 @@ import {
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
 import { MOCK_PRODUCTS } from '@/mocks/products';
-import { AVAILABLE_VALUES } from '@/mocks/causes';
+import { trpc } from '@/lib/trpc';
 import { useUser } from '@/contexts/UserContext';
 import { useRef, useMemo, useState, useCallback } from 'react';
 
@@ -90,6 +90,12 @@ export default function ProductDetailScreen() {
   const [reviewText, setReviewText] = useState('');
   const [userRating, setUserRating] = useState(0);
 
+  const { data: causes = [] } = trpc.data.getCauses.useQuery();
+  const allValues = (Array.isArray(causes) ? causes : []).map(v => ({ id: v.id, name: v.name }));
+  // The original code used: Object.values(AVAILABLE_VALUES).flat()
+  // To preserve the same access pattern, create a flat array:
+  const ALL_VALUES_FLAT = allValues; // array of {id, name}
+  
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (evt, gestureState) => {
@@ -362,8 +368,7 @@ export default function ProductDetailScreen() {
             {alignmentData.matchingValues.length > 0 && (
               <View style={styles.valueTagsContainer}>
                 {alignmentData.matchingValues.map((valueId) => {
-                    const allValues = Object.values(AVAILABLE_VALUES).flat();
-                    const value = allValues.find(v => v.id === valueId);
+                   const value = ALL_VALUES_FLAT.find(v => v.id === valueId);
                     if (!value) return null;
                     
                     const userCause = profile.causes.find(c => c.id === valueId);
