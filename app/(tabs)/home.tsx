@@ -34,10 +34,10 @@ import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
-import { MOCK_PRODUCTS } from '@/mocks/products';
 import { Product } from '@/types';
 import { useMemo, useState, useRef } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
+import { trpc } from '@/lib/trpc';
 
 type ViewMode = 'playbook' | 'browse' | 'map';
 
@@ -73,6 +73,9 @@ export default function HomeScreen() {
 
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Fetch brands from Google Sheets via tRPC
+  const { data: brands, isLoading, error } = trpc.data.getBrands.useQuery();
+
   const viewModes: ViewMode[] = ['playbook', 'browse', 'map'];
 
   const panResponder = useRef(
@@ -93,11 +96,22 @@ export default function HomeScreen() {
   ).current;
 
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
+    if (!brands || brands.length === 0) {
+      return {
+        topSupport: [],
+        topAvoid: [],
+        allSupport: [],
+        allSupportFull: [],
+        allAvoidFull: [],
+        scoredBrands: new Map(),
+      };
+    }
+
     const supportedCauses = profile.causes.filter((c) => c.type === 'support').map((c) => c.id);
     const avoidedCauses = profile.causes.filter((c) => c.type === 'avoid').map((c) => c.id);
     const totalUserValues = profile.causes.length;
 
-    const scored = MOCK_PRODUCTS.map((product) => {
+    const scored = brands.map((product) => {
       let totalSupportScore = 0;
       let totalAvoidScore = 0;
       const matchingValues = new Set<string>();
@@ -172,7 +186,7 @@ export default function HomeScreen() {
       allAvoidFull: allAvoidSorted.map((s) => s.product),
       scoredBrands: scoredMap,
     };
-  }, [profile.causes]);
+  }, [profile.causes, brands]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
@@ -180,7 +194,7 @@ export default function HomeScreen() {
     allSupport.forEach((product) => {
       FOLDER_CATEGORIES.forEach((category) => {
         const productCategory = product.category.toLowerCase();
-        const productBrand = product.brand.toLowerCase();
+        const productBrand = product.name.toLowerCase();
 
         let match = false;
 
@@ -316,7 +330,7 @@ export default function HomeScreen() {
           </View>
           <View style={styles.brandCardContent}>
             <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>
-              {product.brand}
+              {product.name}
             </Text>
             <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
               {product.category}
@@ -448,7 +462,7 @@ export default function HomeScreen() {
                     />
                     <View style={styles.folderBrandContent}>
                       <Text style={[styles.folderBrandName, { color: colors.text }]} numberOfLines={2}>
-                        {product.brand}
+                        {product.name}
                       </Text>
                       <Text style={[styles.folderBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
                         {product.category}
@@ -494,6 +508,41 @@ export default function HomeScreen() {
       </View>
     );
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
+          <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
+          <MenuButton />
+        </View>
+        <View style={styles.emptyContainer}>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>Loading brands...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
+          <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
+          <MenuButton />
+        </View>
+        <View style={styles.emptyContainer}>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>Error loading brands</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+            {error.message || 'Please try again later'}
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   if (profile.causes.length === 0) {
     return (
