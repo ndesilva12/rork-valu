@@ -20,6 +20,7 @@ import { MOCK_PRODUCTS } from '@/mocks/products';
 import { Product } from '@/types';
 import { useMemo, useState, useRef } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
+import { trpc } from '@/lib/trpc';
 
 type ViewMode = 'playbook' | 'browse' | 'map';
 
@@ -74,67 +75,30 @@ export default function HomeScreen() {
     })
   ).current;
 
+  // Fetch brands from Google Sheets
+  const { data: brandsData } = trpc.data.getScoredBrands.useQuery({
+    userValues: profile.values,
+    filter: 'all'
+  });
+
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
-    const supportedValues = profile.values.filter(v => v.type === 'support').map(v => v.id);
-    const avoidedValues = profile.values.filter(v => v.type === 'avoid').map(v => v.id);
-    const totalUserValues = profile.values.length;
-    
-    const scored = MOCK_PRODUCTS.map(product => {
-      let totalSupportScore = 0;
-      let totalAvoidScore = 0;
-      const matchingValues = new Set<string>();
-      const positionSum: number[] = [];
-      
-      product.valueAlignments.forEach(alignment => {
-        const isUserSupporting = supportedValues.includes(alignment.valueId);
-        const isUserAvoiding = avoidedValues.includes(alignment.valueId);
-        
-        if (!isUserSupporting && !isUserAvoiding) return;
-        
-        matchingValues.add(alignment.valueId);
-        positionSum.push(alignment.position);
-        
-        const score = alignment.isSupport ? (100 - alignment.position * 5) : -(100 - alignment.position * 5);
-        
-        if (isUserSupporting) {
-          if (score > 0) {
-            totalSupportScore += score;
-          } else {
-            totalAvoidScore += Math.abs(score);
-          }
-        }
-        
-        if (isUserAvoiding) {
-          if (score < 0) {
-            totalSupportScore += Math.abs(score);
-          } else {
-            totalAvoidScore += score;
-          }
-        }
-      });
-      
-      const valuesWhereNotAppears = totalUserValues - matchingValues.size;
-      const totalPositionSum = positionSum.reduce((a, b) => a + b, 0) + (valuesWhereNotAppears * 11);
-      const avgPosition = totalUserValues > 0 ? totalPositionSum / totalUserValues : 11;
-      
-      const isNegativelyAligned = totalAvoidScore > totalSupportScore && totalAvoidScore > 0;
-      
-      let alignmentStrength: number;
-      if (isNegativelyAligned) {
-        alignmentStrength = Math.round(((avgPosition - 1) / 10) * 50);
-      } else {
-        alignmentStrength = Math.round((1 - ((avgPosition - 1) / 10)) * 50 + 50);
-      }
-      
-      return { 
-        product, 
-        totalSupportScore, 
-        totalAvoidScore, 
-        matchingValuesCount: matchingValues.size,
-        matchingValues,
-        alignmentStrength
-      };
-    });
+    if (!brandsData) return { 
+      topSupport: [], 
+      topAvoid: [], 
+      allSupport: [], 
+      allSupportFull: [], 
+      allAvoidFull: [], 
+      scoredBrands: new Map() 
+    };
+
+    const scored = brandsData.scoredBrands.map(brand => ({
+      product: brand,
+      totalSupportScore: brand.totalSupportScore || 0,
+      totalAvoidScore: brand.totalAvoidScore || 0,
+      matchingValuesCount: brand.matchingValuesCount || 0,
+      matchingValues: new Set(brand.matchingValues || []),
+      alignmentStrength: brand.alignmentStrength || 50
+    }));
 
     const allSupportSorted = scored
       .filter(s => s.totalSupportScore > s.totalAvoidScore && s.totalSupportScore > 0)
@@ -154,6 +118,7 @@ export default function HomeScreen() {
       allAvoidFull: allAvoidSorted.map(s => s.product),
       scoredBrands: scoredMap
     };
+  }, [brandsData]);
   }, [profile.values]);
 
   const categorizedBrands = useMemo(() => {
