@@ -80,14 +80,33 @@ export async function fetchValueBrandMatrix(): Promise<ValueBrandMatrix[]> {
       throw new Error('GOOGLE_SPREADSHEET_ID not set in environment variables');
     }
 
+    // Try to fetch from the configured sheet name, fallback to common names
+    let response;
+    let actualSheetName = sheetName;
+
     try {
-      const response = await sheets.spreadsheets.values.get({
+      response = await sheets.spreadsheets.values.get({
         spreadsheetId,
         range: `${sheetName}!A2:W`, // Skip header row, columns A-W (23 columns total)
       });
+    } catch (error: any) {
+      // If the configured sheet doesn't exist, try "Value-Brand-Matrix"
+      console.log(`[Matrix] Sheet "${sheetName}" not found, trying "Value-Brand-Matrix"...`);
+      try {
+        actualSheetName = 'Value-Brand-Matrix';
+        response = await sheets.spreadsheets.values.get({
+          spreadsheetId,
+          range: `Value-Brand-Matrix!A2:W`,
+        });
+      } catch (fallbackError: any) {
+        throw new Error(
+          `Failed to find Value-Brand-Matrix sheet. Tried "${sheetName}" and "Value-Brand-Matrix". Error: ${fallbackError.message}`
+        );
+      }
+    }
 
-      const rows = response.data.values || [];
-      console.log(`[Matrix] Fetched ${rows.length} value rows from Google Sheets`);
+    const rows = response.data.values || [];
+    console.log(`[Matrix] Fetched ${rows.length} value rows from "${actualSheetName}" sheet`);
 
       const matrix: ValueBrandMatrix[] = rows
         .filter((row) => row[0] && row[1]) // Must have id and name
@@ -128,12 +147,6 @@ export async function fetchValueBrandMatrix(): Promise<ValueBrandMatrix[]> {
       });
 
       return matrix;
-    } catch (error: any) {
-      console.error('[Matrix] Error fetching value-brand matrix:', error.message);
-      throw new Error(
-        `Failed to fetch value-brand matrix from Google Sheets: ${error.message}`
-      );
-    }
   });
 }
 

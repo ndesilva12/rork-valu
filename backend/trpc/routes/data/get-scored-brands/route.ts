@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { publicProcedure } from '../../../create-context';
 import { fetchBrandsFromSheets } from '../../../../services/google-sheets';
 import { calculateAllBrandAlignments } from '../../../../services/calculate-alignment';
+import { fetchValueBrandMatrix, buildAllValueAlignments } from '../../../../services/value-brand-matrix';
 
 // Schema for user values
 const userValueSchema = z.object({
@@ -30,11 +31,33 @@ export const getScoredBrandsProcedure = publicProcedure
     })
   )
   .query(async ({ input }) => {
-    // Fetch brands from Google Sheets (uses 5-minute cache)
-    const brands = await fetchBrandsFromSheets();
+  // Fetch brands from Google Sheets (uses 5-minute cache)
+  const brands = await fetchBrandsFromSheets();
 
-    // If user has no values selected, return unscored brands
-    if (input.userValues.length === 0) {
+  // Fetch Value-Brand-Matrix and build valueAlignments for all brands
+  let brandsWithAlignments;
+  try {
+    const matrix = await fetchValueBrandMatrix();
+    const valueAlignmentsMap = buildAllValueAlignments(matrix);
+
+    // Add valueAlignments to each brand
+    brandsWithAlignments = brands.map(brand => ({
+      ...brand,
+      valueAlignments: valueAlignmentsMap.get(brand.id) || [],
+    }));
+
+    console.log(`[getScoredBrands] Added valueAlignments to ${brandsWithAlignments.length} brands`);
+  } catch (error: any) {
+    console.error('[getScoredBrands] Failed to load Value-Brand-Matrix:', error.message);
+    // Fall back to brands without valueAlignments
+    brandsWithAlignments = brands.map(brand => ({
+      ...brand,
+      valueAlignments: [],
+    }));
+  }
+
+  // If user has no values selected, return unscored brands
+  if (input.userValues.length === 0) {
       return {
         scoredBrands: brands.map(b => ({
           ...b,
@@ -51,7 +74,7 @@ export const getScoredBrandsProcedure = publicProcedure
     }
 
     // Calculate alignment scores for all brands
-    const result = calculateAllBrandAlignments(brands, input.userValues);
+  const result = calculateAllBrandAlignments(brandsWithAlignments, input.userValues);
 
     // Return based on filter
     switch (input.filter) {
