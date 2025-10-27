@@ -1,8 +1,10 @@
 ﻿import 'dotenv/config';
-
+import app from "./hono";
 import http from "http";
 import { appRouter } from "./trpc/app-router";
 import { createContext } from "./trpc/create-context";
+// import server-side sheet helpers
+import { fetchBrandFromAppsScript } from "./services/google-sheets";
 
 const port = Number(process.env.PORT || 8081);
 
@@ -11,7 +13,6 @@ function makeTRPCSuccess(result: unknown) {
 }
 
 function makeTRPCError(err: any) {
-  // Minimal tRPC error envelope - include message and code if available.
   return JSON.stringify({
     error: {
       json: {
@@ -38,36 +39,54 @@ const server = http.createServer(async (req, res) => {
         const procPath = urlObj.pathname.replace("/api/trpc/", ""); // e.g. "data.getBrand"
         console.log("[backend] Direct tRPC call for:", procPath);
 
-        // tRPC client encodes input as the 'input' query param JSON (often { json: <actual> })
+        // Read input from query param "input" (tRPC client encodes input as JSON)
         const inputRaw = urlObj.searchParams.get("input");
         let parsedInput: any = undefined;
         if (inputRaw) {
           try {
             parsedInput = JSON.parse(inputRaw);
-            // If the client wrapped the real input in { json: ... }, unwrap it
             if (parsedInput && typeof parsedInput === "object" && "json" in parsedInput) {
               parsedInput = parsedInput.json;
             }
           } catch (e) {
-            // Malformed input JSON
             parsedInput = undefined;
           }
         }
 
-        // create context (some createContext implementations accept args; call without args)
+        // --- Special-case: data.getBrand single-brand fast path via Apps Script helper ---
+        if (procPath === "data.getBrand") {
+          const brandId = parsedInput?.id ?? (parsedInput?.json && parsedInput.json.id) ?? null;
+          if (brandId) {
+            try {
+              // Try to use the Apps Script single-brand helper (server-side)
+              const brand = await (fetchBrandFromAppsScript as any)(String(brandId));
+              // If brand is null/undefined, fall through to normal caller (so errors remain consistent)
+              if (brand) {
+                res.statusCode = 200;
+                res.setHeader("Content-Type", "application/json");
+                res.setHeader("access-control-allow-origin", "*");
+                res.end(makeTRPCSuccess(brand));
+                return;
+              }
+            } catch (err) {
+              console.warn("[backend] fetchBrandFromAppsScript failed or missing, falling back to trpc caller:", err?.message ?? err);
+              // fall through to call the trpc procedure (will fetch via legacy logic)
+            }
+          }
+        }
+        // ----------------- end special-case ------------------
+
+        // create context (use your project's createContext)
         let ctx: any = {};
         try {
-          // If createContext returns a Promise, await it.
           const maybeCtx = (createContext as any)();
           ctx = maybeCtx instanceof Promise ? await maybeCtx : maybeCtx;
         } catch (e) {
-          // Fallback to empty ctx
           ctx = {};
         }
 
         const caller = appRouter.createCaller(ctx ?? {});
-        // Resolve procedure path dynamically: e.g. "data.getBrand"
-        const parts = procPath.split(".");
+        const parts = procPath.split("."); // e.g. ["data","getBrand"]
         let fn: any = caller as any;
         for (const p of parts) {
           fn = fn?.[p];
@@ -75,19 +94,16 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (typeof fn !== "function") {
-          // Procedure not found
           res.statusCode = 404;
           res.setHeader("Content-Type", "application/json");
-          res.end(makeTRPCError({ message: `No procedure found on path "${procPath}"`, code: "NOT_FOUND" }));
+          res.setHeader("access-control-allow-origin", "*");
+          res.end(makeTRPCError({ message: `No procedure found on path \"${procPath}\"`, code: "NOT_FOUND" }));
           return;
         }
 
-        // Call the procedure with parsedInput (or undefined)
         const result = await fn(parsedInput);
-
         res.statusCode = 200;
         res.setHeader("Content-Type", "application/json");
-        // Minimal CORS header used previously by Hono
         res.setHeader("access-control-allow-origin", "*");
         res.end(makeTRPCSuccess(result));
         return;
@@ -95,23 +111,13 @@ const server = http.createServer(async (req, res) => {
         console.error("[backend] Direct tRPC handler error:", err);
         res.statusCode = 500;
         res.setHeader("Content-Type", "application/json");
+        res.setHeader("access-control-allow-origin", "*");
         res.end(makeTRPCError(err));
         return;
       }
     }
-if (urlObj.pathname === "/api/product" && urlObj.searchParams.has("id")) {
-  const id = urlObj.searchParams.get("id");
 
-  const caller = appRouter.createCaller(await createContext());
-  const result = await caller.data.getBrand({ id });
-
-  res.statusCode = 200;
-  res.setHeader("Content-Type", "application/json");
-  res.setHeader("access-control-allow-origin", "*");
-  res.end(JSON.stringify(result));
-  return;
-}
-    // Fallback: forward to Hono app
+    // Fallback: forward to Hono app for other routes
     const request = new Request(fullUrl, {
       method: req.method,
       headers: req.headers as any,
@@ -119,7 +125,6 @@ if (urlObj.pathname === "/api/product" && urlObj.searchParams.has("id")) {
     });
 
     const response = await (app as any).fetch(request);
-
     res.writeHead(response.status, Object.fromEntries(response.headers.entries()));
     const buffer = Buffer.from(await response.arrayBuffer());
     res.end(buffer);
@@ -133,4 +138,3 @@ if (urlObj.pathname === "/api/product" && urlObj.searchParams.has("id")) {
 server.listen(port, () => {
   console.log(`Backend listening at http://localhost:${port}`);
 });
-

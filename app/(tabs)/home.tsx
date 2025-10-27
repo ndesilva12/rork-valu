@@ -207,10 +207,8 @@ export default function HomeScreen() {
     return categorized;
   }, [allSupport]);
 
-  const handleProductPress = async (product: Product) => {
-    const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/product?id=${product.id}`);
-    const data = await res.json();
-    console.log("Brand data:", data);
+  const handleProductPress = (product: Product) => {
+    router.push(`/product/${product.id}`);
   };
 
 
