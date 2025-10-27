@@ -1,0 +1,65 @@
+import { Redirect } from 'expo-router';
+import { useUser } from '@/contexts/UserContext';
+import { useAuth } from '@clerk/clerk-expo';
+import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { lightColors, darkColors } from '@/constants/colors';
+import { useEffect } from 'react';
+
+export default function Index() {
+  const { hasCompletedOnboarding, isLoading: userLoading, isDarkMode, isNewUser, profile } = useUser();
+  const { isSignedIn, isLoaded } = useAuth();
+  const colors = isDarkMode ? darkColors : lightColors;
+
+  useEffect(() => {
+    console.log('[Index] Render state:', {
+      isLoaded,
+      userLoading,
+      isSignedIn,
+      hasCompletedOnboarding,
+      isNewUser,
+      valueCount: profile.values.length,
+    });
+  }, [isLoaded, userLoading, isSignedIn, hasCompletedOnboarding, isNewUser, profile.values.length]);
+
+  useEffect(() => {
+    if (isSignedIn && !userLoading && profile.values.length > 0 && !hasCompletedOnboarding) {
+      console.log('[Index] Detected mismatch: has values but hasCompletedOnboarding is false');
+    }
+  }, [isSignedIn, userLoading, profile.values.length, hasCompletedOnboarding]);
+
+  if (!isLoaded || userLoading) {
+    console.log('[Index] Showing loading state');
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.text, marginTop: 16 }}>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (!isSignedIn) {
+    console.log('[Index] Redirecting to sign-in');
+    return <Redirect href="/(auth)/sign-in" />;
+  }
+
+  if (hasCompletedOnboarding) {
+    console.log('[Index] User has completed onboarding, redirecting to home');
+    return <Redirect href="/(tabs)/home" />;
+  }
+
+  if (isNewUser === true) {
+    console.log('[Index] New user without onboarding, redirecting to onboarding');
+    return <Redirect href="/onboarding" />;
+  }
+
+  console.log('[Index] Existing user without values, redirecting to home');
+  return <Redirect href="/(tabs)/home" />;
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
