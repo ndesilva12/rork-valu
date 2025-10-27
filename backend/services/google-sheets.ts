@@ -120,30 +120,37 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
     }
 
     try {
-      // Fetch both brands data and value-brand matrix
-      const [brandsResponse, valueBrandMatrix] = await Promise.all([
-        sheets.spreadsheets.values.get({
-          spreadsheetId,
-          range: `${sheetName}!A2:P`, // Skip header row, columns A-P (id, name, category, imageUrl, description, website, affiliate1-5, $affiliate1-5)
-        }),
-        fetchValueBrandMatrix(),
-      ]);
+      // Fetch brands data
+      const brandsResponse = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `${sheetName}!A2:P`,
+      });
 
       const rows = brandsResponse.data.values || [];
       console.log(`[Sheets] Fetched ${rows.length} brands from Google Sheets`);
 
-      // Build valueAlignments map from matrix
-      const valueAlignmentsMap = buildAllValueAlignments(valueBrandMatrix);
+      // Try to fetch value-brand matrix, but make it optional
+      let valueAlignmentsMap = new Map<string, any[]>();
+      try {
+        const valueBrandMatrix = await fetchValueBrandMatrix();
+        valueAlignmentsMap = buildAllValueAlignments(valueBrandMatrix);
+        console.log(`[Sheets] Successfully loaded value alignments from matrix`);
+      } catch (matrixError: any) {
+        console.warn(`[Sheets] Could not load value-brand matrix (this is optional): ${matrixError.message}`);
+        console.warn(`[Sheets] Continuing without value alignments...`);
+      }
 
-      const brands: Brand[] = rows
+       const brands: Brand[] = rows
         .filter((row) => row[0] && row[1]) // Must have id and name
         .map((row) => {
           const brandId = String(row[0] || '').trim();
           const brandName = String(row[1] || '').trim(); // Brand name (e.g., "Apple", "Nike")
 
+          console.log(`[Sheets] Processing brand: ${brandId} (${brandName})`);
+
           // Parse affiliate data from columns G-P (indices 6-15)
           // affiliate1 (6), $affiliate1 (7), affiliate2 (8), $affiliate2 (9), etc.
-          const affiliates: Array<{ name: string; amount?: string }> = [];
+          const affiliates: Array<{ name: string; commitment?: string }> = [];
           for (let i = 0; i < 5; i++) {
             const nameIndex = 6 + (i * 2);
             const amountIndex = 7 + (i * 2);
@@ -151,26 +158,28 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
             const rawAmount = row[amountIndex];
 
             const affiliateName = typeof rawName === 'string' ? rawName.trim() : rawName != null ? String(rawName).trim() : '';
-            const affiliateAmount = typeof rawAmount === 'string' ? rawAmount.trim() : rawAmount != null ? String(rawAmount).trim() : '';
+            const affiliateCommitment = typeof rawAmount === 'string' ? rawAmount.trim() : rawAmount != null ? String(rawAmount).trim() : '';
 
-            // Include pair if either name or amount exists (allows partial rows)
-            if (affiliateName || affiliateAmount) {
+            // Include pair if either name or commitment exists (allows partial rows)
+            if (affiliateName || affiliateCommitment) {
               affiliates.push({
                 name: affiliateName,
-                amount: affiliateAmount || undefined,
+                commitment: affiliateCommitment || undefined,
               });
             }
           }
 
+          console.log(`[Sheets]   - Found ${affiliates.length} affiliates for ${brandId}`);
+
           // Also attempt to parse legacy shareholders JSON (column M, index 12)
           const parsedShareholders = parseJsonField(row[12], []);
 
-          // For backward compatibility, if parsedShareholders is non-empty, prefer it for 'shareholders',
+           // For backward compatibility, if parsedShareholders is non-empty, prefer it for 'shareholders',
           // otherwise use affiliates as the 'shareholders' field so other parts of the app expecting shareholders keep working.
           const shareholders = Array.isArray(parsedShareholders) && parsedShareholders.length > 0 ? parsedShareholders : affiliates.map(a => ({
             name: a.name,
             // If $ value looks like a percentage or numeric, leave raw string as-is; further parsing can be added if needed
-            percentage: a.amount ? (isNaN(Number(a.amount)) ? a.amount : Number(a.amount)) : 0,
+            percentage: a.commitment ? (isNaN(Number(a.commitment)) ? a.commitment : Number(a.commitment)) : 0,
             alignment: 'neutral',
             causes: [],
           }));

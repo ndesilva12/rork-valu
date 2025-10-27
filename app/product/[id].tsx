@@ -1,5 +1,10 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, ThumbsUp } from 'lucide-react-native';
+
+Next Changes
+Change 2: Add ActivityIndicator to imports
+Find this line (around line 3-15):
+
 import {
   View,
   Text,
@@ -13,9 +18,24 @@ import {
   FlatList,
   Modal,
 } from 'react-native';
+Add ActivityIndicator, after Modal,:
+
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  PanResponder,
+  Linking,
+  Platform,
+  TextInput,
+  FlatList,
+  Modal,
+  ActivityIndicator,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
-import { MOCK_PRODUCTS } from '@/mocks/products';
 import { trpc } from '@/lib/trpc';
 import { useUser } from '@/contexts/UserContext';
 import { useRef, useMemo, useState, useCallback } from 'react';
@@ -25,7 +45,12 @@ export default function ProductDetailScreen() {
   const router = useRouter();
   const { profile, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
-  const product = MOCK_PRODUCTS.find(p => p.id === id);
+
+  // Fetch brand data from Google Sheets via tRPC
+  const { data: product, isLoading, error } = trpc.data.getBrand.useQuery(
+    { id: id || '' },
+    { enabled: !!id }
+  );
   const scrollViewRef = useRef<ScrollView>(null);
 
   interface Review {
@@ -187,13 +212,34 @@ export default function ProductDetailScreen() {
   const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;
   const alignmentLabel = alignmentData.isAligned ? 'Aligned' : 'Not Aligned';
 
-  if (!product) {
+  // Loading state
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.errorContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.errorText, { color: colors.text }]}>Loading brand details...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Error or not found state
+  if (error || !product) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.errorContainer}>
           <AlertCircle size={48} color={colors.danger} />
-          <Text style={[styles.errorText, { color: colors.text }]}>Product not found</Text>
+          <Text style={[styles.errorText, { color: colors.text }]}>
+            {error ? 'Error loading brand' : 'Brand not found'}
+          </Text>
+          {error && (
+            <Text style={[styles.errorSubtext, { color: colors.textSecondary }]}>
+              {error.message || 'Please check your connection and try again'}
+            </Text>
+          )}
         </View>
       </View>
     );
@@ -355,11 +401,13 @@ export default function ProductDetailScreen() {
             >
               <Text style={[styles.socialButtonText, { color: colors.text }]}>Facebook</Text>
             </TouchableOpacity>
-          </View>
+           </View>
 
-          <Text style={[styles.brandDescription, { color: colors.textSecondary }]}>
-            A leading innovator in sustainable products, committed to reducing environmental impact through innovative design and ethical manufacturing practices.
-          </Text>
+          {product.description && (
+            <Text style={[styles.brandDescription, { color: colors.textSecondary }]}>
+              {product.description}
+            </Text>
+          )}
 
           <View style={[styles.alignmentCard, { backgroundColor: alignmentColor + '15' }]}>
             <Text style={[styles.alignmentLabel, { color: alignmentColor }]}>
@@ -777,6 +825,7 @@ const styles = StyleSheet.create({
   reviewLikeButton: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   reviewLikes: { marginLeft: 6 },
 
-  errorContainer: { alignItems: 'center', padding: 40 },
-  errorText: { color: '#ef4444' },
+   errorContainer: { alignItems: 'center', padding: 40 },
+  errorText: { fontSize: 18, fontWeight: '600', marginTop: 16 },
+  errorSubtext: { fontSize: 14, marginTop: 8, textAlign: 'center', paddingHorizontal: 20 },
 });
