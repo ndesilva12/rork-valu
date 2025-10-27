@@ -49,7 +49,7 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
+      "output": "server",
       "favicon": "./assets/images/favicon.png",
       "name": "Valu App",
       "shortName": "Valu",
