@@ -30,6 +30,11 @@ export interface MoneyFlow {
   overallAlignment: number;
 }
 
+export interface Affiliate {
+  name: string;
+  relationship: string;
+}
+
 export interface ValueAlignment {
   valueId: string;
   position: number;
@@ -50,6 +55,7 @@ export interface Brand {
   valueAlignments: ValueAlignment[];
   alternatives?: Brand[];
   website?: string;
+  affiliates?: Affiliate[]; // Celebrity/influencer affiliates and their relationships
 }
 
 // For backwards compatibility during transition

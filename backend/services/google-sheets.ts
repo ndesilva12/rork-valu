@@ -122,7 +122,7 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
     try {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${sheetName}!A2:N`, // Skip header row, columns A-N
+        range: `${sheetName}!A2:P`, // Skip header row, columns A-P (id through $affiliate5)
       });
 
       const rows = response.data.values || [];
@@ -131,27 +131,47 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
       const brands: Brand[] = rows
         .filter((row) => row[0] && row[1]) // Must have id and name
         .map((row) => {
-          const shareholders = parseJsonField(row[12], []);
           const brandName = row[1]; // Brand name (e.g., "Apple", "Nike")
-          const moneyFlow = {
-            company: row[11] || brandName, // Use moneyFlowCompany or brand name
-            shareholders,
-            overallAlignment: parseFloat(row[7]) || 0,
-          };
+
+          // Parse affiliates from columns G-P (indices 6-15)
+          // affiliate1: row[6], $affiliate1: row[7]
+          // affiliate2: row[8], $affiliate2: row[9]
+          // affiliate3: row[10], $affiliate3: row[11]
+          // affiliate4: row[12], $affiliate4: row[13]
+          // affiliate5: row[14], $affiliate5: row[15]
+          const affiliates = [];
+          for (let i = 0; i < 5; i++) {
+            const affiliateIndex = 6 + (i * 2);
+            const relationshipIndex = 7 + (i * 2);
+            const affiliateName = row[affiliateIndex];
+            const relationship = row[relationshipIndex];
+
+            if (affiliateName && affiliateName.trim()) {
+              affiliates.push({
+                name: affiliateName,
+                relationship: relationship || 'Unknown',
+              });
+            }
+          }
 
           return {
             id: row[0],
             name: brandName,
-            category: row[3] || 'Uncategorized',
-            imageUrl: row[4] || '', // Brand logo
-            exampleImageUrl: row[5] || row[4] || '', // Example product image
-            description: row[6] || '', // Brand description
-            alignmentScore: parseFloat(row[7]) || 0,
-            keyReasons: parseJsonField(row[8], []),
-            relatedValues: parseJsonField(row[9], []),
-            website: row[10] || undefined,
-            moneyFlow,
-            valueAlignments: parseJsonField(row[13], []),
+            category: row[2] || 'Uncategorized',
+            imageUrl: row[3] || '', // Brand logo
+            description: row[4] || '', // Brand description
+            website: row[5] || undefined,
+            affiliates,
+            // Default values for backward compatibility
+            alignmentScore: 0,
+            keyReasons: [],
+            relatedValues: [],
+            valueAlignments: [],
+            moneyFlow: {
+              company: brandName,
+              shareholders: [],
+              overallAlignment: 0,
+            },
           };
         });
 

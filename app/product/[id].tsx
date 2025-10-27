@@ -13,18 +13,23 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
-import { MOCK_PRODUCTS } from '@/mocks/products';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { useUser } from '@/contexts/UserContext';
 import { useRef, useMemo, useState, useCallback } from 'react';
+import { trpc } from '@/lib/trpc';
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { profile, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
-  const product = MOCK_PRODUCTS.find(p => p.id === id);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Fetch brand data from tRPC
+  const { data: product, isLoading, error } = trpc.data.getBrand.useQuery(
+    { id: id as string },
+    { enabled: !!id }
+  );
 
   interface Review {
     id: string;
@@ -176,6 +181,34 @@ export default function ProductDetailScreen() {
   const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;
   const alignmentLabel = alignmentData.isAligned ? 'Aligned' : 'Not Aligned';
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.errorContainer}>
+          <Text style={[styles.errorText, { color: colors.text }]}>Loading brand...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.errorContainer}>
+          <AlertCircle size={48} color={colors.danger} />
+          <Text style={[styles.errorText, { color: colors.text }]}>Error loading brand</Text>
+          <Text style={[styles.errorSubtext, { color: colors.textSecondary }]}>
+            {error.message || 'Please try again later'}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   if (!product) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -190,7 +223,7 @@ export default function ProductDetailScreen() {
 
   const handleShopPress = async () => {
     try {
-      const websiteUrl = product.website || `https://${product.brand.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '')}.com`;
+      const websiteUrl = product.website || `https://${product.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '')}.com`;
       const canOpen = await Linking.canOpenURL(websiteUrl);
       if (canOpen) {
         await Linking.openURL(websiteUrl);
@@ -243,7 +276,7 @@ export default function ProductDetailScreen() {
 
   const handleSocialPress = async (platform: 'x' | 'instagram' | 'facebook') => {
     try {
-      const brandSlug = product.brand.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '');
+      const brandSlug = product.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '');
       let url = '';
       
       switch (platform) {
@@ -388,68 +421,36 @@ export default function ProductDetailScreen() {
 
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Money Flow</Text>
-            
+
             <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
               <View style={[styles.companyHeader, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.companyName, { color: colors.text }]}>{product.moneyFlow.company}</Text>
+                <Text style={[styles.companyName, { color: colors.text }]}>{product.name}</Text>
               </View>
-              
-              <View style={styles.shareholdersContainer}>
-                <Text style={[styles.shareholdersTitle, { color: colors.textSecondary }]}>Top Stakeholders</Text>
-                {[
-                  { name: 'Vanguard Group', percentage: 8.2, alignment: 'aligned' as const },
-                  { name: 'BlackRock', percentage: 7.5, alignment: 'neutral' as const },
-                  { name: 'State Street Corporation', percentage: 4.8, alignment: 'aligned' as const },
-                  { name: 'Fidelity Investments', percentage: 3.9, alignment: 'neutral' as const },
-                  { name: 'Capital Research', percentage: 2.6, alignment: 'opposed' as const },
-                ].map((stakeholder, index) => {
-                  const shColor =
-                    stakeholder.alignment === 'aligned'
-                      ? colors.success
-                      : stakeholder.alignment === 'opposed'
-                      ? colors.danger
-                      : colors.neutral;
 
-                  return (
-                    <View key={`stakeholder-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
-                      <View style={styles.shareholderInfo}>
-                        <Text style={[styles.shareholderName, { color: colors.text }]}>{stakeholder.name}</Text>
-                        <Text style={[styles.shareholderPercentage, { color: colors.textSecondary }]}>
-                          {stakeholder.percentage}% stake
+              {product.affiliates && product.affiliates.length > 0 ? (
+                <View style={styles.shareholdersContainer}>
+                  <View style={styles.tableHeader}>
+                    <Text style={[styles.tableHeaderText, { color: colors.textSecondary }]}>Affiliate</Text>
+                    <Text style={[styles.tableHeaderText, { color: colors.textSecondary }]}>Relationship</Text>
+                  </View>
+                  {product.affiliates.map((affiliate, index) => (
+                    <View key={`affiliate-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
+                      <View style={styles.tableRow}>
+                        <Text style={[styles.affiliateName, { color: colors.text }]}>{affiliate.name}</Text>
+                        <Text style={[styles.affiliateRelationship, { color: colors.textSecondary }]}>
+                          {affiliate.relationship}
                         </Text>
                       </View>
-                      <View style={[styles.alignmentDot, { backgroundColor: shColor }]} />
                     </View>
-                  );
-                })}
-              </View>
-
-              <View style={[styles.shareholdersContainer, { marginTop: 24 }]}>
-                <Text style={[styles.shareholdersTitle, { color: colors.textSecondary }]}>Endorsements</Text>
-                {[
-                  { name: 'Sierra Club', type: 'Environmental Organization', alignment: 'aligned' as const },
-                  { name: 'Fair Trade USA', type: 'Certification Body', alignment: 'aligned' as const },
-                  { name: 'B Corporation', type: 'Business Certification', alignment: 'aligned' as const },
-                  { name: 'Green America', type: 'Environmental Nonprofit', alignment: 'aligned' as const },
-                  { name: 'EcoWatch', type: 'Media & Watchdog', alignment: 'neutral' as const },
-                ].map((endorsement, index) => {
-                  const shColor = endorsement.alignment === 'aligned'
-                      ? colors.success
-                      : colors.neutral;
-
-                  return (
-                    <View key={`endorsement-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
-                      <View style={styles.shareholderInfo}>
-                        <Text style={[styles.shareholderName, { color: colors.text }]}>{endorsement.name}</Text>
-                        <Text style={[styles.shareholderPercentage, { color: colors.textSecondary }]}>
-                          {endorsement.type}
-                        </Text>
-                      </View>
-                      <View style={[styles.alignmentDot, { backgroundColor: shColor }]} />
-                    </View>
-                  );
-                })}
-              </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.shareholdersContainer}>
+                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
+                    No affiliate information available
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 
@@ -753,6 +754,39 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
   },
+  tableHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  tableHeaderText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    flex: 1,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flex: 1,
+  },
+  affiliateName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    flex: 1,
+  },
+  affiliateRelationship: {
+    fontSize: 13,
+    flex: 1,
+    textAlign: 'right' as const,
+  },
+  noDataText: {
+    fontSize: 14,
+    textAlign: 'center' as const,
+    paddingVertical: 24,
+  },
   valueTagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -777,6 +811,11 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 18,
     fontWeight: '600' as const,
+  },
+  errorSubtext: {
+    fontSize: 14,
+    textAlign: 'center' as const,
+    marginTop: 8,
   },
   reviewsHeader: {
     flexDirection: 'row',
