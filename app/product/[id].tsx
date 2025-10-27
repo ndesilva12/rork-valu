@@ -1,10 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, ThumbsUp } from 'lucide-react-native';
-
-Next Changes
-Change 2: Add ActivityIndicator to imports
-Find this line (around line 3-15):
-
 import {
   View,
   Text,
