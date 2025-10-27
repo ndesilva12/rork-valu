@@ -16,7 +16,6 @@ import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
-import { MOCK_PRODUCTS } from '@/mocks/products';
 import { Product } from '@/types';
 import { useMemo, useState, useRef } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
@@ -75,20 +74,20 @@ export default function HomeScreen() {
     })
   ).current;
 
-  // Fetch brands from Google Sheets
+  // Fetch brands from Google Sheets with scores
   const { data: brandsData } = trpc.data.getScoredBrands.useQuery({
     userValues: profile.values,
     filter: 'all'
   });
 
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
-    if (!brandsData) return { 
-      topSupport: [], 
-      topAvoid: [], 
-      allSupport: [], 
-      allSupportFull: [], 
-      allAvoidFull: [], 
-      scoredBrands: new Map() 
+    if (!brandsData) return {
+      topSupport: [],
+      topAvoid: [],
+      allSupport: [],
+      allSupportFull: [],
+      allAvoidFull: [],
+      scoredBrands: new Map()
     };
 
     const scored = brandsData.scoredBrands.map(brand => ({
@@ -110,17 +109,16 @@ export default function HomeScreen() {
 
     const scoredMap = new Map(scored.map(s => [s.product.id, s.alignmentStrength]));
 
-    return { 
-      topSupport: allSupportSorted.slice(0, 10).map(s => s.product), 
+    return {
+      topSupport: allSupportSorted.slice(0, 10).map(s => s.product),
       topAvoid: allAvoidSorted.slice(0, 10).map(s => s.product),
       allSupport: allSupportSorted.map(s => s.product),
       allSupportFull: allSupportSorted.map(s => s.product),
       allAvoidFull: allAvoidSorted.map(s => s.product),
       scoredBrands: scoredMap
     };
-  }, [brandsData]);
-  }, [profile.values]);
 
+  }, [brandsData]);
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
     
@@ -175,7 +173,6 @@ export default function HomeScreen() {
   const handleProductPress = (product: Product) => {
     router.push(`/product/${product.id}`);
   };
-
 
 
 
