@@ -1,25 +1,17 @@
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
-import { appRouter } from '../../backend/trpc/app-router';
-import { createContext } from '../../backend/trpc/create-context';
+import { appRouter } from './router';  // Your existing router.ts
+import { createTRPCContext } from '../../../lib/trpc';  // Adjust path if needed
 
-export const config = {
-  runtime: 'nodejs',
-  maxDuration: 60,
-};
-
-export default async function handler(req: Request) {
-  return fetchRequestHandler({
+const handler = (req: Request) =>
+  fetchRequestHandler({
     endpoint: '/api/trpc',
     req,
     router: appRouter,
-    createContext,
-    onError:
-      process.env.NODE_ENV === 'development'
-        ? ({ path, error }) => {
-            console.error(
-              ``❌ tRPC failed on `${path ?? '<no-path>'}: `${error.message}``
-            );
-          }
-        : undefined,
+    createContext: () => createTRPCContext({ req }),
+    onError: ({ error }) => {
+      console.error('TRPC Error:', error);
+      return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    },
   });
-}
+
+export { handler as GET, handler as POST };
