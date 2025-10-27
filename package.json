@@ -14,6 +14,7 @@
     "@ai-sdk/react": "^2.0.76",
     "@clerk/backend": "^2.18.3",
     "@clerk/clerk-expo": "^2.17.0",
+    "@expo/server": "^0.7.5",
     "@expo/vector-icons": "^14.1.0",
     "@hono/trpc-server": "^0.4.0",
     "@nkzw/create-context-hook": "^1.1.0",
