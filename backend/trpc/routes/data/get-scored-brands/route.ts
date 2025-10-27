@@ -39,7 +39,13 @@ export const getScoredBrandsProcedure = publicProcedure
   try {
     const matrix = await fetchValueBrandMatrix();
     const valueAlignmentsMap = buildAllValueAlignments(matrix);
-
+    // DEBUG: Log what we got
+   console.log(`[getScoredBrands] Matrix has ${matrix.length} values`);
+   console.log(`[getScoredBrands] valueAlignmentsMap has ${valueAlignmentsMap.size} brand IDs`);
+   console.log(`[getScoredBrands] Brands array has ${brands.length} brands`);
+   console.log(`[getScoredBrands] First 5 brands from Brands sheet:`, brands.slice(0, 5).map(b => b.id));
+   console.log(`[getScoredBrands] First 5 brand IDs from Values matrix:`, Array.from(valueAlignmentsMap.keys()).slice(0, 5));
+    
     // Add valueAlignments to each brand
     brandsWithAlignments = brands.map(brand => ({
       ...brand,
