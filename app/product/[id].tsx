@@ -120,16 +120,15 @@ export default function ProductDetailScreen() {
     })
   ).current;
 
-  const supportedCauses = useMemo(
-    () => profile.causes.filter(c => c.type === 'support').map(c => c.id),
-    [profile.causes]
-  );
-  const avoidedCauses = useMemo(
-    () => profile.causes.filter(c => c.type === 'avoid').map(c => c.id),
+  // Create stable keys for dependencies to prevent infinite re-renders
+  const causesKey = useMemo(
+    () => profile.causes.map(c => `${c.id}:${c.type}`).sort().join(','),
     [profile.causes]
   );
 
   const alignmentData = useMemo(() => {
+    console.log('[ProductDetail] alignmentData useMemo recalculating');
+
     if (!product || !valuesMatrix) {
       return {
         isAligned: false,
@@ -141,6 +140,13 @@ export default function ProductDetailScreen() {
       };
     }
 
+    // Calculate causes inside useMemo using stable profile reference
+    const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
+    const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
+    const allUserCauses = [...supportedCauses, ...avoidedCauses];
+
+    console.log('[ProductDetail] Calculating alignment for', product.name, 'with causes:', allUserCauses);
+
     const brandName = product.name;
     let totalSupportScore = 0;
     let totalAvoidScore = 0;
@@ -149,9 +155,6 @@ export default function ProductDetailScreen() {
     // Collect positions for this brand across all user's selected values
     const alignedPositions: number[] = [];
     const unalignedPositions: number[] = [];
-
-    // Calculate all user causes inside useMemo to avoid unstable dependencies
-    const allUserCauses = [...supportedCauses, ...avoidedCauses];
 
     // Check each user cause to find the brand's position
     allUserCauses.forEach((causeId) => {
@@ -225,7 +228,7 @@ export default function ProductDetailScreen() {
       totalAvoidScore,
       alignmentStrength
     };
-  }, [product, valuesMatrix, supportedCauses, avoidedCauses]);
+  }, [product, valuesMatrix, causesKey, profile]);
 
   const alignmentColor = alignmentData.isAligned ? colors.success : colors.danger;
   const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;
