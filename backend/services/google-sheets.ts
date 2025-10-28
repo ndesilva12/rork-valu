@@ -111,15 +111,28 @@ function parseJsonField(value: string | undefined, defaultValue: any = []): any 
 // Fetch brands from Google Sheets
 export async function fetchBrandsFromSheets(): Promise<Brand[]> {
   return getCachedOrFetch('brands', async () => {
-    const sheets = getGoogleSheetsClient();
+    console.log('[Sheets] Starting fetchBrandsFromSheets');
+
     const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
     const sheetName = process.env.SHEET_NAME_BRANDS || 'Brands';
+
+    console.log('[Sheets] Config:', {
+      spreadsheetId: spreadsheetId ? `${spreadsheetId.substring(0, 10)}...` : 'NOT SET',
+      sheetName,
+      hasApiKey: !!process.env.GOOGLE_SHEETS_API_KEY,
+      hasServiceAccountFile: !!process.env.GOOGLE_SERVICE_ACCOUNT_FILE,
+      hasServiceAccountJson: !!process.env.GOOGLE_SERVICE_ACCOUNT_JSON,
+    });
 
     if (!spreadsheetId) {
       throw new Error('GOOGLE_SPREADSHEET_ID not set in environment variables');
     }
 
     try {
+      console.log('[Sheets] Initializing Google Sheets client');
+      const sheets = getGoogleSheetsClient();
+
+      console.log('[Sheets] Fetching data from range:', `${sheetName}!A2:P`);
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId,
         range: `${sheetName}!A2:P`, // Skip header row, columns A-P (id through $affiliate5)
@@ -175,9 +188,16 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
           };
         });
 
+      console.log('[Sheets] Successfully parsed brands:', brands.length);
       return brands;
     } catch (error: any) {
-      console.error('[Sheets] Error fetching brands:', error.message);
+      console.error('[Sheets] Error fetching brands:', {
+        message: error.message,
+        code: error.code,
+        status: error.status,
+        errors: error.errors,
+        stack: error.stack,
+      });
       throw new Error(`Failed to fetch brands from Google Sheets: ${error.message}`);
     }
   });
