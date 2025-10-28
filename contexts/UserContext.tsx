@@ -2,17 +2,26 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
-import { Cause, UserProfile } from '@/types';
+import { Cause, UserProfile, Charity } from '@/types';
 
 const DARK_MODE_KEY = '@dark_mode';
 const PROFILE_KEY = '@user_profile';
 const IS_NEW_USER_KEY = '@is_new_user';
+
+// Generate a random 6-digit promo code
+const generatePromoCode = (): string => {
+  const digits = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+  return `VALU${digits}`;
+};
 
 export const [UserProvider, useUser] = createContextHook(() => {
   const { user: clerkUser, isLoaded: isClerkLoaded } = useClerkUser();
   const [profile, setProfile] = useState<UserProfile>({
     causes: [],
     searchHistory: [],
+    promoCode: undefined,
+    donationAmount: 0,
+    selectedCharities: [],
   });
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -45,11 +54,28 @@ export const [UserProvider, useUser] = createContextHook(() => {
         if (storedProfile && mounted) {
           const parsedProfile = JSON.parse(storedProfile) as UserProfile;
           console.log('[UserContext] Loaded profile from AsyncStorage with', parsedProfile.causes.length, 'causes');
+
+          // Generate promo code if it doesn't exist
+          if (!parsedProfile.promoCode) {
+            parsedProfile.promoCode = generatePromoCode();
+            parsedProfile.donationAmount = parsedProfile.donationAmount ?? 0;
+            parsedProfile.selectedCharities = parsedProfile.selectedCharities ?? [];
+            await AsyncStorage.setItem(storageKey, JSON.stringify(parsedProfile));
+            console.log('[UserContext] Generated new promo code:', parsedProfile.promoCode);
+          }
+
           setProfile(parsedProfile);
           setHasCompletedOnboarding(parsedProfile.causes.length > 0);
         } else if (mounted) {
-          console.log('[UserContext] No stored profile found, using empty profile');
-          setProfile({ causes: [], searchHistory: [] });
+          console.log('[UserContext] No stored profile found, creating new profile with promo code');
+          const newProfile: UserProfile = {
+            causes: [],
+            searchHistory: [],
+            promoCode: generatePromoCode(),
+            donationAmount: 0,
+            selectedCharities: [],
+          };
+          setProfile(newProfile);
           setHasCompletedOnboarding(false);
         }
         
@@ -66,7 +92,13 @@ export const [UserProvider, useUser] = createContextHook(() => {
       } catch (error) {
         console.error('[UserContext] Failed to load profile:', error);
         if (mounted) {
-          setProfile({ causes: [], searchHistory: [] });
+          setProfile({
+            causes: [],
+            searchHistory: [],
+            promoCode: generatePromoCode(),
+            donationAmount: 0,
+            selectedCharities: [],
+          });
           setHasCompletedOnboarding(false);
           setIsNewUser(false);
         }
@@ -148,13 +180,39 @@ export const [UserProvider, useUser] = createContextHook(() => {
     }
   }, [profile, clerkUser]);
 
+  const updateSelectedCharities = useCallback(async (charities: Charity[]) => {
+    if (!clerkUser) {
+      console.error('[UserContext] Cannot update charities: User not logged in');
+      return;
+    }
+
+    const newProfile = { ...profile, selectedCharities: charities };
+    console.log('[UserContext] Updating selected charities:', charities.length);
+
+    setProfile(newProfile);
+
+    try {
+      const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
+      await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
+      console.log('[UserContext] Selected charities saved successfully');
+    } catch (error) {
+      console.error('[UserContext] Failed to save selected charities:', error);
+    }
+  }, [clerkUser, profile]);
+
   const resetProfile = useCallback(async () => {
     if (!clerkUser) {
       console.error('Cannot reset profile: User not logged in');
       return;
     }
     try {
-      const emptyProfile = { causes: [], searchHistory: [] };
+      const emptyProfile: UserProfile = {
+        causes: [],
+        searchHistory: [],
+        promoCode: profile.promoCode || generatePromoCode(),
+        donationAmount: 0,
+        selectedCharities: [],
+      };
       setProfile(emptyProfile);
       setHasCompletedOnboarding(false);
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
@@ -163,13 +221,19 @@ export const [UserProvider, useUser] = createContextHook(() => {
     } catch (error) {
       console.error('Failed to reset profile:', error);
     }
-  }, [clerkUser]);
+  }, [clerkUser, profile.promoCode]);
 
   const clearAllStoredData = useCallback(async () => {
     try {
       console.log('[UserContext] Clearing ALL AsyncStorage data');
       await AsyncStorage.clear();
-      setProfile({ causes: [], searchHistory: [] });
+      setProfile({
+        causes: [],
+        searchHistory: [],
+        promoCode: generatePromoCode(),
+        donationAmount: 0,
+        selectedCharities: [],
+      });
       setHasCompletedOnboarding(false);
       setIsDarkMode(true);
       console.log('[UserContext] All data cleared successfully');
@@ -195,10 +259,11 @@ export const [UserProvider, useUser] = createContextHook(() => {
     isNewUser,
     addCauses,
     addToSearchHistory,
+    updateSelectedCharities,
     resetProfile,
     clearAllStoredData,
     isDarkMode,
     toggleDarkMode,
     clerkUser,
-  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, addToSearchHistory, resetProfile, clearAllStoredData, isDarkMode, toggleDarkMode, clerkUser]);
+  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, toggleDarkMode, clerkUser]);
 });

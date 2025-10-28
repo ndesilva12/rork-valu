@@ -62,7 +62,17 @@ export interface Brand {
 // TODO: Remove this once all code is migrated
 export type Product = Brand;
 
+export interface Charity {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+}
+
 export interface UserProfile {
   causes: Cause[];
   searchHistory: string[];
+  promoCode?: string;
+  donationAmount?: number;
+  selectedCharities?: Charity[];
 }
