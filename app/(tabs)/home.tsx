@@ -131,6 +131,7 @@ export default function HomeScreen() {
     const scored = brands.map((product) => {
       let totalSupportScore = 0;
       let totalAvoidScore = 0;
+      let matchingValuesCount = 0;
 
       // Check each user cause to see if this brand appears in its support/oppose lists
       allUserCauses.forEach((causeId) => {
@@ -140,6 +141,11 @@ export default function HomeScreen() {
         const brandName = product.name;
         const isBrandInSupport = causeData.support?.includes(brandName);
         const isBrandInOppose = causeData.oppose?.includes(brandName);
+
+        // If brand is mentioned in this value at all
+        if (isBrandInSupport || isBrandInOppose) {
+          matchingValuesCount++;
+        }
 
         // If user supports this cause
         if (supportedCauses.includes(causeId)) {
@@ -164,17 +170,25 @@ export default function HomeScreen() {
         }
       });
 
-      // Calculate alignment strength (0-100)
+      // Calculate alignment strength (50-100 for aligned, 0-50 for unaligned)
+      // More matching values = stronger score
       const totalScore = totalSupportScore + totalAvoidScore;
-      const alignmentStrength = totalScore > 0
-        ? Math.round((totalSupportScore / totalScore) * 100)
-        : 50;
+      let alignmentStrength = 50; // Neutral default
+
+      if (totalScore > 0) {
+        const isAligned = totalSupportScore > totalAvoidScore;
+        // Score range: aligned 50-100, unaligned 0-50
+        // Boost score based on number of matching values (1-10 values)
+        const valueBoost = Math.min(matchingValuesCount * 5, 50);
+        alignmentStrength = isAligned ? 50 + valueBoost : 50 - valueBoost;
+      }
 
       return {
         product,
         totalSupportScore,
         totalAvoidScore,
         alignmentStrength,
+        matchingValuesCount,
       };
     });
 
