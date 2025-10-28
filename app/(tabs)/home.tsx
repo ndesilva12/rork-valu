@@ -127,64 +127,73 @@ export default function HomeScreen() {
       sampleValueIds: Object.keys(valuesMatrix).slice(0, 5)
     });
 
-    // Score each brand based on the values matrix
+    // Score each brand based on position in the values matrix
     const scored = brands.map((product) => {
+      const brandName = product.name;
       let totalSupportScore = 0;
       let totalAvoidScore = 0;
-      let matchingValuesCount = 0;
 
-      // Check each user cause to see if this brand appears in its support/oppose lists
+      // Collect positions for this brand across all user's selected values
+      const alignedPositions: number[] = [];
+      const unalignedPositions: number[] = [];
+
+      // Check each user cause to find the brand's position
       allUserCauses.forEach((causeId) => {
         const causeData = valuesMatrix[causeId];
         if (!causeData) return;
 
-        const brandName = product.name;
-        const isBrandInSupport = causeData.support?.includes(brandName);
-        const isBrandInOppose = causeData.oppose?.includes(brandName);
+        // Find position in support list (1-10, or 11 if not found)
+        const supportIndex = causeData.support?.indexOf(brandName);
+        const supportPosition = supportIndex !== undefined && supportIndex >= 0
+          ? supportIndex + 1 // Convert to 1-indexed
+          : 11; // Not in top 10
 
-        // If brand is mentioned in this value at all
-        if (isBrandInSupport || isBrandInOppose) {
-          matchingValuesCount++;
-        }
+        // Find position in oppose list (1-10, or 11 if not found)
+        const opposeIndex = causeData.oppose?.indexOf(brandName);
+        const opposePosition = opposeIndex !== undefined && opposeIndex >= 0
+          ? opposeIndex + 1 // Convert to 1-indexed
+          : 11; // Not in top 10
 
         // If user supports this cause
         if (supportedCauses.includes(causeId)) {
-          if (isBrandInSupport) {
-            // Brand supports a cause the user supports = good
+          // Good if brand is in support list, bad if in oppose list
+          if (supportPosition <= 10) {
+            alignedPositions.push(supportPosition);
             totalSupportScore += 100;
-          } else if (isBrandInOppose) {
-            // Brand opposes a cause the user supports = bad
+          } else if (opposePosition <= 10) {
+            unalignedPositions.push(opposePosition);
             totalAvoidScore += 100;
           }
         }
 
         // If user avoids this cause
         if (avoidedCauses.includes(causeId)) {
-          if (isBrandInOppose) {
-            // Brand opposes a cause the user avoids = good
+          // Good if brand is in oppose list, bad if in support list
+          if (opposePosition <= 10) {
+            alignedPositions.push(opposePosition);
             totalSupportScore += 100;
-          } else if (isBrandInSupport) {
-            // Brand supports a cause the user avoids = bad
+          } else if (supportPosition <= 10) {
+            unalignedPositions.push(supportPosition);
             totalAvoidScore += 100;
           }
         }
       });
 
-      // Calculate alignment strength
-      // Brands with more matching values get higher scores
-      const totalScore = totalSupportScore + totalAvoidScore;
+      // Calculate alignment strength based on average position
       let alignmentStrength = 50; // Neutral default
 
-      if (totalScore > 0) {
-        const isAligned = totalSupportScore > totalAvoidScore;
-        // Base score: 60-100 for aligned, 0-40 for unaligned
-        // Add 10 points per matching value (up to 4 values = 40 points)
-        const matchBonus = Math.min(matchingValuesCount * 10, 40);
-        if (isAligned) {
-          alignmentStrength = 60 + matchBonus;
-        } else {
-          alignmentStrength = 40 - matchBonus;
-        }
+      if (alignedPositions.length > 0) {
+        // Calculate average position for aligned brands
+        const avgPosition = alignedPositions.reduce((sum, pos) => sum + pos, 0) / alignedPositions.length;
+        // Map position to score: position 1 = 100, position 11 = 50
+        // Formula: score = 100 - ((avgPosition - 1) / 10) * 50
+        alignmentStrength = Math.round(100 - ((avgPosition - 1) / 10) * 50);
+      } else if (unalignedPositions.length > 0) {
+        // Calculate average position for unaligned brands
+        const avgPosition = unalignedPositions.reduce((sum, pos) => sum + pos, 0) / unalignedPositions.length;
+        // Map position to score: position 1 = 0, position 11 = 50
+        // Formula: score = ((avgPosition - 1) / 10) * 50
+        alignmentStrength = Math.round(((avgPosition - 1) / 10) * 50);
       }
 
       return {
@@ -192,7 +201,7 @@ export default function HomeScreen() {
         totalSupportScore,
         totalAvoidScore,
         alignmentStrength,
-        matchingValuesCount,
+        matchingValuesCount: alignedPositions.length + unalignedPositions.length,
       };
     });
 

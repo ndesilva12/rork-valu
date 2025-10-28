@@ -27,11 +27,13 @@ export default function ProductDetailScreen() {
 
   console.log('[ProductDetail] Loading product with ID:', id);
 
-  // Fetch brand data from tRPC
+  // Fetch brand data and values matrix from tRPC
   const { data: product, isLoading, error } = trpc.data.getBrand.useQuery(
     { id: id as string },
     { enabled: !!id }
   );
+
+  const { data: valuesMatrix } = trpc.data.getValuesMatrix.useQuery();
 
   console.log('[ProductDetail] Query state:', {
     id,
@@ -39,7 +41,8 @@ export default function ProductDetailScreen() {
     hasError: !!error,
     errorMessage: error?.message,
     hasProduct: !!product,
-    productName: product?.name
+    productName: product?.name,
+    hasValuesMatrix: !!valuesMatrix
   });
 
   interface Review {
@@ -119,65 +122,93 @@ export default function ProductDetailScreen() {
 
   const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
   const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
+  const allUserCauses = [...supportedCauses, ...avoidedCauses];
 
   const alignmentData = useMemo(() => {
-    if (!product) {
+    if (!product || !valuesMatrix) {
       return {
         isAligned: false,
         matchingValues: [],
         avgPosition: 0,
         totalSupportScore: 0,
         totalAvoidScore: 0,
-        alignmentStrength: 0
+        alignmentStrength: 50
       };
     }
-    const totalUserValues = profile.causes.length;
+
+    const brandName = product.name;
     let totalSupportScore = 0;
     let totalAvoidScore = 0;
     const matchingValues = new Set<string>();
-    const positionSum: number[] = [];
-    
-    product.valueAlignments.forEach(alignment => {
-      const isUserSupporting = supportedCauses.includes(alignment.valueId);
-      const isUserAvoiding = avoidedCauses.includes(alignment.valueId);
-      
-      if (!isUserSupporting && !isUserAvoiding) return;
-      
-      matchingValues.add(alignment.valueId);
-      positionSum.push(alignment.position);
-      
-      const score = alignment.isSupport ? (100 - alignment.position * 5) : -(100 - alignment.position * 5);
-      
-      if (isUserSupporting) {
-        if (score > 0) {
-          totalSupportScore += score;
-        } else {
-          totalAvoidScore += Math.abs(score);
+
+    // Collect positions for this brand across all user's selected values
+    const alignedPositions: number[] = [];
+    const unalignedPositions: number[] = [];
+
+    // Check each user cause to find the brand's position
+    allUserCauses.forEach((causeId) => {
+      const causeData = valuesMatrix[causeId];
+      if (!causeData) return;
+
+      // Find position in support list (1-10, or 11 if not found)
+      const supportIndex = causeData.support?.indexOf(brandName);
+      const supportPosition = supportIndex !== undefined && supportIndex >= 0
+        ? supportIndex + 1 // Convert to 1-indexed
+        : 11; // Not in top 10
+
+      // Find position in oppose list (1-10, or 11 if not found)
+      const opposeIndex = causeData.oppose?.indexOf(brandName);
+      const opposePosition = opposeIndex !== undefined && opposeIndex >= 0
+        ? opposeIndex + 1 // Convert to 1-indexed
+        : 11; // Not in top 10
+
+      // If user supports this cause
+      if (supportedCauses.includes(causeId)) {
+        // Good if brand is in support list, bad if in oppose list
+        if (supportPosition <= 10) {
+          matchingValues.add(causeId);
+          alignedPositions.push(supportPosition);
+          totalSupportScore += 100;
+        } else if (opposePosition <= 10) {
+          matchingValues.add(causeId);
+          unalignedPositions.push(opposePosition);
+          totalAvoidScore += 100;
         }
       }
-      
-      if (isUserAvoiding) {
-        if (score < 0) {
-          totalSupportScore += Math.abs(score);
-        } else {
-          totalAvoidScore += score;
+
+      // If user avoids this cause
+      if (avoidedCauses.includes(causeId)) {
+        // Good if brand is in oppose list, bad if in support list
+        if (opposePosition <= 10) {
+          matchingValues.add(causeId);
+          alignedPositions.push(opposePosition);
+          totalSupportScore += 100;
+        } else if (supportPosition <= 10) {
+          matchingValues.add(causeId);
+          unalignedPositions.push(supportPosition);
+          totalAvoidScore += 100;
         }
       }
     });
 
-    const valuesWhereNotAppears = totalUserValues - matchingValues.size;
-    const totalPositionSum = positionSum.reduce((a, b) => a + b, 0) + (valuesWhereNotAppears * 11);
-    const avgPosition = totalUserValues > 0 ? totalPositionSum / totalUserValues : 11;
-    
-    const isAligned = totalSupportScore > totalAvoidScore && totalSupportScore > 0;
-    
-    let alignmentStrength: number;
-    if (isAligned) {
-      alignmentStrength = Math.round((1 - ((avgPosition - 1) / 10)) * 50 + 50);
-    } else {
+    // Calculate alignment strength based on average position
+    let alignmentStrength = 50; // Neutral default
+    let avgPosition = 11;
+
+    if (alignedPositions.length > 0) {
+      // Calculate average position for aligned brands
+      avgPosition = alignedPositions.reduce((sum, pos) => sum + pos, 0) / alignedPositions.length;
+      // Map position to score: position 1 = 100, position 11 = 50
+      alignmentStrength = Math.round(100 - ((avgPosition - 1) / 10) * 50);
+    } else if (unalignedPositions.length > 0) {
+      // Calculate average position for unaligned brands
+      avgPosition = unalignedPositions.reduce((sum, pos) => sum + pos, 0) / unalignedPositions.length;
+      // Map position to score: position 1 = 0, position 11 = 50
       alignmentStrength = Math.round(((avgPosition - 1) / 10) * 50);
     }
-    
+
+    const isAligned = totalSupportScore > totalAvoidScore && totalSupportScore > 0;
+
     return {
       isAligned,
       matchingValues: Array.from(matchingValues),
@@ -186,7 +217,7 @@ export default function ProductDetailScreen() {
       totalAvoidScore,
       alignmentStrength
     };
-  }, [product, supportedCauses, avoidedCauses, profile.causes.length]);
+  }, [product, valuesMatrix, supportedCauses, avoidedCauses, allUserCauses]);
 
   const alignmentColor = alignmentData.isAligned ? colors.success : colors.danger;
   const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;
