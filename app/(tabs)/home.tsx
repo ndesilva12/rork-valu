@@ -170,12 +170,17 @@ export default function HomeScreen() {
           if (supportPosition <= 10) {
             alignedPositions.push(supportPosition);
             totalSupportScore += 100;
+            // For unaligned calculation, this value doesn't apply (brand is good here)
+            unalignedPositions.push(11);
           } else if (opposePosition <= 10) {
             unalignedPositions.push(opposePosition);
             totalAvoidScore += 100;
+            // For aligned calculation, this value doesn't apply (brand is bad here)
+            alignedPositions.push(11);
           } else {
             // Brand doesn't appear in either list for this value
             alignedPositions.push(11);
+            unalignedPositions.push(11);
           }
         }
 
@@ -185,12 +190,17 @@ export default function HomeScreen() {
           if (opposePosition <= 10) {
             alignedPositions.push(opposePosition);
             totalSupportScore += 100;
+            // For unaligned calculation, this value doesn't apply (brand is good here)
+            unalignedPositions.push(11);
           } else if (supportPosition <= 10) {
             unalignedPositions.push(supportPosition);
             totalAvoidScore += 100;
+            // For aligned calculation, this value doesn't apply (brand is bad here)
+            alignedPositions.push(11);
           } else {
             // Brand doesn't appear in either list for this value
             alignedPositions.push(11);
+            unalignedPositions.push(11);
           }
         }
       });
