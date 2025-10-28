@@ -1,0 +1,68 @@
+[
+  {
+    "id": "1",
+    "name": "Nike",
+    "category": "Apparel & Footwear",
+    "imageUrl": "https://logo.clearbit.com/nike.com",
+    "description": "Leading athletic apparel and footwear company",
+    "website": "https://nike.com",
+    "affiliates": [
+      {
+        "name": "LeBron James",
+        "relationship": "Brand Ambassador"
+      },
+      {
+        "name": "Colin Kaepernick",
+        "relationship": "Sponsorship"
+      },
+      {
+        "name": "Serena Williams",
+        "relationship": "Sponsorship"
+      },
+      {
+        "name": "Tiger Woods",
+        "relationship": "Sponsorship"
+      },
+      {
+        "name": "Michael Jordan",
+        "relationship": "Brand Partnership"
+      }
+    ]
+  },
+  {
+    "id": "2",
+    "name": "Apple",
+    "category": "Technology",
+    "imageUrl": "https://logo.clearbit.com/apple.com",
+    "description": "Technology company specializing in consumer electronics",
+    "website": "https://apple.com",
+    "affiliates": [
+      {
+        "name": "Tim Cook",
+        "relationship": "CEO"
+      },
+      {
+        "name": "Steve Jobs",
+        "relationship": "Founder"
+      },
+      {
+        "name": "Oprah Winfrey",
+        "relationship": "Content Partnership"
+      }
+    ]
+  },
+  {
+    "id": "3",
+    "name": "Tesla",
+    "category": "Automotive",
+    "imageUrl": "https://logo.clearbit.com/tesla.com",
+    "description": "Electric vehicle and clean energy company",
+    "website": "https://tesla.com",
+    "affiliates": [
+      {
+        "name": "Elon Musk",
+        "relationship": "CEO & Founder"
+      }
+    ]
+  }
+]

@@ -1,0 +1,40 @@
+{
+  "climate-change": {
+    "id": "climate-change",
+    "name": "Climate Change",
+    "support": [
+      "Tesla",
+      "Patagonia",
+      "Apple"
+    ],
+    "oppose": [
+      "ExxonMobil",
+      "Chevron"
+    ]
+  },
+  "liberal": {
+    "id": "liberal",
+    "name": "Liberal",
+    "support": [
+      "Nike",
+      "Starbucks",
+      "Apple"
+    ],
+    "oppose": [
+      "Chick-fil-A",
+      "Hobby Lobby"
+    ]
+  },
+  "conservative": {
+    "id": "conservative",
+    "name": "Conservative",
+    "support": [
+      "Chick-fil-A",
+      "Hobby Lobby"
+    ],
+    "oppose": [
+      "Nike",
+      "Starbucks"
+    ]
+  }
+}
