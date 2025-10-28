@@ -631,7 +631,7 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setBrandType('local')} activeOpacity={0.7}>
-              <Text style={[styles.headerTitle, { color: brandType === 'local' ? '#84CC16' : colors.textSecondary }]}>
+              <Text style={[styles.headerTitle, { color: brandType === 'local' ? '#84CC16' : colors.textLight }]}>
                 Local
               </Text>
             </TouchableOpacity>

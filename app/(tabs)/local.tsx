@@ -45,13 +45,13 @@ export default function ValuesScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact</Text>
           <View style={[styles.statsCard, { backgroundColor: 'transparent', borderColor: colors.primaryLight }]}>
             <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.primary }]}>{profile.causes.length}</Text>
-              <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Active Values</Text>
+              <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.success }]}>{supportCauses.length}</Text>
+              <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Aligned Values</Text>
             </View>
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
             <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.primary }]}>{profile.searchHistory.length}</Text>
-              <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Products Checked</Text>
+              <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.danger }]}>{avoidCauses.length}</Text>
+              <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Unaligned Values</Text>
             </View>
           </View>
         </View>

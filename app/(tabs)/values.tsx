@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Platform,
   StatusBar,
-  Alert,
 } from 'react-native';
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
@@ -19,12 +18,7 @@ export default function ProfileScreen() {
   const colors = isDarkMode ? darkColors : lightColors;
 
   const handleSelectCharities = () => {
-    // TODO: Implement charity selection page/modal
-    Alert.alert(
-      'Select Charities',
-      'Charity selection will be available soon. You can select up to 3 organizations to receive donations on your behalf.',
-      [{ text: 'OK' }]
-    );
+    router.push('/select-charities');
   };
 
   const selectedCharitiesCount = profile.selectedCharities?.length || 0;
