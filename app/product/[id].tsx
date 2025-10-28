@@ -25,11 +25,22 @@ export default function ProductDetailScreen() {
   const colors = isDarkMode ? darkColors : lightColors;
   const scrollViewRef = useRef<ScrollView>(null);
 
+  console.log('[ProductDetail] Loading product with ID:', id);
+
   // Fetch brand data from tRPC
   const { data: product, isLoading, error } = trpc.data.getBrand.useQuery(
     { id: id as string },
     { enabled: !!id }
   );
+
+  console.log('[ProductDetail] Query state:', {
+    id,
+    isLoading,
+    hasError: !!error,
+    errorMessage: error?.message,
+    hasProduct: !!product,
+    productName: product?.name
+  });
 
   interface Review {
     id: string;
