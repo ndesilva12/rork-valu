@@ -811,6 +811,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700' as const,
     flex: 1,
+    textAlign: 'center' as const,
   },
   tableRow: {
     flexDirection: 'row',
@@ -821,11 +822,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600' as const,
     flex: 1,
+    textAlign: 'center' as const,
   },
   affiliateRelationship: {
     fontSize: 13,
     flex: 1,
-    textAlign: 'right' as const,
+    textAlign: 'center' as const,
   },
   noDataText: {
     fontSize: 14,
