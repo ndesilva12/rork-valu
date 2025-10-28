@@ -98,6 +98,12 @@ export default function HomeScreen() {
 
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
     if (!brands || brands.length === 0 || !valuesMatrix) {
+      console.log('[Home] Missing data:', {
+        hasBrands: !!brands,
+        brandsCount: brands?.length || 0,
+        hasValuesMatrix: !!valuesMatrix,
+        valuesCount: valuesMatrix ? Object.keys(valuesMatrix).length : 0
+      });
       return {
         topSupport: [],
         topAvoid: [],
@@ -112,6 +118,15 @@ export default function HomeScreen() {
     const avoidedCauses = profile.causes.filter((c) => c.type === 'avoid').map((c) => c.id);
     const allUserCauses = [...supportedCauses, ...avoidedCauses];
 
+    console.log('[Home] Scoring brands:', {
+      totalBrands: brands.length,
+      userCauses: allUserCauses,
+      supportedCauses,
+      avoidedCauses,
+      sampleBrandNames: brands.slice(0, 5).map(b => b.name),
+      sampleValueIds: Object.keys(valuesMatrix).slice(0, 5)
+    });
+
     // Score each brand based on the values matrix
     const scored = brands.map((product) => {
       let totalSupportScore = 0;
@@ -123,12 +138,11 @@ export default function HomeScreen() {
         if (!causeData) return;
 
         const brandName = product.name;
-        const isUserSupporting = supportedCauses.includes(causeId);
         const isBrandInSupport = causeData.support?.includes(brandName);
         const isBrandInOppose = causeData.oppose?.includes(brandName);
 
         // If user supports this cause
-        if (isUserSupporting) {
+        if (supportedCauses.includes(causeId)) {
           if (isBrandInSupport) {
             // Brand supports a cause the user supports = good
             totalSupportScore += 100;
@@ -172,6 +186,13 @@ export default function HomeScreen() {
     const allAvoidSorted = scored
       .filter((s) => s.totalAvoidScore > s.totalSupportScore && s.totalAvoidScore > 0)
       .sort((a, b) => b.totalAvoidScore - a.totalAvoidScore);
+
+    console.log('[Home] Scoring results:', {
+      alignedCount: allSupportSorted.length,
+      unalignedCount: allAvoidSorted.length,
+      topAligned: allSupportSorted.slice(0, 3).map(s => ({ name: s.product.name, score: s.totalSupportScore })),
+      topUnaligned: allAvoidSorted.slice(0, 3).map(s => ({ name: s.product.name, score: s.totalAvoidScore }))
+    });
 
     const scoredMap = new Map(scored.map((s) => [s.product.id, s.alignmentStrength]));
 
