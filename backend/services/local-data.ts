@@ -1,7 +1,27 @@
 import { Brand } from '@/types';
 import { ValueItem } from '@/mocks/causes';
-import brandsData from '../../data/brands.json';
-import valuesData from '../../data/values.json';
+
+// Import data from loader
+let brandsData: any[] = [];
+let valuesData: any = {};
+
+// Load data dynamically to support Edge Runtime
+async function loadData() {
+  if (brandsData.length === 0) {
+    try {
+      // Try to load from JSON files
+      const brandsModule = await import('../../data/brands.json');
+      const valuesModule = await import('../../data/values.json');
+      brandsData = brandsModule.default || brandsModule;
+      valuesData = valuesModule.default || valuesModule;
+    } catch (error) {
+      console.error('[LocalData] Failed to load JSON files:', error);
+      // Fallback to empty data
+      brandsData = [];
+      valuesData = {};
+    }
+  }
+}
 
 // Cache configuration
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
@@ -28,6 +48,7 @@ async function getCachedOrFetch<T>(
 
 // Fetch causes/values from local JSON
 export async function fetchCausesFromSheets(): Promise<ValueItem[]> {
+  await loadData(); // Ensure data is loaded
   return getCachedOrFetch('causes', async () => {
     console.log('[LocalData] Loading values from local JSON');
 
@@ -47,6 +68,7 @@ export async function fetchCausesFromSheets(): Promise<ValueItem[]> {
 
 // Fetch brands from local JSON
 export async function fetchBrandsFromSheets(): Promise<Brand[]> {
+  await loadData(); // Ensure data is loaded
   return getCachedOrFetch('brands', async () => {
     console.log('[LocalData] Loading brands from local JSON');
 
