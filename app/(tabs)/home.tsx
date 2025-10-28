@@ -205,20 +205,20 @@ export default function HomeScreen() {
       };
     });
 
-    // Sort brands into support and avoid categories
+    // Sort brands into support and avoid categories BY ALIGNMENT STRENGTH
     const allSupportSorted = scored
       .filter((s) => s.totalSupportScore > s.totalAvoidScore && s.totalSupportScore > 0)
-      .sort((a, b) => b.totalSupportScore - a.totalSupportScore);
+      .sort((a, b) => b.alignmentStrength - a.alignmentStrength); // Sort by score, not count!
 
     const allAvoidSorted = scored
       .filter((s) => s.totalAvoidScore > s.totalSupportScore && s.totalAvoidScore > 0)
-      .sort((a, b) => b.totalAvoidScore - a.totalAvoidScore);
+      .sort((a, b) => a.alignmentStrength - b.alignmentStrength); // Lowest score first for unaligned
 
     console.log('[Home] Scoring results:', {
       alignedCount: allSupportSorted.length,
       unalignedCount: allAvoidSorted.length,
-      topAligned: allSupportSorted.slice(0, 3).map(s => ({ name: s.product.name, score: s.totalSupportScore })),
-      topUnaligned: allAvoidSorted.slice(0, 3).map(s => ({ name: s.product.name, score: s.totalAvoidScore }))
+      topAligned: allSupportSorted.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength })),
+      topUnaligned: allAvoidSorted.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength }))
     });
 
     const scoredMap = new Map(scored.map((s) => [s.product.id, s.alignmentStrength]));
