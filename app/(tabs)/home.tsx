@@ -73,8 +73,9 @@ export default function HomeScreen() {
 
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Fetch brands from Google Sheets via tRPC
+  // Fetch brands and values matrix from local data via tRPC
   const { data: brands, isLoading, error } = trpc.data.getBrands.useQuery();
+  const { data: valuesMatrix } = trpc.data.getValuesMatrix.useQuery();
 
   const viewModes: ViewMode[] = ['playbook', 'browse', 'map'];
 
@@ -96,7 +97,7 @@ export default function HomeScreen() {
   ).current;
 
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
-    if (!brands || brands.length === 0) {
+    if (!brands || brands.length === 0 || !valuesMatrix) {
       return {
         topSupport: [],
         topAvoid: [],
@@ -109,72 +110,68 @@ export default function HomeScreen() {
 
     const supportedCauses = profile.causes.filter((c) => c.type === 'support').map((c) => c.id);
     const avoidedCauses = profile.causes.filter((c) => c.type === 'avoid').map((c) => c.id);
-    const totalUserValues = profile.causes.length;
+    const allUserCauses = [...supportedCauses, ...avoidedCauses];
 
+    // Score each brand based on the values matrix
     const scored = brands.map((product) => {
       let totalSupportScore = 0;
       let totalAvoidScore = 0;
-      const matchingValues = new Set<string>();
-      const positionSum: number[] = [];
 
-      product.valueAlignments.forEach((alignment) => {
-        const isUserSupporting = supportedCauses.includes(alignment.valueId);
-        const isUserAvoiding = avoidedCauses.includes(alignment.valueId);
+      // Check each user cause to see if this brand appears in its support/oppose lists
+      allUserCauses.forEach((causeId) => {
+        const causeData = valuesMatrix[causeId];
+        if (!causeData) return;
 
-        if (!isUserSupporting && !isUserAvoiding) return;
+        const brandName = product.name;
+        const isUserSupporting = supportedCauses.includes(causeId);
+        const isBrandInSupport = causeData.support?.includes(brandName);
+        const isBrandInOppose = causeData.oppose?.includes(brandName);
 
-        matchingValues.add(alignment.valueId);
-        positionSum.push(alignment.position);
-
-        const score = alignment.isSupport ? 100 - alignment.position * 5 : -(100 - alignment.position * 5);
-
+        // If user supports this cause
         if (isUserSupporting) {
-          if (score > 0) {
-            totalSupportScore += score;
-          } else {
-            totalAvoidScore += Math.abs(score);
+          if (isBrandInSupport) {
+            // Brand supports a cause the user supports = good
+            totalSupportScore += 100;
+          } else if (isBrandInOppose) {
+            // Brand opposes a cause the user supports = bad
+            totalAvoidScore += 100;
           }
         }
 
-        if (isUserAvoiding) {
-          if (score < 0) {
-            totalSupportScore += Math.abs(score);
-          } else {
-            totalAvoidScore += score;
+        // If user avoids this cause
+        if (avoidedCauses.includes(causeId)) {
+          if (isBrandInOppose) {
+            // Brand opposes a cause the user avoids = good
+            totalSupportScore += 100;
+          } else if (isBrandInSupport) {
+            // Brand supports a cause the user avoids = bad
+            totalAvoidScore += 100;
           }
         }
       });
 
-      const valuesWhereNotAppears = totalUserValues - matchingValues.size;
-      const totalPositionSum = positionSum.reduce((a, b) => a + b, 0) + valuesWhereNotAppears * 11;
-      const avgPosition = totalUserValues > 0 ? totalPositionSum / totalUserValues : 11;
-
-      const isNegativelyAligned = totalAvoidScore > totalSupportScore && totalAvoidScore > 0;
-
-      let alignmentStrength: number;
-      if (isNegativelyAligned) {
-        alignmentStrength = Math.round(((avgPosition - 1) / 10) * 50);
-      } else {
-        alignmentStrength = Math.round((1 - (avgPosition - 1) / 10) * 50 + 50);
-      }
+      // Calculate alignment strength (0-100)
+      const totalScore = totalSupportScore + totalAvoidScore;
+      const alignmentStrength = totalScore > 0
+        ? Math.round((totalSupportScore / totalScore) * 100)
+        : 50;
 
       return {
         product,
         totalSupportScore,
         totalAvoidScore,
-        matchingValuesCount: matchingValues.size,
-        matchingValues,
         alignmentStrength,
       };
     });
 
+    // Sort brands into support and avoid categories
     const allSupportSorted = scored
       .filter((s) => s.totalSupportScore > s.totalAvoidScore && s.totalSupportScore > 0)
-      .sort((a, b) => b.alignmentStrength - a.alignmentStrength);
+      .sort((a, b) => b.totalSupportScore - a.totalSupportScore);
 
     const allAvoidSorted = scored
       .filter((s) => s.totalAvoidScore > s.totalSupportScore && s.totalAvoidScore > 0)
-      .sort((a, b) => a.alignmentStrength - b.alignmentStrength);
+      .sort((a, b) => b.totalAvoidScore - a.totalAvoidScore);
 
     const scoredMap = new Map(scored.map((s) => [s.product.id, s.alignmentStrength]));
 
@@ -186,7 +183,7 @@ export default function HomeScreen() {
       allAvoidFull: allAvoidSorted.map((s) => s.product),
       scoredBrands: scoredMap,
     };
-  }, [profile.causes, brands]);
+  }, [profile.causes, brands, valuesMatrix]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
