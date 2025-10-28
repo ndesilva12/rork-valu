@@ -120,6 +120,87 @@ export default function ProductDetailScreen() {
     })
   ).current;
 
+  const sortedReviews = useMemo(() => {
+    const sorted = [...reviews];
+    if (sortBy === 'latest') {
+      sorted.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    } else {
+      sorted.sort((a, b) => b.likes - a.likes);
+    }
+    return sorted;
+  }, [reviews, sortBy]);
+
+  const handleLikeReview = useCallback((reviewId: string) => {
+    setReviews(prev => prev.map(review => {
+      if (review.id === reviewId) {
+        return {
+          ...review,
+          userLiked: !review.userLiked,
+          likes: review.userLiked ? review.likes - 1 : review.likes + 1
+        };
+      }
+      return review;
+    }));
+  }, []);
+
+  const handleSubmitReview = useCallback(() => {
+    if (!reviewText.trim() || userRating === 0) return;
+
+    const newReview: Review = {
+      id: Date.now().toString(),
+      userName: clerkUser?.firstName || clerkUser?.username || 'Anonymous',
+      rating: userRating,
+      text: reviewText.trim(),
+      timestamp: new Date(),
+      likes: 0,
+      userLiked: false
+    };
+
+    setReviews(prev => [newReview, ...prev]);
+    setReviewText('');
+    setUserRating(0);
+  }, [reviewText, userRating, clerkUser]);
+
+  const handleShopPress = async () => {
+    if (!product) return;
+    try {
+      const websiteUrl = product.website || `https://${product.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '')}.com`;
+      const canOpen = await Linking.canOpenURL(websiteUrl);
+      if (canOpen) {
+        await Linking.openURL(websiteUrl);
+      }
+    } catch (error) {
+      console.error('Error opening URL:', error);
+    }
+  };
+
+  const handleSocialPress = async (platform: 'x' | 'instagram' | 'facebook') => {
+    if (!product) return;
+    try {
+      const brandSlug = product.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '');
+      let url = '';
+
+      switch (platform) {
+        case 'x':
+          url = `https://x.com/${brandSlug}`;
+          break;
+        case 'instagram':
+          url = `https://instagram.com/${brandSlug}`;
+          break;
+        case 'facebook':
+          url = `https://facebook.com/${brandSlug}`;
+          break;
+      }
+
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      }
+    } catch (error) {
+      console.error('Error opening social URL:', error);
+    }
+  };
+
   // Calculate alignment data without useMemo to avoid infinite re-render
   // Early return for loading/missing data
   if (!product || !valuesMatrix) {
@@ -263,85 +344,6 @@ export default function ProductDetailScreen() {
       </View>
     );
   }
-
-  const handleShopPress = async () => {
-    try {
-      const websiteUrl = product.website || `https://${product.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '')}.com`;
-      const canOpen = await Linking.canOpenURL(websiteUrl);
-      if (canOpen) {
-        await Linking.openURL(websiteUrl);
-      }
-    } catch (error) {
-      console.error('Error opening URL:', error);
-    }
-  };
-
-  const sortedReviews = useMemo(() => {
-    const sorted = [...reviews];
-    if (sortBy === 'latest') {
-      sorted.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-    } else {
-      sorted.sort((a, b) => b.likes - a.likes);
-    }
-    return sorted;
-  }, [reviews, sortBy]);
-
-  const handleLikeReview = useCallback((reviewId: string) => {
-    setReviews(prev => prev.map(review => {
-      if (review.id === reviewId) {
-        return {
-          ...review,
-          userLiked: !review.userLiked,
-          likes: review.userLiked ? review.likes - 1 : review.likes + 1
-        };
-      }
-      return review;
-    }));
-  }, []);
-
-  const handleSubmitReview = useCallback(() => {
-    if (!reviewText.trim() || userRating === 0) return;
-
-    const newReview: Review = {
-      id: Date.now().toString(),
-      userName: clerkUser?.firstName || clerkUser?.username || 'Anonymous',
-      rating: userRating,
-      text: reviewText.trim(),
-      timestamp: new Date(),
-      likes: 0,
-      userLiked: false
-    };
-
-    setReviews(prev => [newReview, ...prev]);
-    setReviewText('');
-    setUserRating(0);
-  }, [reviewText, userRating, clerkUser]);
-
-  const handleSocialPress = async (platform: 'x' | 'instagram' | 'facebook') => {
-    try {
-      const brandSlug = product.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '');
-      let url = '';
-      
-      switch (platform) {
-        case 'x':
-          url = `https://x.com/${brandSlug}`;
-          break;
-        case 'instagram':
-          url = `https://instagram.com/${brandSlug}`;
-          break;
-        case 'facebook':
-          url = `https://facebook.com/${brandSlug}`;
-          break;
-      }
-      
-      const canOpen = await Linking.canOpenURL(url);
-      if (canOpen) {
-        await Linking.openURL(url);
-      }
-    } catch (error) {
-      console.error('Error opening social URL:', error);
-    }
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
