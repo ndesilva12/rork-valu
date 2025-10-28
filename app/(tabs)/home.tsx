@@ -38,6 +38,7 @@ import { Product } from '@/types';
 import { useMemo, useState, useRef } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
 import { trpc } from '@/lib/trpc';
+import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
 
 type ViewMode = 'playbook' | 'browse' | 'map';
 
@@ -70,6 +71,7 @@ export default function HomeScreen() {
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
+  const [brandType, setBrandType] = useState<'brands' | 'local'>('brands');
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -97,10 +99,14 @@ export default function HomeScreen() {
   ).current;
 
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
-    if (!brands || brands.length === 0 || !valuesMatrix) {
+    // Select brand source based on brandType
+    const currentBrands = brandType === 'local' ? LOCAL_BUSINESSES : brands;
+
+    if (!currentBrands || currentBrands.length === 0 || !valuesMatrix) {
       console.log('[Home] Missing data:', {
-        hasBrands: !!brands,
-        brandsCount: brands?.length || 0,
+        brandType,
+        hasBrands: !!currentBrands,
+        brandsCount: currentBrands?.length || 0,
         hasValuesMatrix: !!valuesMatrix,
         valuesCount: valuesMatrix ? Object.keys(valuesMatrix).length : 0
       });
@@ -119,16 +125,16 @@ export default function HomeScreen() {
     const allUserCauses = [...supportedCauses, ...avoidedCauses];
 
     console.log('[Home] Scoring brands:', {
-      totalBrands: brands.length,
+      totalBrands: currentBrands.length,
       userCauses: allUserCauses,
       supportedCauses,
       avoidedCauses,
-      sampleBrandNames: brands.slice(0, 5).map(b => b.name),
+      sampleBrandNames: currentBrands.slice(0, 5).map(b => b.name),
       sampleValueIds: Object.keys(valuesMatrix).slice(0, 5)
     });
 
     // Score each brand based on position in the values matrix
-    const scored = brands.map((product) => {
+    const scored = currentBrands.map((product) => {
       const brandName = product.name;
       let totalSupportScore = 0;
       let totalAvoidScore = 0;
@@ -231,7 +237,7 @@ export default function HomeScreen() {
       allAvoidFull: allAvoidSorted.map((s) => s.product),
       scoredBrands: scoredMap,
     };
-  }, [profile.causes, brands, valuesMatrix]);
+  }, [profile.causes, brands, valuesMatrix, brandType]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
@@ -618,7 +624,18 @@ export default function HomeScreen() {
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
+          <View style={styles.headerTitleRow}>
+            <TouchableOpacity onPress={() => setBrandType('brands')} activeOpacity={0.7}>
+              <Text style={[styles.headerTitle, { color: brandType === 'brands' ? colors.primary : colors.textSecondary }]}>
+                Brands
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setBrandType('local')} activeOpacity={0.7}>
+              <Text style={[styles.headerTitle, { color: brandType === 'local' ? '#84CC16' : colors.textSecondary }]}>
+                Local
+              </Text>
+            </TouchableOpacity>
+          </View>
           <MenuButton />
         </View>
         {renderViewModeSelector()}
@@ -682,7 +699,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 32,
     fontWeight: '700' as const,
+  },
+  headerTitleRow: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
 
   section: {
