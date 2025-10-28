@@ -120,9 +120,14 @@ export default function ProductDetailScreen() {
     })
   ).current;
 
-  const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
-  const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
-  const allUserCauses = [...supportedCauses, ...avoidedCauses];
+  const supportedCauses = useMemo(
+    () => profile.causes.filter(c => c.type === 'support').map(c => c.id),
+    [profile.causes]
+  );
+  const avoidedCauses = useMemo(
+    () => profile.causes.filter(c => c.type === 'avoid').map(c => c.id),
+    [profile.causes]
+  );
 
   const alignmentData = useMemo(() => {
     if (!product || !valuesMatrix) {
@@ -144,6 +149,9 @@ export default function ProductDetailScreen() {
     // Collect positions for this brand across all user's selected values
     const alignedPositions: number[] = [];
     const unalignedPositions: number[] = [];
+
+    // Calculate all user causes inside useMemo to avoid unstable dependencies
+    const allUserCauses = [...supportedCauses, ...avoidedCauses];
 
     // Check each user cause to find the brand's position
     allUserCauses.forEach((causeId) => {
@@ -217,7 +225,7 @@ export default function ProductDetailScreen() {
       totalAvoidScore,
       alignmentStrength
     };
-  }, [product, valuesMatrix, supportedCauses, avoidedCauses, allUserCauses]);
+  }, [product, valuesMatrix, supportedCauses, avoidedCauses]);
 
   const alignmentColor = alignmentData.isAligned ? colors.success : colors.danger;
   const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;
