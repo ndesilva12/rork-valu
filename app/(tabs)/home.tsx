@@ -170,17 +170,21 @@ export default function HomeScreen() {
         }
       });
 
-      // Calculate alignment strength (50-100 for aligned, 0-50 for unaligned)
-      // More matching values = stronger score
+      // Calculate alignment strength
+      // Brands with more matching values get higher scores
       const totalScore = totalSupportScore + totalAvoidScore;
       let alignmentStrength = 50; // Neutral default
 
       if (totalScore > 0) {
         const isAligned = totalSupportScore > totalAvoidScore;
-        // Score range: aligned 50-100, unaligned 0-50
-        // Boost score based on number of matching values (1-10 values)
-        const valueBoost = Math.min(matchingValuesCount * 5, 50);
-        alignmentStrength = isAligned ? 50 + valueBoost : 50 - valueBoost;
+        // Base score: 60-100 for aligned, 0-40 for unaligned
+        // Add 10 points per matching value (up to 4 values = 40 points)
+        const matchBonus = Math.min(matchingValuesCount * 10, 40);
+        if (isAligned) {
+          alignmentStrength = 60 + matchBonus;
+        } else {
+          alignmentStrength = 40 - matchBonus;
+        }
       }
 
       return {
