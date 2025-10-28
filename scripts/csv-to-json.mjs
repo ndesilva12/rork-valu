@@ -12,16 +12,49 @@ const DATA_DIR = path.join(ROOT_DIR, 'data');
 
 /**
  * Parse CSV string to array of objects
+ * Handles quoted fields with commas inside them
  */
 function parseCSV(csvContent) {
   const lines = csvContent.split('\n').filter(line => line.trim());
   if (lines.length === 0) return [];
 
-  const headers = lines[0].split(',').map(h => h.trim());
+  // Parse a single CSV line, handling quoted values
+  function parseLine(line) {
+    const values = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          // Escaped quote
+          current += '"';
+          i++; // Skip next quote
+        } else {
+          // Toggle quote state
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        // End of field
+        values.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    // Add last field
+    values.push(current.trim());
+    return values;
+  }
+
+  const headers = parseLine(lines[0]).map(h => h.trim());
   const rows = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map(v => v.trim());
+    const values = parseLine(lines[i]);
     const row = {};
     headers.forEach((header, index) => {
       row[header] = values[index] || '';
@@ -97,16 +130,29 @@ function convertValues() {
   const csvContent = fs.readFileSync(csvPath, 'utf-8');
   const rows = parseCSV(csvContent);
 
+  console.log(`📊 Parsed ${rows.length} rows from values.csv`);
+  if (rows.length > 0) {
+    console.log('📋 First row columns:', Object.keys(rows[0]));
+    console.log('📋 First row data:', rows[0]);
+  }
+
   // Group by value
   const valuesMap = {};
+  let skippedRows = 0;
 
-  rows.forEach(row => {
+  rows.forEach((row, index) => {
     const valueId = row.id || row.valueId;
     const valueName = row.name || row.valueName;
     const type = row.type; // 'support' or 'oppose'
     const brandName = row.brandName || row.brand;
 
-    if (!valueId || !brandName) return;
+    if (!valueId || !brandName) {
+      skippedRows++;
+      if (index < 5) {
+        console.log(`⚠️  Skipping row ${index + 1}: missing valueId or brandName`, row);
+      }
+      return;
+    }
 
     if (!valuesMap[valueId]) {
       valuesMap[valueId] = {
@@ -126,6 +172,10 @@ function convertValues() {
 
   const outputPath = path.join(DATA_DIR, 'values.json');
   fs.writeFileSync(outputPath, JSON.stringify(valuesMap, null, 2));
+
+  if (skippedRows > 0) {
+    console.log(`⚠️  Skipped ${skippedRows} rows with missing data`);
+  }
   console.log(`✅ Converted ${Object.keys(valuesMap).length} values to ${outputPath}`);
 }
 
