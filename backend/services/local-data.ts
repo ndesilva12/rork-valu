@@ -7,13 +7,18 @@ let valuesData: any = {};
 
 // Load data dynamically to support Edge Runtime
 async function loadData() {
-  if (brandsData.length === 0) {
+  // Check if data is already loaded
+  const hasData = brandsData.length > 0 && Object.keys(valuesData).length > 0;
+
+  if (!hasData) {
     try {
+      console.log('[LocalData] Loading JSON files...');
       // Try to load from JSON files
       const brandsModule = await import('../../data/brands.json');
       const valuesModule = await import('../../data/values.json');
       brandsData = brandsModule.default || brandsModule;
       valuesData = valuesModule.default || valuesModule;
+      console.log('[LocalData] Loaded:', brandsData.length, 'brands and', Object.keys(valuesData).length, 'values');
     } catch (error) {
       console.error('[LocalData] Failed to load JSON files:', error);
       // Fallback to empty data
@@ -104,7 +109,9 @@ export async function fetchLocalBusinessesFromSheets(): Promise<Brand[]> {
 }
 
 // Get the values matrix for scoring
-export function getValuesMatrix(): Record<string, { support: string[]; oppose: string[] }> {
+export async function getValuesMatrix(): Promise<Record<string, { support: string[]; oppose: string[] }>> {
+  await loadData(); // Make sure data is loaded!
+  console.log('[LocalData] Returning values matrix with', Object.keys(valuesData).length, 'values');
   return valuesData as any;
 }
 
