@@ -12,17 +12,17 @@ import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 
-export default function ValuesScreen() {
+export default function ProfileScreen() {
   const router = useRouter();
   const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
-  const supportCauses = profile.causes
-    .filter(c => c.type === 'support')
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const avoidCauses = profile.causes
-    .filter(c => c.type === 'avoid')
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const handleSelectCharities = () => {
+    router.push('/select-charities');
+  };
+
+  const selectedCharitiesCount = profile.selectedCharities?.length || 0;
+  const donationAmount = profile.donationAmount || 0;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -32,7 +32,7 @@ export default function ValuesScreen() {
       />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <Text style={[styles.title, { color: colors.primary }]}>Values</Text>
+          <Text style={[styles.title, { color: colors.primary }]}>Profile</Text>
           <MenuButton />
         </View>
       </View>
@@ -41,67 +41,71 @@ export default function ValuesScreen() {
         style={styles.scrollView}
         contentContainerStyle={[styles.content]}
       >
-        <View style={styles.statsSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact</Text>
-          <View style={[styles.statsCard, { backgroundColor: 'transparent', borderColor: colors.primaryLight }]}>
-            <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.primary }]}>{profile.causes.length}</Text>
-              <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Active Values</Text>
+        {/* Promo Code Section */}
+        <View style={[styles.promoSection, { borderColor: colors.primary, backgroundColor: colors.backgroundSecondary }]}>
+          <Text style={[styles.promoLabel, { color: colors.textSecondary }]}>Your Promo Code</Text>
+          <Text style={[styles.promoCode, { color: colors.primary }]}>{profile.promoCode || 'VALU000000'}</Text>
+          <Text style={[styles.promoDescription, { color: colors.textSecondary }]}>
+            Share this code with friends and earn rewards on every purchase
+          </Text>
+        </View>
+
+        {/* Donation Counter Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact Dashboard</Text>
+          <View style={[styles.donationCard, { backgroundColor: colors.backgroundSecondary }]}>
+            <View style={styles.donationAmountContainer}>
+              <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Donated on Your Behalf</Text>
+              <Text style={[styles.donationAmount, { color: colors.primary }]}>
+                ${donationAmount.toFixed(2)}
+              </Text>
             </View>
-            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-            <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.primary }]}>{profile.searchHistory.length}</Text>
-              <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Products Checked</Text>
+
+            <View style={styles.charitiesInfoContainer}>
+              <Text style={[styles.charitiesInfoText, { color: colors.textSecondary }]}>
+                {selectedCharitiesCount === 0
+                  ? 'No charities selected yet'
+                  : selectedCharitiesCount === 1
+                  ? '1 charity selected'
+                  : `${selectedCharitiesCount} charities selected`}
+              </Text>
             </View>
+
+            <TouchableOpacity
+              style={[styles.selectCharitiesButton, { backgroundColor: colors.primary }]}
+              onPress={handleSelectCharities}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.selectCharitiesButtonText, { color: colors.white }]}>
+                {selectedCharitiesCount === 0 ? 'Select Charities' : 'Manage Charities'}
+              </Text>
+            </TouchableOpacity>
+
+            {selectedCharitiesCount > 0 && profile.selectedCharities && (
+              <View style={styles.selectedCharitiesList}>
+                {profile.selectedCharities.map((charity) => (
+                  <View key={charity.id} style={[styles.charityItem, { backgroundColor: colors.background }]}>
+                    <Text style={[styles.charityName, { color: colors.text }]}>{charity.name}</Text>
+                    <Text style={[styles.charityCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {charity.category}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         </View>
 
-        {supportCauses.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Supporting</Text>
-            <View style={styles.causesGrid}>
-              {supportCauses.map(cause => (
-                <TouchableOpacity
-                  key={cause.id}
-                  style={[styles.causeCard, styles.supportCard, { borderColor: colors.success, backgroundColor: colors.backgroundSecondary }]}
-                  onPress={() => router.push(`/value/${cause.id}`)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.causeName, { color: colors.success }]}>{cause.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {avoidCauses.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Opposing</Text>
-            <View style={styles.causesGrid}>
-              {avoidCauses.map(cause => (
-                <TouchableOpacity
-                  key={cause.id}
-                  style={[styles.causeCard, styles.avoidCard, { borderColor: colors.danger, backgroundColor: colors.backgroundSecondary }]}
-                  onPress={() => router.push(`/value/${cause.id}`)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.causeName, { color: colors.danger }]}>{cause.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
-
-        <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]} key="info-section">
-          <Text style={[styles.infoTitle, { color: colors.text }]}>How it works</Text>
+        {/* Info Section */}
+        <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
+          <Text style={[styles.infoTitle, { color: colors.text }]}>How Donations Work</Text>
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            We analyze where your money flows when you purchase products - from the company to its
-            shareholders and beneficiaries. We then match these entities against your selected values
-            to provide alignment scores.
+            Every time you or someone using your promo code makes a purchase, we donate a portion
+            of the transaction to your selected charities.
           </Text>
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            Products are scored from -100 (strongly opposed) to +100 (strongly aligned) based on
-            public records, donations, and stated positions.
+            You can select up to 3 organizations to support. Donations are split equally among
+            your chosen charities.
           </Text>
         </View>
       </ScrollView>
@@ -137,86 +141,107 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     flex: 1,
   },
+  promoSection: {
+    borderWidth: 3,
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  promoLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  promoCode: {
+    fontSize: 36,
+    fontWeight: '700' as const,
+    marginBottom: 12,
+    letterSpacing: 2,
+  },
+  promoDescription: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
   section: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700' as const,
-    color: Colors.text,
     marginBottom: 16,
   },
-  causesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  donationCard: {
+    borderRadius: 16,
+    padding: 20,
+  },
+  donationAmountContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  donationLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  donationAmount: {
+    fontSize: 42,
+    fontWeight: '700' as const,
+  },
+  charitiesInfoContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  charitiesInfoText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  selectCharitiesButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  selectCharitiesButtonText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  selectedCharitiesList: {
     gap: 12,
   },
-  causeCard: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 2,
-  },
-  supportCard: {
-    borderColor: Colors.success,
-  },
-  avoidCard: {
-    borderColor: Colors.danger,
-  },
-  causeName: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    color: Colors.text,
-  },
-  avoidText: {
-    color: Colors.danger,
-  },
-  statsSection: {
-    marginBottom: 24,
-  },
-  statsCard: {
-    backgroundColor: Colors.primaryLight + '08',
-    borderRadius: 12,
+  charityItem: {
     padding: 16,
-    flexDirection: 'row',
-    borderWidth: 2,
-    borderColor: Colors.primaryLight,
+    borderRadius: 12,
   },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 28,
+  charityName: {
+    fontSize: 15,
     fontWeight: '700' as const,
-    color: Colors.primary,
     marginBottom: 4,
   },
-  statLabel: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: Colors.border,
-    marginHorizontal: 16,
+  charityCategory: {
+    fontSize: 13,
+    opacity: 0.7,
   },
   infoSection: {
-    backgroundColor: Colors.backgroundSecondary,
     padding: 20,
     borderRadius: 16,
-    marginBottom: 32,
   },
   infoTitle: {
     fontSize: 18,
     fontWeight: '700' as const,
-    color: Colors.text,
     marginBottom: 12,
   },
   infoText: {
     fontSize: 14,
-    color: Colors.textSecondary,
     lineHeight: 22,
     marginBottom: 12,
   },

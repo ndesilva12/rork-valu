@@ -13,18 +13,37 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
-import { MOCK_PRODUCTS } from '@/mocks/products';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { useUser } from '@/contexts/UserContext';
 import { useRef, useMemo, useState, useCallback } from 'react';
+import { trpc } from '@/lib/trpc';
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { profile, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
-  const product = MOCK_PRODUCTS.find(p => p.id === id);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  console.log('[ProductDetail] Loading product with ID:', id);
+
+  // Fetch brand data and values matrix from tRPC
+  const { data: product, isLoading, error } = trpc.data.getBrand.useQuery(
+    { id: id as string },
+    { enabled: !!id }
+  );
+
+  const { data: valuesMatrix } = trpc.data.getValuesMatrix.useQuery();
+
+  console.log('[ProductDetail] Query state:', {
+    id,
+    isLoading,
+    hasError: !!error,
+    errorMessage: error?.message,
+    hasProduct: !!product,
+    productName: product?.name,
+    hasValuesMatrix: !!valuesMatrix
+  });
 
   interface Review {
     id: string;
@@ -101,105 +120,6 @@ export default function ProductDetailScreen() {
     })
   ).current;
 
-  const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
-  const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
-
-  const alignmentData = useMemo(() => {
-    if (!product) {
-      return {
-        isAligned: false,
-        matchingValues: [],
-        avgPosition: 0,
-        totalSupportScore: 0,
-        totalAvoidScore: 0,
-        alignmentStrength: 0
-      };
-    }
-    const totalUserValues = profile.causes.length;
-    let totalSupportScore = 0;
-    let totalAvoidScore = 0;
-    const matchingValues = new Set<string>();
-    const positionSum: number[] = [];
-    
-    product.valueAlignments.forEach(alignment => {
-      const isUserSupporting = supportedCauses.includes(alignment.valueId);
-      const isUserAvoiding = avoidedCauses.includes(alignment.valueId);
-      
-      if (!isUserSupporting && !isUserAvoiding) return;
-      
-      matchingValues.add(alignment.valueId);
-      positionSum.push(alignment.position);
-      
-      const score = alignment.isSupport ? (100 - alignment.position * 5) : -(100 - alignment.position * 5);
-      
-      if (isUserSupporting) {
-        if (score > 0) {
-          totalSupportScore += score;
-        } else {
-          totalAvoidScore += Math.abs(score);
-        }
-      }
-      
-      if (isUserAvoiding) {
-        if (score < 0) {
-          totalSupportScore += Math.abs(score);
-        } else {
-          totalAvoidScore += score;
-        }
-      }
-    });
-
-    const valuesWhereNotAppears = totalUserValues - matchingValues.size;
-    const totalPositionSum = positionSum.reduce((a, b) => a + b, 0) + (valuesWhereNotAppears * 11);
-    const avgPosition = totalUserValues > 0 ? totalPositionSum / totalUserValues : 11;
-    
-    const isAligned = totalSupportScore > totalAvoidScore && totalSupportScore > 0;
-    
-    let alignmentStrength: number;
-    if (isAligned) {
-      alignmentStrength = Math.round((1 - ((avgPosition - 1) / 10)) * 50 + 50);
-    } else {
-      alignmentStrength = Math.round(((avgPosition - 1) / 10) * 50);
-    }
-    
-    return {
-      isAligned,
-      matchingValues: Array.from(matchingValues),
-      avgPosition: Math.round(avgPosition * 10) / 10,
-      totalSupportScore,
-      totalAvoidScore,
-      alignmentStrength
-    };
-  }, [product, supportedCauses, avoidedCauses, profile.causes.length]);
-
-  const alignmentColor = alignmentData.isAligned ? colors.success : colors.danger;
-  const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;
-  const alignmentLabel = alignmentData.isAligned ? 'Aligned' : 'Not Aligned';
-
-  if (!product) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Stack.Screen options={{ headerShown: false }} />
-        <View style={styles.errorContainer}>
-          <AlertCircle size={48} color={colors.danger} />
-          <Text style={[styles.errorText, { color: colors.text }]}>Product not found</Text>
-        </View>
-      </View>
-    );
-  }
-
-  const handleShopPress = async () => {
-    try {
-      const websiteUrl = product.website || `https://${product.brand.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '')}.com`;
-      const canOpen = await Linking.canOpenURL(websiteUrl);
-      if (canOpen) {
-        await Linking.openURL(websiteUrl);
-      }
-    } catch (error) {
-      console.error('Error opening URL:', error);
-    }
-  };
-
   const sortedReviews = useMemo(() => {
     const sorted = [...reviews];
     if (sortBy === 'latest') {
@@ -241,11 +161,25 @@ export default function ProductDetailScreen() {
     setUserRating(0);
   }, [reviewText, userRating, clerkUser]);
 
-  const handleSocialPress = async (platform: 'x' | 'instagram' | 'facebook') => {
+  const handleShopPress = async () => {
+    if (!product) return;
     try {
-      const brandSlug = product.brand.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '');
+      const websiteUrl = product.website || `https://${product.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '')}.com`;
+      const canOpen = await Linking.canOpenURL(websiteUrl);
+      if (canOpen) {
+        await Linking.openURL(websiteUrl);
+      }
+    } catch (error) {
+      console.error('Error opening URL:', error);
+    }
+  };
+
+  const handleSocialPress = async (platform: 'x' | 'instagram' | 'facebook') => {
+    if (!product) return;
+    try {
+      const brandSlug = product.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '');
       let url = '';
-      
+
       switch (platform) {
         case 'x':
           url = `https://x.com/${brandSlug}`;
@@ -257,7 +191,7 @@ export default function ProductDetailScreen() {
           url = `https://facebook.com/${brandSlug}`;
           break;
       }
-      
+
       const canOpen = await Linking.canOpenURL(url);
       if (canOpen) {
         await Linking.openURL(url);
@@ -266,6 +200,150 @@ export default function ProductDetailScreen() {
       console.error('Error opening social URL:', error);
     }
   };
+
+  // Calculate alignment data without useMemo to avoid infinite re-render
+  // Early return for loading/missing data
+  if (!product || !valuesMatrix) {
+    var alignmentData = {
+      isAligned: false,
+      matchingValues: [],
+      avgPosition: 0,
+      totalSupportScore: 0,
+      totalAvoidScore: 0,
+      alignmentStrength: 50
+    };
+  } else {
+    // Calculate causes
+    const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
+    const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
+    const allUserCauses = [...supportedCauses, ...avoidedCauses];
+
+    const brandName = product.name;
+    let totalSupportScore = 0;
+    let totalAvoidScore = 0;
+    const matchingValues = new Set<string>();
+
+    // Collect positions for this brand across all user's selected values
+    const alignedPositions: number[] = [];
+    const unalignedPositions: number[] = [];
+
+    // Check each user cause to find the brand's position
+    allUserCauses.forEach((causeId) => {
+      const causeData = valuesMatrix[causeId];
+      if (!causeData) return;
+
+      // Find position in support list (1-10, or 11 if not found)
+      const supportIndex = causeData.support?.indexOf(brandName);
+      const supportPosition = supportIndex !== undefined && supportIndex >= 0
+        ? supportIndex + 1 // Convert to 1-indexed
+        : 11; // Not in top 10
+
+      // Find position in oppose list (1-10, or 11 if not found)
+      const opposeIndex = causeData.oppose?.indexOf(brandName);
+      const opposePosition = opposeIndex !== undefined && opposeIndex >= 0
+        ? opposeIndex + 1 // Convert to 1-indexed
+        : 11; // Not in top 10
+
+      // If user supports this cause
+      if (supportedCauses.includes(causeId)) {
+        // Good if brand is in support list, bad if in oppose list
+        if (supportPosition <= 10) {
+          matchingValues.add(causeId);
+          alignedPositions.push(supportPosition);
+          totalSupportScore += 100;
+        } else if (opposePosition <= 10) {
+          matchingValues.add(causeId);
+          unalignedPositions.push(opposePosition);
+          totalAvoidScore += 100;
+        }
+      }
+
+      // If user avoids this cause
+      if (avoidedCauses.includes(causeId)) {
+        // Good if brand is in oppose list, bad if in support list
+        if (opposePosition <= 10) {
+          matchingValues.add(causeId);
+          alignedPositions.push(opposePosition);
+          totalSupportScore += 100;
+        } else if (supportPosition <= 10) {
+          matchingValues.add(causeId);
+          unalignedPositions.push(supportPosition);
+          totalAvoidScore += 100;
+        }
+      }
+    });
+
+    // Calculate alignment strength based on average position
+    let alignmentStrength = 50; // Neutral default
+    let avgPosition = 11;
+
+    if (alignedPositions.length > 0) {
+      // Calculate average position for aligned brands
+      avgPosition = alignedPositions.reduce((sum, pos) => sum + pos, 0) / alignedPositions.length;
+      // Map position to score: position 1 = 100, position 11 = 50
+      alignmentStrength = Math.round(100 - ((avgPosition - 1) / 10) * 50);
+    } else if (unalignedPositions.length > 0) {
+      // Calculate average position for unaligned brands
+      avgPosition = unalignedPositions.reduce((sum, pos) => sum + pos, 0) / unalignedPositions.length;
+      // Map position to score: position 1 = 0, position 11 = 50
+      alignmentStrength = Math.round(((avgPosition - 1) / 10) * 50);
+    }
+
+    const isAligned = totalSupportScore > totalAvoidScore && totalSupportScore > 0;
+
+    var alignmentData = {
+      isAligned,
+      matchingValues: Array.from(matchingValues),
+      avgPosition: Math.round(avgPosition * 10) / 10,
+      totalSupportScore,
+      totalAvoidScore,
+      alignmentStrength
+    };
+  }
+
+  const alignmentColor = alignmentData.isAligned ? colors.success : colors.danger;
+  const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;
+  const alignmentLabel = alignmentData.isAligned ? 'Aligned' : 'Not Aligned';
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.errorContainer}>
+          <Text style={[styles.errorText, { color: colors.text }]}>Loading brand...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.errorContainer}>
+          <AlertCircle size={48} color={colors.danger} />
+          <Text style={[styles.errorText, { color: colors.text }]}>Error loading brand</Text>
+          <Text style={[styles.errorSubtext, { color: colors.textSecondary }]}>
+            {error.message || 'Please try again later'}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (!product) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.errorContainer}>
+          <AlertCircle size={48} color={colors.danger} />
+          <Text style={[styles.errorText, { color: colors.text }]}>Product not found</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -388,68 +466,36 @@ export default function ProductDetailScreen() {
 
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Money Flow</Text>
-            
+
             <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
               <View style={[styles.companyHeader, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.companyName, { color: colors.text }]}>{product.moneyFlow.company}</Text>
+                <Text style={[styles.companyName, { color: colors.text }]}>{product.name}</Text>
               </View>
-              
-              <View style={styles.shareholdersContainer}>
-                <Text style={[styles.shareholdersTitle, { color: colors.textSecondary }]}>Top Stakeholders</Text>
-                {[
-                  { name: 'Vanguard Group', percentage: 8.2, alignment: 'aligned' as const },
-                  { name: 'BlackRock', percentage: 7.5, alignment: 'neutral' as const },
-                  { name: 'State Street Corporation', percentage: 4.8, alignment: 'aligned' as const },
-                  { name: 'Fidelity Investments', percentage: 3.9, alignment: 'neutral' as const },
-                  { name: 'Capital Research', percentage: 2.6, alignment: 'opposed' as const },
-                ].map((stakeholder, index) => {
-                  const shColor =
-                    stakeholder.alignment === 'aligned'
-                      ? colors.success
-                      : stakeholder.alignment === 'opposed'
-                      ? colors.danger
-                      : colors.neutral;
 
-                  return (
-                    <View key={`stakeholder-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
-                      <View style={styles.shareholderInfo}>
-                        <Text style={[styles.shareholderName, { color: colors.text }]}>{stakeholder.name}</Text>
-                        <Text style={[styles.shareholderPercentage, { color: colors.textSecondary }]}>
-                          {stakeholder.percentage}% stake
+              {product.affiliates && product.affiliates.length > 0 ? (
+                <View style={styles.shareholdersContainer}>
+                  <View style={styles.tableHeader}>
+                    <Text style={[styles.tableHeaderText, { color: colors.textSecondary }]}>Affiliate</Text>
+                    <Text style={[styles.tableHeaderText, { color: colors.textSecondary }]}>Relationship</Text>
+                  </View>
+                  {product.affiliates.map((affiliate, index) => (
+                    <View key={`affiliate-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
+                      <View style={styles.tableRow}>
+                        <Text style={[styles.affiliateName, { color: colors.text }]}>{affiliate.name}</Text>
+                        <Text style={[styles.affiliateRelationship, { color: colors.textSecondary }]}>
+                          {affiliate.relationship}
                         </Text>
                       </View>
-                      <View style={[styles.alignmentDot, { backgroundColor: shColor }]} />
                     </View>
-                  );
-                })}
-              </View>
-
-              <View style={[styles.shareholdersContainer, { marginTop: 24 }]}>
-                <Text style={[styles.shareholdersTitle, { color: colors.textSecondary }]}>Endorsements</Text>
-                {[
-                  { name: 'Sierra Club', type: 'Environmental Organization', alignment: 'aligned' as const },
-                  { name: 'Fair Trade USA', type: 'Certification Body', alignment: 'aligned' as const },
-                  { name: 'B Corporation', type: 'Business Certification', alignment: 'aligned' as const },
-                  { name: 'Green America', type: 'Environmental Nonprofit', alignment: 'aligned' as const },
-                  { name: 'EcoWatch', type: 'Media & Watchdog', alignment: 'neutral' as const },
-                ].map((endorsement, index) => {
-                  const shColor = endorsement.alignment === 'aligned'
-                      ? colors.success
-                      : colors.neutral;
-
-                  return (
-                    <View key={`endorsement-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
-                      <View style={styles.shareholderInfo}>
-                        <Text style={[styles.shareholderName, { color: colors.text }]}>{endorsement.name}</Text>
-                        <Text style={[styles.shareholderPercentage, { color: colors.textSecondary }]}>
-                          {endorsement.type}
-                        </Text>
-                      </View>
-                      <View style={[styles.alignmentDot, { backgroundColor: shColor }]} />
-                    </View>
-                  );
-                })}
-              </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.shareholdersContainer}>
+                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
+                    No affiliate information available
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 
@@ -753,6 +799,41 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
   },
+  tableHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  tableHeaderText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    flex: 1,
+    textAlign: 'center' as const,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flex: 1,
+  },
+  affiliateName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    flex: 1,
+    textAlign: 'center' as const,
+  },
+  affiliateRelationship: {
+    fontSize: 13,
+    flex: 1,
+    textAlign: 'center' as const,
+  },
+  noDataText: {
+    fontSize: 14,
+    textAlign: 'center' as const,
+    paddingVertical: 24,
+  },
   valueTagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -777,6 +858,11 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 18,
     fontWeight: '600' as const,
+  },
+  errorSubtext: {
+    fontSize: 14,
+    textAlign: 'center' as const,
+    marginTop: 8,
   },
   reviewsHeader: {
     flexDirection: 'row',

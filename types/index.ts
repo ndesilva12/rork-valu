@@ -30,6 +30,11 @@ export interface MoneyFlow {
   overallAlignment: number;
 }
 
+export interface Affiliate {
+  name: string;
+  relationship: string;
+}
+
 export interface ValueAlignment {
   valueId: string;
   position: number;
@@ -50,13 +55,24 @@ export interface Brand {
   valueAlignments: ValueAlignment[];
   alternatives?: Brand[];
   website?: string;
+  affiliates?: Affiliate[]; // Celebrity/influencer affiliates and their relationships
 }
 
 // For backwards compatibility during transition
 // TODO: Remove this once all code is migrated
 export type Product = Brand;
 
+export interface Charity {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+}
+
 export interface UserProfile {
   causes: Cause[];
   searchHistory: string[];
+  promoCode?: string;
+  donationAmount?: number;
+  selectedCharities?: Charity[];
 }

@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -135,7 +136,7 @@ export default function OnboardingScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 + insets.bottom }]}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 + insets.bottom }, Platform.OS === 'web' && styles.webContent]}>
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <Image 
@@ -271,6 +272,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {},
+  webContent: {
+    maxWidth: 768,
+    alignSelf: 'center' as const,
+    width: '100%',
+  },
   header: {
     paddingHorizontal: 24,
     paddingTop: 32,

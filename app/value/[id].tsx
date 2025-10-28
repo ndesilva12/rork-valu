@@ -12,9 +12,8 @@ import {
 } from 'react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
-import { MOCK_PRODUCTS } from '@/mocks/products';
-import productsData from '@/mocks/products-data.json';
-import { generateProducts } from '@/mocks/generate-products';
+import productsData from '../../mocks/products-data.json';
+import { generateProducts } from '../../mocks/generate-products';
 import { useRef } from 'react';
 
 interface ValueDriver {

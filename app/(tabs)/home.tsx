@@ -34,10 +34,11 @@ import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
-import { MOCK_PRODUCTS } from '@/mocks/products';
 import { Product } from '@/types';
 import { useMemo, useState, useRef } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
+import { trpc } from '@/lib/trpc';
+import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
 
 type ViewMode = 'playbook' | 'browse' | 'map';
 
@@ -70,8 +71,13 @@ export default function HomeScreen() {
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
+  const [brandType, setBrandType] = useState<'brands' | 'local'>('brands');
 
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Fetch brands and values matrix from local data via tRPC
+  const { data: brands, isLoading, error } = trpc.data.getBrands.useQuery();
+  const { data: valuesMatrix } = trpc.data.getValuesMatrix.useQuery();
 
   const viewModes: ViewMode[] = ['playbook', 'browse', 'map'];
 
@@ -93,74 +99,133 @@ export default function HomeScreen() {
   ).current;
 
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
+    // Select brand source based on brandType
+    const currentBrands = brandType === 'local' ? LOCAL_BUSINESSES : brands;
+
+    if (!currentBrands || currentBrands.length === 0 || !valuesMatrix) {
+      console.log('[Home] Missing data:', {
+        brandType,
+        hasBrands: !!currentBrands,
+        brandsCount: currentBrands?.length || 0,
+        hasValuesMatrix: !!valuesMatrix,
+        valuesCount: valuesMatrix ? Object.keys(valuesMatrix).length : 0
+      });
+      return {
+        topSupport: [],
+        topAvoid: [],
+        allSupport: [],
+        allSupportFull: [],
+        allAvoidFull: [],
+        scoredBrands: new Map(),
+      };
+    }
+
     const supportedCauses = profile.causes.filter((c) => c.type === 'support').map((c) => c.id);
     const avoidedCauses = profile.causes.filter((c) => c.type === 'avoid').map((c) => c.id);
-    const totalUserValues = profile.causes.length;
+    const allUserCauses = [...supportedCauses, ...avoidedCauses];
 
-    const scored = MOCK_PRODUCTS.map((product) => {
+    console.log('[Home] Scoring brands:', {
+      totalBrands: currentBrands.length,
+      userCauses: allUserCauses,
+      supportedCauses,
+      avoidedCauses,
+      sampleBrandNames: currentBrands.slice(0, 5).map(b => b.name),
+      sampleValueIds: Object.keys(valuesMatrix).slice(0, 5)
+    });
+
+    // Score each brand based on position in the values matrix
+    const scored = currentBrands.map((product) => {
+      const brandName = product.name;
       let totalSupportScore = 0;
       let totalAvoidScore = 0;
-      const matchingValues = new Set<string>();
-      const positionSum: number[] = [];
 
-      product.valueAlignments.forEach((alignment) => {
-        const isUserSupporting = supportedCauses.includes(alignment.valueId);
-        const isUserAvoiding = avoidedCauses.includes(alignment.valueId);
+      // Collect positions for this brand across all user's selected values
+      const alignedPositions: number[] = [];
+      const unalignedPositions: number[] = [];
 
-        if (!isUserSupporting && !isUserAvoiding) return;
+      // Check each user cause to find the brand's position
+      allUserCauses.forEach((causeId) => {
+        const causeData = valuesMatrix[causeId];
+        if (!causeData) return;
 
-        matchingValues.add(alignment.valueId);
-        positionSum.push(alignment.position);
+        // Find position in support list (1-10, or 11 if not found)
+        const supportIndex = causeData.support?.indexOf(brandName);
+        const supportPosition = supportIndex !== undefined && supportIndex >= 0
+          ? supportIndex + 1 // Convert to 1-indexed
+          : 11; // Not in top 10
 
-        const score = alignment.isSupport ? 100 - alignment.position * 5 : -(100 - alignment.position * 5);
+        // Find position in oppose list (1-10, or 11 if not found)
+        const opposeIndex = causeData.oppose?.indexOf(brandName);
+        const opposePosition = opposeIndex !== undefined && opposeIndex >= 0
+          ? opposeIndex + 1 // Convert to 1-indexed
+          : 11; // Not in top 10
 
-        if (isUserSupporting) {
-          if (score > 0) {
-            totalSupportScore += score;
-          } else {
-            totalAvoidScore += Math.abs(score);
+        // If user supports this cause
+        if (supportedCauses.includes(causeId)) {
+          // Good if brand is in support list, bad if in oppose list
+          if (supportPosition <= 10) {
+            alignedPositions.push(supportPosition);
+            totalSupportScore += 100;
+          } else if (opposePosition <= 10) {
+            unalignedPositions.push(opposePosition);
+            totalAvoidScore += 100;
           }
         }
 
-        if (isUserAvoiding) {
-          if (score < 0) {
-            totalSupportScore += Math.abs(score);
-          } else {
-            totalAvoidScore += score;
+        // If user avoids this cause
+        if (avoidedCauses.includes(causeId)) {
+          // Good if brand is in oppose list, bad if in support list
+          if (opposePosition <= 10) {
+            alignedPositions.push(opposePosition);
+            totalSupportScore += 100;
+          } else if (supportPosition <= 10) {
+            unalignedPositions.push(supportPosition);
+            totalAvoidScore += 100;
           }
         }
       });
 
-      const valuesWhereNotAppears = totalUserValues - matchingValues.size;
-      const totalPositionSum = positionSum.reduce((a, b) => a + b, 0) + valuesWhereNotAppears * 11;
-      const avgPosition = totalUserValues > 0 ? totalPositionSum / totalUserValues : 11;
+      // Calculate alignment strength based on average position
+      let alignmentStrength = 50; // Neutral default
 
-      const isNegativelyAligned = totalAvoidScore > totalSupportScore && totalAvoidScore > 0;
-
-      let alignmentStrength: number;
-      if (isNegativelyAligned) {
+      if (alignedPositions.length > 0) {
+        // Calculate average position for aligned brands
+        const avgPosition = alignedPositions.reduce((sum, pos) => sum + pos, 0) / alignedPositions.length;
+        // Map position to score: position 1 = 100, position 11 = 50
+        // Formula: score = 100 - ((avgPosition - 1) / 10) * 50
+        alignmentStrength = Math.round(100 - ((avgPosition - 1) / 10) * 50);
+      } else if (unalignedPositions.length > 0) {
+        // Calculate average position for unaligned brands
+        const avgPosition = unalignedPositions.reduce((sum, pos) => sum + pos, 0) / unalignedPositions.length;
+        // Map position to score: position 1 = 0, position 11 = 50
+        // Formula: score = ((avgPosition - 1) / 10) * 50
         alignmentStrength = Math.round(((avgPosition - 1) / 10) * 50);
-      } else {
-        alignmentStrength = Math.round((1 - (avgPosition - 1) / 10) * 50 + 50);
       }
 
       return {
         product,
         totalSupportScore,
         totalAvoidScore,
-        matchingValuesCount: matchingValues.size,
-        matchingValues,
         alignmentStrength,
+        matchingValuesCount: alignedPositions.length + unalignedPositions.length,
       };
     });
 
+    // Sort brands into support and avoid categories BY ALIGNMENT STRENGTH
     const allSupportSorted = scored
       .filter((s) => s.totalSupportScore > s.totalAvoidScore && s.totalSupportScore > 0)
-      .sort((a, b) => b.alignmentStrength - a.alignmentStrength);
+      .sort((a, b) => b.alignmentStrength - a.alignmentStrength); // Sort by score, not count!
 
     const allAvoidSorted = scored
       .filter((s) => s.totalAvoidScore > s.totalSupportScore && s.totalAvoidScore > 0)
-      .sort((a, b) => a.alignmentStrength - b.alignmentStrength);
+      .sort((a, b) => a.alignmentStrength - b.alignmentStrength); // Lowest score first for unaligned
+
+    console.log('[Home] Scoring results:', {
+      alignedCount: allSupportSorted.length,
+      unalignedCount: allAvoidSorted.length,
+      topAligned: allSupportSorted.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength })),
+      topUnaligned: allAvoidSorted.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength }))
+    });
 
     const scoredMap = new Map(scored.map((s) => [s.product.id, s.alignmentStrength]));
 
@@ -172,7 +237,7 @@ export default function HomeScreen() {
       allAvoidFull: allAvoidSorted.map((s) => s.product),
       scoredBrands: scoredMap,
     };
-  }, [profile.causes]);
+  }, [profile.causes, brands, valuesMatrix, brandType]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
@@ -180,7 +245,7 @@ export default function HomeScreen() {
     allSupport.forEach((product) => {
       FOLDER_CATEGORIES.forEach((category) => {
         const productCategory = product.category.toLowerCase();
-        const productBrand = product.brand.toLowerCase();
+        const productBrand = product.name.toLowerCase();
 
         let match = false;
 
@@ -316,7 +381,7 @@ export default function HomeScreen() {
           </View>
           <View style={styles.brandCardContent}>
             <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>
-              {product.brand}
+              {product.name}
             </Text>
             <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
               {product.category}
@@ -448,7 +513,7 @@ export default function HomeScreen() {
                     />
                     <View style={styles.folderBrandContent}>
                       <Text style={[styles.folderBrandName, { color: colors.text }]} numberOfLines={2}>
-                        {product.brand}
+                        {product.name}
                       </Text>
                       <Text style={[styles.folderBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
                         {product.category}
@@ -495,6 +560,41 @@ export default function HomeScreen() {
     );
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
+          <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
+          <MenuButton />
+        </View>
+        <View style={styles.emptyContainer}>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>Loading brands...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
+          <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
+          <MenuButton />
+        </View>
+        <View style={styles.emptyContainer}>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>Error loading brands</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+            {error.message || 'Please try again later'}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   if (profile.causes.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -524,7 +624,18 @@ export default function HomeScreen() {
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
+          <View style={styles.headerTitleRow}>
+            <TouchableOpacity onPress={() => setBrandType('brands')} activeOpacity={0.7}>
+              <Text style={[styles.headerTitle, { color: brandType === 'brands' ? colors.primary : colors.textSecondary }]}>
+                Brands
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setBrandType('local')} activeOpacity={0.7}>
+              <Text style={[styles.headerTitle, { color: brandType === 'local' ? '#84CC16' : colors.textLight }]}>
+                Local
+              </Text>
+            </TouchableOpacity>
+          </View>
           <MenuButton />
         </View>
         {renderViewModeSelector()}
@@ -588,7 +699,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 32,
     fontWeight: '700' as const,
+  },
+  headerTitleRow: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
 
   section: {

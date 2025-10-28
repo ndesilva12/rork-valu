@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { publicProcedure } from "../../../create-context";
-import { fetchBrandsFromSheets, fetchLocalBusinessesFromSheets } from "../../../../services/google-sheets";
+import { fetchBrandsFromSheets, fetchLocalBusinessesFromSheets } from "../../../../services/local-data";
 
 export const getBrandProcedure = publicProcedure
   .input(z.object({ id: z.string() }))

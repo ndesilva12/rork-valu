@@ -33,6 +33,9 @@ yarn-error.*
 .env*.local
 .env
 
+# Generated data files (built from data-src CSVs)
+/data/*.json
+
 # typescript
 *.tsbuildinfo
 .vercel
@@ -43,6 +46,3 @@ yarn-error.*
 # Google Sheets credentials
 secrets/
 *service-account*.json
-
-secrets/
-*.json
