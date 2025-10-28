@@ -1,4 +1,3 @@
-import { google } from 'googleapis';
 import { Brand } from '@/types';
 import { ValueItem } from '@/mocks/causes';
 
@@ -6,38 +5,37 @@ import { ValueItem } from '@/mocks/causes';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 const cache = new Map<string, { data: any; timestamp: number }>();
 
-// Initialize Google Sheets API
-function getGoogleSheetsClient() {
-  // Check if service account credentials are provided
-  const serviceAccountFile = process.env.GOOGLE_SERVICE_ACCOUNT_FILE;
-  const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+// Fetch data from Google Sheets using direct API calls (Edge Runtime compatible)
+async function fetchSheetData(range: string): Promise<any[][]> {
+  const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
   const apiKey = process.env.GOOGLE_SHEETS_API_KEY;
 
-  let auth;
-
-  if (serviceAccountFile) {
-    // Method 1: Service account from file
-    auth = new google.auth.GoogleAuth({
-      keyFile: serviceAccountFile,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    });
-  } else if (serviceAccountJson) {
-    // Method 2: Service account from JSON string
-    const credentials = JSON.parse(serviceAccountJson);
-    auth = new google.auth.GoogleAuth({
-      credentials,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    });
-  } else if (apiKey) {
-    // Method 3: API key (for public sheets)
-    auth = apiKey;
-  } else {
-    throw new Error(
-      'Google Sheets credentials not found. Please set either GOOGLE_SERVICE_ACCOUNT_FILE, GOOGLE_SERVICE_ACCOUNT_JSON, or GOOGLE_SHEETS_API_KEY in your .env file.'
-    );
+  if (!spreadsheetId) {
+    throw new Error('GOOGLE_SPREADSHEET_ID not set in environment variables');
   }
 
-  return google.sheets({ version: 'v4', auth });
+  if (!apiKey) {
+    throw new Error('GOOGLE_SHEETS_API_KEY not set in environment variables. Make sure your Google Sheet is publicly accessible.');
+  }
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?key=${apiKey}`;
+
+  console.log('[Sheets] Fetching from URL:', url.replace(apiKey, 'API_KEY_HIDDEN'));
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('[Sheets] API error response:', {
+      status: response.status,
+      statusText: response.statusText,
+      body: errorText,
+    });
+    throw new Error(`Google Sheets API error: ${response.status} ${response.statusText} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.values || [];
 }
 
 // Get data from cache or fetch fresh
@@ -62,7 +60,6 @@ async function getCachedOrFetch<T>(
 // Fetch causes/values from Google Sheets
 export async function fetchCausesFromSheets(): Promise<ValueItem[]> {
   return getCachedOrFetch('causes', async () => {
-    const sheets = getGoogleSheetsClient();
     const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
     const sheetName = process.env.SHEET_NAME_CAUSES || 'Causes';
 
@@ -71,12 +68,7 @@ export async function fetchCausesFromSheets(): Promise<ValueItem[]> {
     }
 
     try {
-      const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range: `${sheetName}!A2:E`, // Skip header row
-      });
-
-      const rows = response.data.values || [];
+      const rows = await fetchSheetData(`${sheetName}!A2:E`);
       console.log(`[Sheets] Fetched ${rows.length} causes from Google Sheets`);
 
       const causes: ValueItem[] = rows
@@ -129,16 +121,8 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
     }
 
     try {
-      console.log('[Sheets] Initializing Google Sheets client');
-      const sheets = getGoogleSheetsClient();
-
       console.log('[Sheets] Fetching data from range:', `${sheetName}!A2:P`);
-      const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range: `${sheetName}!A2:P`, // Skip header row, columns A-P (id through $affiliate5)
-      });
-
-      const rows = response.data.values || [];
+      const rows = await fetchSheetData(`${sheetName}!A2:P`);
       console.log(`[Sheets] Fetched ${rows.length} brands from Google Sheets`);
 
       const brands: Brand[] = rows
@@ -206,7 +190,6 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
 // Fetch local businesses from Google Sheets
 export async function fetchLocalBusinessesFromSheets(): Promise<Brand[]> {
   return getCachedOrFetch('local-businesses', async () => {
-    const sheets = getGoogleSheetsClient();
     const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
     const sheetName = process.env.SHEET_NAME_LOCAL_BUSINESSES || 'Local Businesses';
 
@@ -215,12 +198,7 @@ export async function fetchLocalBusinessesFromSheets(): Promise<Brand[]> {
     }
 
     try {
-      const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range: `${sheetName}!A2:N`, // Skip header row
-      });
-
-      const rows = response.data.values || [];
+      const rows = await fetchSheetData(`${sheetName}!A2:N`);
       console.log(`[Sheets] Fetched ${rows.length} local businesses from Google Sheets`);
 
       const businesses: Brand[] = rows
