@@ -115,8 +115,8 @@ function convertBrands() {
 
 /**
  * Convert values.csv to values.json
- * Expected format: valueId, valueName, support/oppose, brandName columns
- * This creates a mapping of values to their aligned/opposed brands for scoring
+ * Expected format: id, name, category, aligned1-10, unaligned1-10
+ * Each row is a value with multiple brand columns
  */
 function convertValues() {
   console.log('Converting values.csv...');
@@ -133,49 +133,51 @@ function convertValues() {
   console.log(`📊 Parsed ${rows.length} rows from values.csv`);
   if (rows.length > 0) {
     console.log('📋 First row columns:', Object.keys(rows[0]));
-    console.log('📋 First row data:', rows[0]);
   }
 
-  // Group by value
+  // Convert wide format to nested format
   const valuesMap = {};
-  let skippedRows = 0;
 
-  rows.forEach((row, index) => {
-    const valueId = row.id || row.valueId;
-    const valueName = row.name || row.valueName;
-    const type = row.type; // 'support' or 'oppose'
-    const brandName = row.brandName || row.brand;
+  rows.forEach((row) => {
+    const valueId = row.id;
+    const valueName = row.name;
 
-    if (!valueId || !brandName) {
-      skippedRows++;
-      if (index < 5) {
-        console.log(`⚠️  Skipping row ${index + 1}: missing valueId or brandName`, row);
-      }
+    if (!valueId || !valueName) {
+      console.log('⚠️  Skipping row: missing id or name');
       return;
     }
 
-    if (!valuesMap[valueId]) {
-      valuesMap[valueId] = {
-        id: valueId,
-        name: valueName,
-        support: [],
-        oppose: []
-      };
+    // Collect aligned brands from aligned1, aligned2, ..., aligned10 columns
+    const support = [];
+    for (let i = 1; i <= 10; i++) {
+      const brandName = row[`aligned${i}`];
+      if (brandName && brandName.trim() && brandName !== '') {
+        support.push(brandName.trim());
+      }
     }
 
-    if (type === 'support' || type === 'aligned') {
-      valuesMap[valueId].support.push(brandName);
-    } else if (type === 'oppose' || type === 'unaligned') {
-      valuesMap[valueId].oppose.push(brandName);
+    // Collect unaligned brands from unaligned1, unaligned2, ..., unaligned10 columns
+    const oppose = [];
+    for (let i = 1; i <= 10; i++) {
+      const brandName = row[`unaligned${i}`];
+      if (brandName && brandName.trim() && brandName !== '') {
+        oppose.push(brandName.trim());
+      }
     }
+
+    valuesMap[valueId] = {
+      id: valueId,
+      name: valueName,
+      support: support,
+      oppose: oppose
+    };
+
+    console.log(`✓ ${valueName}: ${support.length} aligned, ${oppose.length} unaligned`);
   });
 
   const outputPath = path.join(DATA_DIR, 'values.json');
   fs.writeFileSync(outputPath, JSON.stringify(valuesMap, null, 2));
 
-  if (skippedRows > 0) {
-    console.log(`⚠️  Skipped ${skippedRows} rows with missing data`);
-  }
   console.log(`✅ Converted ${Object.keys(valuesMap).length} values to ${outputPath}`);
 }
 
