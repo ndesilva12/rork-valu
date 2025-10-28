@@ -139,14 +139,18 @@ export default function HomeScreen() {
       let totalSupportScore = 0;
       let totalAvoidScore = 0;
 
-      // Collect positions for this brand across all user's selected values
+      // Collect positions for this brand across ALL user's selected values
       const alignedPositions: number[] = [];
       const unalignedPositions: number[] = [];
 
-      // Check each user cause to find the brand's position
+      // Check EACH user cause to find the brand's position
       allUserCauses.forEach((causeId) => {
         const causeData = valuesMatrix[causeId];
-        if (!causeData) return;
+        if (!causeData) {
+          // If cause data doesn't exist, treat as position 11 (not found)
+          alignedPositions.push(11);
+          return;
+        }
 
         // Find position in support list (1-10, or 11 if not found)
         const supportIndex = causeData.support?.indexOf(brandName);
@@ -169,6 +173,9 @@ export default function HomeScreen() {
           } else if (opposePosition <= 10) {
             unalignedPositions.push(opposePosition);
             totalAvoidScore += 100;
+          } else {
+            // Brand doesn't appear in either list for this value
+            alignedPositions.push(11);
           }
         }
 
@@ -181,21 +188,24 @@ export default function HomeScreen() {
           } else if (supportPosition <= 10) {
             unalignedPositions.push(supportPosition);
             totalAvoidScore += 100;
+          } else {
+            // Brand doesn't appear in either list for this value
+            alignedPositions.push(11);
           }
         }
       });
 
-      // Calculate alignment strength based on average position
+      // Calculate alignment strength based on average position across ALL values
       let alignmentStrength = 50; // Neutral default
 
-      if (alignedPositions.length > 0) {
-        // Calculate average position for aligned brands
+      if (totalSupportScore > totalAvoidScore && totalSupportScore > 0) {
+        // Aligned brand: calculate score based on average position
         const avgPosition = alignedPositions.reduce((sum, pos) => sum + pos, 0) / alignedPositions.length;
         // Map position to score: position 1 = 100, position 11 = 50
         // Formula: score = 100 - ((avgPosition - 1) / 10) * 50
         alignmentStrength = Math.round(100 - ((avgPosition - 1) / 10) * 50);
-      } else if (unalignedPositions.length > 0) {
-        // Calculate average position for unaligned brands
+      } else if (totalAvoidScore > totalSupportScore && totalAvoidScore > 0) {
+        // Unaligned brand: calculate score based on average position
         const avgPosition = unalignedPositions.reduce((sum, pos) => sum + pos, 0) / unalignedPositions.length;
         // Map position to score: position 1 = 0, position 11 = 50
         // Formula: score = ((avgPosition - 1) / 10) * 50
