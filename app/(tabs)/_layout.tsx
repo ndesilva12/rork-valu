@@ -1,5 +1,5 @@
 import { Tabs, useSegments } from "expo-router";
-import { BookOpen, MapPin, ShoppingBag, Search, User } from "lucide-react-native";
+import { BookOpen, Heart, ShoppingBag, Search, User } from "lucide-react-native";
 import React from "react";
 import { Platform, useWindowDimensions, StyleSheet, StatusBar, View, Text } from "react-native";
 import { lightColors, darkColors } from "@/constants/colors";
@@ -7,15 +7,11 @@ import { useUser } from "@/contexts/UserContext";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useIsStandalone } from "@/hooks/useIsStandalone";
 
-const localColor = '#84CC16';
-
 export default function TabLayout() {
   const isStandalone = useIsStandalone();
   const { isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const { width } = useWindowDimensions();
-  const segments = useSegments();
-  const isLocalTab = segments[segments.length - 1] === 'local';
 
   const isTabletOrLarger = Platform.OS === 'web' && width >= 768;
   const tabBarHeight = isTabletOrLarger ? 64 : 70;
@@ -65,7 +61,7 @@ export default function TabLayout() {
         <View style={{ width: '100%', maxWidth: isTabletOrLarger ? '50%' : 768, flex: 1 }}>
           <Tabs
             screenOptions={{
-              tabBarActiveTintColor: isLocalTab ? localColor : colors.primary,
+              tabBarActiveTintColor: colors.primary,
               headerShown: false,
               tabBarPosition: isTabletOrLarger ? 'top' : 'bottom',
               // we'll render our own label next to icons on wide screens
@@ -105,8 +101,8 @@ export default function TabLayout() {
             <Tabs.Screen
               name="local"
               options={{
-                title: "Local",
-                tabBarIcon: renderTabIconWithLabel(MapPin, "Local", localColor),
+                title: "Values",
+                tabBarIcon: renderTabIconWithLabel(Heart, "Values", colors.primary),
               }}
             />
             <Tabs.Screen
