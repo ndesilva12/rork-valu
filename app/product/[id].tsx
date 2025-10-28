@@ -120,32 +120,22 @@ export default function ProductDetailScreen() {
     })
   ).current;
 
-  // Create stable keys for dependencies to prevent infinite re-renders
-  const causesKey = useMemo(
-    () => profile.causes.map(c => `${c.id}:${c.type}`).sort().join(','),
-    [profile.causes]
-  );
-
-  const alignmentData = useMemo(() => {
-    console.log('[ProductDetail] alignmentData useMemo recalculating');
-
-    if (!product || !valuesMatrix) {
-      return {
-        isAligned: false,
-        matchingValues: [],
-        avgPosition: 0,
-        totalSupportScore: 0,
-        totalAvoidScore: 0,
-        alignmentStrength: 50
-      };
-    }
-
-    // Calculate causes inside useMemo using stable profile reference
+  // Calculate alignment data without useMemo to avoid infinite re-render
+  // Early return for loading/missing data
+  if (!product || !valuesMatrix) {
+    var alignmentData = {
+      isAligned: false,
+      matchingValues: [],
+      avgPosition: 0,
+      totalSupportScore: 0,
+      totalAvoidScore: 0,
+      alignmentStrength: 50
+    };
+  } else {
+    // Calculate causes
     const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
     const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
     const allUserCauses = [...supportedCauses, ...avoidedCauses];
-
-    console.log('[ProductDetail] Calculating alignment for', product.name, 'with causes:', allUserCauses);
 
     const brandName = product.name;
     let totalSupportScore = 0;
@@ -220,7 +210,7 @@ export default function ProductDetailScreen() {
 
     const isAligned = totalSupportScore > totalAvoidScore && totalSupportScore > 0;
 
-    return {
+    var alignmentData = {
       isAligned,
       matchingValues: Array.from(matchingValues),
       avgPosition: Math.round(avgPosition * 10) / 10,
@@ -228,7 +218,7 @@ export default function ProductDetailScreen() {
       totalAvoidScore,
       alignmentStrength
     };
-  }, [product, valuesMatrix, causesKey]);
+  }
 
   const alignmentColor = alignmentData.isAligned ? colors.success : colors.danger;
   const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;
