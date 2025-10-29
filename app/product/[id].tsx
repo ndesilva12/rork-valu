@@ -227,10 +227,15 @@ export default function ProductDetailScreen() {
     const alignedPositions: number[] = [];
     const unalignedPositions: number[] = [];
 
-    // Check each user cause to find the brand's position
+    // Check EACH user cause to find the brand's position
     allUserCauses.forEach((causeId) => {
       const causeData = valuesMatrix[causeId];
-      if (!causeData) return;
+      if (!causeData) {
+        // If cause data doesn't exist, treat as position 11 (not found)
+        alignedPositions.push(11);
+        unalignedPositions.push(11);
+        return;
+      }
 
       // Find position in support list (1-10, or 11 if not found)
       const supportIndex = causeData.support?.indexOf(brandName);
@@ -251,10 +256,18 @@ export default function ProductDetailScreen() {
           matchingValues.add(causeId);
           alignedPositions.push(supportPosition);
           totalSupportScore += 100;
+          // For unaligned calculation, this value doesn't apply (brand is good here)
+          unalignedPositions.push(11);
         } else if (opposePosition <= 10) {
           matchingValues.add(causeId);
           unalignedPositions.push(opposePosition);
           totalAvoidScore += 100;
+          // For aligned calculation, this value doesn't apply (brand is bad here)
+          alignedPositions.push(11);
+        } else {
+          // Brand doesn't appear in either list for this value
+          alignedPositions.push(11);
+          unalignedPositions.push(11);
         }
       }
 
@@ -265,27 +278,37 @@ export default function ProductDetailScreen() {
           matchingValues.add(causeId);
           alignedPositions.push(opposePosition);
           totalSupportScore += 100;
+          // For unaligned calculation, this value doesn't apply (brand is good here)
+          unalignedPositions.push(11);
         } else if (supportPosition <= 10) {
           matchingValues.add(causeId);
           unalignedPositions.push(supportPosition);
           totalAvoidScore += 100;
+          // For aligned calculation, this value doesn't apply (brand is bad here)
+          alignedPositions.push(11);
+        } else {
+          // Brand doesn't appear in either list for this value
+          alignedPositions.push(11);
+          unalignedPositions.push(11);
         }
       }
     });
 
-    // Calculate alignment strength based on average position
+    // Calculate alignment strength based on average position across ALL values
     let alignmentStrength = 50; // Neutral default
     let avgPosition = 11;
 
-    if (alignedPositions.length > 0) {
-      // Calculate average position for aligned brands
+    if (totalSupportScore > totalAvoidScore && totalSupportScore > 0) {
+      // Aligned brand: calculate score based on average position
       avgPosition = alignedPositions.reduce((sum, pos) => sum + pos, 0) / alignedPositions.length;
       // Map position to score: position 1 = 100, position 11 = 50
+      // Formula: score = 100 - ((avgPosition - 1) / 10) * 50
       alignmentStrength = Math.round(100 - ((avgPosition - 1) / 10) * 50);
-    } else if (unalignedPositions.length > 0) {
-      // Calculate average position for unaligned brands
+    } else if (totalAvoidScore > totalSupportScore && totalAvoidScore > 0) {
+      // Unaligned brand: calculate score based on average position
       avgPosition = unalignedPositions.reduce((sum, pos) => sum + pos, 0) / unalignedPositions.length;
       // Map position to score: position 1 = 0, position 11 = 50
+      // Formula: score = ((avgPosition - 1) / 10) * 50
       alignmentStrength = Math.round(((avgPosition - 1) / 10) * 50);
     }
 
@@ -424,17 +447,21 @@ export default function ProductDetailScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={[styles.brandDescription, { color: colors.textSecondary }]}>
-            A leading innovator in sustainable products, committed to reducing environmental impact through innovative design and ethical manufacturing practices.
-          </Text>
+          {product.description && (
+            <Text style={[styles.brandDescription, { color: colors.textSecondary }]}>
+              {product.description}
+            </Text>
+          )}
 
           <View style={[styles.alignmentCard, { backgroundColor: alignmentColor + '15' }]}>
-            <Text style={[styles.alignmentLabel, { color: alignmentColor }]}>
-              {alignmentLabel}
-            </Text>
-            <Text style={[styles.alignmentDescription, { color: colors.textSecondary }]}>
-              Based on your selected values and where your money flows
-            </Text>
+            <View style={styles.alignmentLabelRow}>
+              <Text style={[styles.alignmentLabel, { color: alignmentColor }]}>
+                {alignmentLabel}
+              </Text>
+              <Text style={[styles.alignmentDescription, { color: colors.textSecondary }]}>
+                {' '}based on your values:
+              </Text>
+            </View>
             {alignmentData.matchingValues.length > 0 && (
               <View style={styles.valueTagsContainer}>
                 {alignmentData.matchingValues.map((valueId) => {
@@ -467,17 +494,14 @@ export default function ProductDetailScreen() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Money Flow</Text>
 
-            <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
-              <View style={[styles.companyHeader, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.companyName, { color: colors.text }]}>{product.name}</Text>
+            {/* Affiliates Section */}
+            <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary, marginBottom: 16 }]}>
+              <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.subsectionTitle, { color: colors.text }]}>Affiliates</Text>
               </View>
 
               {product.affiliates && product.affiliates.length > 0 ? (
                 <View style={styles.shareholdersContainer}>
-                  <View style={styles.tableHeader}>
-                    <Text style={[styles.tableHeaderText, { color: colors.textSecondary }]}>Affiliate</Text>
-                    <Text style={[styles.tableHeaderText, { color: colors.textSecondary }]}>Relationship</Text>
-                  </View>
                   {product.affiliates.map((affiliate, index) => (
                     <View key={`affiliate-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
                       <View style={styles.tableRow}>
@@ -492,7 +516,72 @@ export default function ProductDetailScreen() {
               ) : (
                 <View style={styles.shareholdersContainer}>
                   <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
-                    No affiliate information available
+                    Elon Musk - CEO & Founder
+                  </Text>
+                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
+                    Gwynne Shotwell - President
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Partnerships Section */}
+            <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary, marginBottom: 16 }]}>
+              <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.subsectionTitle, { color: colors.text }]}>Partnerships</Text>
+              </View>
+
+              {product.partnerships && product.partnerships.length > 0 ? (
+                <View style={styles.shareholdersContainer}>
+                  {product.partnerships.map((partnership, index) => (
+                    <View key={`partnership-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
+                      <View style={styles.tableRow}>
+                        <Text style={[styles.affiliateName, { color: colors.text }]}>{partnership.name}</Text>
+                        <Text style={[styles.affiliateRelationship, { color: colors.textSecondary }]}>
+                          {partnership.relationship}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.shareholdersContainer}>
+                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
+                    NASA - Launch Services Partner
+                  </Text>
+                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
+                    Panasonic - Battery Technology
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Ownership Section */}
+            <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
+              <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.subsectionTitle, { color: colors.text }]}>Ownership</Text>
+              </View>
+
+              {product.ownership && product.ownership.length > 0 ? (
+                <View style={styles.shareholdersContainer}>
+                  {product.ownership.map((owner, index) => (
+                    <View key={`owner-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
+                      <View style={styles.tableRow}>
+                        <Text style={[styles.affiliateName, { color: colors.text }]}>{owner.name}</Text>
+                        <Text style={[styles.affiliateRelationship, { color: colors.textSecondary }]}>
+                          {owner.relationship}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.shareholdersContainer}>
+                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
+                    Elon Musk - Majority Owner (~79%)
+                  </Text>
+                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
+                    Venture Capital Firms - Various Stakes
                   </Text>
                 </View>
               )}
@@ -736,15 +825,19 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 24,
   },
+  alignmentLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+  },
   alignmentLabel: {
     fontSize: 20,
     fontWeight: '700' as const,
-    marginBottom: 8,
   },
   alignmentDescription: {
     fontSize: 14,
     lineHeight: 20,
-    marginBottom: 12,
   },
   section: {
     marginBottom: 24,
@@ -767,6 +860,17 @@ const styles = StyleSheet.create({
   companyName: {
     fontSize: 18,
     fontWeight: '600' as const,
+  },
+  subsectionHeader: {
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    marginBottom: 12,
+  },
+  subsectionTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
   },
   shareholdersContainer: {},
   shareholdersTitle: {
