@@ -35,6 +35,16 @@ export interface Affiliate {
   relationship: string;
 }
 
+export interface Partnership {
+  name: string;
+  relationship: string;
+}
+
+export interface Ownership {
+  name: string;
+  relationship: string;
+}
+
 export interface ValueAlignment {
   valueId: string;
   position: number;
@@ -56,6 +66,8 @@ export interface Brand {
   alternatives?: Brand[];
   website?: string;
   affiliates?: Affiliate[]; // Celebrity/influencer affiliates and their relationships
+  partnerships?: Partnership[]; // Business partnerships and collaborations
+  ownership?: Ownership[]; // Parent companies, investors, and ownership structure
 }
 
 // For backwards compatibility during transition
