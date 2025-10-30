@@ -660,7 +660,7 @@ export default function HomeScreen() {
         </View>
         {renderViewModeSelector()}
       </View>
-      <ScrollView ref={scrollViewRef} style={styles.scrollView} contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}>
+      <ScrollView ref={scrollViewRef} style={styles.scrollView} contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent, { paddingBottom: 100 }]}>
         {viewMode === 'playbook' && renderPlaybookView()}
         {viewMode === 'browse' && renderFoldersView()}
         {viewMode === 'map' && renderMapView()}

@@ -14,7 +14,7 @@ export default function TabLayout() {
   const { width } = useWindowDimensions();
 
   const isTabletOrLarger = Platform.OS === 'web' && width >= 768;
-  const tabBarHeight = isTabletOrLarger ? 64 : 70;
+  const tabBarHeight = isTabletOrLarger ? 64 : 60;
 
   // Use safe area insets to avoid content going under system UI (status bar / home indicator)
   const insets = useSafeAreaInsets();
@@ -73,8 +73,8 @@ export default function TabLayout() {
                 left: 0,
                 right: 0,
                 height: tabBarHeight,
-                paddingBottom: 0,
-                paddingTop: 0,
+                paddingBottom: isTabletOrLarger ? 0 : 4,
+                paddingTop: isTabletOrLarger ? 0 : 12,
                 borderTopWidth: isTabletOrLarger ? 0 : 1,
                 borderBottomWidth: isTabletOrLarger ? 1 : 0,
                 borderTopColor: colors.border,
@@ -82,6 +82,10 @@ export default function TabLayout() {
                 backgroundColor: colors.background,
                 zIndex: isTabletOrLarger ? 10 : undefined,
                 elevation: isTabletOrLarger ? 10 : undefined,
+              },
+              tabBarItemStyle: {
+                paddingTop: isTabletOrLarger ? 0 : 5,
+                paddingBottom: isTabletOrLarger ? 0 : 4,
               },
               contentStyle: {
                 // Reserve space for the top tab bar + system top inset on wide screens,

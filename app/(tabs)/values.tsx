@@ -21,7 +21,7 @@ export default function ProfileScreen() {
     router.push('/select-charities');
   };
 
-  const selectedCharitiesCount = profile.selectedCharities?.length || 0;
+  const selectedOrganizationsCount = profile.selectedCharities?.length || 0;
   const donationAmount = profile.donationAmount || 0;
 
   return (
@@ -39,14 +39,14 @@ export default function ProfileScreen() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.content]}
+        contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
       >
-        {/* Promo Code Section */}
+        {/* Valu Code Section */}
         <View style={[styles.promoSection, { borderColor: colors.primary, backgroundColor: colors.backgroundSecondary }]}>
-          <Text style={[styles.promoLabel, { color: colors.textSecondary }]}>Your Promo Code</Text>
+          <Text style={[styles.promoLabel, { color: colors.textSecondary }]}>Your Valu Code</Text>
           <Text style={[styles.promoCode, { color: colors.primary }]}>{profile.promoCode || 'VALU000000'}</Text>
           <Text style={[styles.promoDescription, { color: colors.textSecondary }]}>
-            Share this code with friends and earn rewards on every purchase
+            Use this code when you shop at locations and we will donate a percentage of each purchase to your selected organizations
           </Text>
         </View>
 
@@ -63,11 +63,11 @@ export default function ProfileScreen() {
 
             <View style={styles.charitiesInfoContainer}>
               <Text style={[styles.charitiesInfoText, { color: colors.textSecondary }]}>
-                {selectedCharitiesCount === 0
-                  ? 'No charities selected yet'
-                  : selectedCharitiesCount === 1
-                  ? '1 charity selected'
-                  : `${selectedCharitiesCount} charities selected`}
+                {selectedOrganizationsCount === 0
+                  ? 'No organizations selected yet'
+                  : selectedOrganizationsCount === 1
+                  ? '1 organization selected'
+                  : `${selectedOrganizationsCount} organizations selected`}
               </Text>
             </View>
 
@@ -77,11 +77,11 @@ export default function ProfileScreen() {
               activeOpacity={0.7}
             >
               <Text style={[styles.selectCharitiesButtonText, { color: colors.white }]}>
-                {selectedCharitiesCount === 0 ? 'Select Charities' : 'Manage Charities'}
+                {selectedOrganizationsCount === 0 ? 'Select Organizations' : 'Manage Organizations'}
               </Text>
             </TouchableOpacity>
 
-            {selectedCharitiesCount > 0 && profile.selectedCharities && (
+            {selectedOrganizationsCount > 0 && profile.selectedCharities && (
               <View style={styles.selectedCharitiesList}>
                 {profile.selectedCharities.map((charity) => (
                   <View key={charity.id} style={[styles.charityItem, { backgroundColor: colors.background }]}>
@@ -100,12 +100,12 @@ export default function ProfileScreen() {
         <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
           <Text style={[styles.infoTitle, { color: colors.text }]}>How Donations Work</Text>
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            Every time you or someone using your promo code makes a purchase, we donate a portion
-            of the transaction to your selected charities.
+            Every time you or someone using your Valu code makes a purchase, we donate a portion
+            of the transaction to your selected organizations.
           </Text>
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
             You can select up to 3 organizations to support. Donations are split equally among
-            your chosen charities.
+            your chosen organizations.
           </Text>
         </View>
       </ScrollView>
