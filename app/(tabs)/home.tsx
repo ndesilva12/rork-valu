@@ -634,24 +634,13 @@ export default function HomeScreen() {
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <View style={styles.headerTitleRow}>
-            <TouchableOpacity onPress={() => setBrandType('brands')} activeOpacity={0.7}>
-              <Text style={[styles.headerTitle, { color: brandType === 'brands' ? colors.primary : colors.textSecondary }]}>
-                Brands
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setBrandType('local')} activeOpacity={0.7}>
-              <Text style={[styles.headerTitle, { color: brandType === 'local' ? colors.primary : colors.textSecondary }]}>
-                Local
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={[styles.headerTitle, { color: colors.primary, flex: 1 }]}>Playbook</Text>
           <MenuButton />
         </View>
         {renderViewModeSelector()}
       </View>
       <ScrollView ref={scrollViewRef} style={styles.scrollView} contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent, { paddingBottom: 100 }]}>
-        {viewMode === 'playbook' && renderPlaybookView()}
+        {(viewMode === 'playbook' || viewMode === 'local') && renderPlaybookView()}
         {viewMode === 'browse' && renderFoldersView()}
 
         {(
@@ -875,7 +864,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   viewModeButton: {
-    width: '50%',
+    width: '33.33%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
