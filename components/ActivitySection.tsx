@@ -4,13 +4,20 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
-import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 
 type TimeFrame = 'week' | 'month' | 'year';
+
+interface Transaction {
+  id: string;
+  date: string;
+  merchant: string;
+  amount: number;
+  percentAligned: number;
+  percentUnaligned: number;
+}
 
 interface SpendingData {
   aligned: number;
@@ -20,8 +27,7 @@ interface SpendingData {
   alignedAmount: number;
   opposedAmount: number;
   neutralAmount: number;
-  topAlignedCategories: { name: string; amount: number }[];
-  topOpposedCategories: { name: string; amount: number }[];
+  transactions: Transaction[];
 }
 
 // Mock data generator based on timeframe
@@ -38,6 +44,60 @@ const generateMockData = (timeframe: TimeFrame): SpendingData => {
   const opposedAmount = (totalAmount * opposed) / 100;
   const neutralAmount = (totalAmount * neutral) / 100;
 
+  // Generate mock transactions
+  const merchants = [
+    'Whole Foods Market',
+    'Patagonia',
+    'Local Coffee Shop',
+    'Amazon',
+    'Target',
+    'Trader Joe\'s',
+    'Starbucks',
+    'Nike',
+    'Apple Store',
+    'Farmers Market',
+    'REI',
+    'Fast Fashion Co',
+    'Gas Station',
+    'Restaurant',
+    'Bookstore',
+  ];
+
+  const numTransactions = timeframe === 'week' ? 8 : timeframe === 'month' ? 25 : 150;
+  const transactions: Transaction[] = [];
+
+  const now = new Date();
+  for (let i = 0; i < numTransactions; i++) {
+    const daysAgo = timeframe === 'week' ? i : timeframe === 'month' ? i * 1.2 : i * 2.4;
+    const transactionDate = new Date(now);
+    transactionDate.setDate(transactionDate.getDate() - Math.floor(daysAgo));
+
+    const merchant = merchants[Math.floor(Math.random() * merchants.length)];
+    const amount = 10 + Math.random() * 150;
+
+    // Vary alignment based on merchant
+    let percentAligned, percentUnaligned;
+    if (merchant.includes('Whole Foods') || merchant.includes('Patagonia') || merchant.includes('Local') || merchant.includes('Farmers')) {
+      percentAligned = 70 + Math.random() * 25;
+      percentUnaligned = Math.random() * 10;
+    } else if (merchant.includes('Fast Fashion') || merchant.includes('Gas')) {
+      percentAligned = Math.random() * 15;
+      percentUnaligned = 60 + Math.random() * 30;
+    } else {
+      percentAligned = 20 + Math.random() * 40;
+      percentUnaligned = 10 + Math.random() * 30;
+    }
+
+    transactions.push({
+      id: `txn-${i}`,
+      date: transactionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      merchant,
+      amount: Math.round(amount * 100) / 100,
+      percentAligned: Math.round(percentAligned),
+      percentUnaligned: Math.round(percentUnaligned),
+    });
+  }
+
   return {
     aligned: Math.round(aligned * 10) / 10,
     opposed: Math.round(opposed * 10) / 10,
@@ -46,110 +106,13 @@ const generateMockData = (timeframe: TimeFrame): SpendingData => {
     alignedAmount: Math.round(alignedAmount * 100) / 100,
     opposedAmount: Math.round(opposedAmount * 100) / 100,
     neutralAmount: Math.round(neutralAmount * 100) / 100,
-    topAlignedCategories: [
-      { name: 'Sustainable Fashion', amount: Math.round(alignedAmount * 0.35 * 100) / 100 },
-      { name: 'Local Produce', amount: Math.round(alignedAmount * 0.28 * 100) / 100 },
-      { name: 'Eco-Friendly Products', amount: Math.round(alignedAmount * 0.22 * 100) / 100 },
-      { name: 'Renewable Energy', amount: Math.round(alignedAmount * 0.15 * 100) / 100 },
-    ],
-    topOpposedCategories: [
-      { name: 'Fast Fashion', amount: Math.round(opposedAmount * 0.45 * 100) / 100 },
-      { name: 'Non-Sustainable Goods', amount: Math.round(opposedAmount * 0.35 * 100) / 100 },
-      { name: 'Single-Use Products', amount: Math.round(opposedAmount * 0.20 * 100) / 100 },
-    ],
+    transactions,
   };
-};
-
-// Donut Chart Component
-const DonutChart: React.FC<{
-  aligned: number;
-  opposed: number;
-  neutral: number;
-  colors: typeof lightColors;
-}> = ({ aligned, opposed, neutral, colors }) => {
-  const size = 200;
-  const strokeWidth = 30;
-  const center = size / 2;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-
-  // Calculate angles for each segment
-  const alignedAngle = (aligned / 100) * 360;
-  const opposedAngle = (opposed / 100) * 360;
-  const neutralAngle = (neutral / 100) * 360;
-
-  // Create arc path
-  const createArc = (startAngle: number, endAngle: number) => {
-    const start = polarToCartesian(center, center, radius, endAngle);
-    const end = polarToCartesian(center, center, radius, startAngle);
-    const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
-    return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
-  };
-
-  const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
-    const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180;
-    return {
-      x: centerX + radius * Math.cos(angleInRadians),
-      y: centerY + radius * Math.sin(angleInRadians),
-    };
-  };
-
-  return (
-    <View style={styles.chartContainer}>
-      <Svg width={size} height={size}>
-        {/* Aligned segment */}
-        <Path
-          d={createArc(0, alignedAngle)}
-          stroke="#4CAF50"
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeLinecap="round"
-        />
-        {/* Opposed segment */}
-        <Path
-          d={createArc(alignedAngle, alignedAngle + opposedAngle)}
-          stroke="#F44336"
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeLinecap="round"
-        />
-        {/* Neutral segment */}
-        <Path
-          d={createArc(alignedAngle + opposedAngle, 360)}
-          stroke="#9E9E9E"
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeLinecap="round"
-        />
-        {/* Center circle for donut effect */}
-        <Circle cx={center} cy={center} r={radius - strokeWidth / 2} fill={colors.backgroundSecondary} />
-        <SvgText
-          x={center}
-          y={center - 10}
-          textAnchor="middle"
-          fontSize="18"
-          fontWeight="600"
-          fill={colors.textSecondary}
-        >
-          Spending
-        </SvgText>
-        <SvgText
-          x={center}
-          y={center + 15}
-          textAnchor="middle"
-          fontSize="18"
-          fontWeight="600"
-          fill={colors.textSecondary}
-        >
-          Alignment
-        </SvgText>
-      </Svg>
-    </View>
-  );
 };
 
 export default function ActivitySection() {
   const [timeframe, setTimeframe] = useState<TimeFrame>('month');
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
   const { isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
@@ -163,156 +126,178 @@ export default function ActivitySection() {
   ];
 
   return (
-    <View style={styles.section}>
+    <View style={styles.statsSection}>
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Activity</Text>
-
-      {/* Timeline Filter */}
-      <View style={styles.timelineContainer}>
-        {timeframes.map((tf) => (
-          <TouchableOpacity
-            key={tf.value}
-            style={[
-              styles.timelineButton,
-              { backgroundColor: colors.backgroundSecondary },
-              timeframe === tf.value && { backgroundColor: colors.primary },
-            ]}
-            onPress={() => setTimeframe(tf.value)}
-            activeOpacity={0.7}
-          >
-            <Text
+      <View style={[styles.statsCard, { backgroundColor: 'transparent', borderColor: colors.primaryLight }]}>
+        {/* Timeline Filter */}
+        <View style={styles.timelineContainer}>
+          {timeframes.map((tf) => (
+            <TouchableOpacity
+              key={tf.value}
               style={[
-                styles.timelineButtonText,
-                { color: timeframe === tf.value ? colors.white : colors.textSecondary },
+                styles.timelineButton,
+                timeframe === tf.value && [styles.timelineButtonActive, { backgroundColor: colors.primary }],
               ]}
+              onPress={() => setTimeframe(tf.value)}
+              activeOpacity={0.7}
             >
-              {tf.label}
+              <Text
+                style={[
+                  styles.timelineButtonText,
+                  { color: colors.textSecondary },
+                  timeframe === tf.value && { color: colors.white, fontWeight: '700' },
+                ]}
+              >
+                {tf.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Percentages above bar */}
+        <View style={styles.percentageRow}>
+          <View style={[styles.percentageItem, { flex: data.aligned }]}>
+            <Text style={[styles.percentageText, { color: colors.success }]}>
+              {data.aligned}%
             </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <View style={[styles.activityCard, { backgroundColor: colors.backgroundSecondary }]}>
-        {/* Donut Chart */}
-        <DonutChart
-          aligned={data.aligned}
-          opposed={data.opposed}
-          neutral={data.neutral}
-          colors={colors}
-        />
-
-        {/* Legend */}
-        <View style={styles.legendContainer}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: '#4CAF50' }]} />
-            <View style={styles.legendTextContainer}>
-              <Text style={[styles.legendLabel, { color: colors.textSecondary }]}>
-                Aligned with Values
-              </Text>
-              <Text style={[styles.legendValue, { color: colors.text }]}>
-                {data.aligned}%
-              </Text>
-              <Text style={[styles.legendAmount, { color: colors.textSecondary }]}>
-                ${data.alignedAmount.toFixed(2)}
-              </Text>
-            </View>
           </View>
-
-          <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: '#F44336' }]} />
-            <View style={styles.legendTextContainer}>
-              <Text style={[styles.legendLabel, { color: colors.textSecondary }]}>
-                Opposed to Values
-              </Text>
-              <Text style={[styles.legendValue, { color: colors.text }]}>
-                {data.opposed}%
-              </Text>
-              <Text style={[styles.legendAmount, { color: colors.textSecondary }]}>
-                ${data.opposedAmount.toFixed(2)}
-              </Text>
-            </View>
+          <View style={[styles.percentageItem, { flex: data.neutral }]}>
+            <Text style={[styles.percentageText, { color: colors.textSecondary }]}>
+              {data.neutral}%
+            </Text>
           </View>
-
-          <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: '#9E9E9E' }]} />
-            <View style={styles.legendTextContainer}>
-              <Text style={[styles.legendLabel, { color: colors.textSecondary }]}>
-                Neutral
-              </Text>
-              <Text style={[styles.legendValue, { color: colors.text }]}>
-                {data.neutral}%
-              </Text>
-              <Text style={[styles.legendAmount, { color: colors.textSecondary }]}>
-                ${data.neutralAmount.toFixed(2)}
-              </Text>
-            </View>
+          <View style={[styles.percentageItem, { flex: data.opposed }]}>
+            <Text style={[styles.percentageText, { color: colors.danger }]}>
+              {data.opposed}%
+            </Text>
           </View>
         </View>
 
-        {/* Total Spending */}
-        <View style={[styles.totalContainer, { borderTopColor: 'rgba(0, 0, 0, 0.05)' }]}>
-          <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>
-            Total Spending
-          </Text>
-          <Text style={[styles.totalAmount, { color: colors.primary }]}>
-            ${data.totalAmount.toFixed(2)}
-          </Text>
+        {/* Horizontal Bar */}
+        <View style={styles.barContainer}>
+          <View
+            style={[
+              styles.barSegment,
+              styles.barAligned,
+              { flex: data.aligned, backgroundColor: colors.success },
+            ]}
+          />
+          <View
+            style={[
+              styles.barSegment,
+              styles.barNeutral,
+              { flex: data.neutral, backgroundColor: '#9E9E9E' },
+            ]}
+          />
+          <View
+            style={[
+              styles.barSegment,
+              styles.barOpposed,
+              { flex: data.opposed, backgroundColor: colors.danger },
+            ]}
+          />
         </View>
 
-        {/* Top Categories */}
-        <View style={styles.categoriesContainer}>
-          <View style={styles.categoryColumn}>
-            <Text style={[styles.categoryTitle, { color: colors.text }]}>
-              Top Aligned Categories
+        {/* Dollar amounts below bar */}
+        <View style={styles.amountRow}>
+          <View style={[styles.amountItem, { flex: data.aligned }]}>
+            <Text style={[styles.amountText, { color: colors.textSecondary }]}>
+              ${data.alignedAmount.toFixed(0)}
             </Text>
-            {data.topAlignedCategories.map((cat, idx) => (
-              <View key={idx} style={styles.categoryItem}>
-                <View style={[styles.categoryDot, { backgroundColor: '#4CAF50' }]} />
-                <View style={styles.categoryTextContainer}>
-                  <Text style={[styles.categoryName, { color: colors.text }]} numberOfLines={1}>
-                    {cat.name}
+          </View>
+          <View style={[styles.amountItem, { flex: data.neutral }]}>
+            <Text style={[styles.amountText, { color: colors.textSecondary }]}>
+              ${data.neutralAmount.toFixed(0)}
+            </Text>
+          </View>
+          <View style={[styles.amountItem, { flex: data.opposed }]}>
+            <Text style={[styles.amountText, { color: colors.textSecondary }]}>
+              ${data.opposedAmount.toFixed(0)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Labels */}
+        <View style={styles.labelRow}>
+          <View style={[styles.labelItem, { flex: data.aligned }]}>
+            <Text style={[styles.labelText, { color: colors.textSecondary }]} numberOfLines={1}>
+              Aligned
+            </Text>
+          </View>
+          <View style={[styles.labelItem, { flex: data.neutral }]}>
+            <Text style={[styles.labelText, { color: colors.textSecondary }]} numberOfLines={1}>
+              Neutral
+            </Text>
+          </View>
+          <View style={[styles.labelItem, { flex: data.opposed }]}>
+            <Text style={[styles.labelText, { color: colors.textSecondary }]} numberOfLines={1}>
+              Unaligned
+            </Text>
+          </View>
+        </View>
+
+        {/* View Details Toggle */}
+        <TouchableOpacity
+          style={styles.detailsToggle}
+          onPress={() => setDetailsExpanded(!detailsExpanded)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.detailsToggleText, { color: colors.primary }]}>
+            {detailsExpanded ? 'Hide Details' : 'View Details'}
+          </Text>
+          <Text style={[styles.detailsToggleIcon, { color: colors.primary }]}>
+            {detailsExpanded ? '−' : '+'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Expandable Details */}
+        {detailsExpanded && (
+          <View style={[styles.detailsContainer, { borderTopColor: colors.border }]}>
+            <Text style={[styles.detailsTitle, { color: colors.text }]}>
+              Recent Transactions
+            </Text>
+            {data.transactions.slice(0, 15).map((transaction) => (
+              <View key={transaction.id} style={[styles.transactionItem, { borderBottomColor: colors.border }]}>
+                <View style={styles.transactionHeader}>
+                  <Text style={[styles.merchantName, { color: colors.text }]} numberOfLines={1}>
+                    {transaction.merchant}
                   </Text>
-                  <Text style={[styles.categoryAmount, { color: colors.textSecondary }]}>
-                    ${cat.amount.toFixed(2)}
+                  <Text style={[styles.transactionAmount, { color: colors.text }]}>
+                    ${transaction.amount.toFixed(2)}
                   </Text>
+                </View>
+                <View style={styles.transactionMeta}>
+                  <Text style={[styles.transactionDate, { color: colors.textSecondary }]}>
+                    {transaction.date}
+                  </Text>
+                  <View style={styles.alignmentBadges}>
+                    {transaction.percentAligned > 0 && (
+                      <View style={[styles.badge, { backgroundColor: colors.success + '20' }]}>
+                        <Text style={[styles.badgeText, { color: colors.success }]}>
+                          {transaction.percentAligned}% aligned
+                        </Text>
+                      </View>
+                    )}
+                    {transaction.percentUnaligned > 0 && (
+                      <View style={[styles.badge, { backgroundColor: colors.danger + '20' }]}>
+                        <Text style={[styles.badgeText, { color: colors.danger }]}>
+                          {transaction.percentUnaligned}% unaligned
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
               </View>
             ))}
           </View>
-
-          <View style={styles.categoryColumn}>
-            <Text style={[styles.categoryTitle, { color: colors.text }]}>
-              Top Opposed Categories
-            </Text>
-            {data.topOpposedCategories.map((cat, idx) => (
-              <View key={idx} style={styles.categoryItem}>
-                <View style={[styles.categoryDot, { backgroundColor: '#F44336' }]} />
-                <View style={styles.categoryTextContainer}>
-                  <Text style={[styles.categoryName, { color: colors.text }]} numberOfLines={1}>
-                    {cat.name}
-                  </Text>
-                  <Text style={[styles.categoryAmount, { color: colors.textSecondary }]}>
-                    ${cat.amount.toFixed(2)}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Info Text */}
-        <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            Your spending is analyzed based on the values you've selected. Connect your bank account
-            to see real transaction data and get personalized insights.
-          </Text>
-        </View>
+        )}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  section: {
+  statsSection: {
     marginBottom: 24,
   },
   sectionTitle: {
@@ -320,121 +305,154 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     marginBottom: 16,
   },
+  statsCard: {
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+  },
   timelineContainer: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   timelineButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 10,
+    borderRadius: 8,
     alignItems: 'center',
+  },
+  timelineButtonActive: {
+    // backgroundColor set dynamically
   },
   timelineButtonText: {
-    fontSize: 13,
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  percentageRow: {
+    flexDirection: 'row',
+    marginBottom: 6,
+    gap: 2,
+  },
+  percentageItem: {
+    alignItems: 'center',
+  },
+  percentageText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  barContainer: {
+    flexDirection: 'row',
+    height: 32,
+    borderRadius: 6,
+    overflow: 'hidden',
+    gap: 2,
+  },
+  barSegment: {
+    // flex set dynamically
+  },
+  barAligned: {
+    borderTopLeftRadius: 6,
+    borderBottomLeftRadius: 6,
+  },
+  barNeutral: {
+    // middle segment
+  },
+  barOpposed: {
+    borderTopRightRadius: 6,
+    borderBottomRightRadius: 6,
+  },
+  amountRow: {
+    flexDirection: 'row',
+    marginTop: 6,
+    marginBottom: 4,
+    gap: 2,
+  },
+  amountItem: {
+    alignItems: 'center',
+  },
+  amountText: {
+    fontSize: 12,
     fontWeight: '600' as const,
   },
-  activityCard: {
-    borderRadius: 16,
-    padding: 20,
+  labelRow: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    gap: 2,
   },
-  chartContainer: {
+  labelItem: {
     alignItems: 'center',
-    marginBottom: 24,
   },
-  legendContainer: {
-    gap: 16,
-    marginBottom: 24,
+  labelText: {
+    fontSize: 11,
+    fontWeight: '500' as const,
   },
-  legendItem: {
+  detailsToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 8,
   },
-  legendColor: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-  },
-  legendTextContainer: {
-    flex: 1,
-  },
-  legendLabel: {
-    fontSize: 13,
-    fontWeight: '500' as const,
-    marginBottom: 4,
-  },
-  legendValue: {
-    fontSize: 24,
-    fontWeight: '700' as const,
-    marginBottom: 2,
-  },
-  legendAmount: {
-    fontSize: 12,
-  },
-  totalContainer: {
-    borderTopWidth: 1,
-    paddingTop: 20,
-    marginBottom: 24,
-    alignItems: 'center',
-  },
-  totalLabel: {
+  detailsToggleText: {
     fontSize: 14,
     fontWeight: '600' as const,
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
   },
-  totalAmount: {
-    fontSize: 36,
-    fontWeight: '700' as const,
+  detailsToggleIcon: {
+    fontSize: 20,
+    fontWeight: '600' as const,
   },
-  categoriesContainer: {
-    gap: 20,
-    marginBottom: 20,
+  detailsContainer: {
+    borderTopWidth: 1,
+    paddingTop: 16,
+    marginTop: 4,
   },
-  categoryColumn: {
-    gap: 12,
-  },
-  categoryTitle: {
+  detailsTitle: {
     fontSize: 15,
     fontWeight: '700' as const,
-    marginBottom: 4,
+    marginBottom: 12,
   },
-  categoryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+  transactionItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
-  categoryDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  categoryTextContainer: {
-    flex: 1,
+  transactionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 6,
   },
-  categoryName: {
-    fontSize: 13,
-    fontWeight: '500' as const,
-    flex: 1,
-  },
-  categoryAmount: {
-    fontSize: 13,
+  merchantName: {
+    fontSize: 14,
     fontWeight: '600' as const,
+    flex: 1,
+    marginRight: 12,
   },
-  infoBox: {
-    padding: 16,
-    borderRadius: 12,
+  transactionAmount: {
+    fontSize: 14,
+    fontWeight: '700' as const,
   },
-  infoText: {
+  transactionMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  transactionDate: {
     fontSize: 12,
-    lineHeight: 18,
-    textAlign: 'center',
+  },
+  alignmentBadges: {
+    flexDirection: 'row',
+    gap: 6,
+    flexShrink: 1,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '600' as const,
   },
 });

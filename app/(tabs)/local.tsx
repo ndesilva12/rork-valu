@@ -11,6 +11,7 @@ import {
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
+import ActivitySection from '@/components/ActivitySection';
 
 export default function ValuesScreen() {
   const router = useRouter();
@@ -41,20 +42,7 @@ export default function ValuesScreen() {
         style={styles.scrollView}
         contentContainerStyle={[styles.content]}
       >
-        <View style={styles.statsSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact</Text>
-          <View style={[styles.statsCard, { backgroundColor: 'transparent', borderColor: colors.primaryLight }]}>
-            <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.success }]}>{supportCauses.length}</Text>
-              <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Aligned Values</Text>
-            </View>
-            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-            <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: isDarkMode ? colors.white : colors.danger }]}>{avoidCauses.length}</Text>
-              <Text style={[styles.statLabel, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Unaligned Values</Text>
-            </View>
-          </View>
-        </View>
+        <ActivitySection />
 
         {supportCauses.length > 0 && (
           <View style={styles.section}>
