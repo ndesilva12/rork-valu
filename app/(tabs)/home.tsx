@@ -35,12 +35,12 @@ import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { Product } from '@/types';
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
 import { trpc } from '@/lib/trpc';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
 
-type ViewMode = 'playbook' | 'browse';
+type ViewMode = 'playbook' | 'browse' | 'local';
 
 type FolderCategory = {
   id: string;
@@ -75,11 +75,20 @@ export default function HomeScreen() {
 
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Sync brandType with viewMode
+  useEffect(() => {
+    if (viewMode === 'local') {
+      setBrandType('local');
+    } else {
+      setBrandType('brands');
+    }
+  }, [viewMode]);
+
   // Fetch brands and values matrix from local data via tRPC
   const { data: brands, isLoading, error } = trpc.data.getBrands.useQuery();
   const { data: valuesMatrix } = trpc.data.getValuesMatrix.useQuery();
 
-  const viewModes: ViewMode[] = ['playbook', 'browse'];
+  const viewModes: ViewMode[] = ['playbook', 'browse', 'local'];
 
   const panResponder = useRef(
     PanResponder.create({
@@ -439,6 +448,17 @@ export default function HomeScreen() {
         </Text>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        style={[styles.viewModeButton, viewMode === 'local' && { backgroundColor: colors.primary }]}
+        onPress={() => setViewMode('local')}
+        activeOpacity={0.7}
+      >
+        <MapPin size={18} color={viewMode === 'local' ? colors.white : colors.textSecondary} strokeWidth={2} />
+        <Text style={[styles.viewModeText, { color: viewMode === 'local' ? colors.white : colors.textSecondary }]}>
+          Local
+        </Text>
+      </TouchableOpacity>
+
     </View>
   );
 
@@ -634,24 +654,13 @@ export default function HomeScreen() {
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <View style={styles.headerTitleRow}>
-            <TouchableOpacity onPress={() => setBrandType('brands')} activeOpacity={0.7}>
-              <Text style={[styles.headerTitle, { color: brandType === 'brands' ? colors.primary : colors.textSecondary }]}>
-                Brands
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setBrandType('local')} activeOpacity={0.7}>
-              <Text style={[styles.headerTitle, { color: brandType === 'local' ? colors.primary : colors.textSecondary }]}>
-                Local
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={[styles.headerTitle, { color: colors.primary, flex: 1 }]}>Playbook</Text>
           <MenuButton />
         </View>
         {renderViewModeSelector()}
       </View>
       <ScrollView ref={scrollViewRef} style={styles.scrollView} contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent, { paddingBottom: 100 }]}>
-        {viewMode === 'playbook' && renderPlaybookView()}
+        {(viewMode === 'playbook' || viewMode === 'local') && renderPlaybookView()}
         {viewMode === 'browse' && renderFoldersView()}
 
         {(
@@ -875,7 +884,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   viewModeButton: {
-    width: '50%',
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

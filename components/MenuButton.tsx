@@ -142,7 +142,7 @@ export default function MenuButton() {
                 activeOpacity={0.7}
               >
                 <View style={styles.menuItemLeft}>
-                  <Settings size={20} color={colors.primary} strokeWidth={2} />
+                  <Settings size={26} color={colors.primary} strokeWidth={2} />
                   <Text style={[styles.menuItemTitle, { color: colors.text }]}>Update My Values</Text>
                 </View>
               </TouchableOpacity>
@@ -153,7 +153,7 @@ export default function MenuButton() {
                 activeOpacity={0.7}
               >
                 <View style={styles.menuItemLeft}>
-                  <RefreshCw size={20} color={colors.primary} strokeWidth={2} />
+                  <RefreshCw size={26} color={colors.primary} strokeWidth={2} />
                   <Text style={[styles.menuItemTitle, { color: colors.text }]}>Reset My Values</Text>
                 </View>
               </TouchableOpacity>
@@ -161,9 +161,9 @@ export default function MenuButton() {
               <View style={[styles.menuItem, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
                 <View style={styles.menuItemLeft}>
                   {isDarkMode ? (
-                    <Moon size={20} color={colors.primary} strokeWidth={2} />
+                    <Moon size={26} color={colors.primary} strokeWidth={2} />
                   ) : (
-                    <Sun size={20} color={colors.primary} strokeWidth={2} />
+                    <Sun size={26} color={colors.primary} strokeWidth={2} />
                   )}
                   <Text style={[styles.menuItemTitle, { color: colors.text }]}>Dark Mode</Text>
                 </View>
@@ -181,7 +181,7 @@ export default function MenuButton() {
                 activeOpacity={0.7}
               >
                 <View style={styles.menuItemLeft}>
-                  <LogOut size={20} color={colors.danger} strokeWidth={2} />
+                  <LogOut size={26} color={colors.danger} strokeWidth={2} />
                   <Text style={[styles.menuItemTitle, { color: colors.danger }]}>Logout</Text>
                 </View>
               </TouchableOpacity>
@@ -236,58 +236,59 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingTop: 90,
+    paddingTop: '5%',
   },
   menuContainer: {
     width: '90%',
     maxWidth: 500,
-    borderRadius: 20,
+    borderRadius: 24,
     overflow: 'hidden',
-    maxHeight: '85%',
+    maxHeight: '92%',
   },
   logoContainer: {
-    padding: 16,
+    padding: 28,
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   menuLogo: {
-    width: 240,
-    height: 70,
+    width: 300,
+    height: 88,
   },
   menuContent: {
-    maxHeight: 500,
+    maxHeight: '100%',
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 28,
   },
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 18,
     flex: 1,
   },
   menuItemTitle: {
-    fontSize: 16,
-    fontWeight: '600' as const,
+    fontSize: 20,
+    fontWeight: '500' as const,
   },
   menuItemSubtitle: {
-    fontSize: 13,
-    marginTop: 2,
+    fontSize: 16,
+    fontWeight: '400' as const,
+    marginTop: 4,
   },
   avatarPlaceholder: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: 16,
+    fontSize: 22,
     fontWeight: '700' as const,
   },
   confirmOverlay: {

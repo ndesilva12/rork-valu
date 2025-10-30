@@ -1,5 +1,5 @@
 import { Tabs, useSegments } from "expo-router";
-import { BookOpen, Bookmark, ShoppingBag, Search, User } from "lucide-react-native";
+import { BookOpen, BarChart3, ShoppingBag, Search, User } from "lucide-react-native";
 import React from "react";
 import { Platform, useWindowDimensions, StyleSheet, StatusBar, View, Text } from "react-native";
 import { lightColors, darkColors } from "@/constants/colors";
@@ -14,7 +14,7 @@ export default function TabLayout() {
   const { width } = useWindowDimensions();
 
   const isTabletOrLarger = Platform.OS === 'web' && width >= 768;
-  const tabBarHeight = isTabletOrLarger ? 64 : 60;
+  const tabBarHeight = isTabletOrLarger ? 64 : 64;
 
   // Use safe area insets to avoid content going under system UI (status bar / home indicator)
   const insets = useSafeAreaInsets();
@@ -84,8 +84,8 @@ export default function TabLayout() {
                 elevation: isTabletOrLarger ? 10 : undefined,
               },
               tabBarItemStyle: {
-                paddingTop: isTabletOrLarger ? 0 : 5,
-                paddingBottom: isTabletOrLarger ? 0 : 4,
+                paddingTop: isTabletOrLarger ? 0 : 4,
+                paddingBottom: isTabletOrLarger ? 0 : 12,
               },
               contentStyle: {
                 // Reserve space for the top tab bar + system top inset on wide screens,
@@ -106,7 +106,7 @@ export default function TabLayout() {
               name="local"
               options={{
                 title: "Values",
-                tabBarIcon: renderTabIconWithLabel(Bookmark, "Values", colors.primary),
+                tabBarIcon: renderTabIconWithLabel(BarChart3, "Values", colors.primary),
               }}
             />
             <Tabs.Screen
