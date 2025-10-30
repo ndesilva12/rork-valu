@@ -134,11 +134,26 @@ const generateMockData = (timeframe: TimeFrame, userValues: { name: string; type
   };
 };
 
-export default function ActivitySection() {
-  const [timeframe, setTimeframe] = useState<TimeFrame>('month');
+interface ActivitySectionProps {
+  timeframe?: TimeFrame;
+  onTimeframeChange?: (timeframe: TimeFrame) => void;
+}
+
+export default function ActivitySection({ timeframe: externalTimeframe, onTimeframeChange }: ActivitySectionProps = {}) {
+  const [internalTimeframe, setInternalTimeframe] = useState<TimeFrame>('month');
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const { isDarkMode, profile } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+
+  // Use external timeframe if provided, otherwise use internal state
+  const timeframe = externalTimeframe || internalTimeframe;
+  const setTimeframe = (tf: TimeFrame) => {
+    if (onTimeframeChange) {
+      onTimeframeChange(tf);
+    } else {
+      setInternalTimeframe(tf);
+    }
+  };
 
   // Get user's values
   const userValues = profile.causes || [];

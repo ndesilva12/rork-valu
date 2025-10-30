@@ -247,18 +247,20 @@ export default function OnboardingScreen() {
         </View>
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: 32 + insets.bottom, backgroundColor: colors.backgroundSecondary, borderTopColor: colors.border }]}>
-        <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
-          {selectedValues.length} {selectedValues.length === 1 ? 'value' : 'values'} selected
-        </Text>
-        <TouchableOpacity
-          style={[styles.continueButton, { backgroundColor: colors.primary }, selectedValues.length === 0 && { backgroundColor: colors.neutral, opacity: 0.5 }]}
-          onPress={handleContinue}
-          disabled={selectedValues.length === 0}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.continueButtonText, { color: colors.white }]}>Continue</Text>
-        </TouchableOpacity>
+      <View style={[styles.footer, { paddingBottom: 32 + insets.bottom, backgroundColor: colors.backgroundSecondary, borderTopColor: colors.border }, Platform.OS === 'web' && styles.footerWeb]}>
+        <View style={[styles.footerContent, Platform.OS === 'web' && styles.footerContentWeb]}>
+          <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
+            {selectedValues.length} {selectedValues.length === 1 ? 'value' : 'values'} selected
+          </Text>
+          <TouchableOpacity
+            style={[styles.continueButton, { backgroundColor: colors.primary }, selectedValues.length === 0 && { backgroundColor: colors.neutral, opacity: 0.5 }]}
+            onPress={handleContinue}
+            disabled={selectedValues.length === 0}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.continueButtonText, { color: colors.white }]}>Continue</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -387,6 +389,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
     borderTopWidth: 1,
+  },
+  footerWeb: {
+    alignItems: 'center',
+  },
+  footerContent: {
+    width: '100%',
+  },
+  footerContentWeb: {
+    width: '50%',
+    maxWidth: 400,
   },
   selectedCount: {
     fontSize: 14,

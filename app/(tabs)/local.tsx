@@ -14,9 +14,15 @@ import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import ActivitySection from '@/components/ActivitySection';
 
-// Generate mock spending data for a value
-const generateValueSpending = (valueName: string, totalSpending: number): { amount: number; percentage: number } => {
-  // Different values get different spending amounts with some randomness
+type TimeFrame = 'week' | 'month' | 'year';
+
+// Generate mock spending data for a value based on timeframe
+const generateValueSpending = (valueName: string, timeframe: TimeFrame): { amount: number; percentage: number } => {
+  // Different timeframes have different base amounts
+  const baseMultiplier = timeframe === 'week' ? 1 : timeframe === 'month' ? 4.3 : 52;
+  const totalSpending = (250 + Math.random() * 150) * baseMultiplier;
+
+  // Different values get different spending percentages
   const basePercentage = 8 + Math.random() * 12; // 8-20% of total
   const amount = (totalSpending * basePercentage) / 100;
   return {
@@ -30,8 +36,8 @@ export default function ValuesScreen() {
   const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
-  // Mock total spending (would come from Activity section in real implementation)
-  const totalSpending = 1200 + Math.random() * 500;
+  // Shared timeframe state
+  const [timeframe, setTimeframe] = useState<TimeFrame>('month');
 
   const supportCauses = profile.causes
     .filter(c => c.type === 'support')
@@ -57,14 +63,14 @@ export default function ValuesScreen() {
         style={styles.scrollView}
         contentContainerStyle={[styles.content]}
       >
-        <ActivitySection />
+        <ActivitySection timeframe={timeframe} onTimeframeChange={setTimeframe} />
 
         {supportCauses.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Supporting</Text>
             <View style={styles.valuesList}>
               {supportCauses.map(cause => {
-                const spending = generateValueSpending(cause.name, totalSpending);
+                const spending = generateValueSpending(cause.name, timeframe);
                 return (
                   <TouchableOpacity
                     key={cause.id}
@@ -72,8 +78,8 @@ export default function ValuesScreen() {
                     onPress={() => router.push(`/value/${cause.id}`)}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.valueNameBox, { borderColor: colors.primary }]}>
-                      <Text style={[styles.valueNameText, { color: colors.primary }]} numberOfLines={1}>
+                    <View style={[styles.valueNameBox, { borderColor: colors.success }]}>
+                      <Text style={[styles.valueNameText, { color: colors.success }]} numberOfLines={1}>
                         {cause.name}
                       </Text>
                     </View>
@@ -97,7 +103,7 @@ export default function ValuesScreen() {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Opposing</Text>
             <View style={styles.valuesList}>
               {avoidCauses.map(cause => {
-                const spending = generateValueSpending(cause.name, totalSpending);
+                const spending = generateValueSpending(cause.name, timeframe);
                 return (
                   <TouchableOpacity
                     key={cause.id}
@@ -105,8 +111,8 @@ export default function ValuesScreen() {
                     onPress={() => router.push(`/value/${cause.id}`)}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.valueNameBox, { borderColor: '#9CA3AF' }]}>
-                      <Text style={[styles.valueNameText, { color: '#9CA3AF' }]} numberOfLines={1}>
+                    <View style={[styles.valueNameBox, { borderColor: colors.danger }]}>
+                      <Text style={[styles.valueNameText, { color: colors.danger }]} numberOfLines={1}>
                         {cause.name}
                       </Text>
                     </View>
@@ -188,14 +194,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 12,
     borderRadius: 12,
-    gap: 12,
+    gap: 16,
   },
   valueNameBox: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 2,
-    flex: 1,
+    alignSelf: 'flex-start',
   },
   valueNameText: {
     fontSize: 14,
