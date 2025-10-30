@@ -171,6 +171,9 @@ export default function ActivitySection({ timeframe: externalTimeframe, onTimefr
     <View style={styles.statsSection}>
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Activity</Text>
       <View style={[styles.statsCard, { backgroundColor: 'transparent', borderColor: colors.primaryLight }]}>
+        {/* Spending Title */}
+        <Text style={[styles.spendingTitle, { color: colors.text }]}>your spending:</Text>
+
         {/* Timeline Filter */}
         <View style={styles.timelineContainer}>
           {timeframes.map((tf) => (
@@ -278,6 +281,26 @@ export default function ActivitySection({ timeframe: externalTimeframe, onTimefr
           </View>
         </View>
 
+        {/* Bank Management Buttons */}
+        <View style={styles.bankButtonsContainer}>
+          <TouchableOpacity
+            style={[styles.bankButton, { backgroundColor: isDarkMode ? '#1F2937' : '#E5E7EB' }]}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.bankButtonText, { color: colors.textSecondary }]}>
+              Disconnect Bank
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.bankButton, { backgroundColor: isDarkMode ? '#1F2937' : '#E5E7EB' }]}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.bankButtonText, { color: colors.textSecondary }]}>
+              Add Bank
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* View Details Toggle */}
         <TouchableOpacity
           style={styles.detailsToggle}
@@ -351,6 +374,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 2,
+  },
+  spendingTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    marginBottom: 12,
+    textTransform: 'lowercase' as const,
   },
   timelineContainer: {
     flexDirection: 'row',
@@ -427,6 +456,22 @@ const styles = StyleSheet.create({
   },
   labelText: {
     fontSize: 11,
+    fontWeight: '500' as const,
+  },
+  bankButtonsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  bankButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  bankButtonText: {
+    fontSize: 13,
     fontWeight: '500' as const,
   },
   detailsToggle: {

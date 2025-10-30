@@ -84,8 +84,8 @@ export default function TabLayout() {
                 elevation: isTabletOrLarger ? 10 : undefined,
               },
               tabBarItemStyle: {
-                paddingTop: isTabletOrLarger ? 0 : 8,
-                paddingBottom: isTabletOrLarger ? 0 : 8,
+                paddingTop: isTabletOrLarger ? 0 : 4,
+                paddingBottom: isTabletOrLarger ? 0 : 12,
               },
               contentStyle: {
                 // Reserve space for the top tab bar + system top inset on wide screens,
