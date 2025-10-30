@@ -19,6 +19,12 @@ interface Transaction {
   percentUnaligned: number;
 }
 
+interface ValueSpending {
+  valueName: string;
+  amount: number;
+  percentage: number;
+}
+
 interface SpendingData {
   aligned: number;
   opposed: number;
@@ -28,10 +34,11 @@ interface SpendingData {
   opposedAmount: number;
   neutralAmount: number;
   transactions: Transaction[];
+  valueSpending: ValueSpending[];
 }
 
 // Mock data generator based on timeframe
-const generateMockData = (timeframe: TimeFrame): SpendingData => {
+const generateMockData = (timeframe: TimeFrame, userValues: { name: string; type: string }[]): SpendingData => {
   const baseMultiplier = timeframe === 'week' ? 1 : timeframe === 'month' ? 4.3 : 52;
 
   // Generate realistic percentages
@@ -98,6 +105,22 @@ const generateMockData = (timeframe: TimeFrame): SpendingData => {
     });
   }
 
+  // Generate spending per value
+  const supportValues = userValues.filter(v => v.type === 'support');
+  const valueSpending: ValueSpending[] = supportValues.map((value) => {
+    // Distribute aligned spending across values with some randomness
+    const basePercentage = alignedAmount / supportValues.length;
+    const variance = basePercentage * (0.3 + Math.random() * 0.4); // 30-70% variance
+    const amount = basePercentage + (Math.random() > 0.5 ? variance : -variance);
+    const percentage = (amount / totalAmount) * 100;
+
+    return {
+      valueName: value.name,
+      amount: Math.max(0, Math.round(amount * 100) / 100),
+      percentage: Math.max(0, Math.round(percentage * 10) / 10),
+    };
+  });
+
   return {
     aligned: Math.round(aligned * 10) / 10,
     opposed: Math.round(opposed * 10) / 10,
@@ -107,17 +130,21 @@ const generateMockData = (timeframe: TimeFrame): SpendingData => {
     opposedAmount: Math.round(opposedAmount * 100) / 100,
     neutralAmount: Math.round(neutralAmount * 100) / 100,
     transactions,
+    valueSpending,
   };
 };
 
 export default function ActivitySection() {
   const [timeframe, setTimeframe] = useState<TimeFrame>('month');
   const [detailsExpanded, setDetailsExpanded] = useState(false);
-  const { isDarkMode } = useUser();
+  const { isDarkMode, profile } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
+  // Get user's values
+  const userValues = profile.causes || [];
+
   // Generate data based on timeframe
-  const data = generateMockData(timeframe);
+  const data = generateMockData(timeframe, userValues);
 
   const timeframes: { value: TimeFrame; label: string }[] = [
     { value: 'week', label: 'This Week' },
@@ -186,7 +213,7 @@ export default function ActivitySection() {
             style={[
               styles.barSegment,
               styles.barNeutral,
-              { flex: data.neutral, backgroundColor: '#9E9E9E' },
+              { flex: data.neutral, backgroundColor: '#D0D0D0' },
             ]}
           />
           <View
@@ -235,6 +262,30 @@ export default function ActivitySection() {
             </Text>
           </View>
         </View>
+
+        {/* Values Spending Breakdown */}
+        {data.valueSpending.length > 0 && (
+          <View style={[styles.valuesBreakdown, { borderTopColor: colors.border }]}>
+            <Text style={[styles.valuesBreakdownTitle, { color: colors.text }]}>
+              Spending by Value
+            </Text>
+            {data.valueSpending.map((valueSpend, idx) => (
+              <View key={idx} style={styles.valueSpendingRow}>
+                <Text style={[styles.valueName, { color: colors.text }]} numberOfLines={1}>
+                  {valueSpend.valueName}
+                </Text>
+                <View style={styles.valueSpendingRight}>
+                  <Text style={[styles.valueAmount, { color: colors.text }]}>
+                    ${valueSpend.amount.toFixed(0)}
+                  </Text>
+                  <Text style={[styles.valuePercentage, { color: colors.textSecondary }]}>
+                    {valueSpend.percentage}%
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* View Details Toggle */}
         <TouchableOpacity
@@ -338,13 +389,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   percentageText: {
-    fontSize: 14,
-    fontWeight: '700' as const,
+    fontSize: 18,
+    fontWeight: '800' as const,
   },
   barContainer: {
     flexDirection: 'row',
-    height: 32,
-    borderRadius: 6,
+    height: 20,
+    borderRadius: 12,
     overflow: 'hidden',
     gap: 2,
   },
@@ -352,15 +403,15 @@ const styles = StyleSheet.create({
     // flex set dynamically
   },
   barAligned: {
-    borderTopLeftRadius: 6,
-    borderBottomLeftRadius: 6,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
   },
   barNeutral: {
     // middle segment
   },
   barOpposed: {
-    borderTopRightRadius: 6,
-    borderBottomRightRadius: 6,
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
   },
   amountRow: {
     flexDirection: 'row',
@@ -372,8 +423,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   amountText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
+    fontSize: 15,
+    fontWeight: '700' as const,
   },
   labelRow: {
     flexDirection: 'row',
@@ -386,6 +437,43 @@ const styles = StyleSheet.create({
   labelText: {
     fontSize: 11,
     fontWeight: '500' as const,
+  },
+  valuesBreakdown: {
+    borderTopWidth: 1,
+    paddingTop: 16,
+    marginBottom: 16,
+    gap: 12,
+  },
+  valuesBreakdownTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  valueSpendingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  valueName: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    flex: 1,
+    marginRight: 12,
+  },
+  valueSpendingRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  valueAmount: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  valuePercentage: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    minWidth: 45,
+    textAlign: 'right',
   },
   detailsToggle: {
     flexDirection: 'row',
