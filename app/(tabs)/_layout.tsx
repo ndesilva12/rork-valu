@@ -84,7 +84,7 @@ export default function TabLayout() {
                 elevation: isTabletOrLarger ? 10 : undefined,
               },
               tabBarItemStyle: {
-                paddingTop: isTabletOrLarger ? 0 : 8,
+                paddingTop: isTabletOrLarger ? 0 : 5,
                 paddingBottom: isTabletOrLarger ? 0 : 4,
               },
               contentStyle: {
