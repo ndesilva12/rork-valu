@@ -184,7 +184,7 @@ export default function ActivitySection() {
         {/* Percentages above bar */}
         <View style={styles.percentageRow}>
           <View style={[styles.percentageItem, { flex: data.aligned }]}>
-            <Text style={[styles.percentageText, { color: colors.success }]}>
+            <Text style={[styles.percentageText, { color: colors.primary }]}>
               {data.aligned}%
             </Text>
           </View>
@@ -194,7 +194,7 @@ export default function ActivitySection() {
             </Text>
           </View>
           <View style={[styles.percentageItem, { flex: data.opposed }]}>
-            <Text style={[styles.percentageText, { color: colors.danger }]}>
+            <Text style={[styles.percentageText, { color: colors.textSecondary }]}>
               {data.opposed}%
             </Text>
           </View>
@@ -206,21 +206,21 @@ export default function ActivitySection() {
             style={[
               styles.barSegment,
               styles.barAligned,
-              { flex: data.aligned, backgroundColor: colors.success },
+              { flex: data.aligned, backgroundColor: colors.primary },
             ]}
           />
           <View
             style={[
               styles.barSegment,
               styles.barNeutral,
-              { flex: data.neutral, backgroundColor: '#D0D0D0' },
+              { flex: data.neutral, backgroundColor: isDarkMode ? '#171E29' : '#FAFBFC' },
             ]}
           />
           <View
             style={[
               styles.barSegment,
               styles.barOpposed,
-              { flex: data.opposed, backgroundColor: colors.danger },
+              { flex: data.opposed, backgroundColor: '#9CA3AF' },
             ]}
           />
         </View>
@@ -263,30 +263,6 @@ export default function ActivitySection() {
           </View>
         </View>
 
-        {/* Values Spending Breakdown */}
-        {data.valueSpending.length > 0 && (
-          <View style={[styles.valuesBreakdown, { borderTopColor: colors.border }]}>
-            <Text style={[styles.valuesBreakdownTitle, { color: colors.text }]}>
-              Spending by Value
-            </Text>
-            {data.valueSpending.map((valueSpend, idx) => (
-              <View key={idx} style={styles.valueSpendingRow}>
-                <Text style={[styles.valueName, { color: colors.text }]} numberOfLines={1}>
-                  {valueSpend.valueName}
-                </Text>
-                <View style={styles.valueSpendingRight}>
-                  <Text style={[styles.valueAmount, { color: colors.text }]}>
-                    ${valueSpend.amount.toFixed(0)}
-                  </Text>
-                  <Text style={[styles.valuePercentage, { color: colors.textSecondary }]}>
-                    {valueSpend.percentage}%
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
         {/* View Details Toggle */}
         <TouchableOpacity
           style={styles.detailsToggle}
@@ -323,15 +299,15 @@ export default function ActivitySection() {
                   </Text>
                   <View style={styles.alignmentBadges}>
                     {transaction.percentAligned > 0 && (
-                      <View style={[styles.badge, { backgroundColor: colors.success + '20' }]}>
-                        <Text style={[styles.badgeText, { color: colors.success }]}>
+                      <View style={[styles.badge, { backgroundColor: colors.primary + '20' }]}>
+                        <Text style={[styles.badgeText, { color: colors.primary }]}>
                           {transaction.percentAligned}% aligned
                         </Text>
                       </View>
                     )}
                     {transaction.percentUnaligned > 0 && (
-                      <View style={[styles.badge, { backgroundColor: colors.danger + '20' }]}>
-                        <Text style={[styles.badgeText, { color: colors.danger }]}>
+                      <View style={[styles.badge, { backgroundColor: '#9CA3AF' + '20' }]}>
+                        <Text style={[styles.badgeText, { color: '#9CA3AF' }]}>
                           {transaction.percentUnaligned}% unaligned
                         </Text>
                       </View>
@@ -437,43 +413,6 @@ const styles = StyleSheet.create({
   labelText: {
     fontSize: 11,
     fontWeight: '500' as const,
-  },
-  valuesBreakdown: {
-    borderTopWidth: 1,
-    paddingTop: 16,
-    marginBottom: 16,
-    gap: 12,
-  },
-  valuesBreakdownTitle: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    marginBottom: 4,
-  },
-  valueSpendingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  valueName: {
-    fontSize: 13,
-    fontWeight: '500' as const,
-    flex: 1,
-    marginRight: 12,
-  },
-  valueSpendingRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  valueAmount: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-  },
-  valuePercentage: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    minWidth: 45,
-    textAlign: 'right',
   },
   detailsToggle: {
     flexDirection: 'row',

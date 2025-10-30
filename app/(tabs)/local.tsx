@@ -8,15 +8,30 @@ import {
   Platform,
   StatusBar,
 } from 'react-native';
+import { useState } from 'react';
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import ActivitySection from '@/components/ActivitySection';
 
+// Generate mock spending data for a value
+const generateValueSpending = (valueName: string, totalSpending: number): { amount: number; percentage: number } => {
+  // Different values get different spending amounts with some randomness
+  const basePercentage = 8 + Math.random() * 12; // 8-20% of total
+  const amount = (totalSpending * basePercentage) / 100;
+  return {
+    amount: Math.round(amount * 100) / 100,
+    percentage: Math.round(basePercentage * 10) / 10,
+  };
+};
+
 export default function ValuesScreen() {
   const router = useRouter();
   const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+
+  // Mock total spending (would come from Activity section in real implementation)
+  const totalSpending = 1200 + Math.random() * 500;
 
   const supportCauses = profile.causes
     .filter(c => c.type === 'support')
@@ -47,17 +62,32 @@ export default function ValuesScreen() {
         {supportCauses.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Supporting</Text>
-            <View style={styles.causesGrid}>
-              {supportCauses.map(cause => (
-                <TouchableOpacity
-                  key={cause.id}
-                  style={[styles.causeCard, styles.supportCard, { borderColor: colors.success, backgroundColor: colors.backgroundSecondary }]}
-                  onPress={() => router.push(`/value/${cause.id}`)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.causeName, { color: colors.success }]}>{cause.name}</Text>
-                </TouchableOpacity>
-              ))}
+            <View style={styles.valuesList}>
+              {supportCauses.map(cause => {
+                const spending = generateValueSpending(cause.name, totalSpending);
+                return (
+                  <TouchableOpacity
+                    key={cause.id}
+                    style={[styles.valueRow, { backgroundColor: colors.backgroundSecondary }]}
+                    onPress={() => router.push(`/value/${cause.id}`)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.valueNameBox, { borderColor: colors.primary }]}>
+                      <Text style={[styles.valueNameText, { color: colors.primary }]} numberOfLines={1}>
+                        {cause.name}
+                      </Text>
+                    </View>
+                    <View style={styles.valueSpendingInfo}>
+                      <Text style={[styles.valueSpendingAmount, { color: colors.text }]}>
+                        ${spending.amount.toFixed(0)}
+                      </Text>
+                      <Text style={[styles.valueSpendingPercent, { color: colors.textSecondary }]}>
+                        {spending.percentage}%
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
         )}
@@ -65,17 +95,32 @@ export default function ValuesScreen() {
         {avoidCauses.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Opposing</Text>
-            <View style={styles.causesGrid}>
-              {avoidCauses.map(cause => (
-                <TouchableOpacity
-                  key={cause.id}
-                  style={[styles.causeCard, styles.avoidCard, { borderColor: colors.danger, backgroundColor: colors.backgroundSecondary }]}
-                  onPress={() => router.push(`/value/${cause.id}`)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.causeName, { color: colors.danger }]}>{cause.name}</Text>
-                </TouchableOpacity>
-              ))}
+            <View style={styles.valuesList}>
+              {avoidCauses.map(cause => {
+                const spending = generateValueSpending(cause.name, totalSpending);
+                return (
+                  <TouchableOpacity
+                    key={cause.id}
+                    style={[styles.valueRow, { backgroundColor: colors.backgroundSecondary }]}
+                    onPress={() => router.push(`/value/${cause.id}`)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.valueNameBox, { borderColor: '#9CA3AF' }]}>
+                      <Text style={[styles.valueNameText, { color: '#9CA3AF' }]} numberOfLines={1}>
+                        {cause.name}
+                      </Text>
+                    </View>
+                    <View style={styles.valueSpendingInfo}>
+                      <Text style={[styles.valueSpendingAmount, { color: colors.text }]}>
+                        ${spending.amount.toFixed(0)}
+                      </Text>
+                      <Text style={[styles.valueSpendingPercent, { color: colors.textSecondary }]}>
+                        {spending.percentage}%
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
         )}
@@ -134,30 +179,42 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: 16,
   },
-  causesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  valuesList: {
     gap: 12,
   },
-  causeCard: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
     borderRadius: 12,
+    gap: 12,
+  },
+  valueNameBox: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
     borderWidth: 2,
+    flex: 1,
   },
-  supportCard: {
-    borderColor: Colors.success,
-  },
-  avoidCard: {
-    borderColor: Colors.danger,
-  },
-  causeName: {
-    fontSize: 15,
+  valueNameText: {
+    fontSize: 14,
     fontWeight: '600' as const,
-    color: Colors.text,
   },
-  avoidText: {
-    color: Colors.danger,
+  valueSpendingInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  valueSpendingAmount: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+  },
+  valueSpendingPercent: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    minWidth: 50,
+    textAlign: 'right',
   },
   statsSection: {
     marginBottom: 24,
