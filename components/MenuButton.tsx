@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     paddingTop: '5%',
   },
   menuContainer: {
-    width: '96%',
+    width: '90%',
     maxWidth: 500,
     borderRadius: 24,
     overflow: 'hidden',

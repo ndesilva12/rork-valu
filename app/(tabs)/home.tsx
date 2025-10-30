@@ -35,12 +35,12 @@ import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { Product } from '@/types';
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
 import { trpc } from '@/lib/trpc';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
 
-type ViewMode = 'playbook' | 'browse';
+type ViewMode = 'playbook' | 'browse' | 'local';
 
 type FolderCategory = {
   id: string;
@@ -75,11 +75,20 @@ export default function HomeScreen() {
 
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Sync brandType with viewMode
+  useEffect(() => {
+    if (viewMode === 'local') {
+      setBrandType('local');
+    } else {
+      setBrandType('brands');
+    }
+  }, [viewMode]);
+
   // Fetch brands and values matrix from local data via tRPC
   const { data: brands, isLoading, error } = trpc.data.getBrands.useQuery();
   const { data: valuesMatrix } = trpc.data.getValuesMatrix.useQuery();
 
-  const viewModes: ViewMode[] = ['playbook', 'browse'];
+  const viewModes: ViewMode[] = ['playbook', 'browse', 'local'];
 
   const panResponder = useRef(
     PanResponder.create({
@@ -436,6 +445,17 @@ export default function HomeScreen() {
         <FolderOpen size={18} color={viewMode === 'browse' ? colors.white : colors.textSecondary} strokeWidth={2} />
         <Text style={[styles.viewModeText, { color: viewMode === 'browse' ? colors.white : colors.textSecondary }]}>
           Browse
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.viewModeButton, viewMode === 'local' && { backgroundColor: colors.primary }]}
+        onPress={() => setViewMode('local')}
+        activeOpacity={0.7}
+      >
+        <MapPin size={18} color={viewMode === 'local' ? colors.white : colors.textSecondary} strokeWidth={2} />
+        <Text style={[styles.viewModeText, { color: viewMode === 'local' ? colors.white : colors.textSecondary }]}>
+          Local
         </Text>
       </TouchableOpacity>
 
@@ -864,7 +884,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   viewModeButton: {
-    width: '33.33%',
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
