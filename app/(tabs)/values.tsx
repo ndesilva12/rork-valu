@@ -11,6 +11,7 @@ import {
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
+import ActivitySection from '@/components/ActivitySection';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -49,6 +50,9 @@ export default function ProfileScreen() {
             Share this code with friends and earn rewards on every purchase
           </Text>
         </View>
+
+        {/* Activity Section */}
+        <ActivitySection />
 
         {/* Donation Counter Section */}
         <View style={styles.section}>
