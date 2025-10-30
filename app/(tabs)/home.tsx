@@ -40,7 +40,7 @@ import { useIsStandalone } from '@/hooks/useIsStandalone';
 import { trpc } from '@/lib/trpc';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
 
-type ViewMode = 'playbook' | 'browse' | 'map';
+type ViewMode = 'playbook' | 'browse';
 
 type FolderCategory = {
   id: string;
@@ -79,7 +79,7 @@ export default function HomeScreen() {
   const { data: brands, isLoading, error } = trpc.data.getBrands.useQuery();
   const { data: valuesMatrix } = trpc.data.getValuesMatrix.useQuery();
 
-  const viewModes: ViewMode[] = ['playbook', 'browse', 'map'];
+  const viewModes: ViewMode[] = ['playbook', 'browse'];
 
   const panResponder = useRef(
     PanResponder.create({
@@ -439,16 +439,6 @@ export default function HomeScreen() {
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.viewModeButton, viewMode === 'map' && { backgroundColor: colors.primary }]}
-        onPress={() => setViewMode('map')}
-        activeOpacity={0.7}
-      >
-        <MapPin size={18} color={viewMode === 'map' ? colors.white : colors.textSecondary} strokeWidth={2} />
-        <Text style={[styles.viewModeText, { color: viewMode === 'map' ? colors.white : colors.textSecondary }]}>
-          Map
-        </Text>
-      </TouchableOpacity>
     </View>
   );
 
@@ -651,7 +641,7 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setBrandType('local')} activeOpacity={0.7}>
-              <Text style={[styles.headerTitle, { color: brandType === 'local' ? '#84CC16' : colors.textLight }]}>
+              <Text style={[styles.headerTitle, { color: brandType === 'local' ? colors.primary : colors.textSecondary }]}>
                 Local
               </Text>
             </TouchableOpacity>
@@ -663,9 +653,8 @@ export default function HomeScreen() {
       <ScrollView ref={scrollViewRef} style={styles.scrollView} contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent, { paddingBottom: 100 }]}>
         {viewMode === 'playbook' && renderPlaybookView()}
         {viewMode === 'browse' && renderFoldersView()}
-        {viewMode === 'map' && renderMapView()}
 
-        {viewMode !== 'map' && (
+        {(
           <TouchableOpacity
             style={[
               styles.searchPrompt,
@@ -878,15 +867,15 @@ const styles = StyleSheet.create({
   },
   viewModeSelector: {
     flexDirection: 'row',
-    borderRadius: 12,
-    padding: 4,
+    borderRadius: 10,
+    padding: 3,
     marginHorizontal: 16,
     marginBottom: 8,
-    marginTop: 12,
+    marginTop: 10,
     borderWidth: 1,
   },
   viewModeButton: {
-    width: '33.33%',
+    width: '50%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
