@@ -399,7 +399,7 @@ export default function ShopScreen() {
         renderItem={renderProductPost}
         keyExtractor={item => item.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}
+        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent, { paddingBottom: 100 }]}
       />
 
       <Modal

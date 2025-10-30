@@ -228,14 +228,14 @@ export default function ActivitySection({ timeframe: externalTimeframe, onTimefr
             style={[
               styles.barSegment,
               styles.barNeutral,
-              { flex: data.neutral, backgroundColor: isDarkMode ? '#171E29' : '#FAFBFC' },
+              { flex: data.neutral, backgroundColor: isDarkMode ? '#1A2332' : '#F5F6F7' },
             ]}
           />
           <View
             style={[
               styles.barSegment,
               styles.barOpposed,
-              { flex: data.opposed, backgroundColor: '#9CA3AF' },
+              { flex: data.opposed, backgroundColor: '#6B7280' },
             ]}
           />
         </View>
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
   },
   barContainer: {
     flexDirection: 'row',
-    height: 20,
+    height: 10,
     borderRadius: 12,
     overflow: 'hidden',
     gap: 2,

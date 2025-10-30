@@ -39,7 +39,7 @@ export default function ProfileScreen() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.content]}
+        contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
       >
         {/* Valu Code Section */}
         <View style={[styles.promoSection, { borderColor: colors.primary, backgroundColor: colors.backgroundSecondary }]}>

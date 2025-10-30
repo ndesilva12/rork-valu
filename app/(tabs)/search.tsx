@@ -275,7 +275,7 @@ export default function SearchScreen() {
           data={results}
           renderItem={renderProduct}
           keyExtractor={item => item.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: 100 }]}
           showsVerticalScrollIndicator={false}
         />
       )}

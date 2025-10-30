@@ -61,13 +61,13 @@ export default function ValuesScreen() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.content]}
+        contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
       >
         <ActivitySection timeframe={timeframe} onTimeframeChange={setTimeframe} />
 
         {supportCauses.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Supporting</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Aligned</Text>
             <View style={styles.valuesList}>
               {supportCauses.map(cause => {
                 const spending = generateValueSpending(cause.name, timeframe);
@@ -100,7 +100,7 @@ export default function ValuesScreen() {
 
         {avoidCauses.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Opposing</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Unaligned</Text>
             <View style={styles.valuesList}>
               {avoidCauses.map(cause => {
                 const spending = generateValueSpending(cause.name, timeframe);
