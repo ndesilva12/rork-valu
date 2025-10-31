@@ -171,54 +171,46 @@ export default function ActivitySection({ timeframe: externalTimeframe, onTimefr
     <View style={styles.statsSection}>
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Activity</Text>
       <View style={[styles.statsCard, { backgroundColor: 'transparent', borderColor: colors.primaryLight }]}>
-        {/* Spending Title */}
-        <Text style={[styles.spendingTitle, { color: colors.text }]}>your spending:</Text>
 
-        {/* Timeline Filter */}
-        <View style={styles.timelineContainer}>
-          {timeframes.map((tf) => (
-            <TouchableOpacity
-              key={tf.value}
-              style={[
-                styles.timelineButton,
-                timeframe === tf.value && [styles.timelineButtonActive, { backgroundColor: colors.primary }],
-              ]}
-              onPress={() => setTimeframe(tf.value)}
-              activeOpacity={0.7}
-            >
-              <Text
+        {/* Header: Title + Time Selector */}
+        <View style={styles.header}>
+          <Text style={[styles.spendingTitle, { color: colors.text }]}>Your Spending</Text>
+          <View style={styles.timelineCompact}>
+            {timeframes.map((tf) => (
+              <TouchableOpacity
+                key={tf.value}
                 style={[
-                  styles.timelineButtonText,
-                  { color: colors.textSecondary },
-                  timeframe === tf.value && { color: colors.white, fontWeight: '700' },
+                  styles.timelineButtonCompact,
+                  timeframe === tf.value && { backgroundColor: colors.primary },
                 ]}
+                onPress={() => setTimeframe(tf.value)}
+                activeOpacity={0.7}
               >
-                {tf.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Percentages above bar */}
-        <View style={styles.percentageRow}>
-          <View style={[styles.percentageItem, { flex: data.aligned }]}>
-            <Text style={[styles.percentageText, { color: colors.primary }]}>
-              {data.aligned}%
-            </Text>
-          </View>
-          <View style={[styles.percentageItem, { flex: data.neutral }]}>
-            <Text style={[styles.percentageText, { color: colors.textSecondary }]}>
-              {data.neutral}%
-            </Text>
-          </View>
-          <View style={[styles.percentageItem, { flex: data.opposed }]}>
-            <Text style={[styles.percentageText, { color: colors.textSecondary }]}>
-              {data.opposed}%
-            </Text>
+                <Text
+                  style={[
+                    styles.timelineButtonTextCompact,
+                    { color: colors.textSecondary },
+                    timeframe === tf.value && { color: colors.white, fontWeight: '600' },
+                  ]}
+                >
+                  {tf.label.replace('This ', '')}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
-        {/* Horizontal Bar */}
+        {/* Total Amount - Hero Element */}
+        <View style={styles.totalContainer}>
+          <Text style={[styles.totalAmount, { color: colors.text }]}>
+            ${data.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+          </Text>
+          <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>
+            total spent
+          </Text>
+        </View>
+
+        {/* Horizontal Bar - Thicker and more prominent */}
         <View style={styles.barContainer}>
           <View
             style={[
@@ -243,77 +235,69 @@ export default function ActivitySection({ timeframe: externalTimeframe, onTimefr
           />
         </View>
 
-        {/* Dollar amounts below bar */}
-        <View style={styles.amountRow}>
-          <View style={[styles.amountItem, { flex: data.aligned }]}>
-            <Text style={[styles.amountText, { color: colors.textSecondary }]}>
+        {/* Breakdown: Percentages, Labels, and Amounts Combined */}
+        <View style={styles.breakdownRow}>
+          {/* Aligned */}
+          <View style={[styles.breakdownItem, { flex: data.aligned }]}>
+            <Text style={[styles.breakdownPercent, { color: colors.primary }]}>
+              {data.aligned.toFixed(0)}%
+            </Text>
+            <Text style={[styles.breakdownLabel, { color: colors.textSecondary }]}>
+              Aligned
+            </Text>
+            <Text style={[styles.breakdownAmount, { color: colors.text }]}>
               ${data.alignedAmount.toFixed(0)}
             </Text>
           </View>
-          <View style={[styles.amountItem, { flex: data.neutral }]}>
-            <Text style={[styles.amountText, { color: colors.textSecondary }]}>
+
+          {/* Neutral */}
+          <View style={[styles.breakdownItem, { flex: data.neutral }]}>
+            <Text style={[styles.breakdownPercent, { color: colors.textSecondary }]}>
+              {data.neutral.toFixed(0)}%
+            </Text>
+            <Text style={[styles.breakdownLabel, { color: colors.textSecondary }]}>
+              Neutral
+            </Text>
+            <Text style={[styles.breakdownAmount, { color: colors.text }]}>
               ${data.neutralAmount.toFixed(0)}
             </Text>
           </View>
-          <View style={[styles.amountItem, { flex: data.opposed }]}>
-            <Text style={[styles.amountText, { color: colors.textSecondary }]}>
+
+          {/* Unaligned */}
+          <View style={[styles.breakdownItem, { flex: data.opposed }]}>
+            <Text style={[styles.breakdownPercent, { color: '#6B7280' }]}>
+              {data.opposed.toFixed(0)}%
+            </Text>
+            <Text style={[styles.breakdownLabel, { color: colors.textSecondary }]}>
+              Unaligned
+            </Text>
+            <Text style={[styles.breakdownAmount, { color: colors.text }]}>
               ${data.opposedAmount.toFixed(0)}
             </Text>
           </View>
         </View>
 
-        {/* Labels */}
-        <View style={styles.labelRow}>
-          <View style={[styles.labelItem, { flex: data.aligned }]}>
-            <Text style={[styles.labelText, { color: colors.textSecondary }]} numberOfLines={1}>
-              Aligned
-            </Text>
-          </View>
-          <View style={[styles.labelItem, { flex: data.neutral }]}>
-            <Text style={[styles.labelText, { color: colors.textSecondary }]} numberOfLines={1}>
-              Neutral
-            </Text>
-          </View>
-          <View style={[styles.labelItem, { flex: data.opposed }]}>
-            <Text style={[styles.labelText, { color: colors.textSecondary }]} numberOfLines={1}>
-              Unaligned
-            </Text>
-          </View>
-        </View>
-
-        {/* Bank Management Buttons */}
-        <View style={styles.bankButtonsContainer}>
+        {/* Actions Row: Bank Management + View Details */}
+        <View style={styles.actionsRow}>
           <TouchableOpacity
-            style={[styles.bankButton, { backgroundColor: isDarkMode ? '#1F2937' : '#E5E7EB' }]}
+            style={[styles.actionButton, { borderColor: colors.border }]}
             activeOpacity={0.7}
           >
-            <Text style={[styles.bankButtonText, { color: colors.textSecondary }]}>
-              Disconnect Bank
+            <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>
+              Manage Banks
             </Text>
           </TouchableOpacity>
+
           <TouchableOpacity
-            style={[styles.bankButton, { backgroundColor: isDarkMode ? '#1F2937' : '#E5E7EB' }]}
+            style={[styles.actionButton, styles.actionButtonPrimary, { borderColor: colors.primary }]}
+            onPress={() => setDetailsExpanded(!detailsExpanded)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.bankButtonText, { color: colors.textSecondary }]}>
-              Add Bank
+            <Text style={[styles.actionButtonText, { color: colors.primary }]}>
+              {detailsExpanded ? 'Hide Details' : 'View Details'}
             </Text>
           </TouchableOpacity>
         </View>
-
-        {/* View Details Toggle */}
-        <TouchableOpacity
-          style={styles.detailsToggle}
-          onPress={() => setDetailsExpanded(!detailsExpanded)}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.detailsToggleText, { color: colors.primary }]}>
-            {detailsExpanded ? 'Hide Details' : 'View Details'}
-          </Text>
-          <Text style={[styles.detailsToggleIcon, { color: colors.primary }]}>
-            {detailsExpanded ? '−' : '+'}
-          </Text>
-        </TouchableOpacity>
 
         {/* Expandable Details */}
         {detailsExpanded && (
@@ -372,52 +356,56 @@ const styles = StyleSheet.create({
   },
   statsCard: {
     borderRadius: 12,
-    padding: 16,
+    padding: 20,
     borderWidth: 2,
   },
-  spendingTitle: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    marginBottom: 12,
-    textTransform: 'lowercase' as const,
-  },
-  timelineContainer: {
+  // Header with title and compact time selector
+  header: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
-  },
-  timelineButton: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 24,
   },
-  timelineButtonActive: {
-    // backgroundColor set dynamically
+  spendingTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
   },
-  timelineButtonText: {
-    fontSize: 12,
+  timelineCompact: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  timelineButtonCompact: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+  },
+  timelineButtonTextCompact: {
+    fontSize: 11,
     fontWeight: '500' as const,
   },
-  percentageRow: {
-    flexDirection: 'row',
-    marginBottom: 6,
-    gap: 2,
-  },
-  percentageItem: {
+  // Total amount - hero element
+  totalContainer: {
     alignItems: 'center',
+    marginBottom: 24,
   },
-  percentageText: {
-    fontSize: 18,
-    fontWeight: '800' as const,
+  totalAmount: {
+    fontSize: 42,
+    fontWeight: '700' as const,
+    letterSpacing: -1,
   },
+  totalLabel: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    marginTop: 4,
+  },
+  // Bar - thicker and more prominent
   barContainer: {
     flexDirection: 'row',
-    height: 10,
+    height: 20,
     borderRadius: 12,
     overflow: 'hidden',
     gap: 2,
+    marginBottom: 16,
   },
   barSegment: {
     // flex set dynamically
@@ -433,66 +421,55 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 12,
     borderBottomRightRadius: 12,
   },
-  amountRow: {
+  // Breakdown - combined percentages, labels, and amounts
+  breakdownRow: {
     flexDirection: 'row',
-    marginTop: 6,
-    marginBottom: 4,
     gap: 2,
+    marginBottom: 24,
   },
-  amountItem: {
+  breakdownItem: {
     alignItems: 'center',
+    gap: 4,
   },
-  amountText: {
-    fontSize: 15,
+  breakdownPercent: {
+    fontSize: 20,
     fontWeight: '700' as const,
   },
-  labelRow: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    gap: 2,
-  },
-  labelItem: {
-    alignItems: 'center',
-  },
-  labelText: {
+  breakdownLabel: {
     fontSize: 11,
     fontWeight: '500' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
   },
-  bankButtonsContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  bankButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  bankButtonText: {
-    fontSize: 13,
-    fontWeight: '500' as const,
-  },
-  detailsToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    gap: 8,
-  },
-  detailsToggleText: {
+  breakdownAmount: {
     fontSize: 14,
     fontWeight: '600' as const,
   },
-  detailsToggleIcon: {
-    fontSize: 20,
+  // Actions row
+  actionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  actionButtonPrimary: {
+    // Border color set dynamically
+  },
+  actionButtonText: {
+    fontSize: 13,
     fontWeight: '600' as const,
   },
+  // Details section
   detailsContainer: {
     borderTopWidth: 1,
-    paddingTop: 16,
-    marginTop: 4,
+    paddingTop: 20,
+    marginTop: 20,
   },
   detailsTitle: {
     fontSize: 15,
