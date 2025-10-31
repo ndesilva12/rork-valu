@@ -22,6 +22,7 @@ import { useUser } from '@/contexts/UserContext';
 import { searchProducts } from '@/mocks/products';
 import { Product } from '@/types';
 import { lookupBarcode, findBrandInDatabase, getBrandProduct } from '@/mocks/barcode-products';
+import { getLogoUrl } from '@/lib/logo';
 
 export default function SearchScreen() {
   const router = useRouter();
@@ -188,8 +189,8 @@ export default function SearchScreen() {
         onPress={() => handleProductPress(item)}
         activeOpacity={0.7}
       >
-        <Image 
-          source={{ uri: item.imageUrl }} 
+        <Image
+          source={{ uri: getLogoUrl(item.website || '') }}
           style={styles.productImage}
           contentFit="cover"
           transition={200}
@@ -350,7 +351,7 @@ export default function SearchScreen() {
                 <Text style={[styles.resultTitle, { color: colors.text }]}>Product Found!</Text>
 
                 <Image
-                  source={{ uri: scannedProduct.imageUrl }}
+                  source={{ uri: getLogoUrl(scannedProduct.website || '') }}
                   style={styles.resultImage}
                   contentFit="cover"
                   transition={200}

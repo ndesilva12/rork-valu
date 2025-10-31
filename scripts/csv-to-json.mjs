@@ -67,7 +67,7 @@ function parseCSV(csvContent) {
 
 /**
  * Convert brands.csv to brands.json
- * Expected columns: id, name, category, imageUrl, description, website,
+ * Expected columns: id, name, category, description, website,
  *                   affiliate1, $affiliate1, affiliate2, $affiliate2, etc.
  */
 function convertBrands() {
@@ -101,7 +101,6 @@ function convertBrands() {
       id: row.id || '',
       name: row.name || '',
       category: row.category || 'Uncategorized',
-      imageUrl: row.imageUrl || '',
       description: row.description || '',
       website: row.website || '',
       affiliates: affiliates

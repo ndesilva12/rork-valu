@@ -15,6 +15,7 @@ import { useUser } from '@/contexts/UserContext';
 import productsData from '../../mocks/products-data.json';
 import { generateProducts } from '../../mocks/generate-products';
 import { useRef } from 'react';
+import { getLogoUrl } from '@/lib/logo';
 
 interface ValueDriver {
   id: string;
@@ -82,6 +83,7 @@ export default function ValueDetailScreen() {
     const supports = valueData.support.map((brandName, index) => {
       const product = allProducts.find(p => p.name === brandName);
       const productId = (product?.id && product.id.trim()) ? product.id : '';
+      const websiteUrl = product?.website || getWebsiteUrl(brandName);
       return {
         id: productId || `${id}-support-${brandName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-${index}`,
         name: brandName,
@@ -89,14 +91,15 @@ export default function ValueDetailScreen() {
         description: product?.brand || brandName,
         reason: `Directly supports ${userCause.name}`,
         position: index + 1,
-        imageUrl: product?.imageUrl || '',
-        websiteUrl: getWebsiteUrl(brandName),
+        imageUrl: getLogoUrl(websiteUrl),
+        websiteUrl,
       };
     });
 
     const opposes = valueData.oppose.map((brandName, index) => {
       const product = allProducts.find(p => p.name === brandName);
       const productId = (product?.id && product.id.trim()) ? product.id : '';
+      const websiteUrl = product?.website || getWebsiteUrl(brandName);
       return {
         id: productId || `${id}-oppose-${brandName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-${index}`,
         name: brandName,
@@ -104,8 +107,8 @@ export default function ValueDetailScreen() {
         description: product?.brand || brandName,
         reason: `Opposes ${userCause.name}`,
         position: index + 1,
-        imageUrl: product?.imageUrl || '',
-        websiteUrl: getWebsiteUrl(brandName),
+        imageUrl: getLogoUrl(websiteUrl),
+        websiteUrl,
       };
     });
 

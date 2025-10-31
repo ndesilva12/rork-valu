@@ -39,6 +39,7 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
 import { trpc } from '@/lib/trpc';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
+import { getLogoUrl } from '@/lib/logo';
 
 type ViewMode = 'playbook' | 'browse' | 'local';
 
@@ -401,7 +402,7 @@ export default function HomeScreen() {
         <View style={styles.brandCardInner}>
           <View style={styles.brandLogoContainer}>
             <Image
-              source={{ uri: product.imageUrl }}
+              source={{ uri: getLogoUrl(product.website || '') }}
               style={styles.brandLogo}
               contentFit="cover"
               transition={200}
@@ -535,7 +536,7 @@ export default function HomeScreen() {
                     activeOpacity={0.7}
                   >
                     <Image
-                      source={{ uri: product.imageUrl }}
+                      source={{ uri: getLogoUrl(product.website || '') }}
                       style={styles.folderBrandImage}
                       contentFit="cover"
                       transition={200}

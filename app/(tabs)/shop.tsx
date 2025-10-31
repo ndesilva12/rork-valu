@@ -22,6 +22,7 @@ import { useUser } from '@/contexts/UserContext';
 import { MOCK_PRODUCTS } from '@/mocks/products';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
 import { Product } from '@/types';
+import { getLogoUrl } from '@/lib/logo';
 
 interface Comment {
   id: string;
@@ -257,9 +258,9 @@ export default function ShopScreen() {
             activeOpacity={0.7}
           >
             <View style={[styles.brandAvatar, { backgroundColor: colors.backgroundSecondary }]}>
-              <Image 
-                source={{ uri: item.imageUrl }} 
-                style={styles.brandAvatarImage} 
+              <Image
+                source={{ uri: getLogoUrl(item.website || '') }}
+                style={styles.brandAvatarImage}
                 contentFit="cover"
                 transition={200}
                 cachePolicy="memory-disk"
@@ -279,9 +280,9 @@ export default function ShopScreen() {
           activeOpacity={0.95}
           onPress={() => handleProductPress(item)}
         >
-          <Image 
-            source={{ uri: item.productImageUrl || item.imageUrl }} 
-            style={styles.postImage} 
+          <Image
+            source={{ uri: item.productImageUrl || getLogoUrl(item.website || '') }}
+            style={styles.postImage}
             contentFit="cover"
             transition={200}
             cachePolicy="memory-disk"

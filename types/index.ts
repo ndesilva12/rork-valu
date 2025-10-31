@@ -55,7 +55,6 @@ export interface Brand {
   id: string;
   name: string; // Brand name (e.g., "Apple", "Nike")
   category: string;
-  imageUrl: string; // Brand logo
   exampleImageUrl?: string; // Optional image of example product
   description?: string; // Brand description
   alignmentScore: number;
@@ -64,7 +63,7 @@ export interface Brand {
   relatedValues: string[];
   valueAlignments: ValueAlignment[];
   alternatives?: Brand[];
-  website?: string;
+  website?: string; // Used to generate logo URL via logo.dev
   affiliates?: Affiliate[]; // Celebrity/influencer affiliates and their relationships
   partnerships?: Partnership[]; // Business partnerships and collaborations
   ownership?: Ownership[]; // Parent companies, investors, and ownership structure
