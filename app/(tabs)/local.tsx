@@ -8,11 +8,13 @@ import {
   Platform,
   StatusBar,
 } from 'react-native';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import ActivitySection from '@/components/ActivitySection';
+import BusinessActivitySection from '@/components/BusinessActivitySection';
+import { generateMockValuCodeCustomers } from '@/mocks/valu-code-customers';
 
 type TimeFrame = 'week' | 'month' | 'year';
 
@@ -39,6 +41,28 @@ export default function ValuesScreen() {
   // Shared timeframe state
   const [timeframe, setTimeframe] = useState<TimeFrame>('month');
 
+  const isBusiness = profile.accountType === 'business';
+
+  // Generate mock customers for business accounts
+  const customers = useMemo(() => {
+    if (!isBusiness) return [];
+    const discountPercent = profile.businessInfo?.valuCodeDiscount || 10;
+    return generateMockValuCodeCustomers(25, discountPercent);
+  }, [isBusiness, profile.businessInfo?.valuCodeDiscount]);
+
+  // Get customer value IDs and counts for businesses
+  const customerValueCounts = useMemo(() => {
+    if (!isBusiness || customers.length === 0) return new Map<string, number>();
+
+    const counts = new Map<string, number>();
+    customers.forEach(customer => {
+      customer.values.forEach(valueId => {
+        counts.set(valueId, (counts.get(valueId) || 0) + 1);
+      });
+    });
+    return counts;
+  }, [isBusiness, customers]);
+
   const supportCauses = profile.causes
     .filter(c => c.type === 'support')
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -54,7 +78,7 @@ export default function ValuesScreen() {
       />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <Text style={[styles.title, { color: colors.primary }]}>Values</Text>
+          <Text style={[styles.title, { color: colors.primary }]}>Data</Text>
           <MenuButton />
         </View>
       </View>
@@ -63,14 +87,26 @@ export default function ValuesScreen() {
         style={styles.scrollView}
         contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
       >
-        <ActivitySection timeframe={timeframe} onTimeframeChange={setTimeframe} />
+        {/* Show BusinessActivitySection for business accounts, ActivitySection for individuals */}
+        {isBusiness ? (
+          <BusinessActivitySection />
+        ) : (
+          <ActivitySection timeframe={timeframe} onTimeframeChange={setTimeframe} />
+        )}
 
         {supportCauses.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Aligned</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              {isBusiness ? 'Your Business Values (Aligned)' : 'Aligned'}
+            </Text>
             <View style={styles.valuesList}>
               {supportCauses.map(cause => {
                 const spending = generateValueSpending(cause.name, timeframe);
+                const customerCount = customerValueCounts.get(cause.id) || 0;
+                const customerPercentage = isBusiness && customers.length > 0
+                  ? Math.round((customerCount / customers.length) * 100)
+                  : 0;
+
                 return (
                   <TouchableOpacity
                     key={cause.id}
@@ -84,12 +120,25 @@ export default function ValuesScreen() {
                       </Text>
                     </View>
                     <View style={styles.valueSpendingInfo}>
-                      <Text style={[styles.valueSpendingAmount, { color: colors.text }]}>
-                        ${spending.amount.toFixed(0)}
-                      </Text>
-                      <Text style={[styles.valueSpendingPercent, { color: colors.textSecondary }]}>
-                        {spending.percentage}%
-                      </Text>
+                      {isBusiness && customerCount > 0 ? (
+                        <>
+                          <Text style={[styles.valueSpendingAmount, { color: colors.text }]}>
+                            {customerCount} customers
+                          </Text>
+                          <Text style={[styles.valueSpendingPercent, { color: colors.textSecondary }]}>
+                            {customerPercentage}%
+                          </Text>
+                        </>
+                      ) : (
+                        <>
+                          <Text style={[styles.valueSpendingAmount, { color: colors.text }]}>
+                            ${spending.amount.toFixed(0)}
+                          </Text>
+                          <Text style={[styles.valueSpendingPercent, { color: colors.textSecondary }]}>
+                            {spending.percentage}%
+                          </Text>
+                        </>
+                      )}
                     </View>
                   </TouchableOpacity>
                 );
@@ -100,10 +149,17 @@ export default function ValuesScreen() {
 
         {avoidCauses.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Unaligned</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              {isBusiness ? 'Your Business Values (Unaligned)' : 'Unaligned'}
+            </Text>
             <View style={styles.valuesList}>
               {avoidCauses.map(cause => {
                 const spending = generateValueSpending(cause.name, timeframe);
+                const customerCount = customerValueCounts.get(cause.id) || 0;
+                const customerPercentage = isBusiness && customers.length > 0
+                  ? Math.round((customerCount / customers.length) * 100)
+                  : 0;
+
                 return (
                   <TouchableOpacity
                     key={cause.id}
@@ -117,12 +173,25 @@ export default function ValuesScreen() {
                       </Text>
                     </View>
                     <View style={styles.valueSpendingInfo}>
-                      <Text style={[styles.valueSpendingAmount, { color: colors.text }]}>
-                        ${spending.amount.toFixed(0)}
-                      </Text>
-                      <Text style={[styles.valueSpendingPercent, { color: colors.textSecondary }]}>
-                        {spending.percentage}%
-                      </Text>
+                      {isBusiness && customerCount > 0 ? (
+                        <>
+                          <Text style={[styles.valueSpendingAmount, { color: colors.text }]}>
+                            {customerCount} customers
+                          </Text>
+                          <Text style={[styles.valueSpendingPercent, { color: colors.textSecondary }]}>
+                            {customerPercentage}%
+                          </Text>
+                        </>
+                      ) : (
+                        <>
+                          <Text style={[styles.valueSpendingAmount, { color: colors.text }]}>
+                            ${spending.amount.toFixed(0)}
+                          </Text>
+                          <Text style={[styles.valueSpendingPercent, { color: colors.textSecondary }]}>
+                            {spending.percentage}%
+                          </Text>
+                        </>
+                      )}
                     </View>
                   </TouchableOpacity>
                 );
@@ -133,15 +202,31 @@ export default function ValuesScreen() {
 
         <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]} key="info-section">
           <Text style={[styles.infoTitle, { color: colors.text }]}>How it works</Text>
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            We analyze where your money flows when you purchase products - from the company to its
-            shareholders and beneficiaries. We then match these entities against your selected values
-            to provide alignment scores.
-          </Text>
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            Products are scored from -100 (strongly opposed) to +100 (strongly aligned) based on
-            public records, donations, and stated positions.
-          </Text>
+          {isBusiness ? (
+            <>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                The data above shows insights from customers who have used valu codes at your business.
+                See which values resonate most with your customer base and track total revenue from
+                value-aligned shoppers.
+              </Text>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                The percentages represent how many of your valu code customers share each value. This
+                helps you understand your customer demographics and their priorities.
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                We analyze where your money flows when you purchase products - from the company to its
+                shareholders and beneficiaries. We then match these entities against your selected values
+                to provide alignment scores.
+              </Text>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                Products are scored from -100 (strongly opposed) to +100 (strongly aligned) based on
+                public records, donations, and stated positions.
+              </Text>
+            </>
+          )}
         </View>
       </ScrollView>
     </View>

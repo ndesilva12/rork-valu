@@ -17,6 +17,7 @@ import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { useUser } from '@/contexts/UserContext';
 import { useRef, useMemo, useState, useCallback } from 'react';
 import { trpc } from '@/lib/trpc';
+import { getLogoUrl } from '@/lib/logo';
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -384,9 +385,9 @@ export default function ProductDetailScreen() {
         {...panResponder.panHandlers}
       >
         <View style={styles.heroImageContainer}>
-          <Image 
-            source={{ uri: product.imageUrl }} 
-            style={styles.heroImage} 
+          <Image
+            source={{ uri: getLogoUrl(product.website || '') }}
+            style={styles.heroImage}
             contentFit="cover"
             transition={200}
             cachePolicy="memory-disk"

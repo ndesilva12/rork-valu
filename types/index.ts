@@ -55,7 +55,6 @@ export interface Brand {
   id: string;
   name: string; // Brand name (e.g., "Apple", "Nike")
   category: string;
-  imageUrl: string; // Brand logo
   exampleImageUrl?: string; // Optional image of example product
   description?: string; // Brand description
   alignmentScore: number;
@@ -64,7 +63,7 @@ export interface Brand {
   relatedValues: string[];
   valueAlignments: ValueAlignment[];
   alternatives?: Brand[];
-  website?: string;
+  website?: string; // Used to generate logo URL via logo.dev
   affiliates?: Affiliate[]; // Celebrity/influencer affiliates and their relationships
   partnerships?: Partnership[]; // Business partnerships and collaborations
   ownership?: Ownership[]; // Parent companies, investors, and ownership structure
@@ -81,10 +80,34 @@ export interface Charity {
   category: string;
 }
 
+export type AccountType = 'individual' | 'business';
+
+export interface BusinessInfo {
+  name: string;
+  category: string;
+  description?: string;
+  website?: string;
+  logoUrl?: string;
+  acceptsValuCodes: boolean;
+  valuCodeDiscount?: number; // Percentage discount (e.g., 10 for 10%)
+}
+
+export interface ValuCodeCustomer {
+  id: string;
+  name: string;
+  totalSpent: number;
+  totalDiscounted: number;
+  values: string[]; // Value IDs
+  lastPurchaseDate: string;
+}
+
 export interface UserProfile {
+  accountType?: AccountType; // Default: 'individual'
   causes: Cause[];
   searchHistory: string[];
   promoCode?: string;
   donationAmount?: number;
   selectedCharities?: Charity[];
+  businessInfo?: BusinessInfo; // Only for business accounts
+  valuCodeCustomers?: ValuCodeCustomer[]; // Only for business accounts
 }

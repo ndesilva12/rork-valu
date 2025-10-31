@@ -63,7 +63,6 @@ export async function fetchCausesFromSheets(): Promise<ValueItem[]> {
       name: value.name,
       category: 'values' as any, // Default category
       description: undefined,
-      imageUrl: undefined,
     }));
 
     console.log(`[LocalData] Loaded ${causes.length} values`);
@@ -81,7 +80,6 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
       id: brand.id,
       name: brand.name,
       category: brand.category || 'Uncategorized',
-      imageUrl: brand.imageUrl || '',
       description: brand.description || '',
       website: brand.website || undefined,
       affiliates: brand.affiliates || [],

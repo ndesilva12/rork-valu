@@ -11,11 +11,15 @@ import {
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
+import BusinessProfileEditor from '@/components/BusinessProfileEditor';
+import ValuCodeSettings from '@/components/ValuCodeSettings';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+
+  const isBusiness = profile.accountType === 'business';
 
   const handleSelectCharities = () => {
     router.push('/select-charities');
@@ -41,73 +45,97 @@ export default function ProfileScreen() {
         style={styles.scrollView}
         contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
       >
-        {/* Valu Code Section */}
-        <View style={[styles.promoSection, { borderColor: colors.primary, backgroundColor: colors.backgroundSecondary }]}>
-          <Text style={[styles.promoLabel, { color: colors.textSecondary }]}>Your Valu Code</Text>
-          <Text style={[styles.promoCode, { color: colors.primary }]}>{profile.promoCode || 'VALU000000'}</Text>
-          <Text style={[styles.promoDescription, { color: colors.textSecondary }]}>
-            Use this code when you shop at locations and we will donate a percentage of each purchase to your selected organizations
-          </Text>
-        </View>
+        {isBusiness ? (
+          /* Business Account UI */
+          <>
+            <BusinessProfileEditor />
+            <ValuCodeSettings />
 
-        {/* Donation Counter Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact Dashboard</Text>
-          <View style={[styles.donationCard, { backgroundColor: colors.backgroundSecondary }]}>
-            <View style={styles.donationAmountContainer}>
-              <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Donated on Your Behalf</Text>
-              <Text style={[styles.donationAmount, { color: colors.primary }]}>
-                ${donationAmount.toFixed(2)}
+            {/* Business Info Section */}
+            <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
+              <Text style={[styles.infoTitle, { color: colors.text }]}>About Your Business Profile</Text>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                Your brand profile helps customers discover your business and understand your values.
+                Keep your information up-to-date to maximize visibility on the Valu platform.
+              </Text>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                By accepting valu codes, you attract value-aligned customers and gain insights into
+                their priorities through your Data tab.
+              </Text>
+            </View>
+          </>
+        ) : (
+          /* Individual Account UI */
+          <>
+            {/* Valu Code Section */}
+            <View style={[styles.promoSection, { borderColor: colors.primary, backgroundColor: colors.backgroundSecondary }]}>
+              <Text style={[styles.promoLabel, { color: colors.textSecondary }]}>Your Valu Code</Text>
+              <Text style={[styles.promoCode, { color: colors.primary }]}>{profile.promoCode || 'VALU000000'}</Text>
+              <Text style={[styles.promoDescription, { color: colors.textSecondary }]}>
+                Use this code when you shop at locations and we will donate a percentage of each purchase to your selected organizations
               </Text>
             </View>
 
-            <View style={styles.charitiesInfoContainer}>
-              <Text style={[styles.charitiesInfoText, { color: colors.textSecondary }]}>
-                {selectedOrganizationsCount === 0
-                  ? 'No organizations selected yet'
-                  : selectedOrganizationsCount === 1
-                  ? '1 organization selected'
-                  : `${selectedOrganizationsCount} organizations selected`}
-              </Text>
-            </View>
+            {/* Donation Counter Section */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact Dashboard</Text>
+              <View style={[styles.donationCard, { backgroundColor: colors.backgroundSecondary }]}>
+                <View style={styles.donationAmountContainer}>
+                  <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Donated on Your Behalf</Text>
+                  <Text style={[styles.donationAmount, { color: colors.primary }]}>
+                    ${donationAmount.toFixed(2)}
+                  </Text>
+                </View>
 
-            <TouchableOpacity
-              style={[styles.selectCharitiesButton, { backgroundColor: colors.primary }]}
-              onPress={handleSelectCharities}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.selectCharitiesButtonText, { color: colors.white }]}>
-                {selectedOrganizationsCount === 0 ? 'Select Organizations' : 'Manage Organizations'}
-              </Text>
-            </TouchableOpacity>
+                <View style={styles.charitiesInfoContainer}>
+                  <Text style={[styles.charitiesInfoText, { color: colors.textSecondary }]}>
+                    {selectedOrganizationsCount === 0
+                      ? 'No organizations selected yet'
+                      : selectedOrganizationsCount === 1
+                      ? '1 organization selected'
+                      : `${selectedOrganizationsCount} organizations selected`}
+                  </Text>
+                </View>
 
-            {selectedOrganizationsCount > 0 && profile.selectedCharities && (
-              <View style={styles.selectedCharitiesList}>
-                {profile.selectedCharities.map((charity) => (
-                  <View key={charity.id} style={[styles.charityItem, { backgroundColor: colors.background }]}>
-                    <Text style={[styles.charityName, { color: colors.text }]}>{charity.name}</Text>
-                    <Text style={[styles.charityCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {charity.category}
-                    </Text>
+                <TouchableOpacity
+                  style={[styles.selectCharitiesButton, { backgroundColor: colors.primary }]}
+                  onPress={handleSelectCharities}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.selectCharitiesButtonText, { color: colors.white }]}>
+                    {selectedOrganizationsCount === 0 ? 'Select Organizations' : 'Manage Organizations'}
+                  </Text>
+                </TouchableOpacity>
+
+                {selectedOrganizationsCount > 0 && profile.selectedCharities && (
+                  <View style={styles.selectedCharitiesList}>
+                    {profile.selectedCharities.map((charity) => (
+                      <View key={charity.id} style={[styles.charityItem, { backgroundColor: colors.background }]}>
+                        <Text style={[styles.charityName, { color: colors.text }]}>{charity.name}</Text>
+                        <Text style={[styles.charityCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {charity.category}
+                        </Text>
+                      </View>
+                    ))}
                   </View>
-                ))}
+                )}
               </View>
-            )}
-          </View>
-        </View>
+            </View>
 
-        {/* Info Section */}
-        <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
-          <Text style={[styles.infoTitle, { color: colors.text }]}>How Donations Work</Text>
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            Every time you or someone using your Valu code makes a purchase, we donate a portion
-            of the transaction to your selected organizations.
-          </Text>
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            You can select up to 3 organizations to support. Donations are split equally among
-            your chosen organizations.
-          </Text>
-        </View>
+            {/* Info Section */}
+            <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
+              <Text style={[styles.infoTitle, { color: colors.text }]}>How Donations Work</Text>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                Every time you or someone using your Valu code makes a purchase, we donate a portion
+                of the transaction to your selected organizations.
+              </Text>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                You can select up to 3 organizations to support. Donations are split equally among
+                your chosen organizations.
+              </Text>
+            </View>
+          </>
+        )}
       </ScrollView>
     </View>
   );
