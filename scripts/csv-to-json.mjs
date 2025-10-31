@@ -67,7 +67,7 @@ function parseCSV(csvContent) {
 
 /**
  * Convert brands.csv to brands.json
- * Expected columns: id, name, category, description, website,
+ * Expected columns: id, name, category, description, website, location, latitude, longitude,
  *                   affiliate1, $affiliate1, affiliate2, $affiliate2, etc.
  */
 function convertBrands() {
@@ -97,7 +97,12 @@ function convertBrands() {
       }
     }
 
-    return {
+    // Parse location fields
+    const location = row.location?.trim() || '';
+    const latitude = row.latitude?.trim() ? parseFloat(row.latitude) : undefined;
+    const longitude = row.longitude?.trim() ? parseFloat(row.longitude) : undefined;
+
+    const brand = {
       id: row.id || '',
       name: row.name || '',
       category: row.category || 'Uncategorized',
@@ -105,6 +110,19 @@ function convertBrands() {
       website: row.website || '',
       affiliates: affiliates
     };
+
+    // Only include location fields if they have values
+    if (location) {
+      brand.location = location;
+    }
+    if (latitude !== undefined && !isNaN(latitude)) {
+      brand.latitude = latitude;
+    }
+    if (longitude !== undefined && !isNaN(longitude)) {
+      brand.longitude = longitude;
+    }
+
+    return brand;
   });
 
   const outputPath = path.join(DATA_DIR, 'brands.json');

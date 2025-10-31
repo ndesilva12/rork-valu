@@ -2266,8 +2266,29 @@
     "name": "Sturm,Firearms,https://logo.clearbit.com/ruger.com,Leading American manufacturer of pistols",
     "category": "revolvers",
     "description": "rifles",
-    "website": "and shotguns.,https://www.ruger.com/,Bill Ruger,Undisclosed (founder),Christopher J. Killoy,Undisclosed (CEO),Kevin Sardone,Undisclosed (exec),Mark Lang,Undisclosed (exec),Tom Whitney,Undisclosed (exec)",
-    "affiliates": []
+    "website": "and shotguns.\"",
+    "affiliates": [
+      {
+        "name": "https://www.ruger.com/",
+        "relationship": "Bill Ruger"
+      },
+      {
+        "name": "Undisclosed (founder)",
+        "relationship": "Christopher J. Killoy"
+      },
+      {
+        "name": "Undisclosed (CEO)",
+        "relationship": "Kevin Sardone"
+      },
+      {
+        "name": "Undisclosed (exec)",
+        "relationship": "Mark Lang"
+      },
+      {
+        "name": "Undisclosed (exec)",
+        "relationship": "Tom Whitney"
+      }
+    ]
   },
   {
     "id": "Ørsted",

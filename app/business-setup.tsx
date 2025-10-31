@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Building2, ChevronDown } from 'lucide-react-native';
+import { Building2, ChevronDown, MapPin } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   View,
@@ -13,6 +13,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Location from 'expo-location';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 
@@ -47,6 +48,52 @@ export default function BusinessSetupScreen() {
   const [businessName, setBusinessName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [location, setLocation] = useState('');
+  const [latitude, setLatitude] = useState<number | undefined>(undefined);
+  const [longitude, setLongitude] = useState<number | undefined>(undefined);
+  const [gettingLocation, setGettingLocation] = useState(false);
+
+  const handleGetCurrentLocation = async () => {
+    try {
+      setGettingLocation(true);
+
+      // Request location permissions
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Denied',
+          'Location permission is required to get your current location. Please enable it in your device settings.'
+        );
+        return;
+      }
+
+      // Get current position
+      const currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const lat = currentLocation.coords.latitude;
+      const lon = currentLocation.coords.longitude;
+
+      setLatitude(lat);
+      setLongitude(lon);
+
+      // Reverse geocode to get address
+      const addresses = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
+      if (addresses && addresses.length > 0) {
+        const addr = addresses[0];
+        const locationString = [addr.city, addr.region].filter(Boolean).join(', ');
+        setLocation(locationString || `${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+      } else {
+        setLocation(`${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+      }
+    } catch (error) {
+      console.error('Error getting location:', error);
+      Alert.alert('Error', 'Failed to get current location. Please enter it manually.');
+    } finally {
+      setGettingLocation(false);
+    }
+  };
 
   const handleContinue = async () => {
     if (!businessName.trim()) {
@@ -59,12 +106,24 @@ export default function BusinessSetupScreen() {
       return;
     }
 
-    // Save basic business info
-    await setBusinessInfo({
+    // Save basic business info (including location if provided)
+    const businessInfo: any = {
       name: businessName.trim(),
       category: selectedCategory,
       acceptsValuCodes: false, // Default to false, can be changed in profile later
-    });
+    };
+
+    if (location.trim()) {
+      businessInfo.location = location.trim();
+    }
+    if (latitude !== undefined) {
+      businessInfo.latitude = latitude;
+    }
+    if (longitude !== undefined) {
+      businessInfo.longitude = longitude;
+    }
+
+    await setBusinessInfo(businessInfo);
 
     // Continue to value selection
     router.push('/onboarding');
@@ -185,6 +244,53 @@ export default function BusinessSetupScreen() {
           )}
         </View>
 
+        {/* Location Input */}
+        <View style={styles.section}>
+          <View style={styles.labelRow}>
+            <MapPin size={18} color={colors.text} strokeWidth={2} />
+            <Text style={[styles.label, { color: colors.text }]}>
+              Location (Optional)
+            </Text>
+          </View>
+          <View style={styles.locationInputContainer}>
+            <TextInput
+              style={[
+                styles.input,
+                styles.locationInput,
+                {
+                  backgroundColor: colors.backgroundSecondary,
+                  borderColor: colors.border,
+                  color: colors.text,
+                }
+              ]}
+              placeholder="Enter city and state (e.g., New York, NY)"
+              placeholderTextColor={colors.textSecondary}
+              value={location}
+              onChangeText={setLocation}
+              autoCapitalize="words"
+            />
+            <TouchableOpacity
+              style={[
+                styles.locationButton,
+                {
+                  backgroundColor: colors.primary,
+                }
+              ]}
+              onPress={handleGetCurrentLocation}
+              disabled={gettingLocation}
+              activeOpacity={0.7}
+            >
+              <MapPin size={18} color={colors.white} strokeWidth={2} />
+              <Text style={[styles.locationButtonText, { color: colors.white }]}>
+                {gettingLocation ? 'Getting...' : 'Use Current'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+            Adding your location helps customers find you on the map
+          </Text>
+        </View>
+
         {/* Info Box */}
         <View style={[styles.infoBox, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}>
           <Text style={[styles.infoText, { color: colors.text }]}>
@@ -267,10 +373,15 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
   label: {
     fontSize: 16,
     fontWeight: '600' as const,
-    marginBottom: 8,
   },
   input: {
     paddingHorizontal: 16,
@@ -278,6 +389,30 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     fontSize: 16,
+  },
+  locationInputContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 8,
+  },
+  locationInput: {
+    flex: 1,
+  },
+  locationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  locationButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  helperText: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   categoryPicker: {
     flexDirection: 'row',
