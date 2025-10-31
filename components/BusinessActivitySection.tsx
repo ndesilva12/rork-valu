@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
 } from 'react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -136,7 +135,7 @@ export default function BusinessActivitySection() {
             <Text style={[styles.customerListTitle, { color: colors.text }]}>
               Recent Customers ({customers.length})
             </Text>
-            <ScrollView style={styles.customerScroll} nestedScrollEnabled>
+            <View style={styles.customerScroll}>
               {customers.map((customer) => (
                 <View
                   key={customer.id}
@@ -160,7 +159,7 @@ export default function BusinessActivitySection() {
                   </View>
                 </View>
               ))}
-            </ScrollView>
+            </View>
           </View>
         )}
 
@@ -285,7 +284,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   customerScroll: {
-    maxHeight: 400,
+    // Container for customer list items
   },
   customerItem: {
     paddingVertical: 12,
