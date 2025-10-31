@@ -105,8 +105,8 @@ export default function TabLayout() {
             <Tabs.Screen
               name="local"
               options={{
-                title: "Values",
-                tabBarIcon: renderTabIconWithLabel(BarChart3, "Values", colors.primary),
+                title: "Data",
+                tabBarIcon: renderTabIconWithLabel(BarChart3, "Data", colors.primary),
               }}
             />
             <Tabs.Screen

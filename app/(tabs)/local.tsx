@@ -54,7 +54,7 @@ export default function ValuesScreen() {
       />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <Text style={[styles.title, { color: colors.primary }]}>Values</Text>
+          <Text style={[styles.title, { color: colors.primary }]}>Data</Text>
           <MenuButton />
         </View>
       </View>
