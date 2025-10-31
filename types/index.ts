@@ -67,6 +67,9 @@ export interface Brand {
   affiliates?: Affiliate[]; // Celebrity/influencer affiliates and their relationships
   partnerships?: Partnership[]; // Business partnerships and collaborations
   ownership?: Ownership[]; // Parent companies, investors, and ownership structure
+  location?: string; // Location name (e.g., "New York, NY")
+  latitude?: number; // Latitude coordinate for distance calculations
+  longitude?: number; // Longitude coordinate for distance calculations
 }
 
 // For backwards compatibility during transition
@@ -88,6 +91,9 @@ export interface BusinessInfo {
   description?: string;
   website?: string;
   logoUrl?: string;
+  location?: string; // Location name (e.g., "New York, NY")
+  latitude?: number; // Latitude coordinate for distance calculations
+  longitude?: number; // Longitude coordinate for distance calculations
   acceptsValuCodes: boolean;
   valuCodeDiscount?: number; // Percentage discount (e.g., 10 for 10%)
 }

@@ -8,7 +8,8 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import { Building2, ChevronDown, Globe, Upload } from 'lucide-react-native';
+import { Building2, ChevronDown, Globe, Upload, MapPin } from 'lucide-react-native';
+import * as Location from 'expo-location';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 
@@ -57,6 +58,52 @@ export default function BusinessProfileEditor() {
   const [description, setDescription] = useState(businessInfo.description || '');
   const [website, setWebsite] = useState(businessInfo.website || '');
   const [logoUrl, setLogoUrl] = useState(businessInfo.logoUrl || '');
+  const [location, setLocation] = useState(businessInfo.location || '');
+  const [latitude, setLatitude] = useState<number | undefined>(businessInfo.latitude);
+  const [longitude, setLongitude] = useState<number | undefined>(businessInfo.longitude);
+  const [gettingLocation, setGettingLocation] = useState(false);
+
+  const handleGetCurrentLocation = async () => {
+    try {
+      setGettingLocation(true);
+
+      // Request location permissions
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Denied',
+          'Location permission is required to get your current location. Please enable it in your device settings.'
+        );
+        return;
+      }
+
+      // Get current position
+      const currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const lat = currentLocation.coords.latitude;
+      const lon = currentLocation.coords.longitude;
+
+      setLatitude(lat);
+      setLongitude(lon);
+
+      // Reverse geocode to get address
+      const addresses = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
+      if (addresses && addresses.length > 0) {
+        const addr = addresses[0];
+        const locationString = [addr.city, addr.region].filter(Boolean).join(', ');
+        setLocation(locationString || `${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+      } else {
+        setLocation(`${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+      }
+    } catch (error) {
+      console.error('Error getting location:', error);
+      Alert.alert('Error', 'Failed to get current location. Please enter it manually.');
+    } finally {
+      setGettingLocation(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -69,13 +116,25 @@ export default function BusinessProfileEditor() {
       return;
     }
 
-    await setBusinessInfo({
+    const updateInfo: any = {
       name: name.trim(),
       category,
       description: description.trim(),
       website: website.trim(),
       logoUrl: logoUrl.trim(),
-    });
+    };
+
+    if (location.trim()) {
+      updateInfo.location = location.trim();
+    }
+    if (latitude !== undefined) {
+      updateInfo.latitude = latitude;
+    }
+    if (longitude !== undefined) {
+      updateInfo.longitude = longitude;
+    }
+
+    await setBusinessInfo(updateInfo);
 
     setEditing(false);
     Alert.alert('Success', 'Business profile updated');
@@ -88,6 +147,9 @@ export default function BusinessProfileEditor() {
     setDescription(businessInfo.description || '');
     setWebsite(businessInfo.website || '');
     setLogoUrl(businessInfo.logoUrl || '');
+    setLocation(businessInfo.location || '');
+    setLatitude(businessInfo.latitude);
+    setLongitude(businessInfo.longitude);
     setEditing(false);
   };
 
@@ -273,6 +335,53 @@ export default function BusinessProfileEditor() {
           )}
         </View>
 
+        {/* Location */}
+        <View style={styles.inputGroup}>
+          <View style={styles.labelRow}>
+            <MapPin size={16} color={colors.text} strokeWidth={2} />
+            <Text style={[styles.label, { color: colors.text }]}>Location</Text>
+          </View>
+          {editing ? (
+            <>
+              <View style={styles.locationInputContainer}>
+                <TextInput
+                  style={[
+                    styles.input,
+                    styles.locationInput,
+                    { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }
+                  ]}
+                  placeholder="Enter city and state (e.g., New York, NY)"
+                  placeholderTextColor={colors.textSecondary}
+                  value={location}
+                  onChangeText={setLocation}
+                  autoCapitalize="words"
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.locationButton,
+                    { backgroundColor: colors.primary }
+                  ]}
+                  onPress={handleGetCurrentLocation}
+                  disabled={gettingLocation}
+                  activeOpacity={0.7}
+                >
+                  <MapPin size={16} color={colors.white} strokeWidth={2} />
+                  <Text style={[styles.locationButtonText, { color: colors.white }]}>
+                    {gettingLocation ? 'Getting...' : 'Current'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+                Adding your location helps customers find you on the map
+              </Text>
+            </>
+          ) : (
+            <Text style={[styles.value, { color: colors.text }]}>
+              {businessInfo.location || 'No location added'}
+            </Text>
+          )}
+        </View>
+
         {/* Edit Actions */}
         {editing && (
           <View style={styles.editActions}>
@@ -392,6 +501,31 @@ const styles = StyleSheet.create({
   },
   link: {
     textDecorationLine: 'underline',
+  },
+  // Location Input
+  locationInputContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 8,
+  },
+  locationInput: {
+    flex: 1,
+  },
+  locationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  locationButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  helperText: {
+    fontSize: 12,
+    lineHeight: 16,
   },
   // Category Picker
   categoryPicker: {
