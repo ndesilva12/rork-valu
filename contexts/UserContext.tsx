@@ -2,7 +2,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
-import { Cause, UserProfile, Charity } from '@/types';
+import { Cause, UserProfile, Charity, AccountType, BusinessInfo } from '@/types';
 
 const DARK_MODE_KEY = '@dark_mode';
 const PROFILE_KEY = '@user_profile';
@@ -252,6 +252,52 @@ export const [UserProvider, useUser] = createContextHook(() => {
     }
   }, [isDarkMode]);
 
+  const setAccountType = useCallback(async (accountType: AccountType) => {
+    if (!clerkUser) {
+      console.error('[UserContext] Cannot set account type: User not logged in');
+      return;
+    }
+
+    const newProfile = { ...profile, accountType };
+    console.log('[UserContext] Setting account type to:', accountType);
+
+    setProfile(newProfile);
+
+    try {
+      const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
+      await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
+      console.log('[UserContext] Account type saved successfully');
+    } catch (error) {
+      console.error('[UserContext] Failed to save account type:', error);
+    }
+  }, [clerkUser, profile]);
+
+  const setBusinessInfo = useCallback(async (businessInfo: Partial<BusinessInfo>) => {
+    if (!clerkUser) {
+      console.error('[UserContext] Cannot set business info: User not logged in');
+      return;
+    }
+
+    const newProfile = {
+      ...profile,
+      businessInfo: {
+        ...profile.businessInfo,
+        ...businessInfo,
+      } as BusinessInfo,
+    };
+    console.log('[UserContext] Updating business info');
+
+    setProfile(newProfile);
+
+    try {
+      const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
+      await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
+      console.log('[UserContext] Business info saved successfully');
+    } catch (error) {
+      console.error('[UserContext] Failed to save business info:', error);
+    }
+  }, [clerkUser, profile]);
+
   return useMemo(() => ({
     profile,
     isLoading: isLoading || !isClerkLoaded,
@@ -265,5 +311,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
     isDarkMode,
     toggleDarkMode,
     clerkUser,
-  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, toggleDarkMode, clerkUser]);
+    setAccountType,
+    setBusinessInfo,
+  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, toggleDarkMode, clerkUser, setAccountType, setBusinessInfo]);
 });
