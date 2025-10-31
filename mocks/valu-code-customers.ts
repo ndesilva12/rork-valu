@@ -42,8 +42,10 @@ function generateRecentDate(daysAgo: number): string {
  * Select random values for a customer, weighted towards certain popular values
  */
 function generateCustomerValues(count: number = 5): string[] {
-  // Get available value IDs
-  const allValueIds = AVAILABLE_VALUES.map(v => v.id);
+  // Get available value IDs by flattening the AVAILABLE_VALUES object
+  const allValueIds = Object.values(AVAILABLE_VALUES)
+    .flat()
+    .map(v => v.id);
 
   // Shuffle and take the first 'count' values
   const shuffled = [...allValueIds].sort(() => 0.5 - Math.random());
@@ -131,9 +133,12 @@ export function calculateCustomerStats(
   });
 
   // Convert to sorted array with percentages
+  // Flatten AVAILABLE_VALUES to search through all values
+  const allValues = Object.values(AVAILABLE_VALUES).flat();
+
   const topValues = Array.from(valueCount.entries())
     .map(([valueId, count]) => {
-      const value = AVAILABLE_VALUES.find(v => v.id === valueId);
+      const value = allValues.find(v => v.id === valueId);
       return {
         valueId,
         valueName: value?.name || valueId,

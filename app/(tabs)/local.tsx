@@ -63,10 +63,10 @@ export default function ValuesScreen() {
     return counts;
   }, [isBusiness, customers]);
 
-  const supportCauses = profile.causes
+  const supportCauses = (profile.causes || [])
     .filter(c => c.type === 'support')
     .sort((a, b) => a.name.localeCompare(b.name));
-  const avoidCauses = profile.causes
+  const avoidCauses = (profile.causes || [])
     .filter(c => c.type === 'avoid')
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -89,7 +89,9 @@ export default function ValuesScreen() {
       >
         {/* Show BusinessActivitySection for business accounts, ActivitySection for individuals */}
         {isBusiness ? (
-          <BusinessActivitySection />
+          <>
+            <BusinessActivitySection />
+          </>
         ) : (
           <ActivitySection timeframe={timeframe} onTimeframeChange={setTimeframe} />
         )}
