@@ -99,29 +99,15 @@ function convertBrands() {
     }
 
     // Parse ownership from ownership1-5 columns
-    // Format: "Company Name (~X.X%)" or "Company Name"
     const ownership = [];
     for (let i = 1; i <= 5; i++) {
       const ownershipEntry = row[`ownership${i}`];
 
       if (ownershipEntry && ownershipEntry.trim()) {
-        const entry = ownershipEntry.trim();
-        // Check if entry contains percentage in parentheses
-        const match = entry.match(/^(.+?)\s*\(([^)]+)\)$/);
-
-        if (match) {
-          // Extract name and percentage/relationship
-          ownership.push({
-            name: match[1].trim(),
-            relationship: match[2].trim()
-          });
-        } else {
-          // No percentage found, use entry as-is
-          ownership.push({
-            name: entry,
-            relationship: 'Owner'
-          });
-        }
+        ownership.push({
+          name: ownershipEntry.trim(),
+          relationship: ''
+        });
       }
     }
 
