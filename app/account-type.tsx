@@ -9,6 +9,7 @@ import {
   Image,
   Platform,
   ScrollView,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -35,6 +36,10 @@ export default function AccountTypeScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
+      />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
