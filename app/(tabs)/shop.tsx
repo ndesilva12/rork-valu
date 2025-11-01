@@ -6,15 +6,31 @@ import {
   ScrollView,
   Platform,
   StatusBar,
+  TouchableOpacity,
 } from 'react-native';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import ActivitySection from '@/components/ActivitySection';
 import BusinessActivitySection from '@/components/BusinessActivitySection';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 type TimeFrame = 'week' | 'month' | 'year';
+
+// Generate mock spending data for a value based on timeframe
+const generateValueSpending = (valueName: string, timeframe: TimeFrame): { amount: number; percentage: number } => {
+  // Different timeframes have different base amounts
+  const baseMultiplier = timeframe === 'week' ? 1 : timeframe === 'month' ? 4.3 : 52;
+  const totalSpending = (250 + Math.random() * 150) * baseMultiplier;
+
+  // Different values get different spending percentages
+  const basePercentage = 8 + Math.random() * 12; // 8-20% of total
+  const amount = (totalSpending * basePercentage) / 100;
+  return {
+    amount: Math.round(amount * 100) / 100,
+    percentage: Math.round(basePercentage * 10) / 10,
+  };
+};
 
 export default function DataScreen() {
   const router = useRouter();
@@ -25,6 +41,11 @@ export default function DataScreen() {
   const [timeframe, setTimeframe] = useState<TimeFrame>('month');
 
   const isBusiness = profile.accountType === 'business';
+
+  // Get user's values for spending breakdown
+  const userCauses = useMemo(() => {
+    return (profile.causes || []).sort((a, b) => a.name.localeCompare(b.name));
+  }, [profile.causes]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -48,6 +69,40 @@ export default function DataScreen() {
           <BusinessActivitySection />
         ) : (
           <ActivitySection timeframe={timeframe} onTimeframeChange={setTimeframe} />
+        )}
+
+        {/* Values Spending Section - only for individual accounts */}
+        {!isBusiness && userCauses.length > 0 && (
+          <View style={styles.valuesSection}>
+            <Text style={[styles.valuesSectionTitle, { color: colors.text }]}>
+              Spending by Value
+            </Text>
+            <View style={styles.valuesListContainer}>
+              {userCauses.map(cause => {
+                const spending = generateValueSpending(cause.name, timeframe);
+                return (
+                  <TouchableOpacity
+                    key={cause.id}
+                    style={[styles.valueSpendingRow, { backgroundColor: colors.backgroundSecondary }]}
+                    onPress={() => router.push(`/value/${cause.id}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.valueSpendingName, { color: colors.text }]} numberOfLines={1}>
+                      {cause.name}
+                    </Text>
+                    <View style={styles.valueSpendingRight}>
+                      <Text style={[styles.valueSpendingAmount, { color: colors.text }]}>
+                        ${spending.amount.toFixed(0)}
+                      </Text>
+                      <Text style={[styles.valueSpendingPercent, { color: colors.textSecondary }]}>
+                        {spending.percentage}%
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
         )}
 
         <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
@@ -109,6 +164,49 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700' as const,
     flex: 1,
+  },
+  valuesSection: {
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  valuesSectionTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    marginBottom: 16,
+  },
+  valuesListContainer: {
+    gap: 12,
+  },
+  valueSpendingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 12,
+  },
+  valueSpendingName: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    flex: 1,
+    marginRight: 16,
+  },
+  valueSpendingRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  valueSpendingAmount: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    minWidth: 80,
+    textAlign: 'right',
+  },
+  valueSpendingPercent: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    minWidth: 50,
+    textAlign: 'right',
   },
   infoSection: {
     padding: 20,
