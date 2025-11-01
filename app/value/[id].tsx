@@ -194,7 +194,7 @@ export default function ValueDetailScreen() {
                   style={[styles.driverCard, styles.supportingCard, { backgroundColor: colors.backgroundSecondary }]}
                   onPress={() => {
                     if (driver.id) {
-                      router.push(`/product/${driver.id}`);
+                      router.push(`/brand/${driver.id}`);
                     }
                   }}
                   activeOpacity={0.7}
@@ -248,7 +248,7 @@ export default function ValueDetailScreen() {
                   style={[styles.driverCard, styles.opposingCard, { backgroundColor: colors.backgroundSecondary }]}
                   onPress={() => {
                     if (driver.id) {
-                      router.push(`/product/${driver.id}`);
+                      router.push(`/brand/${driver.id}`);
                     }
                   }}
                   activeOpacity={0.7}

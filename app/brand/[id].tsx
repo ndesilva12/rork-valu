@@ -19,30 +19,30 @@ import { useRef, useMemo, useState, useCallback } from 'react';
 import { trpc } from '@/lib/trpc';
 import { getLogoUrl } from '@/lib/logo';
 
-export default function ProductDetailScreen() {
+export default function BrandDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { profile, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const scrollViewRef = useRef<ScrollView>(null);
 
-  console.log('[ProductDetail] Loading product with ID:', id);
+  console.log('[BrandDetail] Loading brand with ID:', id);
 
   // Fetch brand data and values matrix from tRPC
-  const { data: product, isLoading, error } = trpc.data.getBrand.useQuery(
+  const { data: brand, isLoading, error } = trpc.data.getBrand.useQuery(
     { id: id as string },
     { enabled: !!id }
   );
 
   const { data: valuesMatrix } = trpc.data.getValuesMatrix.useQuery();
 
-  console.log('[ProductDetail] Query state:', {
+  console.log('[BrandDetail] Query state:', {
     id,
     isLoading,
     hasError: !!error,
     errorMessage: error?.message,
-    hasProduct: !!product,
-    productName: product?.name,
+    hasBrand: !!brand,
+    brandName: brand?.name,
     hasValuesMatrix: !!valuesMatrix
   });
 
@@ -163,9 +163,9 @@ export default function ProductDetailScreen() {
   }, [reviewText, userRating, clerkUser]);
 
   const handleShopPress = async () => {
-    if (!product) return;
+    if (!brand) return;
     try {
-      const websiteUrl = product.website || `https://${product.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '')}.com`;
+      const websiteUrl = brand.website || `https://${brand?.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '')}.com`;
       const canOpen = await Linking.canOpenURL(websiteUrl);
       if (canOpen) {
         await Linking.openURL(websiteUrl);
@@ -176,9 +176,9 @@ export default function ProductDetailScreen() {
   };
 
   const handleSocialPress = async (platform: 'x' | 'instagram' | 'facebook') => {
-    if (!product) return;
+    if (!brand) return;
     try {
-      const brandSlug = product.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '');
+      const brandSlug = brand?.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '');
       let url = '';
 
       switch (platform) {
@@ -219,7 +219,7 @@ export default function ProductDetailScreen() {
     const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
     const allUserCauses = [...supportedCauses, ...avoidedCauses];
 
-    const brandName = product.name;
+    const brandName = brand?.name;
     let totalSupportScore = 0;
     let totalAvoidScore = 0;
     const matchingValues = new Set<string>();
@@ -357,7 +357,7 @@ export default function ProductDetailScreen() {
     );
   }
 
-  if (!product) {
+  if (!brand) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Stack.Screen options={{ headerShown: false }} />
@@ -386,7 +386,7 @@ export default function ProductDetailScreen() {
       >
         <View style={styles.heroImageContainer}>
           <Image
-            source={{ uri: getLogoUrl(product.website || '') }}
+            source={{ uri: getLogoUrl(brand.website || '') }}
             style={styles.heroImage}
             contentFit="cover"
             transition={200}
@@ -413,12 +413,12 @@ export default function ProductDetailScreen() {
             </TouchableOpacity>
 
             <View style={styles.titleContainer}>
-              <Text style={[styles.productName, { color: colors.text }]}>{product.name}</Text>
-              <Text style={[styles.category, { color: colors.primary }]}>{product.category}</Text>
-              {product.location && (
+              <Text style={[styles.productName, { color: colors.text }]}>{brand?.name}</Text>
+              <Text style={[styles.category, { color: colors.primary }]}>{brand.category}</Text>
+              {brand.location && (
                 <View style={styles.locationRow}>
                   <MapPin size={14} color={colors.textSecondary} strokeWidth={2} />
-                  <Text style={[styles.locationText, { color: colors.textSecondary }]}>{product.location}</Text>
+                  <Text style={[styles.locationText, { color: colors.textSecondary }]}>{brand.location}</Text>
                 </View>
               )}
             </View>
@@ -430,9 +430,9 @@ export default function ProductDetailScreen() {
             </View>
           </View>
 
-          {product.description && (
+          {brand.description && (
             <Text style={[styles.brandDescription, { color: colors.textSecondary }]}>
-              {product.description}
+              {brand.description}
             </Text>
           )}
 
@@ -507,9 +507,9 @@ export default function ProductDetailScreen() {
                 <Text style={[styles.subsectionTitle, { color: colors.text }]}>Ownership</Text>
               </View>
 
-              {product.ownership && product.ownership.length > 0 ? (
+              {brand.ownership && brand.ownership.length > 0 ? (
                 <View style={styles.shareholdersContainer}>
-                  {product.ownership.map((owner, index) => (
+                  {brand.ownership.map((owner, index) => (
                     <View key={`owner-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
                       <View style={styles.tableRow}>
                         <Text style={[styles.affiliateName, { color: colors.text }]}>{owner.name}</Text>
@@ -520,11 +520,11 @@ export default function ProductDetailScreen() {
                     </View>
                   ))}
 
-                  {product.ownershipSources && (
+                  {brand.ownershipSources && (
                     <View style={[styles.sourcesContainer, { borderTopColor: colors.border }]}>
                       <Text style={[styles.sourcesLabel, { color: colors.text }]}>Sources:</Text>
                       <Text style={[styles.sourcesText, { color: colors.textSecondary }]}>
-                        {product.ownershipSources}
+                        {brand.ownershipSources}
                       </Text>
                     </View>
                   )}
@@ -544,9 +544,9 @@ export default function ProductDetailScreen() {
                 <Text style={[styles.subsectionTitle, { color: colors.text }]}>Affiliates</Text>
               </View>
 
-              {product.affiliates && product.affiliates.length > 0 ? (
+              {brand.affiliates && brand.affiliates.length > 0 ? (
                 <View style={styles.shareholdersContainer}>
-                  {product.affiliates.map((affiliate, index) => (
+                  {brand.affiliates.map((affiliate, index) => (
                     <View key={`affiliate-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
                       <View style={styles.tableRow}>
                         <Text style={[styles.affiliateName, { color: colors.text }]}>{affiliate.name}</Text>
@@ -575,9 +575,9 @@ export default function ProductDetailScreen() {
                 <Text style={[styles.subsectionTitle, { color: colors.text }]}>Partnerships</Text>
               </View>
 
-              {product.partnerships && product.partnerships.length > 0 ? (
+              {brand.partnerships && brand.partnerships.length > 0 ? (
                 <View style={styles.shareholdersContainer}>
-                  {product.partnerships.map((partnership, index) => (
+                  {brand.partnerships.map((partnership, index) => (
                     <View key={`partnership-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
                       <View style={styles.tableRow}>
                         <Text style={[styles.affiliateName, { color: colors.text }]}>{partnership.name}</Text>
@@ -783,7 +783,7 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
 
-  productName: {
+  brandName: {
     fontSize: 28,
     fontWeight: '700' as const,
     marginBottom: 6,
