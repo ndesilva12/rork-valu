@@ -17,6 +17,7 @@ import {
   Linking,
   Share as RNShare,
   Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
@@ -48,6 +49,7 @@ export default function SearchScreen() {
   const router = useRouter();
   const { profile, addToSearchHistory, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+  const { width } = useWindowDimensions();
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Product[]>([]);
@@ -57,6 +59,9 @@ export default function SearchScreen() {
   const [scanning, setScanning] = useState(true);
   const [lookingUp, setLookingUp] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
+
+  // Responsive grid columns
+  const numColumns = useMemo(() => width > 768 ? 3 : 2, [width]);
 
   // Explore feed state
   const [selectedPostProduct, setSelectedPostProduct] = useState<(Product & { matchingValues?: string[] }) | null>(null);
@@ -68,6 +73,10 @@ export default function SearchScreen() {
 
   // Calculate aligned products for Explore section
   const alignedProducts = useMemo(() => {
+    if (!profile?.causes || !Array.isArray(profile.causes)) {
+      return [];
+    }
+
     const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
     const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
     const totalUserValues = profile.causes.length;
@@ -268,12 +277,17 @@ export default function SearchScreen() {
   }, []);
 
   const handleSearch = (text: string) => {
-    setQuery(text);
-    if (text.trim().length > 0) {
-      const userCauseIds = profile.causes.map(c => c.id);
-      const searchResults = searchProducts(text, userCauseIds);
-      setResults(searchResults);
-    } else {
+    try {
+      setQuery(text);
+      if (text.trim().length > 0) {
+        const userCauseIds = profile?.causes ? profile.causes.map(c => c.id) : [];
+        const searchResults = searchProducts(text, userCauseIds);
+        setResults(searchResults || []);
+      } else {
+        setResults([]);
+      }
+    } catch (error) {
+      console.error('Error during search:', error);
       setResults([]);
     }
   };
@@ -458,21 +472,18 @@ export default function SearchScreen() {
     );
   };
 
-  const renderExploreCard = ({ item, index }: { item: Product & { matchingValues?: string[] }; index: number }) => {
-    const isLeft = index % 2 === 0;
-
+  const renderExploreCard = ({ item }: { item: Product & { matchingValues?: string[] } }) => {
     return (
       <TouchableOpacity
         style={[
           styles.exploreCard,
-          { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-          isLeft ? styles.exploreCardLeft : styles.exploreCardRight
+          { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }
         ]}
         onPress={() => handleGridCardPress(item)}
         activeOpacity={0.7}
       >
         <Image
-          source={{ uri: item.productImageUrl || getLogoUrl(item.website || '') }}
+          source={{ uri: getLogoUrl(item.website || '') }}
           style={styles.exploreCardImage}
           contentFit="cover"
           transition={200}
@@ -536,7 +547,7 @@ export default function SearchScreen() {
           }}
         >
           <Image
-            source={{ uri: selectedPostProduct.productImageUrl || getLogoUrl(selectedPostProduct.website || '') }}
+            source={{ uri: selectedPostProduct.exampleImageUrl || getLogoUrl(selectedPostProduct.website || '') }}
             style={styles.postImage}
             contentFit="cover"
             transition={200}
@@ -653,7 +664,7 @@ export default function SearchScreen() {
       </View>
 
       {query.trim().length === 0 ? (
-        profile.causes.length === 0 ? (
+        !profile?.causes || profile.causes.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={[styles.emptyIconContainer, { backgroundColor: colors.primaryLight + '10' }]}>
               <SearchIcon size={48} color={colors.primaryLight} strokeWidth={1.5} />
@@ -665,10 +676,11 @@ export default function SearchScreen() {
           </View>
         ) : (
           <FlatList
+            key={`explore-grid-${numColumns}`}
             data={alignedProducts}
             renderItem={renderExploreCard}
             keyExtractor={item => item.id}
-            numColumns={2}
+            numColumns={numColumns}
             contentContainerStyle={[styles.exploreGrid, { paddingBottom: 100 }]}
             columnWrapperStyle={styles.exploreRow}
             showsVerticalScrollIndicator={false}
@@ -689,6 +701,7 @@ export default function SearchScreen() {
         </View>
       ) : (
         <FlatList
+          key="search-results"
           data={results}
           renderItem={renderProduct}
           keyExtractor={item => item.id}
@@ -982,7 +995,11 @@ export default function SearchScreen() {
 }
 
 const { width } = Dimensions.get('window');
-const cardWidth = (width - 48) / 2; // 16px padding on each side + 16px gap
+// Responsive grid: 3 columns on desktop (>768px), 2 columns on mobile
+const isDesktop = width > 768;
+const numColumns = isDesktop ? 3 : 2;
+const maxGridWidth = Math.min(width, 900); // Max 900px for 3-column layout
+const cardWidth = (maxGridWidth - (numColumns + 1) * 3) / numColumns; // Account for gaps
 
 const styles = StyleSheet.create({
   container: {
@@ -1045,28 +1062,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   exploreGrid: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 3,
     paddingTop: 0,
+    alignSelf: 'center',
+    maxWidth: 900,
+    width: '100%',
   },
   exploreRow: {
-    justifyContent: 'space-between',
+    gap: 3,
   },
   exploreCard: {
-    width: cardWidth,
-    marginBottom: 16,
-    borderRadius: 12,
+    flex: 1,
+    aspectRatio: 1,
+    marginBottom: 3,
+    borderRadius: 2,
     overflow: 'hidden',
-    borderWidth: 1,
-  },
-  exploreCardLeft: {
-    marginRight: 8,
-  },
-  exploreCardRight: {
-    marginLeft: 8,
+    borderWidth: 0,
   },
   exploreCardImage: {
-    width: cardWidth,
-    height: cardWidth,
+    width: '100%',
+    height: '100%',
   },
   exploreCardOverlay: {
     position: 'absolute' as const,

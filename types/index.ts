@@ -67,7 +67,8 @@ export interface Brand {
   affiliates?: Affiliate[]; // Celebrity/influencer affiliates and their relationships
   partnerships?: Partnership[]; // Business partnerships and collaborations
   ownership?: Ownership[]; // Parent companies, investors, and ownership structure
-  location?: string; // Location name (e.g., "New York, NY")
+  ownershipSources?: string; // Citations/sources for ownership data
+  location?: string; // Location name (e.g., "New York, NY" / Headquarters Location)
   latitude?: number; // Latitude coordinate for distance calculations
   longitude?: number; // Longitude coordinate for distance calculations
 }
@@ -85,6 +86,13 @@ export interface Charity {
 
 export type AccountType = 'individual' | 'business';
 
+export interface SocialMedia {
+  facebook?: string;
+  instagram?: string;
+  twitter?: string;
+  linkedin?: string;
+}
+
 export interface BusinessInfo {
   name: string;
   category: string;
@@ -96,6 +104,17 @@ export interface BusinessInfo {
   longitude?: number; // Longitude coordinate for distance calculations
   acceptsValuCodes: boolean;
   valuCodeDiscount?: number; // Percentage discount (e.g., 10 for 10%)
+  socialMedia?: SocialMedia;
+}
+
+export interface UserDetails {
+  name?: string;
+  description?: string;
+  website?: string;
+  location?: string;
+  latitude?: number;
+  longitude?: number;
+  socialMedia?: SocialMedia;
 }
 
 export interface ValuCodeCustomer {
@@ -116,4 +135,5 @@ export interface UserProfile {
   selectedCharities?: Charity[];
   businessInfo?: BusinessInfo; // Only for business accounts
   valuCodeCustomers?: ValuCodeCustomer[]; // Only for business accounts
+  userDetails?: UserDetails; // Only for individual accounts
 }

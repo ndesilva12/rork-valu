@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, ThumbsUp } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, ThumbsUp, MapPin } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -415,6 +415,12 @@ export default function ProductDetailScreen() {
             <View style={styles.titleContainer}>
               <Text style={[styles.productName, { color: colors.text }]}>{product.name}</Text>
               <Text style={[styles.category, { color: colors.primary }]}>{product.category}</Text>
+              {product.location && (
+                <View style={styles.locationRow}>
+                  <MapPin size={14} color={colors.textSecondary} strokeWidth={2} />
+                  <Text style={[styles.locationText, { color: colors.textSecondary }]}>{product.location}</Text>
+                </View>
+              )}
             </View>
             <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.backgroundSecondary }]}>
               <AlignmentIcon size={24} color={alignmentColor} strokeWidth={2.5} />
@@ -575,14 +581,20 @@ export default function ProductDetailScreen() {
                       </View>
                     </View>
                   ))}
+
+                  {product.ownershipSources && (
+                    <View style={[styles.sourcesContainer, { borderTopColor: colors.border }]}>
+                      <Text style={[styles.sourcesLabel, { color: colors.text }]}>Sources:</Text>
+                      <Text style={[styles.sourcesText, { color: colors.textSecondary }]}>
+                        {product.ownershipSources}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               ) : (
                 <View style={styles.shareholdersContainer}>
                   <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
-                    Elon Musk - Majority Owner (~79%)
-                  </Text>
-                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
-                    Venture Capital Firms - Various Stakes
+                    No ownership data available
                   </Text>
                 </View>
               )}
@@ -780,6 +792,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600' as const,
   },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+  },
+  locationText: {
+    fontSize: 13,
+  },
   socialLinksContainer: {
     flexDirection: 'row',
     gap: 10,
@@ -887,6 +908,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
+  },
+  sourcesContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+  },
+  sourcesLabel: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    marginBottom: 6,
+  },
+  sourcesText: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontStyle: 'italic' as const,
   },
   shareholderInfo: {
     flex: 1,

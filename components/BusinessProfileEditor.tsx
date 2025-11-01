@@ -8,7 +8,7 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import { Building2, ChevronDown, Globe, Upload, MapPin } from 'lucide-react-native';
+import { Building2, ChevronDown, Globe, Upload, MapPin, Facebook, Instagram, Twitter, Linkedin } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
@@ -61,6 +61,10 @@ export default function BusinessProfileEditor() {
   const [location, setLocation] = useState(businessInfo.location || '');
   const [latitude, setLatitude] = useState<number | undefined>(businessInfo.latitude);
   const [longitude, setLongitude] = useState<number | undefined>(businessInfo.longitude);
+  const [facebook, setFacebook] = useState(businessInfo.socialMedia?.facebook || '');
+  const [instagram, setInstagram] = useState(businessInfo.socialMedia?.instagram || '');
+  const [twitter, setTwitter] = useState(businessInfo.socialMedia?.twitter || '');
+  const [linkedin, setLinkedin] = useState(businessInfo.socialMedia?.linkedin || '');
 
   const handleLocationSelect = (locationName: string, lat: number, lon: number) => {
     setLocation(locationName);
@@ -85,6 +89,12 @@ export default function BusinessProfileEditor() {
       description: description.trim(),
       website: website.trim(),
       logoUrl: logoUrl.trim(),
+      socialMedia: {
+        facebook: facebook.trim(),
+        instagram: instagram.trim(),
+        twitter: twitter.trim(),
+        linkedin: linkedin.trim(),
+      },
     };
 
     if (location.trim()) {
@@ -113,6 +123,10 @@ export default function BusinessProfileEditor() {
     setLocation(businessInfo.location || '');
     setLatitude(businessInfo.latitude);
     setLongitude(businessInfo.longitude);
+    setFacebook(businessInfo.socialMedia?.facebook || '');
+    setInstagram(businessInfo.socialMedia?.instagram || '');
+    setTwitter(businessInfo.socialMedia?.twitter || '');
+    setLinkedin(businessInfo.socialMedia?.linkedin || '');
     setEditing(false);
   };
 
@@ -140,8 +154,8 @@ export default function BusinessProfileEditor() {
       </View>
 
       <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
-        {/* Logo Section */}
-        <View style={styles.logoSection}>
+        {/* Logo and Basic Info - Compact Horizontal Layout */}
+        <View style={styles.compactHeader}>
           <View style={[styles.logoContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
             {logoUrl || businessInfo.logoUrl ? (
               <Image
@@ -150,41 +164,48 @@ export default function BusinessProfileEditor() {
                 resizeMode="contain"
               />
             ) : (
-              <Building2 size={48} color={colors.textSecondary} strokeWidth={1.5} />
+              <Building2 size={32} color={colors.textSecondary} strokeWidth={1.5} />
             )}
           </View>
-          {editing && (
-            <View style={styles.logoActions}>
+
+          <View style={styles.headerInfo}>
+            <Text style={[styles.businessName, { color: colors.text }]}>
+              {businessInfo.name || 'Business Name'}
+            </Text>
+            <Text style={[styles.businessCategory, { color: colors.textSecondary }]}>
+              {businessInfo.category || 'Category'}
+            </Text>
+            {businessInfo.location && (
+              <View style={styles.locationRow}>
+                <MapPin size={12} color={colors.textSecondary} strokeWidth={2} />
+                <Text style={[styles.locationText, { color: colors.textSecondary }]}>{businessInfo.location}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Logo URL and Upload (when editing) */}
+        {editing && (
+          <View style={[styles.inputGroup, { marginTop: 16 }]}>
+            <Text style={[styles.label, { color: colors.text }]}>Logo URL</Text>
+            <View style={styles.logoInputRow}>
+              <TextInput
+                style={[styles.input, styles.logoUrlInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                placeholder="https://example.com/logo.png"
+                placeholderTextColor={colors.textSecondary}
+                value={logoUrl}
+                onChangeText={setLogoUrl}
+                autoCapitalize="none"
+                keyboardType="url"
+              />
               <TouchableOpacity
-                style={[styles.uploadButton, { backgroundColor: colors.primary }]}
+                style={[styles.uploadButtonSmall, { backgroundColor: colors.primary }]}
                 onPress={handleLogoUpload}
                 activeOpacity={0.7}
               >
                 <Upload size={16} color={colors.white} strokeWidth={2} />
-                <Text style={[styles.uploadButtonText, { color: colors.white }]}>
-                  Upload Logo
-                </Text>
               </TouchableOpacity>
-              <Text style={[styles.uploadHint, { color: colors.textSecondary }]}>
-                or enter URL below
-              </Text>
             </View>
-          )}
-        </View>
-
-        {/* Logo URL Input (when editing) */}
-        {editing && (
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.text }]}>Logo URL</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-              placeholder="https://example.com/logo.png"
-              placeholderTextColor={colors.textSecondary}
-              value={logoUrl}
-              onChangeText={setLogoUrl}
-              autoCapitalize="none"
-              keyboardType="url"
-            />
           </View>
         )}
 
@@ -298,23 +319,139 @@ export default function BusinessProfileEditor() {
           )}
         </View>
 
-        {/* Location */}
-        <View style={styles.inputGroup}>
-          <View style={styles.labelRow}>
-            <MapPin size={16} color={colors.text} strokeWidth={2} />
-            <Text style={[styles.label, { color: colors.text }]}>Location</Text>
+        {/* Compact Layout - Name, Category, Location in rows */}
+        <View style={styles.formGrid}>
+          <View style={styles.formRow}>
+            <View style={[styles.inputGroup, styles.halfWidth]}>
+              <Text style={[styles.label, { color: colors.text }]}>Location</Text>
+              {editing ? (
+                <LocationAutocomplete
+                  value={location}
+                  onLocationSelect={handleLocationSelect}
+                  isDarkMode={isDarkMode}
+                />
+              ) : (
+                <Text style={[styles.value, { color: colors.text }]}>
+                  {businessInfo.location || 'Not set'}
+                </Text>
+              )}
+            </View>
+
+            <View style={[styles.inputGroup, styles.halfWidth]}>
+              <View style={styles.labelRow}>
+                <Globe size={14} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.label, { color: colors.text }]}>Website</Text>
+              </View>
+              {editing ? (
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  placeholder="https://your-website.com"
+                  placeholderTextColor={colors.textSecondary}
+                  value={website}
+                  onChangeText={setWebsite}
+                  autoCapitalize="none"
+                  keyboardType="url"
+                />
+              ) : (
+                <Text style={[styles.value, styles.link, { color: colors.primary }]} numberOfLines={1}>
+                  {businessInfo.website || 'Not set'}
+                </Text>
+              )}
+            </View>
           </View>
-          {editing ? (
-            <LocationAutocomplete
-              value={location}
-              onLocationSelect={handleLocationSelect}
-              isDarkMode={isDarkMode}
-            />
-          ) : (
-            <Text style={[styles.value, { color: colors.text }]}>
-              {businessInfo.location || 'No location added'}
-            </Text>
-          )}
+
+          {/* Social Media - 2x2 Grid */}
+          <View style={styles.socialMediaSection}>
+            <Text style={[styles.sectionSubtitle, { color: colors.text }]}>Social Media</Text>
+
+            <View style={styles.formRow}>
+              <View style={[styles.inputGroup, styles.halfWidth]}>
+                <View style={styles.labelRow}>
+                  <Facebook size={14} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.label, { color: colors.text }]}>Facebook</Text>
+                </View>
+                {editing ? (
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    placeholder="facebook.com/business"
+                    placeholderTextColor={colors.textSecondary}
+                    value={facebook}
+                    onChangeText={setFacebook}
+                    autoCapitalize="none"
+                  />
+                ) : (
+                  <Text style={[styles.value, { color: colors.text }]} numberOfLines={1}>
+                    {businessInfo.socialMedia?.facebook || 'Not set'}
+                  </Text>
+                )}
+              </View>
+
+              <View style={[styles.inputGroup, styles.halfWidth]}>
+                <View style={styles.labelRow}>
+                  <Instagram size={14} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.label, { color: colors.text }]}>Instagram</Text>
+                </View>
+                {editing ? (
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    placeholder="@business"
+                    placeholderTextColor={colors.textSecondary}
+                    value={instagram}
+                    onChangeText={setInstagram}
+                    autoCapitalize="none"
+                  />
+                ) : (
+                  <Text style={[styles.value, { color: colors.text }]} numberOfLines={1}>
+                    {businessInfo.socialMedia?.instagram || 'Not set'}
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.formRow}>
+              <View style={[styles.inputGroup, styles.halfWidth]}>
+                <View style={styles.labelRow}>
+                  <Twitter size={14} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.label, { color: colors.text }]}>Twitter/X</Text>
+                </View>
+                {editing ? (
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    placeholder="@business"
+                    placeholderTextColor={colors.textSecondary}
+                    value={twitter}
+                    onChangeText={setTwitter}
+                    autoCapitalize="none"
+                  />
+                ) : (
+                  <Text style={[styles.value, { color: colors.text }]} numberOfLines={1}>
+                    {businessInfo.socialMedia?.twitter || 'Not set'}
+                  </Text>
+                )}
+              </View>
+
+              <View style={[styles.inputGroup, styles.halfWidth]}>
+                <View style={styles.labelRow}>
+                  <Linkedin size={14} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.label, { color: colors.text }]}>LinkedIn</Text>
+                </View>
+                {editing ? (
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    placeholder="linkedin.com/company/business"
+                    placeholderTextColor={colors.textSecondary}
+                    value={linkedin}
+                    onChangeText={setLinkedin}
+                    autoCapitalize="none"
+                  />
+                ) : (
+                  <Text style={[styles.value, { color: colors.text }]} numberOfLines={1}>
+                    {businessInfo.socialMedia?.linkedin || 'Not set'}
+                  </Text>
+                )}
+              </View>
+            </View>
+          </View>
         </View>
 
         {/* Edit Actions */}
@@ -361,78 +498,114 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
   },
-  // Logo Section
-  logoSection: {
+  // Compact Header Layout
+  compactHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
-    paddingBottom: 24,
+    gap: 16,
+    paddingBottom: 16,
+    marginBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.05)',
   },
   logoContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 80,
+    height: 80,
+    borderRadius: 12,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
   },
   logoImage: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
+    width: 72,
+    height: 72,
+    borderRadius: 10,
   },
-  logoActions: {
-    alignItems: 'center',
+  headerInfo: {
+    flex: 1,
+    gap: 4,
   },
-  uploadButton: {
+  businessName: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  businessCategory: {
+    fontSize: 14,
+  },
+  locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    gap: 6,
-    marginBottom: 6,
+    gap: 4,
+    marginTop: 2,
   },
-  uploadButtonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  uploadHint: {
+  locationText: {
     fontSize: 12,
+  },
+  logoInputRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  logoUrlInput: {
+    flex: 1,
+  },
+  uploadButtonSmall: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Compact Form Layout
+  formGrid: {
+    gap: 12,
+    marginTop: 8,
+  },
+  formRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  halfWidth: {
+    flex: 1,
+  },
+  sectionSubtitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  socialMediaSection: {
+    marginTop: 8,
   },
   // Input Groups
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 8,
   },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
-    marginBottom: 8,
   },
   input: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
     borderWidth: 1,
-    fontSize: 15,
+    fontSize: 14,
   },
   textArea: {
     minHeight: 100,
     paddingTop: 14,
   },
   value: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 20,
   },
   link: {
     textDecorationLine: 'underline',
@@ -469,12 +642,12 @@ const styles = StyleSheet.create({
   editActions: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 8,
+    marginTop: 16,
   },
   actionButton: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
   },
   cancelButton: {
@@ -484,7 +657,7 @@ const styles = StyleSheet.create({
     // backgroundColor set dynamically
   },
   actionButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600' as const,
   },
 });

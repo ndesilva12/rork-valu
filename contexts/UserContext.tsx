@@ -2,7 +2,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
-import { Cause, UserProfile, Charity, AccountType, BusinessInfo } from '@/types';
+import { Cause, UserProfile, Charity, AccountType, BusinessInfo, UserDetails } from '@/types';
 
 const DARK_MODE_KEY = '@dark_mode';
 const PROFILE_KEY = '@user_profile';
@@ -298,6 +298,32 @@ export const [UserProvider, useUser] = createContextHook(() => {
     }
   }, [clerkUser, profile]);
 
+  const setUserDetails = useCallback(async (userDetails: Partial<UserDetails>) => {
+    if (!clerkUser) {
+      console.error('[UserContext] Cannot set user details: User not logged in');
+      return;
+    }
+
+    const newProfile = {
+      ...profile,
+      userDetails: {
+        ...profile.userDetails,
+        ...userDetails,
+      } as UserDetails,
+    };
+    console.log('[UserContext] Updating user details');
+
+    setProfile(newProfile);
+
+    try {
+      const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
+      await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
+      console.log('[UserContext] User details saved successfully');
+    } catch (error) {
+      console.error('[UserContext] Failed to save user details:', error);
+    }
+  }, [clerkUser, profile]);
+
   return useMemo(() => ({
     profile,
     isLoading: isLoading || !isClerkLoaded,
@@ -313,5 +339,6 @@ export const [UserProvider, useUser] = createContextHook(() => {
     clerkUser,
     setAccountType,
     setBusinessInfo,
-  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, toggleDarkMode, clerkUser, setAccountType, setBusinessInfo]);
+    setUserDetails,
+  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, toggleDarkMode, clerkUser, setAccountType, setBusinessInfo, setUserDetails]);
 });

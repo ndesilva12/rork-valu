@@ -16,6 +16,7 @@ import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import BusinessProfileEditor from '@/components/BusinessProfileEditor';
 import ValuCodeSettings from '@/components/ValuCodeSettings';
+import UserDetailsEditor from '@/components/UserDetailsEditor';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -24,6 +25,8 @@ export default function ProfileScreen() {
   const { height } = useWindowDimensions();
 
   const isBusiness = profile.accountType === 'business';
+  const [activeTab, setActiveTab] = useState<'profile' | 'details'>('profile');
+  const [showQRCode, setShowQRCode] = useState(false);
 
   // Generate a random QR code value that changes on each render
   const [qrValue, setQrValue] = useState('');
@@ -56,6 +59,40 @@ export default function ProfileScreen() {
           <Text style={[styles.title, { color: colors.primary }]}>Profile</Text>
           <MenuButton />
         </View>
+
+        {/* Tab Selector */}
+        <View style={[styles.tabContainer, { backgroundColor: colors.background }]}>
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === 'profile' && { borderBottomColor: colors.primary, borderBottomWidth: 3 }
+            ]}
+            onPress={() => setActiveTab('profile')}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.tabText,
+              { color: activeTab === 'profile' ? colors.primary : colors.textSecondary }
+            ]}>
+              Profile
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === 'details' && { borderBottomColor: colors.primary, borderBottomWidth: 3 }
+            ]}
+            onPress={() => setActiveTab('details')}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.tabText,
+              { color: activeTab === 'details' ? colors.primary : colors.textSecondary }
+            ]}>
+              {isBusiness ? 'Business Details' : 'User Details'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -64,110 +101,155 @@ export default function ProfileScreen() {
       >
         {isBusiness ? (
           /* Business Account UI */
-          <>
-            <BusinessProfileEditor />
-            <ValuCodeSettings />
+          activeTab === 'profile' ? (
+            <>
+              <ValuCodeSettings />
 
-            {/* Business Info Section */}
-            <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
-              <Text style={[styles.infoTitle, { color: colors.text }]}>About Your Business Profile</Text>
-              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                Your brand profile helps customers discover your business and understand your values.
-                Keep your information up-to-date to maximize visibility on the Valu platform.
-              </Text>
-              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                By accepting valu codes, you attract value-aligned customers and gain insights into
-                their priorities through your Data tab.
-              </Text>
-            </View>
-          </>
+              {/* Business Info Section */}
+              <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
+                <Text style={[styles.infoTitle, { color: colors.text }]}>About ValuCode</Text>
+                <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                  By accepting valu codes, you attract value-aligned customers and gain insights into
+                  their priorities through your Data tab.
+                </Text>
+                <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                  Set your discount percentage and we'll handle the rest. Customers will be able to
+                  use their codes at checkout.
+                </Text>
+              </View>
+            </>
+          ) : (
+            <>
+              <BusinessProfileEditor />
+
+              {/* Business Info Section */}
+              <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
+                <Text style={[styles.infoTitle, { color: colors.text }]}>About Your Business Profile</Text>
+                <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                  Your brand profile helps customers discover your business and understand your values.
+                  Keep your information up-to-date to maximize visibility on the Valu platform.
+                </Text>
+              </View>
+            </>
+          )
         ) : (
           /* Individual Account UI */
-          <>
-            {/* Valu Code Section */}
-            <View style={[styles.promoSection, { borderColor: colors.primary, backgroundColor: colors.backgroundSecondary }]}>
-              <Text style={[styles.promoLabel, { color: colors.textSecondary }]}>Your Valu Code</Text>
-              <Text style={[styles.promoCode, { color: colors.primary }]}>{profile.promoCode || 'VALU000000'}</Text>
-              <Text style={[styles.promoDescription, { color: colors.textSecondary }]}>
-                Use this code when you shop at locations and we will donate a percentage of each purchase to your selected organizations
-              </Text>
+          activeTab === 'profile' ? (
+            <>
+              {/* Valu Code Section */}
+              <View style={[styles.promoSection, { borderColor: colors.primary, backgroundColor: colors.backgroundSecondary }]}>
+                <Text style={[styles.promoLabel, { color: colors.textSecondary }]}>Your Valu Code</Text>
+                <Text style={[styles.promoCode, { color: colors.primary }]}>{profile.promoCode || 'VALU000000'}</Text>
+                <Text style={[styles.promoDescription, { color: colors.textSecondary }]}>
+                  Use this code when you shop at locations and we will donate a percentage of each purchase to your selected organizations
+                </Text>
 
-              {/* QR Code - Inside the same box */}
-              {qrValue && (
-                <View style={styles.qrCodeSection}>
-                  <View style={styles.qrDivider} />
-                  <Text style={[styles.qrLabel, { color: colors.textSecondary }]}>Scan to Share</Text>
-                  <View style={[styles.qrCodeContainer, { width: qrSize, height: qrSize }]}>
-                    <QRCode
-                      value={qrValue}
-                      size={qrSize - 32}
-                      color={isDarkMode ? colors.text : Colors.text}
-                      backgroundColor="#ffffff"
-                    />
-                  </View>
-                </View>
-              )}
-            </View>
-
-            {/* Donation Counter Section */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact Dashboard</Text>
-              <View style={[styles.donationCard, { backgroundColor: colors.backgroundSecondary }]}>
-                <View style={styles.donationAmountContainer}>
-                  <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Donated on Your Behalf</Text>
-                  <Text style={[styles.donationAmount, { color: colors.primary }]}>
-                    ${donationAmount.toFixed(2)}
-                  </Text>
-                </View>
-
-                <View style={styles.charitiesInfoContainer}>
-                  <Text style={[styles.charitiesInfoText, { color: colors.textSecondary }]}>
-                    {selectedOrganizationsCount === 0
-                      ? 'No organizations selected yet'
-                      : selectedOrganizationsCount === 1
-                      ? '1 organization selected'
-                      : `${selectedOrganizationsCount} organizations selected`}
-                  </Text>
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.selectCharitiesButton, { backgroundColor: colors.primary }]}
-                  onPress={handleSelectCharities}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.selectCharitiesButtonText, { color: colors.white }]}>
-                    {selectedOrganizationsCount === 0 ? 'Select Organizations' : 'Manage Organizations'}
-                  </Text>
-                </TouchableOpacity>
-
-                {selectedOrganizationsCount > 0 && profile.selectedCharities && (
-                  <View style={styles.selectedCharitiesList}>
-                    {profile.selectedCharities.map((charity) => (
-                      <View key={charity.id} style={[styles.charityItem, { backgroundColor: colors.background }]}>
-                        <Text style={[styles.charityName, { color: colors.text }]}>{charity.name}</Text>
-                        <Text style={[styles.charityCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                          {charity.category}
+                {/* QR Code Toggle Section */}
+                {qrValue && (
+                  <View style={styles.qrCodeSection}>
+                    <View style={styles.qrDivider} />
+                    {!showQRCode ? (
+                      <TouchableOpacity
+                        style={[styles.generateQRButton, { backgroundColor: colors.primary }]}
+                        onPress={() => setShowQRCode(true)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.generateQRButtonText, { color: colors.white }]}>
+                          Generate QR Code
                         </Text>
-                      </View>
-                    ))}
+                      </TouchableOpacity>
+                    ) : (
+                      <>
+                        <View style={[styles.qrCodeContainer, { width: qrSize, height: qrSize }]}>
+                          <QRCode
+                            value={qrValue}
+                            size={qrSize - 32}
+                            color="#000000"
+                            backgroundColor="#ffffff"
+                          />
+                        </View>
+                        <Text style={[styles.qrSubtitle, { color: colors.textSecondary }]}>
+                          Present this at checkout for discount and donation credit
+                        </Text>
+                        <TouchableOpacity
+                          style={[styles.closeQRButton, { borderColor: colors.border }]}
+                          onPress={() => setShowQRCode(false)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.closeQRButtonText, { color: colors.text }]}>
+                            Close
+                          </Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
                   </View>
                 )}
               </View>
-            </View>
 
-            {/* Info Section */}
-            <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
-              <Text style={[styles.infoTitle, { color: colors.text }]}>How Donations Work</Text>
-              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                Every time you or someone using your Valu code makes a purchase, we donate a portion
-                of the transaction to your selected organizations.
-              </Text>
-              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                You can select up to 3 organizations to support. Donations are split equally among
-                your chosen organizations.
-              </Text>
-            </View>
-          </>
+              {/* Donation Counter Section */}
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Impact Dashboard</Text>
+                <View style={[styles.donationCard, { backgroundColor: colors.backgroundSecondary }]}>
+                  <View style={styles.donationAmountContainer}>
+                    <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Donated on Your Behalf</Text>
+                    <Text style={[styles.donationAmount, { color: colors.primary }]}>
+                      ${donationAmount.toFixed(2)}
+                    </Text>
+                  </View>
+
+                  <View style={styles.charitiesInfoContainer}>
+                    <Text style={[styles.charitiesInfoText, { color: colors.textSecondary }]}>
+                      {selectedOrganizationsCount === 0
+                        ? 'No organizations selected yet'
+                        : selectedOrganizationsCount === 1
+                        ? '1 organization selected'
+                        : `${selectedOrganizationsCount} organizations selected`}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={[styles.selectCharitiesButton, { backgroundColor: colors.primary }]}
+                    onPress={handleSelectCharities}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.selectCharitiesButtonText, { color: colors.white }]}>
+                      {selectedOrganizationsCount === 0 ? 'Select Organizations' : 'Manage Organizations'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {selectedOrganizationsCount > 0 && profile.selectedCharities && (
+                    <View style={styles.selectedCharitiesList}>
+                      {profile.selectedCharities.map((charity) => (
+                        <View key={charity.id} style={[styles.charityItem, { backgroundColor: colors.background }]}>
+                          <Text style={[styles.charityName, { color: colors.text }]}>{charity.name}</Text>
+                          <Text style={[styles.charityCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                            {charity.category}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {/* Info Section */}
+              <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
+                <Text style={[styles.infoTitle, { color: colors.text }]}>How Donations Work</Text>
+                <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                  Every time you or someone using your Valu code makes a purchase, we donate a portion
+                  of the transaction to your selected organizations.
+                </Text>
+                <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                  You can select up to 3 organizations to support. Donations are split equally among
+                  your chosen organizations.
+                </Text>
+              </View>
+            </>
+          ) : (
+            <>
+              <UserDetailsEditor />
+            </>
+          )
         )}
       </ScrollView>
     </View>
@@ -201,6 +283,19 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700' as const,
     flex: 1,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 24,
+  },
+  tab: {
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
   promoSection: {
     borderWidth: 3,
@@ -251,6 +346,37 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  qrSubtitle: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 16,
+  },
+  generateQRButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 56,
+  },
+  generateQRButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  closeQRButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    borderWidth: 1,
+  },
+  closeQRButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   section: {
     marginBottom: 24,
