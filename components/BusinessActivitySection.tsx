@@ -25,6 +25,7 @@ export default function BusinessActivitySection() {
   const [valuesExpanded, setValuesExpanded] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [customerModalVisible, setCustomerModalVisible] = useState(false);
+  const [customerValuesExpanded, setCustomerValuesExpanded] = useState(false);
   const { isDarkMode, profile } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
@@ -65,6 +66,7 @@ export default function BusinessActivitySection() {
 
   const handleViewCustomer = (customer: any) => {
     setSelectedCustomer(customer);
+    setCustomerValuesExpanded(false); // Reset expansion state
     setCustomerModalVisible(true);
   };
 
@@ -123,12 +125,23 @@ export default function BusinessActivitySection() {
 
         {/* Average Customer Profile */}
         <View style={styles.profileSection}>
-          <Text style={[styles.profileTitle, { color: colors.text }]}>
-            Top Customer Values
-          </Text>
-          <Text style={[styles.profileSubtitle, { color: colors.textSecondary }]}>
-            Values most shared by your valu code customers
-          </Text>
+          <View style={styles.profileHeader}>
+            <View style={styles.profileHeaderText}>
+              <Text style={[styles.profileTitle, { color: colors.text }]}>
+                Top Customer Values
+              </Text>
+              <Text style={[styles.profileSubtitle, { color: colors.textSecondary }]}>
+                Values most shared by your valu code customers
+              </Text>
+            </View>
+            {stats.topValues.length > 5 && (
+              <TouchableOpacity onPress={() => setValuesExpanded(!valuesExpanded)} activeOpacity={0.7}>
+                <Text style={[styles.showAllButton, { color: colors.primary }]}>
+                  {valuesExpanded ? 'Hide All' : 'Show All Values'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
           <View style={styles.valuesList}>
             {stats.topValues.slice(0, valuesExpanded ? undefined : 5).map((value, index) => (
@@ -159,19 +172,6 @@ export default function BusinessActivitySection() {
             ))}
           </View>
         </View>
-
-        {/* View All Values Button (only show if there are more than 5 values) */}
-        {stats.topValues.length > 5 && (
-          <TouchableOpacity
-            style={[styles.detailsButton, { borderColor: colors.border }]}
-            onPress={() => setValuesExpanded(!valuesExpanded)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.detailsButtonText, { color: colors.primary }]}>
-              {valuesExpanded ? 'Show Less' : `View All Values (${stats.topValues.length})`}
-            </Text>
-          </TouchableOpacity>
-        )}
 
         {/* View Details Toggle */}
         <TouchableOpacity
@@ -284,11 +284,20 @@ export default function BusinessActivitySection() {
 
                 {/* Customer Values Section */}
                 <View style={styles.modalSection}>
-                  <Text style={[styles.sectionLabel, { color: colors.text }]}>
-                    Customer Values
-                  </Text>
+                  <View style={styles.modalSectionHeader}>
+                    <Text style={[styles.sectionLabel, { color: colors.text }]}>
+                      Customer Values
+                    </Text>
+                    {selectedCustomer.values.length > 8 && (
+                      <TouchableOpacity onPress={() => setCustomerValuesExpanded(!customerValuesExpanded)} activeOpacity={0.7}>
+                        <Text style={[styles.expandButtonText, { color: colors.primary }]}>
+                          {customerValuesExpanded ? 'Hide' : 'Show All'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                   <View style={styles.valueChips}>
-                    {selectedCustomer.values.map((value: any) => (
+                    {selectedCustomer.values.slice(0, customerValuesExpanded ? undefined : 8).map((value: any) => (
                       <View
                         key={value.id}
                         style={[styles.valueChip, { backgroundColor: colors.primary + '20', borderColor: colors.primary }]}
@@ -388,6 +397,16 @@ const styles = StyleSheet.create({
   profileSection: {
     marginBottom: 24,
   },
+  profileHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  profileHeaderText: {
+    flex: 1,
+    marginRight: 12,
+  },
   profileTitle: {
     fontSize: 16,
     fontWeight: '700' as const,
@@ -395,7 +414,10 @@ const styles = StyleSheet.create({
   },
   profileSubtitle: {
     fontSize: 13,
-    marginBottom: 16,
+  },
+  showAllButton: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   valuesList: {
     gap: 10,
@@ -518,6 +540,12 @@ const styles = StyleSheet.create({
   modalSection: {
     marginBottom: 24,
   },
+  modalSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   customerDetailName: {
     fontSize: 24,
     fontWeight: '700' as const,
@@ -546,7 +574,10 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 16,
     fontWeight: '700' as const,
-    marginBottom: 12,
+  },
+  expandButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   valueChips: {
     flexDirection: 'row',
