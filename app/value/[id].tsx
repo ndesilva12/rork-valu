@@ -189,7 +189,17 @@ export default function ValueDetailScreen() {
           {drivers.supports.length > 0 ? (
             <View style={styles.driversContainer}>
               {drivers.supports.map((driver, index) => (
-                <View key={`${id}-support-${driver.name}-${index}`} style={[styles.driverCard, styles.supportingCard, { backgroundColor: colors.backgroundSecondary }]}>
+                <TouchableOpacity
+                  key={`${id}-support-${driver.name}-${index}`}
+                  style={[styles.driverCard, styles.supportingCard, { backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => {
+                    if (driver.id) {
+                      router.push(`/product/${driver.id}`);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                  disabled={!driver.id}
+                >
                   <View style={styles.cardContent}>
                     <View style={styles.leftContent}>
                       {driver.imageUrl ? (
@@ -200,16 +210,19 @@ export default function ValueDetailScreen() {
                         <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>{driver.description}</Text>
                       </View>
                     </View>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={[styles.shopButton, { backgroundColor: colors.success }]}
-                      onPress={() => handleShopPress(driver.websiteUrl || '')}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleShopPress(driver.websiteUrl || '');
+                      }}
                       activeOpacity={0.7}
                     >
                       <Text style={[styles.shopButtonText, { color: colors.white }]}>Shop</Text>
                       <ExternalLink size={14} color={colors.white} strokeWidth={2.5} />
                     </TouchableOpacity>
                   </View>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
           ) : (
@@ -230,7 +243,17 @@ export default function ValueDetailScreen() {
           {drivers.opposes.length > 0 ? (
             <View style={styles.driversContainer}>
               {drivers.opposes.map((driver, index) => (
-                <View key={`${id}-oppose-${driver.name}-${index}`} style={[styles.driverCard, styles.opposingCard, { backgroundColor: colors.backgroundSecondary }]}>
+                <TouchableOpacity
+                  key={`${id}-oppose-${driver.name}-${index}`}
+                  style={[styles.driverCard, styles.opposingCard, { backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => {
+                    if (driver.id) {
+                      router.push(`/product/${driver.id}`);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                  disabled={!driver.id}
+                >
                   <View style={styles.cardContent}>
                     <View style={styles.leftContent}>
                       {driver.imageUrl ? (
@@ -241,16 +264,19 @@ export default function ValueDetailScreen() {
                         <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>{driver.description}</Text>
                       </View>
                     </View>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={[styles.shopButton, { backgroundColor: colors.danger }]}
-                      onPress={() => handleShopPress(driver.websiteUrl || '')}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleShopPress(driver.websiteUrl || '');
+                      }}
                       activeOpacity={0.7}
                     >
                       <Text style={[styles.shopButtonText, { color: colors.white }]}>Shop</Text>
                       <ExternalLink size={14} color={colors.white} strokeWidth={2.5} />
                     </TouchableOpacity>
                   </View>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
           ) : (
