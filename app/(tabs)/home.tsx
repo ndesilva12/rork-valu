@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import * as Location from 'expo-location';
 import {
   TrendingUp,
   TrendingDown,
@@ -18,6 +19,7 @@ import {
   Store,
   DollarSign,
   Shirt,
+  ChevronDown,
 } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import {
@@ -29,6 +31,7 @@ import {
   Platform,
   PanResponder,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
@@ -40,8 +43,10 @@ import { useIsStandalone } from '@/hooks/useIsStandalone';
 import { trpc } from '@/lib/trpc';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
 import { getLogoUrl } from '@/lib/logo';
+import { calculateDistance, formatDistance } from '@/lib/distance';
 
-type ViewMode = 'playbook' | 'browse' | 'local';
+type ViewMode = 'playbook' | 'browse';
+type DistanceFilter = 'any' | 1 | 5 | 10 | 25 | 50 | 100 | 250 | 500;
 
 type FolderCategory = {
   id: string;
@@ -72,24 +77,49 @@ export default function HomeScreen() {
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
-  const [brandType, setBrandType] = useState<'brands' | 'local'>('brands');
+  const [distanceFilter, setDistanceFilter] = useState<DistanceFilter>('any');
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [showDistanceDropdown, setShowDistanceDropdown] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Sync brandType with viewMode
-  useEffect(() => {
-    if (viewMode === 'local') {
-      setBrandType('local');
-    } else {
-      setBrandType('brands');
-    }
-  }, [viewMode]);
-
-  // Fetch brands and values matrix from local data via tRPC
+  // Fetch brands, local businesses, and values matrix from local data via tRPC
   const { data: brands, isLoading, error } = trpc.data.getBrands.useQuery();
+  const { data: localBusinesses } = trpc.data.getLocalBusinesses.useQuery();
   const { data: valuesMatrix } = trpc.data.getValuesMatrix.useQuery();
 
-  const viewModes: ViewMode[] = ['playbook', 'browse', 'local'];
+  const viewModes: ViewMode[] = ['playbook', 'browse'];
+
+  // Request location permission and get user's location
+  const requestLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Location Permission Required',
+          'Please enable location access to filter brands by distance.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      setUserLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+    } catch (error) {
+      console.error('Error getting location:', error);
+      Alert.alert('Error', 'Could not get your location. Please try again.');
+    }
+  };
+
+  // Request location when distance filter changes from "any" to a specific distance
+  useEffect(() => {
+    if (distanceFilter !== 'any' && !userLocation) {
+      requestLocation();
+    }
+  }, [distanceFilter]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -108,15 +138,28 @@ export default function HomeScreen() {
     })
   ).current;
 
-  const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
-    // Select brand source based on brandType
-    const currentBrands = brandType === 'local' ? LOCAL_BUSINESSES : brands;
+  const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands, brandDistances } = useMemo(() => {
+    // Combine brands from CSV and local businesses
+    const csvBrands = brands || [];
+    const localBizList = localBusinesses || [];
+
+    // Filter local businesses to only include those with >50% value overlap with user
+    const userValueIds = new Set(profile.causes.map(c => c.id));
+    const filteredLocalBiz = localBizList.filter((biz: any) => {
+      if (!biz.values || biz.values.length === 0 || userValueIds.size === 0) return false;
+      const bizValueIds = new Set(biz.values.map((v: any) => v.id));
+      const overlapCount = Array.from(userValueIds).filter(id => bizValueIds.has(id)).length;
+      const overlapPercentage = (overlapCount / userValueIds.size) * 100;
+      return overlapPercentage > 50;
+    });
+
+    const currentBrands = [...csvBrands, ...filteredLocalBiz];
 
     if (!currentBrands || currentBrands.length === 0 || !valuesMatrix) {
       console.log('[Home] Missing data:', {
-        brandType,
         hasBrands: !!currentBrands,
         brandsCount: currentBrands?.length || 0,
+        localBizCount: filteredLocalBiz.length,
         hasValuesMatrix: !!valuesMatrix,
         valuesCount: valuesMatrix ? Object.keys(valuesMatrix).length : 0
       });
@@ -127,6 +170,7 @@ export default function HomeScreen() {
         allSupportFull: [],
         allAvoidFull: [],
         scoredBrands: new Map(),
+        brandDistances: new Map(),
       };
     }
 
@@ -250,24 +294,58 @@ export default function HomeScreen() {
       .filter((s) => s.totalAvoidScore > s.totalSupportScore && s.totalAvoidScore > 0)
       .sort((a, b) => a.alignmentStrength - b.alignmentStrength); // Lowest score first for unaligned
 
+    // Calculate distances if user location is available
+    const distancesMap = new Map<string, number>();
+    if (userLocation && distanceFilter !== 'any') {
+      currentBrands.forEach((product) => {
+        if (product.latitude && product.longitude) {
+          const distance = calculateDistance(
+            userLocation.latitude,
+            userLocation.longitude,
+            product.latitude,
+            product.longitude
+          );
+          distancesMap.set(product.id, distance);
+        }
+      });
+    }
+
+    // Filter by distance if a distance filter is active
+    let filteredSupport = allSupportSorted;
+    let filteredAvoid = allAvoidSorted;
+
+    if (distanceFilter !== 'any' && userLocation) {
+      filteredSupport = allSupportSorted.filter((s) => {
+        const distance = distancesMap.get(s.product.id);
+        return distance !== undefined && distance <= distanceFilter;
+      });
+      filteredAvoid = allAvoidSorted.filter((s) => {
+        const distance = distancesMap.get(s.product.id);
+        return distance !== undefined && distance <= distanceFilter;
+      });
+    }
+
     console.log('[Home] Scoring results:', {
-      alignedCount: allSupportSorted.length,
-      unalignedCount: allAvoidSorted.length,
-      topAligned: allSupportSorted.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength })),
-      topUnaligned: allAvoidSorted.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength }))
+      alignedCount: filteredSupport.length,
+      unalignedCount: filteredAvoid.length,
+      distanceFilter,
+      hasLocation: !!userLocation,
+      topAligned: filteredSupport.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength })),
+      topUnaligned: filteredAvoid.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength }))
     });
 
     const scoredMap = new Map(scored.map((s) => [s.product.id, s.alignmentStrength]));
 
     return {
-      topSupport: allSupportSorted.slice(0, 10).map((s) => s.product),
-      topAvoid: allAvoidSorted.slice(0, 10).map((s) => s.product),
-      allSupport: allSupportSorted.map((s) => s.product),
-      allSupportFull: allSupportSorted.map((s) => s.product),
-      allAvoidFull: allAvoidSorted.map((s) => s.product),
+      topSupport: filteredSupport.slice(0, 10).map((s) => s.product),
+      topAvoid: filteredAvoid.slice(0, 10).map((s) => s.product),
+      allSupport: filteredSupport.map((s) => s.product),
+      allSupportFull: filteredSupport.map((s) => s.product),
+      allAvoidFull: filteredAvoid.map((s) => s.product),
       scoredBrands: scoredMap,
+      brandDistances: distancesMap,
     };
-  }, [profile.causes, brands, valuesMatrix, brandType]);
+  }, [profile.causes, brands, localBusinesses, valuesMatrix, distanceFilter, userLocation]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
@@ -388,6 +466,8 @@ export default function HomeScreen() {
     const isSupport = type === 'support';
     const titleColor = isSupport ? '#22C55E' : '#EF4444';
     const alignmentScore = scoredBrands.get(product.id) || 0;
+    const distance = brandDistances.get(product.id);
+    const showDistance = distanceFilter !== 'any' && distance !== undefined;
 
     return (
       <TouchableOpacity
@@ -416,6 +496,14 @@ export default function HomeScreen() {
             <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
               {product.category}
             </Text>
+            {showDistance && (
+              <View style={styles.distanceContainer}>
+                <MapPin size={12} color={colors.textSecondary} strokeWidth={2} />
+                <Text style={[styles.distanceText, { color: colors.textSecondary }]}>
+                  {formatDistance(distance)}
+                </Text>
+              </View>
+            )}
           </View>
           <View style={styles.brandScoreContainer}>
             <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
@@ -425,41 +513,79 @@ export default function HomeScreen() {
     );
   };
 
+  const distanceOptions: DistanceFilter[] = ['any', 500, 250, 100, 50, 25, 10, 5, 1];
+
   const renderViewModeSelector = () => (
-    <View style={[styles.viewModeSelector, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-      <TouchableOpacity
-        style={[styles.viewModeButton, viewMode === 'playbook' && { backgroundColor: colors.primary }]}
-        onPress={() => setViewMode('playbook')}
-        activeOpacity={0.7}
-      >
-        <Target size={18} color={viewMode === 'playbook' ? colors.white : colors.textSecondary} strokeWidth={2} />
-        <Text style={[styles.viewModeText, { color: viewMode === 'playbook' ? colors.white : colors.textSecondary }]}>
-          Brands
-        </Text>
-      </TouchableOpacity>
+    <View style={styles.selectionRow}>
+      <View style={[styles.viewModeSelector, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+        <TouchableOpacity
+          style={[styles.viewModeButton, viewMode === 'playbook' && { backgroundColor: colors.primary }]}
+          onPress={() => setViewMode('playbook')}
+          activeOpacity={0.7}
+        >
+          <Target size={18} color={viewMode === 'playbook' ? colors.white : colors.textSecondary} strokeWidth={2} />
+          <Text style={[styles.viewModeText, { color: viewMode === 'playbook' ? colors.white : colors.textSecondary }]}>
+            Brands
+          </Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.viewModeButton, viewMode === 'browse' && { backgroundColor: colors.primary }]}
-        onPress={() => setViewMode('browse')}
-        activeOpacity={0.7}
-      >
-        <FolderOpen size={18} color={viewMode === 'browse' ? colors.white : colors.textSecondary} strokeWidth={2} />
-        <Text style={[styles.viewModeText, { color: viewMode === 'browse' ? colors.white : colors.textSecondary }]}>
-          Browse
-        </Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.viewModeButton, viewMode === 'browse' && { backgroundColor: colors.primary }]}
+          onPress={() => setViewMode('browse')}
+          activeOpacity={0.7}
+        >
+          <FolderOpen size={18} color={viewMode === 'browse' ? colors.white : colors.textSecondary} strokeWidth={2} />
+          <Text style={[styles.viewModeText, { color: viewMode === 'browse' ? colors.white : colors.textSecondary }]}>
+            Browse
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-      <TouchableOpacity
-        style={[styles.viewModeButton, viewMode === 'local' && { backgroundColor: colors.primary }]}
-        onPress={() => setViewMode('local')}
-        activeOpacity={0.7}
-      >
-        <MapPin size={18} color={viewMode === 'local' ? colors.white : colors.textSecondary} strokeWidth={2} />
-        <Text style={[styles.viewModeText, { color: viewMode === 'local' ? colors.white : colors.textSecondary }]}>
-          Local
-        </Text>
-      </TouchableOpacity>
+      {/* Distance Selector */}
+      <View style={styles.distanceSelectorContainer}>
+        <TouchableOpacity
+          style={[styles.distanceButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+          onPress={() => setShowDistanceDropdown(!showDistanceDropdown)}
+          activeOpacity={0.7}
+        >
+          <MapPin size={16} color={colors.textSecondary} strokeWidth={2} />
+          <Text style={[styles.distanceButtonText, { color: colors.text }]}>
+            {distanceFilter === 'any' ? 'Any Distance' : `${distanceFilter} mi`}
+          </Text>
+          <ChevronDown size={16} color={colors.textSecondary} strokeWidth={2} />
+        </TouchableOpacity>
 
+        {showDistanceDropdown && (
+          <View style={[styles.distanceDropdown, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            <ScrollView style={styles.distanceDropdownScroll} nestedScrollEnabled>
+              {distanceOptions.map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={[
+                    styles.distanceOption,
+                    distanceFilter === option && { backgroundColor: colors.primary },
+                  ]}
+                  onPress={() => {
+                    setDistanceFilter(option);
+                    setShowDistanceDropdown(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.distanceOptionText,
+                      { color: colors.text },
+                      distanceFilter === option && { color: colors.white, fontWeight: '600' },
+                    ]}
+                  >
+                    {option === 'any' ? 'Any Distance' : `${option} miles`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </View>
     </View>
   );
 
@@ -661,7 +787,7 @@ export default function HomeScreen() {
         {renderViewModeSelector()}
       </View>
       <ScrollView ref={scrollViewRef} style={styles.scrollView} contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent, { paddingBottom: 100 }]}>
-        {(viewMode === 'playbook' || viewMode === 'local') && renderPlaybookView()}
+        {viewMode === 'playbook' && renderPlaybookView()}
         {viewMode === 'browse' && renderFoldersView()}
 
         {(
@@ -707,6 +833,8 @@ const styles = StyleSheet.create({
   stickyHeaderContainer: {
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+    zIndex: 1000,
+    position: 'relative' as const,
   },
   header: {
     flexDirection: 'row',
@@ -875,13 +1003,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
   },
-  viewModeSelector: {
+  selectionRow: {
     flexDirection: 'row',
-    borderRadius: 10,
-    padding: 3,
+    alignItems: 'center',
+    gap: 8,
     marginHorizontal: 16,
     marginBottom: 8,
     marginTop: 10,
+    zIndex: 100,
+  },
+  viewModeSelector: {
+    flex: 1,
+    flexDirection: 'row',
+    borderRadius: 10,
+    padding: 3,
     borderWidth: 1,
   },
   viewModeButton: {
@@ -897,6 +1032,62 @@ const styles = StyleSheet.create({
   viewModeText: {
     fontSize: 15,
     fontWeight: '600' as const,
+  },
+  distanceSelectorContainer: {
+    position: 'relative' as const,
+    minWidth: 140,
+    zIndex: 101,
+  },
+  distanceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  distanceButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    flex: 1,
+  },
+  distanceDropdown: {
+    position: 'absolute' as const,
+    top: 48,
+    right: 0,
+    width: 160,
+    maxHeight: 300,
+    borderRadius: 12,
+    borderWidth: 1,
+    zIndex: 99999,
+    elevation: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  distanceDropdownScroll: {
+    maxHeight: 300,
+  },
+  distanceOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  distanceOptionText: {
+    fontSize: 14,
+  },
+  distanceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  distanceText: {
+    fontSize: 11,
+    fontWeight: '500' as const,
   },
   compactSection: {
     marginBottom: 24,

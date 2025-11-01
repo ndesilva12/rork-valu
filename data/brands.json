@@ -50,6 +50,8 @@
       }
     ],
     "location": "Cupertino, CA, USA",
+    "latitude": 37.323,
+    "longitude": -122.0322,
     "ownershipSources": "HQ: Official site; Stakes: Q3 2025 13F filings via SEC/Yahoo Finance"
   },
   {
@@ -103,6 +105,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Latest 13F/Nasdaq data"
   },
   {
@@ -262,6 +266,8 @@
       }
     ],
     "location": "Austin, TX, USA",
+    "latitude": 30.2672,
+    "longitude": -97.7431,
     "ownershipSources": "HQ: Official announcement 2021; Stakes: 13F + insider filings"
   },
   {
@@ -474,6 +480,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Public records; Private entity - Trump as 100% owner per Forbes/Bloomberg"
   },
   {
@@ -739,6 +747,8 @@
       }
     ],
     "location": "Seattle, WA, USA",
+    "latitude": 47.6062,
+    "longitude": -122.3321,
     "ownershipSources": "HQ: Official; Consumer co-op - no traditional shareholders"
   },
   {
@@ -792,6 +802,8 @@
       }
     ],
     "location": "Atlanta, GA, USA",
+    "latitude": 33.749,
+    "longitude": -84.388,
     "ownershipSources": "HQ: Official; Stakes: Private - family-owned per company statements/Forbes"
   },
   {
@@ -898,6 +910,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: 13F + family trust filings"
   },
   {
@@ -1110,6 +1124,8 @@
       }
     ],
     "location": "Cincinnati, OH, USA",
+    "latitude": 39.1031,
+    "longitude": -84.512,
     "ownershipSources": "HQ: Official; Stakes: Latest 13F data"
   },
   {
@@ -1163,6 +1179,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Post-acquisition estimates/SEC filings"
   },
   {
@@ -1375,6 +1393,8 @@
       }
     ],
     "location": "Paris, France",
+    "latitude": 48.8566,
+    "longitude": 2.3522,
     "ownershipSources": "HQ: Official; Stakes: Euronext filings + family holdings"
   },
   {
@@ -1587,6 +1607,8 @@
       }
     ],
     "location": "Boston, MA, USA",
+    "latitude": 42.3601,
+    "longitude": -71.0589,
     "ownershipSources": "HQ: Official; Stakes: Private - family-owned per Forbes"
   },
   {
@@ -1693,6 +1715,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Latest 13F data"
   },
   {
@@ -1958,6 +1982,8 @@
       }
     ],
     "location": "Washington, DC, USA",
+    "latitude": 38.9072,
+    "longitude": -77.0369,
     "ownershipSources": "HQ: Public statements; Private sole proprietorship"
   },
   {
@@ -2064,6 +2090,8 @@
       }
     ],
     "location": "Philadelphia, PA, USA",
+    "latitude": 39.9526,
+    "longitude": -75.1652,
     "ownershipSources": "HQ: Official; Stakes: 13F + family voting trust"
   },
   {
@@ -2117,6 +2145,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Family-controlled + 13F"
   },
   {
@@ -2223,6 +2253,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Latest 13F filings"
   },
   {
@@ -2276,6 +2308,8 @@
       }
     ],
     "location": "Denver, CO, USA",
+    "latitude": 39.7392,
+    "longitude": -104.9903,
     "ownershipSources": "HQ: Official (2020 move); Stakes: NYSE 13F + insiders"
   },
   {
@@ -2329,6 +2363,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official (50 Hudson Yards); Stakes: Q3 2025 13F filings"
   },
   {
@@ -2382,6 +2418,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: JV structure per Reuters 2025"
   },
   {
@@ -2488,6 +2526,8 @@
       }
     ],
     "location": "Redmond, WA, USA",
+    "latitude": 47.674,
+    "longitude": -122.1215,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -2700,6 +2740,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: 2024 investments valuing at $1B"
   },
   {
@@ -2912,6 +2954,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -2965,6 +3009,8 @@
       }
     ],
     "location": "Menlo Park, CA, USA",
+    "latitude": 37.453,
+    "longitude": -122.1817,
     "ownershipSources": "HQ: Official; Stakes: Insider + 13F data"
   },
   {
@@ -3018,6 +3064,8 @@
       }
     ],
     "location": "Mountain View, CA, USA",
+    "latitude": 37.3861,
+    "longitude": -122.0839,
     "ownershipSources": "HQ: Official (Googleplex); Stakes: Founders + 13F"
   },
   {
@@ -3177,6 +3225,8 @@
       }
     ],
     "location": "Chicago, IL, USA",
+    "latitude": 41.8781,
+    "longitude": -87.6298,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -3336,6 +3386,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Insider + 13F filings"
   },
   {
@@ -3389,6 +3441,8 @@
       }
     ],
     "location": "Atlanta, GA, USA",
+    "latitude": 33.749,
+    "longitude": -84.388,
     "ownershipSources": "HQ: Official; Stakes: Oprah majority per company structure"
   },
   {
@@ -3442,6 +3496,8 @@
       }
     ],
     "location": "Seattle, WA, USA",
+    "latitude": 47.6062,
+    "longitude": -122.3321,
     "ownershipSources": "HQ: Official; Stakes: Insider + Q3 2025 13F"
   },
   {
@@ -3654,6 +3710,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 filings"
   },
   {
@@ -3813,6 +3871,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -3919,6 +3979,8 @@
       }
     ],
     "location": "Los Angeles, CA, USA",
+    "latitude": 34.0522,
+    "longitude": -118.2437,
     "ownershipSources": "HQ: Official; Stakes: Merger/estimates 2025"
   },
   {
@@ -4025,6 +4087,8 @@
       }
     ],
     "location": "Austin, TX, USA",
+    "latitude": 30.2672,
+    "longitude": -97.7431,
     "ownershipSources": "HQ: Official; Stakes: Acquired by Unilever 2021"
   },
   {
@@ -4343,6 +4407,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Family trusts + 13F data"
   },
   {
@@ -4396,6 +4462,8 @@
       }
     ],
     "location": "Atlanta, GA, USA",
+    "latitude": 33.749,
+    "longitude": -84.388,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -4502,6 +4570,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -4608,6 +4678,8 @@
       }
     ],
     "location": "Cincinnati, OH, USA",
+    "latitude": 39.1031,
+    "longitude": -84.512,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -4661,6 +4733,8 @@
       }
     ],
     "location": "Mountain View, CA, USA",
+    "latitude": 37.3861,
+    "longitude": -122.0839,
     "ownershipSources": "HQ: Official; Stakes: Nonprofit ownership"
   },
   {
@@ -5138,6 +5212,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -5191,6 +5267,8 @@
       }
     ],
     "location": "Mountain View, CA, USA",
+    "latitude": 37.3861,
+    "longitude": -122.0839,
     "ownershipSources": "HQ: Official; Stakes: Insider + 13F data"
   },
   {
@@ -5297,6 +5375,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Latest 13F data"
   },
   {
@@ -5403,6 +5483,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Family-controlled + 13F"
   },
   {
@@ -5509,6 +5591,8 @@
       }
     ],
     "location": "Atlanta, GA, USA",
+    "latitude": 33.749,
+    "longitude": -84.388,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -5774,6 +5858,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Stakes: Owned by H&M per corporate structure"
   },
   {
@@ -5880,6 +5966,8 @@
       }
     ],
     "location": "Los Angeles, CA, USA",
+    "latitude": 34.0522,
+    "longitude": -118.2437,
     "ownershipSources": "HQ: Official; Stakes: Creditor takeover 2025"
   },
   {
@@ -5986,6 +6074,8 @@
       }
     ],
     "location": "Menlo Park, CA, USA",
+    "latitude": 37.453,
+    "longitude": -122.1817,
     "ownershipSources": "HQ: Official (Meta); Stakes: Meta/13F data"
   },
   {
@@ -6039,6 +6129,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Stakes: Acquired by Auréa 2025"
   },
   {
@@ -6092,6 +6184,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -6145,6 +6239,8 @@
       }
     ],
     "location": "Chicago, IL, USA",
+    "latitude": 41.8781,
+    "longitude": -87.6298,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -6198,6 +6294,8 @@
       }
     ],
     "location": "Boston, MA, USA",
+    "latitude": 42.3601,
+    "longitude": -71.0589,
     "ownershipSources": "HQ: Official; Stakes: Latest 13F data"
   },
   {
@@ -6304,6 +6402,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Acquired by Salesforce 2021"
   },
   {
@@ -6516,6 +6616,8 @@
       }
     ],
     "location": "Chicago, IL, USA",
+    "latitude": 41.8781,
+    "longitude": -87.6298,
     "ownershipSources": "HQ: Official; Stakes: Private owned by Winfrey"
   },
   {
@@ -6569,6 +6671,8 @@
       }
     ],
     "location": "Austin, TX, USA",
+    "latitude": 30.2672,
+    "longitude": -97.7431,
     "ownershipSources": "HQ: Official; Stakes: Acquired by Amazon 2017"
   },
   {
@@ -7417,6 +7521,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Latest funding rounds"
   },
   {
@@ -7523,6 +7629,8 @@
       }
     ],
     "location": "Austin, TX, USA",
+    "latitude": 30.2672,
+    "longitude": -97.7431,
     "ownershipSources": "HQ: Official; Stakes: Acquired 2017"
   },
   {
@@ -7576,6 +7684,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Latest 13F data"
   },
   {
@@ -7629,6 +7739,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Funding rounds 2025"
   },
   {
@@ -7947,6 +8059,8 @@
       }
     ],
     "location": "Tokyo, Japan",
+    "latitude": 35.6762,
+    "longitude": 139.6503,
     "ownershipSources": "HQ: Official; Stakes: TSE filings"
   },
   {
@@ -8159,6 +8273,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -8265,6 +8381,8 @@
       }
     ],
     "location": "Pittsburgh, PA, USA",
+    "latitude": 40.4406,
+    "longitude": -79.9959,
     "ownershipSources": "HQ: Official; Stakes: Nonprofit"
   },
   {
@@ -8318,6 +8436,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -8424,6 +8544,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Corporate site; Stakes: Owned by News Corp (Murdoch family)"
   },
   {
@@ -8530,6 +8652,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Latest 13F data"
   },
   {
@@ -8583,6 +8707,8 @@
       }
     ],
     "location": "Washington, DC, USA",
+    "latitude": 38.9072,
+    "longitude": -77.0369,
     "ownershipSources": "HQ: Official; Stakes: Major donors per IRS filings/estimates"
   },
   {
@@ -8636,6 +8762,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F equivalents"
   },
   {
@@ -8848,6 +8976,8 @@
       }
     ],
     "location": "Cincinnati, OH, USA",
+    "latitude": 39.1031,
+    "longitude": -84.512,
     "ownershipSources": "HQ: Official; Stakes: Acquired by Transdev 2023"
   },
   {
@@ -9007,6 +9137,8 @@
       }
     ],
     "location": "Houston, TX, USA",
+    "latitude": 29.7604,
+    "longitude": -95.3698,
     "ownershipSources": "HQ: Official (2024 move); Stakes: Q3 2025 13F filings"
   },
   {
@@ -9060,6 +9192,8 @@
       }
     ],
     "location": "Menlo Park, CA, USA",
+    "latitude": 37.453,
+    "longitude": -122.1817,
     "ownershipSources": "HQ: Official (Meta); Stakes: Acquired by Meta 2014"
   },
   {
@@ -9219,6 +9353,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -9378,6 +9514,8 @@
       }
     ],
     "location": "Redmond, WA, USA",
+    "latitude": 47.674,
+    "longitude": -122.1215,
     "ownershipSources": "HQ: Official (Microsoft); Stakes: Owned by Microsoft"
   },
   {
@@ -9537,6 +9675,8 @@
       }
     ],
     "location": "Pittsburgh, PA, USA",
+    "latitude": 40.4406,
+    "longitude": -79.9959,
     "ownershipSources": "HQ: Official (AE); Stakes: Owned by American Eagle"
   },
   {
@@ -9590,6 +9730,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -10067,6 +10209,8 @@
       }
     ],
     "location": "Minneapolis, MN, USA",
+    "latitude": 44.9778,
+    "longitude": -93.265,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -10173,6 +10317,8 @@
       }
     ],
     "location": "Atlanta, GA, USA",
+    "latitude": 33.749,
+    "longitude": -84.388,
     "ownershipSources": "HQ: Official; Stakes: Private estimates"
   },
   {
@@ -10279,6 +10425,8 @@
       }
     ],
     "location": "Menlo Park, CA, USA",
+    "latitude": 37.453,
+    "longitude": -122.1817,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -10597,6 +10745,8 @@
       }
     ],
     "location": "Seattle, WA, USA",
+    "latitude": 47.6062,
+    "longitude": -122.3321,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -10756,6 +10906,8 @@
       }
     ],
     "location": "Detroit, MI, USA",
+    "latitude": 42.3314,
+    "longitude": -83.0458,
     "ownershipSources": "HQ: Official (2025 move); Stakes: Q3 2025 13F"
   },
   {
@@ -10809,6 +10961,8 @@
       }
     ],
     "location": "Pittsburgh, PA, USA",
+    "latitude": 40.4406,
+    "longitude": -79.9959,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -10915,6 +11069,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official (Google); Acquired 2021"
   },
   {
@@ -10968,6 +11124,8 @@
       }
     ],
     "location": "Mountain View, CA, USA",
+    "latitude": 37.3861,
+    "longitude": -122.0839,
     "ownershipSources": "HQ: Official; Acquired 2015"
   },
   {
@@ -11074,6 +11232,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: VC rounds 2025"
   },
   {
@@ -11127,6 +11287,8 @@
       }
     ],
     "location": "Bentonville, AR, USA",
+    "latitude": 36.3729,
+    "longitude": -94.2088,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -11339,6 +11501,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Owned by Comcast"
   },
   {
@@ -11445,6 +11609,8 @@
       }
     ],
     "location": "Boston, MA, USA",
+    "latitude": 42.3601,
+    "longitude": -71.0589,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -11551,6 +11717,8 @@
       }
     ],
     "location": "Miami, FL, USA",
+    "latitude": 25.7617,
+    "longitude": -80.1918,
     "ownershipSources": "HQ: Official (2025 move); Stakes: Q3 2025 13F filings"
   },
   {
@@ -11604,6 +11772,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Latest 13F data"
   },
   {
@@ -11763,6 +11933,8 @@
       }
     ],
     "location": "Pittsburgh, PA, USA",
+    "latitude": 40.4406,
+    "longitude": -79.9959,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -11869,6 +12041,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Owned by News Corp (Murdoch family)"
   },
   {
@@ -12346,6 +12520,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Nonprofit - member-owned"
   },
   {
@@ -12399,6 +12575,8 @@
       }
     ],
     "location": "Menlo Park, CA, USA",
+    "latitude": 37.453,
+    "longitude": -122.1817,
     "ownershipSources": "HQ: Official (Meta); Stakes: Acquired by Meta 2014"
   },
   {
@@ -12452,6 +12630,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official (post-merger); Stakes: Q3 2025 filings"
   },
   {
@@ -12611,6 +12791,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Acquired by Included Health 2021"
   },
   {
@@ -12717,6 +12899,8 @@
       }
     ],
     "location": "Mountain View, CA, USA",
+    "latitude": 37.3861,
+    "longitude": -122.0839,
     "ownershipSources": "HQ: Official (Google); Stakes: Owned by Alphabet"
   },
   {
@@ -12876,6 +13060,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official (Gap); Stakes: Owned by Gap Inc."
   },
   {
@@ -12929,6 +13115,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Owned by Hearst"
   },
   {
@@ -12982,6 +13170,8 @@
       }
     ],
     "location": "Washington, DC, USA",
+    "latitude": 38.9072,
+    "longitude": -77.0369,
     "ownershipSources": "HQ: Official; Stakes: Private - owned by Bezos"
   },
   {
@@ -13565,6 +13755,8 @@
       }
     ],
     "location": "Dallas, TX, USA",
+    "latitude": 32.7767,
+    "longitude": -96.797,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -13618,6 +13810,8 @@
       }
     ],
     "location": "San Diego, CA, USA",
+    "latitude": 32.7157,
+    "longitude": -117.1611,
     "ownershipSources": "HQ: Official; Stakes: Funding rounds 2025 (private)"
   },
   {
@@ -13883,6 +14077,8 @@
       }
     ],
     "location": "Los Angeles, CA, USA",
+    "latitude": 34.0522,
+    "longitude": -118.2437,
     "ownershipSources": "HQ: Official; Stakes: Post-bankruptcy 2025 ownership"
   },
   {
@@ -14095,6 +14291,8 @@
       }
     ],
     "location": "Menlo Park, CA, USA",
+    "latitude": 37.453,
+    "longitude": -122.1817,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -14466,6 +14664,8 @@
       }
     ],
     "location": "Tokyo, Japan",
+    "latitude": 35.6762,
+    "longitude": 139.6503,
     "ownershipSources": "HQ: Official; Stakes: TSE filings"
   },
   {
@@ -14572,6 +14772,8 @@
       }
     ],
     "location": "Dallas, TX, USA",
+    "latitude": 32.7767,
+    "longitude": -96.797,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -14625,6 +14827,8 @@
       }
     ],
     "location": "Miami, FL, USA",
+    "latitude": 25.7617,
+    "longitude": -80.1918,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -14784,6 +14988,8 @@
       }
     ],
     "location": "Pittsburgh, PA, USA",
+    "latitude": 40.4406,
+    "longitude": -79.9959,
     "ownershipSources": "HQ: Official; Stakes: Private family-owned"
   },
   {
@@ -14837,6 +15043,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -14943,6 +15151,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Owned by News Corp"
   },
   {
@@ -15049,6 +15259,8 @@
       }
     ],
     "location": "Washington, DC, USA",
+    "latitude": 38.9072,
+    "longitude": -77.0369,
     "ownershipSources": "HQ: Official; Nonprofit - no shareholders; major donors via IRS filings (e.g., conservative foundations)"
   },
   {
@@ -15102,6 +15314,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings (NASDAQ: BIRD)"
   },
   {
@@ -15208,6 +15422,8 @@
       }
     ],
     "location": "Chicago, IL, USA",
+    "latitude": 41.8781,
+    "longitude": -87.6298,
     "ownershipSources": "HQ: Parent company; Acquired by Pinnacle (Conagra) 2017"
   },
   {
@@ -15420,6 +15636,8 @@
       }
     ],
     "location": "Menlo Park, CA, USA",
+    "latitude": 37.453,
+    "longitude": -122.1817,
     "ownershipSources": "HQ: Official (Meta); Stakes: Q3 2025 13F filings"
   },
   {
@@ -15579,6 +15797,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Acquired 2021"
   },
   {
@@ -15685,6 +15905,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -15738,6 +15960,8 @@
       }
     ],
     "location": "Philadelphia, PA, USA",
+    "latitude": 39.9526,
+    "longitude": -75.1652,
     "ownershipSources": "HQ: Official; Stakes: Latest funding rounds (private)"
   },
   {
@@ -16056,6 +16280,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -16321,6 +16547,8 @@
       }
     ],
     "location": "Boston, MA, USA",
+    "latitude": 42.3601,
+    "longitude": -71.0589,
     "ownershipSources": "HQ: Official; Stakes: 2025 acquisition by GTCR"
   },
   {
@@ -16374,6 +16602,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Acquired by Fidelity 2015"
   },
   {
@@ -16639,6 +16869,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Private founder-owned"
   },
   {
@@ -16692,6 +16924,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Stakes: 2025 filings"
   },
   {
@@ -16798,6 +17032,8 @@
       }
     ],
     "location": "Austin, TX, USA",
+    "latitude": 30.2672,
+    "longitude": -97.7431,
     "ownershipSources": "HQ: PitchBook; Acquired by Francisco Partners Feb 2025"
   },
   {
@@ -16957,6 +17193,8 @@
       }
     ],
     "location": "Paris, France",
+    "latitude": 48.8566,
+    "longitude": 2.3522,
     "ownershipSources": "HQ: Official; Stakes: Latest filings"
   },
   {
@@ -17063,6 +17301,8 @@
       }
     ],
     "location": "Tokyo, Japan",
+    "latitude": 35.6762,
+    "longitude": 139.6503,
     "ownershipSources": "HQ: Official; Stakes: TSE filings"
   },
   {
@@ -17116,6 +17356,8 @@
       }
     ],
     "location": "Boston, MA, USA",
+    "latitude": 42.3601,
+    "longitude": -71.0589,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -17434,6 +17676,8 @@
       }
     ],
     "location": "Austin, TX, USA",
+    "latitude": 30.2672,
+    "longitude": -97.7431,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F + insiders"
   },
   {
@@ -17540,6 +17784,8 @@
       }
     ],
     "location": "Nashville, TN, USA",
+    "latitude": 36.1627,
+    "longitude": -86.7816,
     "ownershipSources": "HQ: Official; Private founder-owned"
   },
   {
@@ -17699,6 +17945,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Funding rounds"
   },
   {
@@ -17805,6 +18053,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Private founder-owned post-LVMH sale 2025"
   },
   {
@@ -18017,6 +18267,8 @@
       }
     ],
     "location": "Paris, France",
+    "latitude": 48.8566,
+    "longitude": 2.3522,
     "ownershipSources": "HQ: Official; Owned by RATP Group"
   },
   {
@@ -18123,6 +18375,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Funding rounds"
   },
   {
@@ -18388,6 +18642,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -18441,6 +18697,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Acquired by IKEA 2017"
   },
   {
@@ -18547,6 +18805,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Owned by PVH Corp"
   },
   {
@@ -18971,6 +19231,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Stakes: Private - Branson-owned"
   },
   {
@@ -19077,6 +19339,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Acquired by Permira 2024"
   },
   {
@@ -19130,6 +19394,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official (L'Oréal); Stakes: Acquired by L'Oréal 2017"
   },
   {
@@ -19713,6 +19979,8 @@
       }
     ],
     "location": "Paris, France",
+    "latitude": 48.8566,
+    "longitude": 2.3522,
     "ownershipSources": "HQ: Official; Stakes: Euronext Q3 2025"
   },
   {
@@ -19872,6 +20140,8 @@
       }
     ],
     "location": "Chicago, IL, USA",
+    "latitude": 41.8781,
+    "longitude": -87.6298,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -20137,6 +20407,8 @@
       }
     ],
     "location": "Pittsburgh, PA, USA",
+    "latitude": 40.4406,
+    "longitude": -79.9959,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -20190,6 +20462,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -20455,6 +20729,8 @@
       }
     ],
     "location": "Los Angeles, CA, USA",
+    "latitude": 34.0522,
+    "longitude": -118.2437,
     "ownershipSources": "HQ: Craft.co; Stakes: Forbes estimates 2025 (private)"
   },
   {
@@ -20826,6 +21102,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Craft.co; Stakes: Q3 2025 13F filings"
   },
   {
@@ -20879,6 +21157,8 @@
       }
     ],
     "location": "Tokyo, Japan",
+    "latitude": 35.6762,
+    "longitude": 139.6503,
     "ownershipSources": "HQ: Wikipedia; Private post-2023 liquidation"
   },
   {
@@ -20985,6 +21265,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Wikipedia; Stakes: Q3 2025 13F filings"
   },
   {
@@ -21197,6 +21479,8 @@
       }
     ],
     "location": "San Diego, CA, USA",
+    "latitude": 32.7157,
+    "longitude": -117.1611,
     "ownershipSources": "HQ: Wikipedia; Nonprofit-owned"
   },
   {
@@ -21250,6 +21534,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Wikipedia; Post-bankruptcy stakes 2024"
   },
   {
@@ -21674,6 +21960,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Wikipedia; Stakes: Q3 2025 13F equivalents"
   },
   {
@@ -21886,6 +22174,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Wikipedia; Owned by Coty"
   },
   {
@@ -22098,6 +22388,8 @@
       }
     ],
     "location": "Dallas, TX, USA",
+    "latitude": 32.7767,
+    "longitude": -96.797,
     "ownershipSources": "HQ: Wikipedia; Private family-owned"
   },
   {
@@ -22151,6 +22443,8 @@
       }
     ],
     "location": "San Diego, CA, USA",
+    "latitude": 32.7157,
+    "longitude": -117.1611,
     "ownershipSources": "HQ: ZoomInfo; Private family-owned"
   },
   {
@@ -22310,6 +22604,8 @@
       }
     ],
     "location": "Chicago, IL, USA",
+    "latitude": 41.8781,
+    "longitude": -87.6298,
     "ownershipSources": "HQ: CB Insights; Owned by PepsiCo"
   },
   {
@@ -22363,6 +22659,8 @@
       }
     ],
     "location": "Cupertino, CA, USA",
+    "latitude": 37.323,
+    "longitude": -122.0322,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings (features part of Apple)"
   },
   {
@@ -22681,6 +22979,8 @@
       }
     ],
     "location": "Tokyo, Japan",
+    "latitude": 35.6762,
+    "longitude": 139.6503,
     "ownershipSources": "HQ: Official; Stakes: TSE filings Q3 2025"
   },
   {
@@ -22734,6 +23034,8 @@
       }
     ],
     "location": "Boston, MA, USA",
+    "latitude": 42.3601,
+    "longitude": -71.0589,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -22787,6 +23089,8 @@
       }
     ],
     "location": "Houston, TX, USA",
+    "latitude": 29.7604,
+    "longitude": -95.3698,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -22999,6 +23303,8 @@
       }
     ],
     "location": "Chicago, IL, USA",
+    "latitude": 41.8781,
+    "longitude": -87.6298,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -23105,6 +23411,8 @@
       }
     ],
     "location": "Pittsburgh, PA, USA",
+    "latitude": 40.4406,
+    "longitude": -79.9959,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -23158,6 +23466,8 @@
       }
     ],
     "location": "Chicago, IL, USA",
+    "latitude": 41.8781,
+    "longitude": -87.6298,
     "ownershipSources": "HQ: Official; Stakes: Post-IPO filings Q3 2025"
   },
   {
@@ -23264,6 +23574,8 @@
       }
     ],
     "location": "Boston, MA, USA",
+    "latitude": 42.3601,
+    "longitude": -71.0589,
     "ownershipSources": "HQ: Official; Mutual structure - no external shareholders"
   },
   {
@@ -23317,6 +23629,8 @@
       }
     ],
     "location": "Boston, MA, USA",
+    "latitude": 42.3601,
+    "longitude": -71.0589,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -23370,6 +23684,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -23423,6 +23739,8 @@
       }
     ],
     "location": "Seattle, WA, USA",
+    "latitude": 47.6062,
+    "longitude": -122.3321,
     "ownershipSources": "HQ: Official; Stakes: Acquired by General Mills 2021"
   },
   {
@@ -23476,6 +23794,8 @@
       }
     ],
     "location": "Chicago, IL, USA",
+    "latitude": 41.8781,
+    "longitude": -87.6298,
     "ownershipSources": "HQ: Official; Nonprofit - no shareholders; donors via IRS"
   },
   {
@@ -23794,6 +24114,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -24006,6 +24328,8 @@
       }
     ],
     "location": "Paris, France",
+    "latitude": 48.8566,
+    "longitude": 2.3522,
     "ownershipSources": "HQ: Official; Stakes: Nationalized 2023"
   },
   {
@@ -24059,6 +24383,8 @@
       }
     ],
     "location": "Phoenix, AZ, USA",
+    "latitude": 33.4484,
+    "longitude": -112.074,
     "ownershipSources": "HQ: Official; Stakes: Post-IPO filings Q3 2025"
   },
   {
@@ -24165,6 +24491,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Stakes: VC rounds/estimates (private)."
   },
   {
@@ -24536,6 +24864,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Stakes: LSE Q3 2025 filings."
   },
   {
@@ -24854,6 +25184,8 @@
       }
     ],
     "location": "Las Vegas, NV, USA",
+    "latitude": 36.1699,
+    "longitude": -115.1398,
     "ownershipSources": "HQ: Official; Stakes: TKO Group post-2023 merger."
   },
   {
@@ -25013,6 +25345,8 @@
       }
     ],
     "location": "Chicago, IL, USA",
+    "latitude": 41.8781,
+    "longitude": -87.6298,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings."
   },
   {
@@ -25172,6 +25506,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Nonprofit structure."
   },
   {
@@ -25331,6 +25667,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: VC rounds 2025 (private)."
   },
   {
@@ -25437,6 +25775,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Founder-majority (private)."
   },
   {
@@ -25543,6 +25883,8 @@
       }
     ],
     "location": "Paris, France",
+    "latitude": 48.8566,
+    "longitude": 2.3522,
     "ownershipSources": "HQ: Official; Stakes: Euronext Q3 2025."
   },
   {
@@ -25649,6 +25991,8 @@
       }
     ],
     "location": "Tokyo, Japan",
+    "latitude": 35.6762,
+    "longitude": 139.6503,
     "ownershipSources": "HQ: Official; Stakes: TSE Q3 2025."
   },
   {
@@ -25702,6 +26046,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings."
   },
   {
@@ -25755,6 +26101,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Wholly owned by Flutter since 2025."
   },
   {
@@ -26020,6 +26368,8 @@
       }
     ],
     "location": "Chicago, IL, USA",
+    "latitude": 41.8781,
+    "longitude": -87.6298,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 filings."
   },
   {
@@ -26126,6 +26476,8 @@
       }
     ],
     "location": "Philadelphia, PA, USA",
+    "latitude": 39.9526,
+    "longitude": -75.1652,
     "ownershipSources": "HQ: Official; Closed all stores by Sep 2025; Stakes: Pre-liquidation 13F."
   },
   {
@@ -26232,6 +26584,8 @@
       }
     ],
     "location": "Atlanta, GA, USA",
+    "latitude": 33.749,
+    "longitude": -84.388,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F."
   },
   {
@@ -26285,6 +26639,8 @@
       }
     ],
     "location": "Phoenix, AZ, USA",
+    "latitude": 33.4484,
+    "longitude": -112.074,
     "ownershipSources": "HQ: Official; Nonprofit - major donors per IRS."
   },
   {
@@ -26444,6 +26800,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F."
   },
   {
@@ -26868,6 +27226,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Family trusts + 13F."
   },
   {
@@ -26921,6 +27281,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: 2024 funding rounds."
   },
   {
@@ -27027,6 +27389,8 @@
       }
     ],
     "location": "Seattle, WA, USA",
+    "latitude": 47.6062,
+    "longitude": -122.3321,
     "ownershipSources": "HQ: Official (Amazon); Stakes: Owned by Amazon."
   },
   {
@@ -27186,6 +27550,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: VC rounds 2025."
   },
   {
@@ -27822,6 +28188,8 @@
       }
     ],
     "location": "Las Vegas, NV, USA",
+    "latitude": 36.1699,
+    "longitude": -115.1398,
     "ownershipSources": "HQ: Official; Stakes: NYSE 13F + DoD investment 2025"
   },
   {
@@ -28246,6 +28614,8 @@
       }
     ],
     "location": "Las Vegas, NV, USA",
+    "latitude": 36.1699,
+    "longitude": -115.1398,
     "ownershipSources": "HQ: Official; Stakes: Owned by LBRY"
   },
   {
@@ -28617,6 +28987,8 @@
       }
     ],
     "location": "Tokyo, Japan",
+    "latitude": 35.6762,
+    "longitude": 139.6503,
     "ownershipSources": "HQ: Official; Stakes: TSE Q3 2025"
   },
   {
@@ -28723,6 +29095,8 @@
       }
     ],
     "location": "Houston, TX, USA",
+    "latitude": 29.7604,
+    "longitude": -95.3698,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -28776,6 +29150,8 @@
       }
     ],
     "location": "Miami, FL, USA",
+    "latitude": 25.7617,
+    "longitude": -80.1918,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -28829,6 +29205,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -28882,6 +29260,8 @@
       }
     ],
     "location": "Mountain View, CA, USA",
+    "latitude": 37.3861,
+    "longitude": -122.0839,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -28935,6 +29315,8 @@
       }
     ],
     "location": "Chicago, IL, USA",
+    "latitude": 41.8781,
+    "longitude": -87.6298,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -29041,6 +29423,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -29624,6 +30008,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings (Block Inc.)"
   },
   {
@@ -29677,6 +30063,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Acquired by Meta 2019"
   },
   {
@@ -29730,6 +30118,8 @@
       }
     ],
     "location": "Los Angeles, CA, USA",
+    "latitude": 34.0522,
+    "longitude": -118.2437,
     "ownershipSources": "HQ: Official; Private founder-owned"
   },
   {
@@ -29783,6 +30173,8 @@
       }
     ],
     "location": "Mountain View, CA, USA",
+    "latitude": 37.3861,
+    "longitude": -122.0839,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F (Broadcom)"
   },
   {
@@ -29942,6 +30334,8 @@
       }
     ],
     "location": "Washington, DC, USA",
+    "latitude": 38.9072,
+    "longitude": -77.0369,
     "ownershipSources": "HQ: Official; Nonprofit-owned"
   },
   {
@@ -29995,6 +30389,8 @@
       }
     ],
     "location": "Boston, MA, USA",
+    "latitude": 42.3601,
+    "longitude": -71.0589,
     "ownershipSources": "HQ: Official; Stakes: Acquired 2020 (GoTo)"
   },
   {
@@ -30101,6 +30497,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Acquired 2023"
   },
   {
@@ -30154,6 +30552,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official (WBD); Stakes: Q3 2025 13F"
   },
   {
@@ -30207,6 +30607,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Funding rounds 2025 (private)"
   },
   {
@@ -30419,6 +30821,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 filings"
   },
   {
@@ -31002,6 +31406,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 filings"
   },
   {
@@ -31267,6 +31673,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Owned by Sony Group"
   },
   {
@@ -31426,6 +31834,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -31532,6 +31942,8 @@
       }
     ],
     "location": "Washington, DC, USA",
+    "latitude": 38.9072,
+    "longitude": -77.0369,
     "ownershipSources": "HQ: Various; Collective membership-based structure"
   },
   {
@@ -31638,6 +32050,8 @@
       }
     ],
     "location": "Boston, MA, USA",
+    "latitude": 42.3601,
+    "longitude": -71.0589,
     "ownershipSources": "HQ: Official; Private equity-owned post-2021 acquisition"
   },
   {
@@ -31797,6 +32211,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -31903,6 +32319,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official (BuzzFeed); Acquired 2020"
   },
   {
@@ -31956,6 +32374,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 filings"
   },
   {
@@ -32009,6 +32429,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 filings"
   },
   {
@@ -32062,6 +32484,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Acquired by VF Corp 2020"
   },
   {
@@ -32486,6 +32910,8 @@
       }
     ],
     "location": "Washington, DC, USA",
+    "latitude": 38.9072,
+    "longitude": -77.0369,
     "ownershipSources": "HQ: Official; U.S. federal entity"
   },
   {
@@ -32539,6 +32965,8 @@
       }
     ],
     "location": "Mountain View, CA, USA",
+    "latitude": 37.3861,
+    "longitude": -122.0839,
     "ownershipSources": "HQ: Official; Wholly owned by Alphabet"
   },
   {
@@ -32592,6 +33020,8 @@
       }
     ],
     "location": "Washington, DC, USA",
+    "latitude": 38.9072,
+    "longitude": -77.0369,
     "ownershipSources": "HQ: Official; Donor-funded nonprofit"
   },
   {
@@ -32645,6 +33075,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Private equity-owned"
   },
   {
@@ -32857,6 +33289,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 filings"
   },
   {
@@ -32910,6 +33344,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Post-IPO filings"
   },
   {
@@ -32963,6 +33399,8 @@
       }
     ],
     "location": "Atlanta, GA, USA",
+    "latitude": 33.749,
+    "longitude": -84.388,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -33175,6 +33613,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -33599,6 +34039,8 @@
       }
     ],
     "location": "Seattle, WA, USA",
+    "latitude": 47.6062,
+    "longitude": -122.3321,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -33970,6 +34412,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Stakes: LSE Q3 2025"
   },
   {
@@ -34023,6 +34467,8 @@
       }
     ],
     "location": "Minneapolis, MN, USA",
+    "latitude": 44.9778,
+    "longitude": -93.265,
     "ownershipSources": "HQ: Official; Stakes: Private family-owned"
   },
   {
@@ -34129,6 +34575,8 @@
       }
     ],
     "location": "Boston, MA, USA",
+    "latitude": 42.3601,
+    "longitude": -71.0589,
     "ownershipSources": "HQ: Official; Stakes: Acquired by Avis in 2013"
   },
   {
@@ -34182,6 +34630,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -34288,6 +34738,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -34394,6 +34846,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -35030,6 +35484,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -35083,6 +35539,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Owned by Pearson plc"
   },
   {
@@ -35242,6 +35700,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Owned by Disney"
   },
   {
@@ -35295,6 +35755,8 @@
       }
     ],
     "location": "Washington, DC, USA",
+    "latitude": 38.9072,
+    "longitude": -77.0369,
     "ownershipSources": "HQ: Official; Private – owned by Vox Media"
   },
   {
@@ -35454,6 +35916,8 @@
       }
     ],
     "location": "Houston, TX, USA",
+    "latitude": 29.7604,
+    "longitude": -95.3698,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -35666,6 +36130,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Private founder-owned"
   },
   {
@@ -35825,6 +36291,8 @@
       }
     ],
     "location": "Boston, MA, USA",
+    "latitude": 42.3601,
+    "longitude": -71.0589,
     "ownershipSources": "HQ: Official; Private equity-owned"
   },
   {
@@ -35931,6 +36399,8 @@
       }
     ],
     "location": "Tokyo, Japan",
+    "latitude": 35.6762,
+    "longitude": 139.6503,
     "ownershipSources": "HQ: Official; Stakes: TSE Q3 2025"
   },
   {
@@ -36037,6 +36507,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official (Paramount); Stakes: Q3 2025"
   },
   {
@@ -36090,6 +36562,8 @@
       }
     ],
     "location": "Washington, DC, USA",
+    "latitude": 38.9072,
+    "longitude": -77.0369,
     "ownershipSources": "HQ: Official; Owned by Graham Holdings"
   },
   {
@@ -36196,6 +36670,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -36249,6 +36725,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Post-2025 funding round"
   },
   {
@@ -36355,6 +36833,8 @@
       }
     ],
     "location": "Houston, TX, USA",
+    "latitude": 29.7604,
+    "longitude": -95.3698,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -36408,6 +36888,8 @@
       }
     ],
     "location": "Denver, CO, USA",
+    "latitude": 39.7392,
+    "longitude": -104.9903,
     "ownershipSources": "HQ: Official; Stakes: NYSE Q3 2025"
   },
   {
@@ -36514,6 +36996,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Publicly funded via license fee"
   },
   {
@@ -36567,6 +37051,8 @@
       }
     ],
     "location": "Chicago, IL, USA",
+    "latitude": 41.8781,
+    "longitude": -87.6298,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -36620,6 +37106,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Private equity-owned"
   },
   {
@@ -36726,6 +37214,8 @@
       }
     ],
     "location": "Detroit, MI, USA",
+    "latitude": 42.3314,
+    "longitude": -83.0458,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -36779,6 +37269,8 @@
       }
     ],
     "location": "Pittsburgh, PA, USA",
+    "latitude": 40.4406,
+    "longitude": -79.9959,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -36832,6 +37324,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Family-controlled + Q3 2025 13F"
   },
   {
@@ -36885,6 +37379,8 @@
       }
     ],
     "location": "Washington, DC, USA",
+    "latitude": 38.9072,
+    "longitude": -77.0369,
     "ownershipSources": "HQ: Official; Owned by Laurene Powell Jobs"
   },
   {
@@ -37097,6 +37593,8 @@
       }
     ],
     "location": "Los Angeles, CA, USA",
+    "latitude": 34.0522,
+    "longitude": -118.2437,
     "ownershipSources": "HQ: Official; Owned by Anschutz Entertainment Group"
   },
   {
@@ -37150,6 +37648,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
   },
   {
@@ -37203,6 +37703,8 @@
       }
     ],
     "location": "Atlanta, GA, USA",
+    "latitude": 33.749,
+    "longitude": -84.388,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -37415,6 +37917,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Owned by Uber"
   },
   {
@@ -37521,6 +38025,8 @@
       }
     ],
     "location": "Atlanta, GA, USA",
+    "latitude": 33.749,
+    "longitude": -84.388,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -37733,6 +38239,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 filings"
   },
   {
@@ -37786,6 +38294,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Public service broadcaster"
   },
   {
@@ -37839,6 +38349,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -37892,6 +38404,8 @@
       }
     ],
     "location": "Miami, FL, USA",
+    "latitude": 25.7617,
+    "longitude": -80.1918,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -38051,6 +38565,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Owned by WBD"
   },
   {
@@ -38104,6 +38620,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official; Owned by Newhouse family"
   },
   {
@@ -38422,6 +38940,8 @@
       }
     ],
     "location": "Los Angeles, CA, USA",
+    "latitude": 34.0522,
+    "longitude": -118.2437,
     "ownershipSources": "HQ: Official; Private founder-owned"
   },
   {
@@ -38581,6 +39101,8 @@
       }
     ],
     "location": "Atlanta, GA, USA",
+    "latitude": 33.749,
+    "longitude": -84.388,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -38634,6 +39156,8 @@
       }
     ],
     "location": "Chicago, IL, USA",
+    "latitude": 41.8781,
+    "longitude": -87.6298,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -38687,6 +39211,8 @@
       }
     ],
     "location": "San Francisco, CA, USA",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
     "ownershipSources": "HQ: Official; Stakes: Post-2025 restructuring"
   },
   {
@@ -39005,6 +39531,8 @@
       }
     ],
     "location": "Dallas, TX, USA",
+    "latitude": 32.7767,
+    "longitude": -96.797,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -39111,6 +39639,8 @@
       }
     ],
     "location": "Boston, MA, USA",
+    "latitude": 42.3601,
+    "longitude": -71.0589,
     "ownershipSources": "HQ: Official; Private equity-owned"
   },
   {
@@ -39270,6 +39800,8 @@
       }
     ],
     "location": "Tokyo, Japan",
+    "latitude": 35.6762,
+    "longitude": 139.6503,
     "ownershipSources": "HQ: Official; Joint venture (rebranded to Fujifilm Business Innovation)"
   },
   {
@@ -39376,6 +39908,8 @@
       }
     ],
     "location": "Los Angeles, CA, USA",
+    "latitude": 34.0522,
+    "longitude": -118.2437,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F + insiders"
   },
   {
@@ -39482,6 +40016,8 @@
       }
     ],
     "location": "London, UK",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
     "ownershipSources": "HQ: Official; Owned by Scott Trust (nonprofit)"
   },
   {
@@ -39641,6 +40177,8 @@
       }
     ],
     "location": "Boston, MA, USA",
+    "latitude": 42.3601,
+    "longitude": -71.0589,
     "ownershipSources": "HQ: Official; Private founder-owned"
   },
   {
@@ -39747,6 +40285,8 @@
       }
     ],
     "location": "Los Angeles, CA, USA",
+    "latitude": 34.0522,
+    "longitude": -118.2437,
     "ownershipSources": "HQ: Official; Stakes: Creditor takeover 2025"
   },
   {
@@ -39853,6 +40393,8 @@
       }
     ],
     "location": "Seattle, WA, USA",
+    "latitude": 47.6062,
+    "longitude": -122.3321,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -40065,6 +40607,8 @@
       }
     ],
     "location": "Seattle, WA, USA",
+    "latitude": 47.6062,
+    "longitude": -122.3321,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   },
   {
@@ -40118,6 +40662,8 @@
       }
     ],
     "location": "Philadelphia, PA, USA",
+    "latitude": 39.9526,
+    "longitude": -75.1652,
     "ownershipSources": "HQ: Official; Owned by Exelon"
   },
   {
@@ -40330,6 +40876,8 @@
       }
     ],
     "location": "Tokyo, Japan",
+    "latitude": 35.6762,
+    "longitude": 139.6503,
     "ownershipSources": "HQ: Official; Stakes: TSE Q3 2025"
   },
   {
@@ -40383,6 +40931,8 @@
       }
     ],
     "location": "New York, NY, USA",
+    "latitude": 40.7128,
+    "longitude": -74.006,
     "ownershipSources": "HQ: Official (Paramount); Stakes: Q3 2025"
   },
   {
@@ -40436,6 +40986,8 @@
       }
     ],
     "location": "Houston, TX, USA",
+    "latitude": 29.7604,
+    "longitude": -95.3698,
     "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
   }
 ]
