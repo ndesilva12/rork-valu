@@ -26,7 +26,8 @@
         "name": "Nick Jonas",
         "relationship": "$2-3 million"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Uber",
@@ -55,7 +56,8 @@
         "name": "Amy Schumer",
         "relationship": "$1M (Tampax tie est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Hobby-Lobby",
@@ -84,7 +86,8 @@
         "name": "Tatertots & Jello",
         "relationship": "$10K (influencer est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "The-Walt-Disney-Company",
@@ -113,7 +116,8 @@
         "name": "Joseph Quinn",
         "relationship": "$30M (leading est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Tesla",
@@ -142,7 +146,8 @@
         "name": "Ron Perelman",
         "relationship": "$100M (investor)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Nike",
@@ -171,7 +176,8 @@
         "name": "Jon Rahm",
         "relationship": "$218M (golf)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Universal-Music-Group",
@@ -200,7 +206,8 @@
         "name": "Playboi Carti",
         "relationship": "$80M (album est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Spotify",
@@ -229,7 +236,8 @@
         "name": "Bill Simmons",
         "relationship": "$20M (Simmons Podcast)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Trump-Organization",
@@ -258,7 +266,8 @@
         "name": "Jeff Yass",
         "relationship": "$30M (donation)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Costco-Wholesale",
@@ -287,7 +296,8 @@
         "name": "Billie Eilish",
         "relationship": "$0 (organic fan)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Smith-&-Wesson",
@@ -316,7 +326,8 @@
         "name": "Gun YouTubers",
         "relationship": "$25K/post (promo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "NextEra-Energy",
@@ -345,7 +356,8 @@
         "name": "Florida Power Execs",
         "relationship": "$1.5M (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Lockheed-Martin",
@@ -374,7 +386,8 @@
         "name": "Harrison Ford",
         "relationship": "$0 (films organic)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "REI",
@@ -403,7 +416,8 @@
         "name": "KEEN Exec",
         "relationship": "$400K (footwear)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Chick-fil-A",
@@ -432,7 +446,8 @@
         "name": "Luke Bryan",
         "relationship": "$0 (promo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Huda-Beauty",
@@ -461,7 +476,8 @@
         "name": "Selena Gomez",
         "relationship": "$1.5M (est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Estée-Lauder",
@@ -490,7 +506,8 @@
         "name": "Shu Qi",
         "relationship": "$1M (global spokesperson)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Headspace",
@@ -519,7 +536,8 @@
         "name": "Gwyneth Paltrow",
         "relationship": "$200K (supporter)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "USAA",
@@ -548,7 +566,8 @@
         "name": "Larry Fitzgerald",
         "relationship": "$1M (initiative)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Boeing",
@@ -577,7 +596,8 @@
         "name": "Harrison Ford",
         "relationship": "$0 (films)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Procter-&-Gamble",
@@ -606,7 +626,8 @@
         "name": "Kate Upton",
         "relationship": "$3 million"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "X",
@@ -635,7 +656,8 @@
         "name": "Barack Obama",
         "relationship": "$0 (organic)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Proton",
@@ -664,7 +686,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Gazprom",
@@ -693,7 +716,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Elbit-Systems",
@@ -722,7 +746,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "LVMH",
@@ -751,7 +776,8 @@
         "name": "Emma Stone",
         "relationship": "Undisclosed (LV)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Eni",
@@ -780,7 +806,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Toyota",
@@ -809,7 +836,8 @@
         "name": "Beyoncé",
         "relationship": "$0 (organic)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Adidas",
@@ -838,7 +866,8 @@
         "name": "Patrick Mahomes",
         "relationship": "$100 million (aol.com)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Fidelity-Investments",
@@ -867,7 +896,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "ExxonMobil",
@@ -896,7 +926,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "JPMorgan-Chase",
@@ -925,7 +956,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Caterpillar",
@@ -954,7 +986,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Hershey-Company",
@@ -983,7 +1016,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "NVIDIA",
@@ -1012,7 +1046,8 @@
         "name": "Tench Coxe",
         "relationship": "Undisclosed (co-founder)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Vanguard",
@@ -1041,7 +1076,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Tucker-Carlson-Network",
@@ -1070,7 +1106,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Rumble",
@@ -1099,7 +1136,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Comcast",
@@ -1128,7 +1166,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Fox-Corporation",
@@ -1157,7 +1196,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Smurfit-WestRock",
@@ -1186,7 +1226,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Goldman-Sachs",
@@ -1215,7 +1256,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Palantir-Technologies",
@@ -1244,7 +1286,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "BlackRock",
@@ -1273,7 +1316,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Fenty-Beauty",
@@ -1302,7 +1346,8 @@
         "name": "Rosalía",
         "relationship": "Undisclosed (Vogue)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Patagonia",
@@ -1331,7 +1376,8 @@
         "name": "Ryan Gelb",
         "relationship": "Undisclosed (ambassador)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Microsoft",
@@ -1360,7 +1406,8 @@
         "name": "Megan Thee Stallion",
         "relationship": "Undisclosed (Copilot)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Beyond-Meat",
@@ -1389,7 +1436,8 @@
         "name": "Kyrie Irving",
         "relationship": "Undisclosed (investor)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Abeka",
@@ -1418,7 +1466,8 @@
         "name": "Siebert Family",
         "relationship": "Undisclosed (authors)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Keolis",
@@ -1447,7 +1496,8 @@
         "name": "Rachel Picard",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "The-Row",
@@ -1476,7 +1526,8 @@
         "name": "Hailey Bieber",
         "relationship": "Undisclosed (fan)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Shopify",
@@ -1505,7 +1556,8 @@
         "name": "Selena Gomez",
         "relationship": "Undisclosed (Rare Beauty)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Netflix",
@@ -1534,7 +1586,8 @@
         "name": "Bela Bajaria",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Publix",
@@ -1563,7 +1616,8 @@
         "name": "John Comer",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Yelp",
@@ -1592,7 +1646,8 @@
         "name": "Community Elites",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Meta-Platforms",
@@ -1621,7 +1676,8 @@
         "name": "Javier Olivan",
         "relationship": "Undisclosed (COO)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Google",
@@ -1650,7 +1706,8 @@
         "name": "Sergey Brin",
         "relationship": "Undisclosed (co-founder)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Constellation-Energy",
@@ -1679,7 +1736,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Teladoc-Health",
@@ -1708,7 +1766,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "McDonald's",
@@ -1737,7 +1796,8 @@
         "name": "Serena Williams",
         "relationship": "Undisclosed (mcdo-menu-guide)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "K11",
@@ -1766,7 +1826,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Zoom",
@@ -1795,7 +1856,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Upwork",
@@ -1824,7 +1886,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "OWN",
@@ -1853,7 +1916,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Amazon",
@@ -1882,7 +1946,8 @@
         "name": "Rocky Barnes",
         "relationship": "Undisclosed (Feedspot)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Alibaba",
@@ -1911,7 +1976,8 @@
         "name": "Simu Liu",
         "relationship": "Undisclosed (judge)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Telmex",
@@ -1940,7 +2006,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Tim-Hortons",
@@ -1969,7 +2036,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "HSBC",
@@ -1998,7 +2066,8 @@
         "name": "N/A",
         "relationship": "N/A"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Volkswagen",
@@ -2027,7 +2096,8 @@
         "name": "Oliver Blume",
         "relationship": "Undisclosed (CEO)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Tata-Group",
@@ -2056,7 +2126,8 @@
         "name": "Ratan Tata",
         "relationship": "Undisclosed (founder)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Airbnb",
@@ -2085,7 +2156,8 @@
         "name": "Kevin Hart",
         "relationship": "Undisclosed (Influencer Intelligence)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "SpaceX",
@@ -2114,7 +2186,8 @@
         "name": "Sergey Brin",
         "relationship": "Undisclosed (investor)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "SpringHill-Company",
@@ -2143,7 +2216,8 @@
         "name": "Barack Obama",
         "relationship": "Undisclosed (content partner)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Live-Nation",
@@ -2172,7 +2246,8 @@
         "name": "Madonna",
         "relationship": "Undisclosed (tour)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Onnit",
@@ -2201,7 +2276,8 @@
         "name": "Mark Sisson",
         "relationship": "Undisclosed (partner)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Trump-Media-&-Technology-Group",
@@ -2230,7 +2306,8 @@
         "name": "Hulk Hogan",
         "relationship": "Undisclosed (endorser)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Kaiser-Permanente",
@@ -2259,7 +2336,8 @@
         "name": "Andrew Wiggins",
         "relationship": "Undisclosed (NBA partner)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Sturm,-Ruger-&-Co.",
@@ -2288,7 +2366,8 @@
         "name": "Undisclosed (exec)",
         "relationship": "Tom Whitney"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Ørsted",
@@ -2317,7 +2396,8 @@
         "name": "Jeppe Borch",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Ben-&-Jerry's",
@@ -2346,7 +2426,8 @@
         "name": "Jimmy Fallon",
         "relationship": "Undisclosed (Influencer Intelligence)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Levi-Strauss-&-Co.",
@@ -2375,7 +2456,8 @@
         "name": "Xiye Bastida",
         "relationship": "Undisclosed (The Drum)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "The-Home-Depot",
@@ -2404,7 +2486,8 @@
         "name": "Paula Drake",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "RTX",
@@ -2433,7 +2516,8 @@
         "name": "Harrison Ford",
         "relationship": "Undisclosed (films)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Peloton",
@@ -2462,7 +2546,8 @@
         "name": "Cody Rigsby",
         "relationship": "Undisclosed (Time)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Calm",
@@ -2491,7 +2576,8 @@
         "name": "Tamra Davis",
         "relationship": "Undisclosed (contributor)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Kroger",
@@ -2520,7 +2606,8 @@
         "name": "Tim McCoy",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Signal",
@@ -2549,7 +2636,8 @@
         "name": "Meredith Whittaker",
         "relationship": "Undisclosed (president)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Rosneft",
@@ -2578,7 +2666,8 @@
         "name": "Lee Young-soo",
         "relationship": "Undisclosed (partner)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Rafael-Advanced-Defense-Systems",
@@ -2607,7 +2696,8 @@
         "name": "Yossi Levy",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Airbus",
@@ -2636,7 +2726,8 @@
         "name": "Julie Kitcher",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Ferrari",
@@ -2665,7 +2756,8 @@
         "name": "Michael B. Jordan",
         "relationship": "Undisclosed (BookingAgentInfo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Sony",
@@ -2694,7 +2786,8 @@
         "name": "Ava Kolker",
         "relationship": "Undisclosed (Sony)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "PepsiCo",
@@ -2723,7 +2816,8 @@
         "name": "Travis Scott",
         "relationship": "Undisclosed (MarketingDive)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "RTX-(Raytheon-Technologies)",
@@ -2752,7 +2846,8 @@
         "name": "Harrison Ford",
         "relationship": "Undisclosed (films)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "H-E-B",
@@ -2781,7 +2876,8 @@
         "name": "Craig Boyan",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Verizon",
@@ -2810,7 +2906,8 @@
         "name": "Rainn Wilson",
         "relationship": "Undisclosed (AdAge)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Alphabet",
@@ -2839,7 +2936,8 @@
         "name": "Ruth Porat",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "L3Harris",
@@ -2868,7 +2966,8 @@
         "name": "David Adams",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Wells-Fargo",
@@ -2897,7 +2996,8 @@
         "name": "Richard Madian",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "MyPillow",
@@ -2926,7 +3026,8 @@
         "name": "Sidney Powell",
         "relationship": "Undisclosed (supporter)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "News-Corporation",
@@ -2955,7 +3056,8 @@
         "name": "Rupert Murdoch",
         "relationship": "Undisclosed (founder)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "GFL-Environmental",
@@ -2984,7 +3086,8 @@
         "name": "Michelle Whittemore",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Coca-Cola",
@@ -3013,7 +3116,8 @@
         "name": "Ranbir Kapoor",
         "relationship": "Undisclosed (Tring)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Coinbase",
@@ -3042,7 +3146,8 @@
         "name": "Maisie Williams",
         "relationship": "Undisclosed (Binance)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Impossible-Foods",
@@ -3071,7 +3176,8 @@
         "name": "Trevor Noah",
         "relationship": "Undisclosed (CNN)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Sonlight",
@@ -3100,7 +3206,8 @@
         "name": "Homeschool Influencers",
         "relationship": "Undisclosed (Affiliate Prog)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Transdev",
@@ -3129,7 +3236,8 @@
         "name": "Jean-Eudes Trelay",
         "relationship": "Undisclosed (Exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "COS",
@@ -3158,7 +3266,8 @@
         "name": "Gwyneth Paltrow",
         "relationship": "Undisclosed (The Guardian)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Stripe",
@@ -3187,7 +3296,8 @@
         "name": "Patrick McHenry",
         "relationship": "Undisclosed (Politico)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "TOMS",
@@ -3216,7 +3326,8 @@
         "name": "Anissa Rodriguez",
         "relationship": "Undisclosed (StealHerStyle)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Chobani",
@@ -3245,7 +3356,8 @@
         "name": "Athlete Partners",
         "relationship": "Undisclosed (Company)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Instagram",
@@ -3274,7 +3386,8 @@
         "name": "Selena Gomez",
         "relationship": "Undisclosed (Influencer)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "The-Body-Shop",
@@ -3303,7 +3416,8 @@
         "name": "Changemakers",
         "relationship": "Undisclosed (MarketingDive)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Warner-Bros.-Discovery",
@@ -3332,7 +3446,8 @@
         "name": "Paramount Skydance",
         "relationship": "Undisclosed (Reuters)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Exelon",
@@ -3361,7 +3476,8 @@
         "name": "A. Roy Pottle",
         "relationship": "Undisclosed (Exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Amwell",
@@ -3390,7 +3506,8 @@
         "name": "Jayne Morgan",
         "relationship": "Undisclosed (Instagram)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Stride",
@@ -3419,7 +3536,8 @@
         "name": "Leslie J. Miller",
         "relationship": "Undisclosed (Exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Slack",
@@ -3448,7 +3566,8 @@
         "name": "AI Leaders",
         "relationship": "Undisclosed (MIT Sloan)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Fiverr",
@@ -3477,7 +3596,8 @@
         "name": "Pro Sellers",
         "relationship": "Undisclosed (Fiverr)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Rivian",
@@ -3506,7 +3626,8 @@
         "name": "Volkswagen",
         "relationship": "$5B (Forbes)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Dove",
@@ -3535,7 +3656,8 @@
         "name": "Gabrielle Union",
         "relationship": "Undisclosed (Dove)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Harpo-Productions",
@@ -3564,7 +3686,8 @@
         "name": "Gayle King",
         "relationship": "Undisclosed (Talent)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Whole-Foods",
@@ -3593,7 +3716,8 @@
         "name": "Anne Hathaway",
         "relationship": "Undisclosed (HuffPost)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Huawei",
@@ -3622,7 +3746,8 @@
         "name": "Henry Cavill",
         "relationship": "Undisclosed (Past Ambassador)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Grupo-Bimbo",
@@ -3651,7 +3776,8 @@
         "name": "Roberto Servitje",
         "relationship": "Undisclosed (Exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Shoppers-Drug-Mart",
@@ -3680,7 +3806,8 @@
         "name": "Retail Execs",
         "relationship": "Undisclosed (Exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Barclays",
@@ -3709,7 +3836,8 @@
         "name": "Sports Sponsors",
         "relationship": "Undisclosed (Barclays)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Reliance-Industries",
@@ -3738,7 +3866,8 @@
         "name": "Jio Platforms",
         "relationship": "Undisclosed (Subsidiary)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "xAI",
@@ -3767,7 +3896,8 @@
         "name": "Greg Yang",
         "relationship": "Undisclosed (Observer)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Liverpool-FC",
@@ -3796,7 +3926,8 @@
         "name": "Alexis Mac Allister",
         "relationship": "$10.14M/year (BeInSports)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Ticketmaster",
@@ -3825,7 +3956,8 @@
         "name": "Robert Smith",
         "relationship": "Undisclosed (Guardian)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Athletic-Greens",
@@ -3854,7 +3986,8 @@
         "name": "Chidera Ejikeme",
         "relationship": "$25/month lifetime (X post)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Bass-Pro-Shops",
@@ -3883,7 +4016,8 @@
         "name": "Kevin VanDam",
         "relationship": "Undisclosed (MLF)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Vestas-Wind-Systems",
@@ -3912,7 +4046,8 @@
         "name": "Julie Kitcher",
         "relationship": "€800K+ est. (Vestas Report)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "In-N-Out-Burger",
@@ -3941,7 +4076,8 @@
         "name": "Olivia Munn",
         "relationship": "$0 paid (organic) (Vogue)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Wardah-Cosmetics",
@@ -3970,7 +4106,8 @@
         "name": "Syifa Hadju",
         "relationship": "Undisclosed (Instagram)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "PrAna",
@@ -3999,7 +4136,8 @@
         "name": "Michaela Kiersch",
         "relationship": "Undisclosed (prAna)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Intel",
@@ -4028,7 +4166,8 @@
         "name": "Jim Johnson",
         "relationship": "Undisclosed (Intel Newsroom)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "MasterClass",
@@ -4057,7 +4196,8 @@
         "name": "Natalie Portman",
         "relationship": "$100K+ upfront (Hollywood Reporter)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Lululemon",
@@ -4086,7 +4226,8 @@
         "name": "DK Metcalf",
         "relationship": "$1M+ est. (Lululemon)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Whole-Foods-Market",
@@ -4115,7 +4256,8 @@
         "name": "Rachel Ama",
         "relationship": "Undisclosed (Influencer Intelligence)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Talkspace",
@@ -4144,7 +4286,8 @@
         "name": "Kristen Bell",
         "relationship": "Undisclosed (PCMag)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Substack",
@@ -4173,7 +4316,8 @@
         "name": "Matt Taibbi",
         "relationship": "$1M+ (Amra & Elma)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "DuckDuckGo",
@@ -4202,7 +4346,8 @@
         "name": "Jason Calacanis",
         "relationship": "Undisclosed (Investor)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Lukoil",
@@ -4231,7 +4376,8 @@
         "name": "Oleg Pashaev",
         "relationship": "Undisclosed (Lukoil)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Israel-Aerospace-Industries-(IAI)",
@@ -4260,7 +4406,8 @@
         "name": "Nir Reiss",
         "relationship": "$500M+ est. (RocketReach)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "TotalEnergies",
@@ -4289,7 +4436,8 @@
         "name": "Emma Raducanu",
         "relationship": "$1M+ est. (FIFA)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Stellantis",
@@ -4318,7 +4466,8 @@
         "name": "Jack Black",
         "relationship": "Undisclosed (Jeep)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Honda",
@@ -4347,7 +4496,8 @@
         "name": "Max Verstappen",
         "relationship": "Undisclosed (F1)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Anheuser-Busch-InBev",
@@ -4376,7 +4526,8 @@
         "name": "Shane Smith",
         "relationship": "Undisclosed (Budweiser)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Biogen",
@@ -4405,7 +4556,8 @@
         "name": "Jack Osbourne",
         "relationship": "Undisclosed (Advocate)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Publix-Super-Markets",
@@ -4434,7 +4586,8 @@
         "name": "John Comer",
         "relationship": "Undisclosed (Exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Pfizer",
@@ -4463,7 +4616,8 @@
         "name": "Bill Gates",
         "relationship": "$10B+ investment (Gates Foundation)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Nationwide",
@@ -4492,7 +4646,8 @@
         "name": "Bubba Wallace",
         "relationship": "Undisclosed (Partner)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "UPMC",
@@ -4521,7 +4676,8 @@
         "name": "Franco Harris",
         "relationship": "Undisclosed (Legacy)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Blackstone",
@@ -4550,7 +4706,8 @@
         "name": "Elliot Stein",
         "relationship": "Undisclosed (Exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Newsmax",
@@ -4579,7 +4736,8 @@
         "name": "Diamond & Silk",
         "relationship": "Undisclosed (Contributors)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "The-Wall-Street-Journal",
@@ -4608,7 +4766,8 @@
         "name": "Paul Gigot",
         "relationship": "Undisclosed (Columnist)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "First-Solar",
@@ -4637,7 +4796,8 @@
         "name": "Michael Koralewski",
         "relationship": "Undisclosed (Exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Morgan-Stanley",
@@ -4666,7 +4826,8 @@
         "name": "Sharon Yeshaya",
         "relationship": "Undisclosed (Exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Heritage-Foundation",
@@ -4695,7 +4856,8 @@
         "name": "Rachel Greszler",
         "relationship": "Undisclosed (Exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Unilever",
@@ -4724,7 +4886,8 @@
         "name": "Jane Fonda",
         "relationship": "Undisclosed (Advocate)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Binance",
@@ -4753,7 +4916,8 @@
         "name": "Caroline Marin",
         "relationship": "Undisclosed (Exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Oatly",
@@ -4782,7 +4946,8 @@
         "name": "Alicia Silverstone",
         "relationship": "Undisclosed (Advocate)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Timberdoodle",
@@ -4811,7 +4976,8 @@
         "name": "Curriculum Authors",
         "relationship": "Undisclosed (Contributors)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "First-Transit",
@@ -4840,7 +5006,8 @@
         "name": "Transit Partners",
         "relationship": "Undisclosed (Collaborators)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Totême",
@@ -4869,7 +5036,8 @@
         "name": "Alexa Chung",
         "relationship": "Undisclosed (Fan)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Disney",
@@ -4898,7 +5066,8 @@
         "name": "Dwayne Johnson",
         "relationship": "$50M+ (Jungle Cruise) (Forbes)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Chevron",
@@ -4927,7 +5096,8 @@
         "name": "Rickie Fowler",
         "relationship": "Undisclosed (Partner)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "WhatsApp",
@@ -4956,7 +5126,8 @@
         "name": "Sheryl Sandberg",
         "relationship": "Undisclosed (Oversight)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Lush",
@@ -4985,7 +5156,8 @@
         "name": "Mark Constantine",
         "relationship": "Undisclosed (Founder)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Universal-Pictures",
@@ -5014,7 +5186,8 @@
         "name": "Jonathan Bailey",
         "relationship": "$2M (Jurassic Rebirth) (FandomWire)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Salesforce",
@@ -5043,7 +5216,8 @@
         "name": "Amy Weaver",
         "relationship": "Undisclosed (Former CRO)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "MDLIVE",
@@ -5072,7 +5246,8 @@
         "name": "Chris Altchek",
         "relationship": "Undisclosed (Founder)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Connections-Academy",
@@ -5101,7 +5276,8 @@
         "name": "Coursera Collaborators",
         "relationship": "Undisclosed (Courses)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Microsoft-Teams",
@@ -5130,7 +5306,8 @@
         "name": "Steven Spielberg",
         "relationship": "Undisclosed (Partner)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Toptal",
@@ -5159,7 +5336,8 @@
         "name": "Manav Sachdeva",
         "relationship": "Undisclosed (Exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Lucid-Motors",
@@ -5188,7 +5366,8 @@
         "name": "Tony Alva",
         "relationship": "Undisclosed (Ambassador)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Aerie",
@@ -5217,7 +5396,8 @@
         "name": "Ali Stroker",
         "relationship": "Undisclosed (Role Model) (Fashionista)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Weight-Watchers",
@@ -5246,7 +5426,8 @@
         "name": "Marie Osmond",
         "relationship": "Undisclosed (ETOnline)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Blue-Origin",
@@ -5275,7 +5456,8 @@
         "name": "NASA Collaborators",
         "relationship": "Undisclosed (Partnerships)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Sberbank",
@@ -5304,7 +5486,8 @@
         "name": "Anatoly Popov",
         "relationship": "Undisclosed (Exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "ByteDance",
@@ -5333,7 +5516,8 @@
         "name": "Stokes Twins",
         "relationship": "$150K/post (MarketRealist)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "CEMEX",
@@ -5362,7 +5546,8 @@
         "name": "Cemex Ventures",
         "relationship": "Undisclosed (Startups)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Rogers-Communications",
@@ -5391,7 +5576,8 @@
         "name": "Lourdes Agapay",
         "relationship": "Undisclosed (Exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "BMW",
@@ -5420,7 +5606,8 @@
         "name": "Gigi Hadid",
         "relationship": "Undisclosed (InfluencerIntelligence)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Infosys",
@@ -5449,7 +5636,8 @@
         "name": "Michael Reh",
         "relationship": "Undisclosed (Exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Goya-Foods",
@@ -5478,7 +5666,8 @@
         "name": "Anthony Unanue",
         "relationship": "Undisclosed (Exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Target",
@@ -5507,7 +5696,8 @@
         "name": "Goodfellow Collab",
         "relationship": "Undisclosed (Fashion)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Neuralink",
@@ -5536,7 +5726,8 @@
         "name": "G42",
         "relationship": "Undisclosed (Investor)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Blaze-Pizza",
@@ -5565,7 +5756,8 @@
         "name": "Jim Mizes",
         "relationship": "Undisclosed (Exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Black-Rifle-Coffee-Company",
@@ -5594,7 +5786,8 @@
         "name": "Tom Lauren",
         "relationship": "Undisclosed (Influencer) (SBI)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Meta",
@@ -5623,7 +5816,8 @@
         "name": "Selena Gomez",
         "relationship": "$100K/post est. (MarketRealist)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Cabela's",
@@ -5652,7 +5846,8 @@
         "name": "Kevin VanDam",
         "relationship": "Undisclosed (MLF)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Northrop-Grumman",
@@ -5681,7 +5876,8 @@
         "name": "Christopher Calio",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Costco",
@@ -5710,7 +5906,8 @@
         "name": "Jessica Alba",
         "relationship": "$0 paid (organic advocate)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Tyson-Foods",
@@ -5739,7 +5936,8 @@
         "name": "Wes Morris",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Saffron-Road",
@@ -5768,7 +5966,8 @@
         "name": "Halal Advocates",
         "relationship": "Undisclosed (endorsers)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Starbucks",
@@ -5797,7 +5996,8 @@
         "name": "LA28 Olympics",
         "relationship": "Undisclosed (partner)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "DharmaCrafts",
@@ -5826,7 +6026,8 @@
         "name": "Buddhist Leaders",
         "relationship": "Undisclosed (supporters)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Lowe's",
@@ -5855,7 +6056,8 @@
         "name": "GE Appliances",
         "relationship": "Undisclosed (vendor)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "General-Motors",
@@ -5884,7 +6086,8 @@
         "name": "Rory Harvey",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Duolingo",
@@ -5913,7 +6116,8 @@
         "name": "LinkedIn Partners",
         "relationship": "Undisclosed (integration)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Planet-Fitness",
@@ -5942,7 +6146,8 @@
         "name": "National Fitness Partners",
         "relationship": "Undisclosed (franchise)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Fitbit",
@@ -5971,7 +6176,8 @@
         "name": "Retail Partners",
         "relationship": "Undisclosed (Best Buy etc.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "BetterHelp",
@@ -6000,7 +6206,8 @@
         "name": "Jonny Kim",
         "relationship": "Undisclosed (advocate)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Telegram",
@@ -6029,7 +6236,8 @@
         "name": "Ad Platforms",
         "relationship": "Undisclosed (RichAds)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Brave",
@@ -6058,7 +6266,8 @@
         "name": "Tech Advocates",
         "relationship": "Undisclosed (supporters)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Walmart",
@@ -6087,7 +6296,8 @@
         "name": "Jennifer Lopez",
         "relationship": "$5M+ est. (Forbes)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "L'Oréal",
@@ -6116,7 +6326,8 @@
         "name": "Kate Winslet",
         "relationship": "Undisclosed (ambassador)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "EssilorLuxottica",
@@ -6145,7 +6356,8 @@
         "name": "Ariana Grande",
         "relationship": "Undisclosed (EssilorLuxottica)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Nintendo",
@@ -6174,7 +6386,8 @@
         "name": "Chrissy Teigen",
         "relationship": "$0 paid (organic) (CBR)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "NBCUniversal",
@@ -6203,7 +6416,8 @@
         "name": "Jonathan Bailey",
         "relationship": "$2M (FandomWire)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Fanatics",
@@ -6232,7 +6446,8 @@
         "name": "Michael Rubin",
         "relationship": "Undisclosed (CEO)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Vertex-Pharmaceuticals",
@@ -6261,7 +6476,8 @@
         "name": "Robin Roberts",
         "relationship": "Undisclosed (spokesperson)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Dell-Technologies",
@@ -6290,7 +6506,8 @@
         "name": "David Beckham",
         "relationship": "Undisclosed (partner) (Forbes)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Carnival-Corporation",
@@ -6319,7 +6536,8 @@
         "name": "Lars Ljoen",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Citigroup",
@@ -6348,7 +6566,8 @@
         "name": "Kweku Adoboli",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Abbott-Laboratories",
@@ -6377,7 +6596,8 @@
         "name": "Robert H. Reeder Jr.",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Cardinal-Health",
@@ -6406,7 +6626,8 @@
         "name": "Steve Howell",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "PNC-Financial-Services",
@@ -6435,7 +6656,8 @@
         "name": "Deborah Hope",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "PureTalk",
@@ -6464,7 +6686,8 @@
         "name": "Dennis Prager",
         "relationship": "$100K est. (endorser) (PureTalk)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "New-York-Post",
@@ -6493,7 +6716,8 @@
         "name": "Miranda Devine",
         "relationship": "Undisclosed (columnist)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Liberty-Broadband",
@@ -6522,7 +6746,8 @@
         "name": "Albert Rosenthal",
         "relationship": "Undisclosed (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Focus-on-the-Family",
@@ -6551,7 +6776,8 @@
         "name": "Tucker Carlson",
         "relationship": "$0 paid (supporter) (Forbes est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Kraken",
@@ -6580,7 +6806,8 @@
         "name": "Changpeng Zhao",
         "relationship": "Undisclosed (rival)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Daiya-Foods",
@@ -6609,7 +6836,8 @@
         "name": "Otsuka (acquirer)",
         "relationship": "$325M (FoodDive)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Alpha-Omega",
@@ -6638,7 +6866,8 @@
         "name": "Faith-Based Leaders",
         "relationship": "Undisclosed (supporters)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "National-Express",
@@ -6667,7 +6896,8 @@
         "name": "Sustainability Advocates",
         "relationship": "Undisclosed (endorsers)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Peter-Do",
@@ -6696,7 +6926,8 @@
         "name": "Addison Rae",
         "relationship": "Undisclosed (wearer) (Instagram)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Etsy",
@@ -6725,7 +6956,8 @@
         "name": "Jonathan Van Ness",
         "relationship": "Undisclosed (collab) (Reddit)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Democratic-Socialists-of-America",
@@ -6754,7 +6986,8 @@
         "name": "Cori Bush",
         "relationship": "$0 paid (member) (Wikipedia)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Oculus",
@@ -6783,7 +7016,8 @@
         "name": "Brendan Iribe",
         "relationship": "Undisclosed (co-founder) (GamesRadar)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Paramount-Global",
@@ -6812,7 +7046,8 @@
         "name": "Bob Bakish",
         "relationship": "Undisclosed (former CEO) (Statista)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Nvidia",
@@ -6841,7 +7076,8 @@
         "name": "Lisa Su (AMD rival)",
         "relationship": "Undisclosed (industry) (Bloomberg)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "GE-Hitachi",
@@ -6870,7 +7106,8 @@
         "name": "SNC-Lavalin",
         "relationship": "Undisclosed (SMR) (Utility Dive)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Doctor-on-Demand",
@@ -6899,7 +7136,8 @@
         "name": "GoodRx Partners",
         "relationship": "Undisclosed (integration) (GoodRx)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Excelsior-Academy",
@@ -6928,7 +7166,8 @@
         "name": "Grace Community Church",
         "relationship": "Undisclosed (co-op) (The Homeschool Mom)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Google-Workspace",
@@ -6957,7 +7196,8 @@
         "name": "Nonprofits",
         "relationship": "Discounts up to 50% (Promevo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Freelancer.com",
@@ -6986,7 +7226,8 @@
         "name": "High-Paying Clients",
         "relationship": "$2.5K avg. project (Nick Wolny)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Polestar",
@@ -7015,7 +7256,8 @@
         "name": "Super Bowl Advertisers",
         "relationship": "Undisclosed (campaign) (AutoNews)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Old-Navy",
@@ -7044,7 +7286,8 @@
         "name": "Goodfellow",
         "relationship": "Undisclosed (fashion) (Gap Inc.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "O-Magazine",
@@ -7073,7 +7316,8 @@
         "name": "Dr. Mehmet Oz",
         "relationship": "Undisclosed (contributor) (ABC News)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Washington-Post",
@@ -7102,7 +7346,8 @@
         "name": "Ruth Marcus",
         "relationship": "Undisclosed (columnist) (Washington Post)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "WeChat",
@@ -7131,7 +7376,8 @@
         "name": "Adhisty Zara",
         "relationship": "Undisclosed (influencer) (Jing Daily)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Grupo-Modelo",
@@ -7160,7 +7406,8 @@
         "name": "Francisco Lindor",
         "relationship": "Undisclosed (ad) (Ad Age)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Loblaws",
@@ -7189,7 +7436,8 @@
         "name": "Food Banks Canada",
         "relationship": "$1B+ donations (Loblaw)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Vodafone",
@@ -7218,7 +7466,8 @@
         "name": "AI Influencer (Germany)",
         "relationship": "2M views (SmartCompany)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Mercedes-Benz",
@@ -7247,7 +7496,8 @@
         "name": "Beyoncé",
         "relationship": "Undisclosed (Quartz)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Wipro",
@@ -7276,7 +7526,8 @@
         "name": "Metro Cash & Carry",
         "relationship": "Undisclosed (Google Cloud) (Google Cloud)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Overstock",
@@ -7305,7 +7556,8 @@
         "name": "Zendaya",
         "relationship": "Undisclosed (fashion tie-in) (Forbes)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Anheuser-Busch",
@@ -7334,7 +7586,8 @@
         "name": "Tracee Ellis Ross",
         "relationship": "Undisclosed (Bud Light) (PRNewswire)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "The-Boring-Company",
@@ -7363,7 +7616,8 @@
         "name": "AREA15",
         "relationship": "Undisclosed (LVCC tour) (FTE)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Beats-by-Dre",
@@ -7392,7 +7646,8 @@
         "name": "Lil Wayne",
         "relationship": "$5M+ est. (Forbes list)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "AT&T",
@@ -7421,7 +7676,8 @@
         "name": "Angela Kinsey",
         "relationship": "Undisclosed (Office ads) (MediaPost)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Manscaped",
@@ -7450,7 +7706,8 @@
         "name": "Influencers (2,000+)",
         "relationship": "$3.3M total (NeoReach)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Daniel-Defense",
@@ -7479,7 +7736,8 @@
         "name": "Exec Team",
         "relationship": "Undisclosed (internal) (LinkedIn)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Enphase-Energy",
@@ -7508,7 +7766,8 @@
         "name": "GAMMA Investing",
         "relationship": "$ small stake (MarketBeat)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "General-Dynamics",
@@ -7537,7 +7796,8 @@
         "name": "Shield AI",
         "relationship": "Undisclosed (partner) (Euro-SD)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Equal-Exchange",
@@ -7566,7 +7826,8 @@
         "name": "Alternative Trader",
         "relationship": "Undisclosed (profile) (EqualExchange)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Forever-20",
@@ -7595,7 +7856,8 @@
         "name": "Frankie and the Studs",
         "relationship": "Undisclosed (festival) (Authentic)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "INIKA-Organic",
@@ -7624,7 +7886,8 @@
         "name": "Award Winners",
         "relationship": "Undisclosed (Green Beauty) (INIKA)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Buddha-Groove",
@@ -7653,7 +7916,8 @@
         "name": "Hannah Ciordas",
         "relationship": "Undisclosed (influencer) (Modash)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Ford",
@@ -7682,7 +7946,8 @@
         "name": "Truck Buyers",
         "relationship": "Undisclosed (loyalty) (FordAuthority)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Robinhood",
@@ -7711,7 +7976,8 @@
         "name": "Ray Dalio",
         "relationship": "Undisclosed (influencer) (SovereignBoss)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Under-Armour",
@@ -7740,7 +8006,8 @@
         "name": "Cam Ward",
         "relationship": "Undisclosed (NFL draft) (UnderArmour)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Mullvad",
@@ -7769,7 +8036,8 @@
         "name": "Resellers",
         "relationship": "Undisclosed (distributors) (Mullvad)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Novatek",
@@ -7798,7 +8066,8 @@
         "name": "Alfa Fortress",
         "relationship": "Undisclosed (investor) (Tracxn)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Raytheon-Technologies",
@@ -7827,7 +8096,8 @@
         "name": "Anduril",
         "relationship": "Undisclosed (test) (RTX)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Renault",
@@ -7856,7 +8126,8 @@
         "name": "George Russell",
         "relationship": "$5M/year est. (F1) (Spotrac)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Enel",
@@ -7885,7 +8156,8 @@
         "name": "Sustainability Partners",
         "relationship": "Undisclosed (initiatives) (Enel)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "SoftBank",
@@ -7914,7 +8186,8 @@
         "name": "Robert Pattinson",
         "relationship": "Undisclosed (Dior) (EnterpriseWorld)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Dunkin'-Brands",
@@ -7943,7 +8216,8 @@
         "name": "Joey Fatone",
         "relationship": "Undisclosed (ads) (NRN)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Southwest-Airlines",
@@ -7972,7 +8246,8 @@
         "name": "Premium Travelers",
         "relationship": "Undisclosed (upgrades) (Yahoo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Royal-Caribbean-International",
@@ -8001,7 +8276,8 @@
         "name": "Cruise Influencers",
         "relationship": "$50K+ est. (onboard) (RoyalCaribbean)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Walgreens-Boots-Alliance",
@@ -8030,7 +8306,8 @@
         "name": "Pharmacy Advocates",
         "relationship": "Undisclosed (campaigns) (WBA)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Progressive",
@@ -8059,7 +8336,8 @@
         "name": "Influencer Partners",
         "relationship": "$100K+ est. (EnterpriseWorld)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Giant-Eagle",
@@ -8088,7 +8366,8 @@
         "name": "Community Partners",
         "relationship": "Undisclosed (local) (GiantEagle)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Blackstone-Group",
@@ -8117,7 +8396,8 @@
         "name": "Distributable Earnings",
         "relationship": "$1.9B Q3 (TipRanks)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Ford-Motor-Company",
@@ -8146,7 +8426,8 @@
         "name": "Powell (Rashad)",
         "relationship": "Undisclosed (past) (Quartz)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "HarperCollins",
@@ -8175,7 +8456,8 @@
         "name": "Microsoft Partners",
         "relationship": "$5K per title (Musically)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "AstraZeneca",
@@ -8204,7 +8486,8 @@
         "name": "CER Growth Investors",
         "relationship": "Undisclosed (presentation) (AstraZeneca)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "National-Right-to-Life",
@@ -8233,7 +8516,8 @@
         "name": "Pro-Life Candidates",
         "relationship": "$485K outside (OpenSecrets)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Allbirds",
@@ -8262,7 +8546,8 @@
         "name": "Venture Backers",
         "relationship": "$100M+ funding (ResidualThoughts)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Bitfinex",
@@ -8291,7 +8576,8 @@
         "name": "Floyd Mayweather",
         "relationship": "Undisclosed (holdings) (FinanceMonthly)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Gardein",
@@ -8320,7 +8606,8 @@
         "name": "Prenuvo Advocates",
         "relationship": "Undisclosed (trust) (Forbes)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Foundation-Worldview",
@@ -8349,7 +8636,8 @@
         "name": "Andrew Pudewa",
         "relationship": "$30K est. (guest instructor) (event fees)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "ComfortDelGro",
@@ -8378,7 +8666,8 @@
         "name": "Stanley Leow",
         "relationship": "$900K est. (exec) (Statista)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Filippa-K",
@@ -8407,7 +8696,8 @@
         "name": "Alexa Chung",
         "relationship": "$75K est. (fan collab) (Grazia)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Facebook",
@@ -8436,7 +8726,8 @@
         "name": "Kylie Jenner",
         "relationship": "$12.5K-25K/post (Shopify influencers)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Sony-Pictures",
@@ -8465,7 +8756,8 @@
         "name": "Timothée Chalamet",
         "relationship": "$12M max (Forbes 2025 highest)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Westinghouse",
@@ -8494,7 +8786,8 @@
         "name": "Brookfield Execs",
         "relationship": "$7.9B stake value (Cameco acquisition)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Included-Health",
@@ -8523,7 +8816,8 @@
         "name": "Jason Gorevic",
         "relationship": "$114K min (former CEO est.) (Comparably)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "American-Heritage-Academy",
@@ -8552,7 +8846,8 @@
         "name": "Community Donors",
         "relationship": "$20K est. (supporters) (NellisHousing)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Dropbox",
@@ -8581,7 +8876,8 @@
         "name": "Adi Sidler",
         "relationship": "$350K est. (exec) (Levels.fyi)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Guru",
@@ -8610,7 +8906,8 @@
         "name": "Kirsty McCubbin",
         "relationship": "$300K est. (top earner) (InfluencerMarketingHub)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Hyundai-Ioniq",
@@ -8639,7 +8936,8 @@
         "name": "Randall Park",
         "relationship": "$1.5M est. (ads) (Hyundai)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Discovery-Channel",
@@ -8668,7 +8966,8 @@
         "name": "James May",
         "relationship": "$10M est. (Grand Tour) (Forbes)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Audible",
@@ -8697,7 +8996,8 @@
         "name": "Celebrity Narrators",
         "relationship": "$200K est. (premium) (Jane Friedman)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "China-Mobile",
@@ -8726,7 +9026,8 @@
         "name": "Rong Hua Li",
         "relationship": "$180K est. (exec) (Marketscreener)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Canadian-Tire",
@@ -8755,7 +9056,8 @@
         "name": "David Court",
         "relationship": "$1.2M est. (exec) (Payscale)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "BP",
@@ -8784,7 +9086,8 @@
         "name": "Helge Lund",
         "relationship": "$5M (chair est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Deutsche-Telekom",
@@ -8813,7 +9116,8 @@
         "name": "Srini Gopalan",
         "relationship": "$2.5M (CEO Americas est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Zee-Entertainment",
@@ -8842,7 +9146,8 @@
         "name": "Saurav Adhikari",
         "relationship": "$700K (director est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "L.L.-Bean",
@@ -8871,7 +9176,8 @@
         "name": "Store Expansion Leads",
         "relationship": "$60 stores value"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Capital-One",
@@ -8900,7 +9206,8 @@
         "name": "Miles Transfer Users",
         "relationship": "1.85 cpp value"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "SimpliSafe",
@@ -8929,7 +9236,8 @@
         "name": "Business Security Leads",
         "relationship": "$ tailored solutions est."
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Colt",
@@ -8958,7 +9266,8 @@
         "name": "Technology Challengers",
         "relationship": "$3rd year Gartner"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Iberdrola",
@@ -8987,7 +9296,8 @@
         "name": "UK/US Grid Partners",
         "relationship": "€58B spending"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Ocean-Spray",
@@ -9016,7 +9326,8 @@
         "name": "Shareholder Members",
         "relationship": "$275K cash on hand"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Wendy's",
@@ -9045,7 +9356,8 @@
         "name": "Abigail E.",
         "relationship": "$1.3M (total comp est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "PHB-Ethical-Beauty",
@@ -9074,7 +9386,8 @@
         "name": "Organic Advocates",
         "relationship": "$5.04B vegan market"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Phat-Buddha",
@@ -9103,7 +9416,8 @@
         "name": "Visualsoft Partners",
         "relationship": "$ eCommerce value"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "BAE-Systems",
@@ -9132,7 +9446,8 @@
         "name": "US Contract Winners",
         "relationship": "$ large orders value"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Mondragon-Corporation",
@@ -9161,7 +9476,8 @@
         "name": "Community Leaders",
         "relationship": "€70K members"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "MyFitnessPal",
@@ -9190,7 +9506,8 @@
         "name": "App Developers",
         "relationship": "$200K est. (feature collabs) (Business of Apps)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "ExpressVPN",
@@ -9219,7 +9536,8 @@
         "name": "Top Streamers",
         "relationship": "$2.2M/month est. (HeySeva)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Nornickel",
@@ -9248,7 +9566,8 @@
         "name": "Supply Chain Partners",
         "relationship": "$12.5B revenue share (Nornickel)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "BNP-Paribas",
@@ -9277,7 +9596,8 @@
         "name": "Q2 Revenue Leads",
         "relationship": "€12.2B net income (BNP IR)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Intesa-Sanpaolo",
@@ -9306,7 +9626,8 @@
         "name": "H1 Net Income Leads",
         "relationship": "€5.2B (Intesa IR)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Mitsubishi",
@@ -9335,7 +9656,8 @@
         "name": "Top Models Buyers",
         "relationship": "$ exceptional value (Mitsubishi)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Wayfair",
@@ -9364,7 +9686,8 @@
         "name": "Influencer Collabs",
         "relationship": "$ credibility growth (Wayfair IR)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "State-Farm",
@@ -9393,7 +9716,8 @@
         "name": "Bundle Personalizers",
         "relationship": "$1,356 savings avg. (State Farm)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Goodyear",
@@ -9422,7 +9746,8 @@
         "name": "Collaborators",
         "relationship": "$ millions in innovation (Goodyear)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Wawa",
@@ -9451,7 +9776,8 @@
         "name": "Regional Leaders",
         "relationship": "$1B+ donations (Wawa IR)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Broadcom",
@@ -9480,7 +9806,8 @@
         "name": "Q2 Earnings Boosters",
         "relationship": "$1.69 EPS (Fool)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Eli-Lilly",
@@ -9509,7 +9836,8 @@
         "name": "Kym Whitley",
         "relationship": "$500K est. (Zepbound) (FiercePharma)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Oracle",
@@ -9538,7 +9866,8 @@
         "name": "AI Revenue Boosters",
         "relationship": "$455B backlog (Seeking Alpha)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Turning-Point-Brands",
@@ -9567,7 +9896,8 @@
         "name": "Commerce Revenue Leads",
         "relationship": "$22M (Axios)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "The-Daily-Wire",
@@ -9596,7 +9926,8 @@
         "name": "Growth Investors",
         "relationship": "$1B valuation est. (YouTube)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Sky-Group",
@@ -9625,7 +9956,8 @@
         "name": "Subscriber Value Leads",
         "relationship": "$4:1 ROI avg. (McKinsey)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "AerCap-Holdings",
@@ -9654,7 +9986,8 @@
         "name": "FY Guidance Execs",
         "relationship": "$11.60 EPS (Investing.com)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Universal-Standard",
@@ -9683,7 +10016,8 @@
         "name": "Melissa McCarthy",
         "relationship": "$50K est. (promo) (BrandVM)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Susie-B.-Anthony-List",
@@ -9712,7 +10046,8 @@
         "name": "Jane Stith",
         "relationship": "$100K est. (exec) (Charity Navigator)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Stella-McCartney",
@@ -9741,7 +10076,8 @@
         "name": "Stella McCartney",
         "relationship": "$10M est. (founder stake) (Vogue)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Chainlink",
@@ -9770,7 +10106,8 @@
         "name": "Naval Ravikant",
         "relationship": "$1M est. (investor) (Crunchbase)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Follow-Your-Heart",
@@ -9799,7 +10136,8 @@
         "name": "Prenuvo Advocates",
         "relationship": "$150K est. (trust) (Forbes)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Calvert-Education",
@@ -9828,7 +10166,8 @@
         "name": "Community Donors",
         "relationship": "$20K est. (supporters) (NellisHousing)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "RATP-Dev",
@@ -9857,7 +10196,8 @@
         "name": "Alizé Jourdren",
         "relationship": "$1M est. (exec) (Glassdoor)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Jil-Sander",
@@ -9886,7 +10226,8 @@
         "name": "Hailey Bieber",
         "relationship": "$100K est. (promo) (Harpers Bazaar)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Everlane",
@@ -9915,7 +10256,8 @@
         "name": "Venture Backers",
         "relationship": "$100M+ funding (ResidualThoughts)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Bank-of-America",
@@ -9944,7 +10286,8 @@
         "name": "Merrill Lynch Advisors",
         "relationship": "$5M avg. (team) (Forbes)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Framatome",
@@ -9973,7 +10316,8 @@
         "name": "Ken Peterson",
         "relationship": "$300K est. (exec) (Comparably)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "SimplePractice",
@@ -10002,7 +10346,8 @@
         "name": "Influencer Affiliates",
         "relationship": "$25K/post est. (Modash)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Liberty-University-Online",
@@ -10031,7 +10376,8 @@
         "name": "Enrollment Counselors",
         "relationship": "$40K avg. salary (Indeed)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Asana",
@@ -10060,7 +10406,8 @@
         "name": "Nick Tommarello",
         "relationship": "$3M est. (exec) (Levels.fyi)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "TaskRabbit",
@@ -10089,7 +10436,8 @@
         "name": "Mayra P.",
         "relationship": "$3K/month est. (TaskRabbit blog)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "NIO",
@@ -10118,7 +10466,8 @@
         "name": "Liu Shishi",
         "relationship": "$2M est. (promo) (SCMP)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Calvin-Klein",
@@ -10147,7 +10496,8 @@
         "name": "Cooper Koch",
         "relationship": "$1M (WWD)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Bezos-Expeditions",
@@ -10176,7 +10526,8 @@
         "name": "Waleed Al-Saleh",
         "relationship": "$200M ag-tech (Yahoo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Gazpromneft",
@@ -10205,7 +10556,8 @@
         "name": "Institutional Investors",
         "relationship": "$2.4B financing (Nornickel)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Tencent",
@@ -10234,7 +10586,8 @@
         "name": "NBA Partnership",
         "relationship": "$700M deal (Wikipedia)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "FEMSA",
@@ -10263,7 +10616,8 @@
         "name": "The Coca-Cola Company",
         "relationship": "$63B tie (SEC)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Air-Canada",
@@ -10292,7 +10646,8 @@
         "name": "Frequent Flyers",
         "relationship": "$ loyalty value (Yahoo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Bayer",
@@ -10321,7 +10676,8 @@
         "name": "Priyanka Chopra",
         "relationship": "$2M est. (ambassador) (Variety)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "TCS",
@@ -10350,7 +10706,8 @@
         "name": "Milind Lakkad",
         "relationship": "Rs 10 crore ($1.2M) (People Matters)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Virgin-Group",
@@ -10379,7 +10736,8 @@
         "name": "Holly Branson",
         "relationship": "$2M est. (exec) (LinkedIn)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Panasonic",
@@ -10408,7 +10766,8 @@
         "name": "Athlete Endorsers",
         "relationship": "$1M est. (campaigns) (ResearchGate)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Squarespace",
@@ -10437,7 +10796,8 @@
         "name": "Affiliate Partners",
         "relationship": "$100+ per referral (Squarespace)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "CeraVe",
@@ -10466,7 +10826,8 @@
         "name": "Vanessa Hudgens",
         "relationship": "$150K est. (endorsement) (BookingAgentInfo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Vista-Outdoor",
@@ -10495,7 +10856,8 @@
         "name": "David Allen",
         "relationship": "$1.26M (exec) (Comparably)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "GE-Vernova",
@@ -10524,7 +10886,8 @@
         "name": "Sean Burke",
         "relationship": "$5M est. (exec) (Proxy)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Land-O'Lakes",
@@ -10553,7 +10916,8 @@
         "name": "Executive Median",
         "relationship": "$243K (avg exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "George-Foreman-Grills",
@@ -10582,7 +10946,8 @@
         "name": "Hulk Hogan",
         "relationship": "$0 paid (rumored approach)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "FARSÁLI",
@@ -10611,7 +10976,8 @@
         "name": "Fake Influencer Fighters",
         "relationship": "$ value recovery (Red Points)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Bosatsu-Brand",
@@ -10640,7 +11006,8 @@
         "name": "Spiritual Influencers",
         "relationship": "$20K est. (promo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Lululemon-Athletica",
@@ -10669,7 +11036,8 @@
         "name": "Min Woo Lee",
         "relationship": "$1M est. (golf)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "NordVPN",
@@ -10698,7 +11066,8 @@
         "name": "Casey Neistat",
         "relationship": "$300K est. (longest sponsor)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "BYD",
@@ -10727,7 +11096,8 @@
         "name": "Jet Li",
         "relationship": "$3M est. (promo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Polyus",
@@ -10756,7 +11126,8 @@
         "name": "Sergey Cherkashin",
         "relationship": "$1M est. (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Sanofi",
@@ -10785,7 +11156,8 @@
         "name": "Michael J. Fox",
         "relationship": "$200K est. (foundation tie)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "UniCredit",
@@ -10814,7 +11186,8 @@
         "name": "Jay Welker",
         "relationship": "€1.5M est. (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Mastercard",
@@ -10843,7 +11216,8 @@
         "name": "Patrick Mahomes",
         "relationship": "$1M est. (partner)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Molson-Coors",
@@ -10872,7 +11246,8 @@
         "name": "Post Malone",
         "relationship": "$2M est. (Poppi flavor)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "HubSpot",
@@ -10901,7 +11276,8 @@
         "name": "Erica (seller)",
         "relationship": "$100K annual (template)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Valero-Energy",
@@ -10930,7 +11306,8 @@
         "name": "Eric Fisher",
         "relationship": "$1.8M est. (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Deere-&-Company",
@@ -10959,7 +11336,8 @@
         "name": "Farm Influencers",
         "relationship": "$50K est. (promo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Marathon-Petroleum",
@@ -10988,7 +11366,8 @@
         "name": "Rick Hessling",
         "relationship": "$4.2M (CCO)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "PPG-Industries",
@@ -11017,7 +11396,8 @@
         "name": "Michael H. Naso",
         "relationship": "$1.8M est. (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Visa",
@@ -11046,7 +11426,8 @@
         "name": "George Clooney",
         "relationship": "$40M (Nespresso tie)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Micron-Technology",
@@ -11075,7 +11456,8 @@
         "name": "Michelle Holthaus",
         "relationship": "$2.5M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "PublicSquare",
@@ -11104,7 +11486,8 @@
         "name": "Hulk Hogan",
         "relationship": "$150K (endorser est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Novo-Nordisk",
@@ -11133,7 +11516,8 @@
         "name": "Anthony Edwards",
         "relationship": "$25M (Jordan tie est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "UBS",
@@ -11162,7 +11546,8 @@
         "name": "Jay Welker",
         "relationship": "$3M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Good-American",
@@ -11191,7 +11576,8 @@
         "name": "Aidy Bryant",
         "relationship": "$100K (ambassador est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Priests-for-Life",
@@ -11220,7 +11606,8 @@
         "name": "Alveda King",
         "relationship": "$80K (advocate est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Uniswap",
@@ -11249,7 +11636,8 @@
         "name": "Naval Ravikant",
         "relationship": "$1M (investor est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Clif-Bar",
@@ -11278,7 +11666,8 @@
         "name": "Sustainability Advocates",
         "relationship": "$200K (promo est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Christian-Light",
@@ -11307,7 +11696,8 @@
         "name": "Siebert Family",
         "relationship": "$50K (authors est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Go-Ahead-Group",
@@ -11336,7 +11726,8 @@
         "name": "Kanwar Brar",
         "relationship": "£450K (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Arket",
@@ -11365,7 +11756,8 @@
         "name": "Alexa Chung",
         "relationship": "$75K (collab est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "DoorDash",
@@ -11394,7 +11786,8 @@
         "name": "Grocery Partners",
         "relationship": "$100M+ value (DoorDash)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "People-Tree",
@@ -11423,7 +11816,8 @@
         "name": "Helena Christensen",
         "relationship": "$100K (promo est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Amazon-MGM-Studios",
@@ -11452,7 +11846,8 @@
         "name": "Ben Affleck",
         "relationship": "$20M (Air est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Bank-of-New-York-Mellon",
@@ -11481,7 +11876,8 @@
         "name": "Joseph Eazor",
         "relationship": "$2M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Adobe",
@@ -11510,7 +11906,8 @@
         "name": "Carmelo Anthony",
         "relationship": "$5M (summit tie est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Orano",
@@ -11539,7 +11936,8 @@
         "name": "Brookfield Execs",
         "relationship": "$7.9B (acquisition value)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Doxy.me",
@@ -11568,7 +11966,8 @@
         "name": "Non-Profit Partners",
         "relationship": "Free (Essential plan)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "National-University",
@@ -11597,7 +11996,8 @@
         "name": "Faculty Scholars",
         "relationship": "$100K (award est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "WeWork",
@@ -11626,7 +12026,8 @@
         "name": "Masayoshi Son",
         "relationship": "$10B (SoftBank investment)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "99designs",
@@ -11655,7 +12056,8 @@
         "name": "Client Partners",
         "relationship": "$1K avg. project (99designs)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Fisker",
@@ -11684,7 +12086,8 @@
         "name": "Early Adopters",
         "relationship": "$69K MSRP drop (Car and Driver)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Amazon-Studios",
@@ -11713,7 +12116,8 @@
         "name": "Ben Affleck",
         "relationship": "$20M (Air est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Transneft",
@@ -11742,7 +12146,8 @@
         "name": "Vladimir Putin",
         "relationship": "$0 (state affiliation)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Alipay",
@@ -11771,7 +12176,8 @@
         "name": "Prilly Latuconsina",
         "relationship": "$4K/post est. (Jing Daily)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "America-Movil",
@@ -11800,7 +12206,8 @@
         "name": "Daniela Gerdts",
         "relationship": "$2M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "WestJet",
@@ -11829,7 +12236,8 @@
         "name": "Sandra Oh",
         "relationship": "$500K (campaign est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "GlaxoSmithKline",
@@ -11858,7 +12266,8 @@
         "name": "Tonya Winders",
         "relationship": "$3M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Adidas-Group",
@@ -11887,7 +12296,8 @@
         "name": "Noah Lyles",
         "relationship": "$10M (track deal)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Flipkart",
@@ -11916,7 +12326,8 @@
         "name": "Shah Rukh Khan",
         "relationship": "$100M (brand value)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Kia",
@@ -11945,7 +12356,8 @@
         "name": "Pierce Brosnan",
         "relationship": "$1M est. (ads)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "CoverGirl",
@@ -11974,7 +12386,8 @@
         "name": "Queen Latifah",
         "relationship": "$500K est. (spokesperson)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Brownells",
@@ -12003,7 +12416,8 @@
         "name": "Gun Influencers",
         "relationship": "$25K/post est. (promo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Brookfield-Renewable",
@@ -12032,7 +12446,8 @@
         "name": "Bruce Flatt",
         "relationship": "$10M est. (chair tie)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "New-Belgium-Brewing",
@@ -12061,7 +12476,8 @@
         "name": "Kirin Holdings",
         "relationship": "$300M stake est."
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Interstate-Batteries",
@@ -12090,7 +12506,8 @@
         "name": "Auto Influencers",
         "relationship": "$50K est. (promo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "PaliRoots",
@@ -12119,7 +12536,8 @@
         "name": "Cultural Ambassadors",
         "relationship": "$20K est. (promo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Eileen-Fisher",
@@ -12148,7 +12566,8 @@
         "name": "Jane Fonda",
         "relationship": "$200K est. (advocate)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Huntington-Ingalls-Industries",
@@ -12177,7 +12596,8 @@
         "name": "Nicolas D. Chabraja",
         "relationship": "$3M est. (board)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Gatorade",
@@ -12206,7 +12626,8 @@
         "name": "Serena Williams",
         "relationship": "$5M est. (past)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Apple-(mental-health-features)",
@@ -12235,7 +12656,8 @@
         "name": "Esther Perel",
         "relationship": "$600K est. (podcast tie)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Gab",
@@ -12264,7 +12686,8 @@
         "name": "Laura Loomer",
         "relationship": "$150K est. (influencer)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Lenovo",
@@ -12293,7 +12716,8 @@
         "name": "Justin Bieber",
         "relationship": "$2M est. (promo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Tatneft",
@@ -12322,7 +12746,8 @@
         "name": "Institutional Investors",
         "relationship": "$2B financing (PitchBook)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Orange",
@@ -12351,7 +12776,8 @@
         "name": "Emma Raducanu",
         "relationship": "$3M (SportsPro)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Barilla",
@@ -12380,7 +12806,8 @@
         "name": "Laura Dern",
         "relationship": "$1M est. (promo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Canon",
@@ -12409,7 +12836,8 @@
         "name": "Tim Walker",
         "relationship": "$1M est. (fashion tie)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "DraftKings",
@@ -12438,7 +12866,8 @@
         "name": "Matt Ryan",
         "relationship": "$1M est. (NFL)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Occidental-Petroleum",
@@ -12467,7 +12896,8 @@
         "name": "Bill Gates",
         "relationship": "$100M est. (climate fund)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Darden-Restaurants",
@@ -12496,7 +12926,8 @@
         "name": "Gene Lee",
         "relationship": "$2.5M (former CEO est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "IBM",
@@ -12525,7 +12956,8 @@
         "name": "Jim Kavanaugh",
         "relationship": "$5M (World Wide Tech tie)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Cisco-Systems",
@@ -12554,7 +12986,8 @@
         "name": "Mario Mazzola",
         "relationship": "$1B legacy (founder tie)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Motorola-Solutions",
@@ -12583,7 +13016,8 @@
         "name": "Paul Steinberg",
         "relationship": "$5M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "FirstEnergy",
@@ -12612,7 +13046,8 @@
         "name": "Lobbying PACs",
         "relationship": "$153K spending"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Alcoa",
@@ -12641,7 +13076,8 @@
         "name": "Tamer Abu-Jazar",
         "relationship": "$3M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Tempus-AI",
@@ -12670,7 +13106,8 @@
         "name": "Whitehawk Bio",
         "relationship": "$10M (biotech collab)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Humana",
@@ -12699,7 +13136,8 @@
         "name": "Vivek Anand",
         "relationship": "$5M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Liberty-Mutual",
@@ -12728,7 +13166,8 @@
         "name": "Jonathan R. Jackson",
         "relationship": "$800K (spokesperson est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "General-Electric",
@@ -12757,7 +13196,8 @@
         "name": "Jeff Immelt",
         "relationship": "$200M (former CEO)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "MetLife",
@@ -12786,7 +13226,8 @@
         "name": "Tom Garmon",
         "relationship": "$5M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Girlfriend-Collective",
@@ -12815,7 +13256,8 @@
         "name": "Laura Halliday",
         "relationship": "$150K est. (co-founder)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Thomas-More-Society",
@@ -12844,7 +13286,8 @@
         "name": "Average Employee",
         "relationship": "$79K (avg)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Polkadot",
@@ -12873,7 +13316,8 @@
         "name": "Ambassador",
         "relationship": "$100K est. (role)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "So-Delicious",
@@ -12902,7 +13346,8 @@
         "name": "Exec",
         "relationship": "$300K est. (avg)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Apologia",
@@ -12931,7 +13376,8 @@
         "name": "Influencer",
         "relationship": "$20K est. (collab)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Arriva",
@@ -12960,7 +13406,8 @@
         "name": "Customer Rep",
         "relationship": "$33K-46K"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Uniqlo",
@@ -12989,7 +13436,8 @@
         "name": "Pharrell Williams",
         "relationship": "$3M est."
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Instacart",
@@ -13018,7 +13466,8 @@
         "name": "Settlement Recipient",
         "relationship": "$46.5M (total)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Novica",
@@ -13047,7 +13496,8 @@
         "name": "Influencer",
         "relationship": "$50K/post est."
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Lionsgate",
@@ -13076,7 +13526,8 @@
         "name": "Julia Roberts",
         "relationship": "$20M est."
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Cisco",
@@ -13105,7 +13556,8 @@
         "name": "Mario Mazzola",
         "relationship": "$1B legacy"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "EDF",
@@ -13134,7 +13586,8 @@
         "name": "Board Member",
         "relationship": "$500K est."
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "University-of-Phoenix",
@@ -13163,7 +13616,8 @@
         "name": "Alumni",
         "relationship": "$100K est. (promo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Cisco-Webex",
@@ -13192,7 +13646,8 @@
         "name": "Endorser",
         "relationship": "$200K est. (campaign)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "PeoplePerHour",
@@ -13221,7 +13676,8 @@
         "name": "Software Engineer",
         "relationship": "$112K-191K"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Volkswagen-ID",
@@ -13250,7 +13706,8 @@
         "name": "Exec",
         "relationship": "$2M est."
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Lane-Bryant",
@@ -13279,7 +13736,8 @@
         "name": "Justine Legault",
         "relationship": "$150K est."
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Ring",
@@ -13308,7 +13766,8 @@
         "name": "Endorser",
         "relationship": "$200K est."
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Weibo",
@@ -13337,7 +13796,8 @@
         "name": "Exec",
         "relationship": "$500K est."
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Grupo-Carso",
@@ -13366,7 +13826,8 @@
         "name": "Vanessa Slim",
         "relationship": "$7M est."
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Scotiabank",
@@ -13395,7 +13856,8 @@
         "name": "Prashant Bhandari",
         "relationship": "$3M est."
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Rolls-Royce",
@@ -13424,7 +13886,8 @@
         "name": "Davido",
         "relationship": "$2B (new buy)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Volkswagen-Group",
@@ -13453,7 +13916,8 @@
         "name": "Gunnar Kilian",
         "relationship": "$3M est."
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Reliance-Retail",
@@ -13482,7 +13946,8 @@
         "name": "Virat Kohli",
         "relationship": "$231M (brand value)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "TSMC",
@@ -13511,7 +13976,8 @@
         "name": "Lora Ho",
         "relationship": "$3.5M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Samsung",
@@ -13540,7 +14006,8 @@
         "name": "TM Roh",
         "relationship": "$4M (exec comp)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Keds",
@@ -13569,7 +14036,8 @@
         "name": "Karlie Kloss",
         "relationship": "$100K est. (collab)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "UFC",
@@ -13598,7 +14066,8 @@
         "name": "Israel Adesanya",
         "relationship": "$30M (fight purse)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Academy-Sports-+-Outdoors",
@@ -13627,7 +14096,8 @@
         "name": "Jeff Webster",
         "relationship": "$1.8M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Siemens-Energy",
@@ -13656,7 +14126,8 @@
         "name": "Agathe V.",
         "relationship": "€1M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Archer-Daniels-Midland",
@@ -13685,7 +14156,8 @@
         "name": "Vincent Andrews",
         "relationship": "$3M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "King-Arthur-Baking-Company",
@@ -13714,7 +14186,8 @@
         "name": "Store Managers",
         "relationship": "$60K avg. salary"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Pure-Flix",
@@ -13743,7 +14216,8 @@
         "name": "Angel Studios",
         "relationship": "$5M (distribution)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Zaytoun",
@@ -13772,7 +14246,8 @@
         "name": "Ethical Consumers",
         "relationship": "$500K donations"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Toad&Co",
@@ -13801,7 +14276,8 @@
         "name": "Retail Partners",
         "relationship": "$100K annual (Wholesale)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Honeywell",
@@ -13830,7 +14306,8 @@
         "name": "Kevin Gorner",
         "relationship": "$3.5M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Betterment",
@@ -13859,7 +14336,8 @@
         "name": "Jeff Malachowsky",
         "relationship": "$2M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Truth-Social",
@@ -13888,7 +14366,8 @@
         "name": "Kash Patel",
         "relationship": "$150K (supporter est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Purism",
@@ -13917,7 +14396,8 @@
         "name": "Ethical Hackers",
         "relationship": "$30K est. (test)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "DJI",
@@ -13946,7 +14426,8 @@
         "name": "Peter McKinnon",
         "relationship": "$80K est. (creator)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Pernod-Ricard",
@@ -13975,7 +14456,8 @@
         "name": "Tim Stones",
         "relationship": "€1.2M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Pirelli",
@@ -14004,7 +14486,8 @@
         "name": "Charles Leclerc",
         "relationship": "$500K est. (F1)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Hitachi",
@@ -14033,7 +14516,8 @@
         "name": "Shinjiro Yamaguchi",
         "relationship": "¥160M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "American-Express",
@@ -14062,7 +14546,8 @@
         "name": "Anna Marrs",
         "relationship": "$5M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "FanDuel",
@@ -14091,7 +14576,8 @@
         "name": "Matt Ryan",
         "relationship": "$1M (NFL tie est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Hyundai",
@@ -14120,7 +14606,8 @@
         "name": "Steve Wilhite",
         "relationship": "$3M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "TJX-Companies",
@@ -14149,7 +14636,8 @@
         "name": "Doug Ewert",
         "relationship": "$5M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "AutoNation",
@@ -14178,7 +14666,8 @@
         "name": "Marc Cannon",
         "relationship": "$3M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Bristol-Myers-Squibb",
@@ -14207,7 +14696,8 @@
         "name": "Murdo Gordon",
         "relationship": "$5M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "The-Kraft-Heinz-Company",
@@ -14236,7 +14726,8 @@
         "name": "Lori Dickerson Foy",
         "relationship": "$3M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Huntington-Bancshares",
@@ -14265,7 +14756,8 @@
         "name": "Andy Giffin",
         "relationship": "$2.5M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Rite-Aid",
@@ -14294,7 +14786,8 @@
         "name": "Paul J. Campanelli",
         "relationship": "$1M (former CEO est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Palo-Alto-Networks",
@@ -14323,7 +14816,8 @@
         "name": "Nadeem Moghal",
         "relationship": "$5M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "United-Parcel-Service",
@@ -14352,7 +14846,8 @@
         "name": "Norman M. Brothers",
         "relationship": "$5M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Turning-Point-USA",
@@ -14381,7 +14876,8 @@
         "name": "Riley Gaines",
         "relationship": "$150K (spokesperson est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Hewlett-Packard",
@@ -14410,7 +14906,8 @@
         "name": "Ellen Jackowski",
         "relationship": "$5M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "JD.com",
@@ -14439,7 +14936,8 @@
         "name": "Lai Xu",
         "relationship": "$20M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Apollo-Global-Management",
@@ -14468,7 +14966,8 @@
         "name": "Josh Harris",
         "relationship": "$10M (co-founder est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Reformation",
@@ -14497,7 +14996,8 @@
         "name": "Hailey Bieber",
         "relationship": "$200K (wearer)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Live-Action",
@@ -14526,7 +15026,8 @@
         "name": "Janet Morana",
         "relationship": "$100K (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Cardano",
@@ -14555,7 +15056,8 @@
         "name": "Emurgo Partners",
         "relationship": "$5M (stakeholder est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Violife",
@@ -14584,7 +15086,8 @@
         "name": "Carlos Santana",
         "relationship": "$75K (unexpected est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Apologia-Educational-Ministries",
@@ -14613,7 +15116,8 @@
         "name": "Influencer",
         "relationship": "$20K (collab est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Zara",
@@ -14642,7 +15146,8 @@
         "name": "Kendall Jenner",
         "relationship": "$1M (promo)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Beluga",
@@ -14671,7 +15176,8 @@
         "name": "Distiller",
         "relationship": "$1M (production est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Levi-Strauss",
@@ -14700,7 +15206,8 @@
         "name": "Xiye Bastida",
         "relationship": "$800K (advocate)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "A23",
@@ -14729,7 +15236,8 @@
         "name": "Barry Jenkins",
         "relationship": "$3M (director)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "KEPCO",
@@ -14758,7 +15266,8 @@
         "name": "Renewable Partners",
         "relationship": "$5B investment"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Amazon-Clinic",
@@ -14787,7 +15296,8 @@
         "name": "Esther Perel",
         "relationship": "$600K (podcast tie est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Charter-Schools-USA",
@@ -14816,7 +15326,8 @@
         "name": "School Leaders",
         "relationship": "$100K avg. (principal)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "RingCentral",
@@ -14845,7 +15356,8 @@
         "name": "Christine J.",
         "relationship": "$1.5M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Thumbtack",
@@ -14874,7 +15386,8 @@
         "name": "Client Leads",
         "relationship": "$1K avg. project"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "GM-Ultium",
@@ -14903,7 +15416,8 @@
         "name": "Mary Beth Whitman",
         "relationship": "$4M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Zoox",
@@ -14932,7 +15446,8 @@
         "name": "Test Driver",
         "relationship": "$100K salary avg."
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Surgutneftegas",
@@ -14961,7 +15476,8 @@
         "name": "Supply Partners",
         "relationship": "$5B revenue share"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "China-Telecom",
@@ -14990,7 +15506,8 @@
         "name": "Rong Hua Li",
         "relationship": "$400K (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Wal-Mart-de-Mexico",
@@ -15019,7 +15536,8 @@
         "name": "Walmex Execs",
         "relationship": "$1.5M avg. (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Royal-Bank-of-Canada",
@@ -15048,7 +15566,8 @@
         "name": "Neil McLaughlin",
         "relationship": "$5M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "BMW-i",
@@ -15077,7 +15596,8 @@
         "name": "Beyoncé",
         "relationship": "$800K (Quartz est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "D-Mart",
@@ -15106,7 +15626,8 @@
         "name": "Mukesh Ambani",
         "relationship": "$10B (family stake)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "CATL",
@@ -15135,7 +15656,8 @@
         "name": "Zeng Yuqun",
         "relationship": "$300M (exec)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Ladder",
@@ -15164,7 +15686,8 @@
         "name": "Allyson Felix",
         "relationship": "$1M (athlete est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Happy-Dad-Seltzer",
@@ -15193,7 +15716,8 @@
         "name": "Nelk Boys",
         "relationship": "$50M (collective)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "MP-Materials",
@@ -15222,7 +15746,8 @@
         "name": "JPMorgan Chase",
         "relationship": "$1B (financing)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "JinkoSolar",
@@ -15251,7 +15776,8 @@
         "name": "Costco",
         "relationship": "$100M (warehouse modules)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Seventh-Generation",
@@ -15280,7 +15806,8 @@
         "name": "Carbon Pricing Advocates",
         "relationship": "$50K (initiative)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Dayspring",
@@ -15309,7 +15836,8 @@
         "name": "Kirk Cameron",
         "relationship": "$80K (family tie est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Al'Ard",
@@ -15338,7 +15866,8 @@
         "name": "Advocacy Groups",
         "relationship": "$500K (donations)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Lotus-Sky",
@@ -15367,7 +15896,8 @@
         "name": "Ethical Buyers",
         "relationship": "$20K (loyalty)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Leidos",
@@ -15396,7 +15926,8 @@
         "name": "Surya Parkash",
         "relationship": "$2.5M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "CrossFit",
@@ -15425,7 +15956,8 @@
         "name": "Sam Briggs",
         "relationship": "$400K (sponsorships)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Odysee",
@@ -15454,7 +15986,8 @@
         "name": "Video Creators",
         "relationship": "$50K (monetization)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Tutanota",
@@ -15483,7 +16016,8 @@
         "name": "Tech Reviewers",
         "relationship": "$20K (review)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Shein",
@@ -15512,7 +16046,8 @@
         "name": "Kylie Jenner",
         "relationship": "$300K (past)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Mars",
@@ -15541,7 +16076,8 @@
         "name": "Pamela Mars",
         "relationship": "$30B (stake)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Teva-Pharmaceutical-Industries",
@@ -15570,7 +16106,8 @@
         "name": "Mark Sabag",
         "relationship": "$3M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Veolia",
@@ -15599,7 +16136,8 @@
         "name": "Hinda Gharbi",
         "relationship": "€1.2M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Leonardo",
@@ -15628,7 +16166,8 @@
         "name": "Pierfrancesco Guidi",
         "relationship": "€700K (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Fast-Retailing-(Uniqlo)",
@@ -15657,7 +16196,8 @@
         "name": "Kei Nishikori",
         "relationship": "$5M est."
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Betway",
@@ -15686,7 +16226,8 @@
         "name": "NHL Teams",
         "relationship": "$5M (partnerships)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Sysco",
@@ -15715,7 +16256,8 @@
         "name": "Marie Robinson",
         "relationship": "$3M (exec est.)"
       }
-    ]
+    ],
+    "ownership": []
   },
   {
     "id": "Lennar-Corporation",
@@ -15723,7 +16265,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Colgate-Palmolive",
@@ -15731,7 +16274,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Intuit",
@@ -15739,7 +16283,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "United-Airlines",
@@ -15747,7 +16292,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "KeyCorp",
@@ -15755,7 +16301,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "BNY-Mellon",
@@ -15763,7 +16310,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Vistra-Corp",
@@ -15771,7 +16319,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "GEO-Group",
@@ -15779,7 +16328,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Allstate",
@@ -15787,7 +16337,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Splunk",
@@ -15795,7 +16346,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "American-Life-League",
@@ -15803,7 +16355,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Ethereum",
@@ -15811,7 +16364,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Lightlife",
@@ -15819,7 +16373,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Heritage-Studies",
@@ -15827,7 +16382,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "FirstGroup",
@@ -15835,7 +16391,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "&-Other-Stories",
@@ -15843,7 +16400,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Square",
@@ -15851,7 +16409,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "CTRL-labs",
@@ -15859,7 +16418,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Blumhouse",
@@ -15867,7 +16427,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Symantec",
@@ -15875,7 +16436,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "CGN",
@@ -15883,7 +16445,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "HealthTap",
@@ -15891,7 +16454,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "George-Washington-University-Online",
@@ -15899,7 +16463,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "LogMeIn",
@@ -15907,7 +16472,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Ford-Mustang-Mach-E",
@@ -15915,7 +16481,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Eloquii",
@@ -15923,7 +16490,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Discovery-Inc",
@@ -15931,7 +16499,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Perplexity-AI",
@@ -15939,7 +16508,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Lenta",
@@ -15947,7 +16517,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Oxxo",
@@ -15955,7 +16526,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "TD-Bank",
@@ -15963,7 +16535,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "HSBC-Holdings",
@@ -15971,7 +16544,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Siemens",
@@ -15979,7 +16553,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "HCL-Technologies",
@@ -15987,7 +16562,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "HYBE",
@@ -15995,7 +16571,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Dick's-Sporting-Goods",
@@ -16003,7 +16580,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Purdue-Pharma",
@@ -16011,7 +16589,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "YouTube",
@@ -16019,7 +16598,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "UnitedHealth-Group",
@@ -16027,7 +16607,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Public-Schools",
@@ -16035,7 +16616,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Private-Car-Services",
@@ -16043,7 +16625,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Greenpeace",
@@ -16051,7 +16634,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Pearson",
@@ -16059,7 +16643,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Office-Depot",
@@ -16067,7 +16652,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Corporate-Express",
@@ -16075,7 +16661,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Puma",
@@ -16083,7 +16670,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Politico",
@@ -16091,7 +16679,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Sony-Music",
@@ -16099,7 +16688,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Johnson-&-Johnson",
@@ -16107,7 +16697,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "ByteDance-(TikTok)",
@@ -16115,7 +16706,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Con-Edison",
@@ -16123,7 +16715,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Burger-King",
@@ -16131,7 +16724,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Teachers-Unions",
@@ -16139,7 +16733,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Sierra-Club",
@@ -16147,7 +16742,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Houghton-Mifflin-Harcourt",
@@ -16155,7 +16751,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Staples",
@@ -16163,7 +16760,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "OfficeMax",
@@ -16171,7 +16769,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Gap",
@@ -16179,7 +16778,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Warner-Bros.",
@@ -16187,7 +16787,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Huffington-Post",
@@ -16195,7 +16796,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Warner-Music-Group",
@@ -16203,7 +16805,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Shell",
@@ -16211,7 +16814,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Supreme",
@@ -16219,7 +16823,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Philip-Morris-International",
@@ -16227,7 +16832,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Lush-Cosmetics",
@@ -16235,7 +16841,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Booking.com",
@@ -16243,7 +16850,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "3M",
@@ -16251,7 +16859,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "HelloFresh",
@@ -16259,7 +16868,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Sinclair-Broadcast-Group",
@@ -16267,7 +16877,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "JBS",
@@ -16275,7 +16886,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Department-of-Education",
@@ -16283,7 +16895,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Waymo",
@@ -16291,7 +16904,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Friends-of-the-Earth",
@@ -16299,7 +16913,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "McGraw-Hill",
@@ -16307,7 +16922,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "FedEx-Office",
@@ -16315,7 +16931,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Avery-Dennison",
@@ -16323,7 +16940,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Victoria's-Secret",
@@ -16331,7 +16949,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Paramount",
@@ -16339,7 +16958,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "BuzzFeed",
@@ -16347,7 +16967,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Home-Depot",
@@ -16355,7 +16976,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "eBay",
@@ -16363,7 +16985,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Domino's",
@@ -16371,7 +16994,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "iHeartMedia",
@@ -16379,7 +17003,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "The-New-York-Times-Company",
@@ -16387,7 +17012,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Saudi-Aramco",
@@ -16395,7 +17021,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "G4S",
@@ -16403,7 +17030,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Arc'teryx",
@@ -16411,7 +17039,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Monsanto",
@@ -16419,7 +17048,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Activision-Blizzard",
@@ -16427,7 +17057,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Micron",
@@ -16435,7 +17066,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "IKEA",
@@ -16443,7 +17075,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Expedia-Group",
@@ -16451,7 +17084,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Ryanair",
@@ -16459,7 +17093,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Anta-Sports",
@@ -16467,7 +17102,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Monster-Beverage",
@@ -16475,7 +17111,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "DuPont",
@@ -16483,7 +17120,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Nestlé",
@@ -16491,7 +17129,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Florida-Crystals",
@@ -16499,7 +17138,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "ASOS",
@@ -16507,7 +17147,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Cargill",
@@ -16515,7 +17156,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "State-Education",
@@ -16523,7 +17165,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Zipcar",
@@ -16531,7 +17174,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Scholastic",
@@ -16539,7 +17183,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "UPS-Store",
@@ -16547,7 +17192,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "The-New-York-Times",
@@ -16555,7 +17201,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Academy-Sports",
@@ -16563,7 +17210,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "SiriusXM",
@@ -16571,7 +17219,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Orange-S.A.",
@@ -16579,7 +17228,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Dow-Chemical",
@@ -16587,7 +17237,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "ASML",
@@ -16595,7 +17246,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "H&M",
@@ -16603,7 +17255,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Li-Ning",
@@ -16611,7 +17264,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Duke-Energy",
@@ -16619,7 +17273,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "PG&E",
@@ -16627,7 +17282,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Monsanto-(Bayer)",
@@ -16635,7 +17291,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Sticker-Mule",
@@ -16643,7 +17300,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Roberto-Cavalli",
@@ -16651,7 +17309,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Smithfield-Foods",
@@ -16659,7 +17318,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Warby-Parker",
@@ -16667,7 +17327,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Pearson-Education",
@@ -16675,7 +17336,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "DHL",
@@ -16683,7 +17345,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "HP",
@@ -16691,7 +17354,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "ABC",
@@ -16699,7 +17363,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Vox",
@@ -16707,7 +17372,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Best-Buy",
@@ -16715,7 +17381,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "CVS-Health",
@@ -16723,7 +17390,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Halliburton",
@@ -16731,7 +17399,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "TikTok",
@@ -16739,7 +17408,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Southern-California-Edison",
@@ -16747,7 +17417,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Peabody-Energy",
@@ -16755,7 +17426,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Vivobarefoot",
@@ -16763,7 +17435,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Hormel-Foods",
@@ -16771,7 +17444,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Private-Jets",
@@ -16779,7 +17453,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Houghton-Mifflin",
@@ -16787,7 +17462,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Pitney-Bowes",
@@ -16795,7 +17471,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Ricoh",
@@ -16803,7 +17480,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Abercrombie-&-Fitch",
@@ -16811,7 +17489,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "CBS",
@@ -16819,7 +17498,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Slate",
@@ -16827,7 +17507,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Black-Rifle-Coffee",
@@ -16835,7 +17516,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Macy's",
@@ -16843,7 +17525,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "OpenAI",
@@ -16851,7 +17534,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Manchester-United",
@@ -16859,7 +17543,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "KBR",
@@ -16867,7 +17552,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Palantir",
@@ -16875,7 +17561,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Altria-Group",
@@ -16883,7 +17570,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "BBC",
@@ -16891,7 +17579,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Conagra-Brands",
@@ -16899,7 +17588,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "McGraw-Hill-Education",
@@ -16907,7 +17597,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "XPO-Logistics",
@@ -16915,7 +17606,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "GM",
@@ -16923,7 +17615,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "American-Eagle",
@@ -16931,7 +17624,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Fox",
@@ -16939,7 +17633,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "The-Atlantic",
@@ -16947,7 +17642,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Wintershall",
@@ -16955,7 +17651,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Kohl's",
@@ -16963,7 +17660,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Papa-John's",
@@ -16971,7 +17669,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "AEG-Presents",
@@ -16979,7 +17678,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "New-York-Times",
@@ -16987,7 +17687,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Delta-Air-Lines",
@@ -16995,7 +17696,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Coal-India",
@@ -17003,7 +17705,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Constellis-(Academi)",
@@ -17011,7 +17714,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "PayPal-(high-fee-services)",
@@ -17019,7 +17723,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Uber-Eats",
@@ -17027,7 +17732,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Harley-Davidson",
@@ -17035,7 +17741,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Equifax",
@@ -17043,7 +17750,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Applied-Materials",
@@ -17051,7 +17759,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Tripadvisor",
@@ -17059,7 +17768,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "The-Mosaic-Company",
@@ -17067,7 +17777,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "National-Grid",
@@ -17075,7 +17786,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Channel-3",
@@ -17083,7 +17795,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Scholastic-Inc.",
@@ -17091,7 +17804,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Ryder",
@@ -17099,7 +17813,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Epson",
@@ -17107,7 +17822,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Hollister",
@@ -17115,7 +17831,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "HBO",
@@ -17123,7 +17840,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "New-Yorker",
@@ -17131,7 +17849,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Raytheon",
@@ -17139,7 +17858,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Sturm-Ruger",
@@ -17147,7 +17867,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Aldi",
@@ -17155,7 +17876,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "RWE",
@@ -17163,7 +17885,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Sears",
@@ -17171,7 +17894,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Crooked-Media",
@@ -17179,7 +17903,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Cigna",
@@ -17187,7 +17912,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Pemex",
@@ -17195,7 +17921,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "UPS",
@@ -17203,7 +17930,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Mondelez",
@@ -17211,7 +17939,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Juul-Labs",
@@ -17219,7 +17948,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Hershey",
@@ -17227,7 +17957,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Snapchat",
@@ -17235,7 +17966,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Experian",
@@ -17243,7 +17975,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Lam-Research",
@@ -17251,7 +17984,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "SodaStream",
@@ -17259,7 +17993,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Invitation-Homes",
@@ -17267,7 +18002,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "KFC",
@@ -17275,7 +18011,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Cengage-Learning",
@@ -17283,7 +18020,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "SAP",
@@ -17291,7 +18029,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Arkema",
@@ -17299,7 +18038,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Fuji-Xerox",
@@ -17307,7 +18047,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Nissan",
@@ -17315,7 +18056,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Guess",
@@ -17323,7 +18065,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "ESPN",
@@ -17331,7 +18074,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Guardian",
@@ -17339,7 +18083,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Lidl",
@@ -17347,7 +18092,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "BASF",
@@ -17355,7 +18101,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "New-Balance",
@@ -17363,7 +18110,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "audiochuck",
@@ -17371,7 +18119,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "TOMS-Shoes",
@@ -17379,7 +18128,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "FedEx",
@@ -17387,7 +18137,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Expedia",
@@ -17395,7 +18146,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Acxiom",
@@ -17403,7 +18155,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "KLA",
@@ -17411,7 +18164,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Eversource",
@@ -17419,7 +18173,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Zillow",
@@ -17427,7 +18182,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "PECO",
@@ -17435,7 +18191,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Wiley",
@@ -17443,7 +18200,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Accenture",
@@ -17451,7 +18209,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Brinks",
@@ -17459,7 +18218,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "Konica-Minolta",
@@ -17467,7 +18227,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "MTV",
@@ -17475,7 +18236,8 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   },
   {
     "id": "ConocoPhillips",
@@ -17483,6 +18245,7 @@
     "category": "Uncategorized",
     "description": "",
     "website": "",
-    "affiliates": []
+    "affiliates": [],
+    "ownership": []
   }
 ]
