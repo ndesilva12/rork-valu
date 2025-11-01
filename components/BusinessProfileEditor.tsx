@@ -8,7 +8,7 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import { Building2, ChevronDown, Globe, Upload, MapPin } from 'lucide-react-native';
+import { Building2, ChevronDown, Globe, Upload, MapPin, Facebook, Instagram, Twitter, Linkedin } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
@@ -61,6 +61,10 @@ export default function BusinessProfileEditor() {
   const [location, setLocation] = useState(businessInfo.location || '');
   const [latitude, setLatitude] = useState<number | undefined>(businessInfo.latitude);
   const [longitude, setLongitude] = useState<number | undefined>(businessInfo.longitude);
+  const [facebook, setFacebook] = useState(businessInfo.socialMedia?.facebook || '');
+  const [instagram, setInstagram] = useState(businessInfo.socialMedia?.instagram || '');
+  const [twitter, setTwitter] = useState(businessInfo.socialMedia?.twitter || '');
+  const [linkedin, setLinkedin] = useState(businessInfo.socialMedia?.linkedin || '');
 
   const handleLocationSelect = (locationName: string, lat: number, lon: number) => {
     setLocation(locationName);
@@ -85,6 +89,12 @@ export default function BusinessProfileEditor() {
       description: description.trim(),
       website: website.trim(),
       logoUrl: logoUrl.trim(),
+      socialMedia: {
+        facebook: facebook.trim(),
+        instagram: instagram.trim(),
+        twitter: twitter.trim(),
+        linkedin: linkedin.trim(),
+      },
     };
 
     if (location.trim()) {
@@ -113,6 +123,10 @@ export default function BusinessProfileEditor() {
     setLocation(businessInfo.location || '');
     setLatitude(businessInfo.latitude);
     setLongitude(businessInfo.longitude);
+    setFacebook(businessInfo.socialMedia?.facebook || '');
+    setInstagram(businessInfo.socialMedia?.instagram || '');
+    setTwitter(businessInfo.socialMedia?.twitter || '');
+    setLinkedin(businessInfo.socialMedia?.linkedin || '');
     setEditing(false);
   };
 
@@ -305,23 +319,139 @@ export default function BusinessProfileEditor() {
           )}
         </View>
 
-        {/* Location */}
-        <View style={styles.inputGroup}>
-          <View style={styles.labelRow}>
-            <MapPin size={16} color={colors.text} strokeWidth={2} />
-            <Text style={[styles.label, { color: colors.text }]}>Location</Text>
+        {/* Compact Layout - Name, Category, Location in rows */}
+        <View style={styles.formGrid}>
+          <View style={styles.formRow}>
+            <View style={[styles.inputGroup, styles.halfWidth]}>
+              <Text style={[styles.label, { color: colors.text }]}>Location</Text>
+              {editing ? (
+                <LocationAutocomplete
+                  value={location}
+                  onLocationSelect={handleLocationSelect}
+                  isDarkMode={isDarkMode}
+                />
+              ) : (
+                <Text style={[styles.value, { color: colors.text }]}>
+                  {businessInfo.location || 'Not set'}
+                </Text>
+              )}
+            </View>
+
+            <View style={[styles.inputGroup, styles.halfWidth]}>
+              <View style={styles.labelRow}>
+                <Globe size={14} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.label, { color: colors.text }]}>Website</Text>
+              </View>
+              {editing ? (
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  placeholder="https://your-website.com"
+                  placeholderTextColor={colors.textSecondary}
+                  value={website}
+                  onChangeText={setWebsite}
+                  autoCapitalize="none"
+                  keyboardType="url"
+                />
+              ) : (
+                <Text style={[styles.value, styles.link, { color: colors.primary }]} numberOfLines={1}>
+                  {businessInfo.website || 'Not set'}
+                </Text>
+              )}
+            </View>
           </View>
-          {editing ? (
-            <LocationAutocomplete
-              value={location}
-              onLocationSelect={handleLocationSelect}
-              isDarkMode={isDarkMode}
-            />
-          ) : (
-            <Text style={[styles.value, { color: colors.text }]}>
-              {businessInfo.location || 'No location added'}
-            </Text>
-          )}
+
+          {/* Social Media - 2x2 Grid */}
+          <View style={styles.socialMediaSection}>
+            <Text style={[styles.sectionSubtitle, { color: colors.text }]}>Social Media</Text>
+
+            <View style={styles.formRow}>
+              <View style={[styles.inputGroup, styles.halfWidth]}>
+                <View style={styles.labelRow}>
+                  <Facebook size={14} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.label, { color: colors.text }]}>Facebook</Text>
+                </View>
+                {editing ? (
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    placeholder="facebook.com/business"
+                    placeholderTextColor={colors.textSecondary}
+                    value={facebook}
+                    onChangeText={setFacebook}
+                    autoCapitalize="none"
+                  />
+                ) : (
+                  <Text style={[styles.value, { color: colors.text }]} numberOfLines={1}>
+                    {businessInfo.socialMedia?.facebook || 'Not set'}
+                  </Text>
+                )}
+              </View>
+
+              <View style={[styles.inputGroup, styles.halfWidth]}>
+                <View style={styles.labelRow}>
+                  <Instagram size={14} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.label, { color: colors.text }]}>Instagram</Text>
+                </View>
+                {editing ? (
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    placeholder="@business"
+                    placeholderTextColor={colors.textSecondary}
+                    value={instagram}
+                    onChangeText={setInstagram}
+                    autoCapitalize="none"
+                  />
+                ) : (
+                  <Text style={[styles.value, { color: colors.text }]} numberOfLines={1}>
+                    {businessInfo.socialMedia?.instagram || 'Not set'}
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.formRow}>
+              <View style={[styles.inputGroup, styles.halfWidth]}>
+                <View style={styles.labelRow}>
+                  <Twitter size={14} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.label, { color: colors.text }]}>Twitter/X</Text>
+                </View>
+                {editing ? (
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    placeholder="@business"
+                    placeholderTextColor={colors.textSecondary}
+                    value={twitter}
+                    onChangeText={setTwitter}
+                    autoCapitalize="none"
+                  />
+                ) : (
+                  <Text style={[styles.value, { color: colors.text }]} numberOfLines={1}>
+                    {businessInfo.socialMedia?.twitter || 'Not set'}
+                  </Text>
+                )}
+              </View>
+
+              <View style={[styles.inputGroup, styles.halfWidth]}>
+                <View style={styles.labelRow}>
+                  <Linkedin size={14} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.label, { color: colors.text }]}>LinkedIn</Text>
+                </View>
+                {editing ? (
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    placeholder="linkedin.com/company/business"
+                    placeholderTextColor={colors.textSecondary}
+                    value={linkedin}
+                    onChangeText={setLinkedin}
+                    autoCapitalize="none"
+                  />
+                ) : (
+                  <Text style={[styles.value, { color: colors.text }]} numberOfLines={1}>
+                    {businessInfo.socialMedia?.linkedin || 'Not set'}
+                  </Text>
+                )}
+              </View>
+            </View>
+          </View>
         </View>
 
         {/* Edit Actions */}
@@ -427,35 +557,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Compact Form Layout
+  formGrid: {
+    gap: 12,
+    marginTop: 8,
+  },
+  formRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  halfWidth: {
+    flex: 1,
+  },
+  sectionSubtitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  socialMediaSection: {
+    marginTop: 8,
+  },
   // Input Groups
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 8,
   },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
-    marginBottom: 8,
   },
   input: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
     borderWidth: 1,
-    fontSize: 15,
+    fontSize: 14,
   },
   textArea: {
     minHeight: 100,
     paddingTop: 14,
   },
   value: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 20,
   },
   link: {
     textDecorationLine: 'underline',
@@ -492,12 +642,12 @@ const styles = StyleSheet.create({
   editActions: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 8,
+    marginTop: 16,
   },
   actionButton: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
   },
   cancelButton: {
@@ -507,7 +657,7 @@ const styles = StyleSheet.create({
     // backgroundColor set dynamically
   },
   actionButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600' as const,
   },
 });

@@ -16,6 +16,7 @@ import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import BusinessProfileEditor from '@/components/BusinessProfileEditor';
 import ValuCodeSettings from '@/components/ValuCodeSettings';
+import UserDetailsEditor from '@/components/UserDetailsEditor';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -246,14 +247,7 @@ export default function ProfileScreen() {
             </>
           ) : (
             <>
-              {/* User Details Section - Placeholder for now */}
-              <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
-                <Text style={[styles.infoTitle, { color: colors.text }]}>User Details</Text>
-                <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                  This section is for your personal information and preferences.
-                  You can add details at your discretion.
-                </Text>
-              </View>
+              <UserDetailsEditor />
             </>
           )
         )}

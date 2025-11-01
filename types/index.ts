@@ -85,6 +85,13 @@ export interface Charity {
 
 export type AccountType = 'individual' | 'business';
 
+export interface SocialMedia {
+  facebook?: string;
+  instagram?: string;
+  twitter?: string;
+  linkedin?: string;
+}
+
 export interface BusinessInfo {
   name: string;
   category: string;
@@ -96,6 +103,17 @@ export interface BusinessInfo {
   longitude?: number; // Longitude coordinate for distance calculations
   acceptsValuCodes: boolean;
   valuCodeDiscount?: number; // Percentage discount (e.g., 10 for 10%)
+  socialMedia?: SocialMedia;
+}
+
+export interface UserDetails {
+  name?: string;
+  description?: string;
+  website?: string;
+  location?: string;
+  latitude?: number;
+  longitude?: number;
+  socialMedia?: SocialMedia;
 }
 
 export interface ValuCodeCustomer {
@@ -116,4 +134,5 @@ export interface UserProfile {
   selectedCharities?: Charity[];
   businessInfo?: BusinessInfo; // Only for business accounts
   valuCodeCustomers?: ValuCodeCustomer[]; // Only for business accounts
+  userDetails?: UserDetails; // Only for individual accounts
 }
