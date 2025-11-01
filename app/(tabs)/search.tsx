@@ -483,7 +483,7 @@ export default function SearchScreen() {
         activeOpacity={0.7}
       >
         <Image
-          source={{ uri: item.productImageUrl || getLogoUrl(item.website || '') }}
+          source={{ uri: getLogoUrl(item.website || '') }}
           style={styles.exploreCardImage}
           contentFit="cover"
           transition={200}
@@ -547,7 +547,7 @@ export default function SearchScreen() {
           }}
         >
           <Image
-            source={{ uri: selectedPostProduct.productImageUrl || getLogoUrl(selectedPostProduct.website || '') }}
+            source={{ uri: selectedPostProduct.exampleImageUrl || getLogoUrl(selectedPostProduct.website || '') }}
             style={styles.postImage}
             contentFit="cover"
             transition={200}

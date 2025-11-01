@@ -25,6 +25,7 @@ export default function ProfileScreen() {
 
   const isBusiness = profile.accountType === 'business';
   const [activeTab, setActiveTab] = useState<'profile' | 'details'>('profile');
+  const [showQRCode, setShowQRCode] = useState(false);
 
   // Generate a random QR code value that changes on each render
   const [qrValue, setQrValue] = useState('');
@@ -142,21 +143,44 @@ export default function ProfileScreen() {
                   Use this code when you shop at locations and we will donate a percentage of each purchase to your selected organizations
                 </Text>
 
-                {/* QR Code - Inside the same box */}
+                {/* QR Code Toggle Section */}
                 {qrValue && (
                   <View style={styles.qrCodeSection}>
                     <View style={styles.qrDivider} />
-                    <View style={[styles.qrCodeContainer, { width: qrSize, height: qrSize }]}>
-                      <QRCode
-                        value={qrValue}
-                        size={qrSize - 32}
-                        color="#000000"
-                        backgroundColor="#ffffff"
-                      />
-                    </View>
-                    <Text style={[styles.qrSubtitle, { color: colors.textSecondary }]}>
-                      Present this at checkout for discount and donation credit
-                    </Text>
+                    {!showQRCode ? (
+                      <TouchableOpacity
+                        style={[styles.generateQRButton, { backgroundColor: colors.primary }]}
+                        onPress={() => setShowQRCode(true)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.generateQRButtonText, { color: colors.white }]}>
+                          Generate QR Code
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <>
+                        <View style={[styles.qrCodeContainer, { width: qrSize, height: qrSize }]}>
+                          <QRCode
+                            value={qrValue}
+                            size={qrSize - 32}
+                            color="#000000"
+                            backgroundColor="#ffffff"
+                          />
+                        </View>
+                        <Text style={[styles.qrSubtitle, { color: colors.textSecondary }]}>
+                          Present this at checkout for discount and donation credit
+                        </Text>
+                        <TouchableOpacity
+                          style={[styles.closeQRButton, { borderColor: colors.border }]}
+                          onPress={() => setShowQRCode(false)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.closeQRButtonText, { color: colors.text }]}>
+                            Close
+                          </Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
                   </View>
                 )}
               </View>
@@ -334,6 +358,31 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
     marginTop: 16,
+  },
+  generateQRButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 56,
+  },
+  generateQRButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  closeQRButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    borderWidth: 1,
+  },
+  closeQRButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   section: {
     marginBottom: 24,
