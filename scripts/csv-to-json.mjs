@@ -67,8 +67,9 @@ function parseCSV(csvContent) {
 
 /**
  * Convert brands.csv to brands.json
- * Expected columns: id, name, category, description, website, location, latitude, longitude,
+ * Expected columns: id, name, category, description, website, Headquarters Location,
  *                   affiliate1, $affiliate1, affiliate2, $affiliate2, etc.
+ *                   ownership1-5, ownership Sources
  */
 function convertBrands() {
   console.log('Converting brands.csv...');
@@ -97,10 +98,26 @@ function convertBrands() {
       }
     }
 
-    // Parse location fields
-    const location = row.location?.trim() || '';
+    // Parse ownership from ownership1-5 columns
+    const ownership = [];
+    for (let i = 1; i <= 5; i++) {
+      const ownershipEntry = row[`ownership${i}`];
+
+      if (ownershipEntry && ownershipEntry.trim()) {
+        ownership.push({
+          name: ownershipEntry.trim(),
+          relationship: 'Owner' // Default relationship
+        });
+      }
+    }
+
+    // Parse location from "Headquarters Location" column (with fallback to old "location")
+    const location = row['Headquarters Location']?.trim() || row.location?.trim() || '';
     const latitude = row.latitude?.trim() ? parseFloat(row.latitude) : undefined;
     const longitude = row.longitude?.trim() ? parseFloat(row.longitude) : undefined;
+
+    // Parse ownership sources
+    const ownershipSources = row['ownership Sources']?.trim() || '';
 
     const brand = {
       id: row.id || '',
@@ -108,7 +125,8 @@ function convertBrands() {
       category: row.category || 'Uncategorized',
       description: row.description || '',
       website: row.website || '',
-      affiliates: affiliates
+      affiliates: affiliates,
+      ownership: ownership
     };
 
     // Only include location fields if they have values
@@ -120,6 +138,11 @@ function convertBrands() {
     }
     if (longitude !== undefined && !isNaN(longitude)) {
       brand.longitude = longitude;
+    }
+
+    // Include ownership sources if present
+    if (ownershipSources) {
+      brand.ownershipSources = ownershipSources;
     }
 
     return brand;

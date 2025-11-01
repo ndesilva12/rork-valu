@@ -67,7 +67,8 @@ export interface Brand {
   affiliates?: Affiliate[]; // Celebrity/influencer affiliates and their relationships
   partnerships?: Partnership[]; // Business partnerships and collaborations
   ownership?: Ownership[]; // Parent companies, investors, and ownership structure
-  location?: string; // Location name (e.g., "New York, NY")
+  ownershipSources?: string; // Citations/sources for ownership data
+  location?: string; // Location name (e.g., "New York, NY" / Headquarters Location)
   latitude?: number; // Latitude coordinate for distance calculations
   longitude?: number; // Longitude coordinate for distance calculations
 }
