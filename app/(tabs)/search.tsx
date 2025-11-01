@@ -674,6 +674,7 @@ export default function SearchScreen() {
           </View>
         ) : (
           <FlatList
+            key="explore-grid"
             data={alignedProducts}
             renderItem={renderExploreCard}
             keyExtractor={item => item.id}
@@ -698,6 +699,7 @@ export default function SearchScreen() {
         </View>
       ) : (
         <FlatList
+          key="search-results"
           data={results}
           renderItem={renderProduct}
           keyExtractor={item => item.id}
