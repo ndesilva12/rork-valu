@@ -1065,8 +1065,8 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   exploreCardImage: {
-    width: '100%',
-    height: cardWidth * 0.75,
+    width: cardWidth,
+    height: cardWidth,
   },
   exploreCardOverlay: {
     position: 'absolute' as const,

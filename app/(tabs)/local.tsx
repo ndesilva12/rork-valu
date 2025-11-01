@@ -64,9 +64,11 @@ export default function ValuesScreen() {
                       onPress={() => router.push(`/value/${cause.id}`)}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.valueName, { color: colors.text }]} numberOfLines={1}>
-                        {cause.name}
-                      </Text>
+                      <View style={[styles.valueNameBox, { borderColor: colors.success }]}>
+                        <Text style={[styles.valueNameText, { color: colors.success }]} numberOfLines={1}>
+                          {cause.name}
+                        </Text>
+                      </View>
                       <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
                     </TouchableOpacity>
                   ))}
@@ -87,9 +89,11 @@ export default function ValuesScreen() {
                       onPress={() => router.push(`/value/${cause.id}`)}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.valueName, { color: colors.text }]} numberOfLines={1}>
-                        {cause.name}
-                      </Text>
+                      <View style={[styles.valueNameBox, { borderColor: colors.danger }]}>
+                        <Text style={[styles.valueNameText, { color: colors.danger }]} numberOfLines={1}>
+                          {cause.name}
+                        </Text>
+                      </View>
                       <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
                     </TouchableOpacity>
                   ))}
@@ -160,11 +164,16 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
   },
-  valueName: {
-    fontSize: 16,
+  valueNameBox: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 2,
+    alignSelf: 'flex-start',
+  },
+  valueNameText: {
+    fontSize: 14,
     fontWeight: '600' as const,
-    flex: 1,
-    marginRight: 12,
   },
   emptyState: {
     flex: 1,

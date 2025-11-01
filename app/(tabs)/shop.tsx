@@ -80,6 +80,8 @@ export default function DataScreen() {
             <View style={styles.valuesListContainer}>
               {userCauses.map(cause => {
                 const spending = generateValueSpending(cause.name, timeframe);
+                const isSupport = cause.type === 'support';
+                const valueColor = isSupport ? colors.success : colors.danger;
                 return (
                   <TouchableOpacity
                     key={cause.id}
@@ -87,9 +89,11 @@ export default function DataScreen() {
                     onPress={() => router.push(`/value/${cause.id}`)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.valueSpendingName, { color: colors.text }]} numberOfLines={1}>
-                      {cause.name}
-                    </Text>
+                    <View style={[styles.valueNameBox, { borderColor: valueColor }]}>
+                      <Text style={[styles.valueNameText, { color: valueColor }]} numberOfLines={1}>
+                        {cause.name}
+                      </Text>
+                    </View>
                     <View style={styles.valueSpendingRight}>
                       <Text style={[styles.valueSpendingAmount, { color: colors.text }]}>
                         ${spending.amount.toFixed(0)}
@@ -185,11 +189,16 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
   },
-  valueSpendingName: {
-    fontSize: 16,
+  valueNameBox: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 2,
+    alignSelf: 'flex-start',
+  },
+  valueNameText: {
+    fontSize: 14,
     fontWeight: '600' as const,
-    flex: 1,
-    marginRight: 16,
   },
   valueSpendingRight: {
     flexDirection: 'row',
