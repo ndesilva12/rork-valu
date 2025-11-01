@@ -297,7 +297,7 @@ export default function SearchScreen() {
       addToSearchHistory(query);
     }
     router.push({
-      pathname: '/product/[id]',
+      pathname: '/brand/[id]',
       params: { id: product.id },
     });
   };
@@ -404,7 +404,7 @@ export default function SearchScreen() {
     if (scannedProduct) {
       handleCloseScanner();
       router.push({
-        pathname: '/product/[id]',
+        pathname: '/brand/[id]',
         params: { id: scannedProduct.id },
       });
     }

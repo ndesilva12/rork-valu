@@ -457,7 +457,7 @@ export default function HomeScreen() {
 
   const handleProductPress = (product: Product) => {
     router.push({
-      pathname: '/product/[id]',
+      pathname: '/brand/[id]',
       params: { id: product.id },
     });
   };
