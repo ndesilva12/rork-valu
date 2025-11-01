@@ -68,6 +68,10 @@ export default function SearchScreen() {
 
   // Calculate aligned products for Explore section
   const alignedProducts = useMemo(() => {
+    if (!profile?.causes || !Array.isArray(profile.causes)) {
+      return [];
+    }
+
     const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
     const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
     const totalUserValues = profile.causes.length;
@@ -271,9 +275,9 @@ export default function SearchScreen() {
     try {
       setQuery(text);
       if (text.trim().length > 0) {
-        const userCauseIds = profile.causes.map(c => c.id);
+        const userCauseIds = profile?.causes ? profile.causes.map(c => c.id) : [];
         const searchResults = searchProducts(text, userCauseIds);
-        setResults(searchResults);
+        setResults(searchResults || []);
       } else {
         setResults([]);
       }
@@ -658,7 +662,7 @@ export default function SearchScreen() {
       </View>
 
       {query.trim().length === 0 ? (
-        profile.causes.length === 0 ? (
+        !profile?.causes || profile.causes.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={[styles.emptyIconContainer, { backgroundColor: colors.primaryLight + '10' }]}>
               <SearchIcon size={48} color={colors.primaryLight} strokeWidth={1.5} />
