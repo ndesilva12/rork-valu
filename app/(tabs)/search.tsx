@@ -268,12 +268,17 @@ export default function SearchScreen() {
   }, []);
 
   const handleSearch = (text: string) => {
-    setQuery(text);
-    if (text.trim().length > 0) {
-      const userCauseIds = profile.causes.map(c => c.id);
-      const searchResults = searchProducts(text, userCauseIds);
-      setResults(searchResults);
-    } else {
+    try {
+      setQuery(text);
+      if (text.trim().length > 0) {
+        const userCauseIds = profile.causes.map(c => c.id);
+        const searchResults = searchProducts(text, userCauseIds);
+        setResults(searchResults);
+      } else {
+        setResults([]);
+      }
+    } catch (error) {
+      console.error('Error during search:', error);
       setResults([]);
     }
   };
@@ -982,7 +987,7 @@ export default function SearchScreen() {
 }
 
 const { width } = Dimensions.get('window');
-const cardWidth = (width - 48) / 2; // 16px padding on each side + 16px gap
+const cardWidth = (width - 6) / 2; // 3px padding on each side, minimal gap
 
 const styles = StyleSheet.create({
   container: {
@@ -1045,24 +1050,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   exploreGrid: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
     paddingTop: 0,
   },
   exploreRow: {
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    gap: 3,
   },
   exploreCard: {
     width: cardWidth,
-    marginBottom: 16,
-    borderRadius: 12,
+    marginBottom: 3,
+    borderRadius: 2,
     overflow: 'hidden',
-    borderWidth: 1,
+    borderWidth: 0,
   },
   exploreCardLeft: {
-    marginRight: 8,
+    marginRight: 0,
   },
   exploreCardRight: {
-    marginLeft: 8,
+    marginLeft: 0,
   },
   exploreCardImage: {
     width: cardWidth,

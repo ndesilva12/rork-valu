@@ -96,7 +96,6 @@ export default function ProfileScreen() {
               {qrValue && (
                 <View style={styles.qrCodeSection}>
                   <View style={styles.qrDivider} />
-                  <Text style={[styles.qrLabel, { color: colors.textSecondary }]}>Scan to Share</Text>
                   <View style={[styles.qrCodeContainer, { width: qrSize, height: qrSize }]}>
                     <QRCode
                       value={qrValue}
@@ -105,6 +104,9 @@ export default function ProfileScreen() {
                       backgroundColor="#ffffff"
                     />
                   </View>
+                  <Text style={[styles.qrSubtitle, { color: colors.textSecondary }]}>
+                    Present this at checkout for discount and donation credit
+                  </Text>
                 </View>
               )}
             </View>
@@ -251,6 +253,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  qrSubtitle: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 16,
   },
   section: {
     marginBottom: 24,
