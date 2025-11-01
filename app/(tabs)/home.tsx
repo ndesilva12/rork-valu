@@ -1008,6 +1008,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 8,
     marginTop: 10,
+    zIndex: 100,
   },
   viewModeSelector: {
     flex: 1,
@@ -1033,12 +1034,13 @@ const styles = StyleSheet.create({
   distanceSelectorContainer: {
     position: 'relative' as const,
     minWidth: 140,
+    zIndex: 101,
   },
   distanceButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 10,
+    paddingVertical: 13,
     paddingHorizontal: 12,
     borderRadius: 10,
     borderWidth: 1,
@@ -1056,8 +1058,8 @@ const styles = StyleSheet.create({
     maxHeight: 300,
     borderRadius: 12,
     borderWidth: 1,
-    zIndex: 1000,
-    elevation: 5,
+    zIndex: 10000,
+    elevation: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
