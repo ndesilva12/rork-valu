@@ -90,7 +90,7 @@ export default function ValuesScreen() {
 
   const handleResetValues = () => {
     Alert.alert(
-      'Reset Values',
+      'Reset All Values',
       'Are you sure you want to reset all your values? This action cannot be undone.',
       [
         {
@@ -158,7 +158,7 @@ export default function ValuesScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.actionButtonText, { color: colors.white }]}>
-              Update Values
+              Update All Values
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -167,7 +167,7 @@ export default function ValuesScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.actionButtonText, { color: colors.danger }]}>
-              Reset Values
+              Reset All Values
             </Text>
           </TouchableOpacity>
         </View>
@@ -176,7 +176,7 @@ export default function ValuesScreen() {
           <View style={styles.emptyState}>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>No Values Selected</Text>
             <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-              Tap "Update Values" to add values
+              Tap "Update All Values" to add values
             </Text>
           </View>
         ) : (

@@ -8,6 +8,7 @@ import {
   FlatList,
   ActivityIndicator,
   Platform,
+  Alert,
 } from 'react-native';
 import { MapPin } from 'lucide-react-native';
 import * as Location from 'expo-location';
@@ -41,8 +42,20 @@ export default function LocationAutocomplete({
 
   const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || '';
 
+  // Debug logging
+  console.log('[LocationAutocomplete] API Key available:', !!API_KEY);
+  if (!API_KEY) {
+    console.warn('[LocationAutocomplete] No Google Places API key found. Autocomplete will not work.');
+  }
+
   const fetchSuggestions = async (text: string) => {
-    if (!text.trim() || !API_KEY) {
+    if (!text.trim()) {
+      setSuggestions([]);
+      return;
+    }
+
+    if (!API_KEY) {
+      console.warn('[LocationAutocomplete] Cannot fetch suggestions - no API key');
       setSuggestions([]);
       return;
     }
@@ -133,9 +146,13 @@ export default function LocationAutocomplete({
   const handleGetCurrentLocation = async () => {
     try {
       setGettingLocation(true);
+      console.log('[LocationAutocomplete] Requesting location permission...');
 
       const { status } = await Location.requestForegroundPermissionsAsync();
+      console.log('[LocationAutocomplete] Permission status:', status);
       if (status !== 'granted') {
+        console.warn('[LocationAutocomplete] Location permission denied');
+        Alert.alert('Permission Required', 'Location permission is required to use your current location.');
         return;
       }
 
@@ -145,18 +162,25 @@ export default function LocationAutocomplete({
 
       const lat = currentLocation.coords.latitude;
       const lon = currentLocation.coords.longitude;
+      console.log('[LocationAutocomplete] Got coordinates:', { lat, lon });
 
       // Reverse geocode to get address
       const addresses = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
+      console.log('[LocationAutocomplete] Reverse geocode result:', addresses);
       if (addresses && addresses.length > 0) {
         const addr = addresses[0];
         const locationString = [addr.city, addr.region].filter(Boolean).join(', ');
         const displayLocation = locationString || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+        console.log('[LocationAutocomplete] Setting location:', displayLocation);
         setInputValue(displayLocation);
         onLocationSelect(displayLocation, lat, lon);
+      } else {
+        console.warn('[LocationAutocomplete] No addresses found for coordinates');
+        Alert.alert('Error', 'Could not determine your location address.');
       }
     } catch (error) {
-      console.error('Error getting location:', error);
+      console.error('[LocationAutocomplete] Error getting location:', error);
+      Alert.alert('Error', `Failed to get current location: ${error.message || 'Unknown error'}`);
     } finally {
       setGettingLocation(false);
     }
