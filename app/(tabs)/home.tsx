@@ -833,6 +833,8 @@ const styles = StyleSheet.create({
   stickyHeaderContainer: {
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+    zIndex: 1000,
+    position: 'relative' as const,
   },
   header: {
     flexDirection: 'row',
@@ -1040,7 +1042,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 13,
+    paddingVertical: 14,
     paddingHorizontal: 12,
     borderRadius: 10,
     borderWidth: 1,
@@ -1058,8 +1060,8 @@ const styles = StyleSheet.create({
     maxHeight: 300,
     borderRadius: 12,
     borderWidth: 1,
-    zIndex: 10000,
-    elevation: 10,
+    zIndex: 99999,
+    elevation: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
