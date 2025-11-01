@@ -204,7 +204,7 @@ export default function BrandDetailScreen() {
 
   // Calculate alignment data without useMemo to avoid infinite re-render
   // Early return for loading/missing data
-  if (!product || !valuesMatrix) {
+  if (!brand || !valuesMatrix) {
     var alignmentData = {
       isAligned: false,
       matchingValues: [],
@@ -363,7 +363,7 @@ export default function BrandDetailScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.errorContainer}>
           <AlertCircle size={48} color={colors.danger} />
-          <Text style={[styles.errorText, { color: colors.text }]}>Product not found</Text>
+          <Text style={[styles.errorText, { color: colors.text }]}>Brand not found</Text>
         </View>
       </View>
     );
@@ -413,7 +413,7 @@ export default function BrandDetailScreen() {
             </TouchableOpacity>
 
             <View style={styles.titleContainer}>
-              <Text style={[styles.productName, { color: colors.text }]}>{brand?.name}</Text>
+              <Text style={[styles.brandName, { color: colors.text }]}>{brand?.name}</Text>
               <Text style={[styles.category, { color: colors.primary }]}>{brand.category}</Text>
               {brand.location && (
                 <View style={styles.locationRow}>
