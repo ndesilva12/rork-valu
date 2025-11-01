@@ -7,7 +7,10 @@ import {
   TouchableOpacity,
   Platform,
   StatusBar,
+  useWindowDimensions,
 } from 'react-native';
+import { useState, useEffect } from 'react';
+import QRCode from 'react-native-qrcode-svg';
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -18,8 +21,18 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+  const { height } = useWindowDimensions();
 
   const isBusiness = profile.accountType === 'business';
+
+  // Generate a random QR code value that changes on each render
+  const [qrValue, setQrValue] = useState('');
+
+  useEffect(() => {
+    // Generate random string for QR code
+    const randomString = `VALU-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    setQrValue(randomString);
+  }, []);
 
   const handleSelectCharities = () => {
     router.push('/select-charities');
@@ -27,6 +40,10 @@ export default function ProfileScreen() {
 
   const selectedOrganizationsCount = profile.selectedCharities?.length || 0;
   const donationAmount = profile.donationAmount || 0;
+
+  // Calculate QR code size (max 50% of scroll area height, maintain 1:1 ratio)
+  const maxQRSize = Math.min(height * 0.5, 300); // Max 50% of height or 300px
+  const qrSize = Math.min(maxQRSize, 250); // Constrain to reasonable size
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -75,6 +92,21 @@ export default function ProfileScreen() {
                 Use this code when you shop at locations and we will donate a percentage of each purchase to your selected organizations
               </Text>
             </View>
+
+            {/* QR Code Section */}
+            {qrValue && (
+              <View style={[styles.qrSection, { backgroundColor: colors.backgroundSecondary }]}>
+                <Text style={[styles.qrLabel, { color: colors.textSecondary }]}>Scan to Share</Text>
+                <View style={[styles.qrCodeContainer, { width: qrSize, height: qrSize }]}>
+                  <QRCode
+                    value={qrValue}
+                    size={qrSize - 32}
+                    color={isDarkMode ? colors.text : Colors.text}
+                    backgroundColor={colors.backgroundSecondary}
+                  />
+                </View>
+              </View>
+            )}
 
             {/* Donation Counter Section */}
             <View style={styles.section}>
@@ -193,6 +225,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  qrSection: {
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  qrLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    marginBottom: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  qrCodeContainer: {
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   section: {
     marginBottom: 24,
