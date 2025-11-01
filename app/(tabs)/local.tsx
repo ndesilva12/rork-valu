@@ -9,13 +9,13 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
-import { ChevronRight, ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon } from 'lucide-react-native';
+import { ChevronRight, ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Plus, Edit3, X } from 'lucide-react-native';
 import { useState } from 'react';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
-import { CauseCategory } from '@/types';
+import { CauseCategory, Cause } from '@/types';
 
 const CATEGORY_ICONS: Record<CauseCategory, any> = {
   social_issue: Heart,
@@ -39,9 +39,11 @@ const CATEGORY_LABELS: Record<CauseCategory, string> = {
 
 export default function ValuesScreen() {
   const router = useRouter();
-  const { profile, isDarkMode, removeCauses } = useUser();
+  const { profile, isDarkMode, removeCauses, toggleCauseType } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const [expandedCategories, setExpandedCategories] = useState<Set<CauseCategory>>(new Set());
+  const [editingValueId, setEditingValueId] = useState<string | null>(null);
+  const [addingValueId, setAddingValueId] = useState<string | null>(null);
 
   const supportCauses = (profile.causes || [])
     .filter(c => c.type === 'support')
@@ -109,6 +111,28 @@ export default function ValuesScreen() {
     );
   };
 
+  const handleCycleValue = async (cause: Cause) => {
+    // Cycle: aligned → unaligned → unselected → aligned
+    if (cause.type === 'support') {
+      await toggleCauseType(cause, 'avoid');
+    } else if (cause.type === 'avoid') {
+      await toggleCauseType(cause, 'remove');
+    }
+    setEditingValueId(null);
+  };
+
+  const handleAddValue = async (value: any, type: 'support' | 'avoid') => {
+    const newCause: Cause = {
+      id: value.id,
+      name: value.name,
+      category: value.category,
+      type,
+      description: value.description,
+    };
+    await toggleCauseType(newCause, type);
+    setAddingValueId(null);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
@@ -164,19 +188,59 @@ export default function ValuesScreen() {
                 </Text>
                 <View style={styles.valuesList}>
                   {supportCauses.map(cause => (
-                    <TouchableOpacity
-                      key={cause.id}
-                      style={[styles.valueRow, { backgroundColor: colors.backgroundSecondary }]}
-                      onPress={() => router.push(`/value/${cause.id}`)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={[styles.valueNameBox, { borderColor: colors.success }]}>
-                        <Text style={[styles.valueNameText, { color: colors.success }]} numberOfLines={1}>
-                          {cause.name}
-                        </Text>
-                      </View>
-                      <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-                    </TouchableOpacity>
+                    <View key={cause.id} style={styles.valueRowContainer}>
+                      <TouchableOpacity
+                        style={[styles.valueRow, { backgroundColor: colors.backgroundSecondary }]}
+                        onPress={() => {
+                          if (editingValueId !== cause.id) {
+                            router.push(`/value/${cause.id}`);
+                          }
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[styles.valueNameBox, { borderColor: colors.success }]}>
+                          <Text style={[styles.valueNameText, { color: colors.success }]} numberOfLines={1}>
+                            {cause.name}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.editButton}
+                          onPress={() => setEditingValueId(editingValueId === cause.id ? null : cause.id)}
+                          activeOpacity={0.7}
+                        >
+                          {editingValueId === cause.id ? (
+                            <X size={18} color={colors.textSecondary} strokeWidth={2} />
+                          ) : (
+                            <Edit3 size={18} color={colors.textSecondary} strokeWidth={2} />
+                          )}
+                        </TouchableOpacity>
+                      </TouchableOpacity>
+                      {editingValueId === cause.id && (
+                        <View style={[styles.editActions, { backgroundColor: colors.background }]}>
+                          <TouchableOpacity
+                            style={[styles.cycleButton, { backgroundColor: colors.danger }]}
+                            onPress={() => handleCycleValue(cause)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.cycleButtonText, { color: colors.white }]}>
+                              Change to Unaligned
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.removeButton, { borderColor: colors.border }]}
+                            onPress={() => {
+                              toggleCauseType(cause, 'remove');
+                              setEditingValueId(null);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.removeButtonText, { color: colors.textSecondary }]}>
+                              Remove
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
                   ))}
                 </View>
               </View>
@@ -189,19 +253,59 @@ export default function ValuesScreen() {
                 </Text>
                 <View style={styles.valuesList}>
                   {avoidCauses.map(cause => (
-                    <TouchableOpacity
-                      key={cause.id}
-                      style={[styles.valueRow, { backgroundColor: colors.backgroundSecondary }]}
-                      onPress={() => router.push(`/value/${cause.id}`)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={[styles.valueNameBox, { borderColor: colors.danger }]}>
-                        <Text style={[styles.valueNameText, { color: colors.danger }]} numberOfLines={1}>
-                          {cause.name}
-                        </Text>
-                      </View>
-                      <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-                    </TouchableOpacity>
+                    <View key={cause.id} style={styles.valueRowContainer}>
+                      <TouchableOpacity
+                        style={[styles.valueRow, { backgroundColor: colors.backgroundSecondary }]}
+                        onPress={() => {
+                          if (editingValueId !== cause.id) {
+                            router.push(`/value/${cause.id}`);
+                          }
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[styles.valueNameBox, { borderColor: colors.danger }]}>
+                          <Text style={[styles.valueNameText, { color: colors.danger }]} numberOfLines={1}>
+                            {cause.name}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.editButton}
+                          onPress={() => setEditingValueId(editingValueId === cause.id ? null : cause.id)}
+                          activeOpacity={0.7}
+                        >
+                          {editingValueId === cause.id ? (
+                            <X size={18} color={colors.textSecondary} strokeWidth={2} />
+                          ) : (
+                            <Edit3 size={18} color={colors.textSecondary} strokeWidth={2} />
+                          )}
+                        </TouchableOpacity>
+                      </TouchableOpacity>
+                      {editingValueId === cause.id && (
+                        <View style={[styles.editActions, { backgroundColor: colors.background }]}>
+                          <TouchableOpacity
+                            style={[styles.cycleButton, { backgroundColor: colors.neutral }]}
+                            onPress={() => handleCycleValue(cause)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.cycleButtonText, { color: colors.white }]}>
+                              Remove from Values
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.removeButton, { borderColor: colors.border }]}
+                            onPress={async () => {
+                              await toggleCauseType(cause, 'support');
+                              setEditingValueId(null);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.removeButtonText, { color: colors.success }]}>
+                              Change to Aligned
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
                   ))}
                 </View>
               </View>
@@ -237,19 +341,56 @@ export default function ValuesScreen() {
                 </View>
                 <View style={styles.valuesList}>
                   {displayedValues.map(value => (
-                    <TouchableOpacity
-                      key={value.id}
-                      style={[styles.valueRow, styles.unselectedValueRow, { backgroundColor: colors.backgroundSecondary }]}
-                      onPress={() => router.push(`/value/${value.id}`)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={[styles.valueNameBox, styles.unselectedValueNameBox, { borderColor: colors.neutral }]}>
-                        <Text style={[styles.valueNameText, styles.unselectedValueText, { color: colors.neutral }]} numberOfLines={1}>
-                          {value.name}
-                        </Text>
-                      </View>
-                      <ChevronRight size={20} color={colors.neutral} strokeWidth={2} />
-                    </TouchableOpacity>
+                    <View key={value.id} style={styles.valueRowContainer}>
+                      <TouchableOpacity
+                        style={[styles.valueRow, styles.unselectedValueRow, { backgroundColor: colors.backgroundSecondary }]}
+                        onPress={() => {
+                          if (addingValueId !== value.id) {
+                            router.push(`/value/${value.id}`);
+                          }
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[styles.valueNameBox, styles.unselectedValueNameBox, { borderColor: colors.neutral }]}>
+                          <Text style={[styles.valueNameText, styles.unselectedValueText, { color: colors.neutral }]} numberOfLines={1}>
+                            {value.name}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.addButton}
+                          onPress={() => setAddingValueId(addingValueId === value.id ? null : value.id)}
+                          activeOpacity={0.7}
+                        >
+                          {addingValueId === value.id ? (
+                            <X size={18} color={colors.neutral} strokeWidth={2} />
+                          ) : (
+                            <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+                          )}
+                        </TouchableOpacity>
+                      </TouchableOpacity>
+                      {addingValueId === value.id && (
+                        <View style={[styles.addActions, { backgroundColor: colors.background }]}>
+                          <TouchableOpacity
+                            style={[styles.addTypeButton, { backgroundColor: colors.success }]}
+                            onPress={() => handleAddValue(value, 'support')}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.addTypeButtonText, { color: colors.white }]}>
+                              Add as Aligned
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.addTypeButton, { backgroundColor: colors.danger }]}
+                            onPress={() => handleAddValue(value, 'avoid')}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.addTypeButtonText, { color: colors.white }]}>
+                              Add as Unaligned
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
                   ))}
                 </View>
                 {hasMore && (
@@ -437,5 +578,66 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
     marginBottom: 12,
+  },
+  valueRowContainer: {
+    marginBottom: 0,
+  },
+  editButton: {
+    padding: 8,
+  },
+  addButton: {
+    padding: 8,
+  },
+  editActions: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  addActions: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  cycleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cycleButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  removeButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  removeButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  addTypeButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  addTypeButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
 });

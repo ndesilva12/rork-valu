@@ -147,19 +147,78 @@ export const [UserProvider, useUser] = createContextHook(() => {
       console.error('[UserContext] Cannot save causes: User not logged in');
       return;
     }
-    
+
     const newProfile = { ...profile, causes };
     console.log('[UserContext] Saving', causes.length, 'causes to AsyncStorage for user:', clerkUser.id);
-    
+
     setProfile(newProfile);
     setHasCompletedOnboarding(causes.length > 0);
-    
+
     try {
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
       await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
       console.log('[UserContext] Profile saved successfully to AsyncStorage');
     } catch (error) {
       console.error('[UserContext] Failed to save profile to AsyncStorage:', error);
+    }
+  }, [clerkUser, profile]);
+
+  const removeCauses = useCallback(async (causeIds: string[]) => {
+    if (!clerkUser) {
+      console.error('[UserContext] Cannot remove causes: User not logged in');
+      return;
+    }
+
+    const newCauses = profile.causes.filter(c => !causeIds.includes(c.id));
+    const newProfile = { ...profile, causes: newCauses };
+    console.log('[UserContext] Removing', causeIds.length, 'causes from AsyncStorage for user:', clerkUser.id);
+
+    setProfile(newProfile);
+    setHasCompletedOnboarding(newCauses.length > 0);
+
+    try {
+      const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
+      await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
+      console.log('[UserContext] Causes removed successfully');
+    } catch (error) {
+      console.error('[UserContext] Failed to remove causes:', error);
+    }
+  }, [clerkUser, profile]);
+
+  const toggleCauseType = useCallback(async (cause: Cause, newType: 'support' | 'avoid' | 'remove') => {
+    if (!clerkUser) {
+      console.error('[UserContext] Cannot toggle cause: User not logged in');
+      return;
+    }
+
+    let newCauses: Cause[];
+    if (newType === 'remove') {
+      // Remove the cause entirely
+      newCauses = profile.causes.filter(c => c.id !== cause.id);
+    } else {
+      const existingIndex = profile.causes.findIndex(c => c.id === cause.id);
+      if (existingIndex >= 0) {
+        // Update existing cause type
+        newCauses = [...profile.causes];
+        newCauses[existingIndex] = { ...cause, type: newType };
+      } else {
+        // Add new cause
+        newCauses = [...profile.causes, { ...cause, type: newType }];
+      }
+    }
+
+    const newProfile = { ...profile, causes: newCauses };
+    console.log('[UserContext] Toggling cause', cause.name, 'to', newType);
+
+    setProfile(newProfile);
+    setHasCompletedOnboarding(newCauses.length > 0);
+
+    try {
+      const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
+      await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
+      console.log('[UserContext] Cause toggled successfully');
+    } catch (error) {
+      console.error('[UserContext] Failed to toggle cause:', error);
     }
   }, [clerkUser, profile]);
 
@@ -330,6 +389,8 @@ export const [UserProvider, useUser] = createContextHook(() => {
     hasCompletedOnboarding,
     isNewUser,
     addCauses,
+    removeCauses,
+    toggleCauseType,
     addToSearchHistory,
     updateSelectedCharities,
     resetProfile,
@@ -340,5 +401,5 @@ export const [UserProvider, useUser] = createContextHook(() => {
     setAccountType,
     setBusinessInfo,
     setUserDetails,
-  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, toggleDarkMode, clerkUser, setAccountType, setBusinessInfo, setUserDetails]);
+  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, removeCauses, toggleCauseType, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, toggleDarkMode, clerkUser, setAccountType, setBusinessInfo, setUserDetails]);
 });
