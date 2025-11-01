@@ -94,8 +94,8 @@ export default function ValuCodeSettings() {
           <Switch
             value={acceptsValuCodes}
             onValueChange={handleToggleValuCodes}
-            trackColor={{ false: colors.border, true: colors.primary + '60' }}
-            thumbColor={acceptsValuCodes ? colors.primary : colors.textSecondary}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor={colors.white}
           />
         </View>
 
