@@ -563,7 +563,7 @@ export default function HomeScreen() {
                   key={option}
                   style={[
                     styles.distanceOption,
-                    distanceFilter === option && { backgroundColor: colors.primaryLight + '20' },
+                    distanceFilter === option && { backgroundColor: colors.primary },
                   ]}
                   onPress={() => {
                     setDistanceFilter(option);
@@ -575,7 +575,7 @@ export default function HomeScreen() {
                     style={[
                       styles.distanceOptionText,
                       { color: colors.text },
-                      distanceFilter === option && { color: colors.primary, fontWeight: '600' },
+                      distanceFilter === option && { color: colors.white, fontWeight: '600' },
                     ]}
                   >
                     {option === 'any' ? 'Any Distance' : `${option} miles`}
