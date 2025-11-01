@@ -100,7 +100,7 @@ export default function ProfileScreen() {
                     <QRCode
                       value={qrValue}
                       size={qrSize - 32}
-                      color={isDarkMode ? colors.text : Colors.text}
+                      color="#000000"
                       backgroundColor="#ffffff"
                     />
                   </View>

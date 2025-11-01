@@ -993,7 +993,9 @@ export default function SearchScreen() {
 }
 
 const { width } = Dimensions.get('window');
-const cardWidth = (width - 6) / 2; // 3px padding on each side, minimal gap
+// Constrain grid to mobile-like width for better card sizing
+const maxGridWidth = Math.min(width, 600); // Max 600px wide for grid
+const cardWidth = (maxGridWidth - 6) / 2; // 3px gap between cards
 
 const styles = StyleSheet.create({
   container: {
@@ -1058,6 +1060,9 @@ const styles = StyleSheet.create({
   exploreGrid: {
     paddingHorizontal: 0,
     paddingTop: 0,
+    alignSelf: 'center',
+    maxWidth: 600,
+    width: '100%',
   },
   exploreRow: {
     justifyContent: 'flex-start',
