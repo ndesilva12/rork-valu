@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Image,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -34,7 +35,14 @@ export default function AccountTypeScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.content,
+          Platform.OS === 'web' && styles.webContent
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Logo */}
         <View style={styles.logoContainer}>
           <Image
@@ -69,7 +77,7 @@ export default function AccountTypeScreen() {
             activeOpacity={0.7}
           >
             <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
-              <User size={32} color={colors.primary} strokeWidth={2} />
+              <User size={28} color={colors.primary} strokeWidth={2} />
             </View>
             <Text style={[styles.optionTitle, { color: colors.text }]}>
               Individual
@@ -92,7 +100,7 @@ export default function AccountTypeScreen() {
             activeOpacity={0.7}
           >
             <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
-              <Building2 size={32} color={colors.primary} strokeWidth={2} />
+              <Building2 size={28} color={colors.primary} strokeWidth={2} />
             </View>
             <Text style={[styles.optionTitle, { color: colors.text }]}>
               Business
@@ -113,7 +121,7 @@ export default function AccountTypeScreen() {
             Continue
           </Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -122,71 +130,72 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  content: {
     paddingHorizontal: 24,
-    paddingVertical: 32,
-    justifyContent: 'space-between',
-    ...(Platform.OS === 'web' && {
-      maxWidth: 600,
-      alignSelf: 'center',
-      width: '100%',
-    }),
+    paddingVertical: 20,
+    paddingBottom: 40,
+  },
+  webContent: {
+    maxWidth: 600,
+    alignSelf: 'center',
+    width: '100%',
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   logo: {
-    width: 180,
-    height: 52,
+    width: 160,
+    height: 48,
   },
   header: {
-    marginBottom: 40,
+    marginBottom: 32,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700' as const,
-    marginBottom: 12,
+    marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 22,
   },
   optionsContainer: {
-    gap: 16,
-    flex: 1,
+    gap: 12,
+    marginBottom: 24,
   },
   optionCard: {
-    padding: 24,
+    padding: 20,
     borderRadius: 16,
     alignItems: 'center',
   },
   iconContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   optionTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700' as const,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   optionDescription: {
-    fontSize: 14,
+    fontSize: 13,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   continueButton: {
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 24,
   },
   continueButtonText: {
     fontSize: 16,

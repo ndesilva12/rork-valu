@@ -95,6 +95,23 @@ export default function BusinessSetupScreen() {
     }
   };
 
+  const handleLocationBlur = async () => {
+    // If location is entered but no coordinates, try to geocode it
+    if (location.trim() && !latitude && !longitude) {
+      try {
+        const results = await Location.geocodeAsync(location);
+        if (results && results.length > 0) {
+          const { latitude: lat, longitude: lon } = results[0];
+          setLatitude(lat);
+          setLongitude(lon);
+        }
+      } catch (error) {
+        console.error('Error geocoding location:', error);
+        // Silently fail - user can still save location without coordinates
+      }
+    }
+  };
+
   const handleContinue = async () => {
     if (!businessName.trim()) {
       Alert.alert('Required', 'Please enter your business name');
@@ -267,6 +284,7 @@ export default function BusinessSetupScreen() {
               placeholderTextColor={colors.textSecondary}
               value={location}
               onChangeText={setLocation}
+              onBlur={handleLocationBlur}
               autoCapitalize="words"
             />
             <TouchableOpacity

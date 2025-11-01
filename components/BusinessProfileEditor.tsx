@@ -105,6 +105,23 @@ export default function BusinessProfileEditor() {
     }
   };
 
+  const handleLocationBlur = async () => {
+    // If location is entered but no coordinates, try to geocode it
+    if (location.trim() && !latitude && !longitude) {
+      try {
+        const results = await Location.geocodeAsync(location);
+        if (results && results.length > 0) {
+          const { latitude: lat, longitude: lon } = results[0];
+          setLatitude(lat);
+          setLongitude(lon);
+        }
+      } catch (error) {
+        console.error('Error geocoding location:', error);
+        // Silently fail - user can still save location without coordinates
+      }
+    }
+  };
+
   const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert('Required', 'Business name is required');
@@ -354,6 +371,7 @@ export default function BusinessProfileEditor() {
                   placeholderTextColor={colors.textSecondary}
                   value={location}
                   onChangeText={setLocation}
+                  onBlur={handleLocationBlur}
                   autoCapitalize="words"
                 />
                 <TouchableOpacity
