@@ -17,6 +17,7 @@ import {
   Linking,
   Share as RNShare,
   Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
@@ -48,6 +49,7 @@ export default function SearchScreen() {
   const router = useRouter();
   const { profile, addToSearchHistory, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+  const { width } = useWindowDimensions();
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Product[]>([]);
@@ -57,6 +59,9 @@ export default function SearchScreen() {
   const [scanning, setScanning] = useState(true);
   const [lookingUp, setLookingUp] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
+
+  // Responsive grid columns
+  const numColumns = useMemo(() => width > 768 ? 3 : 2, [width]);
 
   // Explore feed state
   const [selectedPostProduct, setSelectedPostProduct] = useState<(Product & { matchingValues?: string[] }) | null>(null);
@@ -467,15 +472,12 @@ export default function SearchScreen() {
     );
   };
 
-  const renderExploreCard = ({ item, index }: { item: Product & { matchingValues?: string[] }; index: number }) => {
-    const isLeft = index % 2 === 0;
-
+  const renderExploreCard = ({ item }: { item: Product & { matchingValues?: string[] } }) => {
     return (
       <TouchableOpacity
         style={[
           styles.exploreCard,
-          { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-          isLeft ? styles.exploreCardLeft : styles.exploreCardRight
+          { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }
         ]}
         onPress={() => handleGridCardPress(item)}
         activeOpacity={0.7}
@@ -674,11 +676,11 @@ export default function SearchScreen() {
           </View>
         ) : (
           <FlatList
-            key="explore-grid"
+            key={`explore-grid-${numColumns}`}
             data={alignedProducts}
             renderItem={renderExploreCard}
             keyExtractor={item => item.id}
-            numColumns={2}
+            numColumns={numColumns}
             contentContainerStyle={[styles.exploreGrid, { paddingBottom: 100 }]}
             columnWrapperStyle={styles.exploreRow}
             showsVerticalScrollIndicator={false}
@@ -993,9 +995,11 @@ export default function SearchScreen() {
 }
 
 const { width } = Dimensions.get('window');
-// Constrain grid to mobile-like width for better card sizing
-const maxGridWidth = Math.min(width, 600); // Max 600px wide for grid
-const cardWidth = (maxGridWidth - 6) / 2; // 3px gap between cards
+// Responsive grid: 3 columns on desktop (>768px), 2 columns on mobile
+const isDesktop = width > 768;
+const numColumns = isDesktop ? 3 : 2;
+const maxGridWidth = Math.min(width, 900); // Max 900px for 3-column layout
+const cardWidth = (maxGridWidth - (numColumns + 1) * 3) / numColumns; // Account for gaps
 
 const styles = StyleSheet.create({
   container: {
@@ -1058,32 +1062,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   exploreGrid: {
-    paddingHorizontal: 0,
+    paddingHorizontal: 3,
     paddingTop: 0,
     alignSelf: 'center',
-    maxWidth: 600,
+    maxWidth: 900,
     width: '100%',
   },
   exploreRow: {
-    justifyContent: 'flex-start',
     gap: 3,
   },
   exploreCard: {
-    width: cardWidth,
+    flex: 1,
+    aspectRatio: 1,
     marginBottom: 3,
     borderRadius: 2,
     overflow: 'hidden',
     borderWidth: 0,
   },
-  exploreCardLeft: {
-    marginRight: 0,
-  },
-  exploreCardRight: {
-    marginLeft: 0,
-  },
   exploreCardImage: {
-    width: cardWidth,
-    height: cardWidth,
+    width: '100%',
+    height: '100%',
   },
   exploreCardOverlay: {
     position: 'absolute' as const,

@@ -140,8 +140,8 @@ export default function BusinessProfileEditor() {
       </View>
 
       <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
-        {/* Logo Section */}
-        <View style={styles.logoSection}>
+        {/* Logo and Basic Info - Compact Horizontal Layout */}
+        <View style={styles.compactHeader}>
           <View style={[styles.logoContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
             {logoUrl || businessInfo.logoUrl ? (
               <Image
@@ -150,41 +150,48 @@ export default function BusinessProfileEditor() {
                 resizeMode="contain"
               />
             ) : (
-              <Building2 size={48} color={colors.textSecondary} strokeWidth={1.5} />
+              <Building2 size={32} color={colors.textSecondary} strokeWidth={1.5} />
             )}
           </View>
-          {editing && (
-            <View style={styles.logoActions}>
+
+          <View style={styles.headerInfo}>
+            <Text style={[styles.businessName, { color: colors.text }]}>
+              {businessInfo.name || 'Business Name'}
+            </Text>
+            <Text style={[styles.businessCategory, { color: colors.textSecondary }]}>
+              {businessInfo.category || 'Category'}
+            </Text>
+            {businessInfo.location && (
+              <View style={styles.locationRow}>
+                <MapPin size={12} color={colors.textSecondary} strokeWidth={2} />
+                <Text style={[styles.locationText, { color: colors.textSecondary }]}>{businessInfo.location}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Logo URL and Upload (when editing) */}
+        {editing && (
+          <View style={[styles.inputGroup, { marginTop: 16 }]}>
+            <Text style={[styles.label, { color: colors.text }]}>Logo URL</Text>
+            <View style={styles.logoInputRow}>
+              <TextInput
+                style={[styles.input, styles.logoUrlInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                placeholder="https://example.com/logo.png"
+                placeholderTextColor={colors.textSecondary}
+                value={logoUrl}
+                onChangeText={setLogoUrl}
+                autoCapitalize="none"
+                keyboardType="url"
+              />
               <TouchableOpacity
-                style={[styles.uploadButton, { backgroundColor: colors.primary }]}
+                style={[styles.uploadButtonSmall, { backgroundColor: colors.primary }]}
                 onPress={handleLogoUpload}
                 activeOpacity={0.7}
               >
                 <Upload size={16} color={colors.white} strokeWidth={2} />
-                <Text style={[styles.uploadButtonText, { color: colors.white }]}>
-                  Upload Logo
-                </Text>
               </TouchableOpacity>
-              <Text style={[styles.uploadHint, { color: colors.textSecondary }]}>
-                or enter URL below
-              </Text>
             </View>
-          )}
-        </View>
-
-        {/* Logo URL Input (when editing) */}
-        {editing && (
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.text }]}>Logo URL</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-              placeholder="https://example.com/logo.png"
-              placeholderTextColor={colors.textSecondary}
-              value={logoUrl}
-              onChangeText={setLogoUrl}
-              autoCapitalize="none"
-              keyboardType="url"
-            />
           </View>
         )}
 
@@ -361,48 +368,64 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
   },
-  // Logo Section
-  logoSection: {
+  // Compact Header Layout
+  compactHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
-    paddingBottom: 24,
+    gap: 16,
+    paddingBottom: 16,
+    marginBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.05)',
   },
   logoContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 80,
+    height: 80,
+    borderRadius: 12,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
   },
   logoImage: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
+    width: 72,
+    height: 72,
+    borderRadius: 10,
   },
-  logoActions: {
-    alignItems: 'center',
+  headerInfo: {
+    flex: 1,
+    gap: 4,
   },
-  uploadButton: {
+  businessName: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  businessCategory: {
+    fontSize: 14,
+  },
+  locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    gap: 6,
-    marginBottom: 6,
+    gap: 4,
+    marginTop: 2,
   },
-  uploadButtonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  uploadHint: {
+  locationText: {
     fontSize: 12,
+  },
+  logoInputRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  logoUrlInput: {
+    flex: 1,
+  },
+  uploadButtonSmall: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   // Input Groups
   inputGroup: {
