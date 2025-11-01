@@ -501,6 +501,43 @@ export default function ProductDetailScreen() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Money Flow</Text>
 
+            {/* Ownership Section */}
+            <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary, marginBottom: 16 }]}>
+              <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.subsectionTitle, { color: colors.text }]}>Ownership</Text>
+              </View>
+
+              {product.ownership && product.ownership.length > 0 ? (
+                <View style={styles.shareholdersContainer}>
+                  {product.ownership.map((owner, index) => (
+                    <View key={`owner-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
+                      <View style={styles.tableRow}>
+                        <Text style={[styles.affiliateName, { color: colors.text }]}>{owner.name}</Text>
+                        <Text style={[styles.affiliateRelationship, { color: colors.textSecondary }]}>
+                          {owner.relationship}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+
+                  {product.ownershipSources && (
+                    <View style={[styles.sourcesContainer, { borderTopColor: colors.border }]}>
+                      <Text style={[styles.sourcesLabel, { color: colors.text }]}>Sources:</Text>
+                      <Text style={[styles.sourcesText, { color: colors.textSecondary }]}>
+                        {product.ownershipSources}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.shareholdersContainer}>
+                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
+                    No ownership data available
+                  </Text>
+                </View>
+              )}
+            </View>
+
             {/* Affiliates Section */}
             <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary, marginBottom: 16 }]}>
               <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
@@ -533,7 +570,7 @@ export default function ProductDetailScreen() {
             </View>
 
             {/* Partnerships Section */}
-            <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary, marginBottom: 16 }]}>
+            <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
               <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
                 <Text style={[styles.subsectionTitle, { color: colors.text }]}>Partnerships</Text>
               </View>
@@ -558,43 +595,6 @@ export default function ProductDetailScreen() {
                   </Text>
                   <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
                     Panasonic - Battery Technology
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {/* Ownership Section */}
-            <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
-              <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.subsectionTitle, { color: colors.text }]}>Ownership</Text>
-              </View>
-
-              {product.ownership && product.ownership.length > 0 ? (
-                <View style={styles.shareholdersContainer}>
-                  {product.ownership.map((owner, index) => (
-                    <View key={`owner-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
-                      <View style={styles.tableRow}>
-                        <Text style={[styles.affiliateName, { color: colors.text }]}>{owner.name}</Text>
-                        <Text style={[styles.affiliateRelationship, { color: colors.textSecondary }]}>
-                          {owner.relationship}
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-
-                  {product.ownershipSources && (
-                    <View style={[styles.sourcesContainer, { borderTopColor: colors.border }]}>
-                      <Text style={[styles.sourcesLabel, { color: colors.text }]}>Sources:</Text>
-                      <Text style={[styles.sourcesText, { color: colors.textSecondary }]}>
-                        {product.ownershipSources}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              ) : (
-                <View style={styles.shareholdersContainer}>
-                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
-                    No ownership data available
                   </Text>
                 </View>
               )}

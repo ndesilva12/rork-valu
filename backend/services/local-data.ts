@@ -83,6 +83,12 @@ export async function fetchBrandsFromSheets(): Promise<Brand[]> {
       description: brand.description || '',
       website: brand.website || undefined,
       affiliates: brand.affiliates || [],
+      partnerships: brand.partnerships || [],
+      ownership: brand.ownership || [],
+      ownershipSources: brand.ownershipSources || undefined,
+      location: brand.location || undefined,
+      latitude: brand.latitude || undefined,
+      longitude: brand.longitude || undefined,
       // Default values for backward compatibility
       alignmentScore: 0,
       keyReasons: [],

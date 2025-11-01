@@ -53,7 +53,8 @@ export default function SignUpScreen() {
         password,
       });
       if (res.status === 'complete') {
-        router.replace('/');
+        // Redirect to consent page before onboarding
+        router.replace('/consent');
       } else {
         setError('Sign-up incomplete. Please try again.');
       }

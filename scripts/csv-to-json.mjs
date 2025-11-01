@@ -99,15 +99,29 @@ function convertBrands() {
     }
 
     // Parse ownership from ownership1-5 columns
+    // Extracts percentages or other info in parentheses into relationship field
     const ownership = [];
     for (let i = 1; i <= 5; i++) {
       const ownershipEntry = row[`ownership${i}`];
 
       if (ownershipEntry && ownershipEntry.trim()) {
-        ownership.push({
-          name: ownershipEntry.trim(),
-          relationship: 'Owner' // Default relationship
-        });
+        const entry = ownershipEntry.trim();
+        // Match pattern: "Name (percentage/info)" or just "Name"
+        const match = entry.match(/^(.+?)\s*\(([^)]+)\)$/);
+
+        if (match) {
+          // Found parentheses - split into name and relationship
+          ownership.push({
+            name: match[1].trim(),
+            relationship: match[2].trim()
+          });
+        } else {
+          // No parentheses - use full text as name
+          ownership.push({
+            name: entry,
+            relationship: ''
+          });
+        }
       }
     }
 
@@ -116,8 +130,8 @@ function convertBrands() {
     const latitude = row.latitude?.trim() ? parseFloat(row.latitude) : undefined;
     const longitude = row.longitude?.trim() ? parseFloat(row.longitude) : undefined;
 
-    // Parse ownership sources
-    const ownershipSources = row['ownership Sources']?.trim() || '';
+    // Parse ownership sources (column name is just "Sources")
+    const ownershipSources = row['Sources']?.trim() || '';
 
     const brand = {
       id: row.id || '',
