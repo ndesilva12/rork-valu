@@ -9,6 +9,8 @@ import {
   Image,
   Linking,
   PanResponder,
+  Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -36,6 +38,8 @@ export default function ValueDetailScreen() {
   const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const scrollViewRef = useRef<ScrollView>(null);
+  const { width } = useWindowDimensions();
+  const isLargeScreen = Platform.OS === 'web' && width >= 768;
 
   const panResponder = useRef(
     PanResponder.create({
@@ -152,9 +156,10 @@ export default function ValueDetailScreen() {
       
       <ScrollView
         ref={scrollViewRef}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.scrollContent, isLargeScreen && styles.scrollContentCentered]}
         {...panResponder.panHandlers}
       >
+        <View style={[styles.contentWrapper, isLargeScreen && styles.contentWrapperConstrained]}>
         <View style={styles.header}>
           <View style={[
             styles.badge,
@@ -254,6 +259,7 @@ export default function ValueDetailScreen() {
             </View>
           )}
         </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -267,8 +273,18 @@ const styles = StyleSheet.create({
     padding: 8,
     marginLeft: 8,
   },
-  content: {
+  scrollContent: {
+    flexGrow: 1,
+  },
+  scrollContentCentered: {
+    alignItems: 'center',
+  },
+  contentWrapper: {
+    width: '100%',
     padding: 20,
+  },
+  contentWrapperConstrained: {
+    maxWidth: '50%',
   },
   errorText: {
     fontSize: 16,
