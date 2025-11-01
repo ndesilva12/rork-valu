@@ -23,7 +23,7 @@ import { MOCK_PRODUCTS } from '@/mocks/products';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
 import { Product } from '@/types';
 import { getLogoUrl } from '@/lib/logo';
-import { AVAILABLE_VALUES } from '@/mocks/available-values';
+import { AVAILABLE_VALUES } from '@/mocks/causes';
 
 interface Comment {
   id: string;
