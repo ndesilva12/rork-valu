@@ -11,11 +11,12 @@ import {
   Image,
   Platform,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as Location from 'expo-location';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
+import LocationAutocomplete from '@/components/LocationAutocomplete';
 
 // Common business categories
 const BUSINESS_CATEGORIES = [
@@ -51,48 +52,11 @@ export default function BusinessSetupScreen() {
   const [location, setLocation] = useState('');
   const [latitude, setLatitude] = useState<number | undefined>(undefined);
   const [longitude, setLongitude] = useState<number | undefined>(undefined);
-  const [gettingLocation, setGettingLocation] = useState(false);
 
-  const handleGetCurrentLocation = async () => {
-    try {
-      setGettingLocation(true);
-
-      // Request location permissions
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Permission Denied',
-          'Location permission is required to get your current location. Please enable it in your device settings.'
-        );
-        return;
-      }
-
-      // Get current position
-      const currentLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-
-      const lat = currentLocation.coords.latitude;
-      const lon = currentLocation.coords.longitude;
-
-      setLatitude(lat);
-      setLongitude(lon);
-
-      // Reverse geocode to get address
-      const addresses = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
-      if (addresses && addresses.length > 0) {
-        const addr = addresses[0];
-        const locationString = [addr.city, addr.region].filter(Boolean).join(', ');
-        setLocation(locationString || `${lat.toFixed(4)}, ${lon.toFixed(4)}`);
-      } else {
-        setLocation(`${lat.toFixed(4)}, ${lon.toFixed(4)}`);
-      }
-    } catch (error) {
-      console.error('Error getting location:', error);
-      Alert.alert('Error', 'Failed to get current location. Please enter it manually.');
-    } finally {
-      setGettingLocation(false);
-    }
+  const handleLocationSelect = (locationName: string, lat: number, lon: number) => {
+    setLocation(locationName);
+    setLatitude(lat);
+    setLongitude(lon);
   };
 
   const handleContinue = async () => {
@@ -131,6 +95,10 @@ export default function BusinessSetupScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
+      />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -252,40 +220,11 @@ export default function BusinessSetupScreen() {
               Location (Optional)
             </Text>
           </View>
-          <View style={styles.locationInputContainer}>
-            <TextInput
-              style={[
-                styles.input,
-                styles.locationInput,
-                {
-                  backgroundColor: colors.backgroundSecondary,
-                  borderColor: colors.border,
-                  color: colors.text,
-                }
-              ]}
-              placeholder="Enter city and state (e.g., New York, NY)"
-              placeholderTextColor={colors.textSecondary}
-              value={location}
-              onChangeText={setLocation}
-              autoCapitalize="words"
-            />
-            <TouchableOpacity
-              style={[
-                styles.locationButton,
-                {
-                  backgroundColor: colors.primary,
-                }
-              ]}
-              onPress={handleGetCurrentLocation}
-              disabled={gettingLocation}
-              activeOpacity={0.7}
-            >
-              <MapPin size={18} color={colors.white} strokeWidth={2} />
-              <Text style={[styles.locationButtonText, { color: colors.white }]}>
-                {gettingLocation ? 'Getting...' : 'Use Current'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <LocationAutocomplete
+            value={location}
+            onLocationSelect={handleLocationSelect}
+            isDarkMode={isDarkMode}
+          />
           <Text style={[styles.helperText, { color: colors.textSecondary }]}>
             Adding your location helps customers find you on the map
           </Text>
@@ -390,29 +329,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     fontSize: 16,
   },
-  locationInputContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 8,
-  },
-  locationInput: {
-    flex: 1,
-  },
-  locationButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  locationButtonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
   helperText: {
     fontSize: 13,
     lineHeight: 18,
+    marginTop: 8,
   },
   categoryPicker: {
     flexDirection: 'row',

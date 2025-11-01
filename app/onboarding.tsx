@@ -9,8 +9,9 @@ import {
   TouchableOpacity,
   Image,
   Platform,
+  StatusBar,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
@@ -135,7 +136,11 @@ export default function OnboardingScreen() {
 
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
+      />
       <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 + insets.bottom }, Platform.OS === 'web' && styles.webContent]}>
         <View style={styles.header}>
           <View style={styles.logoContainer}>
@@ -262,7 +267,7 @@ export default function OnboardingScreen() {
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

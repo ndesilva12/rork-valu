@@ -424,6 +424,12 @@ export default function ProductDetailScreen() {
             </View>
           </View>
 
+          {product.description && (
+            <Text style={[styles.brandDescription, { color: colors.textSecondary }]}>
+              {product.description}
+            </Text>
+          )}
+
           <View style={styles.socialLinksContainer}>
             <TouchableOpacity
               style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
@@ -447,12 +453,6 @@ export default function ProductDetailScreen() {
               <Text style={[styles.socialButtonText, { color: colors.text }]}>Facebook</Text>
             </TouchableOpacity>
           </View>
-
-          {product.description && (
-            <Text style={[styles.brandDescription, { color: colors.textSecondary }]}>
-              {product.description}
-            </Text>
-          )}
 
           <View style={[styles.alignmentCard, { backgroundColor: alignmentColor + '15' }]}>
             <View style={styles.alignmentLabelRow}>

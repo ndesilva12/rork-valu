@@ -170,7 +170,7 @@ export default function MenuButton() {
                 <Switch
                   value={isDarkMode}
                   onValueChange={toggleDarkMode}
-                  trackColor={{ false: colors.neutralLight, true: colors.primaryLight }}
+                  trackColor={{ false: colors.border, true: colors.primary }}
                   thumbColor={colors.white}
                 />
               </View>

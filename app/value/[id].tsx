@@ -9,6 +9,8 @@ import {
   Image,
   Linking,
   PanResponder,
+  Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -36,6 +38,8 @@ export default function ValueDetailScreen() {
   const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const scrollViewRef = useRef<ScrollView>(null);
+  const { width } = useWindowDimensions();
+  const isLargeScreen = Platform.OS === 'web' && width >= 768;
 
   const panResponder = useRef(
     PanResponder.create({
@@ -152,9 +156,10 @@ export default function ValueDetailScreen() {
       
       <ScrollView
         ref={scrollViewRef}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.scrollContent, isLargeScreen && styles.scrollContentCentered]}
         {...panResponder.panHandlers}
       >
+        <View style={[styles.contentWrapper, isLargeScreen && styles.contentWrapperConstrained]}>
         <View style={styles.header}>
           <View style={[
             styles.badge,
@@ -184,7 +189,7 @@ export default function ValueDetailScreen() {
           {drivers.supports.length > 0 ? (
             <View style={styles.driversContainer}>
               {drivers.supports.map((driver, index) => (
-                <View key={`${id}-support-${driver.name}-${index}`} style={[styles.driverCard, styles.supportingCard, { borderColor: colors.success }]}>
+                <View key={`${id}-support-${driver.name}-${index}`} style={[styles.driverCard, styles.supportingCard, { backgroundColor: colors.backgroundSecondary }]}>
                   <View style={styles.cardContent}>
                     <View style={styles.leftContent}>
                       {driver.imageUrl ? (
@@ -225,7 +230,7 @@ export default function ValueDetailScreen() {
           {drivers.opposes.length > 0 ? (
             <View style={styles.driversContainer}>
               {drivers.opposes.map((driver, index) => (
-                <View key={`${id}-oppose-${driver.name}-${index}`} style={[styles.driverCard, styles.opposingCard, { borderColor: colors.danger }]}>
+                <View key={`${id}-oppose-${driver.name}-${index}`} style={[styles.driverCard, styles.opposingCard, { backgroundColor: colors.backgroundSecondary }]}>
                   <View style={styles.cardContent}>
                     <View style={styles.leftContent}>
                       {driver.imageUrl ? (
@@ -254,6 +259,7 @@ export default function ValueDetailScreen() {
             </View>
           )}
         </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -267,8 +273,18 @@ const styles = StyleSheet.create({
     padding: 8,
     marginLeft: 8,
   },
-  content: {
+  scrollContent: {
+    flexGrow: 1,
+  },
+  scrollContentCentered: {
+    alignItems: 'center',
+  },
+  contentWrapper: {
+    width: '100%',
     padding: 20,
+  },
+  contentWrapperConstrained: {
+    maxWidth: '50%',
   },
   errorText: {
     fontSize: 16,
@@ -330,7 +346,6 @@ const styles = StyleSheet.create({
   driverCard: {
     borderRadius: 12,
     padding: 14,
-    borderWidth: 1.5,
   },
   supportingCard: {},
   opposingCard: {},

@@ -1,5 +1,5 @@
 import { Tabs, useSegments } from "expo-router";
-import { BookOpen, BarChart3, ShoppingBag, Search, User } from "lucide-react-native";
+import { BookOpen, BarChart3, Heart, Search, User } from "lucide-react-native";
 import React from "react";
 import { Platform, useWindowDimensions, StyleSheet, StatusBar, View, Text } from "react-native";
 import { lightColors, darkColors } from "@/constants/colors";
@@ -105,8 +105,8 @@ export default function TabLayout() {
             <Tabs.Screen
               name="local"
               options={{
-                title: "Data",
-                tabBarIcon: renderTabIconWithLabel(BarChart3, "Data", colors.primary),
+                title: "Values",
+                tabBarIcon: renderTabIconWithLabel(Heart, "Values", colors.primary),
               }}
             />
             <Tabs.Screen
@@ -119,8 +119,8 @@ export default function TabLayout() {
             <Tabs.Screen
               name="shop"
               options={{
-                title: "Shop",
-                tabBarIcon: renderTabIconWithLabel(ShoppingBag, "Shop", colors.primary),
+                title: "Data",
+                tabBarIcon: renderTabIconWithLabel(BarChart3, "Data", colors.primary),
               }}
             />
             <Tabs.Screen

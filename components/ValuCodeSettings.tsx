@@ -6,8 +6,9 @@ import {
   Switch,
   TouchableOpacity,
   Alert,
+  TextInput,
 } from 'react-native';
-import { Percent } from 'lucide-react-native';
+import { Percent, Plus, Minus, Info } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 
@@ -24,8 +25,7 @@ export default function ValuCodeSettings() {
 
   const [acceptsValuCodes, setAcceptsValuCodes] = useState(businessInfo.acceptsValuCodes);
   const [discountPercent, setDiscountPercent] = useState(businessInfo.valuCodeDiscount || 10);
-
-  const discountOptions = [5, 10, 15, 20, 25];
+  const [inputValue, setInputValue] = useState((businessInfo.valuCodeDiscount || 10).toString());
 
   const handleToggleValuCodes = async (value: boolean) => {
     setAcceptsValuCodes(value);
@@ -43,10 +43,37 @@ export default function ValuCodeSettings() {
   };
 
   const handleSetDiscount = async (percent: number) => {
-    setDiscountPercent(percent);
+    // Clamp between 1 and 50
+    const clampedPercent = Math.max(1, Math.min(50, percent));
+    // Round to nearest 0.5
+    const roundedPercent = Math.round(clampedPercent * 2) / 2;
+
+    setDiscountPercent(roundedPercent);
+    setInputValue(roundedPercent.toString());
     await setBusinessInfo({
-      valuCodeDiscount: percent,
+      valuCodeDiscount: roundedPercent,
     });
+  };
+
+  const handleIncrement = () => {
+    handleSetDiscount(discountPercent + 0.5);
+  };
+
+  const handleDecrement = () => {
+    handleSetDiscount(discountPercent - 0.5);
+  };
+
+  const handleInputChange = (text: string) => {
+    setInputValue(text);
+    const parsed = parseFloat(text);
+    if (!isNaN(parsed) && parsed >= 1 && parsed <= 50) {
+      handleSetDiscount(parsed);
+    }
+  };
+
+  const handleInputBlur = () => {
+    // Reset to current valid value if input is invalid
+    setInputValue(discountPercent.toString());
   };
 
   return (
@@ -67,8 +94,8 @@ export default function ValuCodeSettings() {
           <Switch
             value={acceptsValuCodes}
             onValueChange={handleToggleValuCodes}
-            trackColor={{ false: colors.border, true: colors.primary + '60' }}
-            thumbColor={acceptsValuCodes ? colors.primary : colors.textSecondary}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor={colors.white}
           />
         </View>
 
@@ -81,52 +108,83 @@ export default function ValuCodeSettings() {
               <View style={styles.discountHeader}>
                 <Percent size={20} color={colors.text} strokeWidth={2} />
                 <Text style={[styles.discountTitle, { color: colors.text }]}>
-                  Discount Percentage
+                  Valu Code Percentage
                 </Text>
               </View>
               <Text style={[styles.discountSubtitle, { color: colors.textSecondary }]}>
-                Choose the discount percentage for valu code users
+                Choose the percentage for valu code transactions (1% - 50%)
               </Text>
 
-              {/* Discount Options */}
-              <View style={styles.discountOptions}>
-                {discountOptions.map((percent) => (
-                  <TouchableOpacity
-                    key={percent}
-                    style={[
-                      styles.discountOption,
-                      {
-                        backgroundColor: colors.background,
-                        borderColor: discountPercent === percent ? colors.primary : colors.border,
-                        borderWidth: discountPercent === percent ? 2 : 1,
-                      }
-                    ]}
-                    onPress={() => handleSetDiscount(percent)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      styles.discountOptionText,
-                      {
-                        color: discountPercent === percent ? colors.primary : colors.text,
-                        fontWeight: discountPercent === percent ? '700' : '600',
-                      }
-                    ]}>
-                      {percent}%
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+              {/* Percentage Input Controls */}
+              <View style={styles.percentageControls}>
+                <TouchableOpacity
+                  style={[
+                    styles.controlButton,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    discountPercent <= 1 && styles.controlButtonDisabled
+                  ]}
+                  onPress={handleDecrement}
+                  disabled={discountPercent <= 1}
+                  activeOpacity={0.7}
+                >
+                  <Minus size={20} color={discountPercent <= 1 ? colors.textSecondary : colors.text} strokeWidth={2} />
+                </TouchableOpacity>
+
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={[styles.percentInput, { color: colors.text, borderColor: colors.border }]}
+                    value={inputValue}
+                    onChangeText={handleInputChange}
+                    onBlur={handleInputBlur}
+                    keyboardType="decimal-pad"
+                    maxLength={4}
+                    selectTextOnFocus
+                  />
+                  <Text style={[styles.percentSymbol, { color: colors.text }]}>%</Text>
+                </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.controlButton,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    discountPercent >= 50 && styles.controlButtonDisabled
+                  ]}
+                  onPress={handleIncrement}
+                  disabled={discountPercent >= 50}
+                  activeOpacity={0.7}
+                >
+                  <Plus size={20} color={discountPercent >= 50 ? colors.textSecondary : colors.text} strokeWidth={2} />
+                </TouchableOpacity>
               </View>
 
-              {/* Selected Discount Display */}
-              <View style={[styles.selectedDiscountBox, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}>
-                <Text style={[styles.selectedDiscountLabel, { color: colors.textSecondary }]}>
-                  Current Discount
-                </Text>
-                <Text style={[styles.selectedDiscountValue, { color: colors.primary }]}>
-                  {discountPercent}% off
-                </Text>
-                <Text style={[styles.selectedDiscountDescription, { color: colors.textSecondary }]}>
-                  Customers with valu codes save {discountPercent}% on purchases
+              {/* Split Explanation */}
+              <View style={[styles.splitExplanation, { backgroundColor: colors.background, borderColor: colors.primary }]}>
+                <View style={styles.splitHeader}>
+                  <Info size={16} color={colors.primary} strokeWidth={2} />
+                  <Text style={[styles.splitTitle, { color: colors.text }]}>
+                    How the {discountPercent}% is split:
+                  </Text>
+                </View>
+                <View style={styles.splitBreakdown}>
+                  <View style={styles.splitRow}>
+                    <Text style={[styles.splitLabel, { color: colors.textSecondary }]}>
+                      Customer Discount:
+                    </Text>
+                    <Text style={[styles.splitValue, { color: colors.primary }]}>
+                      {(discountPercent / 2).toFixed(2)}%
+                    </Text>
+                  </View>
+                  <View style={styles.splitRow}>
+                    <Text style={[styles.splitLabel, { color: colors.textSecondary }]}>
+                      Paid to Valu:
+                    </Text>
+                    <Text style={[styles.splitValue, { color: colors.primary }]}>
+                      {(discountPercent / 2).toFixed(2)}%
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[styles.splitExample, { color: colors.textSecondary }]}>
+                  Example: $100 purchase = ${(discountPercent / 2).toFixed(2)} customer discount + ${(discountPercent / 2).toFixed(2)} to Valu
                 </Text>
               </View>
             </View>
@@ -205,42 +263,79 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 16,
   },
-  discountOptions: {
+  // Percentage Controls
+  percentageControls: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
     marginBottom: 20,
   },
-  discountOption: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  discountOptionText: {
-    fontSize: 18,
-  },
-  // Selected Discount Display
-  selectedDiscountBox: {
-    padding: 16,
+  controlButton: {
+    width: 48,
+    height: 48,
     borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  selectedDiscountLabel: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 6,
+  controlButtonDisabled: {
+    opacity: 0.4,
   },
-  selectedDiscountValue: {
-    fontSize: 32,
+  inputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  percentInput: {
+    fontSize: 36,
     fontWeight: '700' as const,
-    marginBottom: 6,
-  },
-  selectedDiscountDescription: {
-    fontSize: 13,
     textAlign: 'center',
+    minWidth: 80,
+    borderBottomWidth: 2,
+    paddingVertical: 4,
+  },
+  percentSymbol: {
+    fontSize: 28,
+    fontWeight: '600' as const,
+    marginLeft: 4,
+  },
+  // Split Explanation
+  splitExplanation: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+  },
+  splitHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  splitTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  splitBreakdown: {
+    gap: 8,
+    marginBottom: 12,
+  },
+  splitRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  splitLabel: {
+    fontSize: 13,
+  },
+  splitValue: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  splitExample: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontStyle: 'italic',
   },
   // Info Box
   infoBox: {
