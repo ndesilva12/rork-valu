@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
-import { Search as SearchIcon, TrendingUp, TrendingDown, Minus, ScanBarcode, X } from 'lucide-react-native';
-import { useState } from 'react';
+import { Search as SearchIcon, TrendingUp, TrendingDown, Minus, ScanBarcode, X, Heart, MessageCircle, Share2, ExternalLink } from 'lucide-react-native';
+import { useState, useMemo, useCallback } from 'react';
 import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
 import {
   View,
@@ -13,19 +13,40 @@ import {
   Platform,
   Alert,
   StatusBar,
+  ScrollView,
+  Linking,
+  Share as RNShare,
+  Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { searchProducts } from '@/mocks/products';
+import { MOCK_PRODUCTS } from '@/mocks/products';
+import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
 import { Product } from '@/types';
 import { lookupBarcode, findBrandInDatabase, getBrandProduct } from '@/mocks/barcode-products';
 import { getLogoUrl } from '@/lib/logo';
+import { AVAILABLE_VALUES } from '@/mocks/causes';
+
+interface Comment {
+  id: string;
+  userName: string;
+  text: string;
+  timestamp: Date;
+}
+
+interface ProductInteraction {
+  productId: string;
+  isLiked: boolean;
+  comments: Comment[];
+  likesCount: number;
+}
 
 export default function SearchScreen() {
   const router = useRouter();
-  const { profile, addToSearchHistory, isDarkMode } = useUser();
+  const { profile, addToSearchHistory, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
   const [query, setQuery] = useState('');
@@ -36,6 +57,215 @@ export default function SearchScreen() {
   const [scanning, setScanning] = useState(true);
   const [lookingUp, setLookingUp] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
+
+  // Explore feed state
+  const [selectedPostProduct, setSelectedPostProduct] = useState<(Product & { matchingValues?: string[] }) | null>(null);
+  const [postModalVisible, setPostModalVisible] = useState(false);
+  const [interactions, setInteractions] = useState<Map<string, ProductInteraction>>(new Map());
+  const [commentModalVisible, setCommentModalVisible] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState('');
+
+  // Calculate aligned products for Explore section
+  const alignedProducts = useMemo(() => {
+    const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
+    const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
+    const totalUserValues = profile.causes.length;
+
+    const allProducts = [...MOCK_PRODUCTS, ...LOCAL_BUSINESSES];
+
+    const scored = allProducts.map(product => {
+      let totalSupportScore = 0;
+      let totalAvoidScore = 0;
+      const matchingValues = new Set<string>();
+      const positionSum: number[] = [];
+
+      product.valueAlignments.forEach(alignment => {
+        const isUserSupporting = supportedCauses.includes(alignment.valueId);
+        const isUserAvoiding = avoidedCauses.includes(alignment.valueId);
+
+        if (!isUserSupporting && !isUserAvoiding) return;
+
+        matchingValues.add(alignment.valueId);
+        positionSum.push(alignment.position);
+
+        const score = alignment.isSupport ? (100 - alignment.position * 5) : -(100 - alignment.position * 5);
+
+        if (isUserSupporting) {
+          if (score > 0) {
+            totalSupportScore += score;
+          } else {
+            totalAvoidScore += Math.abs(score);
+          }
+        }
+
+        if (isUserAvoiding) {
+          if (score < 0) {
+            totalSupportScore += Math.abs(score);
+          } else {
+            totalAvoidScore += score;
+          }
+        }
+      });
+
+      const valuesWhereNotAppears = totalUserValues - matchingValues.size;
+      const totalPositionSum = positionSum.reduce((a, b) => a + b, 0) + (valuesWhereNotAppears * 11);
+      const avgPosition = totalUserValues > 0 ? totalPositionSum / totalUserValues : 11;
+
+      const isPositivelyAligned = totalSupportScore > totalAvoidScore && totalSupportScore > 0;
+
+      let alignmentStrength: number;
+      if (isPositivelyAligned) {
+        alignmentStrength = Math.round((1 - ((avgPosition - 1) / 10)) * 50 + 50);
+      } else {
+        alignmentStrength = Math.round(((avgPosition - 1) / 10) * 50);
+      }
+
+      return {
+        product,
+        totalSupportScore,
+        totalAvoidScore,
+        matchingValuesCount: matchingValues.size,
+        matchingValues: Array.from(matchingValues),
+        alignmentStrength,
+        isPositivelyAligned
+      };
+    });
+
+    const alignedSorted = scored
+      .filter(s => s.isPositivelyAligned)
+      .sort((a, b) => b.alignmentStrength - a.alignmentStrength)
+      .map(s => ({ ...s.product, alignmentScore: s.alignmentStrength, matchingValues: s.matchingValues }));
+
+    const shuffled: Product[] = [];
+    const localItems = alignedSorted.filter(p => p.id.startsWith('local-'));
+    const regularItems = alignedSorted.filter(p => !p.id.startsWith('local-'));
+
+    const localInterval = regularItems.length > 0 ? Math.floor(regularItems.length / Math.max(localItems.length, 1)) : 1;
+
+    let localIndex = 0;
+    let regularIndex = 0;
+
+    while (regularIndex < regularItems.length || localIndex < localItems.length) {
+      for (let i = 0; i < localInterval && regularIndex < regularItems.length; i++) {
+        shuffled.push(regularItems[regularIndex++]);
+      }
+      if (localIndex < localItems.length) {
+        shuffled.push(localItems[localIndex++]);
+      }
+    }
+
+    return shuffled.length > 0 ? shuffled : alignedSorted;
+  }, [profile.causes]);
+
+  const getProductInteraction = useCallback((productId: string): ProductInteraction => {
+    return interactions.get(productId) || {
+      productId,
+      isLiked: false,
+      comments: [],
+      likesCount: Math.floor(Math.random() * 500) + 50
+    };
+  }, [interactions]);
+
+  const handleLike = useCallback((productId: string) => {
+    setInteractions(prev => {
+      const newMap = new Map(prev);
+      const interaction = getProductInteraction(productId);
+      newMap.set(productId, {
+        ...interaction,
+        isLiked: !interaction.isLiked,
+        likesCount: interaction.isLiked ? interaction.likesCount - 1 : interaction.likesCount + 1
+      });
+      return newMap;
+    });
+  }, [getProductInteraction]);
+
+  const handleOpenComments = useCallback((productId: string) => {
+    setSelectedProductId(productId);
+    setCommentModalVisible(true);
+  }, []);
+
+  const handleAddComment = useCallback(() => {
+    if (!commentText.trim() || !selectedProductId) return;
+
+    const userName = clerkUser?.firstName || clerkUser?.username || 'Anonymous';
+
+    setInteractions(prev => {
+      const newMap = new Map(prev);
+      const interaction = getProductInteraction(selectedProductId);
+      const newComment: Comment = {
+        id: Date.now().toString(),
+        userName,
+        text: commentText.trim(),
+        timestamp: new Date()
+      };
+      newMap.set(selectedProductId, {
+        ...interaction,
+        comments: [newComment, ...interaction.comments]
+      });
+      return newMap;
+    });
+
+    setCommentText('');
+    setCommentModalVisible(false);
+  }, [commentText, selectedProductId, clerkUser, getProductInteraction]);
+
+  const handleShare = useCallback(async (product: Product) => {
+    const url = `https://yourapp.com/product/${product.id}`;
+    const message = `Check out ${product.name} by ${product.brand}! Alignment score: ${product.alignmentScore}`;
+
+    try {
+      if (Platform.OS === 'web') {
+        const textToCopy = `${message}\n${url}`;
+
+        const textArea = document.createElement('textarea');
+        textArea.value = textToCopy;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+          document.execCommand('copy');
+          Alert.alert('Copied!', 'Link copied to clipboard');
+        } catch (execError) {
+          console.error('Copy fallback error:', execError);
+          Alert.alert('Error', 'Unable to copy to clipboard');
+        } finally {
+          textArea.remove();
+        }
+      } else {
+        await RNShare.share({
+          message: `${message}\n${url}`,
+          title: product.name,
+        });
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  }, []);
+
+  const handleVisitBrand = useCallback(async (product: Product) => {
+    try {
+      const websiteUrl = product.website || `https://${product.brand.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '')}.com`;
+      const canOpen = await Linking.canOpenURL(websiteUrl);
+      if (canOpen) {
+        await Linking.openURL(websiteUrl);
+      }
+    } catch (error) {
+      console.error('Error opening URL:', error);
+    }
+  }, []);
+
+  const getAlignmentReason = useCallback((matchingValues: string[]) => {
+    if (!matchingValues || matchingValues.length === 0) return null;
+    const allValues = Object.values(AVAILABLE_VALUES).flat();
+    const firstMatchingValue = allValues.find(v => v.id === matchingValues[0]);
+    if (!firstMatchingValue) return null;
+    return firstMatchingValue.name;
+  }, []);
 
   const handleSearch = (text: string) => {
     setQuery(text);
@@ -49,11 +279,18 @@ export default function SearchScreen() {
   };
 
   const handleProductPress = (product: Product) => {
-    addToSearchHistory(query);
+    if (query.trim().length > 0) {
+      addToSearchHistory(query);
+    }
     router.push({
       pathname: '/product/[id]',
       params: { id: product.id },
     });
+  };
+
+  const handleGridCardPress = (product: Product & { matchingValues?: string[] }) => {
+    setSelectedPostProduct(product);
+    setPostModalVisible(true);
   };
 
   const handleOpenScanner = async () => {
@@ -90,14 +327,14 @@ export default function SearchScreen() {
 
   const handleBarcodeScanned = async ({ data }: { type: string; data: string }) => {
     if (!scanning || lookingUp) return;
-    
+
     console.log('Barcode scanned:', data);
     setScanning(false);
     setLookingUp(true);
-    
+
     try {
       const productInfo = await lookupBarcode(data);
-      
+
       if (!productInfo) {
         Alert.alert(
           'Product Not Found',
@@ -109,9 +346,9 @@ export default function SearchScreen() {
         );
         return;
       }
-      
+
       const matchedBrand = findBrandInDatabase(productInfo.brandName);
-      
+
       if (!matchedBrand) {
         setScannedInfo({
           productName: productInfo.productName,
@@ -121,9 +358,9 @@ export default function SearchScreen() {
         });
         return;
       }
-      
+
       const product = getBrandProduct(matchedBrand);
-      
+
       if (product) {
         setScannedProduct(product);
       } else {
@@ -221,6 +458,168 @@ export default function SearchScreen() {
     );
   };
 
+  const renderExploreCard = ({ item, index }: { item: Product & { matchingValues?: string[] }; index: number }) => {
+    const isLeft = index % 2 === 0;
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.exploreCard,
+          { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
+          isLeft ? styles.exploreCardLeft : styles.exploreCardRight
+        ]}
+        onPress={() => handleGridCardPress(item)}
+        activeOpacity={0.7}
+      >
+        <Image
+          source={{ uri: item.productImageUrl || getLogoUrl(item.website || '') }}
+          style={styles.exploreCardImage}
+          contentFit="cover"
+          transition={200}
+          cachePolicy="memory-disk"
+        />
+        <View style={[styles.exploreCardOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.4)' }]}>
+          <View style={[styles.exploreCardBadge, { backgroundColor: colors.success + '15' }]}>
+            <Text style={[styles.exploreCardScore, { color: colors.success }]}>{item.alignmentScore}</Text>
+          </View>
+        </View>
+        <View style={styles.exploreCardInfo}>
+          <Text style={[styles.exploreCardBrand, { color: colors.text }]} numberOfLines={1}>
+            {item.brand}
+          </Text>
+          <Text style={[styles.exploreCardCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+            {item.category}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderFullPost = () => {
+    if (!selectedPostProduct) return null;
+
+    const interaction = getProductInteraction(selectedPostProduct.id);
+    const alignmentReason = getAlignmentReason(selectedPostProduct.matchingValues || []);
+
+    return (
+      <View style={[styles.postContainer, { backgroundColor: colors.background }]}>
+        <View style={styles.postHeader}>
+          <TouchableOpacity
+            style={styles.brandInfo}
+            onPress={() => {
+              setPostModalVisible(false);
+              handleProductPress(selectedPostProduct);
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.brandAvatar, { backgroundColor: colors.backgroundSecondary }]}>
+              <Image
+                source={{ uri: getLogoUrl(selectedPostProduct.website || '') }}
+                style={styles.brandAvatarImage}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+              />
+            </View>
+            <View style={styles.brandDetails}>
+              <Text style={[styles.brandName, { color: colors.text }]}>{selectedPostProduct.brand}</Text>
+              <Text style={[styles.brandCategory, { color: colors.textSecondary }]}>{selectedPostProduct.category}</Text>
+            </View>
+          </TouchableOpacity>
+          <View style={[styles.postAlignmentBadge, { backgroundColor: colors.success + '15' }]}>
+            <Text style={[styles.postAlignmentScore, { color: colors.success }]}>{selectedPostProduct.alignmentScore}</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          activeOpacity={0.95}
+          onPress={() => {
+            setPostModalVisible(false);
+            handleProductPress(selectedPostProduct);
+          }}
+        >
+          <Image
+            source={{ uri: selectedPostProduct.productImageUrl || getLogoUrl(selectedPostProduct.website || '') }}
+            style={styles.postImage}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
+          />
+        </TouchableOpacity>
+
+        {alignmentReason && (
+          <View style={styles.alignmentReasonContainer}>
+            <Text style={[styles.alignmentReasonText, { color: colors.textSecondary }]}>
+              You're seeing this because you align with <Text style={{ fontWeight: '600', color: colors.text }}>{alignmentReason}</Text>
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.actionsContainer}>
+          <View style={styles.leftActions}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleLike(selectedPostProduct.id)}
+              activeOpacity={0.7}
+            >
+              <Heart
+                size={28}
+                color={interaction.isLiked ? colors.danger : colors.text}
+                fill={interaction.isLiked ? colors.danger : 'none'}
+                strokeWidth={2}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleOpenComments(selectedPostProduct.id)}
+              activeOpacity={0.7}
+            >
+              <MessageCircle size={28} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleShare(selectedPostProduct)}
+              activeOpacity={0.7}
+            >
+              <Share2 size={28} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            style={[styles.visitButton, { backgroundColor: colors.primary }]}
+            onPress={() => handleVisitBrand(selectedPostProduct)}
+            activeOpacity={0.8}
+          >
+            <ExternalLink size={18} color={colors.white} strokeWidth={2} />
+            <Text style={[styles.visitButtonText, { color: colors.white }]}>Shop</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.postContent}>
+          {interaction.likesCount > 0 && (
+            <Text style={[styles.likesText, { color: colors.text }]}>
+              {interaction.likesCount.toLocaleString()} {interaction.likesCount === 1 ? 'like' : 'likes'}
+            </Text>
+          )}
+          <View style={styles.descriptionContainer}>
+            <Text style={[styles.postProductName, { color: colors.text }]}>
+              <Text style={styles.brandNameBold}>{selectedPostProduct.brand}</Text> {selectedPostProduct.productDescription || selectedPostProduct.name}
+            </Text>
+          </View>
+          {interaction.comments.length > 0 && (
+            <TouchableOpacity
+              onPress={() => handleOpenComments(selectedPostProduct.id)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.viewCommentsText, { color: colors.textSecondary }]}>
+                View all {interaction.comments.length} {interaction.comments.length === 1 ? 'comment' : 'comments'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
@@ -232,7 +631,7 @@ export default function SearchScreen() {
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Search</Text>
           <MenuButton />
         </View>
-        
+
         <View style={[styles.searchContainer, { backgroundColor: colors.backgroundSecondary, borderBottomColor: colors.primaryLight }]}>
         <View style={[styles.searchInputContainer, { backgroundColor: isDarkMode ? colors.backgroundSecondary : colors.white, borderColor: colors.primaryLight }]}>
           <SearchIcon size={20} color={colors.primaryLight} strokeWidth={2} />
@@ -257,15 +656,35 @@ export default function SearchScreen() {
       </View>
 
       {query.trim().length === 0 ? (
-        <View style={styles.emptyState}>
-          <View style={[styles.emptyIconContainer, { backgroundColor: colors.primaryLight + '10' }]}>
-            <SearchIcon size={48} color={colors.primaryLight} strokeWidth={1.5} />
+        profile.causes.length === 0 ? (
+          <View style={styles.emptyState}>
+            <View style={[styles.emptyIconContainer, { backgroundColor: colors.primaryLight + '10' }]}>
+              <SearchIcon size={48} color={colors.primaryLight} strokeWidth={1.5} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>Set Your Values First</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+              Complete your profile to see personalized product recommendations
+            </Text>
           </View>
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>Search for products</Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-            Find out how your purchases align with your values
-          </Text>
-        </View>
+        ) : (
+          <FlatList
+            data={alignedProducts}
+            renderItem={renderExploreCard}
+            keyExtractor={item => item.id}
+            numColumns={2}
+            contentContainerStyle={[styles.exploreGrid, { paddingBottom: 100 }]}
+            columnWrapperStyle={styles.exploreRow}
+            showsVerticalScrollIndicator={false}
+            ListHeaderComponent={
+              <View style={styles.exploreHeader}>
+                <Text style={[styles.exploreTitle, { color: colors.text }]}>Explore</Text>
+                <Text style={[styles.exploreSubtitle, { color: colors.textSecondary }]}>
+                  Brands aligned with your values
+                </Text>
+              </View>
+            }
+          />
+        )
       ) : results.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>No results found</Text>
@@ -281,6 +700,95 @@ export default function SearchScreen() {
         />
       )}
 
+      {/* Post Detail Modal */}
+      <Modal
+        visible={postModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setPostModalVisible(false)}
+      >
+        <View style={styles.postModalOverlay}>
+          <View style={[styles.postModalContent, { backgroundColor: colors.background }]}>
+            <View style={[styles.postModalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.postModalTitle, { color: colors.text }]}>Post</Text>
+              <TouchableOpacity onPress={() => setPostModalVisible(false)} activeOpacity={0.7}>
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            >
+              {renderFullPost()}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Comments Modal */}
+      <Modal
+        visible={commentModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setCommentModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Comments</Text>
+              <TouchableOpacity onPress={() => setCommentModalVisible(false)}>
+                <Text style={[styles.modalClose, { color: colors.primary }]}>Done</Text>
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={selectedProductId ? getProductInteraction(selectedProductId).comments : []}
+              keyExtractor={item => item.id}
+              renderItem={({ item }) => (
+                <View style={[styles.commentItem, { borderBottomColor: colors.border }]}>
+                  <Text style={[styles.commentUser, { color: colors.text }]}>{item.userName}</Text>
+                  <Text style={[styles.commentText, { color: colors.text }]}>{item.text}</Text>
+                  <Text style={[styles.commentTime, { color: colors.textSecondary }]}>
+                    {item.timestamp.toLocaleString()}
+                  </Text>
+                </View>
+              )}
+              ListEmptyComponent={
+                <View style={styles.emptyComments}>
+                  <Text style={[styles.emptyCommentsText, { color: colors.textSecondary }]}>
+                    No comments yet. Be the first to comment!
+                  </Text>
+                </View>
+              }
+              style={styles.commentsList}
+            />
+
+            <View style={[styles.commentInputContainer, { backgroundColor: colors.backgroundSecondary, borderTopColor: colors.border }]}>
+              <TextInput
+                style={[styles.commentInput, { color: colors.text }]}
+                placeholder="Add a comment..."
+                placeholderTextColor={colors.textLight}
+                value={commentText}
+                onChangeText={setCommentText}
+                multiline
+              />
+              <TouchableOpacity
+                style={[
+                  styles.commentSubmitButton,
+                  { backgroundColor: commentText.trim() ? colors.primary : colors.neutralLight }
+                ]}
+                onPress={handleAddComment}
+                disabled={!commentText.trim()}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.commentSubmitText, { color: colors.white }]}>Post</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Barcode Scanner Modal */}
       <Modal
         visible={scannerVisible}
         animationType="slide"
@@ -411,7 +919,7 @@ export default function SearchScreen() {
               </View>
             </View>
           ) : scannedInfo ? (
-            <View style={[styles.resultContainer, { backgroundColor: colors.background }]}>              
+            <View style={[styles.resultContainer, { backgroundColor: colors.background }]}>
               <TouchableOpacity
                 style={[styles.closeButton, styles.closeButtonResult]}
                 onPress={handleCloseScanner}
@@ -421,7 +929,7 @@ export default function SearchScreen() {
               </TouchableOpacity>
 
               <View style={styles.resultContent}>
-                <View style={[styles.successBadge, { backgroundColor: Colors.success + '15' }]}>                  
+                <View style={[styles.successBadge, { backgroundColor: Colors.success + '15' }]}>
                   <ScanBarcode size={32} color={Colors.success} strokeWidth={2} />
                 </View>
 
@@ -444,18 +952,18 @@ export default function SearchScreen() {
                   {scannedInfo.productName}
                 </Text>
 
-                <View style={[styles.notInDbBadge, { backgroundColor: colors.warning + '15', borderColor: colors.warning }]}>                  
+                <View style={[styles.notInDbBadge, { backgroundColor: colors.warning + '15', borderColor: colors.warning }]}>
                   <Text style={[styles.notInDbText, { color: colors.warning }]}>
                     This brand is not in our values database yet
                   </Text>
                 </View>
-                
+
                 <Text style={[styles.notInDbDescription, { color: colors.textSecondary }]}>
                   The barcode scanner is working correctly, but we don&apos;t have alignment information for this brand.
                 </Text>
 
                 <TouchableOpacity
-                  style={[styles.scanAgainButton, { borderColor: colors.border, marginTop: 24 }]}                  
+                  style={[styles.scanAgainButton, { borderColor: colors.border, marginTop: 24 }]}
                   onPress={() => {
                     setScannedInfo(null);
                     setScanning(true);
@@ -476,6 +984,9 @@ export default function SearchScreen() {
   );
 }
 
+const { width } = Dimensions.get('window');
+const cardWidth = (width - 48) / 2; // 16px padding on each side + 16px gap
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -495,7 +1006,6 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     flex: 1,
   },
-
   searchContainer: {
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -515,6 +1025,286 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
   },
+  scanButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Explore Section
+  exploreHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+  exploreTitle: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  exploreSubtitle: {
+    fontSize: 14,
+  },
+  exploreGrid: {
+    paddingHorizontal: 16,
+    paddingTop: 0,
+  },
+  exploreRow: {
+    justifyContent: 'space-between',
+  },
+  exploreCard: {
+    width: cardWidth,
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+  },
+  exploreCardLeft: {
+    marginRight: 8,
+  },
+  exploreCardRight: {
+    marginLeft: 8,
+  },
+  exploreCardImage: {
+    width: '100%',
+    height: cardWidth * 1.2,
+  },
+  exploreCardOverlay: {
+    position: 'absolute' as const,
+    top: 8,
+    right: 8,
+  },
+  exploreCardBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  exploreCardScore: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  exploreCardInfo: {
+    padding: 12,
+  },
+  exploreCardBrand: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    marginBottom: 2,
+  },
+  exploreCardCategory: {
+    fontSize: 12,
+  },
+
+  // Post Modal
+  postModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  postModalContent: {
+    maxHeight: '90%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  postModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  postModalTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+
+  // Full Post Styles
+  postContainer: {
+    paddingBottom: 16,
+  },
+  postHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  brandInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  brandAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  brandAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  brandDetails: {
+    flex: 1,
+  },
+  brandName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 2,
+  },
+  brandCategory: {
+    fontSize: 13,
+  },
+  postAlignmentBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  postAlignmentScore: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  postImage: {
+    width: '100%',
+    height: 400,
+  },
+  alignmentReasonContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  alignmentReasonText: {
+    fontSize: 13,
+    fontStyle: 'italic',
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  leftActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  actionButton: {
+    padding: 4,
+  },
+  visitButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+  },
+  visitButtonText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  postContent: {
+    paddingHorizontal: 16,
+  },
+  likesText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+  },
+  descriptionContainer: {
+    marginBottom: 8,
+  },
+  postProductName: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  brandNameBold: {
+    fontWeight: '600' as const,
+  },
+  viewCommentsText: {
+    fontSize: 14,
+  },
+
+  // Comments Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    maxHeight: '80%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  modalClose: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  commentsList: {
+    maxHeight: 400,
+  },
+  commentItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  commentUser: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    marginBottom: 4,
+  },
+  commentText: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 4,
+  },
+  commentTime: {
+    fontSize: 12,
+  },
+  emptyComments: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  emptyCommentsText: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  commentInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 12,
+    borderTopWidth: 1,
+  },
+  commentInput: {
+    flex: 1,
+    fontSize: 15,
+    maxHeight: 80,
+  },
+  commentSubmitButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  commentSubmitText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+
+  // Empty State & Search Results
   emptyState: {
     flex: 1,
     alignItems: 'center',
@@ -602,13 +1392,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  scanButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+
+  // Barcode Scanner
   scannerContainer: {
     flex: 1,
   },
