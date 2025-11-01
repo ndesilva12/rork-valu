@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { MapPin } from 'lucide-react-native';
 import * as Location from 'expo-location';
+import Constants from 'expo-constants';
 import { lightColors, darkColors } from '@/constants/colors';
 
 interface LocationSuggestion {
@@ -40,12 +41,21 @@ export default function LocationAutocomplete({
   const [gettingLocation, setGettingLocation] = useState(false);
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || '';
+  // Try multiple sources for the API key
+  const API_KEY =
+    Constants.expoConfig?.extra?.googlePlacesApiKey ||
+    process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ||
+    '';
 
   // Debug logging
   console.log('[LocationAutocomplete] API Key available:', !!API_KEY);
+  console.log('[LocationAutocomplete] API Key source:', API_KEY ? (Constants.expoConfig?.extra?.googlePlacesApiKey ? 'expo config' : 'process.env') : 'none');
   if (!API_KEY) {
     console.warn('[LocationAutocomplete] No Google Places API key found. Autocomplete will not work.');
+    console.warn('[LocationAutocomplete] Checked:', {
+      expoConfig: !!Constants.expoConfig?.extra?.googlePlacesApiKey,
+      processEnv: !!process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY
+    });
   }
 
   const fetchSuggestions = async (text: string) => {

@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   unselectedValueRow: {
-    opacity: 0.7,
+    opacity: 0.9,
   },
   valueNameBox: {
     paddingHorizontal: 12,
