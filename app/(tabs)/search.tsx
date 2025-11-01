@@ -487,9 +487,6 @@ export default function SearchScreen() {
           <Text style={[styles.exploreCardBrand, { color: colors.text }]} numberOfLines={1}>
             {item.brand}
           </Text>
-          <Text style={[styles.exploreCardCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-            {item.category}
-          </Text>
         </View>
       </TouchableOpacity>
     );
@@ -1069,32 +1066,31 @@ const styles = StyleSheet.create({
   },
   exploreCardImage: {
     width: '100%',
-    height: cardWidth * 1.2,
+    height: cardWidth * 0.75,
   },
   exploreCardOverlay: {
     position: 'absolute' as const,
-    top: 8,
-    right: 8,
+    top: 6,
+    right: 6,
   },
   exploreCardBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   exploreCardScore: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700' as const,
   },
   exploreCardInfo: {
-    padding: 12,
+    padding: 8,
   },
   exploreCardBrand: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
-    marginBottom: 2,
   },
   exploreCardCategory: {
-    fontSize: 12,
+    fontSize: 11,
   },
 
   // Post Modal
@@ -1104,6 +1100,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   postModalContent: {
+    minHeight: '70%',
     maxHeight: '90%',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
