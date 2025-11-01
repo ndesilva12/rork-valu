@@ -23,6 +23,7 @@ import { MOCK_PRODUCTS } from '@/mocks/products';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
 import { Product } from '@/types';
 import { getLogoUrl } from '@/lib/logo';
+import { AVAILABLE_VALUES } from '@/mocks/available-values';
 
 interface Comment {
   id: string;
@@ -102,11 +103,12 @@ export default function ShopScreen() {
         alignmentStrength = Math.round(((avgPosition - 1) / 10) * 50);
       }
       
-      return { 
-        product, 
-        totalSupportScore, 
-        totalAvoidScore, 
+      return {
+        product,
+        totalSupportScore,
+        totalAvoidScore,
         matchingValuesCount: matchingValues.size,
+        matchingValues: Array.from(matchingValues),
         alignmentStrength,
         isPositivelyAligned
       };
@@ -115,7 +117,7 @@ export default function ShopScreen() {
     const alignedSorted = scored
       .filter(s => s.isPositivelyAligned)
       .sort((a, b) => b.alignmentStrength - a.alignmentStrength)
-      .map(s => ({ ...s.product, alignmentScore: s.alignmentStrength }));
+      .map(s => ({ ...s.product, alignmentScore: s.alignmentStrength, matchingValues: s.matchingValues }));
     
     const shuffled: Product[] = [];
     const localItems = alignedSorted.filter(p => p.id.startsWith('local-'));
@@ -246,8 +248,22 @@ export default function ShopScreen() {
     });
   }, [router]);
 
-  const renderProductPost = useCallback(({ item }: { item: Product }) => {
+  const getAlignmentReason = useCallback((matchingValues: string[]) => {
+    if (!matchingValues || matchingValues.length === 0) return null;
+
+    // Get all values as a flat array
+    const allValues = Object.values(AVAILABLE_VALUES).flat();
+
+    // Get the first matching value name
+    const firstMatchingValue = allValues.find(v => v.id === matchingValues[0]);
+    if (!firstMatchingValue) return null;
+
+    return firstMatchingValue.name;
+  }, []);
+
+  const renderProductPost = useCallback(({ item }: { item: Product & { matchingValues?: string[] } }) => {
     const interaction = getProductInteraction(item.id);
+    const alignmentReason = getAlignmentReason(item.matchingValues || []);
     
     return (
       <View style={[styles.postContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
@@ -288,6 +304,14 @@ export default function ShopScreen() {
             cachePolicy="memory-disk"
           />
         </TouchableOpacity>
+
+        {alignmentReason && (
+          <View style={styles.alignmentReasonContainer}>
+            <Text style={[styles.alignmentReasonText, { color: colors.textSecondary }]}>
+              You're seeing this because you align with <Text style={{ fontWeight: '600', color: colors.text }}>{alignmentReason}</Text>
+            </Text>
+          </View>
+        )}
 
         <View style={styles.actionsContainer}>
           <View style={styles.leftActions}>
@@ -538,6 +562,16 @@ const styles = StyleSheet.create({
   postImage: {
     width: '100%',
     height: 400,
+  },
+  alignmentReasonContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingTop: 12,
+  },
+  alignmentReasonText: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontStyle: 'italic',
   },
   actionsContainer: {
     flexDirection: 'row',
