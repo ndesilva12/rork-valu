@@ -189,7 +189,7 @@ export default function ValueDetailScreen() {
           {drivers.supports.length > 0 ? (
             <View style={styles.driversContainer}>
               {drivers.supports.map((driver, index) => (
-                <View key={`${id}-support-${driver.name}-${index}`} style={[styles.driverCard, styles.supportingCard, { borderColor: colors.success }]}>
+                <View key={`${id}-support-${driver.name}-${index}`} style={[styles.driverCard, styles.supportingCard, { backgroundColor: colors.backgroundSecondary }]}>
                   <View style={styles.cardContent}>
                     <View style={styles.leftContent}>
                       {driver.imageUrl ? (
@@ -230,7 +230,7 @@ export default function ValueDetailScreen() {
           {drivers.opposes.length > 0 ? (
             <View style={styles.driversContainer}>
               {drivers.opposes.map((driver, index) => (
-                <View key={`${id}-oppose-${driver.name}-${index}`} style={[styles.driverCard, styles.opposingCard, { borderColor: colors.danger }]}>
+                <View key={`${id}-oppose-${driver.name}-${index}`} style={[styles.driverCard, styles.opposingCard, { backgroundColor: colors.backgroundSecondary }]}>
                   <View style={styles.cardContent}>
                     <View style={styles.leftContent}>
                       {driver.imageUrl ? (
@@ -346,7 +346,6 @@ const styles = StyleSheet.create({
   driverCard: {
     borderRadius: 12,
     padding: 14,
-    borderWidth: 1.5,
   },
   supportingCard: {},
   opposingCard: {},

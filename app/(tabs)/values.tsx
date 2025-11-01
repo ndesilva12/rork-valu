@@ -91,22 +91,23 @@ export default function ProfileScreen() {
               <Text style={[styles.promoDescription, { color: colors.textSecondary }]}>
                 Use this code when you shop at locations and we will donate a percentage of each purchase to your selected organizations
               </Text>
-            </View>
 
-            {/* QR Code Section */}
-            {qrValue && (
-              <View style={[styles.qrSection, { backgroundColor: colors.backgroundSecondary }]}>
-                <Text style={[styles.qrLabel, { color: colors.textSecondary }]}>Scan to Share</Text>
-                <View style={[styles.qrCodeContainer, { width: qrSize, height: qrSize }]}>
-                  <QRCode
-                    value={qrValue}
-                    size={qrSize - 32}
-                    color={isDarkMode ? colors.text : Colors.text}
-                    backgroundColor={colors.backgroundSecondary}
-                  />
+              {/* QR Code - Inside the same box */}
+              {qrValue && (
+                <View style={styles.qrCodeSection}>
+                  <View style={styles.qrDivider} />
+                  <Text style={[styles.qrLabel, { color: colors.textSecondary }]}>Scan to Share</Text>
+                  <View style={[styles.qrCodeContainer, { width: qrSize, height: qrSize }]}>
+                    <QRCode
+                      value={qrValue}
+                      size={qrSize - 32}
+                      color={isDarkMode ? colors.text : Colors.text}
+                      backgroundColor="#ffffff"
+                    />
+                  </View>
                 </View>
-              </View>
-            )}
+              )}
+            </View>
 
             {/* Donation Counter Section */}
             <View style={styles.section}>
@@ -226,11 +227,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
   },
-  qrSection: {
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
+  qrCodeSection: {
+    marginTop: 24,
     alignItems: 'center',
+    width: '100%',
+  },
+  qrDivider: {
+    width: '80%',
+    height: 1,
+    backgroundColor: 'rgba(128, 128, 128, 0.2)',
+    marginBottom: 20,
   },
   qrLabel: {
     fontSize: 14,
