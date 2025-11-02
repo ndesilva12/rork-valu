@@ -295,11 +295,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 56,
     left: 0,
-    right: 120,
+    right: 0,
     maxHeight: 200,
     borderRadius: 12,
     borderWidth: 1,
     overflow: 'hidden',
+    zIndex: 1000,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -309,6 +310,9 @@ const styles = StyleSheet.create({
       },
       android: {
         elevation: 4,
+      },
+      web: {
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
       },
     }),
   },
