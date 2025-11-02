@@ -47,3 +47,4 @@ yarn-error.*
 secrets/
 *service-account*.json
 *.backup
+geocode-output.log
