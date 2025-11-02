@@ -8,6 +8,8 @@ import { getLocalBusinessesProcedure } from "./routes/data/get-local-businesses/
 import { searchBrandsProcedure } from "./routes/data/search-brands/route";
 import { getBrandProcedure } from "./routes/data/get-brand/route";
 import { getValuesMatrixProcedure } from "./routes/data/get-values-matrix/route";
+import { autocompleteProcedure } from "./routes/location/autocomplete/route";
+import { placeDetailsProcedure } from "./routes/location/place-details/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -24,6 +26,10 @@ export const appRouter = createTRPCRouter({
     searchBrands: searchBrandsProcedure,
     getBrand: getBrandProcedure,
     getValuesMatrix: getValuesMatrixProcedure,
+  }),
+  location: createTRPCRouter({
+    autocomplete: autocompleteProcedure,
+    placeDetails: placeDetailsProcedure,
   }),
 });
 
