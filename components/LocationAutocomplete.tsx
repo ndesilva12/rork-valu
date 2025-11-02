@@ -3,22 +3,14 @@ import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
-  FlatList,
-  ActivityIndicator,
-  Platform,
   Alert,
 } from 'react-native';
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { MapPin } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import Constants from 'expo-constants';
 import { lightColors, darkColors } from '@/constants/colors';
-
-interface LocationSuggestion {
-  description: string;
-  place_id: string;
-}
 
 interface LocationAutocompleteProps {
   value: string;
@@ -34,129 +26,34 @@ export default function LocationAutocomplete({
   placeholder = "Enter city and state (e.g., New York, NY)",
 }: LocationAutocompleteProps) {
   const colors = isDarkMode ? darkColors : lightColors;
-  const [inputValue, setInputValue] = useState(value);
-  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
-  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+  const googlePlacesRef = useRef<any>(null);
 
-  // Sync internal state with prop changes (for controlled component behavior)
-  useEffect(() => {
-    setInputValue(value);
-  }, [value]);
-
-  // Try multiple sources for the API key
+  // Get API key from multiple sources
   const API_KEY =
     Constants.expoConfig?.extra?.googlePlacesApiKey ||
     process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ||
     '';
 
   // Debug logging
-  console.log('[LocationAutocomplete] API Key available:', !!API_KEY);
-  console.log('[LocationAutocomplete] API Key source:', API_KEY ? (Constants.expoConfig?.extra?.googlePlacesApiKey ? 'expo config' : 'process.env') : 'none');
-  if (!API_KEY) {
-    console.warn('[LocationAutocomplete] No Google Places API key found. Autocomplete will not work.');
-    console.warn('[LocationAutocomplete] Checked:', {
-      expoConfig: !!Constants.expoConfig?.extra?.googlePlacesApiKey,
-      processEnv: !!process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY
-    });
-  }
-
-  const fetchSuggestions = async (text: string) => {
-    if (!text.trim()) {
-      setSuggestions([]);
-      return;
-    }
-
+  useEffect(() => {
+    console.log('[LocationAutocomplete] Initialized');
+    console.log('[LocationAutocomplete] API Key available:', !!API_KEY);
     if (!API_KEY) {
-      console.warn('[LocationAutocomplete] Cannot fetch suggestions - no API key');
-      setSuggestions([]);
-      return;
+      console.error('[LocationAutocomplete] No Google Places API key found!');
+      console.error('[LocationAutocomplete] Checked:', {
+        expoConfig: !!Constants.expoConfig?.extra?.googlePlacesApiKey,
+        processEnv: !!process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY
+      });
     }
+  }, [API_KEY]);
 
-    try {
-      setIsLoading(true);
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&types=(cities)&key=${API_KEY}`
-      );
-      const data = await response.json();
-
-      if (data.predictions) {
-        setSuggestions(data.predictions);
-        setShowSuggestions(true);
-      }
-    } catch (error) {
-      console.error('Error fetching suggestions:', error);
-    } finally {
-      setIsLoading(false);
+  // Sync with parent value changes
+  useEffect(() => {
+    if (value && googlePlacesRef.current) {
+      googlePlacesRef.current.setAddressText(value);
     }
-  };
-
-  const handleTextChange = (text: string) => {
-    setInputValue(text);
-
-    // Clear existing timeout
-    if (debounceTimeout.current) {
-      clearTimeout(debounceTimeout.current);
-    }
-
-    // Debounce the API call
-    debounceTimeout.current = setTimeout(() => {
-      fetchSuggestions(text);
-    }, 300);
-  };
-
-  const handleSelectSuggestion = async (suggestion: LocationSuggestion) => {
-    setInputValue(suggestion.description);
-    setShowSuggestions(false);
-    setSuggestions([]);
-
-    // Get coordinates for the selected place
-    try {
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${suggestion.place_id}&fields=geometry&key=${API_KEY}`
-      );
-      const data = await response.json();
-
-      if (data.result?.geometry?.location) {
-        const { lat, lng } = data.result.geometry.location;
-        onLocationSelect(suggestion.description, lat, lng);
-      }
-    } catch (error) {
-      console.error('Error getting place details:', error);
-      // If Places API fails, try expo-location geocoding as fallback
-      try {
-        const results = await Location.geocodeAsync(suggestion.description);
-        if (results && results.length > 0) {
-          const { latitude, longitude } = results[0];
-          onLocationSelect(suggestion.description, latitude, longitude);
-        }
-      } catch (geocodeError) {
-        console.error('Error geocoding location:', geocodeError);
-      }
-    }
-  };
-
-  const handleBlur = async () => {
-    // Delay to allow suggestion click to register
-    setTimeout(async () => {
-      setShowSuggestions(false);
-
-      // If no API key, use expo-location as fallback
-      if (!API_KEY && inputValue.trim()) {
-        try {
-          const results = await Location.geocodeAsync(inputValue);
-          if (results && results.length > 0) {
-            const { latitude, longitude } = results[0];
-            onLocationSelect(inputValue, latitude, longitude);
-          }
-        } catch (error) {
-          console.error('Error geocoding location:', error);
-        }
-      }
-    }, 200);
-  };
+  }, [value]);
 
   const handleGetCurrentLocation = async () => {
     try {
@@ -165,12 +62,14 @@ export default function LocationAutocomplete({
 
       const { status } = await Location.requestForegroundPermissionsAsync();
       console.log('[LocationAutocomplete] Permission status:', status);
+
       if (status !== 'granted') {
         console.warn('[LocationAutocomplete] Location permission denied');
         Alert.alert('Permission Required', 'Location permission is required to use your current location.');
         return;
       }
 
+      console.log('[LocationAutocomplete] Getting current position...');
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
@@ -180,20 +79,31 @@ export default function LocationAutocomplete({
       console.log('[LocationAutocomplete] Got coordinates:', { lat, lon });
 
       // Reverse geocode to get address
+      console.log('[LocationAutocomplete] Reverse geocoding...');
       const addresses = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
       console.log('[LocationAutocomplete] Reverse geocode result:', addresses);
+
       if (addresses && addresses.length > 0) {
         const addr = addresses[0];
         const locationString = [addr.city, addr.region].filter(Boolean).join(', ');
         const displayLocation = locationString || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+
         console.log('[LocationAutocomplete] Setting location:', displayLocation);
-        setInputValue(displayLocation);
+
+        // Update the GooglePlacesAutocomplete input
+        if (googlePlacesRef.current) {
+          googlePlacesRef.current.setAddressText(displayLocation);
+        }
+
+        // Call the callback
         onLocationSelect(displayLocation, lat, lon);
+
+        console.log('[LocationAutocomplete] Location set successfully');
       } else {
         console.warn('[LocationAutocomplete] No addresses found for coordinates');
         Alert.alert('Error', 'Could not determine your location address.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[LocationAutocomplete] Error getting location:', error);
       Alert.alert('Error', `Failed to get current location: ${error.message || 'Unknown error'}`);
     } finally {
@@ -201,26 +111,119 @@ export default function LocationAutocomplete({
     }
   };
 
+  if (!API_KEY) {
+    // Fallback to simple text input when no API key
+    return (
+      <View style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={[styles.errorText, { color: colors.error || '#ff0000' }]}>
+            ⚠️ Google Places API key not configured
+          </Text>
+          <Text style={[styles.errorSubtext, { color: colors.textSecondary }]}>
+            Please add EXPO_PUBLIC_GOOGLE_PLACES_API_KEY to your .env file
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.inputRow}>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: colors.backgroundSecondary,
-              borderColor: colors.border,
-              color: colors.text,
-            }
-          ]}
-          placeholder={placeholder}
-          placeholderTextColor={colors.textSecondary}
-          value={inputValue}
-          onChangeText={handleTextChange}
-          onBlur={handleBlur}
-          onFocus={() => inputValue && fetchSuggestions(inputValue)}
-          autoCapitalize="words"
-        />
+        <View style={styles.autocompleteWrapper}>
+          <GooglePlacesAutocomplete
+            ref={googlePlacesRef}
+            placeholder={placeholder}
+            onPress={(data, details = null) => {
+              console.log('[LocationAutocomplete] Place selected:', data.description);
+              console.log('[LocationAutocomplete] Place details:', details);
+
+              if (details?.geometry?.location) {
+                const { lat, lng } = details.geometry.location;
+                console.log('[LocationAutocomplete] Coordinates:', { lat, lng });
+                onLocationSelect(data.description, lat, lng);
+              } else {
+                console.warn('[LocationAutocomplete] No geometry in details, attempting geocode...');
+                // Fallback to expo-location geocoding
+                Location.geocodeAsync(data.description)
+                  .then((results) => {
+                    if (results && results.length > 0) {
+                      const { latitude, longitude } = results[0];
+                      console.log('[LocationAutocomplete] Geocoded to:', { latitude, longitude });
+                      onLocationSelect(data.description, latitude, longitude);
+                    } else {
+                      console.error('[LocationAutocomplete] Geocoding returned no results');
+                    }
+                  })
+                  .catch((error) => {
+                    console.error('[LocationAutocomplete] Geocoding error:', error);
+                  });
+              }
+            }}
+            query={{
+              key: API_KEY,
+              language: 'en',
+              types: '(cities)',
+            }}
+            fetchDetails={true}
+            enablePoweredByContainer={false}
+            styles={{
+              textInputContainer: {
+                backgroundColor: 'transparent',
+                borderTopWidth: 0,
+                borderBottomWidth: 0,
+                paddingHorizontal: 0,
+                paddingVertical: 0,
+              },
+              textInput: {
+                height: 48,
+                color: colors.text,
+                fontSize: 16,
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+                borderWidth: 1,
+                borderRadius: 12,
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+              },
+              predefinedPlacesDescription: {
+                color: colors.primary,
+              },
+              listView: {
+                backgroundColor: colors.backgroundSecondary,
+                borderColor: colors.border,
+                borderWidth: 1,
+                borderRadius: 12,
+                marginTop: 4,
+              },
+              row: {
+                backgroundColor: colors.backgroundSecondary,
+                padding: 13,
+                height: 44,
+                flexDirection: 'row',
+              },
+              separator: {
+                height: 0.5,
+                backgroundColor: colors.border,
+              },
+              description: {
+                color: colors.text,
+                fontSize: 15,
+              },
+              loader: {
+                flexDirection: 'row',
+                justifyContent: 'flex-end',
+                height: 20,
+              },
+            }}
+            textInputProps={{
+              placeholderTextColor: colors.textSecondary,
+              returnKeyType: 'search',
+            }}
+            debounce={300}
+          />
+        </View>
+
         <TouchableOpacity
           style={[
             styles.locationButton,
@@ -230,52 +233,12 @@ export default function LocationAutocomplete({
           disabled={gettingLocation}
           activeOpacity={0.7}
         >
-          <MapPin size={18} color={colors.white} strokeWidth={2} />
-          <Text style={[styles.locationButtonText, { color: colors.white }]}>
+          <MapPin size={18} color={colors.white || '#ffffff'} strokeWidth={2} />
+          <Text style={[styles.locationButtonText, { color: colors.white || '#ffffff' }]}>
             {gettingLocation ? 'Getting...' : 'Use Current'}
           </Text>
         </TouchableOpacity>
       </View>
-
-      {/* Loading indicator */}
-      {isLoading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-            Searching locations...
-          </Text>
-        </View>
-      )}
-
-      {/* Suggestions list */}
-      {showSuggestions && suggestions.length > 0 && (
-        <View style={[
-          styles.suggestionsContainer,
-          {
-            backgroundColor: colors.backgroundSecondary,
-            borderColor: colors.border,
-          }
-        ]}>
-          <FlatList
-            data={suggestions}
-            keyExtractor={(item) => item.place_id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.suggestionItem, { borderBottomColor: colors.border }]}
-                onPress={() => handleSelectSuggestion(item)}
-                activeOpacity={0.7}
-              >
-                <MapPin size={16} color={colors.textSecondary} strokeWidth={2} />
-                <Text style={[styles.suggestionText, { color: colors.text }]}>
-                  {item.description}
-                </Text>
-              </TouchableOpacity>
-            )}
-            style={styles.suggestionsList}
-            nestedScrollEnabled
-          />
-        </View>
-      )}
     </View>
   );
 }
@@ -288,14 +251,11 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     gap: 12,
+    alignItems: 'flex-start',
   },
-  input: {
+  autocompleteWrapper: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    fontSize: 16,
+    zIndex: 1,
   },
   locationButton: {
     flexDirection: 'row',
@@ -304,54 +264,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 12,
+    height: 48,
   },
   locationButtonText: {
     fontSize: 14,
     fontWeight: '600' as const,
   },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
-  },
-  loadingText: {
-    fontSize: 13,
-  },
-  suggestionsContainer: {
-    position: 'absolute',
-    top: 56,
-    left: 0,
-    right: 120,
-    maxHeight: 200,
+  errorContainer: {
+    padding: 16,
     borderRadius: 12,
+    backgroundColor: '#fff3cd',
     borderWidth: 1,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    borderColor: '#ffc107',
   },
-  suggestionsList: {
-    maxHeight: 200,
+  errorText: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
   },
-  suggestionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  suggestionText: {
-    fontSize: 15,
-    flex: 1,
+  errorSubtext: {
+    fontSize: 12,
   },
 });
