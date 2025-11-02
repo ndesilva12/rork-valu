@@ -543,7 +543,9 @@
       }
     ],
     "location": "Issaquah, WA, USA",
-    "ownershipSources": "HQ: Official; Stakes: 13F + insider disclosures"
+    "ownershipSources": "HQ: Official; Stakes: 13F + insider disclosures",
+    "latitude": 47.5301,
+    "longitude": -122.0326
   },
   {
     "id": "Smith-&-Wesson",
@@ -702,7 +704,9 @@
       }
     ],
     "location": "Bethesda, MD, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F data"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F data",
+    "latitude": 38.9807,
+    "longitude": -77.1028
   },
   {
     "id": "REI",
@@ -865,7 +869,9 @@
       }
     ],
     "location": "Dubai, UAE",
-    "ownershipSources": "HQ: Official; Stakes: Buyback from TSG in 2025 makes it fully founder-owned"
+    "ownershipSources": "HQ: Official; Stakes: Buyback from TSG in 2025 makes it fully founder-owned",
+    "latitude": 25.2048,
+    "longitude": 55.2708
   },
   {
     "id": "Estée-Lauder",
@@ -973,7 +979,9 @@
       }
     ],
     "location": "Santa Monica, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Latest funding rounds/Crunchbase 2025 (private)"
+    "ownershipSources": "HQ: Official; Stakes: Latest funding rounds/Crunchbase 2025 (private)",
+    "latitude": 34.0195,
+    "longitude": -118.4912
   },
   {
     "id": "USAA",
@@ -1081,7 +1089,9 @@
       }
     ],
     "location": "Arlington, VA, USA",
-    "ownershipSources": "HQ: Official (2022 move); Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official (2022 move); Stakes: Q3 2025 13F filings",
+    "latitude": 38.8816,
+    "longitude": -77.091
   },
   {
     "id": "Procter-&-Gamble",
@@ -1244,7 +1254,9 @@
       }
     ],
     "location": "Kuala Lumpur, Malaysia",
-    "ownershipSources": "HQ: Official; Stakes: Bursa Malaysia filings"
+    "ownershipSources": "HQ: Official; Stakes: Bursa Malaysia filings",
+    "latitude": 3.139,
+    "longitude": 101.6869
   },
   {
     "id": "Gazprom",
@@ -1297,7 +1309,9 @@
       }
     ],
     "location": "Saint Petersburg, Russia",
-    "ownershipSources": "HQ: Official; Stakes: State-owned per Russian registry 2025"
+    "ownershipSources": "HQ: Official; Stakes: State-owned per Russian registry 2025",
+    "latitude": 59.9311,
+    "longitude": 30.3609
   },
   {
     "id": "Elbit-Systems",
@@ -1350,7 +1364,9 @@
       }
     ],
     "location": "Haifa, Israel",
-    "ownershipSources": "HQ: Official; Stakes: TASE/Nasdaq 13F equivalents"
+    "ownershipSources": "HQ: Official; Stakes: TASE/Nasdaq 13F equivalents",
+    "latitude": 32.794,
+    "longitude": 34.9896
   },
   {
     "id": "LVMH",
@@ -1566,7 +1582,9 @@
       }
     ],
     "location": "Herzogenaurach, Germany",
-    "ownershipSources": "HQ: Official; Stakes: Xetra 13F equivalents"
+    "ownershipSources": "HQ: Official; Stakes: Xetra 13F equivalents",
+    "latitude": 49.5681,
+    "longitude": 10.885
   },
   {
     "id": "Fidelity-Investments",
@@ -1674,7 +1692,9 @@
       }
     ],
     "location": "Spring, TX, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 30.0799,
+    "longitude": -95.4171
   },
   {
     "id": "JPMorgan-Chase",
@@ -1782,7 +1802,9 @@
       }
     ],
     "location": "Irving, TX, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 32.814,
+    "longitude": -96.9489
   },
   {
     "id": "Hershey-Company",
@@ -1835,7 +1857,9 @@
       }
     ],
     "location": "Hershey, PA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Trust-controlled + 13F"
+    "ownershipSources": "HQ: Official; Stakes: Trust-controlled + 13F",
+    "latitude": 40.2862,
+    "longitude": -76.6505
   },
   {
     "id": "NVIDIA",
@@ -1888,7 +1912,9 @@
       }
     ],
     "location": "Santa Clara, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 37.3541,
+    "longitude": -121.9552
   },
   {
     "id": "Vanguard",
@@ -1941,7 +1967,9 @@
       }
     ],
     "location": "Malvern, PA, USA",
-    "ownershipSources": "HQ: Official; Client-owned mutual structure"
+    "ownershipSources": "HQ: Official; Client-owned mutual structure",
+    "latitude": 40.0362,
+    "longitude": -75.5138
   },
   {
     "id": "Tucker-Carlson-Network",
@@ -2485,7 +2513,9 @@
       }
     ],
     "location": "Ventura, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: 2022 transfer to environmental entities"
+    "ownershipSources": "HQ: Official; Stakes: 2022 transfer to environmental entities",
+    "latitude": 34.2746,
+    "longitude": -119.229
   },
   {
     "id": "Microsoft",
@@ -2646,7 +2676,9 @@
       }
     ],
     "location": "Pensacola, FL, USA",
-    "ownershipSources": "HQ: Official; Stakes: Private - owned by PCC"
+    "ownershipSources": "HQ: Official; Stakes: Private - owned by PCC",
+    "latitude": 30.4213,
+    "longitude": -87.2169
   },
   {
     "id": "Keolis",
@@ -2699,7 +2731,9 @@
       }
     ],
     "location": "Courbevoie, France",
-    "ownershipSources": "HQ: Official; Stakes: Ownership per corporate structure"
+    "ownershipSources": "HQ: Official; Stakes: Ownership per corporate structure",
+    "latitude": 48.8978,
+    "longitude": 2.2536
   },
   {
     "id": "The-Row",
@@ -2807,7 +2841,9 @@
       }
     ],
     "location": "Ottawa, ON, Canada",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F equivalents"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F equivalents",
+    "latitude": 45.4215,
+    "longitude": -75.6972
   },
   {
     "id": "Netflix",
@@ -2860,7 +2896,9 @@
       }
     ],
     "location": "Los Gatos, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Latest 13F data"
+    "ownershipSources": "HQ: Official; Stakes: Latest 13F data",
+    "latitude": 37.2358,
+    "longitude": -121.9623
   },
   {
     "id": "Publix",
@@ -2913,7 +2951,9 @@
       }
     ],
     "location": "Lakeland, FL, USA",
-    "ownershipSources": "HQ: Official; Stakes: Employee-owned structure"
+    "ownershipSources": "HQ: Official; Stakes: Employee-owned structure",
+    "latitude": 28.0395,
+    "longitude": -81.9498
   },
   {
     "id": "Yelp",
@@ -3186,7 +3226,9 @@
       }
     ],
     "location": "Purchase, NY, USA",
-    "ownershipSources": "HQ: Official; Stakes: Latest 13F data"
+    "ownershipSources": "HQ: Official; Stakes: Latest 13F data",
+    "latitude": 41.0401,
+    "longitude": -73.7151
   },
   {
     "id": "McDonald's",
@@ -3294,7 +3336,9 @@
       }
     ],
     "location": "Herndon, VA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Publicly traded as Stride Inc."
+    "ownershipSources": "HQ: Official; Stakes: Publicly traded as Stride Inc.",
+    "latitude": 38.9696,
+    "longitude": -77.3861
   },
   {
     "id": "Zoom",
@@ -3567,7 +3611,9 @@
       }
     ],
     "location": "Hangzhou, China",
-    "ownershipSources": "HQ: Official; Stakes: Latest filings"
+    "ownershipSources": "HQ: Official; Stakes: Latest filings",
+    "latitude": 30.2741,
+    "longitude": 120.1551
   },
   {
     "id": "Telmex",
@@ -3620,7 +3666,9 @@
       }
     ],
     "location": "Mexico City, Mexico",
-    "ownershipSources": "HQ: Official; Stakes: Slim control via América Móvil"
+    "ownershipSources": "HQ: Official; Stakes: Slim control via América Móvil",
+    "latitude": 19.4326,
+    "longitude": -99.1332
   },
   {
     "id": "Tim-Hortons",
@@ -3673,7 +3721,9 @@
       }
     ],
     "location": "Toronto, ON, Canada",
-    "ownershipSources": "HQ: Official; Stakes: RBI ownership structure"
+    "ownershipSources": "HQ: Official; Stakes: RBI ownership structure",
+    "latitude": 43.6532,
+    "longitude": -79.3832
   },
   {
     "id": "HSBC",
@@ -3781,7 +3831,9 @@
       }
     ],
     "location": "Wolfsburg, Lower Saxony, Germany",
-    "ownershipSources": "HQ: Official; Stakes: 2023 filings (no major changes in 2025)"
+    "ownershipSources": "HQ: Official; Stakes: 2023 filings (no major changes in 2025)",
+    "latitude": 52.4227,
+    "longitude": 10.7865
   },
   {
     "id": "Tata-Group",
@@ -3834,7 +3886,9 @@
       }
     ],
     "location": "Mumbai, Maharashtra, India",
-    "ownershipSources": "HQ: Official; Stakes: Private holding structure per 2025 estimates"
+    "ownershipSources": "HQ: Official; Stakes: Private holding structure per 2025 estimates",
+    "latitude": 19.076,
+    "longitude": 72.8777
   },
   {
     "id": "Airbnb",
@@ -4050,7 +4104,9 @@
       }
     ],
     "location": "Beverly Hills, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 34.0736,
+    "longitude": -118.4004
   },
   {
     "id": "Onnit",
@@ -4158,7 +4214,9 @@
       }
     ],
     "location": "Sarasota, FL, USA",
-    "ownershipSources": "HQ: Official; Stakes: 2025 filings"
+    "ownershipSources": "HQ: Official; Stakes: 2025 filings",
+    "latitude": 27.3364,
+    "longitude": -82.5307
   },
   {
     "id": "Kaiser-Permanente",
@@ -4535,7 +4593,9 @@
       }
     ],
     "location": "Arlington, VA, USA",
-    "ownershipSources": "HQ: Official (2022 move); Stakes: Q3 2025 13F data"
+    "ownershipSources": "HQ: Official (2022 move); Stakes: Q3 2025 13F data",
+    "latitude": 38.8816,
+    "longitude": -77.091
   },
   {
     "id": "Peloton",
@@ -4643,7 +4703,9 @@
       }
     ],
     "location": "Palo Alto, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: 2025 funding rounds (private)"
+    "ownershipSources": "HQ: Official; Stakes: 2025 funding rounds (private)",
+    "latitude": 37.4419,
+    "longitude": -122.143
   },
   {
     "id": "Kroger",
@@ -4806,7 +4868,9 @@
       }
     ],
     "location": "Moscow, Russia",
-    "ownershipSources": "HQ: Official; Stakes: State-controlled 2025"
+    "ownershipSources": "HQ: Official; Stakes: State-controlled 2025",
+    "latitude": 55.7558,
+    "longitude": 37.6173
   },
   {
     "id": "Rafael-Advanced-Defense-Systems",
@@ -4859,7 +4923,9 @@
       }
     ],
     "location": "Haifa, Israel",
-    "ownershipSources": "HQ: Official; Stakes: Fully government-owned"
+    "ownershipSources": "HQ: Official; Stakes: Fully government-owned",
+    "latitude": 32.794,
+    "longitude": 34.9896
   },
   {
     "id": "Airbus",
@@ -5071,7 +5137,9 @@
       }
     ],
     "location": "Purchase, NY, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 41.0401,
+    "longitude": -73.7151
   },
   {
     "id": "RTX-(Raytheon-Technologies)",
@@ -5124,7 +5192,9 @@
       }
     ],
     "location": "Arlington, VA, USA",
-    "ownershipSources": "HQ: Official (duplicate entry); Stakes: Q3 2025 13F data"
+    "ownershipSources": "HQ: Official (duplicate entry); Stakes: Q3 2025 13F data",
+    "latitude": 38.8816,
+    "longitude": -77.091
   },
   {
     "id": "H-E-B",
@@ -5342,7 +5412,9 @@
       }
     ],
     "location": "Melbourne, FL, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 28.0836,
+    "longitude": -80.6081
   },
   {
     "id": "Wells-Fargo",
@@ -5666,7 +5738,9 @@
       }
     ],
     "location": "Wilmington, DE, USA",
-    "ownershipSources": "HQ: Official (remote-first); Stakes: Insider + 13F"
+    "ownershipSources": "HQ: Official (remote-first); Stakes: Insider + 13F",
+    "latitude": 39.7391,
+    "longitude": -75.5398
   },
   {
     "id": "Impossible-Foods",
@@ -5719,7 +5793,9 @@
       }
     ],
     "location": "Redwood City, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: VC rounds/Crunchbase 2025 (private)"
+    "ownershipSources": "HQ: Official; Stakes: VC rounds/Crunchbase 2025 (private)",
+    "latitude": 37.4852,
+    "longitude": -122.2364
   },
   {
     "id": "Sonlight",
@@ -5825,7 +5901,9 @@
       }
     ],
     "location": "Issy-les-Moulineaux, France",
-    "ownershipSources": "HQ: Official; Stakes: 2025 ownership shift"
+    "ownershipSources": "HQ: Official; Stakes: 2025 ownership shift",
+    "latitude": 48.8239,
+    "longitude": 2.271
   },
   {
     "id": "COS",
@@ -6369,7 +6447,9 @@
       }
     ],
     "location": "Herndon, VA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 38.9696,
+    "longitude": -77.3861
   },
   {
     "id": "Slack",
@@ -6477,7 +6557,9 @@
       }
     ],
     "location": "Tel Aviv, Israel",
-    "ownershipSources": "HQ: Official; Stakes: Latest 13F data"
+    "ownershipSources": "HQ: Official; Stakes: Latest 13F data",
+    "latitude": 32.0853,
+    "longitude": 34.7818
   },
   {
     "id": "Rivian",
@@ -6530,7 +6612,9 @@
       }
     ],
     "location": "Irvine, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: 13F + insider filings"
+    "ownershipSources": "HQ: Official; Stakes: 13F + insider filings",
+    "latitude": 33.6846,
+    "longitude": -117.8265
   },
   {
     "id": "Dove",
@@ -6746,7 +6830,9 @@
       }
     ],
     "location": "Shenzhen, Guangdong, China",
-    "ownershipSources": "HQ: Official; Stakes: Employee shareholding per 2025 filings"
+    "ownershipSources": "HQ: Official; Stakes: Employee shareholding per 2025 filings",
+    "latitude": 22.5431,
+    "longitude": 114.0579
   },
   {
     "id": "Grupo-Bimbo",
@@ -6799,7 +6885,9 @@
       }
     ],
     "location": "Mexico City, Mexico",
-    "ownershipSources": "HQ: Corporate site; Stakes: BMV filings 2025"
+    "ownershipSources": "HQ: Corporate site; Stakes: BMV filings 2025",
+    "latitude": 19.4326,
+    "longitude": -99.1332
   },
   {
     "id": "Shoppers-Drug-Mart",
@@ -6852,7 +6940,9 @@
       }
     ],
     "location": "Toronto, ON, Canada",
-    "ownershipSources": "HQ: Official; Stakes: Acquired by Loblaw 2014"
+    "ownershipSources": "HQ: Official; Stakes: Acquired by Loblaw 2014",
+    "latitude": 43.6532,
+    "longitude": -79.3832
   },
   {
     "id": "Barclays",
@@ -6905,7 +6995,9 @@
       }
     ],
     "location": "London, England, UK",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F equivalents"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F equivalents",
+    "latitude": 51.5074,
+    "longitude": -0.1278
   },
   {
     "id": "Reliance-Industries",
@@ -6958,7 +7050,9 @@
       }
     ],
     "location": "Mumbai, Maharashtra, India",
-    "ownershipSources": "HQ: Official; Stakes: BSE filings June 2025"
+    "ownershipSources": "HQ: Official; Stakes: BSE filings June 2025",
+    "latitude": 19.076,
+    "longitude": 72.8777
   },
   {
     "id": "xAI",
@@ -7011,7 +7105,9 @@
       }
     ],
     "location": "Palo Alto, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: 2025 funding rounds"
+    "ownershipSources": "HQ: Official; Stakes: 2025 funding rounds",
+    "latitude": 37.4419,
+    "longitude": -122.143
   },
   {
     "id": "Liverpool-FC",
@@ -7223,7 +7319,9 @@
       }
     ],
     "location": "Springfield, MO, USA",
-    "ownershipSources": "HQ: Official; Stakes: Private ownership"
+    "ownershipSources": "HQ: Official; Stakes: Private ownership",
+    "latitude": 37.209,
+    "longitude": -93.2923
   },
   {
     "id": "Vestas-Wind-Systems",
@@ -7329,7 +7427,9 @@
       }
     ],
     "location": "Irvine, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Private family-owned"
+    "ownershipSources": "HQ: Official; Stakes: Private family-owned",
+    "latitude": 33.6846,
+    "longitude": -117.8265
   },
   {
     "id": "Wardah-Cosmetics",
@@ -7488,7 +7588,9 @@
       }
     ],
     "location": "Santa Clara, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 37.3541,
+    "longitude": -121.9552
   },
   {
     "id": "MasterClass",
@@ -7596,7 +7698,9 @@
       }
     ],
     "location": "Vancouver, BC, Canada",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 49.2827,
+    "longitude": -123.1207
   },
   {
     "id": "Whole-Foods-Market",
@@ -7867,7 +7971,9 @@
       }
     ],
     "location": "Moscow, Russia",
-    "ownershipSources": "HQ: Official; Stakes: 2025 filings"
+    "ownershipSources": "HQ: Official; Stakes: 2025 filings",
+    "latitude": 55.7558,
+    "longitude": 37.6173
   },
   {
     "id": "Israel-Aerospace-Industries-(IAI)",
@@ -7973,7 +8079,9 @@
       }
     ],
     "location": "Courbevoie, France",
-    "ownershipSources": "HQ: Official; Stakes: Euronext filings"
+    "ownershipSources": "HQ: Official; Stakes: Euronext filings",
+    "latitude": 48.8978,
+    "longitude": 2.2536
   },
   {
     "id": "Stellantis",
@@ -8187,7 +8295,9 @@
       }
     ],
     "location": "Cambridge, MA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F",
+    "latitude": 42.3736,
+    "longitude": -71.1097
   },
   {
     "id": "Publix-Super-Markets",
@@ -8240,7 +8350,9 @@
       }
     ],
     "location": "Lakeland, FL, USA",
-    "ownershipSources": "HQ: Official; Stakes: ESOP structure"
+    "ownershipSources": "HQ: Official; Stakes: ESOP structure",
+    "latitude": 28.0395,
+    "longitude": -81.9498
   },
   {
     "id": "Pfizer",
@@ -8513,7 +8625,9 @@
       }
     ],
     "location": "Boca Raton, FL, USA",
-    "ownershipSources": "HQ: Official; Stakes: Private ownership"
+    "ownershipSources": "HQ: Official; Stakes: Private ownership",
+    "latitude": 26.3683,
+    "longitude": -80.1289
   },
   {
     "id": "The-Wall-Street-Journal",
@@ -9595,7 +9709,9 @@
       }
     ],
     "location": "Wilmington, DE, USA",
-    "ownershipSources": "HQ: Official; Stakes: Private founder-owned"
+    "ownershipSources": "HQ: Official; Stakes: Private founder-owned",
+    "latitude": 39.7391,
+    "longitude": -75.5398
   },
   {
     "id": "Lucid-Motors",
@@ -9864,7 +9980,9 @@
       }
     ],
     "location": "Moscow, Russia",
-    "ownershipSources": "HQ: Official; Stakes: State-controlled"
+    "ownershipSources": "HQ: Official; Stakes: State-controlled",
+    "latitude": 55.7558,
+    "longitude": 37.6173
   },
   {
     "id": "ByteDance",
@@ -9917,7 +10035,9 @@
       }
     ],
     "location": "Beijing, China",
-    "ownershipSources": "HQ: Official; Stakes: Private - founder + VC estimates"
+    "ownershipSources": "HQ: Official; Stakes: Private - founder + VC estimates",
+    "latitude": 39.9042,
+    "longitude": 116.4074
   },
   {
     "id": "CEMEX",
@@ -10023,7 +10143,9 @@
       }
     ],
     "location": "Toronto, ON, Canada",
-    "ownershipSources": "HQ: Official; Stakes: Latest filings + family trust"
+    "ownershipSources": "HQ: Official; Stakes: Latest filings + family trust",
+    "latitude": 43.6532,
+    "longitude": -79.3832
   },
   {
     "id": "BMW",
@@ -10131,7 +10253,9 @@
       }
     ],
     "location": "Bengaluru, Karnataka, India",
-    "ownershipSources": "HQ: Official; Stakes: BSE filings Q2 2025"
+    "ownershipSources": "HQ: Official; Stakes: BSE filings Q2 2025",
+    "latitude": 12.9716,
+    "longitude": 77.5946
   },
   {
     "id": "Goya-Foods",
@@ -10184,7 +10308,9 @@
       }
     ],
     "location": "Jersey City, NJ, USA",
-    "ownershipSources": "HQ: Corporate site; Private family-owned"
+    "ownershipSources": "HQ: Corporate site; Private family-owned",
+    "latitude": 40.7178,
+    "longitude": -74.0431
   },
   {
     "id": "Target",
@@ -10292,7 +10418,9 @@
       }
     ],
     "location": "Fremont, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: 2025 funding rounds"
+    "ownershipSources": "HQ: Official; Stakes: 2025 funding rounds",
+    "latitude": 37.5485,
+    "longitude": -121.9886
   },
   {
     "id": "Blaze-Pizza",
@@ -10400,7 +10528,9 @@
       }
     ],
     "location": "Salt Lake City, UT, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q2 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q2 2025 13F filings",
+    "latitude": 40.7608,
+    "longitude": -111.891
   },
   {
     "id": "Meta",
@@ -10508,7 +10638,9 @@
       }
     ],
     "location": "Springfield, MO, USA",
-    "ownershipSources": "HQ: Official (post-2017 acquisition)"
+    "ownershipSources": "HQ: Official (post-2017 acquisition)",
+    "latitude": 37.209,
+    "longitude": -93.2923
   },
   {
     "id": "Northrop-Grumman",
@@ -10614,7 +10746,9 @@
       }
     ],
     "location": "Issaquah, WA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 47.5301,
+    "longitude": -122.0326
   },
   {
     "id": "Tyson-Foods",
@@ -10720,7 +10854,9 @@
       }
     ],
     "location": "Stamford, CT, USA",
-    "ownershipSources": "HQ: Official; Private founder-owned"
+    "ownershipSources": "HQ: Official; Private founder-owned",
+    "latitude": 41.0534,
+    "longitude": -73.5387
   },
   {
     "id": "Starbucks",
@@ -11207,7 +11343,9 @@
       }
     ],
     "location": "Dubai, UAE",
-    "ownershipSources": "HQ: Official; Private founder-owned"
+    "ownershipSources": "HQ: Official; Private founder-owned",
+    "latitude": 25.2048,
+    "longitude": 55.2708
   },
   {
     "id": "Brave",
@@ -11694,7 +11832,9 @@
       }
     ],
     "location": "Round Rock, TX, USA",
-    "ownershipSources": "HQ: Official site; Stakes: Q3 2025 13F filings + insider holdings"
+    "ownershipSources": "HQ: Official site; Stakes: Q3 2025 13F filings + insider holdings",
+    "latitude": 30.5083,
+    "longitude": -97.6789
   },
   {
     "id": "Carnival-Corporation",
@@ -11910,7 +12050,9 @@
       }
     ],
     "location": "Dublin, OH, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 40.0992,
+    "longitude": -83.1141
   },
   {
     "id": "PNC-Financial-Services",
@@ -12446,7 +12588,9 @@
       }
     ],
     "location": "Brooklyn, NY, USA",
-    "ownershipSources": "HQ: Official; Stakes: Private founder-owned"
+    "ownershipSources": "HQ: Official; Stakes: Private founder-owned",
+    "latitude": 40.6782,
+    "longitude": -73.9442
   },
   {
     "id": "Etsy",
@@ -12499,7 +12643,9 @@
       }
     ],
     "location": "Brooklyn, NY, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 40.6782,
+    "longitude": -73.9442
   },
   {
     "id": "Democratic-Socialists-of-America",
@@ -12717,7 +12863,9 @@
       }
     ],
     "location": "Santa Clara, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 37.3541,
+    "longitude": -121.9552
   },
   {
     "id": "GE-Hitachi",
@@ -13257,7 +13405,9 @@
       }
     ],
     "location": "Shenzhen, Guangdong, China",
-    "ownershipSources": "HQ: Official; Stakes: Owned by Tencent"
+    "ownershipSources": "HQ: Official; Stakes: Owned by Tencent",
+    "latitude": 22.5431,
+    "longitude": 114.0579
   },
   {
     "id": "Grupo-Modelo",
@@ -13310,7 +13460,9 @@
       }
     ],
     "location": "Mexico City, Mexico",
-    "ownershipSources": "HQ: Official; Stakes: Acquired by AB InBev 2013"
+    "ownershipSources": "HQ: Official; Stakes: Acquired by AB InBev 2013",
+    "latitude": 19.4326,
+    "longitude": -99.1332
   },
   {
     "id": "Loblaws",
@@ -13469,7 +13621,9 @@
       }
     ],
     "location": "Stuttgart, Baden-Württemberg, Germany",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 filings",
+    "latitude": 48.7758,
+    "longitude": 9.1829
   },
   {
     "id": "Wipro",
@@ -13522,7 +13676,9 @@
       }
     ],
     "location": "Bengaluru, Karnataka, India",
-    "ownershipSources": "HQ: Wikipedia; Stakes: Q3 2025 filings (promoter group dominant)"
+    "ownershipSources": "HQ: Wikipedia; Stakes: Q3 2025 filings (promoter group dominant)",
+    "latitude": 12.9716,
+    "longitude": 77.5946
   },
   {
     "id": "Overstock",
@@ -13628,7 +13784,9 @@
       }
     ],
     "location": "St. Louis, MO, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 filings",
+    "latitude": 38.627,
+    "longitude": -90.1994
   },
   {
     "id": "The-Boring-Company",
@@ -13734,7 +13892,9 @@
       }
     ],
     "location": "Culver City, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Acquired by Apple 2014"
+    "ownershipSources": "HQ: Official; Stakes: Acquired by Apple 2014",
+    "latitude": 34.0211,
+    "longitude": -118.3965
   },
   {
     "id": "AT&T",
@@ -13950,7 +14110,9 @@
       }
     ],
     "location": "Fremont, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F",
+    "latitude": 37.5485,
+    "longitude": -121.9886
   },
   {
     "id": "General-Dynamics",
@@ -14003,7 +14165,9 @@
       }
     ],
     "location": "Reston, VA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F",
+    "latitude": 38.9586,
+    "longitude": -77.357
   },
   {
     "id": "Equal-Exchange",
@@ -14217,7 +14381,9 @@
       }
     ],
     "location": "Jersey City, NJ, USA",
-    "ownershipSources": "HQ: Official; Stakes: Private founder-owned"
+    "ownershipSources": "HQ: Official; Stakes: Private founder-owned",
+    "latitude": 40.7178,
+    "longitude": -74.0431
   },
   {
     "id": "Ford",
@@ -14270,7 +14436,9 @@
       }
     ],
     "location": "Dearborn, MI, USA",
-    "ownershipSources": "HQ: Official (2025 move); Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official (2025 move); Stakes: Q3 2025 13F",
+    "latitude": 42.3223,
+    "longitude": -83.1763
   },
   {
     "id": "Robinhood",
@@ -14539,7 +14707,9 @@
       }
     ],
     "location": "Arlington, VA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F (RTX)"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F (RTX)",
+    "latitude": 38.8816,
+    "longitude": -77.091
   },
   {
     "id": "Renault",
@@ -15134,7 +15304,9 @@
       }
     ],
     "location": "Dearborn, MI, USA",
-    "ownershipSources": "HQ: Official (2025 move); Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official (2025 move); Stakes: Q3 2025 13F filings",
+    "latitude": 42.3223,
+    "longitude": -83.1763
   },
   {
     "id": "HarperCollins",
@@ -15566,7 +15738,9 @@
       }
     ],
     "location": "Singapore",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 filings",
+    "latitude": 1.3521,
+    "longitude": 103.8198
   },
   {
     "id": "Filippa-K",
@@ -15729,7 +15903,9 @@
       }
     ],
     "location": "Culver City, CA, USA",
-    "ownershipSources": "HQ: Official; Owned by Sony Group"
+    "ownershipSources": "HQ: Official; Owned by Sony Group",
+    "latitude": 34.0211,
+    "longitude": -118.3965
   },
   {
     "id": "Westinghouse",
@@ -16053,7 +16229,9 @@
       }
     ],
     "location": "Seoul, South Korea",
-    "ownershipSources": "HQ: Official (Hyundai); Brand under Hyundai"
+    "ownershipSources": "HQ: Official (Hyundai); Brand under Hyundai",
+    "latitude": 37.5665,
+    "longitude": 126.978
   },
   {
     "id": "Discovery-Channel",
@@ -16212,7 +16390,9 @@
       }
     ],
     "location": "Hong Kong, China",
-    "ownershipSources": "HQ: Official; Stakes: H1 2025 filings"
+    "ownershipSources": "HQ: Official; Stakes: H1 2025 filings",
+    "latitude": 22.3193,
+    "longitude": 114.1694
   },
   {
     "id": "Canadian-Tire",
@@ -16265,7 +16445,9 @@
       }
     ],
     "location": "Toronto, ON, Canada",
-    "ownershipSources": "HQ: Official; Owned by Canadian Tire Corp."
+    "ownershipSources": "HQ: Official; Owned by Canadian Tire Corp.",
+    "latitude": 43.6532,
+    "longitude": -79.3832
   },
   {
     "id": "BP",
@@ -16426,7 +16608,9 @@
       }
     ],
     "location": "Mumbai, India",
-    "ownershipSources": "HQ: Official; Stakes: Latest filings"
+    "ownershipSources": "HQ: Official; Stakes: Latest filings",
+    "latitude": 19.076,
+    "longitude": 72.8777
   },
   {
     "id": "L.L.-Bean",
@@ -16534,7 +16718,9 @@
       }
     ],
     "location": "McLean, VA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 38.9339,
+    "longitude": -77.1773
   },
   {
     "id": "SimpliSafe",
@@ -16803,7 +16989,9 @@
       }
     ],
     "location": "Dublin, OH, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 40.0992,
+    "longitude": -83.1141
   },
   {
     "id": "PHB-Ethical-Beauty",
@@ -17180,7 +17368,9 @@
       }
     ],
     "location": "Moscow, Russia",
-    "ownershipSources": "HQ: Official; Stakes: 2023 filings (stable 2025)"
+    "ownershipSources": "HQ: Official; Stakes: 2023 filings (stable 2025)",
+    "latitude": 55.7558,
+    "longitude": 37.6173
   },
   {
     "id": "BNP-Paribas",
@@ -17451,7 +17641,9 @@
       }
     ],
     "location": "Bloomington, IL, USA",
-    "ownershipSources": "HQ: Official; Mutual structure - no shareholders"
+    "ownershipSources": "HQ: Official; Mutual structure - no shareholders",
+    "latitude": 40.4842,
+    "longitude": -88.9937
   },
   {
     "id": "Goodyear",
@@ -17504,7 +17696,9 @@
       }
     ],
     "location": "Akron, OH, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F",
+    "latitude": 41.0814,
+    "longitude": -81.519
   },
   {
     "id": "Wawa",
@@ -17610,7 +17804,9 @@
       }
     ],
     "location": "Palo Alto, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F",
+    "latitude": 37.4419,
+    "longitude": -122.143
   },
   {
     "id": "Eli-Lilly",
@@ -18046,7 +18242,9 @@
       }
     ],
     "location": "Arlington, VA, USA",
-    "ownershipSources": "HQ: Official; Nonprofit - no shareholders"
+    "ownershipSources": "HQ: Official; Nonprofit - no shareholders",
+    "latitude": 38.8816,
+    "longitude": -77.091
   },
   {
     "id": "Stella-McCartney",
@@ -18154,7 +18352,9 @@
       }
     ],
     "location": "Wilmington, DE, USA",
-    "ownershipSources": "HQ: Official; Stakes: Private estimates"
+    "ownershipSources": "HQ: Official; Stakes: Private estimates",
+    "latitude": 39.7391,
+    "longitude": -75.5398
   },
   {
     "id": "Follow-Your-Heart",
@@ -18533,7 +18733,9 @@
       }
     ],
     "location": "Courbevoie, France",
-    "ownershipSources": "HQ: Official; Stakes: Ownership structure"
+    "ownershipSources": "HQ: Official; Stakes: Ownership structure",
+    "latitude": 48.8978,
+    "longitude": 2.2536
   },
   {
     "id": "SimplePractice",
@@ -18586,7 +18788,9 @@
       }
     ],
     "location": "Santa Monica, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Funding rounds"
+    "ownershipSources": "HQ: Official; Stakes: Funding rounds",
+    "latitude": 34.0195,
+    "longitude": -118.4912
   },
   {
     "id": "Liberty-University-Online",
@@ -18802,7 +19006,9 @@
       }
     ],
     "location": "Shanghai, China",
-    "ownershipSources": "HQ: Official; Stakes: Latest filings"
+    "ownershipSources": "HQ: Official; Stakes: Latest filings",
+    "latitude": 31.2304,
+    "longitude": 121.4737
   },
   {
     "id": "Calvin-Klein",
@@ -18963,7 +19169,9 @@
       }
     ],
     "location": "Saint Petersburg, Russia",
-    "ownershipSources": "HQ: Corporate site; Stakes: Majority-owned by Gazprom per 2025 filings"
+    "ownershipSources": "HQ: Corporate site; Stakes: Majority-owned by Gazprom per 2025 filings",
+    "latitude": 59.9311,
+    "longitude": 30.3609
   },
   {
     "id": "Tencent",
@@ -19016,7 +19224,9 @@
       }
     ],
     "location": "Shenzhen, Guangdong, China",
-    "ownershipSources": "HQ: Official; Stakes: HKEX filings Q3 2025"
+    "ownershipSources": "HQ: Official; Stakes: HKEX filings Q3 2025",
+    "latitude": 22.5431,
+    "longitude": 114.0579
   },
   {
     "id": "FEMSA",
@@ -19228,7 +19438,9 @@
       }
     ],
     "location": "Mumbai, Maharashtra, India",
-    "ownershipSources": "HQ: Official; Stakes: BSE filings Q2 2025"
+    "ownershipSources": "HQ: Official; Stakes: BSE filings Q2 2025",
+    "latitude": 19.076,
+    "longitude": 72.8777
   },
   {
     "id": "Virgin-Group",
@@ -19552,7 +19764,9 @@
       }
     ],
     "location": "Cambridge, MA, USA",
-    "ownershipSources": "HQ: Official; Stakes: NYSE Q3 2025 filings"
+    "ownershipSources": "HQ: Official; Stakes: NYSE Q3 2025 filings",
+    "latitude": 42.3736,
+    "longitude": -71.1097
   },
   {
     "id": "Land-O'Lakes",
@@ -19817,7 +20031,9 @@
       }
     ],
     "location": "Vancouver, BC, Canada",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 49.2827,
+    "longitude": -123.1207
   },
   {
     "id": "NordVPN",
@@ -19925,7 +20141,9 @@
       }
     ],
     "location": "Shenzhen, Guangdong, China",
-    "ownershipSources": "HQ: Official; Stakes: Latest filings Q3 2025"
+    "ownershipSources": "HQ: Official; Stakes: Latest filings Q3 2025",
+    "latitude": 22.5431,
+    "longitude": 114.0579
   },
   {
     "id": "Polyus",
@@ -19978,7 +20196,9 @@
       }
     ],
     "location": "Moscow, Russia",
-    "ownershipSources": "HQ: Official; Stakes: 2025 filings post-restructure"
+    "ownershipSources": "HQ: Official; Stakes: 2025 filings post-restructure",
+    "latitude": 55.7558,
+    "longitude": 37.6173
   },
   {
     "id": "Sanofi",
@@ -20141,7 +20361,9 @@
       }
     ],
     "location": "Purchase, NY, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F",
+    "latitude": 41.0401,
+    "longitude": -73.7151
   },
   {
     "id": "Molson-Coors",
@@ -20249,7 +20471,9 @@
       }
     ],
     "location": "Cambridge, MA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F",
+    "latitude": 42.3736,
+    "longitude": -71.1097
   },
   {
     "id": "Valero-Energy",
@@ -20573,7 +20797,9 @@
       }
     ],
     "location": "Boise, ID, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F",
+    "latitude": 43.615,
+    "longitude": -116.2023
   },
   {
     "id": "PublicSquare",
@@ -20626,7 +20852,9 @@
       }
     ],
     "location": "West Palm Beach, FL, USA",
-    "ownershipSources": "HQ: Official; Stakes: NYSE Q3 2025 (dispersed)"
+    "ownershipSources": "HQ: Official; Stakes: NYSE Q3 2025 (dispersed)",
+    "latitude": 26.7153,
+    "longitude": -80.0534
   },
   {
     "id": "Novo-Nordisk",
@@ -20895,7 +21123,9 @@
       }
     ],
     "location": "Brooklyn, NY, USA",
-    "ownershipSources": "HQ: CB Insights; Stakes: VC rounds/estimates 2025 (decentralized)"
+    "ownershipSources": "HQ: CB Insights; Stakes: VC rounds/estimates 2025 (decentralized)",
+    "latitude": 40.6782,
+    "longitude": -73.9442
   },
   {
     "id": "Clif-Bar",
@@ -21272,7 +21502,9 @@
       }
     ],
     "location": "Culver City, CA, USA",
-    "ownershipSources": "HQ: Wikipedia; Owned by Amazon"
+    "ownershipSources": "HQ: Wikipedia; Owned by Amazon",
+    "latitude": 34.0211,
+    "longitude": -118.3965
   },
   {
     "id": "Bank-of-New-York-Mellon",
@@ -21757,7 +21989,9 @@
       }
     ],
     "location": "Culver City, CA, USA",
-    "ownershipSources": "HQ: Wikipedia; Owned by Amazon"
+    "ownershipSources": "HQ: Wikipedia; Owned by Amazon",
+    "latitude": 34.0211,
+    "longitude": -118.3965
   },
   {
     "id": "Transneft",
@@ -21810,7 +22044,9 @@
       }
     ],
     "location": "Moscow, Russia",
-    "ownershipSources": "HQ: Wikipedia; State-controlled"
+    "ownershipSources": "HQ: Wikipedia; State-controlled",
+    "latitude": 55.7558,
+    "longitude": 37.6173
   },
   {
     "id": "Alipay",
@@ -21863,7 +22099,9 @@
       }
     ],
     "location": "Hangzhou, China",
-    "ownershipSources": "HQ: Wikipedia; Owned by Ant Group"
+    "ownershipSources": "HQ: Wikipedia; Owned by Ant Group",
+    "latitude": 30.2741,
+    "longitude": 120.1551
   },
   {
     "id": "America-Movil",
@@ -21916,7 +22154,9 @@
       }
     ],
     "location": "Mexico City, Mexico",
-    "ownershipSources": "HQ: Wikipedia; Slim control"
+    "ownershipSources": "HQ: Wikipedia; Slim control",
+    "latitude": 19.4326,
+    "longitude": -99.1332
   },
   {
     "id": "WestJet",
@@ -21969,7 +22209,9 @@
       }
     ],
     "location": "Calgary, AB, Canada",
-    "ownershipSources": "HQ: Wikipedia; Stakes post-2025 deal"
+    "ownershipSources": "HQ: Wikipedia; Stakes post-2025 deal",
+    "latitude": 51.0447,
+    "longitude": -114.0719
   },
   {
     "id": "GlaxoSmithKline",
@@ -22077,7 +22319,9 @@
       }
     ],
     "location": "Herzogenaurach, Germany",
-    "ownershipSources": "HQ: Wikipedia; Stakes: Q3 2025 filings"
+    "ownershipSources": "HQ: Wikipedia; Stakes: Q3 2025 filings",
+    "latitude": 49.5681,
+    "longitude": 10.885
   },
   {
     "id": "Flipkart",
@@ -22130,7 +22374,9 @@
       }
     ],
     "location": "Bengaluru, India",
-    "ownershipSources": "HQ: Wikipedia; Stakes post-2025 shift"
+    "ownershipSources": "HQ: Wikipedia; Stakes post-2025 shift",
+    "latitude": 12.9716,
+    "longitude": 77.5946
   },
   {
     "id": "Kia",
@@ -22183,7 +22429,9 @@
       }
     ],
     "location": "Seoul, South Korea",
-    "ownershipSources": "HQ: Wikipedia; Stakes: Q3 2025 filings"
+    "ownershipSources": "HQ: Wikipedia; Stakes: Q3 2025 filings",
+    "latitude": 37.5665,
+    "longitude": 126.978
   },
   {
     "id": "CoverGirl",
@@ -22344,7 +22592,9 @@
       }
     ],
     "location": "Toronto, ON, Canada",
-    "ownershipSources": "HQ: Wikipedia; Stakes: 2025 filings"
+    "ownershipSources": "HQ: Wikipedia; Stakes: 2025 filings",
+    "latitude": 43.6532,
+    "longitude": -79.3832
   },
   {
     "id": "New-Belgium-Brewing",
@@ -22829,7 +23079,9 @@
       }
     ],
     "location": "Beijing, China",
-    "ownershipSources": "HQ: Official; Stakes: HKEX filings Q3 2025"
+    "ownershipSources": "HQ: Official; Stakes: HKEX filings Q3 2025",
+    "latitude": 39.9042,
+    "longitude": 116.4074
   },
   {
     "id": "Tatneft",
@@ -22935,7 +23187,9 @@
       }
     ],
     "location": "Issy-les-Moulineaux, France",
-    "ownershipSources": "HQ: Official; Stakes: Euronext filings Q3 2025"
+    "ownershipSources": "HQ: Official; Stakes: Euronext filings Q3 2025",
+    "latitude": 48.8239,
+    "longitude": 2.271
   },
   {
     "id": "Barilla",
@@ -23206,7 +23460,9 @@
       }
     ],
     "location": "Orlando, FL, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 28.5383,
+    "longitude": -81.3792
   },
   {
     "id": "IBM",
@@ -23422,7 +23678,9 @@
       }
     ],
     "location": "Akron, OH, USA",
-    "ownershipSources": "HQ: Official (2025 move); Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official (2025 move); Stakes: Q3 2025 13F filings",
+    "latitude": 41.0814,
+    "longitude": -81.519
   },
   {
     "id": "Alcoa",
@@ -23915,7 +24173,9 @@
       }
     ],
     "location": "Zug, Switzerland",
-    "ownershipSources": "HQ: Official; Decentralized - major stakeholders via DOT governance"
+    "ownershipSources": "HQ: Official; Decentralized - major stakeholders via DOT governance",
+    "latitude": 47.166,
+    "longitude": 8.5152
   },
   {
     "id": "So-Delicious",
@@ -24237,7 +24497,9 @@
       }
     ],
     "location": "Santa Monica, CA, USA",
-    "ownershipSources": "HQ: Official; Private - owned by NOVICA United"
+    "ownershipSources": "HQ: Official; Private - owned by NOVICA United",
+    "latitude": 34.0195,
+    "longitude": -118.4912
   },
   {
     "id": "Lionsgate",
@@ -24290,7 +24552,9 @@
       }
     ],
     "location": "Santa Monica, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 34.0195,
+    "longitude": -118.4912
   },
   {
     "id": "Cisco",
@@ -24618,7 +24882,9 @@
       }
     ],
     "location": "Wolfsburg, Germany",
-    "ownershipSources": "HQ: Official (VW Group); Brand under Volkswagen; Stakes: 2025 filings."
+    "ownershipSources": "HQ: Official (VW Group); Brand under Volkswagen; Stakes: 2025 filings.",
+    "latitude": 52.4227,
+    "longitude": 10.7865
   },
   {
     "id": "Lane-Bryant",
@@ -24671,7 +24937,9 @@
       }
     ],
     "location": "New Albany, OH, USA",
-    "ownershipSources": "HQ: Official; Stakes: Owned by Sycamore since 2020 acquisition."
+    "ownershipSources": "HQ: Official; Stakes: Owned by Sycamore since 2020 acquisition.",
+    "latitude": 40.081,
+    "longitude": -82.8088
   },
   {
     "id": "Ring",
@@ -24724,7 +24992,9 @@
       }
     ],
     "location": "Santa Monica, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Acquired by Amazon 2018."
+    "ownershipSources": "HQ: Official; Stakes: Acquired by Amazon 2018.",
+    "latitude": 34.0195,
+    "longitude": -118.4912
   },
   {
     "id": "Weibo",
@@ -24777,7 +25047,9 @@
       }
     ],
     "location": "Beijing, China",
-    "ownershipSources": "HQ: Official; Stakes: Nasdaq Q3 2025 filings."
+    "ownershipSources": "HQ: Official; Stakes: Nasdaq Q3 2025 filings.",
+    "latitude": 39.9042,
+    "longitude": 116.4074
   },
   {
     "id": "Grupo-Carso",
@@ -24830,7 +25102,9 @@
       }
     ],
     "location": "Mexico City, Mexico",
-    "ownershipSources": "HQ: Official; Stakes: Family-controlled per Forbes 2025."
+    "ownershipSources": "HQ: Official; Stakes: Family-controlled per Forbes 2025.",
+    "latitude": 19.4326,
+    "longitude": -99.1332
   },
   {
     "id": "Scotiabank",
@@ -24883,7 +25157,9 @@
       }
     ],
     "location": "Toronto, ON, Canada",
-    "ownershipSources": "HQ: Official; Stakes: TSX Q3 2025 filings."
+    "ownershipSources": "HQ: Official; Stakes: TSX Q3 2025 filings.",
+    "latitude": 43.6532,
+    "longitude": -79.3832
   },
   {
     "id": "Rolls-Royce",
@@ -24991,7 +25267,9 @@
       }
     ],
     "location": "Wolfsburg, Germany",
-    "ownershipSources": "HQ: Official; Stakes: 2025 filings."
+    "ownershipSources": "HQ: Official; Stakes: 2025 filings.",
+    "latitude": 52.4227,
+    "longitude": 10.7865
   },
   {
     "id": "Reliance-Retail",
@@ -25044,7 +25322,9 @@
       }
     ],
     "location": "Mumbai, India",
-    "ownershipSources": "HQ: Official; Stakes: Wholly owned by Reliance."
+    "ownershipSources": "HQ: Official; Stakes: Wholly owned by Reliance.",
+    "latitude": 19.076,
+    "longitude": 72.8777
   },
   {
     "id": "TSMC",
@@ -25527,7 +25807,9 @@
       }
     ],
     "location": "Scottsdale, AZ, USA",
-    "ownershipSources": "HQ: Official; Stakes: Acquired by Great American 2023."
+    "ownershipSources": "HQ: Official; Stakes: Acquired by Great American 2023.",
+    "latitude": 33.4942,
+    "longitude": -111.9261
   },
   {
     "id": "Zaytoun",
@@ -25798,7 +26080,9 @@
       }
     ],
     "location": "Sarasota, FL, USA",
-    "ownershipSources": "HQ: Official; Stakes: Nasdaq Q3 2025 filings."
+    "ownershipSources": "HQ: Official; Stakes: Nasdaq Q3 2025 filings.",
+    "latitude": 27.3364,
+    "longitude": -82.5307
   },
   {
     "id": "Purism",
@@ -25906,7 +26190,9 @@
       }
     ],
     "location": "Shenzhen, China",
-    "ownershipSources": "HQ: Official; Stakes: Private estimates 2025."
+    "ownershipSources": "HQ: Official; Stakes: Private estimates 2025.",
+    "latitude": 22.5431,
+    "longitude": 114.0579
   },
   {
     "id": "Pernod-Ricard",
@@ -26234,7 +26520,9 @@
       }
     ],
     "location": "Seoul, South Korea",
-    "ownershipSources": "HQ: Official; Stakes: KRX Q3 2025."
+    "ownershipSources": "HQ: Official; Stakes: KRX Q3 2025.",
+    "latitude": 37.5665,
+    "longitude": 126.978
   },
   {
     "id": "TJX-Companies",
@@ -26611,7 +26899,9 @@
       }
     ],
     "location": "Santa Clara, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F."
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F.",
+    "latitude": 37.3541,
+    "longitude": -121.9552
   },
   {
     "id": "United-Parcel-Service",
@@ -26774,7 +27064,9 @@
       }
     ],
     "location": "Palo Alto, CA, USA",
-    "ownershipSources": "HQ: Official (HP Inc.); Stakes: Q3 2025 13F."
+    "ownershipSources": "HQ: Official (HP Inc.); Stakes: Q3 2025 13F.",
+    "latitude": 37.4419,
+    "longitude": -122.143
   },
   {
     "id": "JD.com",
@@ -26827,7 +27119,9 @@
       }
     ],
     "location": "Beijing, China",
-    "ownershipSources": "HQ: Official; Stakes: HKEX Q3 2025."
+    "ownershipSources": "HQ: Official; Stakes: HKEX Q3 2025.",
+    "latitude": 39.9042,
+    "longitude": 116.4074
   },
   {
     "id": "Apollo-Global-Management",
@@ -26988,7 +27282,9 @@
       }
     ],
     "location": "Arlington, VA, USA",
-    "ownershipSources": "HQ: Official; Nonprofit - no shareholders."
+    "ownershipSources": "HQ: Official; Nonprofit - no shareholders.",
+    "latitude": 38.8816,
+    "longitude": -77.091
   },
   {
     "id": "Cardano",
@@ -27041,7 +27337,9 @@
       }
     ],
     "location": "Zug, Switzerland",
-    "ownershipSources": "HQ: Official; Decentralized - Foundation holds treasury."
+    "ownershipSources": "HQ: Official; Decentralized - Foundation holds treasury.",
+    "latitude": 47.166,
+    "longitude": 8.5152
   },
   {
     "id": "Violife",
@@ -27255,7 +27553,9 @@
       }
     ],
     "location": "Moscow, Russia",
-    "ownershipSources": "HQ: Official; Stakes: MOEX 2025."
+    "ownershipSources": "HQ: Official; Stakes: MOEX 2025.",
+    "latitude": 55.7558,
+    "longitude": 37.6173
   },
   {
     "id": "Levi-Strauss",
@@ -27846,7 +28146,9 @@
       }
     ],
     "location": "Beijing, China",
-    "ownershipSources": "HQ: Official; Stakes: State-owned."
+    "ownershipSources": "HQ: Official; Stakes: State-owned.",
+    "latitude": 39.9042,
+    "longitude": 116.4074
   },
   {
     "id": "Wal-Mart-de-Mexico",
@@ -27899,7 +28201,9 @@
       }
     ],
     "location": "Mexico City, Mexico",
-    "ownershipSources": "HQ: Official; Stakes: BMV 2025."
+    "ownershipSources": "HQ: Official; Stakes: BMV 2025.",
+    "latitude": 19.4326,
+    "longitude": -99.1332
   },
   {
     "id": "Royal-Bank-of-Canada",
@@ -27952,7 +28256,9 @@
       }
     ],
     "location": "Toronto, ON, Canada",
-    "ownershipSources": "HQ: Official; Stakes: TSX Q3 2025."
+    "ownershipSources": "HQ: Official; Stakes: TSX Q3 2025.",
+    "latitude": 43.6532,
+    "longitude": -79.3832
   },
   {
     "id": "BMW-i",
@@ -28060,7 +28366,9 @@
       }
     ],
     "location": "Mumbai, Maharashtra, India",
-    "ownershipSources": "HQ: Official; Stakes: BSE filings Q2 2025"
+    "ownershipSources": "HQ: Official; Stakes: BSE filings Q2 2025",
+    "latitude": 19.076,
+    "longitude": 72.8777
   },
   {
     "id": "CATL",
@@ -28166,7 +28474,9 @@
       }
     ],
     "location": "Santa Monica, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Private founders per Forbes"
+    "ownershipSources": "HQ: Official; Stakes: Private founders per Forbes",
+    "latitude": 34.0195,
+    "longitude": -118.4912
   },
   {
     "id": "Happy-Dad-Seltzer",
@@ -28327,7 +28637,9 @@
       }
     ],
     "location": "Shanghai, China",
-    "ownershipSources": "HQ: Official; Stakes: NYSE Q3 2025 13F"
+    "ownershipSources": "HQ: Official; Stakes: NYSE Q3 2025 13F",
+    "latitude": 31.2304,
+    "longitude": 121.4737
   },
   {
     "id": "Seventh-Generation",
@@ -28592,7 +28904,9 @@
       }
     ],
     "location": "Reston, VA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 38.9586,
+    "longitude": -77.357
   },
   {
     "id": "CrossFit",
@@ -28806,7 +29120,9 @@
       }
     ],
     "location": "Singapore",
-    "ownershipSources": "HQ: Official; Stakes: Funding rounds 2025 (private)"
+    "ownershipSources": "HQ: Official; Stakes: Funding rounds 2025 (private)",
+    "latitude": 1.3521,
+    "longitude": 103.8198
   },
   {
     "id": "Mars",
@@ -28859,7 +29175,9 @@
       }
     ],
     "location": "McLean, VA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Private family-owned"
+    "ownershipSources": "HQ: Official; Stakes: Private family-owned",
+    "latitude": 38.9339,
+    "longitude": -77.1773
   },
   {
     "id": "Teva-Pharmaceutical-Industries",
@@ -29566,7 +29884,9 @@
       }
     ],
     "location": "Irving, TX, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 32.814,
+    "longitude": -96.9489
   },
   {
     "id": "GEO-Group",
@@ -29619,7 +29939,9 @@
       }
     ],
     "location": "Boca Raton, FL, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 26.3683,
+    "longitude": -80.1289
   },
   {
     "id": "Allstate",
@@ -29833,7 +30155,9 @@
       }
     ],
     "location": "Zug, Switzerland",
-    "ownershipSources": "HQ: Foundation; Stakes: On-chain data 2025"
+    "ownershipSources": "HQ: Foundation; Stakes: On-chain data 2025",
+    "latitude": 47.166,
+    "longitude": 8.5152
   },
   {
     "id": "Lightlife",
@@ -30536,7 +30860,9 @@
       }
     ],
     "location": "Dearborn, MI, USA",
-    "ownershipSources": "HQ: Official (Ford); Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official (Ford); Stakes: Q3 2025 13F",
+    "latitude": 42.3223,
+    "longitude": -83.1763
   },
   {
     "id": "Eloquii",
@@ -30754,7 +31080,9 @@
       }
     ],
     "location": "Saint Petersburg, Russia",
-    "ownershipSources": "HQ: Official; Stakes: Private - Mordashov control"
+    "ownershipSources": "HQ: Official; Stakes: Private - Mordashov control",
+    "latitude": 59.9311,
+    "longitude": 30.3609
   },
   {
     "id": "Oxxo",
@@ -30860,7 +31188,9 @@
       }
     ],
     "location": "Toronto, ON, Canada",
-    "ownershipSources": "HQ: Official; Stakes: TSX Q3 2025"
+    "ownershipSources": "HQ: Official; Stakes: TSX Q3 2025",
+    "latitude": 43.6532,
+    "longitude": -79.3832
   },
   {
     "id": "HSBC-Holdings",
@@ -31076,7 +31406,9 @@
       }
     ],
     "location": "Seoul, South Korea",
-    "ownershipSources": "HQ: Official; Stakes: KRX Q3 2025"
+    "ownershipSources": "HQ: Official; Stakes: KRX Q3 2025",
+    "latitude": 37.5665,
+    "longitude": 126.978
   },
   {
     "id": "Dick's-Sporting-Goods",
@@ -31182,7 +31514,9 @@
       }
     ],
     "location": "Stamford, CT, USA",
-    "ownershipSources": "HQ: Official; Private family-owned (pre-settlement)"
+    "ownershipSources": "HQ: Official; Private family-owned (pre-settlement)",
+    "latitude": 41.0534,
+    "longitude": -73.5387
   },
   {
     "id": "YouTube",
@@ -31557,7 +31891,9 @@
       }
     ],
     "location": "Boca Raton, FL, USA",
-    "ownershipSources": "HQ: Official (ODP); Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official (ODP); Stakes: Q3 2025 13F",
+    "latitude": 26.3683,
+    "longitude": -80.1289
   },
   {
     "id": "Corporate-Express",
@@ -31663,7 +31999,9 @@
       }
     ],
     "location": "Herzogenaurach, Germany",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 filings",
+    "latitude": 49.5681,
+    "longitude": 10.885
   },
   {
     "id": "Politico",
@@ -31716,7 +32054,9 @@
       }
     ],
     "location": "Arlington, VA, USA",
-    "ownershipSources": "HQ: Official; Acquired 2021"
+    "ownershipSources": "HQ: Official; Acquired 2021",
+    "latitude": 38.8816,
+    "longitude": -77.091
   },
   {
     "id": "Sony-Music",
@@ -31877,7 +32217,9 @@
       }
     ],
     "location": "Beijing, China",
-    "ownershipSources": "HQ: Official; Stakes: Private estimates from filings/Forbes 2025"
+    "ownershipSources": "HQ: Official; Stakes: Private estimates from filings/Forbes 2025",
+    "latitude": 39.9042,
+    "longitude": 116.4074
   },
   {
     "id": "Con-Edison",
@@ -31985,7 +32327,9 @@
       }
     ],
     "location": "Toronto, ON, Canada",
-    "ownershipSources": "HQ: RBI Corporate; Stakes: Latest filings"
+    "ownershipSources": "HQ: RBI Corporate; Stakes: Latest filings",
+    "latitude": 43.6532,
+    "longitude": -79.3832
   },
   {
     "id": "Teachers-Unions",
@@ -32256,7 +32600,9 @@
       }
     ],
     "location": "Boca Raton, FL, USA",
-    "ownershipSources": "HQ: Official (ODP); Merged into Office Depot 2013"
+    "ownershipSources": "HQ: Official (ODP); Merged into Office Depot 2013",
+    "latitude": 26.3683,
+    "longitude": -80.1289
   },
   {
     "id": "Gap",
@@ -32639,7 +32985,9 @@
       }
     ],
     "location": "Stamford, CT, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 41.0534,
+    "longitude": -73.5387
   },
   {
     "id": "Lush-Cosmetics",
@@ -33827,7 +34175,9 @@
       }
     ],
     "location": "London, England, UK",
-    "ownershipSources": "HQ: Official; Stakes: Acquired by Allied Universal in 2021; no public shareholders"
+    "ownershipSources": "HQ: Official; Stakes: Acquired by Allied Universal in 2021; no public shareholders",
+    "latitude": 51.5074,
+    "longitude": -0.1278
   },
   {
     "id": "Arc'teryx",
@@ -33933,7 +34283,9 @@
       }
     ],
     "location": "St. Louis, MO, USA",
-    "ownershipSources": "HQ: Official; Stakes: Acquired by Bayer in 2018"
+    "ownershipSources": "HQ: Official; Stakes: Acquired by Bayer in 2018",
+    "latitude": 38.627,
+    "longitude": -90.1994
   },
   {
     "id": "Activision-Blizzard",
@@ -33986,7 +34338,9 @@
       }
     ],
     "location": "Santa Monica, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Acquired by Microsoft in 2023"
+    "ownershipSources": "HQ: Official; Stakes: Acquired by Microsoft in 2023",
+    "latitude": 34.0195,
+    "longitude": -118.4912
   },
   {
     "id": "Micron",
@@ -34039,7 +34393,9 @@
       }
     ],
     "location": "Boise, ID, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F filings",
+    "latitude": 43.615,
+    "longitude": -116.2023
   },
   {
     "id": "IKEA",
@@ -34359,7 +34715,9 @@
       }
     ],
     "location": "Wilmington, DE, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F",
+    "latitude": 39.7391,
+    "longitude": -75.5398
   },
   {
     "id": "Nestlé",
@@ -34465,7 +34823,9 @@
       }
     ],
     "location": "West Palm Beach, FL, USA",
-    "ownershipSources": "HQ: Official; Stakes: Private family-owned"
+    "ownershipSources": "HQ: Official; Stakes: Private family-owned",
+    "latitude": 26.7153,
+    "longitude": -80.0534
   },
   {
     "id": "ASOS",
@@ -35007,7 +35367,9 @@
       }
     ],
     "location": "Issy-les-Moulineaux, France",
-    "ownershipSources": "HQ: Official; Stakes: Euronext Q3 2025"
+    "ownershipSources": "HQ: Official; Stakes: Euronext Q3 2025",
+    "latitude": 48.8239,
+    "longitude": 2.271
   },
   {
     "id": "Dow-Chemical",
@@ -35221,7 +35583,9 @@
       }
     ],
     "location": "Beijing, China",
-    "ownershipSources": "HQ: Official; Stakes: HKEX Q3 2025"
+    "ownershipSources": "HQ: Official; Stakes: HKEX Q3 2025",
+    "latitude": 39.9042,
+    "longitude": 116.4074
   },
   {
     "id": "Duke-Energy",
@@ -35761,7 +36125,9 @@
       }
     ],
     "location": "Palo Alto, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F",
+    "latitude": 37.4419,
+    "longitude": -122.143
   },
   {
     "id": "ABC",
@@ -36085,7 +36451,9 @@
       }
     ],
     "location": "Culver City, CA, USA",
-    "ownershipSources": "HQ: Official; Owned by ByteDance"
+    "ownershipSources": "HQ: Official; Owned by ByteDance",
+    "latitude": 34.0211,
+    "longitude": -118.3965
   },
   {
     "id": "Southern-California-Edison",
@@ -36191,7 +36559,9 @@
       }
     ],
     "location": "St. Louis, MO, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F",
+    "latitude": 38.627,
+    "longitude": -90.1994
   },
   {
     "id": "Vivobarefoot",
@@ -36460,7 +36830,9 @@
       }
     ],
     "location": "Stamford, CT, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F",
+    "latitude": 41.0534,
+    "longitude": -73.5387
   },
   {
     "id": "Ricoh",
@@ -36568,7 +36940,9 @@
       }
     ],
     "location": "New Albany, OH, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F",
+    "latitude": 40.081,
+    "longitude": -82.8088
   },
   {
     "id": "CBS",
@@ -36731,7 +37105,9 @@
       }
     ],
     "location": "Salt Lake City, UT, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F",
+    "latitude": 40.7608,
+    "longitude": -111.891
   },
   {
     "id": "Macy's",
@@ -37927,7 +38303,9 @@
       }
     ],
     "location": "Reston, VA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Acquired by Apollo 2016"
+    "ownershipSources": "HQ: Official; Stakes: Acquired by Apollo 2016",
+    "latitude": 38.9586,
+    "longitude": -77.357
   },
   {
     "id": "PayPal-(high-fee-services)",
@@ -38200,7 +38578,9 @@
       }
     ],
     "location": "Santa Clara, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F",
+    "latitude": 37.3541,
+    "longitude": -121.9552
   },
   {
     "id": "Tripadvisor",
@@ -38634,7 +39014,9 @@
       }
     ],
     "location": "New Albany, OH, USA",
-    "ownershipSources": "HQ: Official; Owned by Abercrombie & Fitch"
+    "ownershipSources": "HQ: Official; Owned by Abercrombie & Fitch",
+    "latitude": 40.081,
+    "longitude": -82.8088
   },
   {
     "id": "HBO",
@@ -38797,7 +39179,9 @@
       }
     ],
     "location": "Arlington, VA, USA",
-    "ownershipSources": "HQ: Official (RTX); Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official (RTX); Stakes: Q3 2025 13F",
+    "latitude": 38.8816,
+    "longitude": -77.091
   },
   {
     "id": "Sturm-Ruger",
@@ -39170,7 +39554,9 @@
       }
     ],
     "location": "Mexico City, Mexico",
-    "ownershipSources": "HQ: Official; State-owned"
+    "ownershipSources": "HQ: Official; State-owned",
+    "latitude": 19.4326,
+    "longitude": -99.1332
   },
   {
     "id": "UPS",
@@ -39388,7 +39774,9 @@
       }
     ],
     "location": "Hershey, PA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Trust-controlled + 13F"
+    "ownershipSources": "HQ: Official; Stakes: Trust-controlled + 13F",
+    "latitude": 40.2862,
+    "longitude": -76.6505
   },
   {
     "id": "Snapchat",
@@ -39441,7 +39829,9 @@
       }
     ],
     "location": "Santa Monica, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F + insiders"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F + insiders",
+    "latitude": 34.0195,
+    "longitude": -118.4912
   },
   {
     "id": "Experian",
@@ -39549,7 +39939,9 @@
       }
     ],
     "location": "Fremont, CA, USA",
-    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F"
+    "ownershipSources": "HQ: Official; Stakes: Q3 2025 13F",
+    "latitude": 37.5485,
+    "longitude": -121.9886
   },
   {
     "id": "SodaStream",
