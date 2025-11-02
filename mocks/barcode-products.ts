@@ -51,24 +51,77 @@ export async function lookupBarcode(barcode: string): Promise<BarcodeProductInfo
 }
 
 function normalizeBrandName(brand: string): string {
-  return brand
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
+  let normalized = brand.toLowerCase();
+
+  // Remove leading articles first
+  normalized = normalized.replace(/^(the|a|an)\s+/i, '');
+
+  // Remove special characters but keep spaces
+  normalized = normalized.replace(/[^a-z0-9\s]/g, ' ');
+
+  // Remove common company suffixes (after special chars are gone)
+  const suffixes = [
+    'company', 'companies', 'corporation', 'corp', 'incorporated', 'inc',
+    'limited', 'ltd', 'llc', 'plc', 'group', 'international',
+    'global', 'brands', 'holdings', 'enterprises', 'industries', 'co'
+  ];
+
+  // Remove suffixes at the end (more flexible matching)
+  for (const suffix of suffixes) {
+    const regex = new RegExp(`\\s+${suffix}(\\s+|$)`, 'gi');
+    normalized = normalized.replace(regex, ' ');
+  }
+
+  // Clean up extra spaces and trim
+  normalized = normalized
     .replace(/\s+/g, ' ')
     .trim();
+
+  return normalized;
 }
 
 function matchBrand(scannedBrand: string, dbBrand: string): boolean {
   const normalized1 = normalizeBrandName(scannedBrand);
   const normalized2 = normalizeBrandName(dbBrand);
-  
-  if (normalized1 === normalized2) return true;
-  if (normalized1.includes(normalized2) || normalized2.includes(normalized1)) return true;
-  
-  const words1 = normalized1.split(' ');
-  const words2 = normalized2.split(' ');
-  
-  return words1.some(w1 => words2.some(w2 => w1 === w2 && w1.length > 3));
+
+  console.log('🔍 Comparing brands:', {
+    scanned: scannedBrand,
+    db: dbBrand,
+    normalized1,
+    normalized2
+  });
+
+  // Exact match after normalization
+  if (normalized1 === normalized2) {
+    console.log('✅ Exact match found');
+    return true;
+  }
+
+  // Substring match
+  if (normalized1.includes(normalized2) || normalized2.includes(normalized1)) {
+    console.log('✅ Substring match found');
+    return true;
+  }
+
+  // Word-based match - check if significant words overlap
+  const words1 = normalized1.split(' ').filter(w => w.length > 3);
+  const words2 = normalized2.split(' ').filter(w => w.length > 3);
+
+  // If at least 2 significant words match, or 1 word matches and it's the primary word
+  const matchingWords = words1.filter(w1 => words2.includes(w1));
+
+  if (matchingWords.length >= 2) {
+    console.log('✅ Multiple word match found:', matchingWords);
+    return true;
+  }
+
+  if (matchingWords.length === 1 && (matchingWords[0] === words1[0] || matchingWords[0] === words2[0])) {
+    console.log('✅ Primary word match found:', matchingWords[0]);
+    return true;
+  }
+
+  console.log('❌ No match found');
+  return false;
 }
 
 export function findBrandInDatabase(brandName: string): string | null {
