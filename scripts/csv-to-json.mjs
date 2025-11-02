@@ -2,6 +2,10 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { config } from 'dotenv';
+
+// Load environment variables
+config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -9,6 +13,8 @@ const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
 const DATA_SRC_DIR = path.join(ROOT_DIR, 'data-src');
 const DATA_DIR = path.join(ROOT_DIR, 'data');
+
+const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || '';
 
 /**
  * Geocoding lookup for common US and international cities
@@ -81,6 +87,36 @@ const CITY_COORDINATES = {
 };
 
 /**
+ * Geocode a location using Google Geocoding API
+ * @param {string} location - The location string to geocode
+ * @returns {Promise<{latitude: number, longitude: number} | null>}
+ */
+async function geocodeLocation(location) {
+  if (!GOOGLE_PLACES_API_KEY) {
+    console.warn('[Geocoding] No Google Places API key found, skipping geocoding for:', location);
+    return null;
+  }
+
+  try {
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${GOOGLE_PLACES_API_KEY}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status === 'OK' && data.results && data.results.length > 0) {
+      const { lat, lng } = data.results[0].geometry.location;
+      console.log(`[Geocoding] ✓ Successfully geocoded "${location}" to (${lat}, ${lng})`);
+      return { latitude: lat, longitude: lng };
+    } else {
+      console.warn(`[Geocoding] ✗ Failed to geocode "${location}": ${data.status}`);
+      return null;
+    }
+  } catch (error) {
+    console.error(`[Geocoding] Error geocoding "${location}":`, error.message);
+    return null;
+  }
+}
+
+/**
  * Parse CSV string to array of objects
  * Handles quoted fields with commas inside them
  */
@@ -141,7 +177,7 @@ function parseCSV(csvContent) {
  *                   affiliate1, $affiliate1, affiliate2, $affiliate2, etc.
  *                   ownership1-5, ownership Sources
  */
-function convertBrands() {
+async function convertBrands() {
   console.log('Converting brands.csv...');
 
   const csvPath = path.join(DATA_SRC_DIR, 'brands.csv');
@@ -153,7 +189,7 @@ function convertBrands() {
   const csvContent = fs.readFileSync(csvPath, 'utf-8');
   const rows = parseCSV(csvContent);
 
-  const brands = rows.map(row => {
+  const brands = await Promise.all(rows.map(async row => {
     // Parse affiliates from affiliate1-5 and $affiliate1-5 columns
     const affiliates = [];
     for (let i = 1; i <= 5; i++) {
@@ -202,12 +238,20 @@ function convertBrands() {
     let latitude = row.latitude?.trim() ? parseFloat(row.latitude) : undefined;
     let longitude = row.longitude?.trim() ? parseFloat(row.longitude) : undefined;
 
-    // If no coordinates in CSV but we have a location string, try geocoding lookup
+    // If no coordinates in CSV but we have a location string, try geocoding
     if ((!latitude || !longitude) && location) {
+      // Try hardcoded lookup first
       const coords = CITY_COORDINATES[location];
       if (coords) {
         latitude = coords.latitude;
         longitude = coords.longitude;
+      } else {
+        // Fallback to Google Geocoding API
+        const geocoded = await geocodeLocation(location);
+        if (geocoded) {
+          latitude = geocoded.latitude;
+          longitude = geocoded.longitude;
+        }
       }
     }
 
@@ -241,7 +285,7 @@ function convertBrands() {
     }
 
     return brand;
-  });
+  }));
 
   const outputPath = path.join(DATA_DIR, 'brands.json');
   fs.writeFileSync(outputPath, JSON.stringify(brands, null, 2));
@@ -316,13 +360,16 @@ function convertValues() {
   console.log(`✅ Converted ${Object.keys(valuesMap).length} values to ${outputPath}`);
 }
 
-// Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
+// Main execution
+(async () => {
+  // Ensure data directory exists
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
 
-// Run conversions
-console.log('🔄 Starting CSV to JSON conversion...\n');
-convertBrands();
-convertValues();
-console.log('\n✨ Conversion complete!');
+  // Run conversions
+  console.log('🔄 Starting CSV to JSON conversion...\n');
+  await convertBrands();
+  convertValues();
+  console.log('\n✨ Conversion complete!');
+})();

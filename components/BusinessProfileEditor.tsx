@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -72,6 +72,22 @@ export default function BusinessProfileEditor() {
     setLongitude(lon);
   };
 
+  // Sync local state with profile changes
+  useEffect(() => {
+    setName(businessInfo.name);
+    setCategory(businessInfo.category);
+    setDescription(businessInfo.description || '');
+    setWebsite(businessInfo.website || '');
+    setLogoUrl(businessInfo.logoUrl || '');
+    setLocation(businessInfo.location || '');
+    setLatitude(businessInfo.latitude);
+    setLongitude(businessInfo.longitude);
+    setFacebook(businessInfo.socialMedia?.facebook || '');
+    setInstagram(businessInfo.socialMedia?.instagram || '');
+    setTwitter(businessInfo.socialMedia?.twitter || '');
+    setLinkedin(businessInfo.socialMedia?.linkedin || '');
+  }, [businessInfo]);
+
   const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert('Required', 'Business name is required');
@@ -99,14 +115,18 @@ export default function BusinessProfileEditor() {
 
     if (location.trim()) {
       updateInfo.location = location.trim();
+      console.log('[BusinessProfileEditor] Saving location:', location.trim());
     }
     if (latitude !== undefined) {
       updateInfo.latitude = latitude;
+      console.log('[BusinessProfileEditor] Saving latitude:', latitude);
     }
     if (longitude !== undefined) {
       updateInfo.longitude = longitude;
+      console.log('[BusinessProfileEditor] Saving longitude:', longitude);
     }
 
+    console.log('[BusinessProfileEditor] Full updateInfo:', updateInfo);
     await setBusinessInfo(updateInfo);
 
     setEditing(false);
