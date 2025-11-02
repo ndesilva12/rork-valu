@@ -308,7 +308,13 @@ export default function SearchScreen() {
   };
 
   const handleOpenScanner = async () => {
+    console.log('📷 Scanner button clicked');
+    console.log('📷 Platform:', Platform.OS);
+    console.log('📷 Permission status:', permission);
+    console.log('📷 Request permission function:', typeof requestPermission);
+
     if (Platform.OS === 'web') {
+      console.log('📷 Platform is web, showing alert');
       Alert.alert(
         'Scanner Not Available',
         'The barcode scanner is not available on web. Please use the mobile app to scan products.',
@@ -317,17 +323,43 @@ export default function SearchScreen() {
       return;
     }
 
+    if (!requestPermission) {
+      console.error('📷 Camera permission hook not available');
+      Alert.alert(
+        'Camera Not Available',
+        'Camera functionality is not available on this device.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    console.log('📷 Checking camera permission...');
     if (!permission?.granted) {
-      const result = await requestPermission();
-      if (!result.granted) {
+      console.log('📷 Permission not granted, requesting...');
+      try {
+        const result = await requestPermission();
+        console.log('📷 Permission request result:', result);
+        if (!result.granted) {
+          console.log('📷 Permission denied, showing alert');
+          Alert.alert(
+            'Camera Permission Required',
+            'Please allow camera access to scan barcodes',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+      } catch (error) {
+        console.error('📷 Error requesting permission:', error);
         Alert.alert(
-          'Camera Permission Required',
-          'Please allow camera access to scan barcodes',
+          'Error',
+          'Failed to request camera permission. Please check your device settings.',
           [{ text: 'OK' }]
         );
         return;
       }
     }
+
+    console.log('📷 Opening scanner modal');
     setScannerVisible(true);
   };
 
