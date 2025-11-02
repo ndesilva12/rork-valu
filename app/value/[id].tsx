@@ -18,6 +18,7 @@ import productsData from '../../mocks/products-data.json';
 import { generateProducts } from '../../mocks/generate-products';
 import { useRef } from 'react';
 import { getLogoUrl } from '@/lib/logo';
+import { AVAILABLE_VALUES } from '@/mocks/causes';
 
 interface ValueDriver {
   id: string;
@@ -54,8 +55,30 @@ export default function ValueDetailScreen() {
     })
   ).current;
 
-  const userCause = profile.causes.find(c => c.id === id);
-  
+  // First check if the value is in user's selected causes
+  let userCause = profile.causes.find(c => c.id === id);
+  let isSelected = !!userCause;
+
+  // If not found in user's causes, check AVAILABLE_VALUES
+  if (!userCause) {
+    // Search through all categories in AVAILABLE_VALUES
+    for (const category of Object.values(AVAILABLE_VALUES)) {
+      const found = category.find(v => v.id === id);
+      if (found) {
+        // Convert to the format expected by the rest of the component
+        userCause = {
+          id: found.id,
+          name: found.name,
+          category: found.category,
+          description: found.description,
+          type: undefined, // Not selected, so no type
+        };
+        break;
+      }
+    }
+  }
+
+  // If still not found, show error
   if (!userCause) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -65,6 +88,7 @@ export default function ValueDetailScreen() {
   }
 
   const isSupporting = userCause.type === 'support';
+  const isAvoiding = userCause.type === 'avoid';
 
   const getWebsiteUrl = (brandName: string): string => {
     const domain = brandName
@@ -161,17 +185,19 @@ export default function ValueDetailScreen() {
       >
         <View style={[styles.contentWrapper, isLargeScreen && styles.contentWrapperConstrained]}>
         <View style={styles.header}>
-          <View style={[
-            styles.badge,
-            isSupporting ? styles.supportBadge : styles.avoidBadge
-          ]}>
-            <Text style={[
-              styles.badgeText,
-              isSupporting ? { color: colors.success } : { color: colors.danger }
+          {isSelected && (
+            <View style={[
+              styles.badge,
+              isSupporting ? styles.supportBadge : styles.avoidBadge
             ]}>
-              {isSupporting ? 'Supporting' : 'Opposing'}
-            </Text>
-          </View>
+              <Text style={[
+                styles.badgeText,
+                isSupporting ? { color: colors.success } : { color: colors.danger }
+              ]}>
+                {isSupporting ? 'Supporting' : 'Opposing'}
+              </Text>
+            </View>
+          )}
           <Text style={[styles.title, { color: colors.text }]}>{userCause.name}</Text>
           {userCause.description && (
             <Text style={[styles.description, { color: colors.textSecondary }]}>{userCause.description}</Text>
