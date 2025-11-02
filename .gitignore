@@ -46,3 +46,4 @@ yarn-error.*
 # Google Sheets credentials
 secrets/
 *service-account*.json
+*.backup

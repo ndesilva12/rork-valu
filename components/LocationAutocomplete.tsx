@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -40,6 +40,11 @@ export default function LocationAutocomplete({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync internal state with prop changes (for controlled component behavior)
+  useEffect(() => {
+    setInputValue(value);
+  }, [value]);
 
   // Try multiple sources for the API key
   const API_KEY =
