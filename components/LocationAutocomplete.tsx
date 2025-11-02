@@ -12,8 +12,8 @@ import {
 } from 'react-native';
 import { MapPin } from 'lucide-react-native';
 import * as Location from 'expo-location';
-import Constants from 'expo-constants';
 import { lightColors, darkColors } from '@/constants/colors';
+import { trpc } from '@/lib/trpc';
 
 interface LocationSuggestion {
   description: string;
@@ -41,48 +41,27 @@ export default function LocationAutocomplete({
   const [gettingLocation, setGettingLocation] = useState(false);
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // Try multiple sources for the API key
-  const API_KEY =
-    Constants.expoConfig?.extra?.googlePlacesApiKey ||
-    process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ||
-    '';
-
-  // Debug logging
-  console.log('[LocationAutocomplete] API Key available:', !!API_KEY);
-  console.log('[LocationAutocomplete] API Key source:', API_KEY ? (Constants.expoConfig?.extra?.googlePlacesApiKey ? 'expo config' : 'process.env') : 'none');
-  if (!API_KEY) {
-    console.warn('[LocationAutocomplete] No Google Places API key found. Autocomplete will not work.');
-    console.warn('[LocationAutocomplete] Checked:', {
-      expoConfig: !!Constants.expoConfig?.extra?.googlePlacesApiKey,
-      processEnv: !!process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY
-    });
-  }
-
   const fetchSuggestions = async (text: string) => {
     if (!text.trim()) {
       setSuggestions([]);
       return;
     }
 
-    if (!API_KEY) {
-      console.warn('[LocationAutocomplete] Cannot fetch suggestions - no API key');
-      setSuggestions([]);
-      return;
-    }
-
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&types=(cities)&key=${API_KEY}`
-      );
-      const data = await response.json();
+      console.log('[LocationAutocomplete] Fetching suggestions via tRPC for:', text);
+
+      const data = await trpc.location.autocomplete.query({ input: text });
 
       if (data.predictions) {
+        console.log('[LocationAutocomplete] Got', data.predictions.length, 'suggestions');
         setSuggestions(data.predictions);
         setShowSuggestions(true);
+      } else if (data.error) {
+        console.error('[LocationAutocomplete] API error:', data.error);
       }
     } catch (error) {
-      console.error('Error fetching suggestions:', error);
+      console.error('[LocationAutocomplete] Error fetching suggestions:', error);
     } finally {
       setIsLoading(false);
     }
@@ -109,18 +88,30 @@ export default function LocationAutocomplete({
 
     // Get coordinates for the selected place
     try {
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${suggestion.place_id}&fields=geometry&key=${API_KEY}`
-      );
-      const data = await response.json();
+      console.log('[LocationAutocomplete] Fetching place details via tRPC for:', suggestion.place_id);
+
+      const data = await trpc.location.placeDetails.query({ placeId: suggestion.place_id });
 
       if (data.result?.geometry?.location) {
         const { lat, lng } = data.result.geometry.location;
+        console.log('[LocationAutocomplete] Got coordinates:', { lat, lng });
         onLocationSelect(suggestion.description, lat, lng);
+      } else if (data.error) {
+        console.error('[LocationAutocomplete] Place details error:', data.error);
+        // Fallback to expo-location geocoding
+        try {
+          const results = await Location.geocodeAsync(suggestion.description);
+          if (results && results.length > 0) {
+            const { latitude, longitude } = results[0];
+            onLocationSelect(suggestion.description, latitude, longitude);
+          }
+        } catch (geocodeError) {
+          console.error('[LocationAutocomplete] Error geocoding location:', geocodeError);
+        }
       }
     } catch (error) {
-      console.error('Error getting place details:', error);
-      // If Places API fails, try expo-location geocoding as fallback
+      console.error('[LocationAutocomplete] Error getting place details:', error);
+      // If tRPC fails, try expo-location geocoding as fallback
       try {
         const results = await Location.geocodeAsync(suggestion.description);
         if (results && results.length > 0) {
@@ -128,28 +119,15 @@ export default function LocationAutocomplete({
           onLocationSelect(suggestion.description, latitude, longitude);
         }
       } catch (geocodeError) {
-        console.error('Error geocoding location:', geocodeError);
+        console.error('[LocationAutocomplete] Error geocoding location:', geocodeError);
       }
     }
   };
 
   const handleBlur = async () => {
     // Delay to allow suggestion click to register
-    setTimeout(async () => {
+    setTimeout(() => {
       setShowSuggestions(false);
-
-      // If no API key, use expo-location as fallback
-      if (!API_KEY && inputValue.trim()) {
-        try {
-          const results = await Location.geocodeAsync(inputValue);
-          if (results && results.length > 0) {
-            const { latitude, longitude } = results[0];
-            onLocationSelect(inputValue, latitude, longitude);
-          }
-        } catch (error) {
-          console.error('Error geocoding location:', error);
-        }
-      }
     }, 200);
   };
 
@@ -317,11 +295,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 56,
     left: 0,
-    right: 120,
+    right: 0,
     maxHeight: 200,
     borderRadius: 12,
     borderWidth: 1,
     overflow: 'hidden',
+    zIndex: 1000,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -331,6 +310,9 @@ const styles = StyleSheet.create({
       },
       android: {
         elevation: 4,
+      },
+      web: {
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
       },
     }),
   },
