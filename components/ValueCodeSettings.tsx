@@ -13,41 +13,41 @@ import Slider from '@react-native-community/slider';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 
-export default function ValuCodeSettings() {
+export default function ValueCodeSettings() {
   const { isDarkMode, profile, setBusinessInfo } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
   const businessInfo = profile.businessInfo || {
     name: '',
     category: '',
-    acceptsValuCodes: false,
-    valuCodeDiscount: 10,
+    acceptsValueCodes: false,
+    valueCodeDiscount: 10,
     customerDiscountPercent: 5,
     donationPercent: 2.5,
   };
 
   const VALU_APP_FEE = 2.5; // Fixed at 2.5%
 
-  const [acceptsValuCodes, setAcceptsValuCodes] = useState(businessInfo.acceptsValuCodes);
-  const [totalPercent, setTotalPercent] = useState(businessInfo.valuCodeDiscount || 10);
+  const [acceptsValueCodes, setAcceptsValueCodes] = useState(businessInfo.acceptsValueCodes);
+  const [totalPercent, setTotalPercent] = useState(businessInfo.valueCodeDiscount || 10);
   const [customerDiscountPercent, setCustomerDiscountPercent] = useState(
     businessInfo.customerDiscountPercent || 5
   );
-  const [inputValue, setInputValue] = useState((businessInfo.valuCodeDiscount || 10).toString());
+  const [inputValue, setInputValue] = useState((businessInfo.valueCodeDiscount || 10).toString());
 
   // Calculate donation percentage (total - customer discount - fee)
   const donationPercent = Math.max(0, totalPercent - customerDiscountPercent - VALU_APP_FEE);
 
-  const handleToggleValuCodes = async (value: boolean) => {
-    setAcceptsValuCodes(value);
+  const handleToggleValueCodes = async (value: boolean) => {
+    setAcceptsValueCodes(value);
     await setBusinessInfo({
-      acceptsValuCodes: value,
+      acceptsValueCodes: value,
     });
 
     if (value) {
       Alert.alert(
-        'Valu Codes Enabled',
-        'Customers can now use their valu codes at your business to receive a discount!',
+        'Value Codes Enabled',
+        'Customers can now use their value codes at your business to receive a discount!',
         [{ text: 'Great!' }]
       );
     }
@@ -70,7 +70,7 @@ export default function ValuCodeSettings() {
     }
 
     await setBusinessInfo({
-      valuCodeDiscount: roundedPercent,
+      valueCodeDiscount: roundedPercent,
       customerDiscountPercent: Math.min(customerDiscountPercent, maxCustomerDiscount),
       donationPercent: Math.max(0, roundedPercent - Math.min(customerDiscountPercent, maxCustomerDiscount) - VALU_APP_FEE),
     });
@@ -114,29 +114,29 @@ export default function ValuCodeSettings() {
 
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Valu Code Settings</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Value Code Settings</Text>
 
       <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
         {/* Toggle Section */}
         <View style={styles.settingRow}>
           <View style={styles.settingInfo}>
             <Text style={[styles.settingTitle, { color: colors.text }]}>
-              Accept Valu Codes
+              Accept Value Codes
             </Text>
             <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
-              Allow customers to use valu codes for discounts at your business
+              Allow customers to use value codes for discounts at your business
             </Text>
           </View>
           <Switch
-            value={acceptsValuCodes}
-            onValueChange={handleToggleValuCodes}
+            value={acceptsValueCodes}
+            onValueChange={handleToggleValueCodes}
             trackColor={{ false: colors.border, true: colors.primary }}
             thumbColor={colors.white}
           />
         </View>
 
         {/* Discount Percentage (only show if accepting codes) */}
-        {acceptsValuCodes && (
+        {acceptsValueCodes && (
           <>
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
@@ -144,7 +144,7 @@ export default function ValuCodeSettings() {
               <View style={styles.discountHeader}>
                 <Percent size={20} color={colors.text} strokeWidth={2} />
                 <Text style={[styles.discountTitle, { color: colors.text }]}>
-                  Total Valu Code Commitment
+                  Total Value Code Commitment
                 </Text>
               </View>
               <Text style={[styles.discountSubtitle, { color: colors.textSecondary }]}>
@@ -273,10 +273,10 @@ export default function ValuCodeSettings() {
         {/* Info Box */}
         <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
           <Text style={[styles.infoTitle, { color: colors.text }]}>
-            How Valu Codes Work
+            How Value Codes Work
           </Text>
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            • Customers show their unique valu code at checkout{'\n'}
+            • Customers show their unique value code at checkout{'\n'}
             • You apply the discount to their purchase{'\n'}
             • Valu charges a small fee to maintain the platform{'\n'}
             • The remainder goes to charity on the customer's behalf{'\n'}

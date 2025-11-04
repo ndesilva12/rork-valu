@@ -15,7 +15,7 @@ import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import BusinessProfileEditor from '@/components/BusinessProfileEditor';
-import ValuCodeSettings from '@/components/ValuCodeSettings';
+import ValueCodeSettings from '@/components/ValueCodeSettings';
 import UserDetailsEditor from '@/components/UserDetailsEditor';
 
 export default function ProfileScreen() {
@@ -119,15 +119,15 @@ export default function ProfileScreen() {
         {activeTab === 'code' && (
           <>
             {isBusiness ? (
-              /* Business Code Tab: Valu Code Settings */
+              /* Business Code Tab: Value Code Settings */
               <>
-                <ValuCodeSettings />
+                <ValueCodeSettings />
 
                 {/* Business Info Section */}
                 <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
-                  <Text style={[styles.infoTitle, { color: colors.text }]}>About ValuCode</Text>
+                  <Text style={[styles.infoTitle, { color: colors.text }]}>About ValueCode</Text>
                   <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                    By accepting valu codes, you attract value-aligned customers and gain insights into
+                    By accepting value codes, you attract value-aligned customers and gain insights into
                     their priorities through your Data tab.
                   </Text>
                   <Text style={[styles.infoText, { color: colors.textSecondary }]}>
@@ -137,11 +137,11 @@ export default function ProfileScreen() {
                 </View>
               </>
             ) : (
-              /* Individual Code Tab: Valu Code & QR Generator */
+              /* Individual Code Tab: Value Code & QR Generator */
               <>
-                {/* Valu Code Section */}
+                {/* Value Code Section */}
                 <View style={[styles.promoSection, { borderColor: colors.primary, backgroundColor: colors.backgroundSecondary }]}>
-                  <Text style={[styles.promoLabel, { color: colors.textSecondary }]}>Your Valu Code</Text>
+                  <Text style={[styles.promoLabel, { color: colors.textSecondary }]}>Your Value Code</Text>
                   <Text style={[styles.promoCode, { color: colors.primary }]}>{profile.promoCode || 'VALU000000'}</Text>
                   <Text style={[styles.promoDescription, { color: colors.textSecondary }]}>
                     Use this code when you shop at locations and we will donate a percentage of each purchase to your selected organizations
@@ -193,7 +193,7 @@ export default function ProfileScreen() {
                 <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
                   <Text style={[styles.infoTitle, { color: colors.text }]}>How Your Code Works</Text>
                   <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                    Every time you use your Valu code at participating businesses, you'll receive a discount
+                    Every time you use your Value code at participating businesses, you'll receive a discount
                     and help support the causes you care about through automatic donations.
                   </Text>
                   <Text style={[styles.infoText, { color: colors.textSecondary }]}>
@@ -226,7 +226,7 @@ export default function ProfileScreen() {
                         How Business Donations Work
                       </Text>
                       <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                        When customers use their Valu codes at your business, a portion of each transaction
+                        When customers use their Value codes at your business, a portion of each transaction
                         is donated to causes they support.
                       </Text>
                       <Text style={[styles.infoText, { color: colors.textSecondary }]}>
@@ -245,7 +245,7 @@ export default function ProfileScreen() {
                 <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
                   <Text style={[styles.infoTitle, { color: colors.text }]}>Your Impact</Text>
                   <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                    By accepting Valu codes, your business helps facilitate charitable giving while building
+                    By accepting Value codes, your business helps facilitate charitable giving while building
                     loyalty with value-aligned customers. Every transaction makes a difference!
                   </Text>
                 </View>
@@ -303,7 +303,7 @@ export default function ProfileScreen() {
                 <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
                   <Text style={[styles.infoTitle, { color: colors.text }]}>How Donations Work</Text>
                   <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                    Every time you use your Valu code, a portion of the transaction is donated to your
+                    Every time you use your Value code, a portion of the transaction is donated to your
                     selected organizations.
                   </Text>
                   <Text style={[styles.infoText, { color: colors.textSecondary }]}>

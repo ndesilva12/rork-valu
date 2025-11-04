@@ -10,7 +10,7 @@ import {
 import { X } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
-import { generateMockValuCodeCustomers, calculateCustomerStats } from '@/mocks/valu-code-customers';
+import { generateMockValueCodeCustomers, calculateCustomerStats } from '@/mocks/value-code-customers';
 
 interface Purchase {
   id: string;
@@ -30,11 +30,11 @@ export default function BusinessActivitySection() {
   const colors = isDarkMode ? darkColors : lightColors;
 
   // Get business discount percentage (default to 10% if not set)
-  const discountPercent = profile.businessInfo?.valuCodeDiscount || 10;
+  const discountPercent = profile.businessInfo?.valueCodeDiscount || 10;
 
   // Generate mock customers (in real app, this would come from API)
   const customers = useMemo(() => {
-    return generateMockValuCodeCustomers(25, discountPercent);
+    return generateMockValueCodeCustomers(25, discountPercent);
   }, [discountPercent]);
 
   const stats = useMemo(() => {
@@ -72,7 +72,7 @@ export default function BusinessActivitySection() {
 
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Valu Code Activity</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Value Code Activity</Text>
       <View style={[styles.card, { backgroundColor: 'transparent', borderColor: colors.primaryLight }]}>
 
         {/* Header */}
@@ -131,7 +131,7 @@ export default function BusinessActivitySection() {
                 Top Customer Values
               </Text>
               <Text style={[styles.profileSubtitle, { color: colors.textSecondary }]}>
-                Values most shared by your valu code customers
+                Values most shared by your value code customers
               </Text>
             </View>
             {stats.topValues.length > 5 && (
@@ -333,7 +333,7 @@ export default function BusinessActivitySection() {
                           {purchase.items.join(', ')}
                         </Text>
                         <Text style={[styles.purchaseDiscount, { color: colors.primary }]}>
-                          Valu Code: -${purchase.discount.toFixed(2)}
+                          Value Code: -${purchase.discount.toFixed(2)}
                         </Text>
                       </View>
                     </View>

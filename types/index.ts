@@ -102,8 +102,8 @@ export interface BusinessInfo {
   location?: string; // Location name (e.g., "New York, NY")
   latitude?: number; // Latitude coordinate for distance calculations
   longitude?: number; // Longitude coordinate for distance calculations
-  acceptsValuCodes: boolean;
-  valuCodeDiscount?: number; // Percentage discount (e.g., 10 for 10%)
+  acceptsValueCodes: boolean;
+  valueCodeDiscount?: number; // Percentage discount (e.g., 10 for 10%)
   socialMedia?: SocialMedia;
 }
 
@@ -117,7 +117,7 @@ export interface UserDetails {
   socialMedia?: SocialMedia;
 }
 
-export interface ValuCodeCustomer {
+export interface ValueCodeCustomer {
   id: string;
   name: string;
   totalSpent: number;
@@ -134,6 +134,6 @@ export interface UserProfile {
   donationAmount?: number;
   selectedCharities?: Charity[];
   businessInfo?: BusinessInfo; // Only for business accounts
-  valuCodeCustomers?: ValuCodeCustomer[]; // Only for business accounts
+  valueCodeCustomers?: ValueCodeCustomer[]; // Only for business accounts
   userDetails?: UserDetails; // Only for individual accounts
 }

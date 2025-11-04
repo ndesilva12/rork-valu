@@ -74,7 +74,7 @@ export default function BusinessSetupScreen() {
     const businessInfo: any = {
       name: businessName.trim(),
       category: selectedCategory,
-      acceptsValuCodes: false, // Default to false, can be changed in profile later
+      acceptsValueCodes: false, // Default to false, can be changed in profile later
     };
 
     if (location.trim()) {

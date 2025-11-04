@@ -45,8 +45,8 @@ export default function BusinessProfileEditor() {
     description: '',
     website: '',
     logoUrl: '',
-    acceptsValuCodes: false,
-    valuCodeDiscount: 10,
+    acceptsValueCodes: false,
+    valueCodeDiscount: 10,
   };
 
   const [editing, setEditing] = useState(false);
