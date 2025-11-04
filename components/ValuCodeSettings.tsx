@@ -8,7 +8,8 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
-import { Percent, Plus, Minus, Info } from 'lucide-react-native';
+import { Percent, Plus, Minus, Info, DollarSign, Heart } from 'lucide-react-native';
+import Slider from '@react-native-community/slider';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 
@@ -21,11 +22,21 @@ export default function ValuCodeSettings() {
     category: '',
     acceptsValuCodes: false,
     valuCodeDiscount: 10,
+    customerDiscountPercent: 5,
+    donationPercent: 2.5,
   };
 
+  const VALU_APP_FEE = 2.5; // Fixed at 2.5%
+
   const [acceptsValuCodes, setAcceptsValuCodes] = useState(businessInfo.acceptsValuCodes);
-  const [discountPercent, setDiscountPercent] = useState(businessInfo.valuCodeDiscount || 10);
+  const [totalPercent, setTotalPercent] = useState(businessInfo.valuCodeDiscount || 10);
+  const [customerDiscountPercent, setCustomerDiscountPercent] = useState(
+    businessInfo.customerDiscountPercent || 5
+  );
   const [inputValue, setInputValue] = useState((businessInfo.valuCodeDiscount || 10).toString());
+
+  // Calculate donation percentage (total - customer discount - fee)
+  const donationPercent = Math.max(0, totalPercent - customerDiscountPercent - VALU_APP_FEE);
 
   const handleToggleValuCodes = async (value: boolean) => {
     setAcceptsValuCodes(value);
@@ -42,38 +53,63 @@ export default function ValuCodeSettings() {
     }
   };
 
-  const handleSetDiscount = async (percent: number) => {
-    // Clamp between 1 and 50
-    const clampedPercent = Math.max(1, Math.min(50, percent));
+  const handleSetTotal = async (percent: number) => {
+    // Clamp between minimum (VALU_APP_FEE + 0.5) and 50
+    const minPercent = VALU_APP_FEE + 0.5;
+    const clampedPercent = Math.max(minPercent, Math.min(50, percent));
     // Round to nearest 0.5
     const roundedPercent = Math.round(clampedPercent * 2) / 2;
 
-    setDiscountPercent(roundedPercent);
+    setTotalPercent(roundedPercent);
     setInputValue(roundedPercent.toString());
+
+    // Adjust customer discount if it exceeds the new total
+    const maxCustomerDiscount = roundedPercent - VALU_APP_FEE;
+    if (customerDiscountPercent > maxCustomerDiscount) {
+      setCustomerDiscountPercent(Math.max(0, maxCustomerDiscount));
+    }
+
     await setBusinessInfo({
       valuCodeDiscount: roundedPercent,
+      customerDiscountPercent: Math.min(customerDiscountPercent, maxCustomerDiscount),
+      donationPercent: Math.max(0, roundedPercent - Math.min(customerDiscountPercent, maxCustomerDiscount) - VALU_APP_FEE),
+    });
+  };
+
+  const handleSetCustomerDiscount = async (percent: number) => {
+    const maxDiscount = totalPercent - VALU_APP_FEE;
+    const clampedPercent = Math.max(0, Math.min(maxDiscount, percent));
+    const roundedPercent = Math.round(clampedPercent * 2) / 2;
+
+    setCustomerDiscountPercent(roundedPercent);
+
+    const newDonation = Math.max(0, totalPercent - roundedPercent - VALU_APP_FEE);
+
+    await setBusinessInfo({
+      customerDiscountPercent: roundedPercent,
+      donationPercent: newDonation,
     });
   };
 
   const handleIncrement = () => {
-    handleSetDiscount(discountPercent + 0.5);
+    handleSetTotal(totalPercent + 0.5);
   };
 
   const handleDecrement = () => {
-    handleSetDiscount(discountPercent - 0.5);
+    handleSetTotal(totalPercent - 0.5);
   };
 
   const handleInputChange = (text: string) => {
     setInputValue(text);
     const parsed = parseFloat(text);
-    if (!isNaN(parsed) && parsed >= 1 && parsed <= 50) {
-      handleSetDiscount(parsed);
+    if (!isNaN(parsed) && parsed >= VALU_APP_FEE + 0.5 && parsed <= 50) {
+      handleSetTotal(parsed);
     }
   };
 
   const handleInputBlur = () => {
     // Reset to current valid value if input is invalid
-    setInputValue(discountPercent.toString());
+    setInputValue(totalPercent.toString());
   };
 
   return (
@@ -108,11 +144,11 @@ export default function ValuCodeSettings() {
               <View style={styles.discountHeader}>
                 <Percent size={20} color={colors.text} strokeWidth={2} />
                 <Text style={[styles.discountTitle, { color: colors.text }]}>
-                  Valu Code Percentage
+                  Total Valu Code Commitment
                 </Text>
               </View>
               <Text style={[styles.discountSubtitle, { color: colors.textSecondary }]}>
-                Choose the percentage for valu code transactions (1% - 50%)
+                Set your total percentage commitment ({VALU_APP_FEE + 0.5}% - 50%)
               </Text>
 
               {/* Percentage Input Controls */}
@@ -121,13 +157,13 @@ export default function ValuCodeSettings() {
                   style={[
                     styles.controlButton,
                     { backgroundColor: colors.background, borderColor: colors.border },
-                    discountPercent <= 1 && styles.controlButtonDisabled
+                    totalPercent <= VALU_APP_FEE + 0.5 && styles.controlButtonDisabled
                   ]}
                   onPress={handleDecrement}
-                  disabled={discountPercent <= 1}
+                  disabled={totalPercent <= VALU_APP_FEE + 0.5}
                   activeOpacity={0.7}
                 >
-                  <Minus size={20} color={discountPercent <= 1 ? colors.textSecondary : colors.text} strokeWidth={2} />
+                  <Minus size={20} color={totalPercent <= VALU_APP_FEE + 0.5 ? colors.textSecondary : colors.text} strokeWidth={2} />
                 </TouchableOpacity>
 
                 <View style={styles.inputContainer}>
@@ -147,44 +183,87 @@ export default function ValuCodeSettings() {
                   style={[
                     styles.controlButton,
                     { backgroundColor: colors.background, borderColor: colors.border },
-                    discountPercent >= 50 && styles.controlButtonDisabled
+                    totalPercent >= 50 && styles.controlButtonDisabled
                   ]}
                   onPress={handleIncrement}
-                  disabled={discountPercent >= 50}
+                  disabled={totalPercent >= 50}
                   activeOpacity={0.7}
                 >
-                  <Plus size={20} color={discountPercent >= 50 ? colors.textSecondary : colors.text} strokeWidth={2} />
+                  <Plus size={20} color={totalPercent >= 50 ? colors.textSecondary : colors.text} strokeWidth={2} />
                 </TouchableOpacity>
               </View>
 
-              {/* Split Explanation */}
+              {/* Customer Discount Slider */}
+              <View style={styles.sliderSection}>
+                <View style={styles.sliderHeader}>
+                  <DollarSign size={18} color={colors.success} strokeWidth={2} />
+                  <Text style={[styles.sliderLabel, { color: colors.text }]}>
+                    Customer Discount
+                  </Text>
+                  <Text style={[styles.sliderValue, { color: colors.success }]}>
+                    {customerDiscountPercent.toFixed(1)}%
+                  </Text>
+                </View>
+                <Slider
+                  style={styles.slider}
+                  minimumValue={0}
+                  maximumValue={totalPercent - VALU_APP_FEE}
+                  value={customerDiscountPercent}
+                  onValueChange={(value) => setCustomerDiscountPercent(Math.round(value * 2) / 2)}
+                  onSlidingComplete={handleSetCustomerDiscount}
+                  minimumTrackTintColor={colors.success}
+                  maximumTrackTintColor={colors.border}
+                  thumbTintColor={colors.success}
+                  step={0.5}
+                />
+              </View>
+
+              {/* Split Breakdown */}
               <View style={[styles.splitExplanation, { backgroundColor: colors.background, borderColor: colors.primary }]}>
                 <View style={styles.splitHeader}>
                   <Info size={16} color={colors.primary} strokeWidth={2} />
                   <Text style={[styles.splitTitle, { color: colors.text }]}>
-                    How the {discountPercent}% is split:
+                    How the {totalPercent}% is split:
                   </Text>
                 </View>
                 <View style={styles.splitBreakdown}>
                   <View style={styles.splitRow}>
-                    <Text style={[styles.splitLabel, { color: colors.textSecondary }]}>
-                      Customer Discount:
-                    </Text>
-                    <Text style={[styles.splitValue, { color: colors.primary }]}>
-                      {(discountPercent / 2).toFixed(2)}%
+                    <View style={styles.splitLabelContainer}>
+                      <DollarSign size={14} color={colors.success} strokeWidth={2} />
+                      <Text style={[styles.splitLabel, { color: colors.textSecondary }]}>
+                        Customer Discount:
+                      </Text>
+                    </View>
+                    <Text style={[styles.splitValue, { color: colors.success }]}>
+                      {customerDiscountPercent.toFixed(1)}%
                     </Text>
                   </View>
                   <View style={styles.splitRow}>
-                    <Text style={[styles.splitLabel, { color: colors.textSecondary }]}>
-                      Paid to Valu:
-                    </Text>
+                    <View style={styles.splitLabelContainer}>
+                      <Percent size={14} color={colors.primary} strokeWidth={2} />
+                      <Text style={[styles.splitLabel, { color: colors.textSecondary }]}>
+                        Valu App Fee:
+                      </Text>
+                    </View>
                     <Text style={[styles.splitValue, { color: colors.primary }]}>
-                      {(discountPercent / 2).toFixed(2)}%
+                      {VALU_APP_FEE.toFixed(1)}% (fixed)
+                    </Text>
+                  </View>
+                  <View style={styles.splitRow}>
+                    <View style={styles.splitLabelContainer}>
+                      <Heart size={14} color={colors.danger} strokeWidth={2} />
+                      <Text style={[styles.splitLabel, { color: colors.textSecondary }]}>
+                        Donation:
+                      </Text>
+                    </View>
+                    <Text style={[styles.splitValue, { color: colors.danger }]}>
+                      {donationPercent.toFixed(1)}%
                     </Text>
                   </View>
                 </View>
+                <View style={[styles.divider, { backgroundColor: colors.border, marginVertical: 12 }]} />
                 <Text style={[styles.splitExample, { color: colors.textSecondary }]}>
-                  Example: $100 purchase = ${(discountPercent / 2).toFixed(2)} customer discount + ${(discountPercent / 2).toFixed(2)} to Valu
+                  Example: $100 purchase = ${customerDiscountPercent.toFixed(2)} customer saves + ${VALU_APP_FEE.toFixed(2)} to Valu + ${donationPercent.toFixed(2)} donated
                 </Text>
               </View>
             </View>
@@ -198,9 +277,10 @@ export default function ValuCodeSettings() {
           </Text>
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
             • Customers show their unique valu code at checkout{'\n'}
-            • You apply the selected discount to their purchase{'\n'}
-            • Track customer demographics and values in your Data tab{'\n'}
-            • Build loyalty with value-aligned customers
+            • You apply the discount to their purchase{'\n'}
+            • Valu charges a small fee to maintain the platform{'\n'}
+            • The remainder goes to charity on the customer's behalf{'\n'}
+            • Track customer demographics and values in your Data tab
           </Text>
         </View>
       </View>
@@ -268,7 +348,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   controlButton: {
     width: 48,
@@ -300,11 +380,35 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     marginLeft: 4,
   },
+  // Slider Section
+  sliderSection: {
+    marginBottom: 20,
+  },
+  sliderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  sliderLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    flex: 1,
+  },
+  sliderValue: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  slider: {
+    width: '100%',
+    height: 40,
+  },
   // Split Explanation
   splitExplanation: {
     padding: 16,
     borderRadius: 12,
     borderWidth: 2,
+    marginBottom: 20,
   },
   splitHeader: {
     flexDirection: 'row',
@@ -318,18 +422,22 @@ const styles = StyleSheet.create({
   },
   splitBreakdown: {
     gap: 8,
-    marginBottom: 12,
   },
   splitRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  splitLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   splitLabel: {
     fontSize: 13,
   },
   splitValue: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700' as const,
   },
   splitExample: {

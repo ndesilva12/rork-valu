@@ -32,8 +32,8 @@ export default function ConsentScreen() {
   const handleProceed = () => {
     if (isChecked) {
       // Store consent in user profile (you may want to save this to backend)
-      // Proceed to account type selection
-      router.replace('/account-type');
+      // Proceed to values selection (onboarding)
+      router.replace('/onboarding');
     }
   };
 
