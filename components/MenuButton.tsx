@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   menuIcon: {
-    width: 32,
+    width: 110,
     height: 32,
   },
   modalOverlay: {
