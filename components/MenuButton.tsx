@@ -10,6 +10,7 @@ import {
   ScrollView,
   Switch,
   Image,
+  Dimensions,
 } from 'react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -229,15 +230,19 @@ export default function MenuButton() {
   );
 }
 
+const { width: screenWidth } = Dimensions.get('window');
+const isMobile = screenWidth < 768;
+
 const styles = StyleSheet.create({
   menuButton: {
     padding: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    ...(isMobile && { marginLeft: 'auto' }),
   },
   menuIcon: {
-    width: 200,
-    height: 58,
+    width: 140,
+    height: 41,
   },
   modalOverlay: {
     flex: 1,
