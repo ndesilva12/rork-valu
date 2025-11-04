@@ -1,9 +1,9 @@
-import { ValuCodeCustomer } from '@/types';
+import { ValueCodeCustomer } from '@/types';
 import { AVAILABLE_VALUES } from './causes';
 
 /**
- * Generate mock valu code customer data for business accounts
- * This simulates customers who have used valu codes at the business
+ * Generate mock value code customer data for business accounts
+ * This simulates customers who have used value codes at the business
  */
 
 const CUSTOMER_FIRST_NAMES = [
@@ -53,16 +53,16 @@ function generateCustomerValues(count: number = 5): string[] {
 }
 
 /**
- * Generate mock valu code customers with realistic spending patterns
+ * Generate mock value code customers with realistic spending patterns
  * @param count - Number of customers to generate
- * @param discountPercent - The business's valu code discount percentage
- * @returns Array of mock ValuCodeCustomer objects
+ * @param discountPercent - The business's value code discount percentage
+ * @returns Array of mock ValueCodeCustomer objects
  */
-export function generateMockValuCodeCustomers(
+export function generateMockValueCodeCustomers(
   count: number = 25,
   discountPercent: number = 10
-): ValuCodeCustomer[] {
-  const customers: ValuCodeCustomer[] = [];
+): ValueCodeCustomer[] {
+  const customers: ValueCodeCustomer[] = [];
 
   for (let i = 0; i < count; i++) {
     // Generate realistic spending amounts
@@ -97,7 +97,7 @@ export function generateMockValuCodeCustomers(
 }
 
 /**
- * Calculate aggregate statistics from valu code customers
+ * Calculate aggregate statistics from value code customers
  */
 export interface CustomerStats {
   totalCustomers: number;
@@ -108,7 +108,7 @@ export interface CustomerStats {
 }
 
 export function calculateCustomerStats(
-  customers: ValuCodeCustomer[]
+  customers: ValueCodeCustomer[]
 ): CustomerStats {
   if (customers.length === 0) {
     return {

@@ -114,12 +114,12 @@ export default function DataScreen() {
           {isBusiness ? (
             <>
               <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                The data above shows insights from customers who have used valu codes at your business.
+                The data above shows insights from customers who have used value codes at your business.
                 See which values resonate most with your customer base and track total revenue from
                 value-aligned shoppers.
               </Text>
               <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                The percentages represent how many of your valu code customers share each value. This
+                The percentages represent how many of your value code customers share each value. This
                 helps you understand your customer demographics and their priorities.
               </Text>
             </>

@@ -88,7 +88,11 @@ export default function MenuButton() {
         onPress={() => setIsMenuVisible(true)}
         activeOpacity={0.7}
       >
-        <Menu size={32} color={colors.primary} strokeWidth={2.5} />
+        <Image
+          source={require('@/assets/images/stand icon.png')}
+          style={styles.menuIcon}
+          resizeMode="contain"
+        />
       </TouchableOpacity>
 
       <Modal
@@ -109,7 +113,7 @@ export default function MenuButton() {
           >
             <View style={styles.logoContainer}>
               <Image
-                source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/01zd2yjl9h93g2cu0yb3u' }}
+                source={require('@/assets/images/stand logo.png')}
                 style={styles.menuLogo}
                 resizeMode="contain"
               />
@@ -230,6 +234,10 @@ const styles = StyleSheet.create({
     padding: 8,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  menuIcon: {
+    width: 32,
+    height: 32,
   },
   modalOverlay: {
     flex: 1,
