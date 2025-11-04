@@ -2,12 +2,15 @@ import { useSignIn, useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
 import React from 'react';
-import { darkColors } from '@/constants/colors';
+import { darkColors, lightColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useUser } from '@/contexts/UserContext';
 export default function SignInScreen() {
   const { signIn, setActive, isLoaded } = useSignIn();
   const { isSignedIn, isLoaded: authLoaded } = useAuth();
   const router = useRouter();
+  const { isDarkMode } = useUser();
+  const colors = isDarkMode ? darkColors : lightColors;
 
   const [emailAddress, setEmailAddress] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -74,50 +77,50 @@ export default function SignInScreen() {
 
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView 
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.logoContainer}>
             <Image
-              source={require('@/assets/images/stand logo.png')}
+              source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
               style={styles.logo}
               resizeMode="contain"
             />
           </View>
-          <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.subtitle}>Sign in to your account</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Welcome back</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Sign in to your account</Text>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Email</Text>
             <TextInput
               autoCapitalize="none"
               value={emailAddress}
               placeholder="Enter your email"
-              placeholderTextColor={darkColors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
               keyboardType="email-address"
             />
           </View>
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Password</Text>
             <TextInput
               value={password}
               placeholder="Enter your password"
-              placeholderTextColor={darkColors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               secureTextEntry={true}
               onChangeText={(password) => setPassword(password)}
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
             />
           </View>
-          <TouchableOpacity onPress={onSignInPress} style={styles.button} disabled={isSubmitting}>
+          <TouchableOpacity onPress={onSignInPress} style={[styles.button, { backgroundColor: colors.primary }]} disabled={isSubmitting}>
             {isSubmitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
@@ -125,9 +128,9 @@ export default function SignInScreen() {
             )}
           </TouchableOpacity>
           <View style={styles.linkContainer}>
-            <Text style={styles.linkText}>Don&apos;t have an account? </Text>
+            <Text style={[styles.linkText, { color: colors.textSecondary }]}>Don&apos;t have an account? </Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/sign-up')}>
-              <Text style={styles.link}>Sign up</Text>
+              <Text style={[styles.link, { color: colors.primary }]}>Sign up</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
