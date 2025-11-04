@@ -2,11 +2,14 @@ import * as React from 'react';
 import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
 import { useSignUp } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { darkColors } from '@/constants/colors';
+import { darkColors, lightColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useUser } from '@/contexts/UserContext';
 export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp();
   const router = useRouter();
+  const { isDarkMode } = useUser();
+  const colors = isDarkMode ? darkColors : lightColors;
 
   const [emailAddress, setEmailAddress] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -248,8 +251,8 @@ export default function SignUpScreen() {
 
   if (pendingVerification) {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <KeyboardAvoidingView 
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.flex}
         >
@@ -259,27 +262,27 @@ export default function SignUpScreen() {
           >
             <View style={styles.logoContainer}>
               <Image
-                source={require('@/assets/images/stand logo.png')}
+                source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
                 style={styles.logo}
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.title}>Verify your email</Text>
-            <Text style={styles.subtitle}>Enter the verification code sent to your email</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Verify your email</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Enter the verification code sent to your email</Text>
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Verification Code</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Verification Code</Text>
               <TextInput
                 value={code}
                 placeholder="Enter verification code"
-                placeholderTextColor={darkColors.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 onChangeText={(code) => setCode(code)}
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
                 keyboardType="number-pad"
                 autoCapitalize="none"
               />
             </View>
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
-            <TouchableOpacity onPress={onVerifyPress} style={styles.button} disabled={isSubmitting}>
+            <TouchableOpacity onPress={onVerifyPress} style={[styles.button, { backgroundColor: colors.primary }]} disabled={isSubmitting}>
               {isSubmitting ? (
                 <ActivityIndicator color="#fff" />
               ) : (
@@ -293,61 +296,61 @@ export default function SignUpScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView 
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.logoContainer}>
             <Image
-              source={require('@/assets/images/stand logo.png')}
+              source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
               style={styles.logo}
               resizeMode="contain"
             />
           </View>
-          <Text style={styles.title}>Create your account</Text>
-          <Text style={styles.subtitle}>Sign up to get started</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Create your account</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Sign up to get started</Text>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Email</Text>
             <TextInput
               autoCapitalize="none"
               value={emailAddress}
               placeholder="Enter your email"
-              placeholderTextColor={darkColors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               onChangeText={(email) => setEmailAddress(email)}
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
               keyboardType="email-address"
             />
           </View>
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Password</Text>
             <TextInput
               value={password}
               placeholder="Enter your password"
-              placeholderTextColor={darkColors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               secureTextEntry={true}
               onChangeText={(password) => setPassword(password)}
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
             />
           </View>
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Confirm Password</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Confirm Password</Text>
             <TextInput
               value={confirmPassword}
               placeholder="Re-enter your password"
-              placeholderTextColor={darkColors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               secureTextEntry={true}
               onChangeText={(confirmPassword) => setConfirmPassword(confirmPassword)}
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
             />
           </View>
-          <TouchableOpacity onPress={onSignUpPress} style={styles.button} disabled={isSubmitting || !isLoaded}>
+          <TouchableOpacity onPress={onSignUpPress} style={[styles.button, { backgroundColor: colors.primary }]} disabled={isSubmitting || !isLoaded}>
             {isSubmitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
@@ -355,12 +358,12 @@ export default function SignUpScreen() {
             )}
           </TouchableOpacity>
           <View style={styles.linkContainer}>
-            <Text style={styles.linkText}>Already have an account? </Text>
+            <Text style={[styles.linkText, { color: colors.textSecondary }]}>Already have an account? </Text>
             <TouchableOpacity onPress={() => {
               resetForm();
               router.push('/(auth)/sign-in');
             }}>
-              <Text style={styles.link}>Sign in</Text>
+              <Text style={[styles.link, { color: colors.primary }]}>Sign in</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

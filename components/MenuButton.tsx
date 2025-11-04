@@ -89,7 +89,7 @@ export default function MenuButton() {
         activeOpacity={0.7}
       >
         <Image
-          source={require('@/assets/images/stand icon.png')}
+          source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
           style={styles.menuIcon}
           resizeMode="contain"
         />
@@ -113,7 +113,7 @@ export default function MenuButton() {
           >
             <View style={styles.logoContainer}>
               <Image
-                source={require('@/assets/images/stand logo.png')}
+                source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
                 style={styles.menuLogo}
                 resizeMode="contain"
               />
