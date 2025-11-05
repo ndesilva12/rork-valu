@@ -20,7 +20,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
   const [profile, setProfile] = useState<UserProfile>({
     causes: [],
     searchHistory: [],
-    promoCode: undefined,
+    promoCode: generatePromoCode(), // Always generate a promo code immediately
     donationAmount: 0,
     selectedCharities: [],
   });
@@ -219,25 +219,44 @@ export const [UserProvider, useUser] = createContextHook(() => {
       return;
     }
 
-    const newProfile = { ...profile, causes };
-    console.log('[UserContext] Saving', causes.length, 'causes for user:', clerkUser.id);
+    console.log('[UserContext] Adding', causes.length, 'causes for user:', clerkUser.id);
 
-    setProfile(newProfile);
+    // Use functional update to avoid stale closure
+    let newProfile: UserProfile | null = null;
+    setProfile((prevProfile) => {
+      newProfile = { ...prevProfile, causes };
+      console.log('[UserContext] Updated profile with causes. PromoCode:', newProfile!.promoCode);
+      return newProfile;
+    });
     setHasCompletedOnboarding(causes.length > 0);
 
+    // Wait for state update to propagate
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    if (!newProfile) {
+      console.error('[UserContext] Failed to create new profile');
+      return;
+    }
+
     try {
+      console.log('[UserContext] 🔄 Saving to AsyncStorage and Firebase...');
+
       // Save to AsyncStorage (local cache)
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
       await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
       console.log('[UserContext] ✅ Profile saved to AsyncStorage');
 
       // Save to Firebase (source of truth)
+      console.log('[UserContext] 🔄 Calling saveUserProfile...');
       await saveUserProfile(clerkUser.id, newProfile);
-      console.log('[UserContext] ✅ Profile synced to Firebase');
+      console.log('[UserContext] ✅ Profile synced to Firebase successfully');
     } catch (error) {
       console.error('[UserContext] ❌ Failed to save profile:', error);
+      if (error instanceof Error) {
+        console.error('[UserContext] Error details:', error.message, error.stack);
+      }
     }
-  }, [clerkUser, profile]);
+  }, [clerkUser]);
 
   const removeCauses = useCallback(async (causeIds: string[]) => {
     if (!clerkUser) {
@@ -245,12 +264,18 @@ export const [UserProvider, useUser] = createContextHook(() => {
       return;
     }
 
-    const newCauses = profile.causes.filter(c => !causeIds.includes(c.id));
-    const newProfile = { ...profile, causes: newCauses };
     console.log('[UserContext] Removing', causeIds.length, 'causes for user:', clerkUser.id);
 
-    setProfile(newProfile);
-    setHasCompletedOnboarding(newCauses.length > 0);
+    let newProfile: UserProfile | null = null;
+    setProfile((prevProfile) => {
+      const newCauses = prevProfile.causes.filter(c => !causeIds.includes(c.id));
+      newProfile = { ...prevProfile, causes: newCauses };
+      return newProfile;
+    });
+
+    if (!newProfile) return;
+
+    setHasCompletedOnboarding(newProfile.causes.length > 0);
 
     try {
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
@@ -260,7 +285,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
     } catch (error) {
       console.error('[UserContext] ❌ Failed to remove causes:', error);
     }
-  }, [clerkUser, profile]);
+  }, [clerkUser]);
 
   const toggleCauseType = useCallback(async (cause: Cause, newType: 'support' | 'avoid' | 'remove') => {
     if (!clerkUser) {
@@ -324,10 +349,15 @@ export const [UserProvider, useUser] = createContextHook(() => {
       return;
     }
 
-    const newProfile = { ...profile, selectedCharities: charities };
     console.log('[UserContext] Updating selected charities:', charities.length);
 
-    setProfile(newProfile);
+    let newProfile: UserProfile | null = null;
+    setProfile((prevProfile) => {
+      newProfile = { ...prevProfile, selectedCharities: charities };
+      return newProfile;
+    });
+
+    if (!newProfile) return;
 
     try {
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
@@ -337,7 +367,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
     } catch (error) {
       console.error('[UserContext] ❌ Failed to save selected charities:', error);
     }
-  }, [clerkUser, profile]);
+  }, [clerkUser]);
 
   const resetProfile = useCallback(async () => {
     if (!clerkUser) {
@@ -398,10 +428,15 @@ export const [UserProvider, useUser] = createContextHook(() => {
       return;
     }
 
-    const newProfile = { ...profile, accountType };
     console.log('[UserContext] Setting account type to:', accountType);
 
-    setProfile(newProfile);
+    let newProfile: UserProfile | null = null;
+    setProfile((prevProfile) => {
+      newProfile = { ...prevProfile, accountType };
+      return newProfile;
+    });
+
+    if (!newProfile) return;
 
     try {
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
@@ -411,7 +446,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
     } catch (error) {
       console.error('[UserContext] ❌ Failed to save account type:', error);
     }
-  }, [clerkUser, profile]);
+  }, [clerkUser]);
 
   const setBusinessInfo = useCallback(async (businessInfo: Partial<BusinessInfo>) => {
     if (!clerkUser) {
@@ -419,16 +454,21 @@ export const [UserProvider, useUser] = createContextHook(() => {
       return;
     }
 
-    const newProfile = {
-      ...profile,
-      businessInfo: {
-        ...profile.businessInfo,
-        ...businessInfo,
-      } as BusinessInfo,
-    };
     console.log('[UserContext] Updating business info');
 
-    setProfile(newProfile);
+    let newProfile: UserProfile | null = null;
+    setProfile((prevProfile) => {
+      newProfile = {
+        ...prevProfile,
+        businessInfo: {
+          ...prevProfile.businessInfo,
+          ...businessInfo,
+        } as BusinessInfo,
+      };
+      return newProfile;
+    });
+
+    if (!newProfile) return;
 
     try {
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
@@ -438,7 +478,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
     } catch (error) {
       console.error('[UserContext] ❌ Failed to save business info:', error);
     }
-  }, [clerkUser, profile]);
+  }, [clerkUser]);
 
   const setUserDetails = useCallback(async (userDetails: Partial<UserDetails>) => {
     if (!clerkUser) {
@@ -446,16 +486,21 @@ export const [UserProvider, useUser] = createContextHook(() => {
       return;
     }
 
-    const newProfile = {
-      ...profile,
-      userDetails: {
-        ...profile.userDetails,
-        ...userDetails,
-      } as UserDetails,
-    };
     console.log('[UserContext] Updating user details');
 
-    setProfile(newProfile);
+    let newProfile: UserProfile | null = null;
+    setProfile((prevProfile) => {
+      newProfile = {
+        ...prevProfile,
+        userDetails: {
+          ...prevProfile.userDetails,
+          ...userDetails,
+        } as UserDetails,
+      };
+      return newProfile;
+    });
+
+    if (!newProfile) return;
 
     try {
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
@@ -465,7 +510,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
     } catch (error) {
       console.error('[UserContext] ❌ Failed to save user details:', error);
     }
-  }, [clerkUser, profile]);
+  }, [clerkUser]);
 
   return useMemo(() => ({
     profile,

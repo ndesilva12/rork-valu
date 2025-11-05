@@ -56,23 +56,36 @@ function cleanUserProfile(profile: UserProfile): Partial<UserProfile> {
  */
 export async function saveUserProfile(userId: string, profile: UserProfile): Promise<void> {
   try {
-    console.log('[Firebase] Saving profile for user:', userId);
+    console.log('[Firebase] 🔄 Saving profile for user:', userId);
+    console.log('[Firebase] Profile data:', JSON.stringify(profile, null, 2));
 
     // Clean the profile to remove any undefined fields
     const cleanedProfile = cleanUserProfile(profile);
+    console.log('[Firebase] Cleaned profile:', JSON.stringify(cleanedProfile, null, 2));
 
     const userRef = doc(db, 'users', userId);
-    await setDoc(userRef, {
+    const dataToSave = {
       ...cleanedProfile,
       updatedAt: serverTimestamp(),
-    }, { merge: true });
+    };
 
-    console.log('[Firebase] ✅ Profile saved successfully');
+    console.log('[Firebase] About to call setDoc with merge:true for user:', userId);
+    await setDoc(userRef, dataToSave, { merge: true });
+    console.log('[Firebase] ✅ setDoc completed successfully');
+
+    // Verify the save by reading back
+    const savedDoc = await getDoc(userRef);
+    if (savedDoc.exists()) {
+      console.log('[Firebase] ✅ Verified - document exists with data:', JSON.stringify(savedDoc.data(), null, 2));
+    } else {
+      console.error('[Firebase] ⚠️ Document does not exist after save!');
+    }
   } catch (error) {
     console.error('[Firebase] ❌ Error saving profile:', error);
     if (error instanceof Error) {
       console.error('[Firebase] Error code:', (error as any).code);
       console.error('[Firebase] Error message:', error.message);
+      console.error('[Firebase] Error stack:', error.stack);
     }
     throw error;
   }
