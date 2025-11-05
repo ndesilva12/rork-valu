@@ -100,9 +100,15 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
             // Sync to Firebase
             try {
-              const email = clerkUser.primaryEmailAddress?.emailAddress || '';
               if (isFirstTime) {
-                await createUser(clerkUser.id, email, parsedProfile);
+                const userData = {
+                  email: clerkUser.primaryEmailAddress?.emailAddress,
+                  firstName: clerkUser.firstName || undefined,
+                  lastName: clerkUser.lastName || undefined,
+                  fullName: clerkUser.fullName || undefined,
+                  imageUrl: clerkUser.imageUrl || undefined,
+                };
+                await createUser(clerkUser.id, userData, parsedProfile);
                 console.log('[UserContext] ✅ New user created in Firebase');
               } else {
                 await saveUserProfile(clerkUser.id, parsedProfile);
@@ -125,8 +131,14 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
             // Create user in Firebase
             try {
-              const email = clerkUser.primaryEmailAddress?.emailAddress || '';
-              await createUser(clerkUser.id, email, newProfile);
+              const userData = {
+                email: clerkUser.primaryEmailAddress?.emailAddress,
+                firstName: clerkUser.firstName || undefined,
+                lastName: clerkUser.lastName || undefined,
+                fullName: clerkUser.fullName || undefined,
+                imageUrl: clerkUser.imageUrl || undefined,
+              };
+              await createUser(clerkUser.id, userData, newProfile);
               console.log('[UserContext] ✅ New user created in Firebase');
             } catch (createError) {
               console.error('[UserContext] Failed to create user in Firebase:', createError);

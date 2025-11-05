@@ -79,6 +79,58 @@ export async function saveUserProfile(userId: string, profile: UserProfile): Pro
 }
 
 /**
+ * Update user metadata (email, name, location, etc.)
+ * @param userId - The Clerk user ID
+ * @param metadata - User metadata to update
+ */
+export async function updateUserMetadata(
+  userId: string,
+  metadata: {
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    fullName?: string;
+    imageUrl?: string;
+    location?: {
+      city?: string;
+      state?: string;
+      country?: string;
+      coordinates?: {
+        latitude: number;
+        longitude: number;
+      };
+    };
+  }
+): Promise<void> {
+  try {
+    console.log('[Firebase] Updating user metadata for:', userId);
+
+    const userRef = doc(db, 'users', userId);
+
+    // Build update object with only defined fields
+    const updateData: Record<string, any> = {
+      updatedAt: serverTimestamp(),
+    };
+
+    if (metadata.email !== undefined) updateData.email = metadata.email;
+    if (metadata.firstName !== undefined) updateData.firstName = metadata.firstName;
+    if (metadata.lastName !== undefined) updateData.lastName = metadata.lastName;
+    if (metadata.fullName !== undefined) updateData.fullName = metadata.fullName;
+    if (metadata.imageUrl !== undefined) updateData.imageUrl = metadata.imageUrl;
+    if (metadata.location !== undefined) {
+      updateData.location = removeUndefinedFields(metadata.location);
+    }
+
+    await setDoc(userRef, updateData, { merge: true });
+
+    console.log('[Firebase] ✅ User metadata updated successfully');
+  } catch (error) {
+    console.error('[Firebase] ❌ Error updating user metadata:', error);
+    throw error;
+  }
+}
+
+/**
  * Get user profile from Firebase Firestore
  * @param userId - The Clerk user ID
  * @returns The user profile or null if not found
@@ -118,12 +170,18 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
 /**
  * Create a new user in Firebase Firestore
  * @param userId - The Clerk user ID
- * @param email - User's email
+ * @param userData - User data including email, name, etc.
  * @param initialProfile - Initial profile data (optional)
  */
 export async function createUser(
   userId: string,
-  email: string,
+  userData: {
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    fullName?: string;
+    imageUrl?: string;
+  },
   initialProfile?: Partial<UserProfile>
 ): Promise<void> {
   try {
@@ -142,12 +200,21 @@ export async function createUser(
     const profile = { ...defaultProfile, ...initialProfile };
     const cleanedProfile = cleanUserProfile(profile);
 
-    await setDoc(userRef, {
+    // Build user document with only defined fields
+    const userDoc: Record<string, any> = {
       ...cleanedProfile,
-      email,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    });
+    };
+
+    // Add user data fields only if they're defined
+    if (userData.email) userDoc.email = userData.email;
+    if (userData.firstName) userDoc.firstName = userData.firstName;
+    if (userData.lastName) userDoc.lastName = userData.lastName;
+    if (userData.fullName) userDoc.fullName = userData.fullName;
+    if (userData.imageUrl) userDoc.imageUrl = userData.imageUrl;
+
+    await setDoc(userRef, userDoc);
 
     console.log('[Firebase] ✅ User created successfully');
   } catch (error) {
