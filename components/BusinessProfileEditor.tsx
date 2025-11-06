@@ -246,61 +246,68 @@ export default function BusinessProfileEditor() {
 
   const handleLogoUpload = async () => {
     if (!clerkUser?.id) {
+      console.error('[BusinessProfileEditor] No clerk user ID available');
       Alert.alert('Error', 'User not logged in. Please log in and try again.');
       return;
     }
 
+    console.log('[BusinessProfileEditor] Starting logo upload for user:', clerkUser.id);
     setUploadingImage(true);
     try {
-      console.log('[BusinessProfileEditor] Starting logo upload for business:', clerkUser.id);
       const downloadURL = await pickAndUploadImage(clerkUser.id, 'business');
+      console.log('[BusinessProfileEditor] Logo upload returned:', downloadURL);
 
       if (downloadURL) {
-        console.log('[BusinessProfileEditor] Logo uploaded successfully:', downloadURL);
+        console.log('[BusinessProfileEditor] Setting logo URL to:', downloadURL);
         setLogoUrl(downloadURL);
         Alert.alert('Success', 'Business logo uploaded! Remember to click "Save Changes" to save it to your profile.');
       } else {
-        console.log('[BusinessProfileEditor] Logo upload cancelled or failed');
-        Alert.alert('Cancelled', 'Image upload was cancelled.');
+        console.warn('[BusinessProfileEditor] Logo upload returned null - cancelled or failed');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[BusinessProfileEditor] Error uploading business logo:', error);
-      Alert.alert('Error', 'Failed to upload logo. Please try again.');
+      console.error('[BusinessProfileEditor] Error stack:', error?.stack);
+      Alert.alert('Error', `Failed to upload logo: ${error?.message || 'Unknown error'}`);
     } finally {
+      console.log('[BusinessProfileEditor] Logo upload complete, stopping spinner');
       setUploadingImage(false);
     }
   };
 
   const handleCoverImageUpload = async () => {
     if (!clerkUser?.id) {
+      console.error('[BusinessProfileEditor] No clerk user ID available');
       Alert.alert('Error', 'User not logged in. Please log in and try again.');
       return;
     }
 
+    console.log('[BusinessProfileEditor] Starting cover image upload for user:', clerkUser.id);
     setUploadingImage(true);
     try {
-      console.log('[BusinessProfileEditor] Starting cover image upload for business:', clerkUser.id);
       // Cover image should be wide (16:9 aspect ratio)
       const downloadURL = await pickAndUploadImage(clerkUser.id, 'cover', [16, 9]);
+      console.log('[BusinessProfileEditor] Cover upload returned:', downloadURL);
 
       if (downloadURL) {
-        console.log('[BusinessProfileEditor] Cover image uploaded successfully:', downloadURL);
+        console.log('[BusinessProfileEditor] Setting cover image URL to:', downloadURL);
         setCoverImageUrl(downloadURL);
         Alert.alert('Success', 'Cover image uploaded! Remember to click "Save Changes" to save it to your profile.');
       } else {
-        console.log('[BusinessProfileEditor] Cover image upload cancelled or failed');
-        Alert.alert('Cancelled', 'Image upload was cancelled.');
+        console.warn('[BusinessProfileEditor] Cover upload returned null - cancelled or failed');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[BusinessProfileEditor] Error uploading cover image:', error);
-      Alert.alert('Error', 'Failed to upload cover image. Please try again.');
+      console.error('[BusinessProfileEditor] Error stack:', error?.stack);
+      Alert.alert('Error', `Failed to upload cover: ${error?.message || 'Unknown error'}`);
     } finally {
+      console.log('[BusinessProfileEditor] Cover upload complete, stopping spinner');
       setUploadingImage(false);
     }
   };
 
   const handleGalleryImageUpload = async () => {
     if (!clerkUser?.id) {
+      console.error('[BusinessProfileEditor] No clerk user ID available');
       Alert.alert('Error', 'User not logged in. Please log in and try again.');
       return;
     }
@@ -310,24 +317,28 @@ export default function BusinessProfileEditor() {
       return;
     }
 
+    console.log('[BusinessProfileEditor] Starting gallery image upload for user:', clerkUser.id);
+    console.log('[BusinessProfileEditor] Current gallery images count:', galleryImages.length);
     setUploadingImage(true);
     try {
-      console.log('[BusinessProfileEditor] Starting gallery image upload for business:', clerkUser.id);
       // Gallery images should be square
       const downloadURL = await pickAndUploadImage(clerkUser.id, 'gallery', [1, 1]);
+      console.log('[BusinessProfileEditor] Gallery upload returned:', downloadURL);
 
       if (downloadURL) {
-        console.log('[BusinessProfileEditor] Gallery image uploaded successfully:', downloadURL);
+        console.log('[BusinessProfileEditor] Adding gallery image to array');
         // Add image with empty caption - user can add caption in text field
         setGalleryImages([...galleryImages, { imageUrl: downloadURL, caption: '' }]);
         Alert.alert('Success', 'Image uploaded! Add a caption below and click "Save Changes".');
       } else {
-        console.log('[BusinessProfileEditor] Gallery image upload cancelled or failed');
+        console.warn('[BusinessProfileEditor] Gallery upload returned null - cancelled or failed');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[BusinessProfileEditor] Error uploading gallery image:', error);
-      Alert.alert('Error', 'Failed to upload gallery image. Please try again.');
+      console.error('[BusinessProfileEditor] Error stack:', error?.stack);
+      Alert.alert('Error', `Failed to upload gallery image: ${error?.message || 'Unknown error'}`);
     } finally {
+      console.log('[BusinessProfileEditor] Gallery upload complete, stopping spinner');
       setUploadingImage(false);
     }
   };
