@@ -8,8 +8,7 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
-import { Percent, Plus, Minus, Info, DollarSign, Heart } from 'lucide-react-native';
-import Slider from '@react-native-community/slider';
+import { Plus, Minus } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 
@@ -20,269 +19,340 @@ export default function ValueCodeSettings() {
   const businessInfo = profile.businessInfo || {
     name: '',
     category: '',
-    acceptsValueCodes: false,
+    acceptsStandDiscounts: false,
+    acceptsQRCode: true,
+    acceptsValueCode: true,
     valueCodeDiscount: 10,
     customerDiscountPercent: 5,
     donationPercent: 2.5,
+    customDiscount: '',
   };
 
-  const VALU_APP_FEE = 2.5; // Fixed at 2.5%
+  const STAND_FEE = 2.5; // Fixed at 2.5%
 
-  const [acceptsValueCodes, setAcceptsValueCodes] = useState(businessInfo.acceptsValueCodes);
-  const [totalPercent, setTotalPercent] = useState(businessInfo.valueCodeDiscount || 10);
-  const [customerDiscountPercent, setCustomerDiscountPercent] = useState(
-    businessInfo.customerDiscountPercent || 5
+  const [acceptsDiscounts, setAcceptsDiscounts] = useState(
+    businessInfo.acceptsStandDiscounts ?? businessInfo.acceptsValueCodes ?? false
   );
-  const [inputValue, setInputValue] = useState((businessInfo.valueCodeDiscount || 10).toString());
+  const [acceptsQRCode, setAcceptsQRCode] = useState(businessInfo.acceptsQRCode ?? true);
+  const [acceptsPromoCode, setAcceptsPromoCode] = useState(businessInfo.acceptsValueCode ?? true);
+  const [discountType, setDiscountType] = useState<'preset' | 'custom'>('preset');
+  const [totalDiscount, setTotalDiscount] = useState(businessInfo.valueCodeDiscount || 10);
+  const [customerDiscount, setCustomerDiscount] = useState(businessInfo.customerDiscountPercent || 5);
+  const [customDiscountText, setCustomDiscountText] = useState(businessInfo.customDiscount || '');
 
-  // Calculate donation percentage (total - customer discount - fee)
-  const donationPercent = Math.max(0, totalPercent - customerDiscountPercent - VALU_APP_FEE);
+  // Calculate donation automatically (total - customer - stand fee)
+  const donationDiscount = Math.max(0, totalDiscount - customerDiscount - STAND_FEE);
 
-  const handleToggleValueCodes = async (value: boolean) => {
-    setAcceptsValueCodes(value);
+  const handleToggleDiscounts = async (value: boolean) => {
+    setAcceptsDiscounts(value);
     await setBusinessInfo({
-      acceptsValueCodes: value,
+      acceptsStandDiscounts: value,
     });
 
     if (value) {
       Alert.alert(
-        'Value Codes Enabled',
-        'Customers can now use their value codes at your business to receive a discount!',
+        'Discounts Enabled',
+        'Customers can now use Stand to receive discounts at your business!',
         [{ text: 'Great!' }]
       );
     }
   };
 
-  const handleSetTotal = async (percent: number) => {
-    // Clamp between minimum (VALU_APP_FEE + 0.5) and 50
-    const minPercent = VALU_APP_FEE + 0.5;
-    const clampedPercent = Math.max(minPercent, Math.min(50, percent));
-    // Round to nearest 0.5
-    const roundedPercent = Math.round(clampedPercent * 2) / 2;
-
-    setTotalPercent(roundedPercent);
-    setInputValue(roundedPercent.toString());
-
-    // Adjust customer discount if it exceeds the new total
-    const maxCustomerDiscount = roundedPercent - VALU_APP_FEE;
-    if (customerDiscountPercent > maxCustomerDiscount) {
-      setCustomerDiscountPercent(Math.max(0, maxCustomerDiscount));
+  const handleToggleQRCode = async (value: boolean) => {
+    if (!value && !acceptsPromoCode) {
+      Alert.alert('Error', 'You must accept at least one method');
+      return;
     }
-
-    await setBusinessInfo({
-      valueCodeDiscount: roundedPercent,
-      customerDiscountPercent: Math.min(customerDiscountPercent, maxCustomerDiscount),
-      donationPercent: Math.max(0, roundedPercent - Math.min(customerDiscountPercent, maxCustomerDiscount) - VALU_APP_FEE),
-    });
+    setAcceptsQRCode(value);
+    await setBusinessInfo({ acceptsQRCode: value });
   };
 
-  const handleSetCustomerDiscount = async (percent: number) => {
-    const maxDiscount = totalPercent - VALU_APP_FEE;
-    const clampedPercent = Math.max(0, Math.min(maxDiscount, percent));
-    const roundedPercent = Math.round(clampedPercent * 2) / 2;
-
-    setCustomerDiscountPercent(roundedPercent);
-
-    const newDonation = Math.max(0, totalPercent - roundedPercent - VALU_APP_FEE);
-
-    await setBusinessInfo({
-      customerDiscountPercent: roundedPercent,
-      donationPercent: newDonation,
-    });
+  const handleTogglePromoCode = async (value: boolean) => {
+    if (!value && !acceptsQRCode) {
+      Alert.alert('Error', 'You must accept at least one method');
+      return;
+    }
+    setAcceptsPromoCode(value);
+    await setBusinessInfo({ acceptsValueCode: value });
   };
 
-  const handleIncrement = () => {
-    handleSetTotal(totalPercent + 0.5);
-  };
+  const handleChangeTotalDiscount = async (newTotal: number) => {
+    const minTotal = STAND_FEE + 0.5;
+    const maxTotal = 50;
+    const clampedTotal = Math.max(minTotal, Math.min(maxTotal, newTotal));
 
-  const handleDecrement = () => {
-    handleSetTotal(totalPercent - 0.5);
-  };
+    setTotalDiscount(clampedTotal);
 
-  const handleInputChange = (text: string) => {
-    setInputValue(text);
-    const parsed = parseFloat(text);
-    if (!isNaN(parsed) && parsed >= VALU_APP_FEE + 0.5 && parsed <= 50) {
-      handleSetTotal(parsed);
+    // Adjust customer discount if it exceeds available amount
+    const maxCustomer = clampedTotal - STAND_FEE;
+    if (customerDiscount > maxCustomer) {
+      setCustomerDiscount(maxCustomer);
+      await setBusinessInfo({
+        valueCodeDiscount: clampedTotal,
+        customerDiscountPercent: maxCustomer,
+        donationPercent: 0,
+      });
+    } else {
+      const newDonation = clampedTotal - customerDiscount - STAND_FEE;
+      await setBusinessInfo({
+        valueCodeDiscount: clampedTotal,
+        donationPercent: Math.max(0, newDonation),
+      });
     }
   };
 
-  const handleInputBlur = () => {
-    // Reset to current valid value if input is invalid
-    setInputValue(totalPercent.toString());
+  const handleChangeCustomerDiscount = async (newCustomer: number) => {
+    const maxCustomer = totalDiscount - STAND_FEE;
+    const clampedCustomer = Math.max(0, Math.min(maxCustomer, newCustomer));
+
+    setCustomerDiscount(clampedCustomer);
+
+    const newDonation = totalDiscount - clampedCustomer - STAND_FEE;
+    await setBusinessInfo({
+      customerDiscountPercent: clampedCustomer,
+      donationPercent: Math.max(0, newDonation),
+    });
+  };
+
+  const handleChangeDonationDiscount = async (newDonation: number) => {
+    const maxDonation = totalDiscount - STAND_FEE;
+    const clampedDonation = Math.max(0, Math.min(maxDonation, newDonation));
+
+    // Calculate customer discount as remainder
+    const newCustomer = totalDiscount - clampedDonation - STAND_FEE;
+    setCustomerDiscount(Math.max(0, newCustomer));
+
+    await setBusinessInfo({
+      customerDiscountPercent: Math.max(0, newCustomer),
+      donationPercent: clampedDonation,
+    });
+  };
+
+  const handleSaveCustomDiscount = async () => {
+    if (!customDiscountText.trim()) {
+      Alert.alert('Error', 'Please enter your custom discount details');
+      return;
+    }
+
+    await setBusinessInfo({
+      customDiscount: customDiscountText.trim(),
+    });
+
+    Alert.alert(
+      'Custom Discount Submitted',
+      'Thank you! We will reach out to confirm and approve your custom discount.',
+      [{ text: 'OK' }]
+    );
   };
 
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Value Code Settings</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Stand Discount Settings</Text>
 
       <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
-        {/* Toggle Section */}
+        {/* Main Toggle */}
         <View style={styles.settingRow}>
-          <View style={styles.settingInfo}>
-            <Text style={[styles.settingTitle, { color: colors.text }]}>
-              Accept Value Codes
-            </Text>
-            <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
-              Allow customers to use value codes for discounts at your business
-            </Text>
-          </View>
+          <Text style={[styles.settingLabel, { color: colors.text }]}>Accept Discounts</Text>
           <Switch
-            value={acceptsValueCodes}
-            onValueChange={handleToggleValueCodes}
-            trackColor={{ false: colors.border, true: colors.primary }}
+            value={acceptsDiscounts}
+            onValueChange={handleToggleDiscounts}
+            trackColor={{ false: colors.border, true: colors.border }}
             thumbColor={colors.white}
           />
         </View>
 
-        {/* Discount Percentage (only show if accepting codes) */}
-        {acceptsValueCodes && (
+        {acceptsDiscounts && (
           <>
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-            <View style={styles.discountSection}>
-              <View style={styles.discountHeader}>
-                <Percent size={20} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.discountTitle, { color: colors.text }]}>
-                  Total Value Code Commitment
-                </Text>
-              </View>
-              <Text style={[styles.discountSubtitle, { color: colors.textSecondary }]}>
-                Set your total percentage commitment ({VALU_APP_FEE + 0.5}% - 50%)
-              </Text>
-
-              {/* Percentage Input Controls */}
-              <View style={styles.percentageControls}>
-                <TouchableOpacity
-                  style={[
-                    styles.controlButton,
-                    { backgroundColor: colors.background, borderColor: colors.border },
-                    totalPercent <= VALU_APP_FEE + 0.5 && styles.controlButtonDisabled
-                  ]}
-                  onPress={handleDecrement}
-                  disabled={totalPercent <= VALU_APP_FEE + 0.5}
-                  activeOpacity={0.7}
-                >
-                  <Minus size={20} color={totalPercent <= VALU_APP_FEE + 0.5 ? colors.textSecondary : colors.text} strokeWidth={2} />
-                </TouchableOpacity>
-
-                <View style={styles.inputContainer}>
-                  <TextInput
-                    style={[styles.percentInput, { color: colors.text, borderColor: colors.border }]}
-                    value={inputValue}
-                    onChangeText={handleInputChange}
-                    onBlur={handleInputBlur}
-                    keyboardType="decimal-pad"
-                    maxLength={4}
-                    selectTextOnFocus
-                  />
-                  <Text style={[styles.percentSymbol, { color: colors.text }]}>%</Text>
-                </View>
-
-                <TouchableOpacity
-                  style={[
-                    styles.controlButton,
-                    { backgroundColor: colors.background, borderColor: colors.border },
-                    totalPercent >= 50 && styles.controlButtonDisabled
-                  ]}
-                  onPress={handleIncrement}
-                  disabled={totalPercent >= 50}
-                  activeOpacity={0.7}
-                >
-                  <Plus size={20} color={totalPercent >= 50 ? colors.textSecondary : colors.text} strokeWidth={2} />
-                </TouchableOpacity>
-              </View>
-
-              {/* Customer Discount Slider */}
-              <View style={styles.sliderSection}>
-                <View style={styles.sliderHeader}>
-                  <DollarSign size={18} color={colors.success} strokeWidth={2} />
-                  <Text style={[styles.sliderLabel, { color: colors.text }]}>
-                    Customer Discount
-                  </Text>
-                  <Text style={[styles.sliderValue, { color: colors.success }]}>
-                    {customerDiscountPercent.toFixed(1)}%
-                  </Text>
-                </View>
-                <Slider
-                  style={styles.slider}
-                  minimumValue={0}
-                  maximumValue={totalPercent - VALU_APP_FEE}
-                  value={customerDiscountPercent}
-                  onValueChange={(value) => setCustomerDiscountPercent(Math.round(value * 2) / 2)}
-                  onSlidingComplete={handleSetCustomerDiscount}
-                  minimumTrackTintColor={colors.success}
-                  maximumTrackTintColor={colors.border}
-                  thumbTintColor={colors.success}
-                  step={0.5}
+            {/* QR Codes & Promo Codes - One Line */}
+            <View style={styles.compactRow}>
+              <View style={styles.compactItem}>
+                <Text style={[styles.compactLabel, { color: colors.text }]}>QR Codes</Text>
+                <Switch
+                  value={acceptsQRCode}
+                  onValueChange={handleToggleQRCode}
+                  trackColor={{ false: colors.border, true: colors.border }}
+                  thumbColor={colors.white}
                 />
               </View>
-
-              {/* Split Breakdown */}
-              <View style={[styles.splitExplanation, { backgroundColor: colors.background, borderColor: colors.primary }]}>
-                <View style={styles.splitHeader}>
-                  <Info size={16} color={colors.primary} strokeWidth={2} />
-                  <Text style={[styles.splitTitle, { color: colors.text }]}>
-                    How the {totalPercent}% is split:
-                  </Text>
-                </View>
-                <View style={styles.splitBreakdown}>
-                  <View style={styles.splitRow}>
-                    <View style={styles.splitLabelContainer}>
-                      <DollarSign size={14} color={colors.success} strokeWidth={2} />
-                      <Text style={[styles.splitLabel, { color: colors.textSecondary }]}>
-                        Customer Discount:
-                      </Text>
-                    </View>
-                    <Text style={[styles.splitValue, { color: colors.success }]}>
-                      {customerDiscountPercent.toFixed(1)}%
-                    </Text>
-                  </View>
-                  <View style={styles.splitRow}>
-                    <View style={styles.splitLabelContainer}>
-                      <Percent size={14} color={colors.primary} strokeWidth={2} />
-                      <Text style={[styles.splitLabel, { color: colors.textSecondary }]}>
-                        Valu App Fee:
-                      </Text>
-                    </View>
-                    <Text style={[styles.splitValue, { color: colors.primary }]}>
-                      {VALU_APP_FEE.toFixed(1)}% (fixed)
-                    </Text>
-                  </View>
-                  <View style={styles.splitRow}>
-                    <View style={styles.splitLabelContainer}>
-                      <Heart size={14} color={colors.danger} strokeWidth={2} />
-                      <Text style={[styles.splitLabel, { color: colors.textSecondary }]}>
-                        Donation:
-                      </Text>
-                    </View>
-                    <Text style={[styles.splitValue, { color: colors.danger }]}>
-                      {donationPercent.toFixed(1)}%
-                    </Text>
-                  </View>
-                </View>
-                <View style={[styles.divider, { backgroundColor: colors.border, marginVertical: 12 }]} />
-                <Text style={[styles.splitExample, { color: colors.textSecondary }]}>
-                  Example: $100 purchase = ${customerDiscountPercent.toFixed(2)} customer saves + ${VALU_APP_FEE.toFixed(2)} to Valu + ${donationPercent.toFixed(2)} donated
-                </Text>
+              <View style={styles.compactItem}>
+                <Text style={[styles.compactLabel, { color: colors.text }]}>Promo Codes</Text>
+                <Switch
+                  value={acceptsPromoCode}
+                  onValueChange={handleTogglePromoCode}
+                  trackColor={{ false: colors.border, true: colors.border }}
+                  thumbColor={colors.white}
+                />
               </View>
             </View>
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            {/* Discount Type Selection */}
+            <View style={styles.discountTypeSection}>
+              <Text style={[styles.subsectionTitle, { color: colors.text }]}>Set Your Discount</Text>
+              <View style={styles.discountTypeButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.typeButton,
+                    { borderColor: colors.border, backgroundColor: colors.background },
+                    discountType === 'preset' && { borderColor: colors.primary }
+                  ]}
+                  onPress={() => setDiscountType('preset')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.typeButtonText,
+                    { color: discountType === 'preset' ? colors.primary : colors.text }
+                  ]}>
+                    Preset Discount
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.typeButton,
+                    { borderColor: colors.border, backgroundColor: colors.background },
+                    discountType === 'custom' && { borderColor: colors.primary }
+                  ]}
+                  onPress={() => setDiscountType('custom')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.typeButtonText,
+                    { color: discountType === 'custom' ? colors.primary : colors.text }
+                  ]}>
+                    Custom Discount
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {discountType === 'preset' ? (
+              <>
+                {/* Total Discount - Big Counter */}
+                <View style={styles.mainCounter}>
+                  <Text style={[styles.counterLabel, { color: colors.textSecondary }]}>Total Discount</Text>
+                  <View style={styles.counterControls}>
+                    <TouchableOpacity
+                      style={[styles.counterButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                      onPress={() => handleChangeTotalDiscount(totalDiscount - 0.5)}
+                      activeOpacity={0.7}
+                    >
+                      <Minus size={24} color={colors.text} strokeWidth={2} />
+                    </TouchableOpacity>
+                    <View style={styles.counterValue}>
+                      <Text style={[styles.counterNumber, { color: colors.primary }]}>
+                        {totalDiscount.toFixed(1)}%
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.counterButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                      onPress={() => handleChangeTotalDiscount(totalDiscount + 0.5)}
+                      activeOpacity={0.7}
+                    >
+                      <Plus size={24} color={colors.text} strokeWidth={2} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Three Small Counters */}
+                <View style={styles.smallCountersGrid}>
+                  {/* Customer Discount */}
+                  <View style={[styles.smallCounter, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Text style={[styles.smallCounterLabel, { color: colors.textSecondary }]}>Customer %</Text>
+                    <View style={styles.smallCounterControls}>
+                      <TouchableOpacity
+                        style={styles.smallCounterButton}
+                        onPress={() => handleChangeCustomerDiscount(customerDiscount - 0.5)}
+                        activeOpacity={0.7}
+                      >
+                        <Minus size={16} color={colors.text} strokeWidth={2} />
+                      </TouchableOpacity>
+                      <Text style={[styles.smallCounterValue, { color: colors.text }]}>
+                        {customerDiscount.toFixed(1)}%
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.smallCounterButton}
+                        onPress={() => handleChangeCustomerDiscount(customerDiscount + 0.5)}
+                        activeOpacity={0.7}
+                      >
+                        <Plus size={16} color={colors.text} strokeWidth={2} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Donation */}
+                  <View style={[styles.smallCounter, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Text style={[styles.smallCounterLabel, { color: colors.textSecondary }]}>Donation %</Text>
+                    <View style={styles.smallCounterControls}>
+                      <TouchableOpacity
+                        style={styles.smallCounterButton}
+                        onPress={() => handleChangeDonationDiscount(donationDiscount - 0.5)}
+                        activeOpacity={0.7}
+                      >
+                        <Minus size={16} color={colors.text} strokeWidth={2} />
+                      </TouchableOpacity>
+                      <Text style={[styles.smallCounterValue, { color: colors.text }]}>
+                        {donationDiscount.toFixed(1)}%
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.smallCounterButton}
+                        onPress={() => handleChangeDonationDiscount(donationDiscount + 0.5)}
+                        activeOpacity={0.7}
+                      >
+                        <Plus size={16} color={colors.text} strokeWidth={2} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Stand Fee - Fixed */}
+                  <View style={[styles.smallCounter, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Text style={[styles.smallCounterLabel, { color: colors.textSecondary }]}>Stand Fee %</Text>
+                    <View style={styles.smallCounterControls}>
+                      <Text style={[styles.smallCounterValue, styles.fixedValue, { color: colors.textSecondary }]}>
+                        {STAND_FEE.toFixed(1)}%
+                      </Text>
+                      <Text style={[styles.fixedLabel, { color: colors.textSecondary }]}>(fixed)</Text>
+                    </View>
+                  </View>
+                </View>
+              </>
+            ) : (
+              /* Custom Discount Input */
+              <View style={styles.customDiscountSection}>
+                <Text style={[styles.customDiscountLabel, { color: colors.textSecondary }]}>
+                  Describe your custom discount structure
+                </Text>
+                <TextInput
+                  style={[
+                    styles.customDiscountInput,
+                    { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }
+                  ]}
+                  placeholder="e.g., 15% off for veterans, 10% for students..."
+                  placeholderTextColor={colors.textSecondary}
+                  value={customDiscountText}
+                  onChangeText={setCustomDiscountText}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+                <Text style={[styles.customDiscountNote, { color: colors.textSecondary }]}>
+                  Note: We will reach out to you to confirm and approve your custom discount.
+                </Text>
+                <TouchableOpacity
+                  style={[styles.saveCustomButton, { backgroundColor: colors.primary }]}
+                  onPress={handleSaveCustomDiscount}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.saveCustomButtonText, { color: colors.white }]}>
+                    Submit Custom Discount
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </>
         )}
-
-        {/* Info Box */}
-        <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
-          <Text style={[styles.infoTitle, { color: colors.text }]}>
-            How Value Codes Work
-          </Text>
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            • Customers show their unique value code at checkout{'\n'}
-            • You apply the discount to their purchase{'\n'}
-            • Valu charges a small fee to maintain the platform{'\n'}
-            • The remainder goes to charity on the customer's behalf{'\n'}
-            • Track customer demographics and values in your Data tab
-          </Text>
-        </View>
       </View>
     </View>
   );
@@ -301,162 +371,166 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
   },
-  // Setting Row
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  settingInfo: {
-    flex: 1,
-    marginRight: 16,
-  },
-  settingTitle: {
+  settingLabel: {
     fontSize: 16,
     fontWeight: '600' as const,
-    marginBottom: 4,
-  },
-  settingDescription: {
-    fontSize: 13,
-    lineHeight: 18,
   },
   divider: {
     height: 1,
-    marginVertical: 20,
+    marginVertical: 16,
   },
-  // Discount Section
-  discountSection: {
-    marginBottom: 20,
-  },
-  discountHeader: {
+  // Compact Row for QR & Promo Codes
+  compactRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  discountTitle: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-  },
-  discountSubtitle: {
-    fontSize: 13,
+    gap: 16,
     marginBottom: 16,
   },
-  // Percentage Controls
-  percentageControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 24,
-  },
-  controlButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  controlButtonDisabled: {
-    opacity: 0.4,
-  },
-  inputContainer: {
+  compactItem: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
   },
-  percentInput: {
-    fontSize: 36,
-    fontWeight: '700' as const,
-    textAlign: 'center',
-    minWidth: 80,
-    borderBottomWidth: 2,
-    paddingVertical: 4,
-  },
-  percentSymbol: {
-    fontSize: 28,
-    fontWeight: '600' as const,
-    marginLeft: 4,
-  },
-  // Slider Section
-  sliderSection: {
-    marginBottom: 20,
-  },
-  sliderHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  sliderLabel: {
+  compactLabel: {
     fontSize: 14,
     fontWeight: '600' as const,
-    flex: 1,
   },
-  sliderValue: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-  },
-  slider: {
-    width: '100%',
-    height: 40,
-  },
-  // Split Explanation
-  splitExplanation: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
+  // Discount Type Selection
+  discountTypeSection: {
     marginBottom: 20,
   },
-  splitHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  subsectionTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
     marginBottom: 12,
   },
-  splitTitle: {
+  discountTypeButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  typeButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    alignItems: 'center',
+  },
+  typeButtonText: {
     fontSize: 14,
     fontWeight: '600' as const,
   },
-  splitBreakdown: {
-    gap: 8,
-  },
-  splitRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  // Main Counter (Total Discount)
+  mainCounter: {
+    marginTop: 20,
+    marginBottom: 20,
     alignItems: 'center',
   },
-  splitLabelContainer: {
+  counterLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    marginBottom: 12,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  counterControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 20,
   },
-  splitLabel: {
-    fontSize: 13,
+  counterButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  splitValue: {
-    fontSize: 15,
+  counterValue: {
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  counterNumber: {
+    fontSize: 48,
     fontWeight: '700' as const,
   },
-  splitExample: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontStyle: 'italic',
+  // Small Counters Grid
+  smallCountersGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
   },
-  // Info Box
-  infoBox: {
-    padding: 16,
+  smallCounter: {
+    flex: 1,
     borderRadius: 12,
+    borderWidth: 2,
+    padding: 12,
+    alignItems: 'center',
   },
-  infoTitle: {
+  smallCounterLabel: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+    textAlign: 'center' as const,
+  },
+  smallCounterControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  smallCounterButton: {
+    padding: 4,
+  },
+  smallCounterValue: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    minWidth: 50,
+    textAlign: 'center' as const,
+  },
+  fixedValue: {
+    minWidth: 'auto',
+  },
+  fixedLabel: {
+    fontSize: 10,
+    marginTop: 2,
+  },
+  // Custom Discount Section
+  customDiscountSection: {
+    marginTop: 20,
+  },
+  customDiscountLabel: {
     fontSize: 14,
     fontWeight: '600' as const,
     marginBottom: 8,
   },
-  infoText: {
-    fontSize: 13,
-    lineHeight: 20,
+  customDiscountInput: {
+    borderRadius: 12,
+    borderWidth: 2,
+    padding: 16,
+    fontSize: 14,
+    minHeight: 100,
+    marginBottom: 12,
+  },
+  customDiscountNote: {
+    fontSize: 12,
+    fontStyle: 'italic' as const,
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  saveCustomButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  saveCustomButtonText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
   },
 });

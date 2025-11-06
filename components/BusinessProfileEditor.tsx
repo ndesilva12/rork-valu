@@ -8,7 +8,7 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import { Building2, ChevronDown, Globe, Upload, MapPin, Facebook, Instagram, Twitter, Linkedin } from 'lucide-react-native';
+import { Building2, ChevronDown, Globe, Upload, MapPin, Facebook, Instagram, Twitter, Linkedin, Plus, X } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
@@ -45,7 +45,9 @@ export default function BusinessProfileEditor() {
     description: '',
     website: '',
     logoUrl: '',
-    acceptsValueCodes: false,
+    acceptsStandDiscounts: false,
+    acceptsQRCode: true,
+    acceptsValueCode: true,
     valueCodeDiscount: 10,
   };
 
@@ -65,6 +67,10 @@ export default function BusinessProfileEditor() {
   const [instagram, setInstagram] = useState(businessInfo.socialMedia?.instagram || '');
   const [twitter, setTwitter] = useState(businessInfo.socialMedia?.twitter || '');
   const [linkedin, setLinkedin] = useState(businessInfo.socialMedia?.linkedin || '');
+  const [ownership, setOwnership] = useState(businessInfo.ownership || []);
+  const [ownershipSources, setOwnershipSources] = useState(businessInfo.ownershipSources || '');
+  const [affiliates, setAffiliates] = useState(businessInfo.affiliates || []);
+  const [partnerships, setPartnerships] = useState(businessInfo.partnerships || []);
 
   const handleLocationSelect = (locationName: string, lat: number, lon: number) => {
     setLocation(locationName);
@@ -86,6 +92,10 @@ export default function BusinessProfileEditor() {
     setInstagram(businessInfo.socialMedia?.instagram || '');
     setTwitter(businessInfo.socialMedia?.twitter || '');
     setLinkedin(businessInfo.socialMedia?.linkedin || '');
+    setOwnership(businessInfo.ownership || []);
+    setOwnershipSources(businessInfo.ownershipSources || '');
+    setAffiliates(businessInfo.affiliates || []);
+    setPartnerships(businessInfo.partnerships || []);
   }, [businessInfo]);
 
   const handleSave = async () => {
@@ -111,6 +121,10 @@ export default function BusinessProfileEditor() {
         twitter: twitter.trim(),
         linkedin: linkedin.trim(),
       },
+      ownership: ownership.length > 0 ? ownership : undefined,
+      ownershipSources: ownershipSources.trim() || undefined,
+      affiliates: affiliates.length > 0 ? affiliates : undefined,
+      partnerships: partnerships.length > 0 ? partnerships : undefined,
     };
 
     if (location.trim()) {
@@ -147,6 +161,10 @@ export default function BusinessProfileEditor() {
     setInstagram(businessInfo.socialMedia?.instagram || '');
     setTwitter(businessInfo.socialMedia?.twitter || '');
     setLinkedin(businessInfo.socialMedia?.linkedin || '');
+    setOwnership(businessInfo.ownership || []);
+    setOwnershipSources(businessInfo.ownershipSources || '');
+    setAffiliates(businessInfo.affiliates || []);
+    setPartnerships(businessInfo.partnerships || []);
     setEditing(false);
   };
 
@@ -157,6 +175,51 @@ export default function BusinessProfileEditor() {
       'Logo upload functionality will be available in a future update. For now, you can enter a logo URL directly.',
       [{ text: 'OK' }]
     );
+  };
+
+  // Ownership management
+  const addOwnership = () => {
+    setOwnership([...ownership, { name: '', relationship: '' }]);
+  };
+
+  const removeOwnership = (index: number) => {
+    setOwnership(ownership.filter((_, i) => i !== index));
+  };
+
+  const updateOwnership = (index: number, field: 'name' | 'relationship', value: string) => {
+    const updated = [...ownership];
+    updated[index] = { ...updated[index], [field]: value };
+    setOwnership(updated);
+  };
+
+  // Affiliates management
+  const addAffiliate = () => {
+    setAffiliates([...affiliates, { name: '', relationship: '' }]);
+  };
+
+  const removeAffiliate = (index: number) => {
+    setAffiliates(affiliates.filter((_, i) => i !== index));
+  };
+
+  const updateAffiliate = (index: number, field: 'name' | 'relationship', value: string) => {
+    const updated = [...affiliates];
+    updated[index] = { ...updated[index], [field]: value };
+    setAffiliates(updated);
+  };
+
+  // Partnerships management
+  const addPartnership = () => {
+    setPartnerships([...partnerships, { name: '', relationship: '' }]);
+  };
+
+  const removePartnership = (index: number) => {
+    setPartnerships(partnerships.filter((_, i) => i !== index));
+  };
+
+  const updatePartnership = (index: number, field: 'name' | 'relationship', value: string) => {
+    const updated = [...partnerships];
+    updated[index] = { ...updated[index], [field]: value };
+    setPartnerships(updated);
   };
 
   return (
@@ -474,6 +537,84 @@ export default function BusinessProfileEditor() {
           </View>
         </View>
 
+        {/* Money Flow Section - Admin Only */}
+        <View style={styles.moneyFlowSection}>
+          <View style={styles.moneyFlowHeader}>
+            <Text style={[styles.moneyFlowTitle, { color: colors.text }]}>Money Flow</Text>
+            <Text style={[styles.adminOnlyNote, { color: colors.textSecondary }]}>
+              (Admin editable only via Firebase)
+            </Text>
+          </View>
+
+          {/* Ownership Section */}
+          <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
+            <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.subsectionTitle, { color: colors.text }]}>OWNERSHIP</Text>
+            </View>
+
+            {ownership.length > 0 ? (
+              <>
+                {ownership.map((owner, index) => (
+                  <View key={`owner-${index}`} style={[styles.moneyFlowItem, { borderBottomColor: colors.border }]}>
+                    <View style={styles.moneyFlowItemRow}>
+                      <Text style={[styles.moneyFlowName, { color: colors.text }]}>{owner.name}</Text>
+                      <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>{owner.relationship}</Text>
+                    </View>
+                  </View>
+                ))}
+                {ownershipSources && (
+                  <View style={[styles.sourcesContainer, { borderTopColor: colors.border }]}>
+                    <Text style={[styles.sourcesLabel, { color: colors.text }]}>Sources:</Text>
+                    <Text style={[styles.sourcesText, { color: colors.textSecondary }]}>{ownershipSources}</Text>
+                  </View>
+                )}
+              </>
+            ) : (
+              <Text style={[styles.noDataText, { color: colors.textSecondary }]}>No ownership data</Text>
+            )}
+          </View>
+
+          {/* Affiliates Section */}
+          <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
+            <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.subsectionTitle, { color: colors.text }]}>AFFILIATES</Text>
+            </View>
+
+            {affiliates.length > 0 ? (
+              affiliates.map((affiliate, index) => (
+                <View key={`affiliate-${index}`} style={[styles.moneyFlowItem, { borderBottomColor: colors.border }]}>
+                  <View style={styles.moneyFlowItemRow}>
+                    <Text style={[styles.moneyFlowName, { color: colors.text }]}>{affiliate.name}</Text>
+                    <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>{affiliate.relationship}</Text>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <Text style={[styles.noDataText, { color: colors.textSecondary }]}>No affiliates</Text>
+            )}
+          </View>
+
+          {/* Partnerships Section */}
+          <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
+            <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.subsectionTitle, { color: colors.text }]}>PARTNERSHIPS</Text>
+            </View>
+
+            {partnerships.length > 0 ? (
+              partnerships.map((partnership, index) => (
+                <View key={`partnership-${index}`} style={[styles.moneyFlowItem, { borderBottomColor: colors.border }]}>
+                  <View style={styles.moneyFlowItemRow}>
+                    <Text style={[styles.moneyFlowName, { color: colors.text }]}>{partnership.name}</Text>
+                    <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>{partnership.relationship}</Text>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <Text style={[styles.noDataText, { color: colors.textSecondary }]}>No partnerships</Text>
+            )}
+          </View>
+        </View>
+
         {/* Edit Actions */}
         {editing && (
           <View style={styles.editActions}>
@@ -679,5 +820,94 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontWeight: '600' as const,
+  },
+  // Money Flow Section Styles
+  moneyFlowSection: {
+    marginTop: 24,
+    gap: 16,
+  },
+  moneyFlowHeader: {
+    marginBottom: 8,
+  },
+  moneyFlowTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  adminOnlyNote: {
+    fontSize: 12,
+    fontStyle: 'italic' as const,
+    marginTop: 4,
+  },
+  moneyFlowCard: {
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+  },
+  subsectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    marginBottom: 12,
+  },
+  subsectionTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    letterSpacing: 0.5,
+  },
+  moneyFlowItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  moneyFlowItemInputs: {
+    flex: 1,
+    gap: 8,
+  },
+  moneyFlowInput: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    fontSize: 14,
+  },
+  moneyFlowItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flex: 1,
+  },
+  moneyFlowName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    flex: 1,
+    textAlign: 'center' as const,
+  },
+  moneyFlowRelationship: {
+    fontSize: 13,
+    flex: 1,
+    textAlign: 'center' as const,
+  },
+  noDataText: {
+    fontSize: 14,
+    textAlign: 'center' as const,
+    paddingVertical: 16,
+  },
+  sourcesContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+  },
+  sourcesLabel: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    marginBottom: 6,
+  },
+  sourcesText: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontStyle: 'italic' as const,
   },
 });

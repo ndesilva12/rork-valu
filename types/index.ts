@@ -102,9 +102,19 @@ export interface BusinessInfo {
   location?: string; // Location name (e.g., "New York, NY")
   latitude?: number; // Latitude coordinate for distance calculations
   longitude?: number; // Longitude coordinate for distance calculations
-  acceptsValueCodes: boolean;
+  acceptsStandDiscounts: boolean; // Renamed from acceptsValueCodes
+  acceptsQRCode?: boolean; // Whether business accepts QR code scans
+  acceptsValueCode?: boolean; // Whether business accepts manual value code entry
   valueCodeDiscount?: number; // Percentage discount (e.g., 10 for 10%)
+  customerDiscountPercent?: number; // Customer discount portion
+  donationPercent?: number; // Donation portion
+  totalDonated?: number; // Track total donations facilitated
+  customDiscount?: string; // Custom discount text (requires admin approval)
   socialMedia?: SocialMedia;
+  affiliates?: Affiliate[]; // Celebrity/influencer affiliates and their relationships
+  partnerships?: Partnership[]; // Business partnerships and collaborations
+  ownership?: Ownership[]; // Parent companies, investors, and ownership structure
+  ownershipSources?: string; // Citations/sources for ownership data
 }
 
 export interface UserDetails {

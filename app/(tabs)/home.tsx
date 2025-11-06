@@ -723,7 +723,11 @@ export default function HomeScreen() {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
+          <Image
+            source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
           <MenuButton />
         </View>
         <View style={styles.emptyContainer}>
@@ -739,7 +743,11 @@ export default function HomeScreen() {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
+          <Image
+            source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
           <MenuButton />
         </View>
         <View style={styles.emptyContainer}>
@@ -757,7 +765,11 @@ export default function HomeScreen() {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>Playbook</Text>
+          <Image
+            source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
           <MenuButton />
         </View>
         <View style={styles.emptyContainer}>
@@ -781,7 +793,11 @@ export default function HomeScreen() {
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <Text style={[styles.headerTitle, { color: colors.primary, flex: 1 }]}>Playbook</Text>
+          <Image
+            source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
           <MenuButton />
         </View>
         {renderViewModeSelector()}
@@ -843,9 +859,10 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'web' ? 16 : 56,
     paddingBottom: 12,
   },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: '700' as const,
+  headerLogo: {
+    width: 140,
+    height: 41,
+    flex: 1,
   },
   headerTitleRow: {
     flex: 1,
