@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -40,6 +40,14 @@ export default function LocationAutocomplete({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync internal state with external value prop
+  useEffect(() => {
+    if (value !== inputValue) {
+      console.log('[LocationAutocomplete] Syncing value prop to inputValue:', value);
+      setInputValue(value);
+    }
+  }, [value]);
 
   const fetchSuggestions = async (text: string) => {
     if (!text.trim()) {
@@ -131,6 +139,36 @@ export default function LocationAutocomplete({
     }, 200);
   };
 
+  const handleConfirmManualEntry = async () => {
+    if (!inputValue.trim()) {
+      Alert.alert('Error', 'Please enter a location');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      console.log('[LocationAutocomplete] Geocoding manual entry:', inputValue);
+
+      // Try to geocode the manually entered address
+      const results = await Location.geocodeAsync(inputValue);
+
+      if (results && results.length > 0) {
+        const { latitude, longitude } = results[0];
+        console.log('[LocationAutocomplete] Geocoded to:', { latitude, longitude });
+        onLocationSelect(inputValue, latitude, longitude);
+        Alert.alert('Success', 'Location confirmed!');
+      } else {
+        console.warn('[LocationAutocomplete] No geocoding results found');
+        Alert.alert('Error', 'Could not find that location. Please try a different address or use your current location.');
+      }
+    } catch (error) {
+      console.error('[LocationAutocomplete] Error geocoding manual entry:', error);
+      Alert.alert('Error', 'Failed to geocode the address. Please try again or use your current location.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleGetCurrentLocation = async () => {
     try {
       setGettingLocation(true);
@@ -210,6 +248,22 @@ export default function LocationAutocomplete({
         </TouchableOpacity>
       </View>
 
+      {/* Manual Entry Confirmation */}
+      {inputValue.trim() && !showSuggestions && !isLoading && (
+        <TouchableOpacity
+          style={[
+            styles.confirmButton,
+            { backgroundColor: colors.success, borderColor: colors.success }
+          ]}
+          onPress={handleConfirmManualEntry}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.confirmButtonText, { color: colors.white }]}>
+            Confirm Location: "{inputValue}"
+          </Text>
+        </TouchableOpacity>
+      )}
+
       {/* Loading indicator */}
       {isLoading && (
         <View style={styles.loadingContainer}>
@@ -279,6 +333,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   locationButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  confirmButton: {
+    marginTop: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+  },
+  confirmButtonText: {
     fontSize: 14,
     fontWeight: '600' as const,
   },

@@ -39,15 +39,45 @@ cd <YOUR_PROJECT_NAME>
 # Step 3: Install the necessary dependencies.
 bun i
 
-# Step 4: Start the instant web preview of your Rork app in your browser, with auto-reloading of your changes
+# Step 4: Set up environment variables
+# Copy .env.example to .env and fill in your API keys
+cp .env.example .env
+# Edit .env and add your Google Places API key (see Environment Setup below)
+
+# Step 5: Start the instant web preview of your Rork app in your browser, with auto-reloading of your changes
 bun run start-web
 
-# Step 5: Start iOS preview
+# Step 6: Start iOS preview
 # Option A (recommended):
 bun run start  # then press "i" in the terminal to open iOS Simulator
 # Option B (if supported by your environment):
 bun run start -- --ios
 ```
+
+## Environment Setup
+
+### Google Places API (Required for Location Features)
+
+This app requires a Google Places API key for location autocomplete and geocoding.
+
+1. **Create a Google Cloud Project**:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+
+2. **Enable Required APIs**:
+   - Enable the [Places API](https://console.cloud.google.com/google/maps-apis/api-list)
+   - Enable the [Geocoding API](https://console.cloud.google.com/google/maps-apis/api-list)
+
+3. **Create API Credentials**:
+   - Go to [Credentials](https://console.cloud.google.com/google/maps-apis/credentials)
+   - Click "Create Credentials" → "API Key"
+   - Copy your API key
+
+4. **Add to Environment**:
+   - Open your `.env` file
+   - Add your API key: `EXPO_PUBLIC_GOOGLE_PLACES_API_KEY=your_api_key_here`
+
+**Note**: The app will still work without the API key, but location autocomplete suggestions will not be available. Users can still manually enter addresses or use their current location.
 
 ### **Edit a file directly in GitHub**
 

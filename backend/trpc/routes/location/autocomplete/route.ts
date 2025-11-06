@@ -20,12 +20,13 @@ export const autocompleteProcedure = publicProcedure
     }
 
     try {
-      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input.input)}&types=(cities)&key=${GOOGLE_PLACES_API_KEY}`;
+      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input.input)}&key=${GOOGLE_PLACES_API_KEY}`;
 
       const response = await fetch(url);
       const data = await response.json();
 
       if (data.status === 'OK' || data.status === 'ZERO_RESULTS') {
+        console.log('[Location API] Got', data.predictions?.length || 0, 'predictions');
         return { predictions: data.predictions || [] };
       } else {
         console.error('[Location API] Google Places API error:', data.status, data.error_message);
