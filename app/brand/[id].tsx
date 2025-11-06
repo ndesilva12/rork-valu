@@ -392,6 +392,15 @@ export default function BrandDetailScreen() {
             transition={200}
             cachePolicy="memory-disk"
           />
+          {/* Back button on top left of cover photo */}
+          <TouchableOpacity
+            style={[styles.backButtonOverlay, { backgroundColor: colors.backgroundSecondary + 'DD' }]}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[styles.visitButton, { backgroundColor: colors.primary }]}
             onPress={handleShopPress}
@@ -400,17 +409,17 @@ export default function BrandDetailScreen() {
             <Text style={[styles.visitButtonText, { color: colors.white }]}>Visit</Text>
           </TouchableOpacity>
         </View>
-        
+
         <View style={styles.content}>
-          {/* custom header: back button now inside the centered content */}
+          {/* Header with logo, brand info, and score */}
           <View style={styles.header}>
-            <TouchableOpacity
-              style={[styles.backButton, { backgroundColor: colors.backgroundSecondary, marginRight: 12 }]}
-              onPress={() => router.back()}
-              activeOpacity={0.7}
-            >
-              <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
-            </TouchableOpacity>
+            {/* Logo on the left */}
+            <Image
+              source={{ uri: getLogoUrl(brand.website || '') }}
+              style={styles.headerLogo}
+              contentFit="cover"
+              transition={200}
+            />
 
             <View style={styles.titleContainer}>
               <Text style={[styles.brandName, { color: colors.text }]}>{brand?.name}</Text>
@@ -731,7 +740,10 @@ const styles = StyleSheet.create({
     alignSelf: 'center' as const,
     width: '100%',
   },
-  backButton: {
+  backButtonOverlay: {
+    position: 'absolute' as const,
+    top: 16,
+    left: 16,
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -777,6 +789,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 24,
+    gap: 12,
+  },
+  headerLogo: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
   },
   titleContainer: {
     flex: 1,
