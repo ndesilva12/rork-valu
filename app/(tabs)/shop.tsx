@@ -29,6 +29,7 @@ export default function DiscountScreen() {
   const isBusiness = profile.accountType === 'business';
   const [showQRCode, setShowQRCode] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showDonationsModal, setShowDonationsModal] = useState(false);
 
   // Generate a random QR code value that changes on each render
   const [qrValue, setQrValue] = useState('');
@@ -144,68 +145,24 @@ export default function DiscountScreen() {
                 </View>
               )}
 
-              {/* How Your Code Works - Clickable Text */}
-              <TouchableOpacity onPress={() => setShowInfoModal(true)} activeOpacity={0.7} style={styles.howItWorksButton}>
-                <Text style={[styles.howItWorksText, { color: colors.primary }]}>
-                  How Your Code Works
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Businesses Accepting Stand Discounts */}
-            <BusinessesAcceptingDiscounts />
-          </>
-        )}
-
-        {/* DONATE SECTION */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            {isBusiness ? 'Donation Contributions' : 'Impact Dashboard'}
-          </Text>
-
-          {isBusiness ? (
-            /* Business Donate: Donation Contributions */
-            <>
-              <View style={[styles.donationCard, { backgroundColor: colors.backgroundSecondary }]}>
-                <View style={styles.donationAmountContainer}>
-                  <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Total Donated Through Stand</Text>
-                  <Text style={[styles.donationAmount, { color: colors.primary }]}>
-                    ${businessDonationAmount.toFixed(2)}
+              {/* Clickable Text Links - Side by Side */}
+              <View style={styles.infoLinksRow}>
+                <TouchableOpacity onPress={() => setShowInfoModal(true)} activeOpacity={0.7} style={styles.infoLinkButton}>
+                  <Text style={[styles.howItWorksText, { color: colors.primary }]}>
+                    How Your Code Works
                   </Text>
-                </View>
-
-                <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
-                  <Text style={[styles.infoTitle, { color: colors.text }]}>
-                    How Business Donations Work
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowDonationsModal(true)} activeOpacity={0.7} style={styles.infoLinkButton}>
+                  <Text style={[styles.howItWorksText, { color: colors.primary }]}>
+                    How Donations Work
                   </Text>
-                  <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                    When customers use their Value codes at your business, a portion of each transaction
-                    is donated to causes they support.
-                  </Text>
-                  <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                    These donations are automatically processed and distributed to charitable organizations
-                    selected by your customers.
-                  </Text>
-                  <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                    Track your total contribution here and see how your business is making a positive impact
-                    in your community.
-                  </Text>
-                </View>
+                </TouchableOpacity>
               </View>
 
-              {/* Business Impact Section */}
-              <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
-                <Text style={[styles.infoTitle, { color: colors.text }]}>Your Impact</Text>
-                <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                  By accepting Value codes, your business helps facilitate charitable giving while building
-                  loyalty with value-aligned customers. Every transaction makes a difference!
-                </Text>
-              </View>
-            </>
-          ) : (
-            /* Individual Donate: Donation Tracking & Charity Selection */
-            <>
-              <View style={[styles.donationCard, { backgroundColor: colors.backgroundSecondary }]}>
+              {/* Impact Dashboard Content */}
+              <View style={styles.impactDashboardSection}>
+                <View style={styles.qrDivider} />
+
                 {/* Two Counters Side by Side */}
                 <View style={styles.countersRow}>
                   <View style={styles.counterItem}>
@@ -256,25 +213,60 @@ export default function DiscountScreen() {
                   </View>
                 )}
               </View>
+            </View>
 
-              {/* Info Section */}
-              <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
-                <Text style={[styles.infoTitle, { color: colors.text }]}>How Donations Work</Text>
-                <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                  Every time you use your Value code, a portion of the transaction is donated to your
-                  selected organizations.
-                </Text>
-                <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                  You can select up to 3 organizations to support. Donations are split equally among
-                  your chosen organizations.
-                </Text>
-              </View>
-            </>
-          )}
+            {/* Businesses Accepting Stand Discounts */}
+            <BusinessesAcceptingDiscounts />
+          </>
+        )}
+
+        {/* DONATE SECTION - Business Only */}
+        {isBusiness && (
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Donation Contributions
+          </Text>
+
+          <View style={[styles.donationCard, { backgroundColor: colors.backgroundSecondary }]}>
+            <View style={styles.donationAmountContainer}>
+              <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Total Donated Through Stand</Text>
+              <Text style={[styles.donationAmount, { color: colors.primary }]}>
+                ${businessDonationAmount.toFixed(2)}
+              </Text>
+            </View>
+
+            <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
+              <Text style={[styles.infoTitle, { color: colors.text }]}>
+                How Business Donations Work
+              </Text>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                When customers use their Value codes at your business, a portion of each transaction
+                is donated to causes they support.
+              </Text>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                These donations are automatically processed and distributed to charitable organizations
+                selected by your customers.
+              </Text>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                Track your total contribution here and see how your business is making a positive impact
+                in your community.
+              </Text>
+            </View>
+          </View>
+
+          {/* Business Impact Section */}
+          <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.infoTitle, { color: colors.text }]}>Your Impact</Text>
+            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+              By accepting Value codes, your business helps facilitate charitable giving while building
+              loyalty with value-aligned customers. Every transaction makes a difference!
+            </Text>
+          </View>
         </View>
+        )}
       </ScrollView>
 
-      {/* Info Modal */}
+      {/* Info Modal - How Your Code Works */}
       <Modal
         visible={showInfoModal}
         animationType="fade"
@@ -295,7 +287,36 @@ export default function DiscountScreen() {
                 and help support the causes you care about through automatic donations.
               </Text>
               <Text style={[styles.modalText, { color: colors.textSecondary }]}>
-                Use the Donate section below to select which organizations receive your donation contributions.
+                Use the Impact Dashboard below to select which organizations receive your donation contributions.
+              </Text>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Donations Modal - How Donations Work */}
+      <Modal
+        visible={showDonationsModal}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setShowDonationsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>How Donations Work</Text>
+              <TouchableOpacity onPress={() => setShowDonationsModal(false)} activeOpacity={0.7}>
+                <XIcon size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalContent}>
+              <Text style={[styles.modalText, { color: colors.textSecondary }]}>
+                Every time you use your Value code, a portion of the transaction is donated to your
+                selected organizations.
+              </Text>
+              <Text style={[styles.modalText, { color: colors.textSecondary }]}>
+                You can select up to 3 organizations to support. Donations are split equally among
+                your chosen organizations.
               </Text>
             </ScrollView>
           </View>
@@ -414,10 +435,26 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(0, 0, 0, 0.1)',
     alignItems: 'center',
   },
+  infoLinksRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    gap: 16,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  infoLinkButton: {
+    flex: 1,
+    alignItems: 'center',
+  },
   howItWorksText: {
     fontSize: 14,
     fontWeight: '600' as const,
     textDecorationLine: 'underline' as const,
+  },
+  impactDashboardSection: {
+    marginTop: 20,
   },
   section: {
     marginTop: 32,
