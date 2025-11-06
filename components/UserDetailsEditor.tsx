@@ -19,7 +19,7 @@ import { useUser } from '@/contexts/UserContext';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
 
 export default function UserDetailsEditor() {
-  const { isDarkMode, profile, setUserDetails } = useUser();
+  const { isDarkMode, profile, setUserDetails, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
@@ -60,10 +60,15 @@ export default function UserDetailsEditor() {
   };
 
   const handleUploadImage = async () => {
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'User not logged in. Please log in and try again.');
+      return;
+    }
+
     setUploadingImage(true);
     try {
-      console.log('[UserDetailsEditor] Starting image upload for user:', profile.id);
-      const downloadURL = await pickAndUploadImage(profile.id, 'profile');
+      console.log('[UserDetailsEditor] Starting image upload for user:', clerkUser.id);
+      const downloadURL = await pickAndUploadImage(clerkUser.id, 'profile');
 
       if (downloadURL) {
         console.log('[UserDetailsEditor] Image uploaded successfully:', downloadURL);

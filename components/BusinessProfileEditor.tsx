@@ -42,7 +42,7 @@ const BUSINESS_CATEGORIES = [
 ];
 
 export default function BusinessProfileEditor() {
-  const { isDarkMode, profile, setBusinessInfo } = useUser();
+  const { isDarkMode, profile, setBusinessInfo, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
   const businessInfo = profile.businessInfo || {
@@ -237,10 +237,15 @@ export default function BusinessProfileEditor() {
   };
 
   const handleLogoUpload = async () => {
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'User not logged in. Please log in and try again.');
+      return;
+    }
+
     setUploadingImage(true);
     try {
-      console.log('[BusinessProfileEditor] Starting logo upload for business:', profile.id);
-      const downloadURL = await pickAndUploadImage(profile.id, 'business');
+      console.log('[BusinessProfileEditor] Starting logo upload for business:', clerkUser.id);
+      const downloadURL = await pickAndUploadImage(clerkUser.id, 'business');
 
       if (downloadURL) {
         console.log('[BusinessProfileEditor] Logo uploaded successfully:', downloadURL);

@@ -144,7 +144,18 @@ export async function pickAndUploadImage(
 
     // Create unique filename: business-abc123-1699999999999.jpg
     const timestamp = Date.now();
-    const extension = imageUri.split('.').pop() || 'jpg';
+
+    // Extract extension properly (handle data URIs on web)
+    let extension = 'jpg';
+    if (imageUri.startsWith('data:')) {
+      // Data URI format: data:image/jpeg;base64,...
+      const mimeType = imageUri.split(';')[0].split(':')[1];
+      extension = mimeType.split('/')[1] || 'jpg';
+    } else {
+      // Regular file URI
+      extension = imageUri.split('.').pop() || 'jpg';
+    }
+
     const filename = `${imageType}-${userId}-${timestamp}.${extension}`;
     const storagePath = `${imageType}-images/${filename}`;
 
