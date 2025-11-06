@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  Platform,
 } from 'react-native';
 import { Building2, ChevronDown, Globe, Upload, MapPin, Facebook, Instagram, Twitter, Linkedin, Plus, X } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -223,7 +224,7 @@ export default function BusinessProfileEditor() {
   };
 
   return (
-    <View style={styles.section}>
+    <View style={[styles.section, Platform.OS === 'web' && styles.webContainer]}>
       <View style={styles.sectionHeader}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Brand Profile</Text>
         {!editing && (
@@ -642,6 +643,11 @@ export default function BusinessProfileEditor() {
 const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
+  },
+  webContainer: {
+    maxWidth: '50%',
+    alignSelf: 'center' as const,
+    width: '100%',
   },
   sectionHeader: {
     flexDirection: 'row',

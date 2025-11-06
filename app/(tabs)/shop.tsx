@@ -70,7 +70,7 @@ export default function DiscountScreen() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
+        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent, { paddingBottom: 100 }]}
       >
         {/* CODE SECTION */}
         {isBusiness ? (
@@ -142,6 +142,55 @@ export default function DiscountScreen() {
                   )}
                 </View>
               )}
+            </View>
+
+            {/* Stand Discount Breakdown Section */}
+            <View style={[styles.standDiscountSection, { backgroundColor: colors.backgroundSecondary, borderColor: colors.primary }]}>
+              <Text style={[styles.standDiscountTitle, { color: colors.text }]}>Stand Discount Program</Text>
+
+              {/* Acceptance Methods */}
+              <View style={styles.acceptanceMethodsContainer}>
+                <Text style={[styles.acceptanceMethodsLabel, { color: colors.textSecondary }]}>Accepted at participating businesses via:</Text>
+                <View style={styles.methodsRow}>
+                  <View style={[styles.methodBadge, { backgroundColor: colors.primary + '15', borderColor: colors.primary }]}>
+                    <Text style={[styles.methodText, { color: colors.primary }]}>Value Code</Text>
+                  </View>
+                  <View style={[styles.methodBadge, { backgroundColor: colors.primary + '15', borderColor: colors.primary }]}>
+                    <Text style={[styles.methodText, { color: colors.primary }]}>QR Code</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Discount & Donation Breakdown */}
+              <View style={styles.breakdownContainer}>
+                <View style={styles.breakdownItem}>
+                  <View style={styles.breakdownLabelRow}>
+                    <View style={[styles.breakdownDot, { backgroundColor: colors.success }]} />
+                    <Text style={[styles.breakdownLabel, { color: colors.text }]}>Your Discount</Text>
+                  </View>
+                  <Text style={[styles.breakdownValue, { color: colors.success }]}>Varies by business</Text>
+                  <Text style={[styles.breakdownDescription, { color: colors.textSecondary }]}>
+                    The discount you receive when using your code or QR at checkout
+                  </Text>
+                </View>
+
+                <View style={[styles.standDivider, { backgroundColor: colors.border }]} />
+
+                <View style={styles.breakdownItem}>
+                  <View style={styles.breakdownLabelRow}>
+                    <View style={[styles.breakdownDot, { backgroundColor: colors.danger }]} />
+                    <Text style={[styles.breakdownLabel, { color: colors.text }]}>Donation Amount</Text>
+                  </View>
+                  <Text style={[styles.breakdownValue, { color: colors.danger }]}>Varies by business</Text>
+                  <Text style={[styles.breakdownDescription, { color: colors.textSecondary }]}>
+                    A separate amount contributed to your selected donation organizations
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={[styles.standDiscountNote, { color: colors.textSecondary }]}>
+                Each business sets their own discount and donation amounts. Check with the business for their current rates.
+              </Text>
             </View>
 
             {/* Info Icon - Click to learn more */}
@@ -311,6 +360,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 20,
+  },
+  webContent: {
+    maxWidth: '50%',
+    alignSelf: 'center' as const,
+    width: '100%',
   },
   stickyHeaderContainer: {
     borderBottomWidth: 1,
@@ -485,6 +539,81 @@ const styles = StyleSheet.create({
   infoBox: {
     padding: 16,
     borderRadius: 12,
+  },
+  // Stand Discount Section
+  standDiscountSection: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 2,
+  },
+  standDiscountTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 16,
+  },
+  acceptanceMethodsContainer: {
+    marginBottom: 20,
+  },
+  acceptanceMethodsLabel: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  methodsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  methodBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  methodText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  breakdownContainer: {
+    marginBottom: 16,
+  },
+  breakdownItem: {
+    paddingVertical: 12,
+  },
+  breakdownLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  breakdownDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  breakdownLabel: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  breakdownValue: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 6,
+  },
+  breakdownDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  standDivider: {
+    height: 1,
+    marginVertical: 8,
+  },
+  standDiscountNote: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontStyle: 'italic' as const,
   },
   infoIconButton: {
     flexDirection: 'row',
