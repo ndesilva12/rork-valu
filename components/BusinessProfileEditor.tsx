@@ -318,33 +318,11 @@ export default function BusinessProfileEditor() {
 
       if (downloadURL) {
         console.log('[BusinessProfileEditor] Gallery image uploaded successfully:', downloadURL);
-
-        // Prompt for caption
-        Alert.prompt(
-          'Add Caption',
-          'Enter a caption for this image (optional)',
-          [
-            {
-              text: 'Cancel',
-              style: 'cancel',
-              onPress: () => {
-                // Still add the image without caption
-                setGalleryImages([...galleryImages, { imageUrl: downloadURL, caption: '' }]);
-              }
-            },
-            {
-              text: 'OK',
-              onPress: (caption) => {
-                setGalleryImages([...galleryImages, { imageUrl: downloadURL, caption: caption || '' }]);
-                Alert.alert('Success', 'Gallery image uploaded! Remember to click "Save Changes" to save it to your profile.');
-              }
-            }
-          ],
-          'plain-text'
-        );
+        // Add image with empty caption - user can add caption in text field
+        setGalleryImages([...galleryImages, { imageUrl: downloadURL, caption: '' }]);
+        Alert.alert('Success', 'Image uploaded! Add a caption below and click "Save Changes".');
       } else {
         console.log('[BusinessProfileEditor] Gallery image upload cancelled or failed');
-        Alert.alert('Cancelled', 'Image upload was cancelled.');
       }
     } catch (error) {
       console.error('[BusinessProfileEditor] Error uploading gallery image:', error);
@@ -469,26 +447,36 @@ export default function BusinessProfileEditor() {
           </View>
         </View>
 
-        {/* Logo URL and Upload (when editing) */}
+        {/* Logo Upload (when editing) */}
         {editing && (
           <View style={[styles.inputGroup, { marginTop: 16 }]}>
-            <Text style={[styles.label, { color: colors.text }]}>Logo URL</Text>
-            <View style={styles.logoInputRow}>
-              <TextInput
-                style={[styles.input, styles.logoUrlInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                placeholder="https://example.com/logo.png"
-                placeholderTextColor={colors.textSecondary}
-                value={logoUrl}
-                onChangeText={setLogoUrl}
-                autoCapitalize="none"
-                keyboardType="url"
-              />
+            <Text style={[styles.label, { color: colors.text }]}>Business Logo</Text>
+            <View style={styles.imageUploadContainer}>
+              <View style={[styles.imagePreviewBox, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                {logoUrl ? (
+                  <Image
+                    source={{ uri: logoUrl }}
+                    style={styles.imagePreview}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <Camera size={32} color={colors.textSecondary} strokeWidth={1.5} />
+                )}
+              </View>
               <TouchableOpacity
-                style={[styles.uploadButtonSmall, { backgroundColor: colors.primary }]}
+                style={[styles.uploadButton, { backgroundColor: colors.primary }]}
                 onPress={handleLogoUpload}
                 activeOpacity={0.7}
+                disabled={uploadingImage}
               >
-                <Upload size={16} color={colors.white} strokeWidth={2} />
+                {uploadingImage ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <>
+                    <Upload size={16} color={colors.white} strokeWidth={2} />
+                    <Text style={[styles.uploadButtonText, { color: colors.white }]}>Upload Logo</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -496,23 +484,25 @@ export default function BusinessProfileEditor() {
 
         {/* Cover Image Upload (when editing) */}
         {editing && (
-          <View style={[styles.inputGroup, { marginTop: 8 }]}>
+          <View style={[styles.inputGroup, { marginTop: 16 }]}>
             <Text style={[styles.label, { color: colors.text }]}>Cover Image (Optional)</Text>
             <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-              Wide banner image displayed on your business page. Defaults to logo if not set.
+              Wide banner image displayed on your business page
             </Text>
-            <View style={styles.logoInputRow}>
-              <TextInput
-                style={[styles.input, styles.logoUrlInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                placeholder="https://example.com/cover.jpg"
-                placeholderTextColor={colors.textSecondary}
-                value={coverImageUrl}
-                onChangeText={setCoverImageUrl}
-                autoCapitalize="none"
-                keyboardType="url"
-              />
+            <View style={styles.imageUploadContainer}>
+              <View style={[styles.coverPreviewBox, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                {coverImageUrl ? (
+                  <Image
+                    source={{ uri: coverImageUrl }}
+                    style={styles.coverPreview}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <Camera size={32} color={colors.textSecondary} strokeWidth={1.5} />
+                )}
+              </View>
               <TouchableOpacity
-                style={[styles.uploadButtonSmall, { backgroundColor: colors.primary }]}
+                style={[styles.uploadButton, { backgroundColor: colors.primary }]}
                 onPress={handleCoverImageUpload}
                 activeOpacity={0.7}
                 disabled={uploadingImage}
@@ -520,75 +510,77 @@ export default function BusinessProfileEditor() {
                 {uploadingImage ? (
                   <ActivityIndicator size="small" color={colors.white} />
                 ) : (
-                  <Upload size={16} color={colors.white} strokeWidth={2} />
+                  <>
+                    <Upload size={16} color={colors.white} strokeWidth={2} />
+                    <Text style={[styles.uploadButtonText, { color: colors.white }]}>Upload Cover</Text>
+                  </>
                 )}
               </TouchableOpacity>
             </View>
-            {coverImageUrl ? (
-              <Image
-                source={{ uri: coverImageUrl }}
-                style={styles.coverImagePreview}
-                contentFit="cover"
-              />
-            ) : null}
           </View>
         )}
 
         {/* Gallery Images Upload (when editing) */}
         {editing && (
-          <View style={[styles.inputGroup, { marginTop: 8 }]}>
-            <View style={styles.galleryHeader}>
-              <View>
-                <Text style={[styles.label, { color: colors.text }]}>Gallery Images ({galleryImages.length}/3)</Text>
-                <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-                  Square images displayed below values section on your business page
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.uploadButtonSmall, { backgroundColor: colors.primary }]}
-                onPress={handleGalleryImageUpload}
-                activeOpacity={0.7}
-                disabled={uploadingImage || galleryImages.length >= 3}
-              >
-                {uploadingImage ? (
-                  <ActivityIndicator size="small" color={colors.white} />
-                ) : (
-                  <Plus size={16} color={colors.white} strokeWidth={2} />
-                )}
-              </TouchableOpacity>
-            </View>
+          <View style={[styles.inputGroup, { marginTop: 16 }]}>
+            <Text style={[styles.label, { color: colors.text }]}>Gallery Images ({galleryImages.length}/3)</Text>
+            <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+              Add up to 3 images to showcase your business
+            </Text>
 
-            {galleryImages.length > 0 && (
-              <View style={styles.galleryImagesContainer}>
-                {galleryImages.map((item, index) => (
-                  <View key={index} style={[styles.galleryImageCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                    <Image
-                      source={{ uri: item.imageUrl }}
-                      style={styles.galleryImageThumb}
-                      contentFit="cover"
-                    />
-                    <View style={styles.galleryImageContent}>
-                      <TextInput
-                        style={[styles.captionInput, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
-                        placeholder="Add caption..."
-                        placeholderTextColor={colors.textSecondary}
-                        value={item.caption}
-                        onChangeText={(text) => updateGalleryImageCaption(index, text)}
-                        multiline
-                        numberOfLines={2}
-                      />
-                      <TouchableOpacity
-                        style={[styles.removeImageButton, { backgroundColor: colors.error }]}
-                        onPress={() => removeGalleryImage(index)}
-                        activeOpacity={0.7}
-                      >
-                        <X size={14} color={colors.white} strokeWidth={2} />
-                      </TouchableOpacity>
+            <View style={styles.galleryUploadGrid}>
+              {[0, 1, 2].map((slotIndex) => {
+                const image = galleryImages[slotIndex];
+                return (
+                  <View key={slotIndex} style={styles.gallerySlot}>
+                    <View style={[styles.galleryPreviewBox, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                      {image ? (
+                        <>
+                          <Image
+                            source={{ uri: image.imageUrl }}
+                            style={styles.galleryPreview}
+                            contentFit="cover"
+                          />
+                          <TouchableOpacity
+                            style={[styles.removeGalleryButton, { backgroundColor: colors.error }]}
+                            onPress={() => removeGalleryImage(slotIndex)}
+                            activeOpacity={0.7}
+                          >
+                            <X size={12} color={colors.white} strokeWidth={2.5} />
+                          </TouchableOpacity>
+                        </>
+                      ) : (
+                        <Camera size={24} color={colors.textSecondary} strokeWidth={1.5} />
+                      )}
                     </View>
+
+                    {image ? (
+                      <TextInput
+                        style={[styles.galleryCaption, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
+                        placeholder="Caption..."
+                        placeholderTextColor={colors.textSecondary}
+                        value={image.caption}
+                        onChangeText={(text) => updateGalleryImageCaption(slotIndex, text)}
+                        multiline
+                      />
+                    ) : (
+                      <TouchableOpacity
+                        style={[styles.galleryUploadButton, { backgroundColor: colors.primary }]}
+                        onPress={handleGalleryImageUpload}
+                        activeOpacity={0.7}
+                        disabled={uploadingImage}
+                      >
+                        {uploadingImage ? (
+                          <ActivityIndicator size="small" color={colors.white} />
+                        ) : (
+                          <Plus size={14} color={colors.white} strokeWidth={2.5} />
+                        )}
+                      </TouchableOpacity>
+                    )}
                   </View>
-                ))}
-              </View>
-            )}
+                );
+              })}
+            </View>
           </View>
         )}
 
@@ -1086,19 +1078,50 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 12,
   },
-  logoInputRow: {
+  // Image Upload Container
+  imageUploadContainer: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
+    alignItems: 'center',
+    marginTop: 8,
   },
-  logoUrlInput: {
-    flex: 1,
-  },
-  uploadButtonSmall: {
-    width: 44,
-    height: 44,
+  imagePreviewBox: {
+    width: 100,
+    height: 100,
     borderRadius: 12,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  imagePreview: {
+    width: '100%',
+    height: '100%',
+  },
+  coverPreviewBox: {
+    width: 160,
+    height: 90,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  coverPreview: {
+    width: '100%',
+    height: '100%',
+  },
+  uploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  uploadButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   // Compact Form Layout
   formGrid: {
@@ -1373,59 +1396,58 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flex: 1,
   },
-  // Cover Image and Gallery Styles
+  // Gallery Styles
   helperText: {
     fontSize: 12,
-    marginBottom: 8,
     marginTop: 4,
+    marginBottom: 8,
   },
-  coverImagePreview: {
-    width: '100%',
-    height: 150,
-    borderRadius: 12,
+  galleryUploadGrid: {
+    flexDirection: 'row',
+    gap: 12,
     marginTop: 12,
   },
-  galleryHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  galleryImagesContainer: {
-    gap: 12,
-  },
-  galleryImageCard: {
-    flexDirection: 'row',
-    gap: 12,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  galleryImageThumb: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-  },
-  galleryImageContent: {
+  gallerySlot: {
     flex: 1,
     gap: 8,
   },
-  captionInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 13,
-    minHeight: 40,
-    textAlignVertical: 'top',
-  },
-  removeImageButton: {
-    width: 24,
-    height: 24,
+  galleryPreviewBox: {
+    width: '100%',
+    aspectRatio: 1,
     borderRadius: 12,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'flex-start',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  galleryPreview: {
+    width: '100%',
+    height: '100%',
+  },
+  removeGalleryButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  galleryCaption: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    fontSize: 12,
+    minHeight: 36,
+    textAlignVertical: 'top',
+  },
+  galleryUploadButton: {
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
