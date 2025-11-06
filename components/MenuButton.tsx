@@ -89,11 +89,7 @@ export default function MenuButton() {
         onPress={() => setIsMenuVisible(true)}
         activeOpacity={0.7}
       >
-        <Image
-          source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
-          style={styles.menuIcon}
-          resizeMode="contain"
-        />
+        <Menu size={28} color={colors.text} strokeWidth={2} />
       </TouchableOpacity>
 
       <Modal
@@ -239,10 +235,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...(isMobile && { marginLeft: 'auto' }),
-  },
-  menuIcon: {
-    width: 140,
-    height: 41,
   },
   modalOverlay: {
     flex: 1,

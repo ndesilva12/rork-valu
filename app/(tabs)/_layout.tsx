@@ -1,7 +1,7 @@
 import { Tabs, useSegments } from "expo-router";
 import { BookOpen, Percent, Heart, Search, User } from "lucide-react-native";
 import React from "react";
-import { Platform, useWindowDimensions, StyleSheet, StatusBar, View, Text } from "react-native";
+import { Platform, useWindowDimensions, StyleSheet, StatusBar, View, Text, Image } from "react-native";
 import { lightColors, darkColors } from "@/constants/colors";
 import { useUser } from "@/contexts/UserContext";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -21,22 +21,19 @@ export default function TabLayout() {
   const topInset = insets.top || 0;
   const bottomInset = insets.bottom || 0;
 
-  // helper to render icon + label beside it on wide screens
+  // helper to render icon + Stand logo beside it on wide screens
   const renderTabIconWithLabel = (Icon: React.ComponentType<any>, label: string, focusedColor: string) => {
     return ({ color, focused }: { color: string; focused?: boolean }) => {
       const active = Boolean(focused);
       if (isTabletOrLarger) {
         return (
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Icon size={24} color={active ? focusedColor : color} strokeWidth={2} />
-            <Text style={{
-              marginLeft: 8,
-              fontSize: 14,
-              fontWeight: active ? '700' : '600',
-              color: active ? focusedColor : color,
-            }}>
-              {label}
-            </Text>
+            <Image
+              source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
+              style={{ width: 70, height: 21 }}
+              resizeMode="contain"
+            />
           </View>
         );
       }
