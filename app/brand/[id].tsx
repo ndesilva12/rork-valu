@@ -391,6 +391,8 @@ export default function BrandDetailScreen() {
             contentFit="cover"
             transition={200}
             cachePolicy="memory-disk"
+            priority="high"
+            placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
           />
           {/* Back button on top left of cover photo */}
           <TouchableOpacity
@@ -419,6 +421,8 @@ export default function BrandDetailScreen() {
               style={styles.headerLogo}
               contentFit="cover"
               transition={200}
+              cachePolicy="memory-disk"
+              placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
             />
 
             <View style={styles.titleContainer}>

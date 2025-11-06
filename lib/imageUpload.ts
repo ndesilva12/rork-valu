@@ -32,8 +32,9 @@ async function uriToBlob(uri: string): Promise<Blob> {
 /**
  * Pick an image from the device gallery
  * @param aspect - Aspect ratio [width, height]. Default [1, 1] for square
+ * @param quality - Image quality 0-1. Default 0.6 for good compression
  */
-export async function pickImage(aspect: [number, number] = [1, 1]): Promise<ImagePicker.ImagePickerResult | null> {
+export async function pickImage(aspect: [number, number] = [1, 1], quality: number = 0.6): Promise<ImagePicker.ImagePickerResult | null> {
   // Request permission
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -45,12 +46,13 @@ export async function pickImage(aspect: [number, number] = [1, 1]): Promise<Imag
     return null;
   }
 
-  // Launch image picker
+  // Launch image picker with compression
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
     allowsEditing: true,
     aspect: aspect,
-    quality: 0.8,
+    quality: quality, // Compress image for faster uploads/loads
+    exif: false, // Don't include EXIF data to reduce size
   });
 
   if (!result.canceled) {
@@ -128,8 +130,14 @@ export async function pickAndUploadImage(
   try {
     console.log('[pickAndUploadImage] Starting picker for', imageType, 'with aspect', aspect);
 
-    // Pick image from gallery with specified aspect ratio
-    const result = await pickImage(aspect);
+    // Use different quality settings for different image types
+    // Cover images: 0.7 (higher quality for banner)
+    // Profile/business logos: 0.6 (good quality, smaller size)
+    // Gallery: 0.6 (balanced)
+    const quality = imageType === 'cover' ? 0.7 : 0.6;
+
+    // Pick image from gallery with specified aspect ratio and compression
+    const result = await pickImage(aspect, quality);
 
     // Check if user cancelled or no result
     if (!result || result.canceled) {

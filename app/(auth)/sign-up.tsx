@@ -1,10 +1,11 @@
 import * as React from 'react';
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
+import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator, Alert, Modal } from 'react-native';
 import { useSignUp } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { darkColors, lightColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useUser } from '@/contexts/UserContext';
+
 export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp();
   const router = useRouter();
@@ -18,6 +19,8 @@ export default function SignUpScreen() {
   const [code, setCode] = React.useState('');
   const [error, setError] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [showConsentModal, setShowConsentModal] = React.useState(false);
+  const [consentChecked, setConsentChecked] = React.useState(false);
 
 
 
@@ -35,13 +38,13 @@ export default function SignUpScreen() {
 
   const onSignUpPress = async () => {
     console.log('[Sign Up] Button pressed, isLoaded:', isLoaded, 'isSubmitting:', isSubmitting);
-    
+
     if (!isLoaded) {
       console.log('[Sign Up] Clerk not loaded yet');
       setError('Please wait, loading...');
       return;
     }
-    
+
     if (isSubmitting) {
       console.log('[Sign Up] Already submitting');
       return;
@@ -68,6 +71,17 @@ export default function SignUpScreen() {
     }
 
     setError('');
+    // Show consent modal before proceeding
+    setShowConsentModal(true);
+  };
+
+  const handleConsentAccept = async () => {
+    if (!consentChecked) {
+      Alert.alert('Consent Required', 'Please check the consent box to proceed with sign up.');
+      return;
+    }
+
+    setShowConsentModal(false);
     setIsSubmitting(true);
 
     try {
@@ -81,6 +95,10 @@ export default function SignUpScreen() {
       const result = await signUp.create({
         emailAddress,
         password,
+        unsafeMetadata: {
+          consentGivenAt: new Date().toISOString(),
+          consentVersion: '1.0',
+        },
       });
 
       console.log('[Sign Up] Account created successfully');
@@ -368,6 +386,103 @@ export default function SignUpScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Consent Modal */}
+      <Modal
+        visible={showConsentModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowConsentModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={true}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Personalized Code Generation and Vendor Sharing Consent
+              </Text>
+
+              <Text style={[styles.consentText, { color: colors.text }]}>
+                By checking the box below and proceeding, you acknowledge and agree to the following:
+              </Text>
+
+              <Text style={[styles.consentText, { color: colors.text }]}>
+                I authorize Stand Corp (the "Company"), operator of the Stand App application (the "App"), to generate a personalized code for my use in shopping and making payments with participating vendors and companies. This code may be used to identify me and apply discounts or other benefits.
+              </Text>
+
+              <Text style={[styles.consentText, { color: colors.text }]}>
+                I understand that:
+              </Text>
+
+              <Text style={[styles.consentText, { color: colors.text }]}>
+                • To enable discounts or personalized offers, the Company will share my basic information (such as name, contact details, and relevant beliefs or preferences provided during sign-up) with the vendors where I use the code.
+              </Text>
+
+              <Text style={[styles.consentText, { color: colors.text }]}>
+                • The Company may also share insights derived from my spending habits and behavior (obtained from my App usage) with these vendors to facilitate tailored offers, or with other third parties for analytical or marketing purposes, in accordance with the Company's Privacy Policy available on our site or upon request.
+              </Text>
+
+              <Text style={[styles.consentText, { color: colors.text }]}>
+                • This sharing is necessary for the code's functionality and to provide value through vendor partnerships.
+              </Text>
+
+              <Text style={[styles.consentText, { color: colors.text }]}>
+                • I can stop using the code or request deletion of shared data by contacting the Company, though this may affect ongoing discounts or features.
+              </Text>
+
+              <Text style={[styles.consentText, { color: colors.text }]}>
+                I have read and understand the Company's Privacy Policy and Terms of Service, and I consent to the generation of the code and the associated data sharing as described above.
+              </Text>
+
+              <TouchableOpacity
+                style={styles.checkboxContainer}
+                onPress={() => setConsentChecked(!consentChecked)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkbox, { borderColor: colors.primary }]}>
+                  {consentChecked && (
+                    <View style={[styles.checkboxChecked, { backgroundColor: colors.primary }]} />
+                  )}
+                </View>
+                <Text style={[styles.checkboxLabel, { color: colors.text }]}>
+                  I consent to generating the personalized code and the associated data sharing.
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={[styles.consentDate, { color: colors.textSecondary }]}>
+                Date: {new Date().toLocaleDateString()}
+              </Text>
+
+              <Text style={[styles.consentDate, { color: colors.textSecondary }]}>
+                User: {emailAddress}
+              </Text>
+            </ScrollView>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary, { borderColor: colors.border }]}
+                onPress={() => {
+                  setShowConsentModal(false);
+                  setConsentChecked(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary, { backgroundColor: colors.primary, opacity: consentChecked ? 1 : 0.5 }]}
+                onPress={handleConsentAccept}
+                activeOpacity={0.7}
+                disabled={!consentChecked}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.white }]}>
+                  {isSubmitting ? 'Processing...' : 'Accept & Continue'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -463,6 +578,96 @@ const styles = StyleSheet.create({
   link: {
     color: darkColors.primary,
     fontSize: 14,
+    fontWeight: '600',
+  },
+  // Consent Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 600,
+    maxHeight: '90%',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalScroll: {
+    maxHeight: '75%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 16,
+    lineHeight: 28,
+  },
+  consentText: {
+    fontSize: 14,
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginVertical: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(128, 128, 128, 0.1)',
+    borderRadius: 10,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    marginRight: 12,
+    marginTop: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    width: 14,
+    height: 14,
+    borderRadius: 3,
+  },
+  checkboxLabel: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 22,
+  },
+  consentDate: {
+    fontSize: 13,
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalButtonSecondary: {
+    borderWidth: 1,
+  },
+  modalButtonPrimary: {
+    // backgroundColor set dynamically
+  },
+  modalButtonText: {
+    fontSize: 16,
     fontWeight: '600',
   },
 });
