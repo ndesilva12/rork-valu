@@ -156,7 +156,7 @@ export default function ValueCodeSettings() {
           <Switch
             value={acceptsDiscounts}
             onValueChange={handleToggleDiscounts}
-            trackColor={{ false: colors.border, true: colors.primary }}
+            trackColor={{ false: colors.border, true: colors.border }}
             thumbColor={colors.white}
           />
         </View>
@@ -172,7 +172,7 @@ export default function ValueCodeSettings() {
                 <Switch
                   value={acceptsQRCode}
                   onValueChange={handleToggleQRCode}
-                  trackColor={{ false: colors.border, true: colors.primary }}
+                  trackColor={{ false: colors.border, true: colors.border }}
                   thumbColor={colors.white}
                 />
               </View>
@@ -181,7 +181,7 @@ export default function ValueCodeSettings() {
                 <Switch
                   value={acceptsPromoCode}
                   onValueChange={handleTogglePromoCode}
-                  trackColor={{ false: colors.border, true: colors.primary }}
+                  trackColor={{ false: colors.border, true: colors.border }}
                   thumbColor={colors.white}
                 />
               </View>
@@ -197,7 +197,7 @@ export default function ValueCodeSettings() {
                   style={[
                     styles.typeButton,
                     { borderColor: colors.border, backgroundColor: colors.background },
-                    discountType === 'preset' && { borderColor: colors.primary, backgroundColor: colors.primary + '15' }
+                    discountType === 'preset' && { borderColor: colors.primary }
                   ]}
                   onPress={() => setDiscountType('preset')}
                   activeOpacity={0.7}
@@ -213,7 +213,7 @@ export default function ValueCodeSettings() {
                   style={[
                     styles.typeButton,
                     { borderColor: colors.border, backgroundColor: colors.background },
-                    discountType === 'custom' && { borderColor: colors.primary, backgroundColor: colors.primary + '15' }
+                    discountType === 'custom' && { borderColor: colors.primary }
                   ]}
                   onPress={() => setDiscountType('custom')}
                   activeOpacity={0.7}

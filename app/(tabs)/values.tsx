@@ -5,6 +5,7 @@ import {
   ScrollView,
   Platform,
   StatusBar,
+  Image,
 } from 'react-native';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -26,7 +27,11 @@ export default function ProfileScreen() {
       />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <Text style={[styles.title, { color: colors.primary }]}>Profile</Text>
+          <Image
+            source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
           <MenuButton />
         </View>
       </View>
@@ -68,9 +73,9 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'web' ? 16 : 56,
     paddingBottom: 12,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: '700' as const,
+  headerLogo: {
+    width: 140,
+    height: 41,
     flex: 1,
   },
 });
