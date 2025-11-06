@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, MapPin, Globe, Facebook, Instagram, Twitter, Linkedin, Percent } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, MapPin } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -8,27 +8,33 @@ import {
   TouchableOpacity,
   Linking,
   Platform,
+  PanResponder,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
+import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { useUser } from '@/contexts/UserContext';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
-import { BusinessInfo } from '@/types';
+import { BusinessInfo, Cause } from '@/types';
+import { getLogoUrl } from '@/lib/logo';
+import { calculateAlignmentScore } from '@/services/firebase/businessService';
 
 interface BusinessUser {
   id: string;
   email?: string;
   fullName?: string;
   businessInfo: BusinessInfo;
+  causes?: Cause[];
 }
 
 export default function BusinessDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { isDarkMode } = useUser();
+  const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const [business, setBusiness] = useState<BusinessUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +55,7 @@ export default function BusinessDetailScreen() {
               email: data.email,
               fullName: data.fullName,
               businessInfo: data.businessInfo as BusinessInfo,
+              causes: data.causes || [],
             });
           }
         }
@@ -62,17 +69,125 @@ export default function BusinessDetailScreen() {
     fetchBusiness();
   }, [id]);
 
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return Math.abs(gestureState.dx) > 30 && Math.abs(gestureState.dy) < 50;
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        if (gestureState.dx > 100) {
+          router.back();
+        }
+      },
+    })
+  ).current;
+
+  const handleShopPress = async () => {
+    if (!business?.businessInfo.website) return;
+    try {
+      const websiteUrl = business.businessInfo.website.startsWith('http')
+        ? business.businessInfo.website
+        : `https://${business.businessInfo.website}`;
+      const canOpen = await Linking.canOpenURL(websiteUrl);
+      if (canOpen) {
+        await Linking.openURL(websiteUrl);
+      }
+    } catch (error) {
+      console.error('Error opening URL:', error);
+    }
+  };
+
+  const handleSocialPress = async (platform: 'x' | 'instagram' | 'facebook') => {
+    if (!business) return;
+    try {
+      const socialMedia = business.businessInfo.socialMedia;
+      let url = '';
+
+      switch (platform) {
+        case 'x':
+          url = socialMedia?.twitter ? `https://x.com/${socialMedia.twitter}` : '';
+          break;
+        case 'instagram':
+          url = socialMedia?.instagram ? `https://instagram.com/${socialMedia.instagram}` : '';
+          break;
+        case 'facebook':
+          url = socialMedia?.facebook ? `https://facebook.com/${socialMedia.facebook}` : '';
+          break;
+      }
+
+      if (url) {
+        const canOpen = await Linking.canOpenURL(url);
+        if (canOpen) {
+          await Linking.openURL(url);
+        }
+      }
+    } catch (error) {
+      console.error('Error opening social URL:', error);
+    }
+  };
+
+  // Calculate alignment data
+  let alignmentData = {
+    isAligned: false,
+    matchingValues: [] as string[],
+    alignmentStrength: 50
+  };
+
+  if (business && business.causes && business.causes.length > 0) {
+    // Calculate alignment score
+    const alignmentScore = calculateAlignmentScore(profile.causes, business.causes);
+    const isAligned = alignmentScore >= 50;
+
+    // Find matching values
+    const matchingValues = new Set<string>();
+    const userSupportSet = new Set(profile.causes.filter(c => c.type === 'support').map(c => c.id));
+    const userAvoidSet = new Set(profile.causes.filter(c => c.type === 'avoid').map(c => c.id));
+    const bizSupportSet = new Set(business.causes.filter(c => c.type === 'support').map(c => c.id));
+    const bizAvoidSet = new Set(business.causes.filter(c => c.type === 'avoid').map(c => c.id));
+
+    // Get all unique value IDs from both users
+    const allValueIds = new Set([...userSupportSet, ...userAvoidSet, ...bizSupportSet, ...bizAvoidSet]);
+
+    allValueIds.forEach(valueId => {
+      const userSupports = userSupportSet.has(valueId);
+      const userAvoids = userAvoidSet.has(valueId);
+      const bizSupports = bizSupportSet.has(valueId);
+      const bizAvoids = bizAvoidSet.has(valueId);
+
+      // If they match on this value (both support or both avoid or conflicting)
+      if ((userSupports && bizSupports) || (userAvoids && bizAvoids) ||
+          (userSupports && bizAvoids) || (userAvoids && bizSupports)) {
+        matchingValues.add(valueId);
+      }
+    });
+
+    alignmentData = {
+      isAligned,
+      matchingValues: Array.from(matchingValues),
+      alignmentStrength: alignmentScore
+    };
+  }
+
+  const alignmentColor = alignmentData.isAligned ? colors.success : colors.danger;
+  const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;
+  const alignmentLabel = alignmentData.isAligned ? 'Aligned' : 'Not Aligned';
+
+  // Get primary location
+  const getPrimaryLocation = () => {
+    if (business?.businessInfo.locations && business.businessInfo.locations.length > 0) {
+      const primary = business.businessInfo.locations.find(loc => loc.isPrimary);
+      return primary?.address || business.businessInfo.locations[0].address;
+    }
+    return business?.businessInfo.location;
+  };
+
+  // Show loading state
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Stack.Screen options={{ headerShown: false }} />
-        <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={styles.backButton}>
-            <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.loadingContainer}>
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading...</Text>
+        <View style={styles.errorContainer}>
+          <Text style={[styles.errorText, { color: colors.text }]}>Loading business...</Text>
         </View>
       </View>
     );
@@ -82,260 +197,251 @@ export default function BusinessDetailScreen() {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Stack.Screen options={{ headerShown: false }} />
-        <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={styles.backButton}>
-            <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.loadingContainer}>
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Business not found</Text>
+        <View style={styles.errorContainer}>
+          <AlertCircle size={48} color={colors.danger} />
+          <Text style={[styles.errorText, { color: colors.text }]}>Business not found</Text>
         </View>
       </View>
     );
   }
 
-  const acceptsQR = business.businessInfo.acceptsQRCode ?? true;
-  const acceptsValue = business.businessInfo.acceptsValueCode ?? true;
-  const acceptanceMethod = acceptsQR && acceptsValue
-    ? 'QR Code / Value Code'
-    : acceptsQR ? 'QR Code' : 'Value Code';
-
-  const discount = business.businessInfo.valueCodeDiscount || 0;
-  const customerDiscount = business.businessInfo.customerDiscountPercent || 0;
-  const donationPercent = business.businessInfo.donationPercent || 0;
-
-  const handleOpenWebsite = (url?: string) => {
-    if (!url) return;
-    const formattedUrl = url.startsWith('http') ? url : `https://${url}`;
-    Linking.openURL(formattedUrl);
-  };
-
-  const handleOpenSocial = (platform: string, handle?: string) => {
-    if (!handle) return;
-    let url = '';
-    switch (platform) {
-      case 'facebook':
-        url = `https://facebook.com/${handle}`;
-        break;
-      case 'instagram':
-        url = `https://instagram.com/${handle}`;
-        break;
-      case 'twitter':
-        url = `https://twitter.com/${handle}`;
-        break;
-      case 'linkedin':
-        url = `https://linkedin.com/company/${handle}`;
-        break;
-    }
-    if (url) Linking.openURL(url);
-  };
+  const logoSource = business.businessInfo.logoUrl || getLogoUrl(business.businessInfo.website || '');
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ headerShown: false }} />
-
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={styles.backButton}>
-          <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
-          {business.businessInfo.name}
-        </Text>
-      </View>
-
+      <Stack.Screen
+        options={{
+          headerShown: false,
+        }}
+      />
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
-        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}
+        contentContainerStyle={Platform.OS === 'web' ? styles.webContent : undefined}
         showsVerticalScrollIndicator={false}
+        {...panResponder.panHandlers}
       >
-        {/* Business Header Card */}
-        <View style={[styles.businessHeaderCard, { backgroundColor: colors.backgroundSecondary }]}>
-          <View style={styles.logoAndInfo}>
-            {business.businessInfo.logoUrl ? (
-              <Image
-                source={{ uri: business.businessInfo.logoUrl }}
-                style={[styles.logo, { borderColor: colors.border }]}
-                contentFit="cover"
-              />
-            ) : (
-              <View style={[styles.logoPlaceholder, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <Text style={[styles.logoPlaceholderText, { color: colors.textSecondary }]}>
-                  {business.businessInfo.name.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
+        <View style={styles.heroImageContainer}>
+          <Image
+            source={{ uri: logoSource }}
+            style={styles.heroImage}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
+          />
+          {business.businessInfo.website && (
+            <TouchableOpacity
+              style={[styles.visitButton, { backgroundColor: colors.primary }]}
+              onPress={handleShopPress}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.visitButtonText, { color: colors.white }]}>Visit</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
-            <View style={styles.headerInfo}>
-              <Text style={[styles.businessName, { color: colors.text }]}>{business.businessInfo.name}</Text>
-              <Text style={[styles.businessCategory, { color: colors.textSecondary }]}>
-                {business.businessInfo.category}
-              </Text>
-              {business.businessInfo.location && (
+        <View style={styles.content}>
+          {/* custom header: back button now inside the centered content */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={[styles.backButton, { backgroundColor: colors.backgroundSecondary, marginRight: 12 }]}
+              onPress={() => router.back()}
+              activeOpacity={0.7}
+            >
+              <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+
+            <View style={styles.titleContainer}>
+              <Text style={[styles.brandName, { color: colors.text }]}>{business.businessInfo.name}</Text>
+              <Text style={[styles.category, { color: colors.primary }]}>{business.businessInfo.category}</Text>
+              {getPrimaryLocation() && (
                 <View style={styles.locationRow}>
                   <MapPin size={14} color={colors.textSecondary} strokeWidth={2} />
                   <Text style={[styles.locationText, { color: colors.textSecondary }]}>
-                    {business.businessInfo.location}
+                    {getPrimaryLocation()}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.backgroundSecondary }]}>
+              <AlignmentIcon size={24} color={alignmentColor} strokeWidth={2.5} />
+              <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
+                {alignmentData.alignmentStrength}
+              </Text>
+            </View>
+          </View>
+
+          {business.businessInfo.description && (
+            <Text style={[styles.brandDescription, { color: colors.textSecondary }]}>
+              {business.businessInfo.description}
+            </Text>
+          )}
+
+          <View style={styles.socialLinksContainer}>
+            {business.businessInfo.socialMedia?.twitter && (
+              <TouchableOpacity
+                style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => handleSocialPress('x')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.socialButtonText, { color: colors.text }]}>𝕏</Text>
+              </TouchableOpacity>
+            )}
+            {business.businessInfo.socialMedia?.instagram && (
+              <TouchableOpacity
+                style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => handleSocialPress('instagram')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.socialButtonText, { color: colors.text }]}>Instagram</Text>
+              </TouchableOpacity>
+            )}
+            {business.businessInfo.socialMedia?.facebook && (
+              <TouchableOpacity
+                style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => handleSocialPress('facebook')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.socialButtonText, { color: colors.text }]}>Facebook</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View style={[styles.alignmentCard, { backgroundColor: alignmentColor + '15' }]}>
+            <View style={styles.alignmentLabelRow}>
+              <Text style={[styles.alignmentLabel, { color: alignmentColor }]}>
+                {alignmentLabel}
+              </Text>
+              <Text style={[styles.alignmentDescription, { color: colors.textSecondary }]}>
+                {' '}based on your values:
+              </Text>
+            </View>
+            {alignmentData.matchingValues.length > 0 && (
+              <View style={styles.valueTagsContainer}>
+                {alignmentData.matchingValues.map((valueId) => {
+                  const allValues = Object.values(AVAILABLE_VALUES).flat();
+                  const value = allValues.find(v => v.id === valueId);
+                  if (!value) return null;
+
+                  const userCause = profile.causes.find(c => c.id === valueId);
+                  if (!userCause) return null;
+
+                  const tagColor = userCause.type === 'support' ? colors.success : colors.danger;
+
+                  return (
+                    <TouchableOpacity
+                      key={valueId}
+                      style={[styles.valueTag, { backgroundColor: tagColor + '15' }]}
+                      onPress={() => router.push(`/value/${valueId}`)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.valueTagText, { color: tagColor }]}>
+                        {value.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Money Flow</Text>
+
+            {/* Ownership Section */}
+            <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary, marginBottom: 16 }]}>
+              <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.subsectionTitle, { color: colors.text }]}>Ownership</Text>
+              </View>
+
+              {business.businessInfo.ownership && business.businessInfo.ownership.length > 0 ? (
+                <View style={styles.shareholdersContainer}>
+                  {business.businessInfo.ownership.map((owner, index) => (
+                    <View key={`owner-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
+                      <View style={styles.tableRow}>
+                        <Text style={[styles.affiliateName, { color: colors.text }]}>{owner.name}</Text>
+                        <Text style={[styles.affiliateRelationship, { color: colors.textSecondary }]}>
+                          {owner.relationship}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+
+                  {business.businessInfo.ownershipSources && (
+                    <View style={[styles.sourcesContainer, { borderTopColor: colors.border }]}>
+                      <Text style={[styles.sourcesLabel, { color: colors.text }]}>Sources:</Text>
+                      <Text style={[styles.sourcesText, { color: colors.textSecondary }]}>
+                        {business.businessInfo.ownershipSources}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.shareholdersContainer}>
+                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
+                    No ownership data available
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Affiliates Section */}
+            <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary, marginBottom: 16 }]}>
+              <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.subsectionTitle, { color: colors.text }]}>Affiliates</Text>
+              </View>
+
+              {business.businessInfo.affiliates && business.businessInfo.affiliates.length > 0 ? (
+                <View style={styles.shareholdersContainer}>
+                  {business.businessInfo.affiliates.map((affiliate, index) => (
+                    <View key={`affiliate-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
+                      <View style={styles.tableRow}>
+                        <Text style={[styles.affiliateName, { color: colors.text }]}>{affiliate.name}</Text>
+                        <Text style={[styles.affiliateRelationship, { color: colors.textSecondary }]}>
+                          {affiliate.relationship}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.shareholdersContainer}>
+                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
+                    No affiliates data available
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Partnerships Section */}
+            <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
+              <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.subsectionTitle, { color: colors.text }]}>Partnerships</Text>
+              </View>
+
+              {business.businessInfo.partnerships && business.businessInfo.partnerships.length > 0 ? (
+                <View style={styles.shareholdersContainer}>
+                  {business.businessInfo.partnerships.map((partnership, index) => (
+                    <View key={`partnership-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
+                      <View style={styles.tableRow}>
+                        <Text style={[styles.affiliateName, { color: colors.text }]}>{partnership.name}</Text>
+                        <Text style={[styles.affiliateRelationship, { color: colors.textSecondary }]}>
+                          {partnership.relationship}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.shareholdersContainer}>
+                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
+                    No partnerships data available
                   </Text>
                 </View>
               )}
             </View>
           </View>
         </View>
-
-        {/* Description */}
-        {business.businessInfo.description && (
-          <View style={[styles.section, { backgroundColor: colors.backgroundSecondary }]}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>About</Text>
-            <Text style={[styles.description, { color: colors.textSecondary }]}>
-              {business.businessInfo.description}
-            </Text>
-          </View>
-        )}
-
-        {/* Stand Discount Info */}
-        {business.businessInfo.acceptsStandDiscounts && (
-          <View style={[styles.section, { backgroundColor: colors.backgroundSecondary }]}>
-            <View style={styles.discountHeader}>
-              <Percent size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Stand Discount</Text>
-            </View>
-            <View style={[styles.discountCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
-              <View style={styles.discountRow}>
-                <Text style={[styles.discountLabel, { color: colors.textSecondary }]}>Acceptance Method:</Text>
-                <Text style={[styles.discountValue, { color: colors.primary }]}>{acceptanceMethod}</Text>
-              </View>
-              <View style={styles.discountRow}>
-                <Text style={[styles.discountLabel, { color: colors.textSecondary }]}>Discount %:</Text>
-                <Text style={[styles.discountValue, { color: colors.primary }]}>{customerDiscount.toFixed(1)}%</Text>
-              </View>
-              <View style={styles.discountRow}>
-                <Text style={[styles.discountLabel, { color: colors.textSecondary }]}>Donation %:</Text>
-                <Text style={[styles.discountValue, { color: colors.primary }]}>{donationPercent.toFixed(1)}%</Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Contact & Links */}
-        <View style={[styles.section, { backgroundColor: colors.backgroundSecondary }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Contact & Links</Text>
-
-          {business.businessInfo.website && (
-            <TouchableOpacity
-              style={styles.contactRow}
-              onPress={() => handleOpenWebsite(business.businessInfo.website)}
-              activeOpacity={0.7}
-            >
-              <Globe size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.contactText, { color: colors.primary }]} numberOfLines={1}>
-                {business.businessInfo.website}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {business.businessInfo.socialMedia && (
-            <View style={styles.socialMediaGrid}>
-              {business.businessInfo.socialMedia.facebook && (
-                <TouchableOpacity
-                  style={[styles.socialButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                  onPress={() => handleOpenSocial('facebook', business.businessInfo.socialMedia?.facebook)}
-                  activeOpacity={0.7}
-                >
-                  <Facebook size={20} color={colors.text} strokeWidth={2} />
-                  <Text style={[styles.socialText, { color: colors.text }]}>Facebook</Text>
-                </TouchableOpacity>
-              )}
-              {business.businessInfo.socialMedia.instagram && (
-                <TouchableOpacity
-                  style={[styles.socialButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                  onPress={() => handleOpenSocial('instagram', business.businessInfo.socialMedia?.instagram)}
-                  activeOpacity={0.7}
-                >
-                  <Instagram size={20} color={colors.text} strokeWidth={2} />
-                  <Text style={[styles.socialText, { color: colors.text }]}>Instagram</Text>
-                </TouchableOpacity>
-              )}
-              {business.businessInfo.socialMedia.twitter && (
-                <TouchableOpacity
-                  style={[styles.socialButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                  onPress={() => handleOpenSocial('twitter', business.businessInfo.socialMedia?.twitter)}
-                  activeOpacity={0.7}
-                >
-                  <Twitter size={20} color={colors.text} strokeWidth={2} />
-                  <Text style={[styles.socialText, { color: colors.text }]}>Twitter/X</Text>
-                </TouchableOpacity>
-              )}
-              {business.businessInfo.socialMedia.linkedin && (
-                <TouchableOpacity
-                  style={[styles.socialButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                  onPress={() => handleOpenSocial('linkedin', business.businessInfo.socialMedia?.linkedin)}
-                  activeOpacity={0.7}
-                >
-                  <Linkedin size={20} color={colors.text} strokeWidth={2} />
-                  <Text style={[styles.socialText, { color: colors.text }]}>LinkedIn</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-        </View>
-
-        {/* Money Flow Section */}
-        {(business.businessInfo.ownership || business.businessInfo.affiliates || business.businessInfo.partnerships) && (
-          <View style={[styles.section, { backgroundColor: colors.backgroundSecondary }]}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Money Flow</Text>
-
-            {/* Ownership */}
-            {business.businessInfo.ownership && business.businessInfo.ownership.length > 0 && (
-              <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
-                <Text style={[styles.moneyFlowTitle, { color: colors.text }]}>OWNERSHIP</Text>
-                {business.businessInfo.ownership.map((owner, index) => (
-                  <View key={`owner-${index}`} style={styles.moneyFlowRow}>
-                    <Text style={[styles.moneyFlowName, { color: colors.text }]}>{owner.name}</Text>
-                    <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>
-                      {owner.relationship}
-                    </Text>
-                  </View>
-                ))}
-                {business.businessInfo.ownershipSources && (
-                  <Text style={[styles.sources, { color: colors.textSecondary }]}>
-                    Sources: {business.businessInfo.ownershipSources}
-                  </Text>
-                )}
-              </View>
-            )}
-
-            {/* Affiliates */}
-            {business.businessInfo.affiliates && business.businessInfo.affiliates.length > 0 && (
-              <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
-                <Text style={[styles.moneyFlowTitle, { color: colors.text }]}>AFFILIATES</Text>
-                {business.businessInfo.affiliates.map((affiliate, index) => (
-                  <View key={`affiliate-${index}`} style={styles.moneyFlowRow}>
-                    <Text style={[styles.moneyFlowName, { color: colors.text }]}>{affiliate.name}</Text>
-                    <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>
-                      {affiliate.relationship}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {/* Partnerships */}
-            {business.businessInfo.partnerships && business.businessInfo.partnerships.length > 0 && (
-              <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
-                <Text style={[styles.moneyFlowTitle, { color: colors.text }]}>PARTNERSHIPS</Text>
-                {business.businessInfo.partnerships.map((partnership, index) => (
-                  <View key={`partnership-${index}`} style={styles.moneyFlowRow}>
-                    <Text style={[styles.moneyFlowName, { color: colors.text }]}>{partnership.name}</Text>
-                    <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>
-                      {partnership.relationship}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-        )}
       </ScrollView>
     </View>
   );
@@ -345,212 +451,234 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'web' ? 16 : 56,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    padding: 8,
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    flex: 1,
-  },
   scrollView: {
     flex: 1,
   },
-  content: {
-    padding: 16,
-    paddingBottom: 100,
-  },
   webContent: {
-    maxWidth: '50%',
+    maxWidth: 768,
     alignSelf: 'center' as const,
     width: '100%',
   },
-  loadingContainer: {
-    flex: 1,
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  loadingText: {
+  heroImageContainer: {
+    width: '100%',
+    height: 150,
+    position: 'relative' as const,
+  },
+  heroImage: {
+    width: '100%',
+    height: 150,
+  },
+  visitButton: {
+    position: 'absolute' as const,
+    right: 16,
+    bottom: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 10,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  visitButtonText: {
     fontSize: 16,
+    fontWeight: '700' as const,
   },
-  businessHeaderCard: {
-    borderRadius: 16,
+  content: {
     padding: 20,
-    marginBottom: 16,
   },
-  logoAndInfo: {
+  header: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 24,
   },
-  logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    borderWidth: 2,
-  },
-  logoPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoPlaceholderText: {
-    fontSize: 32,
-    fontWeight: '700' as const,
-  },
-  headerInfo: {
+  titleContainer: {
     flex: 1,
-    gap: 4,
+    marginRight: 16,
   },
-  businessName: {
-    fontSize: 20,
+  brandName: {
+    fontSize: 28,
     fontWeight: '700' as const,
+    marginBottom: 6,
   },
-  businessCategory: {
-    fontSize: 14,
+  category: {
+    fontSize: 15,
+    fontWeight: '600' as const,
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 2,
+    marginTop: 6,
   },
   locationText: {
-    fontSize: 12,
-  },
-  section: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    marginBottom: 12,
-  },
-  description: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  discountHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  discountCard: {
-    borderRadius: 12,
-    borderWidth: 2,
-    padding: 16,
-  },
-  discountRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  discountLabel: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  discountValue: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-  },
-  discountBreakdown: {
-    marginTop: 8,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.05)',
-    gap: 8,
-  },
-  breakdownRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  breakdownLabel: {
     fontSize: 13,
   },
-  breakdownValue: {
+  socialLinksContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  brandDescription: {
     fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  contactRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 8,
-    marginBottom: 16,
-  },
-  contactText: {
-    fontSize: 15,
-    flex: 1,
-    textDecorationLine: 'underline',
-  },
-  socialMediaGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+    lineHeight: 20,
+    marginBottom: 24,
   },
   socialButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 2,
     flex: 1,
-    minWidth: '45%',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  socialText: {
-    fontSize: 14,
+  socialButtonText: {
+    fontSize: 13,
     fontWeight: '600' as const,
   },
-  moneyFlowCard: {
-    borderRadius: 12,
-    borderWidth: 2,
-    padding: 16,
-    marginBottom: 12,
+  scoreCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  moneyFlowTitle: {
-    fontSize: 14,
+  scoreNumber: {
+    fontSize: 20,
     fontWeight: '700' as const,
-    letterSpacing: 0.5,
+    marginTop: 4,
+  },
+  alignmentCard: {
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 24,
+  },
+  alignmentLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
     marginBottom: 12,
   },
-  moneyFlowRow: {
+  alignmentLabel: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
+  alignmentDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: '700' as const,
+    marginBottom: 16,
+  },
+  moneyFlowCard: {
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 2,
+  },
+  subsectionHeader: {
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    marginBottom: 12,
+  },
+  subsectionTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  shareholdersContainer: {},
+  shareholderItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    alignItems: 'center',
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
   },
-  moneyFlowName: {
+  sourcesContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+  },
+  sourcesLabel: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    marginBottom: 6,
+  },
+  sourcesText: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontStyle: 'italic' as const,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flex: 1,
+  },
+  affiliateName: {
     fontSize: 15,
     fontWeight: '600' as const,
     flex: 1,
     textAlign: 'center' as const,
   },
-  moneyFlowRelationship: {
+  affiliateRelationship: {
     fontSize: 13,
     flex: 1,
     textAlign: 'center' as const,
   },
-  sources: {
-    fontSize: 12,
-    marginTop: 12,
-    fontStyle: 'italic' as const,
+  noDataText: {
+    fontSize: 14,
+    textAlign: 'center' as const,
+    paddingVertical: 24,
+  },
+  valueTagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  valueTag: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  valueTagText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: '600' as const,
   },
 });
