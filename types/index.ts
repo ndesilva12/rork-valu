@@ -166,4 +166,6 @@ export interface UserProfile {
   businessInfo?: BusinessInfo; // Only for business accounts
   valueCodeCustomers?: ValueCodeCustomer[]; // Only for business accounts
   userDetails?: UserDetails; // Only for individual accounts
+  consentGivenAt?: string; // ISO timestamp when user gave consent
+  consentVersion?: string; // Version of consent agreement accepted
 }
