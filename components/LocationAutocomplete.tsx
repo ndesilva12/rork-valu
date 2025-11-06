@@ -31,7 +31,7 @@ export default function LocationAutocomplete({
   value,
   onLocationSelect,
   isDarkMode,
-  placeholder = "Enter address or city",
+  placeholder = "Type address and click search",
 }: LocationAutocompleteProps) {
   const colors = isDarkMode ? darkColors : lightColors;
   const [inputValue, setInputValue] = useState(value);
@@ -51,32 +51,34 @@ export default function LocationAutocomplete({
   const fetchSuggestions = async (text: string) => {
     if (!text.trim() || text.length < 3) {
       setSuggestions([]);
+      setShowSuggestions(false);
       return;
     }
 
     try {
-      setIsLoading(true);
-      console.log('[Location] Fetching autocomplete for:', text);
+      console.log('[Location] Fetching suggestions for:', text);
 
       const data = await trpc.location.autocomplete.query({ input: text });
+      console.log('[Location] API response:', data);
 
       if (data.predictions && data.predictions.length > 0) {
         console.log('[Location] Got', data.predictions.length, 'suggestions');
         setSuggestions(data.predictions);
         setShowSuggestions(true);
       } else {
-        console.log('[Location] No autocomplete results');
+        console.log('[Location] No suggestions from API');
         setSuggestions([]);
+        setShowSuggestions(false);
       }
     } catch (error) {
-      console.error('[Location] Autocomplete error:', error);
+      console.error('[Location] Error fetching suggestions:', error);
       setSuggestions([]);
-    } finally {
-      setIsLoading(false);
+      setShowSuggestions(false);
     }
   };
 
   const handleTextChange = (text: string) => {
+    console.log('[Location] Text changed:', text);
     setInputValue(text);
 
     // Clear existing timeout
@@ -84,17 +86,18 @@ export default function LocationAutocomplete({
       clearTimeout(debounceTimeout.current);
     }
 
-    // Debounce the API call
+    // Debounce the API call - only for showing suggestions
     debounceTimeout.current = setTimeout(() => {
       fetchSuggestions(text);
-    }, 500);
+    }, 800);
   };
 
   const handleSelectSuggestion = async (suggestion: LocationSuggestion) => {
-    console.log('[Location] Selected:', suggestion.description);
+    console.log('[Location] Selected suggestion:', suggestion.description);
     setInputValue(suggestion.description);
     setShowSuggestions(false);
     setSuggestions([]);
+    setIsLoading(true);
 
     // Get coordinates for the selected place
     try {
@@ -102,55 +105,70 @@ export default function LocationAutocomplete({
 
       if (data.result?.geometry?.location) {
         const { lat, lng } = data.result.geometry.location;
-        console.log('[Location] Got coordinates:', { lat, lng });
+        console.log('[Location] Got coordinates from API:', { lat, lng });
         onLocationSelect(suggestion.description, lat, lng);
       } else {
         // Fallback to expo-location geocoding
+        console.log('[Location] No coordinates from API, using fallback geocoding');
         await geocodeAddress(suggestion.description);
       }
     } catch (error) {
       console.error('[Location] Error getting coordinates:', error);
       await geocodeAddress(suggestion.description);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const geocodeAddress = async (address: string) => {
+  const geocodeAddress = async (address: string): Promise<boolean> => {
     try {
-      console.log('[Location] Geocoding:', address);
+      console.log('[Location] Geocoding address:', address);
       const results = await Location.geocodeAsync(address);
+      console.log('[Location] Geocoding results:', results);
 
       if (results && results.length > 0) {
         const { latitude, longitude } = results[0];
-        console.log('[Location] Geocoded to:', { latitude, longitude });
+        console.log('[Location] SUCCESS - Geocoded to:', { latitude, longitude });
+
+        // Call the callback to save location
         onLocationSelect(address, latitude, longitude);
+
+        Alert.alert('Location Set', `Location "${address}" has been set. Click "Save Changes" to save.`);
         return true;
       } else {
-        console.warn('[Location] No geocoding results');
-        Alert.alert('Location Not Found', 'Could not find coordinates for this address. Try being more specific or use your current location.');
+        console.warn('[Location] No geocoding results found');
+        Alert.alert('Location Not Found', 'Could not find coordinates for this address. Please try a different address or be more specific.');
         return false;
       }
     } catch (error) {
       console.error('[Location] Geocoding error:', error);
-      Alert.alert('Error', 'Failed to geocode address. Please try again.');
+      Alert.alert('Error', 'Failed to find this location. Please try again.');
       return false;
     }
   };
 
   const handleSearchLocation = async () => {
-    if (!inputValue.trim()) {
-      Alert.alert('Enter Location', 'Please enter an address or city name');
+    const trimmedInput = inputValue.trim();
+
+    if (!trimmedInput) {
+      Alert.alert('Enter Location', 'Please type an address or city name');
       return;
     }
 
+    console.log('[Location] Search button clicked for:', trimmedInput);
     setIsLoading(true);
     setShowSuggestions(false);
-    await geocodeAddress(inputValue.trim());
+
+    const success = await geocodeAddress(trimmedInput);
+    console.log('[Location] Search completed, success:', success);
+
     setIsLoading(false);
   };
 
   const handleGetCurrentLocation = async () => {
     try {
       setGettingLocation(true);
+      setIsLoading(true);
       console.log('[Location] Getting current location...');
 
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -165,27 +183,39 @@ export default function LocationAutocomplete({
 
       const lat = currentLocation.coords.latitude;
       const lon = currentLocation.coords.longitude;
-      console.log('[Location] Current coords:', { lat, lon });
+      console.log('[Location] Current coordinates:', { lat, lon });
 
-      // Reverse geocode to get address
+      // Reverse geocode to get address in City, State format
       const addresses = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
+      console.log('[Location] Reverse geocode result:', addresses);
+
       if (addresses && addresses.length > 0) {
         const addr = addresses[0];
-        const locationString = [addr.street, addr.city, addr.region, addr.postalCode].filter(Boolean).join(', ');
+        // Format as "City, State" for human readability
+        const locationString = [addr.city, addr.region]
+          .filter(Boolean)
+          .join(', ');
+
         const displayLocation = locationString || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-        console.log('[Location] Reverse geocoded to:', displayLocation);
+        console.log('[Location] Formatted location:', displayLocation);
+
         setInputValue(displayLocation);
         onLocationSelect(displayLocation, lat, lon);
+
+        Alert.alert('Current Location Set', `Location set to "${displayLocation}". Click "Save Changes" to save.`);
       } else {
+        // Fallback to coordinates if reverse geocoding fails
         const coords = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
         setInputValue(coords);
         onLocationSelect(coords, lat, lon);
+        Alert.alert('Current Location Set', 'Location set to your current coordinates. Click "Save Changes" to save.');
       }
     } catch (error: any) {
       console.error('[Location] Current location error:', error);
       Alert.alert('Error', `Failed to get current location: ${error.message || 'Unknown error'}`);
     } finally {
       setGettingLocation(false);
+      setIsLoading(false);
     }
   };
 
@@ -193,7 +223,7 @@ export default function LocationAutocomplete({
     // Delay to allow suggestion click to register
     setTimeout(() => {
       setShowSuggestions(false);
-    }, 200);
+    }, 300);
   };
 
   return (
@@ -213,7 +243,7 @@ export default function LocationAutocomplete({
           value={inputValue}
           onChangeText={handleTextChange}
           onBlur={handleBlur}
-          onFocus={() => inputValue && fetchSuggestions(inputValue)}
+          onFocus={() => inputValue && inputValue.length >= 3 && fetchSuggestions(inputValue)}
           autoCapitalize="words"
           returnKeyType="search"
           onSubmitEditing={handleSearchLocation}
@@ -221,24 +251,32 @@ export default function LocationAutocomplete({
         <TouchableOpacity
           style={[
             styles.iconButton,
-            { backgroundColor: colors.primary }
+            { backgroundColor: colors.primary, opacity: (isLoading || !inputValue.trim()) ? 0.5 : 1 }
           ]}
           onPress={handleSearchLocation}
           disabled={isLoading || !inputValue.trim()}
           activeOpacity={0.7}
         >
-          <Search size={20} color={colors.white} strokeWidth={2} />
+          {isLoading && !gettingLocation ? (
+            <ActivityIndicator size="small" color={colors.white} />
+          ) : (
+            <Search size={20} color={colors.white} strokeWidth={2} />
+          )}
         </TouchableOpacity>
         <TouchableOpacity
           style={[
             styles.iconButton,
-            { backgroundColor: colors.primary }
+            { backgroundColor: colors.primary, opacity: gettingLocation ? 0.5 : 1 }
           ]}
           onPress={handleGetCurrentLocation}
-          disabled={gettingLocation}
+          disabled={gettingLocation || isLoading}
           activeOpacity={0.7}
         >
-          <MapPin size={20} color={colors.white} strokeWidth={2} />
+          {gettingLocation ? (
+            <ActivityIndicator size="small" color={colors.white} />
+          ) : (
+            <MapPin size={20} color={colors.white} strokeWidth={2} />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -247,7 +285,7 @@ export default function LocationAutocomplete({
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color={colors.primary} />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-            {gettingLocation ? 'Getting your location...' : 'Searching...'}
+            {gettingLocation ? 'Getting your location...' : 'Searching for location...'}
           </Text>
         </View>
       )}
