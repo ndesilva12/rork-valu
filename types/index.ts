@@ -110,6 +110,10 @@ export interface BusinessInfo {
   donationPercent?: number; // Donation portion
   totalDonated?: number; // Track total donations facilitated
   socialMedia?: SocialMedia;
+  affiliates?: Affiliate[]; // Celebrity/influencer affiliates and their relationships
+  partnerships?: Partnership[]; // Business partnerships and collaborations
+  ownership?: Ownership[]; // Parent companies, investors, and ownership structure
+  ownershipSources?: string; // Citations/sources for ownership data
 }
 
 export interface UserDetails {
