@@ -102,8 +102,13 @@ export interface BusinessInfo {
   location?: string; // Location name (e.g., "New York, NY")
   latitude?: number; // Latitude coordinate for distance calculations
   longitude?: number; // Longitude coordinate for distance calculations
-  acceptsValueCodes: boolean;
+  acceptsStandDiscounts: boolean; // Renamed from acceptsValueCodes
+  acceptsQRCode?: boolean; // Whether business accepts QR code scans
+  acceptsValueCode?: boolean; // Whether business accepts manual value code entry
   valueCodeDiscount?: number; // Percentage discount (e.g., 10 for 10%)
+  customerDiscountPercent?: number; // Customer discount portion
+  donationPercent?: number; // Donation portion
+  totalDonated?: number; // Track total donations facilitated
   socialMedia?: SocialMedia;
 }
 
