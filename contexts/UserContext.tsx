@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { Cause, UserProfile, Charity, AccountType, BusinessInfo, UserDetails } from '@/types';
-import { saveUserProfile, getUserProfile, createUser } from '@/services/firebase/userService';
+import { saveUserProfile, getUserProfile, createUser, updateUserMetadata } from '@/services/firebase/userService';
 
 const DARK_MODE_KEY = '@dark_mode';
 const PROFILE_KEY = '@user_profile';
@@ -151,9 +151,10 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
         if (mounted) {
           if (isFirstTime) {
-            console.log('[UserContext] First time seeing this user - marking as new');
+            console.log('[UserContext] ✅ First time seeing this user - marking as new');
             setIsNewUser(true);
-            await AsyncStorage.setItem(isNewUserKey, 'false');
+            // Don't mark as false yet - wait until onboarding is complete
+            // await AsyncStorage.setItem(isNewUserKey, 'false');
           } else {
             console.log('[UserContext] User has logged in before - marking as existing');
             setIsNewUser(false);
@@ -250,13 +251,21 @@ export const [UserProvider, useUser] = createContextHook(() => {
       console.log('[UserContext] 🔄 Calling saveUserProfile...');
       await saveUserProfile(clerkUser.id, newProfile);
       console.log('[UserContext] ✅ Profile synced to Firebase successfully');
+
+      // Mark user as no longer new after completing onboarding
+      if (isNewUser === true && causes.length > 0) {
+        console.log('[UserContext] 🎉 User completed onboarding - marking as existing user');
+        const isNewUserKey = `${IS_NEW_USER_KEY}_${clerkUser.id}`;
+        await AsyncStorage.setItem(isNewUserKey, 'false');
+        setIsNewUser(false);
+      }
     } catch (error) {
       console.error('[UserContext] ❌ Failed to save profile:', error);
       if (error instanceof Error) {
         console.error('[UserContext] Error details:', error.message, error.stack);
       }
     }
-  }, [clerkUser]);
+  }, [clerkUser, isNewUser]);
 
   const removeCauses = useCallback(async (causeIds: string[]) => {
     if (!clerkUser) {
@@ -486,7 +495,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
       return;
     }
 
-    console.log('[UserContext] Updating user details');
+    console.log('[UserContext] Updating user details:', JSON.stringify(userDetails, null, 2));
 
     let newProfile: UserProfile | null = null;
     setProfile((prevProfile) => {
@@ -506,7 +515,41 @@ export const [UserProvider, useUser] = createContextHook(() => {
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
       await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
       await saveUserProfile(clerkUser.id, newProfile);
-      console.log('[UserContext] ✅ User details saved and synced to Firebase');
+      console.log('[UserContext] ✅ User details saved to profile');
+
+      // Also update top-level user metadata in Firebase
+      const metadata: any = {};
+
+      // Extract name and location to top-level fields
+      if (userDetails.name) {
+        // Split name into first/last if possible
+        const nameParts = userDetails.name.trim().split(' ');
+        if (nameParts.length > 1) {
+          metadata.firstName = nameParts[0];
+          metadata.lastName = nameParts.slice(1).join(' ');
+          metadata.fullName = userDetails.name.trim();
+        } else {
+          metadata.firstName = userDetails.name.trim();
+          metadata.fullName = userDetails.name.trim();
+        }
+      }
+
+      if (userDetails.location || userDetails.latitude) {
+        metadata.location = {
+          city: userDetails.location,
+          ...(userDetails.latitude && userDetails.longitude ? {
+            coordinates: {
+              latitude: userDetails.latitude,
+              longitude: userDetails.longitude,
+            }
+          } : {})
+        };
+      }
+
+      if (Object.keys(metadata).length > 0) {
+        await updateUserMetadata(clerkUser.id, metadata);
+        console.log('[UserContext] ✅ User metadata updated in Firebase');
+      }
     } catch (error) {
       console.error('[UserContext] ❌ Failed to save user details:', error);
     }
