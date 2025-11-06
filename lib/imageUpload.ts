@@ -31,15 +31,16 @@ async function uriToBlob(uri: string): Promise<Blob> {
 
 /**
  * Pick an image from the device gallery
+ * @param aspect - Aspect ratio [width, height]. Default [1, 1] for square
  */
-export async function pickImage(): Promise<ImagePicker.ImagePickerResult | null> {
+export async function pickImage(aspect: [number, number] = [1, 1]): Promise<ImagePicker.ImagePickerResult | null> {
   // Request permission
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
   if (status !== 'granted') {
     Alert.alert(
       'Permission Required',
-      'Please allow access to your photos to upload a profile image.'
+      'Please allow access to your photos to upload an image.'
     );
     return null;
   }
@@ -48,7 +49,7 @@ export async function pickImage(): Promise<ImagePicker.ImagePickerResult | null>
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
     allowsEditing: true,
-    aspect: [1, 1], // Square aspect ratio for profile images
+    aspect: aspect,
     quality: 0.8,
   });
 
@@ -115,18 +116,20 @@ export async function uploadImageToFirebase(uri: string, path: string): Promise<
 /**
  * Complete flow: Pick and upload an image
  * @param userId - User ID for creating unique file path
- * @param imageType - Type of image ('profile' or 'business')
+ * @param imageType - Type of image ('profile', 'business', 'cover', or 'gallery')
+ * @param aspect - Optional aspect ratio [width, height]. Default [1, 1] for square
  * @returns Download URL of the uploaded image or null if canceled/failed
  */
 export async function pickAndUploadImage(
   userId: string,
-  imageType: 'profile' | 'business'
+  imageType: 'profile' | 'business' | 'cover' | 'gallery',
+  aspect: [number, number] = [1, 1]
 ): Promise<string | null> {
   try {
     console.log('[pickAndUploadImage] Starting picker for', imageType);
 
-    // Pick image from gallery
-    const result = await pickImage();
+    // Pick image from gallery with specified aspect ratio
+    const result = await pickImage(aspect);
 
     // Check if user cancelled or no result
     if (!result || result.canceled) {
@@ -142,7 +145,7 @@ export async function pickAndUploadImage(
     const imageUri = result.assets[0].uri;
     console.log('[pickAndUploadImage] Image selected:', imageUri);
 
-    // Create unique filename: business-abc123-1699999999999.jpg
+    // Create unique filename
     const timestamp = Date.now();
 
     // Extract extension properly (handle data URIs on web)
@@ -156,8 +159,14 @@ export async function pickAndUploadImage(
       extension = imageUri.split('.').pop() || 'jpg';
     }
 
+    // Determine storage folder based on image type
+    const folder = imageType === 'profile' ? 'profile-images'
+                 : imageType === 'business' ? 'business-images'
+                 : imageType === 'cover' ? 'business-cover-images'
+                 : 'business-gallery-images';
+
     const filename = `${imageType}-${userId}-${timestamp}.${extension}`;
-    const storagePath = `${imageType}-images/${filename}`;
+    const storagePath = `${folder}/${filename}`;
 
     // Upload to Firebase Storage
     console.log('[pickAndUploadImage] Uploading to:', storagePath);

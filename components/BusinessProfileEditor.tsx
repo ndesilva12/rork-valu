@@ -17,7 +17,7 @@ import { pickAndUploadImage } from '@/lib/imageUpload';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
-import { BusinessLocation } from '@/types';
+import { BusinessLocation, GalleryImage } from '@/types';
 
 const BUSINESS_CATEGORIES = [
   'Retail',
@@ -66,6 +66,8 @@ export default function BusinessProfileEditor() {
   const [description, setDescription] = useState(businessInfo.description || '');
   const [website, setWebsite] = useState(businessInfo.website || '');
   const [logoUrl, setLogoUrl] = useState(businessInfo.logoUrl || '');
+  const [coverImageUrl, setCoverImageUrl] = useState(businessInfo.coverImageUrl || '');
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(businessInfo.galleryImages || []);
 
   // Multiple locations support
   const [locations, setLocations] = useState<BusinessLocation[]>(() => {
@@ -132,6 +134,8 @@ export default function BusinessProfileEditor() {
     setDescription(businessInfo.description || '');
     setWebsite(businessInfo.website || '');
     setLogoUrl(businessInfo.logoUrl || '');
+    setCoverImageUrl(businessInfo.coverImageUrl || '');
+    setGalleryImages(businessInfo.galleryImages || []);
 
     // Sync locations
     if (businessInfo.locations && businessInfo.locations.length > 0) {
@@ -182,6 +186,8 @@ export default function BusinessProfileEditor() {
       description: description.trim(),
       website: website.trim(),
       logoUrl: logoUrl.trim(),
+      coverImageUrl: coverImageUrl.trim() || undefined,
+      galleryImages: galleryImages.length > 0 ? galleryImages : undefined,
       socialMedia: {
         facebook: facebook.trim(),
         instagram: instagram.trim(),
@@ -215,6 +221,8 @@ export default function BusinessProfileEditor() {
     setDescription(businessInfo.description || '');
     setWebsite(businessInfo.website || '');
     setLogoUrl(businessInfo.logoUrl || '');
+    setCoverImageUrl(businessInfo.coverImageUrl || '');
+    setGalleryImages(businessInfo.galleryImages || []);
 
     // Reset locations
     if (businessInfo.locations && businessInfo.locations.length > 0) {
@@ -261,6 +269,99 @@ export default function BusinessProfileEditor() {
     } finally {
       setUploadingImage(false);
     }
+  };
+
+  const handleCoverImageUpload = async () => {
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'User not logged in. Please log in and try again.');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      console.log('[BusinessProfileEditor] Starting cover image upload for business:', clerkUser.id);
+      // Cover image should be wide (16:9 aspect ratio)
+      const downloadURL = await pickAndUploadImage(clerkUser.id, 'cover', [16, 9]);
+
+      if (downloadURL) {
+        console.log('[BusinessProfileEditor] Cover image uploaded successfully:', downloadURL);
+        setCoverImageUrl(downloadURL);
+        Alert.alert('Success', 'Cover image uploaded! Remember to click "Save Changes" to save it to your profile.');
+      } else {
+        console.log('[BusinessProfileEditor] Cover image upload cancelled or failed');
+        Alert.alert('Cancelled', 'Image upload was cancelled.');
+      }
+    } catch (error) {
+      console.error('[BusinessProfileEditor] Error uploading cover image:', error);
+      Alert.alert('Error', 'Failed to upload cover image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleGalleryImageUpload = async () => {
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'User not logged in. Please log in and try again.');
+      return;
+    }
+
+    if (galleryImages.length >= 3) {
+      Alert.alert('Maximum Reached', 'You can only upload up to 3 gallery images.');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      console.log('[BusinessProfileEditor] Starting gallery image upload for business:', clerkUser.id);
+      // Gallery images should be square
+      const downloadURL = await pickAndUploadImage(clerkUser.id, 'gallery', [1, 1]);
+
+      if (downloadURL) {
+        console.log('[BusinessProfileEditor] Gallery image uploaded successfully:', downloadURL);
+
+        // Prompt for caption
+        Alert.prompt(
+          'Add Caption',
+          'Enter a caption for this image (optional)',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+              onPress: () => {
+                // Still add the image without caption
+                setGalleryImages([...galleryImages, { imageUrl: downloadURL, caption: '' }]);
+              }
+            },
+            {
+              text: 'OK',
+              onPress: (caption) => {
+                setGalleryImages([...galleryImages, { imageUrl: downloadURL, caption: caption || '' }]);
+                Alert.alert('Success', 'Gallery image uploaded! Remember to click "Save Changes" to save it to your profile.');
+              }
+            }
+          ],
+          'plain-text'
+        );
+      } else {
+        console.log('[BusinessProfileEditor] Gallery image upload cancelled or failed');
+        Alert.alert('Cancelled', 'Image upload was cancelled.');
+      }
+    } catch (error) {
+      console.error('[BusinessProfileEditor] Error uploading gallery image:', error);
+      Alert.alert('Error', 'Failed to upload gallery image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setGalleryImages(galleryImages.filter((_, i) => i !== index));
+  };
+
+  const updateGalleryImageCaption = (index: number, caption: string) => {
+    const updated = [...galleryImages];
+    updated[index] = { ...updated[index], caption };
+    setGalleryImages(updated);
   };
 
   // Ownership management
@@ -390,6 +491,104 @@ export default function BusinessProfileEditor() {
                 <Upload size={16} color={colors.white} strokeWidth={2} />
               </TouchableOpacity>
             </View>
+          </View>
+        )}
+
+        {/* Cover Image Upload (when editing) */}
+        {editing && (
+          <View style={[styles.inputGroup, { marginTop: 8 }]}>
+            <Text style={[styles.label, { color: colors.text }]}>Cover Image (Optional)</Text>
+            <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+              Wide banner image displayed on your business page. Defaults to logo if not set.
+            </Text>
+            <View style={styles.logoInputRow}>
+              <TextInput
+                style={[styles.input, styles.logoUrlInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                placeholder="https://example.com/cover.jpg"
+                placeholderTextColor={colors.textSecondary}
+                value={coverImageUrl}
+                onChangeText={setCoverImageUrl}
+                autoCapitalize="none"
+                keyboardType="url"
+              />
+              <TouchableOpacity
+                style={[styles.uploadButtonSmall, { backgroundColor: colors.primary }]}
+                onPress={handleCoverImageUpload}
+                activeOpacity={0.7}
+                disabled={uploadingImage}
+              >
+                {uploadingImage ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Upload size={16} color={colors.white} strokeWidth={2} />
+                )}
+              </TouchableOpacity>
+            </View>
+            {coverImageUrl ? (
+              <Image
+                source={{ uri: coverImageUrl }}
+                style={styles.coverImagePreview}
+                contentFit="cover"
+              />
+            ) : null}
+          </View>
+        )}
+
+        {/* Gallery Images Upload (when editing) */}
+        {editing && (
+          <View style={[styles.inputGroup, { marginTop: 8 }]}>
+            <View style={styles.galleryHeader}>
+              <View>
+                <Text style={[styles.label, { color: colors.text }]}>Gallery Images ({galleryImages.length}/3)</Text>
+                <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+                  Square images displayed below values section on your business page
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.uploadButtonSmall, { backgroundColor: colors.primary }]}
+                onPress={handleGalleryImageUpload}
+                activeOpacity={0.7}
+                disabled={uploadingImage || galleryImages.length >= 3}
+              >
+                {uploadingImage ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Plus size={16} color={colors.white} strokeWidth={2} />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {galleryImages.length > 0 && (
+              <View style={styles.galleryImagesContainer}>
+                {galleryImages.map((item, index) => (
+                  <View key={index} style={[styles.galleryImageCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Image
+                      source={{ uri: item.imageUrl }}
+                      style={styles.galleryImageThumb}
+                      contentFit="cover"
+                    />
+                    <View style={styles.galleryImageContent}>
+                      <TextInput
+                        style={[styles.captionInput, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
+                        placeholder="Add caption..."
+                        placeholderTextColor={colors.textSecondary}
+                        value={item.caption}
+                        onChangeText={(text) => updateGalleryImageCaption(index, text)}
+                        multiline
+                        numberOfLines={2}
+                      />
+                      <TouchableOpacity
+                        style={[styles.removeImageButton, { backgroundColor: colors.error }]}
+                        onPress={() => removeGalleryImage(index)}
+                        activeOpacity={0.7}
+                      >
+                        <X size={14} color={colors.white} strokeWidth={2} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         )}
 
@@ -1173,5 +1372,60 @@ const styles = StyleSheet.create({
   locationDisplayText: {
     fontSize: 14,
     flex: 1,
+  },
+  // Cover Image and Gallery Styles
+  helperText: {
+    fontSize: 12,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  coverImagePreview: {
+    width: '100%',
+    height: 150,
+    borderRadius: 12,
+    marginTop: 12,
+  },
+  galleryHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  galleryImagesContainer: {
+    gap: 12,
+  },
+  galleryImageCard: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  galleryImageThumb: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  galleryImageContent: {
+    flex: 1,
+    gap: 8,
+  },
+  captionInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 13,
+    minHeight: 40,
+    textAlignVertical: 'top',
+  },
+  removeImageButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
   },
 });

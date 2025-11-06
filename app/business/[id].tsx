@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, MapPin, Navigation, Percent } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, MapPin, Navigation, Percent, X } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Linking,
   Platform,
   PanResponder,
+  Modal,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -38,6 +39,7 @@ export default function BusinessDetailScreen() {
 
   const [business, setBusiness] = useState<BusinessUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedGalleryImage, setSelectedGalleryImage] = useState<{ imageUrl: string; caption: string } | null>(null);
 
   useEffect(() => {
     const fetchBusiness = async () => {
@@ -246,6 +248,8 @@ export default function BusinessDetailScreen() {
     );
   }
 
+  // Use cover image for hero, otherwise fall back to logo
+  const coverSource = business.businessInfo.coverImageUrl || business.businessInfo.logoUrl || getLogoUrl(business.businessInfo.website || '');
   const logoSource = business.businessInfo.logoUrl || getLogoUrl(business.businessInfo.website || '');
 
   return (
@@ -264,7 +268,7 @@ export default function BusinessDetailScreen() {
       >
         <View style={styles.heroImageContainer}>
           <Image
-            source={{ uri: logoSource }}
+            source={{ uri: coverSource }}
             style={styles.heroImage}
             contentFit="cover"
             transition={200}
@@ -431,6 +435,35 @@ export default function BusinessDetailScreen() {
             )}
           </View>
 
+          {/* Gallery Images Section */}
+          {business.businessInfo.galleryImages && business.businessInfo.galleryImages.length > 0 && (
+            <View style={styles.gallerySection}>
+              <View style={styles.galleryGrid}>
+                {business.businessInfo.galleryImages.map((item, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[styles.galleryCard, { backgroundColor: colors.backgroundSecondary }]}
+                    onPress={() => setSelectedGalleryImage(item)}
+                    activeOpacity={0.8}
+                  >
+                    <Image
+                      source={{ uri: item.imageUrl }}
+                      style={styles.galleryCardImage}
+                      contentFit="cover"
+                    />
+                    {item.caption ? (
+                      <View style={[styles.galleryCaptionOverlay, { backgroundColor: colors.background + 'DD' }]}>
+                        <Text style={[styles.galleryCaptionText, { color: colors.text }]} numberOfLines={2}>
+                          {item.caption}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Money Flow</Text>
 
@@ -529,6 +562,49 @@ export default function BusinessDetailScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Gallery Image Modal */}
+      <Modal
+        visible={selectedGalleryImage !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedGalleryImage(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackground}
+            activeOpacity={1}
+            onPress={() => setSelectedGalleryImage(null)}
+          >
+            <View style={styles.modalContent}>
+              <TouchableOpacity
+                style={[styles.modalCloseButton, { backgroundColor: colors.background }]}
+                onPress={() => setSelectedGalleryImage(null)}
+                activeOpacity={0.7}
+              >
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+
+              {selectedGalleryImage && (
+                <>
+                  <Image
+                    source={{ uri: selectedGalleryImage.imageUrl }}
+                    style={styles.modalImage}
+                    contentFit="contain"
+                  />
+                  {selectedGalleryImage.caption ? (
+                    <View style={[styles.modalCaptionContainer, { backgroundColor: colors.background }]}>
+                      <Text style={[styles.modalCaptionText, { color: colors.text }]}>
+                        {selectedGalleryImage.caption}
+                      </Text>
+                    </View>
+                  ) : null}
+                </>
+              )}
+            </View>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -820,5 +896,81 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 18,
     fontWeight: '600' as const,
+  },
+  // Gallery Styles
+  gallerySection: {
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  galleryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  galleryCard: {
+    width: '31%',
+    aspectRatio: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  galleryCardImage: {
+    width: '100%',
+    height: '100%',
+  },
+  galleryCaptionOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  galleryCaptionText: {
+    fontSize: 11,
+    fontWeight: '500' as const,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+  },
+  modalBackground: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 500,
+    position: 'relative',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: -50,
+    right: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  modalImage: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 12,
+  },
+  modalCaptionContainer: {
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  modalCaptionText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

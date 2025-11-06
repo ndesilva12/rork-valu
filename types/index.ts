@@ -100,12 +100,19 @@ export interface BusinessLocation {
   isPrimary?: boolean; // Mark primary/headquarters location
 }
 
+export interface GalleryImage {
+  imageUrl: string;
+  caption: string;
+}
+
 export interface BusinessInfo {
   name: string;
   category: string;
   description?: string;
   website?: string;
   logoUrl?: string;
+  coverImageUrl?: string; // Cover/background image (defaults to logoUrl if not set)
+  galleryImages?: GalleryImage[]; // Up to 3 additional images with captions
 
   // Multiple locations support (NEW - preferred)
   locations?: BusinessLocation[]; // Array of business locations

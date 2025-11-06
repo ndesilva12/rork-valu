@@ -40,8 +40,12 @@ firebase deploy --only storage
 
 The rules in `storage.rules` allow:
 
-✅ **Public read access** to profile and business images (so they display on profiles)
-✅ **Uploads up to 5MB** to profile-images/ and business-images/ folders
+✅ **Public read access** to all image types (so they display on profiles and business pages)
+✅ **Uploads up to 5MB** to these folders:
+   - `profile-images/` - Individual user profile images
+   - `business-images/` - Business logos
+   - `business-cover-images/` - Business cover/banner images
+   - `business-gallery-images/` - Business gallery images (up to 3)
 ✅ **Only image files** (jpeg, jpg, png, gif, webp)
 ❌ **Blocks all other access** to other storage locations
 

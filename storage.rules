@@ -30,6 +30,30 @@ service firebase.storage {
                    && request.resource.contentType.matches('image/.*');
     }
 
+    // Business cover images - allow uploads and reads
+    match /business-cover-images/{fileName} {
+      // Allow public read access (cover images should be viewable)
+      allow read: if true;
+
+      // Allow write if:
+      // 1. File size is less than 5MB
+      // 2. File is an image
+      allow write: if request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Business gallery images - allow uploads and reads
+    match /business-gallery-images/{fileName} {
+      // Allow public read access (gallery images should be viewable)
+      allow read: if true;
+
+      // Allow write if:
+      // 1. File size is less than 5MB
+      // 2. File is an image
+      allow write: if request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
     // Deny all other access
     match /{allPaths=**} {
       allow read, write: if false;
