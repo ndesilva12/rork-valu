@@ -156,7 +156,7 @@ export default function ValueCodeSettings() {
           <Switch
             value={acceptsDiscounts}
             onValueChange={handleToggleDiscounts}
-            trackColor={{ false: colors.border, true: colors.border }}
+            trackColor={{ false: colors.border, true: colors.primary }}
             thumbColor={colors.white}
           />
         </View>
@@ -172,7 +172,7 @@ export default function ValueCodeSettings() {
                 <Switch
                   value={acceptsQRCode}
                   onValueChange={handleToggleQRCode}
-                  trackColor={{ false: colors.border, true: colors.border }}
+                  trackColor={{ false: colors.border, true: colors.primary }}
                   thumbColor={colors.white}
                 />
               </View>
@@ -181,7 +181,7 @@ export default function ValueCodeSettings() {
                 <Switch
                   value={acceptsPromoCode}
                   onValueChange={handleTogglePromoCode}
-                  trackColor={{ false: colors.border, true: colors.border }}
+                  trackColor={{ false: colors.border, true: colors.primary }}
                   thumbColor={colors.white}
                 />
               </View>

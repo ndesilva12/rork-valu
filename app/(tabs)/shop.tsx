@@ -45,6 +45,7 @@ export default function DiscountScreen() {
 
   const selectedOrganizationsCount = profile.selectedCharities?.length || 0;
   const donationAmount = profile.donationAmount || 0;
+  const totalSavings = profile.totalSavings || 0;
   const businessDonationAmount = profile.businessInfo?.totalDonated || 0;
 
   // Calculate QR code size (max 50% of scroll area height, maintain 1:1 ratio)
@@ -205,11 +206,21 @@ export default function DiscountScreen() {
             /* Individual Donate: Donation Tracking & Charity Selection */
             <>
               <View style={[styles.donationCard, { backgroundColor: colors.backgroundSecondary }]}>
-                <View style={styles.donationAmountContainer}>
-                  <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Donated on Your Behalf</Text>
-                  <Text style={[styles.donationAmount, { color: colors.primary }]}>
-                    ${donationAmount.toFixed(2)}
-                  </Text>
+                {/* Two Counters Side by Side */}
+                <View style={styles.countersRow}>
+                  <View style={styles.counterItem}>
+                    <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Total Savings</Text>
+                    <Text style={[styles.donationAmount, { color: colors.primary }]}>
+                      ${totalSavings.toFixed(2)}
+                    </Text>
+                  </View>
+                  <View style={styles.counterDivider} />
+                  <View style={styles.counterItem}>
+                    <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Donated</Text>
+                    <Text style={[styles.donationAmount, { color: colors.primary }]}>
+                      ${donationAmount.toFixed(2)}
+                    </Text>
+                  </View>
                 </View>
 
                 <View style={styles.charitiesInfoContainer}>
@@ -428,12 +439,32 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.05)',
   },
+  countersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  counterItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  counterDivider: {
+    width: 1,
+    height: 60,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    marginHorizontal: 16,
+  },
   donationLabel: {
     fontSize: 14,
     fontWeight: '600' as const,
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 1,
+    textAlign: 'center' as const,
   },
   donationAmount: {
     fontSize: 42,
