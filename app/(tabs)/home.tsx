@@ -47,7 +47,7 @@ import { calculateDistance, formatDistance } from '@/lib/distance';
 import { getAllUserBusinesses, calculateAlignmentScore, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 
 type ViewMode = 'playbook' | 'browse';
-type LocalDistanceOption = 1 | 5 | 10 | 25 | 50;
+type LocalDistanceOption = 1 | 5 | 10 | 25 | 50 | 100;
 
 type FolderCategory = {
   id: string;
@@ -81,7 +81,7 @@ export default function HomeScreen() {
   const [isLocalMode, setIsLocalMode] = useState<boolean>(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [showDistanceDropdown, setShowDistanceDropdown] = useState(false);
-  const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(10);
+  const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(100);
   const [userBusinesses, setUserBusinesses] = useState<BusinessUser[]>([]);
 
   const scrollViewRef = useRef<ScrollView>(null);
@@ -606,7 +606,7 @@ export default function HomeScreen() {
     );
   };
 
-  const localDistanceOptions: LocalDistanceOption[] = [50, 25, 10, 5, 1];
+  const localDistanceOptions: LocalDistanceOption[] = [100, 50, 25, 10, 5, 1];
 
   const renderViewModeSelector = () => (
     <View style={styles.selectionRow}>
@@ -642,6 +642,8 @@ export default function HomeScreen() {
             {
               backgroundColor: isLocalMode ? colors.primary : colors.backgroundSecondary,
               borderColor: isLocalMode ? colors.primary : colors.border,
+              borderTopRightRadius: isLocalMode ? 0 : 10,
+              borderBottomRightRadius: isLocalMode ? 0 : 10,
             }
           ]}
           onPress={() => {
@@ -659,11 +661,11 @@ export default function HomeScreen() {
         {/* Distance Dropdown Arrow */}
         {isLocalMode && (
           <TouchableOpacity
-            style={[styles.distanceArrow, { backgroundColor: colors.primary }]}
+            style={[styles.distanceArrow, { backgroundColor: colors.background, borderColor: colors.primary }]}
             onPress={() => setShowDistanceDropdown(!showDistanceDropdown)}
             activeOpacity={0.7}
           >
-            <ChevronDown size={14} color={colors.white} strokeWidth={2} />
+            <ChevronDown size={20} color={colors.primary} strokeWidth={2.5} />
           </TouchableOpacity>
         )}
 
@@ -1350,12 +1352,13 @@ const styles = StyleSheet.create({
   },
   distanceArrow: {
     marginLeft: -1,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 10,
     borderTopRightRadius: 10,
     borderBottomRightRadius: 10,
-    borderLeftWidth: 1,
-    borderLeftColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   distanceDropdown: {
     position: 'absolute' as const,
