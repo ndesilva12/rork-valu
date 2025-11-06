@@ -93,15 +93,28 @@ export interface SocialMedia {
   linkedin?: string;
 }
 
+export interface BusinessLocation {
+  address: string; // Full address (e.g., "123 Main St, New York, NY 10001")
+  latitude: number; // Latitude coordinate
+  longitude: number; // Longitude coordinate
+  isPrimary?: boolean; // Mark primary/headquarters location
+}
+
 export interface BusinessInfo {
   name: string;
   category: string;
   description?: string;
   website?: string;
   logoUrl?: string;
+
+  // Multiple locations support (NEW - preferred)
+  locations?: BusinessLocation[]; // Array of business locations
+
+  // Single location fields (DEPRECATED - kept for backwards compatibility)
   location?: string; // Location name (e.g., "New York, NY")
   latitude?: number; // Latitude coordinate for distance calculations
   longitude?: number; // Longitude coordinate for distance calculations
+
   acceptsStandDiscounts: boolean; // Renamed from acceptsValueCodes
   acceptsQRCode?: boolean; // Whether business accepts QR code scans
   acceptsValueCode?: boolean; // Whether business accepts manual value code entry

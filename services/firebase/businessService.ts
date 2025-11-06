@@ -243,3 +243,57 @@ export function calculateAlignmentScore(userCauses: Cause[], businessCauses: Cau
   // Clamp to 0-100
   return Math.max(0, Math.min(100, Math.round(score)));
 }
+
+/**
+ * Check if a business has ANY location within the specified distance from user
+ * @param business Business user object
+ * @param userLat User's latitude
+ * @param userLon User's longitude
+ * @param maxDistance Maximum distance in miles
+ * @returns Object with isWithinRange boolean and closest distance
+ */
+export function isBusinessWithinRange(
+  business: BusinessUser,
+  userLat: number,
+  userLon: number,
+  maxDistance: number
+): { isWithinRange: boolean; closestDistance?: number; closestLocation?: string } {
+  const businessInfo = business.businessInfo;
+
+  // Check new locations array first (preferred)
+  if (businessInfo.locations && businessInfo.locations.length > 0) {
+    let closestDistance = Infinity;
+    let closestAddress = '';
+
+    for (const location of businessInfo.locations) {
+      const distance = calculateDistance(userLat, userLon, location.latitude, location.longitude);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestAddress = location.address;
+      }
+    }
+
+    return {
+      isWithinRange: closestDistance <= maxDistance,
+      closestDistance: closestDistance === Infinity ? undefined : closestDistance,
+      closestLocation: closestAddress || undefined,
+    };
+  }
+
+  // Fallback to old single location fields (backwards compatibility)
+  if (businessInfo.latitude && businessInfo.longitude) {
+    const distance = calculateDistance(userLat, userLon, businessInfo.latitude, businessInfo.longitude);
+    return {
+      isWithinRange: distance <= maxDistance,
+      closestDistance: distance,
+      closestLocation: businessInfo.location,
+    };
+  }
+
+  // No location data available
+  return {
+    isWithinRange: false,
+    closestDistance: undefined,
+    closestLocation: undefined,
+  };
+}
