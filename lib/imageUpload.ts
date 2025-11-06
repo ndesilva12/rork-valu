@@ -127,28 +127,23 @@ export async function pickAndUploadImage(
 ): Promise<string | null> {
   try {
     console.log('[pickAndUploadImage] Starting picker for', imageType, 'with aspect', aspect);
-    Alert.alert('Debug', `Starting ${imageType} upload...`);
 
     // Pick image from gallery with specified aspect ratio
     const result = await pickImage(aspect);
-    console.log('[pickAndUploadImage] Picker result:', result ? 'Got result' : 'No result');
 
     // Check if user cancelled or no result
     if (!result || result.canceled) {
       console.log('[pickAndUploadImage] User cancelled');
-      Alert.alert('Debug', 'Upload cancelled by user');
       return null;
     }
 
     // Validate we got an image
     if (!result.assets || result.assets.length === 0) {
-      Alert.alert('Debug', 'No image assets found');
       throw new Error('No image was selected');
     }
 
     const imageUri = result.assets[0].uri;
     console.log('[pickAndUploadImage] Image selected:', imageUri);
-    Alert.alert('Debug', `Image selected! URI: ${imageUri.substring(0, 50)}...`);
 
     // Create unique filename
     const timestamp = Date.now();
@@ -175,21 +170,16 @@ export async function pickAndUploadImage(
 
     // Upload to Firebase Storage
     console.log('[pickAndUploadImage] Uploading to:', storagePath);
-    Alert.alert('Debug', 'Starting Firebase upload...');
-
     const downloadURL = await uploadImageToFirebase(imageUri, storagePath);
-
     console.log('[pickAndUploadImage] Success!', downloadURL);
-    Alert.alert('Debug', `Upload complete! URL: ${downloadURL.substring(0, 50)}...`);
 
     return downloadURL;
   } catch (error: any) {
     console.error('[pickAndUploadImage] Error:', error);
-    console.error('[pickAndUploadImage] Error stack:', error?.stack);
 
     // Show user-friendly error
     const errorMessage = error?.message || 'Failed to upload image. Please try again.';
-    Alert.alert('Upload Failed', `Error: ${errorMessage}\n\nStack: ${error?.stack?.substring(0, 100)}`);
+    Alert.alert('Upload Failed', errorMessage);
     return null;
   }
 }
