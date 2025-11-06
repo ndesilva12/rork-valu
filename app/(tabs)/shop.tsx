@@ -88,7 +88,7 @@ export default function DiscountScreen() {
               <Text style={[styles.promoLabel, { color: colors.textSecondary }]}>Your Value Code</Text>
               <Text style={[styles.promoCode, { color: colors.primary }]}>{profile.promoCode || 'VALU000000'}</Text>
               <Text style={[styles.promoDescription, { color: colors.textSecondary }]}>
-                Use this code when you shop at locations and we will donate a percentage of each purchase to your selected organizations
+                Use this code (Promo or QR) to get discounts on purchases plus donations made to your chosen organizations. See below for participating locations in your area.
               </Text>
 
               {/* QR Code Toggle Section */}
@@ -344,9 +344,9 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   promoDescription: {
-    fontSize: 13,
+    fontSize: 15,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 22,
   },
   qrCodeSection: {
     marginTop: 24,
