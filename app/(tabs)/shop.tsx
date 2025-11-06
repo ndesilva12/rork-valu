@@ -79,19 +79,6 @@ export default function DiscountScreen() {
           /* Business Code: Value Code Settings */
           <>
             <ValueCodeSettings />
-
-            {/* Business Info Section */}
-            <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
-              <Text style={[styles.infoTitle, { color: colors.text }]}>About Stand Discounts</Text>
-              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                By accepting Stand discounts, you attract value-aligned customers and gain insights into
-                their priorities through your Data tab.
-              </Text>
-              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                Set your discount percentage and we'll handle the rest. Customers will be able to
-                use their codes at checkout.
-              </Text>
-            </View>
           </>
         ) : (
           /* Individual Code: Value Code & QR Generator */
@@ -237,30 +224,15 @@ export default function DiscountScreen() {
 
             <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
               <Text style={[styles.infoTitle, { color: colors.text }]}>
-                How Business Donations Work
+                Your Tax Deductible Donations
               </Text>
               <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                When customers use their Value codes at your business, a portion of each transaction
-                is donated to causes they support.
-              </Text>
-              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                These donations are automatically processed and distributed to charitable organizations
-                selected by your customers.
-              </Text>
-              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                Track your total contribution here and see how your business is making a positive impact
-                in your community.
+                When you contribute a donation percentage, you are donating but to the charities and
+                organizations that the CUSTOMER chooses. As soon as your percentage is sent to Stand,
+                your contribution is considered donated - to our 501(c)(3) - and then directed to the
+                places the customer selects on our platform.
               </Text>
             </View>
-          </View>
-
-          {/* Business Impact Section */}
-          <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
-            <Text style={[styles.infoTitle, { color: colors.text }]}>Your Impact</Text>
-            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-              By accepting Value codes, your business helps facilitate charitable giving while building
-              loyalty with value-aligned customers. Every transaction makes a difference!
-            </Text>
           </View>
         </View>
         )}

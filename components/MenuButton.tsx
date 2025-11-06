@@ -178,9 +178,9 @@ export default function MenuButton() {
                 <Switch
                   value={isDarkMode}
                   onValueChange={toggleDarkMode}
-                  trackColor={{ false: colors.border, true: colors.primary }}
+                  trackColor={{ false: '#E5E7EB', true: '#9CA3AF' }}
                   thumbColor='#FFFFFF'
-                  ios_backgroundColor={colors.border}
+                  ios_backgroundColor='#E5E7EB'
                 />
               </View>
 

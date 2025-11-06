@@ -115,9 +115,9 @@ export default function ValueCodeSettings() {
           <Switch
             value={acceptsDiscounts}
             onValueChange={handleToggleDiscounts}
-            trackColor={{ false: colors.border, true: colors.primary }}
+            trackColor={{ false: '#E5E7EB', true: '#9CA3AF' }}
             thumbColor='#FFFFFF'
-            ios_backgroundColor={colors.border}
+            ios_backgroundColor='#E5E7EB'
           />
         </View>
 
@@ -132,9 +132,9 @@ export default function ValueCodeSettings() {
                 <Switch
                   value={acceptsQRCode}
                   onValueChange={handleToggleQRCode}
-                  trackColor={{ false: colors.border, true: colors.primary }}
+                  trackColor={{ false: '#E5E7EB', true: '#9CA3AF' }}
                   thumbColor='#FFFFFF'
-                  ios_backgroundColor={colors.border}
+                  ios_backgroundColor='#E5E7EB'
                 />
               </View>
               <View style={styles.compactItem}>
@@ -142,9 +142,9 @@ export default function ValueCodeSettings() {
                 <Switch
                   value={acceptsPromoCode}
                   onValueChange={handleTogglePromoCode}
-                  trackColor={{ false: colors.border, true: colors.primary }}
+                  trackColor={{ false: '#E5E7EB', true: '#9CA3AF' }}
                   thumbColor='#FFFFFF'
-                  ios_backgroundColor={colors.border}
+                  ios_backgroundColor='#E5E7EB'
                 />
               </View>
             </View>
@@ -192,7 +192,7 @@ export default function ValueCodeSettings() {
 
             {discountType === 'preset' ? (
               <>
-                {/* Two Independent Counters */}
+                {/* Three Counters: Customer %, Donation %, and Stand Fee % */}
                 <View style={styles.smallCountersGrid}>
                   {/* Customer Discount */}
                   <View style={[styles.smallCounter, { backgroundColor: colors.background, borderColor: colors.border }]}>
@@ -240,6 +240,17 @@ export default function ValueCodeSettings() {
                         <Plus size={20} color={colors.text} strokeWidth={2} />
                       </TouchableOpacity>
                     </View>
+                  </View>
+
+                  {/* Stand Fee - Fixed */}
+                  <View style={[styles.smallCounter, styles.fixedCounter, { backgroundColor: '#FFFFFF', borderColor: colors.border }]}>
+                    <Text style={[styles.smallCounterLabel, { color: colors.textSecondary }]}>Stand Fee %</Text>
+                    <View style={styles.smallCounterControls}>
+                      <Text style={[styles.largeCounterValue, { color: colors.textSecondary }]}>
+                        2.5%
+                      </Text>
+                    </View>
+                    <Text style={[styles.fixedLabel, { color: colors.textSecondary }]}>(fixed)</Text>
                   </View>
                 </View>
               </>
@@ -397,6 +408,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     padding: 12,
     alignItems: 'center',
+  },
+  fixedCounter: {
+    // White background to distinguish from editable counters
   },
   smallCounterLabel: {
     fontSize: 11,
