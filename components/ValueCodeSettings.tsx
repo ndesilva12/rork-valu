@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
+  useWindowDimensions,
 } from 'react-native';
 import { Plus, Minus } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -15,6 +16,8 @@ import { useUser } from '@/contexts/UserContext';
 export default function ValueCodeSettings() {
   const { isDarkMode, profile, setBusinessInfo } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
 
   const businessInfo = profile.businessInfo || {
     name: '',
@@ -195,55 +198,99 @@ export default function ValueCodeSettings() {
                 {/* Three Counters: Customer %, Donation %, and Stand Fee % */}
                 <View style={styles.smallCountersGrid}>
                   {/* Customer Discount */}
-                  <View style={[styles.smallCounter, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                    <Text style={[styles.smallCounterLabel, { color: colors.textSecondary }]}>Customer %</Text>
-                    <View style={styles.smallCounterControls}>
-                      <Text style={[styles.largeCounterValue, { color: colors.primary }]}>
-                        {customerDiscount.toFixed(1)}%
-                      </Text>
-                      <View style={styles.smallCounterButtons}>
+                  <View style={styles.counterWrapper}>
+                    <View style={[styles.smallCounter, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                      <Text style={[styles.smallCounterLabel, { color: colors.textSecondary }]}>Customer %</Text>
+                      <View style={isMobile ? styles.smallCounterControlsMobile : styles.smallCounterControlsDesktop}>
+                        {!isMobile && (
+                          <TouchableOpacity
+                            style={styles.smallCounterButton}
+                            onPress={() => handleChangeCustomerDiscount(customerDiscount - 0.5)}
+                            activeOpacity={0.7}
+                          >
+                            <Minus size={20} color={colors.text} strokeWidth={2} />
+                          </TouchableOpacity>
+                        )}
+                        <Text style={[styles.largeCounterValue, { color: colors.primary }]}>
+                          {customerDiscount.toFixed(1)}%
+                        </Text>
+                        {!isMobile && (
+                          <TouchableOpacity
+                            style={styles.smallCounterButton}
+                            onPress={() => handleChangeCustomerDiscount(customerDiscount + 0.5)}
+                            activeOpacity={0.7}
+                          >
+                            <Plus size={20} color={colors.text} strokeWidth={2} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                    {isMobile && (
+                      <View style={styles.mobileButtonsOutside}>
                         <TouchableOpacity
-                          style={styles.smallCounterButton}
+                          style={[styles.mobileButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
                           onPress={() => handleChangeCustomerDiscount(customerDiscount - 0.5)}
                           activeOpacity={0.7}
                         >
-                          <Minus size={20} color={colors.text} strokeWidth={2} />
+                          <Minus size={28} color={colors.text} strokeWidth={2} />
                         </TouchableOpacity>
                         <TouchableOpacity
-                          style={styles.smallCounterButton}
+                          style={[styles.mobileButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
                           onPress={() => handleChangeCustomerDiscount(customerDiscount + 0.5)}
                           activeOpacity={0.7}
                         >
-                          <Plus size={20} color={colors.text} strokeWidth={2} />
+                          <Plus size={28} color={colors.text} strokeWidth={2} />
                         </TouchableOpacity>
                       </View>
-                    </View>
+                    )}
                   </View>
 
                   {/* Donation */}
-                  <View style={[styles.smallCounter, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                    <Text style={[styles.smallCounterLabel, { color: colors.textSecondary }]}>Donation %</Text>
-                    <View style={styles.smallCounterControls}>
-                      <Text style={[styles.largeCounterValue, { color: colors.primary }]}>
-                        {donationDiscount.toFixed(1)}%
-                      </Text>
-                      <View style={styles.smallCounterButtons}>
+                  <View style={styles.counterWrapper}>
+                    <View style={[styles.smallCounter, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                      <Text style={[styles.smallCounterLabel, { color: colors.textSecondary }]}>Donation %</Text>
+                      <View style={isMobile ? styles.smallCounterControlsMobile : styles.smallCounterControlsDesktop}>
+                        {!isMobile && (
+                          <TouchableOpacity
+                            style={styles.smallCounterButton}
+                            onPress={() => handleChangeDonationDiscount(donationDiscount - 0.5)}
+                            activeOpacity={0.7}
+                          >
+                            <Minus size={20} color={colors.text} strokeWidth={2} />
+                          </TouchableOpacity>
+                        )}
+                        <Text style={[styles.largeCounterValue, { color: colors.primary }]}>
+                          {donationDiscount.toFixed(1)}%
+                        </Text>
+                        {!isMobile && (
+                          <TouchableOpacity
+                            style={styles.smallCounterButton}
+                            onPress={() => handleChangeDonationDiscount(donationDiscount + 0.5)}
+                            activeOpacity={0.7}
+                          >
+                            <Plus size={20} color={colors.text} strokeWidth={2} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                    {isMobile && (
+                      <View style={styles.mobileButtonsOutside}>
                         <TouchableOpacity
-                          style={styles.smallCounterButton}
+                          style={[styles.mobileButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
                           onPress={() => handleChangeDonationDiscount(donationDiscount - 0.5)}
                           activeOpacity={0.7}
                         >
-                          <Minus size={20} color={colors.text} strokeWidth={2} />
+                          <Minus size={28} color={colors.text} strokeWidth={2} />
                         </TouchableOpacity>
                         <TouchableOpacity
-                          style={styles.smallCounterButton}
+                          style={[styles.mobileButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
                           onPress={() => handleChangeDonationDiscount(donationDiscount + 0.5)}
                           activeOpacity={0.7}
                         >
-                          <Plus size={20} color={colors.text} strokeWidth={2} />
+                          <Plus size={28} color={colors.text} strokeWidth={2} />
                         </TouchableOpacity>
                       </View>
-                    </View>
+                    )}
                   </View>
 
                   {/* Stand Fee - Fixed */}
@@ -431,27 +478,47 @@ const styles = StyleSheet.create({
   fixedCounter: {
     // White background to distinguish from editable counters
   },
+  counterWrapper: {
+    flex: 1,
+    alignItems: 'center',
+  },
   smallCounterLabel: {
     fontSize: 11,
     fontWeight: '600' as const,
     marginBottom: 8,
     textAlign: 'center' as const,
   },
-  smallCounterControls: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 8,
-  },
-  smallCounterButtons: {
+  smallCounterControlsDesktop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    justifyContent: 'center',
+    gap: 4,
+  },
+  smallCounterControlsMobile: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 0,
+  },
+  smallCounterControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   smallCounterButton: {
-    padding: 6,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    padding: 4,
+  },
+  mobileButtonsOutside: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+    justifyContent: 'center',
+  },
+  mobileButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   smallCounterValue: {
     fontSize: 18,
@@ -515,8 +582,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   infoText: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 24,
   },
   underlinedText: {
     textDecorationLine: 'underline' as const,
