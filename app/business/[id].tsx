@@ -99,7 +99,7 @@ export default function BusinessDetailScreen() {
     }
   };
 
-  const handleSocialPress = async (platform: 'x' | 'instagram' | 'facebook') => {
+  const handleSocialPress = async (platform: 'x' | 'instagram' | 'facebook' | 'linkedin' | 'yelp' | 'youtube') => {
     if (!business) return;
     try {
       const socialMedia = business.businessInfo.socialMedia;
@@ -114,6 +114,21 @@ export default function BusinessDetailScreen() {
           break;
         case 'facebook':
           url = socialMedia?.facebook ? `https://facebook.com/${socialMedia.facebook}` : '';
+          break;
+        case 'linkedin':
+          url = socialMedia?.linkedin
+            ? (socialMedia.linkedin.startsWith('http') ? socialMedia.linkedin : `https://${socialMedia.linkedin}`)
+            : '';
+          break;
+        case 'yelp':
+          url = socialMedia?.yelp
+            ? (socialMedia.yelp.startsWith('http') ? socialMedia.yelp : `https://${socialMedia.yelp}`)
+            : '';
+          break;
+        case 'youtube':
+          url = socialMedia?.youtube
+            ? (socialMedia.youtube.startsWith('http') ? socialMedia.youtube : `https://${socialMedia.youtube}`)
+            : '';
           break;
       }
 
@@ -361,6 +376,33 @@ export default function BusinessDetailScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.socialButtonText, { color: colors.text }]}>Facebook</Text>
+              </TouchableOpacity>
+            )}
+            {business.businessInfo.socialMedia?.linkedin && (
+              <TouchableOpacity
+                style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => handleSocialPress('linkedin')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.socialButtonText, { color: colors.text }]}>LinkedIn</Text>
+              </TouchableOpacity>
+            )}
+            {business.businessInfo.socialMedia?.yelp && (
+              <TouchableOpacity
+                style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => handleSocialPress('yelp')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.socialButtonText, { color: colors.text }]}>Yelp</Text>
+              </TouchableOpacity>
+            )}
+            {business.businessInfo.socialMedia?.youtube && (
+              <TouchableOpacity
+                style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => handleSocialPress('youtube')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.socialButtonText, { color: colors.text }]}>YouTube</Text>
               </TouchableOpacity>
             )}
           </View>

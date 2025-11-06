@@ -85,6 +85,8 @@ export default function BusinessProfileEditor() {
   const [instagram, setInstagram] = useState(businessInfo.socialMedia?.instagram || '');
   const [twitter, setTwitter] = useState(businessInfo.socialMedia?.twitter || '');
   const [linkedin, setLinkedin] = useState(businessInfo.socialMedia?.linkedin || '');
+  const [yelp, setYelp] = useState(businessInfo.socialMedia?.yelp || '');
+  const [youtube, setYoutube] = useState(businessInfo.socialMedia?.youtube || '');
   const [ownership, setOwnership] = useState(businessInfo.ownership || []);
   const [ownershipSources, setOwnershipSources] = useState(businessInfo.ownershipSources || '');
   const [affiliates, setAffiliates] = useState(businessInfo.affiliates || []);
@@ -150,6 +152,8 @@ export default function BusinessProfileEditor() {
     setInstagram(businessInfo.socialMedia?.instagram || '');
     setTwitter(businessInfo.socialMedia?.twitter || '');
     setLinkedin(businessInfo.socialMedia?.linkedin || '');
+    setYelp(businessInfo.socialMedia?.yelp || '');
+    setYoutube(businessInfo.socialMedia?.youtube || '');
     setOwnership(businessInfo.ownership || []);
     setOwnershipSources(businessInfo.ownershipSources || '');
     setAffiliates(businessInfo.affiliates || []);
@@ -193,6 +197,8 @@ export default function BusinessProfileEditor() {
         instagram: instagram.trim(),
         twitter: twitter.trim(),
         linkedin: linkedin.trim(),
+        yelp: yelp.trim(),
+        youtube: youtube.trim(),
       },
       ownership: ownership.length > 0 ? ownership : undefined,
       ownershipSources: ownershipSources.trim() || undefined,
@@ -237,6 +243,8 @@ export default function BusinessProfileEditor() {
     setInstagram(businessInfo.socialMedia?.instagram || '');
     setTwitter(businessInfo.socialMedia?.twitter || '');
     setLinkedin(businessInfo.socialMedia?.linkedin || '');
+    setYelp(businessInfo.socialMedia?.yelp || '');
+    setYoutube(businessInfo.socialMedia?.youtube || '');
     setOwnership(businessInfo.ownership || []);
     setOwnershipSources(businessInfo.ownershipSources || '');
     setAffiliates(businessInfo.affiliates || []);
@@ -899,6 +907,66 @@ export default function BusinessProfileEditor() {
                   >
                     <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
                       View Profile
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <Text style={[styles.value, { color: colors.textSecondary }]}>Not set</Text>
+                )}
+              </View>
+            </View>
+
+            {/* Yelp */}
+            <View style={styles.formRow}>
+              <View style={styles.halfWidth}>
+                <View style={styles.labelRow}>
+                  <Text style={[styles.label, { color: colors.text }]}>Yelp</Text>
+                </View>
+                {editing ? (
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    placeholder="yelp.com/biz/business-name"
+                    placeholderTextColor={colors.textSecondary}
+                    value={yelp}
+                    onChangeText={setYelp}
+                    autoCapitalize="none"
+                  />
+                ) : businessInfo.socialMedia?.yelp ? (
+                  <TouchableOpacity
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    onPress={() => Linking.openURL(businessInfo.socialMedia.yelp.startsWith('http') ? businessInfo.socialMedia.yelp : `https://${businessInfo.socialMedia.yelp}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
+                      View Profile
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <Text style={[styles.value, { color: colors.textSecondary }]}>Not set</Text>
+                )}
+              </View>
+
+              {/* YouTube */}
+              <View style={styles.halfWidth}>
+                <View style={styles.labelRow}>
+                  <Text style={[styles.label, { color: colors.text }]}>YouTube</Text>
+                </View>
+                {editing ? (
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                    placeholder="youtube.com/@channel or youtube.com/c/channel"
+                    placeholderTextColor={colors.textSecondary}
+                    value={youtube}
+                    onChangeText={setYoutube}
+                    autoCapitalize="none"
+                  />
+                ) : businessInfo.socialMedia?.youtube ? (
+                  <TouchableOpacity
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    onPress={() => Linking.openURL(businessInfo.socialMedia.youtube.startsWith('http') ? businessInfo.socialMedia.youtube : `https://${businessInfo.socialMedia.youtube}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
+                      View Channel
                     </Text>
                   </TouchableOpacity>
                 ) : (
