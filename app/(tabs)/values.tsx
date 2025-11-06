@@ -17,6 +17,7 @@ import { useUser } from '@/contexts/UserContext';
 import BusinessProfileEditor from '@/components/BusinessProfileEditor';
 import ValueCodeSettings from '@/components/ValueCodeSettings';
 import UserDetailsEditor from '@/components/UserDetailsEditor';
+import BusinessesAcceptingDiscounts from '@/components/BusinessesAcceptingDiscounts';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -200,6 +201,9 @@ export default function ProfileScreen() {
                     Use the Donate tab to select which organizations receive your donation contributions.
                   </Text>
                 </View>
+
+                {/* Businesses Accepting Stand Discounts */}
+                <BusinessesAcceptingDiscounts />
               </>
             )}
           </>
