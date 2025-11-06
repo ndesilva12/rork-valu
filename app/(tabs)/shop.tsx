@@ -153,14 +153,14 @@ export default function DiscountScreen() {
                 {/* Two Counters Side by Side */}
                 <View style={styles.countersRow}>
                   <View style={styles.counterItem}>
-                    <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Total Savings</Text>
+                    <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Savings</Text>
                     <Text style={[styles.donationAmount, { color: colors.primary }]}>
                       ${totalSavings.toFixed(2)}
                     </Text>
                   </View>
                   <View style={styles.counterDivider} />
                   <View style={styles.counterItem}>
-                    <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Total Donated</Text>
+                    <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Donated</Text>
                     <Text style={[styles.donationAmount, { color: colors.primary }]}>
                       ${donationAmount.toFixed(2)}
                     </Text>

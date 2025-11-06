@@ -1111,7 +1111,6 @@ const styles = StyleSheet.create({
   headerLogo: {
     width: 140,
     height: 41,
-    flex: 1,
   },
   searchContainer: {
     paddingHorizontal: 16,

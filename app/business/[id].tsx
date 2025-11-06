@@ -206,18 +206,12 @@ export default function BusinessDetailScreen() {
                 <Text style={[styles.discountValue, { color: colors.primary }]}>{acceptanceMethod}</Text>
               </View>
               <View style={styles.discountRow}>
-                <Text style={[styles.discountLabel, { color: colors.textSecondary }]}>Total Discount:</Text>
-                <Text style={[styles.discountValue, { color: colors.primary }]}>{discount.toFixed(1)}%</Text>
+                <Text style={[styles.discountLabel, { color: colors.textSecondary }]}>Discount %:</Text>
+                <Text style={[styles.discountValue, { color: colors.primary }]}>{customerDiscount.toFixed(1)}%</Text>
               </View>
-              <View style={styles.discountBreakdown}>
-                <View style={styles.breakdownRow}>
-                  <Text style={[styles.breakdownLabel, { color: colors.textSecondary }]}>Customer receives:</Text>
-                  <Text style={[styles.breakdownValue, { color: colors.text }]}>{customerDiscount.toFixed(1)}%</Text>
-                </View>
-                <View style={styles.breakdownRow}>
-                  <Text style={[styles.breakdownLabel, { color: colors.textSecondary }]}>Donated to charity:</Text>
-                  <Text style={[styles.breakdownValue, { color: colors.text }]}>{donationPercent.toFixed(1)}%</Text>
-                </View>
+              <View style={styles.discountRow}>
+                <Text style={[styles.discountLabel, { color: colors.textSecondary }]}>Donation %:</Text>
+                <Text style={[styles.discountValue, { color: colors.primary }]}>{donationPercent.toFixed(1)}%</Text>
               </View>
             </View>
           </View>
