@@ -45,7 +45,9 @@ export default function BusinessProfileEditor() {
     description: '',
     website: '',
     logoUrl: '',
-    acceptsValueCodes: false,
+    acceptsStandDiscounts: false,
+    acceptsQRCode: true,
+    acceptsValueCode: true,
     valueCodeDiscount: 10,
   };
 

@@ -20,7 +20,9 @@ export default function ValueCodeSettings() {
   const businessInfo = profile.businessInfo || {
     name: '',
     category: '',
-    acceptsValueCodes: false,
+    acceptsStandDiscounts: false,
+    acceptsQRCode: true, // Default to QR
+    acceptsValueCode: true, // Default to Value Code
     valueCodeDiscount: 10,
     customerDiscountPercent: 5,
     donationPercent: 2.5,
@@ -28,7 +30,11 @@ export default function ValueCodeSettings() {
 
   const VALU_APP_FEE = 2.5; // Fixed at 2.5%
 
-  const [acceptsValueCodes, setAcceptsValueCodes] = useState(businessInfo.acceptsValueCodes);
+  const [acceptsStandDiscounts, setAcceptsStandDiscounts] = useState(
+    businessInfo.acceptsStandDiscounts ?? businessInfo.acceptsValueCodes ?? false // Backward compat
+  );
+  const [acceptsQRCode, setAcceptsQRCode] = useState(businessInfo.acceptsQRCode ?? true);
+  const [acceptsValueCode, setAcceptsValueCode] = useState(businessInfo.acceptsValueCode ?? true);
   const [totalPercent, setTotalPercent] = useState(businessInfo.valueCodeDiscount || 10);
   const [customerDiscountPercent, setCustomerDiscountPercent] = useState(
     businessInfo.customerDiscountPercent || 5
@@ -38,19 +44,53 @@ export default function ValueCodeSettings() {
   // Calculate donation percentage (total - customer discount - fee)
   const donationPercent = Math.max(0, totalPercent - customerDiscountPercent - VALU_APP_FEE);
 
-  const handleToggleValueCodes = async (value: boolean) => {
-    setAcceptsValueCodes(value);
+  const handleToggleStandDiscounts = async (value: boolean) => {
+    setAcceptsStandDiscounts(value);
     await setBusinessInfo({
-      acceptsValueCodes: value,
+      acceptsStandDiscounts: value,
     });
 
     if (value) {
       Alert.alert(
-        'Value Codes Enabled',
-        'Customers can now use their value codes at your business to receive a discount!',
+        'Stand Discounts Enabled',
+        'Customers can now use Stand to receive discounts at your business!',
         [{ text: 'Great!' }]
       );
     }
+  };
+
+  const handleToggleQRCode = async (value: boolean) => {
+    // Must accept at least one method
+    if (!value && !acceptsValueCode) {
+      Alert.alert(
+        'At least one method required',
+        'You must accept either QR Codes or Value Codes (or both)',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    setAcceptsQRCode(value);
+    await setBusinessInfo({
+      acceptsQRCode: value,
+    });
+  };
+
+  const handleToggleValueCode = async (value: boolean) => {
+    // Must accept at least one method
+    if (!value && !acceptsQRCode) {
+      Alert.alert(
+        'At least one method required',
+        'You must accept either QR Codes or Value Codes (or both)',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    setAcceptsValueCode(value);
+    await setBusinessInfo({
+      acceptsValueCode: value,
+    });
   };
 
   const handleSetTotal = async (percent: number) => {
@@ -114,29 +154,74 @@ export default function ValueCodeSettings() {
 
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Value Code Settings</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Stand Discount Settings</Text>
 
       <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
-        {/* Toggle Section */}
+        {/* Main Toggle Section */}
         <View style={styles.settingRow}>
           <View style={styles.settingInfo}>
             <Text style={[styles.settingTitle, { color: colors.text }]}>
-              Accept Value Codes
+              Accept Stand Discounts
             </Text>
             <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
-              Allow customers to use value codes for discounts at your business
+              Allow customers to use Stand for discounts at your business
             </Text>
           </View>
           <Switch
-            value={acceptsValueCodes}
-            onValueChange={handleToggleValueCodes}
+            value={acceptsStandDiscounts}
+            onValueChange={handleToggleStandDiscounts}
             trackColor={{ false: colors.border, true: colors.primary }}
             thumbColor={colors.white}
           />
         </View>
 
-        {/* Discount Percentage (only show if accepting codes) */}
-        {acceptsValueCodes && (
+        {/* Acceptance Method Toggles (only show if accepting discounts) */}
+        {acceptsStandDiscounts && (
+          <>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            {/* QR Code Toggle */}
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Text style={[styles.settingTitle, { color: colors.text }]}>
+                  Accept QR Codes
+                </Text>
+                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
+                  Customers scan a QR code to apply their discount
+                </Text>
+              </View>
+              <Switch
+                value={acceptsQRCode}
+                onValueChange={handleToggleQRCode}
+                trackColor={{ false: colors.border, true: colors.success }}
+                thumbColor={colors.white}
+              />
+            </View>
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            {/* Value Code Toggle */}
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Text style={[styles.settingTitle, { color: colors.text }]}>
+                  Accept Value Codes
+                </Text>
+                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
+                  Customers enter their unique code manually
+                </Text>
+              </View>
+              <Switch
+                value={acceptsValueCode}
+                onValueChange={handleToggleValueCode}
+                trackColor={{ false: colors.border, true: colors.success }}
+                thumbColor={colors.white}
+              />
+            </View>
+          </>
+        )}
+
+        {/* Discount Percentage (only show if accepting discounts) */}
+        {acceptsStandDiscounts && (
           <>
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
@@ -273,12 +358,12 @@ export default function ValueCodeSettings() {
         {/* Info Box */}
         <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
           <Text style={[styles.infoTitle, { color: colors.text }]}>
-            How Value Codes Work
+            How Stand Discounts Work
           </Text>
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            • Customers show their unique value code at checkout{'\n'}
+            • Customers show their unique {acceptsQRCode && acceptsValueCode ? 'QR code or value code' : acceptsQRCode ? 'QR code' : 'value code'} at checkout{'\n'}
             • You apply the discount to their purchase{'\n'}
-            • Valu charges a small fee to maintain the platform{'\n'}
+            • Stand charges a small fee to maintain the platform{'\n'}
             • The remainder goes to charity on the customer's behalf{'\n'}
             • Track customer demographics and values in your Data tab
           </Text>
