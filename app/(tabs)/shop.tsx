@@ -9,13 +9,16 @@ import {
   StatusBar,
   useWindowDimensions,
   Image,
+  Modal,
 } from 'react-native';
 import { useState, useEffect } from 'react';
+import { Info, X as XIcon } from 'lucide-react-native';
 import QRCode from 'react-native-qrcode-svg';
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import ValueCodeSettings from '@/components/ValueCodeSettings';
+import BusinessesAcceptingDiscounts from '@/components/BusinessesAcceptingDiscounts';
 
 export default function DiscountScreen() {
   const router = useRouter();
@@ -25,6 +28,7 @@ export default function DiscountScreen() {
 
   const isBusiness = profile.accountType === 'business';
   const [showQRCode, setShowQRCode] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   // Generate a random QR code value that changes on each render
   const [qrValue, setQrValue] = useState('');
@@ -140,17 +144,20 @@ export default function DiscountScreen() {
               )}
             </View>
 
-            {/* Info Section */}
-            <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
-              <Text style={[styles.infoTitle, { color: colors.text }]}>How Your Code Works</Text>
-              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                Every time you use your Value code at participating businesses, you'll receive a discount
-                and help support the causes you care about through automatic donations.
+            {/* Info Icon - Click to learn more */}
+            <TouchableOpacity
+              style={[styles.infoIconButton, { backgroundColor: colors.backgroundSecondary }]}
+              onPress={() => setShowInfoModal(true)}
+              activeOpacity={0.7}
+            >
+              <Info size={20} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.infoIconText, { color: colors.primary }]}>
+                How Your Code Works
               </Text>
-              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                Use the Donate section below to select which organizations receive your donation contributions.
-              </Text>
-            </View>
+            </TouchableOpacity>
+
+            {/* Businesses Accepting Stand Discounts */}
+            <BusinessesAcceptingDiscounts />
           </>
         )}
 
@@ -260,6 +267,34 @@ export default function DiscountScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Info Modal */}
+      <Modal
+        visible={showInfoModal}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setShowInfoModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>How Your Code Works</Text>
+              <TouchableOpacity onPress={() => setShowInfoModal(false)} activeOpacity={0.7}>
+                <XIcon size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalContent}>
+              <Text style={[styles.modalText, { color: colors.textSecondary }]}>
+                Every time you use your Value code at participating businesses, you'll receive a discount
+                and help support the causes you care about through automatic donations.
+              </Text>
+              <Text style={[styles.modalText, { color: colors.textSecondary }]}>
+                Use the Donate section below to select which organizations receive your donation contributions.
+              </Text>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -450,5 +485,50 @@ const styles = StyleSheet.create({
   infoBox: {
     padding: 16,
     borderRadius: 12,
+  },
+  infoIconButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    gap: 8,
+  },
+  infoIconText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContainer: {
+    width: '100%',
+    maxWidth: 500,
+    borderRadius: 16,
+    padding: 24,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
+  modalContent: {
+    maxHeight: 400,
+  },
+  modalText: {
+    fontSize: 14,
+    lineHeight: 22,
+    marginBottom: 16,
   },
 });

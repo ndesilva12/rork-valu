@@ -321,6 +321,9 @@ export default function SearchScreen() {
             website: business.businessInfo.website,
             location: business.businessInfo.location,
             valueAlignments: [],
+            keyReasons: [`Accepts Stand Discounts at ${business.businessInfo.name}`],
+            moneyFlow: { company: business.businessInfo.name, shareholders: [], overallAlignment: 0 },
+            relatedValues: [],
             isFirebaseBusiness: true, // Flag to identify Firebase businesses
           } as Product & { firebaseId: string; isFirebaseBusiness: boolean }));
 
