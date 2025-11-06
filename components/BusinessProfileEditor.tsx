@@ -9,13 +9,15 @@ import {
   Platform,
   Linking,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Building2, ChevronDown, Globe, Upload, MapPin, Facebook, Instagram, Twitter, Linkedin, Plus, X, ExternalLink, Camera } from 'lucide-react-native';
+import { Building2, ChevronDown, Globe, Upload, MapPin, Facebook, Instagram, Twitter, Linkedin, Plus, X, ExternalLink, Camera, Star } from 'lucide-react-native';
 import { pickAndUploadImage } from '@/lib/imageUpload';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
+import { BusinessLocation } from '@/types';
 
 const BUSINESS_CATEGORIES = [
   'Retail',
@@ -64,9 +66,19 @@ export default function BusinessProfileEditor() {
   const [description, setDescription] = useState(businessInfo.description || '');
   const [website, setWebsite] = useState(businessInfo.website || '');
   const [logoUrl, setLogoUrl] = useState(businessInfo.logoUrl || '');
-  const [location, setLocation] = useState(businessInfo.location || '');
-  const [latitude, setLatitude] = useState<number | undefined>(businessInfo.latitude);
-  const [longitude, setLongitude] = useState<number | undefined>(businessInfo.longitude);
+
+  // Multiple locations support
+  const [locations, setLocations] = useState<BusinessLocation[]>(() => {
+    // Initialize from existing locations array, or fallback to old single location
+    if (businessInfo.locations && businessInfo.locations.length > 0) {
+      return businessInfo.locations;
+    } else if (businessInfo.location && businessInfo.latitude && businessInfo.longitude) {
+      return [{ address: businessInfo.location, latitude: businessInfo.latitude, longitude: businessInfo.longitude, isPrimary: true }];
+    } else {
+      return [];
+    }
+  });
+
   const [facebook, setFacebook] = useState(businessInfo.socialMedia?.facebook || '');
   const [instagram, setInstagram] = useState(businessInfo.socialMedia?.instagram || '');
   const [twitter, setTwitter] = useState(businessInfo.socialMedia?.twitter || '');
@@ -77,10 +89,40 @@ export default function BusinessProfileEditor() {
   const [partnerships, setPartnerships] = useState(businessInfo.partnerships || []);
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  const handleLocationSelect = (locationName: string, lat: number, lon: number) => {
-    setLocation(locationName);
-    setLatitude(lat);
-    setLongitude(lon);
+  const handleLocationSelect = (index: number, locationName: string, lat: number, lon: number) => {
+    const newLocations = [...locations];
+    newLocations[index] = {
+      address: locationName,
+      latitude: lat,
+      longitude: lon,
+      isPrimary: newLocations[index]?.isPrimary || false,
+    };
+    setLocations(newLocations);
+  };
+
+  const handleAddLocation = () => {
+    setLocations([...locations, { address: '', latitude: 0, longitude: 0, isPrimary: false }]);
+  };
+
+  const handleRemoveLocation = (index: number) => {
+    if (locations.length === 1) {
+      Alert.alert('Required', 'You must have at least one location');
+      return;
+    }
+    const newLocations = locations.filter((_, i) => i !== index);
+    // If we removed the primary location, make the first one primary
+    if (locations[index].isPrimary && newLocations.length > 0) {
+      newLocations[0].isPrimary = true;
+    }
+    setLocations(newLocations);
+  };
+
+  const handleSetPrimary = (index: number) => {
+    const newLocations = locations.map((loc, i) => ({
+      ...loc,
+      isPrimary: i === index,
+    }));
+    setLocations(newLocations);
   };
 
   // Sync local state with profile changes
@@ -90,9 +132,16 @@ export default function BusinessProfileEditor() {
     setDescription(businessInfo.description || '');
     setWebsite(businessInfo.website || '');
     setLogoUrl(businessInfo.logoUrl || '');
-    setLocation(businessInfo.location || '');
-    setLatitude(businessInfo.latitude);
-    setLongitude(businessInfo.longitude);
+
+    // Sync locations
+    if (businessInfo.locations && businessInfo.locations.length > 0) {
+      setLocations(businessInfo.locations);
+    } else if (businessInfo.location && businessInfo.latitude && businessInfo.longitude) {
+      setLocations([{ address: businessInfo.location, latitude: businessInfo.latitude, longitude: businessInfo.longitude, isPrimary: true }]);
+    } else {
+      setLocations([]);
+    }
+
     setFacebook(businessInfo.socialMedia?.facebook || '');
     setInstagram(businessInfo.socialMedia?.instagram || '');
     setTwitter(businessInfo.socialMedia?.twitter || '');
@@ -114,6 +163,19 @@ export default function BusinessProfileEditor() {
       return;
     }
 
+    // Validate locations
+    const validLocations = locations.filter(loc =>
+      loc.address.trim() && loc.latitude !== 0 && loc.longitude !== 0
+    );
+
+    if (validLocations.length === 0) {
+      Alert.alert('Required', 'Please add at least one business location');
+      return;
+    }
+
+    // Get the primary location (or first location if no primary set)
+    const primaryLocation = validLocations.find(loc => loc.isPrimary) || validLocations[0];
+
     const updateInfo: any = {
       name: name.trim(),
       category,
@@ -130,21 +192,15 @@ export default function BusinessProfileEditor() {
       ownershipSources: ownershipSources.trim() || undefined,
       affiliates: affiliates.length > 0 ? affiliates : undefined,
       partnerships: partnerships.length > 0 ? partnerships : undefined,
+      // Multiple locations support
+      locations: validLocations,
+      // Backwards compatibility: save primary location to old fields
+      location: primaryLocation.address,
+      latitude: primaryLocation.latitude,
+      longitude: primaryLocation.longitude,
     };
 
-    if (location.trim()) {
-      updateInfo.location = location.trim();
-      console.log('[BusinessProfileEditor] Saving location:', location.trim());
-    }
-    if (latitude !== undefined) {
-      updateInfo.latitude = latitude;
-      console.log('[BusinessProfileEditor] Saving latitude:', latitude);
-    }
-    if (longitude !== undefined) {
-      updateInfo.longitude = longitude;
-      console.log('[BusinessProfileEditor] Saving longitude:', longitude);
-    }
-
+    console.log('[BusinessProfileEditor] Saving locations:', validLocations);
     console.log('[BusinessProfileEditor] Full updateInfo:', updateInfo);
     await setBusinessInfo(updateInfo);
 
@@ -159,9 +215,16 @@ export default function BusinessProfileEditor() {
     setDescription(businessInfo.description || '');
     setWebsite(businessInfo.website || '');
     setLogoUrl(businessInfo.logoUrl || '');
-    setLocation(businessInfo.location || '');
-    setLatitude(businessInfo.latitude);
-    setLongitude(businessInfo.longitude);
+
+    // Reset locations
+    if (businessInfo.locations && businessInfo.locations.length > 0) {
+      setLocations(businessInfo.locations);
+    } else if (businessInfo.location && businessInfo.latitude && businessInfo.longitude) {
+      setLocations([{ address: businessInfo.location, latitude: businessInfo.latitude, longitude: businessInfo.longitude, isPrimary: true }]);
+    } else {
+      setLocations([]);
+    }
+
     setFacebook(businessInfo.socialMedia?.facebook || '');
     setInstagram(businessInfo.socialMedia?.instagram || '');
     setTwitter(businessInfo.socialMedia?.twitter || '');
@@ -176,13 +239,20 @@ export default function BusinessProfileEditor() {
   const handleLogoUpload = async () => {
     setUploadingImage(true);
     try {
+      console.log('[BusinessProfileEditor] Starting logo upload for business:', profile.id);
       const downloadURL = await pickAndUploadImage(profile.id, 'business');
+
       if (downloadURL) {
+        console.log('[BusinessProfileEditor] Logo uploaded successfully:', downloadURL);
         setLogoUrl(downloadURL);
-        Alert.alert('Success', 'Business logo uploaded!');
+        Alert.alert('Success', 'Business logo uploaded! Remember to click "Save Changes" to save it to your profile.');
+      } else {
+        console.log('[BusinessProfileEditor] Logo upload cancelled or failed');
+        Alert.alert('Cancelled', 'Image upload was cancelled.');
       }
     } catch (error) {
-      console.error('Error uploading business logo:', error);
+      console.error('[BusinessProfileEditor] Error uploading business logo:', error);
+      Alert.alert('Error', 'Failed to upload logo. Please try again.');
     } finally {
       setUploadingImage(false);
     }
@@ -428,54 +498,82 @@ export default function BusinessProfileEditor() {
           )}
         </View>
 
-        {/* Compact Layout - Name, Category, Location in rows */}
+        {/* Business Locations Section */}
         <View style={styles.formGrid}>
-          <View style={styles.formRow}>
-            <View style={[styles.inputGroup, styles.halfWidth]}>
-              <Text style={[styles.label, { color: colors.text }]}>Location</Text>
-              {editing ? (
-                <LocationAutocomplete
-                  value={location}
-                  onLocationSelect={handleLocationSelect}
-                  isDarkMode={isDarkMode}
-                />
-              ) : (
-                <Text style={[styles.value, { color: colors.text }]}>
-                  {businessInfo.location || 'Not set'}
-                </Text>
-              )}
-            </View>
+          <View style={styles.inputGroup}>
+            <Text style={[styles.sectionSubtitle, { color: colors.text }]}>Business Locations</Text>
 
-            <View style={[styles.inputGroup, styles.halfWidth]}>
-              <View style={styles.labelRow}>
-                <Globe size={14} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.label, { color: colors.text }]}>Website</Text>
-              </View>
-              {editing ? (
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                  placeholder="https://your-website.com"
-                  placeholderTextColor={colors.textSecondary}
-                  value={website}
-                  onChangeText={setWebsite}
-                  autoCapitalize="none"
-                  keyboardType="url"
-                />
-              ) : businessInfo.website ? (
+            {editing ? (
+              <>
+                {locations.map((location, index) => (
+                  <View key={index} style={[styles.locationItem, { borderColor: colors.border }]}>
+                    <View style={styles.locationHeader}>
+                      <Text style={[styles.locationNumber, { color: colors.textSecondary }]}>
+                        Location {index + 1}
+                        {location.isPrimary && (
+                          <Text style={{ color: colors.primary }}> (Primary)</Text>
+                        )}
+                      </Text>
+                      <View style={styles.locationActions}>
+                        {!location.isPrimary && locations.length > 1 && (
+                          <TouchableOpacity
+                            onPress={() => handleSetPrimary(index)}
+                            style={styles.iconButton}
+                            activeOpacity={0.7}
+                          >
+                            <Star size={18} color={colors.textSecondary} strokeWidth={2} />
+                          </TouchableOpacity>
+                        )}
+                        {locations.length > 1 && (
+                          <TouchableOpacity
+                            onPress={() => handleRemoveLocation(index)}
+                            style={styles.iconButton}
+                            activeOpacity={0.7}
+                          >
+                            <X size={18} color={colors.danger} strokeWidth={2} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+
+                    <LocationAutocomplete
+                      value={location.address}
+                      onLocationSelect={(address, lat, lon) => handleLocationSelect(index, address, lat, lon)}
+                      isDarkMode={isDarkMode}
+                    />
+                  </View>
+                ))}
+
                 <TouchableOpacity
-                  style={[styles.linkButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                  onPress={() => Linking.openURL(businessInfo.website.startsWith('http') ? businessInfo.website : `https://${businessInfo.website}`)}
+                  style={[styles.addLocationButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.primary }]}
+                  onPress={handleAddLocation}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.linkButtonText, { color: colors.white }]} numberOfLines={1}>
-                    {businessInfo.website}
+                  <Plus size={20} color={colors.primary} strokeWidth={2} />
+                  <Text style={[styles.addLocationText, { color: colors.primary }]}>
+                    Add Another Location
                   </Text>
-                  <ExternalLink size={14} color={colors.white} strokeWidth={2} />
                 </TouchableOpacity>
-              ) : (
-                <Text style={[styles.value, { color: colors.textSecondary }]}>Not set</Text>
-              )}
-            </View>
+              </>
+            ) : (
+              <View style={styles.locationsDisplay}>
+                {locations.length > 0 ? (
+                  locations.map((location, index) => (
+                    <View key={index} style={[styles.locationDisplayItem, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                      <MapPin size={14} color={colors.primary} strokeWidth={2} />
+                      <Text style={[styles.locationDisplayText, { color: colors.text }]}>
+                        {location.address}
+                        {location.isPrimary && (
+                          <Text style={{ color: colors.primary, fontWeight: '600' }}> (Primary)</Text>
+                        )}
+                      </Text>
+                    </View>
+                  ))
+                ) : (
+                  <Text style={[styles.value, { color: colors.textSecondary }]}>No locations set</Text>
+                )}
+              </View>
+            )}
           </View>
 
           {/* Social Media - 2x2 Grid */}
@@ -1015,5 +1113,60 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     fontStyle: 'italic' as const,
+  },
+  // Location styles
+  locationItem: {
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+  },
+  locationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  locationNumber: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  locationActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  iconButton: {
+    padding: 4,
+  },
+  addLocationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  addLocationText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  locationsDisplay: {
+    gap: 8,
+  },
+  locationDisplayItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  locationDisplayText: {
+    fontSize: 14,
+    flex: 1,
   },
 });

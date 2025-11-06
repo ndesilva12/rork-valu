@@ -243,10 +243,10 @@ export default function ValueCodeSettings() {
                   </View>
 
                   {/* Stand Fee - Fixed */}
-                  <View style={[styles.smallCounter, styles.fixedCounter, { backgroundColor: '#FFFFFF', borderColor: colors.border }]}>
+                  <View style={[styles.smallCounter, styles.fixedCounter, { backgroundColor: colors.background, borderColor: colors.border }]}>
                     <Text style={[styles.smallCounterLabel, { color: colors.textSecondary }]}>Stand Fee %</Text>
                     <View style={styles.smallCounterControls}>
-                      <Text style={[styles.largeCounterValue, { color: colors.textSecondary }]}>
+                      <Text style={[styles.largeCounterValue, { color: '#FFFFFF' }]}>
                         2.5%
                       </Text>
                     </View>

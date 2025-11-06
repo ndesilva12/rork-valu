@@ -59,13 +59,20 @@ export default function UserDetailsEditor() {
   const handleUploadImage = async () => {
     setUploadingImage(true);
     try {
+      console.log('[UserDetailsEditor] Starting image upload for user:', profile.id);
       const downloadURL = await pickAndUploadImage(profile.id, 'profile');
+
       if (downloadURL) {
+        console.log('[UserDetailsEditor] Image uploaded successfully:', downloadURL);
         setProfileImage(downloadURL);
-        Alert.alert('Success', 'Profile image uploaded!');
+        Alert.alert('Success', 'Profile image uploaded! Remember to click "Save Changes" to save it to your profile.');
+      } else {
+        console.log('[UserDetailsEditor] Image upload cancelled or failed');
+        Alert.alert('Cancelled', 'Image upload was cancelled.');
       }
     } catch (error) {
-      console.error('Error uploading profile image:', error);
+      console.error('[UserDetailsEditor] Error uploading profile image:', error);
+      Alert.alert('Error', 'Failed to upload image. Please try again.');
     } finally {
       setUploadingImage(false);
     }

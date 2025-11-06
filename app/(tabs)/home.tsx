@@ -44,9 +44,10 @@ import { trpc } from '@/lib/trpc';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
+import { getAllUserBusinesses, calculateAlignmentScore, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 
 type ViewMode = 'playbook' | 'browse';
-type DistanceFilter = 'any' | 1 | 5 | 10 | 25 | 50 | 100 | 250 | 500;
+type LocalDistanceOption = 1 | 5 | 10 | 25 | 50;
 
 type FolderCategory = {
   id: string;
@@ -77,9 +78,11 @@ export default function HomeScreen() {
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
-  const [distanceFilter, setDistanceFilter] = useState<DistanceFilter>('any');
+  const [isLocalMode, setIsLocalMode] = useState<boolean>(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [showDistanceDropdown, setShowDistanceDropdown] = useState(false);
+  const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(10);
+  const [userBusinesses, setUserBusinesses] = useState<BusinessUser[]>([]);
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -114,12 +117,28 @@ export default function HomeScreen() {
     }
   };
 
-  // Request location when distance filter changes from "any" to a specific distance
+  // Fetch user businesses and request location when "local" mode is selected
   useEffect(() => {
-    if (distanceFilter !== 'any' && !userLocation) {
+    if (isLocalMode) {
+      // Request location permission
       requestLocation();
+
+      // Fetch all user businesses
+      const fetchUserBusinesses = async () => {
+        try {
+          console.log('[Home] Fetching user businesses for local mode');
+          const businesses = await getAllUserBusinesses();
+          console.log('[Home] Fetched user businesses:', businesses.length);
+          setUserBusinesses(businesses);
+        } catch (error) {
+          console.error('[Home] Error fetching user businesses:', error);
+          Alert.alert('Error', 'Could not load local businesses. Please try again.');
+        }
+      };
+
+      fetchUserBusinesses();
     }
-  }, [distanceFilter]);
+  }, [isLocalMode]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -294,58 +313,83 @@ export default function HomeScreen() {
       .filter((s) => s.totalAvoidScore > s.totalSupportScore && s.totalAvoidScore > 0)
       .sort((a, b) => a.alignmentStrength - b.alignmentStrength); // Lowest score first for unaligned
 
-    // Calculate distances if user location is available
-    const distancesMap = new Map<string, number>();
-    if (userLocation && distanceFilter !== 'any') {
-      currentBrands.forEach((product) => {
-        if (product.latitude && product.longitude) {
-          const distance = calculateDistance(
-            userLocation.latitude,
-            userLocation.longitude,
-            product.latitude,
-            product.longitude
-          );
-          distancesMap.set(product.id, distance);
-        }
-      });
-    }
-
-    // Filter by distance if a distance filter is active
-    let filteredSupport = allSupportSorted;
-    let filteredAvoid = allAvoidSorted;
-
-    if (distanceFilter !== 'any' && userLocation) {
-      filteredSupport = allSupportSorted.filter((s) => {
-        const distance = distancesMap.get(s.product.id);
-        return distance !== undefined && distance <= distanceFilter;
-      });
-      filteredAvoid = allAvoidSorted.filter((s) => {
-        const distance = distancesMap.get(s.product.id);
-        return distance !== undefined && distance <= distanceFilter;
-      });
-    }
-
     console.log('[Home] Scoring results:', {
-      alignedCount: filteredSupport.length,
-      unalignedCount: filteredAvoid.length,
-      distanceFilter,
-      hasLocation: !!userLocation,
-      topAligned: filteredSupport.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength })),
-      topUnaligned: filteredAvoid.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength }))
+      alignedCount: allSupportSorted.length,
+      unalignedCount: allAvoidSorted.length,
+      topAligned: allSupportSorted.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength })),
+      topUnaligned: allAvoidSorted.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength }))
     });
 
     const scoredMap = new Map(scored.map((s) => [s.product.id, s.alignmentStrength]));
 
     return {
-      topSupport: filteredSupport.slice(0, 10).map((s) => s.product),
-      topAvoid: filteredAvoid.slice(0, 10).map((s) => s.product),
-      allSupport: filteredSupport.map((s) => s.product),
-      allSupportFull: filteredSupport.map((s) => s.product),
-      allAvoidFull: filteredAvoid.map((s) => s.product),
+      topSupport: allSupportSorted.slice(0, 10).map((s) => s.product),
+      topAvoid: allAvoidSorted.slice(0, 10).map((s) => s.product),
+      allSupport: allSupportSorted.map((s) => s.product),
+      allSupportFull: allSupportSorted.map((s) => s.product),
+      allAvoidFull: allAvoidSorted.map((s) => s.product),
       scoredBrands: scoredMap,
-      brandDistances: distancesMap,
     };
-  }, [profile.causes, brands, localBusinesses, valuesMatrix, distanceFilter, userLocation]);
+  }, [profile.causes, brands, localBusinesses, valuesMatrix]);
+
+  // Compute local businesses when "local" mode is active
+  const localBusinessData = useMemo(() => {
+    if (!isLocalMode || !userLocation || userBusinesses.length === 0) {
+      return {
+        alignedBusinesses: [],
+        unalignedBusinesses: [],
+      };
+    }
+
+    console.log('[Home] Computing local business scores:', {
+      businessCount: userBusinesses.length,
+      userCausesCount: profile.causes.length,
+      localDistance,
+      userLocation,
+    });
+
+    // Score each business based on alignment with user's values
+    const scoredBusinesses = userBusinesses.map((business) => {
+      const alignmentScore = calculateAlignmentScore(profile.causes, business.causes || []);
+
+      // Check if business is within range
+      const rangeResult = isBusinessWithinRange(business, userLocation.latitude, userLocation.longitude, localDistance);
+
+      return {
+        business,
+        alignmentScore,
+        distance: rangeResult.closestDistance,
+        closestLocation: rangeResult.closestLocation,
+        isWithinRange: rangeResult.isWithinRange,
+      };
+    });
+
+    // Filter by distance
+    const businessesInRange = scoredBusinesses.filter((b) => b.isWithinRange);
+
+    // Split into aligned (≥50) and unaligned (<50)
+    const aligned = businessesInRange
+      .filter((b) => b.alignmentScore >= 50)
+      .sort((a, b) => b.alignmentScore - a.alignmentScore); // Highest score first
+
+    const unaligned = businessesInRange
+      .filter((b) => b.alignmentScore < 50)
+      .sort((a, b) => a.alignmentScore - b.alignmentScore); // Lowest score first
+
+    console.log('[Home] Local business results:', {
+      totalBusinesses: userBusinesses.length,
+      inRange: businessesInRange.length,
+      aligned: aligned.length,
+      unaligned: unaligned.length,
+      topAligned: aligned.slice(0, 3).map(b => ({ name: b.business.businessInfo.name, score: b.alignmentScore, distance: b.distance })),
+      topUnaligned: unaligned.slice(0, 3).map(b => ({ name: b.business.businessInfo.name, score: b.alignmentScore, distance: b.distance })),
+    });
+
+    return {
+      alignedBusinesses: aligned,
+      unalignedBusinesses: unaligned,
+    };
+  }, [isLocalMode, userLocation, userBusinesses, profile.causes, localDistance]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
@@ -466,8 +510,6 @@ export default function HomeScreen() {
     const isSupport = type === 'support';
     const titleColor = isSupport ? '#22C55E' : '#EF4444';
     const alignmentScore = scoredBrands.get(product.id) || 0;
-    const distance = brandDistances.get(product.id);
-    const showDistance = distanceFilter !== 'any' && distance !== undefined;
 
     return (
       <TouchableOpacity
@@ -496,7 +538,58 @@ export default function HomeScreen() {
             <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
               {product.category}
             </Text>
-            {showDistance && (
+          </View>
+          <View style={styles.brandScoreContainer}>
+            <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const handleBusinessPress = (businessId: string) => {
+    router.push({
+      pathname: '/business/[id]',
+      params: { id: businessId },
+    });
+  };
+
+  const renderLocalBusinessCard = (
+    businessData: { business: BusinessUser; alignmentScore: number; distance?: number; closestLocation?: string },
+    type: 'aligned' | 'unaligned'
+  ) => {
+    const isAligned = type === 'aligned';
+    const titleColor = isAligned ? '#22C55E' : '#EF4444';
+    const { business, alignmentScore, distance, closestLocation } = businessData;
+
+    return (
+      <TouchableOpacity
+        key={business.id}
+        style={[
+          styles.brandCard,
+          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+        ]}
+        onPress={() => handleBusinessPress(business.id)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.brandCardInner}>
+          <View style={styles.brandLogoContainer}>
+            <Image
+              source={{ uri: business.businessInfo.logoUrl ? business.businessInfo.logoUrl : getLogoUrl(business.businessInfo.website || '') }}
+              style={styles.brandLogo}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
+            />
+          </View>
+          <View style={styles.brandCardContent}>
+            <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>
+              {business.businessInfo.name}
+            </Text>
+            <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+              {business.businessInfo.category}
+            </Text>
+            {distance !== undefined && (
               <View style={styles.distanceContainer}>
                 <MapPin size={12} color={colors.textSecondary} strokeWidth={2} />
                 <Text style={[styles.distanceText, { color: colors.textSecondary }]}>
@@ -513,7 +606,7 @@ export default function HomeScreen() {
     );
   };
 
-  const distanceOptions: DistanceFilter[] = ['any', 500, 250, 100, 50, 25, 10, 5, 1];
+  const localDistanceOptions: LocalDistanceOption[] = [50, 25, 10, 5, 1];
 
   const renderViewModeSelector = () => (
     <View style={styles.selectionRow}>
@@ -541,32 +634,52 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Distance Selector */}
-      <View style={styles.distanceSelectorContainer}>
+      {/* Local Toggle Button */}
+      <View style={styles.localButtonContainer}>
         <TouchableOpacity
-          style={[styles.distanceButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-          onPress={() => setShowDistanceDropdown(!showDistanceDropdown)}
+          style={[
+            styles.localButton,
+            {
+              backgroundColor: isLocalMode ? colors.primary : colors.backgroundSecondary,
+              borderColor: isLocalMode ? colors.primary : colors.border,
+            }
+          ]}
+          onPress={() => {
+            setIsLocalMode(!isLocalMode);
+            setShowDistanceDropdown(false);
+          }}
           activeOpacity={0.7}
         >
-          <MapPin size={16} color={colors.textSecondary} strokeWidth={2} />
-          <Text style={[styles.distanceButtonText, { color: colors.text }]}>
-            {distanceFilter === 'any' ? 'Any Distance' : `${distanceFilter} mi`}
+          <MapPin size={16} color={isLocalMode ? colors.white : colors.textSecondary} strokeWidth={2} />
+          <Text style={[styles.localButtonText, { color: isLocalMode ? colors.white : colors.text }]}>
+            Local
           </Text>
-          <ChevronDown size={16} color={colors.textSecondary} strokeWidth={2} />
         </TouchableOpacity>
 
-        {showDistanceDropdown && (
+        {/* Distance Dropdown Arrow */}
+        {isLocalMode && (
+          <TouchableOpacity
+            style={[styles.distanceArrow, { backgroundColor: colors.primary }]}
+            onPress={() => setShowDistanceDropdown(!showDistanceDropdown)}
+            activeOpacity={0.7}
+          >
+            <ChevronDown size={14} color={colors.white} strokeWidth={2} />
+          </TouchableOpacity>
+        )}
+
+        {/* Distance Options Dropdown */}
+        {showDistanceDropdown && isLocalMode && (
           <View style={[styles.distanceDropdown, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <ScrollView style={styles.distanceDropdownScroll} nestedScrollEnabled>
-              {distanceOptions.map((option) => (
+              {localDistanceOptions.map((option) => (
                 <TouchableOpacity
                   key={option}
                   style={[
                     styles.distanceOption,
-                    distanceFilter === option && { backgroundColor: colors.primary },
+                    localDistance === option && { backgroundColor: colors.primary },
                   ]}
                   onPress={() => {
-                    setDistanceFilter(option);
+                    setLocalDistance(option);
                     setShowDistanceDropdown(false);
                   }}
                   activeOpacity={0.7}
@@ -575,10 +688,10 @@ export default function HomeScreen() {
                     style={[
                       styles.distanceOptionText,
                       { color: colors.text },
-                      distanceFilter === option && { color: colors.white, fontWeight: '600' },
+                      localDistance === option && { color: colors.white, fontWeight: '600' },
                     ]}
                   >
-                    {option === 'any' ? 'Any Distance' : `${option} miles`}
+                    {option} mile{option !== 1 ? 's' : ''}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -589,106 +702,262 @@ export default function HomeScreen() {
     </View>
   );
 
-  const renderPlaybookView = () => (
-    <>
-      <View style={styles.section}>
-        <View style={styles.sectionHeaderRow}>
-          <View style={styles.sectionHeader}>
-            <TrendingUp size={24} color={colors.success} strokeWidth={2} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Aligned Brands</Text>
-          </View>
-          <TouchableOpacity onPress={() => setShowAllAligned(!showAllAligned)} activeOpacity={0.7}>
-            <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllAligned ? 'Hide' : 'Show All'}</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.brandsContainer}>
-          {(showAllAligned ? allSupportFull : topSupport.slice(0, 5)).map((product) => renderBrandCard(product, 'support'))}
-        </View>
-      </View>
+  const renderPlaybookView = () => {
+    // Show local businesses when "local" mode is active
+    if (isLocalMode) {
+      const { alignedBusinesses, unalignedBusinesses } = localBusinessData;
 
-      {/* Move Unaligned brands closer to Aligned brands: reduced marginTop + slightly reduced bottom spacing */}
-      <View style={[styles.section, { marginTop: 4, marginBottom: 14 }]}>
-        <View style={styles.sectionHeaderRow}>
-          <View style={styles.sectionHeader}>
-            <TrendingDown size={24} color={colors.danger} strokeWidth={2} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Unaligned Brands</Text>
-          </View>
-          <TouchableOpacity onPress={() => setShowAllLeast(!showAllLeast)} activeOpacity={0.7}>
-            <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllLeast ? 'Hide' : 'Show All'}</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.brandsContainer}>
-          {(showAllLeast ? allAvoidFull : topAvoid.slice(0, 5)).map((product) => renderBrandCard(product, 'avoid'))}
-        </View>
-      </View>
-    </>
-  );
-
-  const renderFoldersView = () => (
-    <View style={styles.foldersContainer}>
-      {FOLDER_CATEGORIES.map((category) => {
-        const brands = categorizedBrands.get(category.id) || [];
-        const isExpanded = expandedFolder === category.id;
-
-        if (brands.length === 0) return null;
-
-        return (
-          <View key={category.id} style={[styles.folderCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-            <TouchableOpacity style={styles.folderHeader} onPress={() => setExpandedFolder(isExpanded ? null : category.id)} activeOpacity={0.7}>
-              <View style={styles.folderHeaderLeft}>
-                <View style={[styles.folderIconContainer, { backgroundColor: colors.primaryLight + '15' }]}>
-                  <category.Icon size={24} color={isDarkMode ? colors.white : colors.primary} strokeWidth={2} />
-                </View>
-                <View>
-                  <Text style={[styles.folderName, { color: colors.text }]}>{category.name}</Text>
-                  <Text style={[styles.folderCount, { color: colors.textSecondary }]}>{brands.length} brands</Text>
-                </View>
+      return (
+        <>
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderRow}>
+              <View style={styles.sectionHeader}>
+                <TrendingUp size={24} color={colors.success} strokeWidth={2} />
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Aligned Businesses</Text>
               </View>
-              <ChevronRight
-                size={20}
-                color={colors.textSecondary}
-                strokeWidth={2}
-                style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}
-              />
+              <TouchableOpacity onPress={() => setShowAllAligned(!showAllAligned)} activeOpacity={0.7}>
+                <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllAligned ? 'Hide' : 'Show All'}</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.brandsContainer}>
+              {alignedBusinesses.length > 0 ? (
+                (showAllAligned ? alignedBusinesses : alignedBusinesses.slice(0, 5)).map((biz) => renderLocalBusinessCard(biz, 'aligned'))
+              ) : (
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                  No aligned businesses found within {localDistance} mile{localDistance !== 1 ? 's' : ''}
+                </Text>
+              )}
+            </View>
+          </View>
+
+          <View style={[styles.section, { marginTop: 4, marginBottom: 14 }]}>
+            <View style={styles.sectionHeaderRow}>
+              <View style={styles.sectionHeader}>
+                <TrendingDown size={24} color={colors.danger} strokeWidth={2} />
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Unaligned Businesses</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowAllLeast(!showAllLeast)} activeOpacity={0.7}>
+                <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllLeast ? 'Hide' : 'Show All'}</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.brandsContainer}>
+              {unalignedBusinesses.length > 0 ? (
+                (showAllLeast ? unalignedBusinesses : unalignedBusinesses.slice(0, 5)).map((biz) => renderLocalBusinessCard(biz, 'unaligned'))
+              ) : (
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                  No unaligned businesses found within {localDistance} mile{localDistance !== 1 ? 's' : ''}
+                </Text>
+              )}
+            </View>
+          </View>
+        </>
+      );
+    }
+
+    // Show regular brands when not in "local" mode
+    return (
+      <>
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <View style={styles.sectionHeader}>
+              <TrendingUp size={24} color={colors.success} strokeWidth={2} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Aligned Brands</Text>
+            </View>
+            <TouchableOpacity onPress={() => setShowAllAligned(!showAllAligned)} activeOpacity={0.7}>
+              <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllAligned ? 'Hide' : 'Show All'}</Text>
             </TouchableOpacity>
+          </View>
+          <View style={styles.brandsContainer}>
+            {(showAllAligned ? allSupportFull : topSupport.slice(0, 5)).map((product) => renderBrandCard(product, 'support'))}
+          </View>
+        </View>
 
-            {isExpanded && (
-              <View style={styles.folderContent}>
-                {brands.map((product) => (
-                  <TouchableOpacity
-                    key={product.id}
-                    style={[styles.folderBrandCard, { backgroundColor: colors.background }]}
-                    onPress={() => handleProductPress(product)}
-                    activeOpacity={0.7}
-                  >
-                    <Image
-                      source={{ uri: getLogoUrl(product.website || '') }}
-                      style={styles.folderBrandImage}
-                      contentFit="cover"
-                      transition={200}
-                      cachePolicy="memory-disk"
-                    />
-                    <View style={styles.folderBrandContent}>
-                      <Text style={[styles.folderBrandName, { color: colors.text }]} numberOfLines={2}>
-                        {product.name}
-                      </Text>
-                      <Text style={[styles.folderBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                        {product.category}
-                      </Text>
-                    </View>
-                    <View style={[styles.folderBrandBadge, { backgroundColor: colors.successLight }]}>
-                      <TrendingUp size={12} color={colors.success} strokeWidth={2.5} />
-                      <Text style={[styles.folderBrandScore, { color: colors.success }]}>{Math.abs(product.alignmentScore)}</Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+        <View style={[styles.section, { marginTop: 4, marginBottom: 14 }]}>
+          <View style={styles.sectionHeaderRow}>
+            <View style={styles.sectionHeader}>
+              <TrendingDown size={24} color={colors.danger} strokeWidth={2} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Unaligned Brands</Text>
+            </View>
+            <TouchableOpacity onPress={() => setShowAllLeast(!showAllLeast)} activeOpacity={0.7}>
+              <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllLeast ? 'Hide' : 'Show All'}</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.brandsContainer}>
+            {(showAllLeast ? allAvoidFull : topAvoid.slice(0, 5)).map((product) => renderBrandCard(product, 'avoid'))}
+          </View>
+        </View>
+      </>
+    );
+  };
+
+  const renderFoldersView = () => {
+    // Show local businesses when "local" mode is active
+    if (isLocalMode) {
+      const { alignedBusinesses, unalignedBusinesses } = localBusinessData;
+      const allLocalBusinesses = [...alignedBusinesses, ...unalignedBusinesses];
+
+      // Group local businesses by category
+      const categorizedLocalBusinesses = new Map<string, typeof allLocalBusinesses>();
+
+      allLocalBusinesses.forEach((bizData) => {
+        const category = bizData.business.businessInfo.category;
+        if (!categorizedLocalBusinesses.has(category)) {
+          categorizedLocalBusinesses.set(category, []);
+        }
+        categorizedLocalBusinesses.get(category)!.push(bizData);
+      });
+
+      if (allLocalBusinesses.length === 0) {
+        return (
+          <View style={styles.foldersContainer}>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              No local businesses found within {localDistance} mile{localDistance !== 1 ? 's' : ''}
+            </Text>
           </View>
         );
-      })}
-    </View>
-  );
+      }
+
+      return (
+        <View style={styles.foldersContainer}>
+          {Array.from(categorizedLocalBusinesses.entries()).map(([category, businesses]) => {
+            const isExpanded = expandedFolder === category;
+
+            return (
+              <View key={category} style={[styles.folderCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <TouchableOpacity style={styles.folderHeader} onPress={() => setExpandedFolder(isExpanded ? null : category)} activeOpacity={0.7}>
+                  <View style={styles.folderHeaderLeft}>
+                    <View style={[styles.folderIconContainer, { backgroundColor: colors.primaryLight + '15' }]}>
+                      <Store size={24} color={isDarkMode ? colors.white : colors.primary} strokeWidth={2} />
+                    </View>
+                    <View>
+                      <Text style={[styles.folderName, { color: colors.text }]}>{category}</Text>
+                      <Text style={[styles.folderCount, { color: colors.textSecondary }]}>{businesses.length} business{businesses.length !== 1 ? 'es' : ''}</Text>
+                    </View>
+                  </View>
+                  <ChevronRight
+                    size={20}
+                    color={colors.textSecondary}
+                    strokeWidth={2}
+                    style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}
+                  />
+                </TouchableOpacity>
+
+                {isExpanded && (
+                  <View style={styles.folderContent}>
+                    {businesses.map((bizData) => {
+                      const isAligned = bizData.alignmentScore >= 50;
+                      const scoreColor = isAligned ? colors.success : colors.danger;
+                      const Icon = isAligned ? TrendingUp : TrendingDown;
+
+                      return (
+                        <TouchableOpacity
+                          key={bizData.business.id}
+                          style={[styles.folderBrandCard, { backgroundColor: colors.background }]}
+                          onPress={() => handleBusinessPress(bizData.business.id)}
+                          activeOpacity={0.7}
+                        >
+                          <Image
+                            source={{
+                              uri: bizData.business.businessInfo.logoUrl
+                                ? bizData.business.businessInfo.logoUrl
+                                : getLogoUrl(bizData.business.businessInfo.website || '')
+                            }}
+                            style={styles.folderBrandImage}
+                            contentFit="cover"
+                            transition={200}
+                            cachePolicy="memory-disk"
+                          />
+                          <View style={styles.folderBrandContent}>
+                            <Text style={[styles.folderBrandName, { color: colors.text }]} numberOfLines={2}>
+                              {bizData.business.businessInfo.name}
+                            </Text>
+                            <Text style={[styles.folderBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                              {bizData.distance !== undefined ? `${formatDistance(bizData.distance)} away` : bizData.business.businessInfo.category}
+                            </Text>
+                          </View>
+                          <View style={[styles.folderBrandBadge, { backgroundColor: isAligned ? colors.successLight : colors.dangerLight }]}>
+                            <Icon size={12} color={scoreColor} strokeWidth={2.5} />
+                            <Text style={[styles.folderBrandScore, { color: scoreColor }]}>{bizData.alignmentScore}</Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      );
+    }
+
+    // Show regular brands when not in "local" mode
+    return (
+      <View style={styles.foldersContainer}>
+        {FOLDER_CATEGORIES.map((category) => {
+          const brands = categorizedBrands.get(category.id) || [];
+          const isExpanded = expandedFolder === category.id;
+
+          if (brands.length === 0) return null;
+
+          return (
+            <View key={category.id} style={[styles.folderCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <TouchableOpacity style={styles.folderHeader} onPress={() => setExpandedFolder(isExpanded ? null : category.id)} activeOpacity={0.7}>
+                <View style={styles.folderHeaderLeft}>
+                  <View style={[styles.folderIconContainer, { backgroundColor: colors.primaryLight + '15' }]}>
+                    <category.Icon size={24} color={isDarkMode ? colors.white : colors.primary} strokeWidth={2} />
+                  </View>
+                  <View>
+                    <Text style={[styles.folderName, { color: colors.text }]}>{category.name}</Text>
+                    <Text style={[styles.folderCount, { color: colors.textSecondary }]}>{brands.length} brands</Text>
+                  </View>
+                </View>
+                <ChevronRight
+                  size={20}
+                  color={colors.textSecondary}
+                  strokeWidth={2}
+                  style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}
+                />
+              </TouchableOpacity>
+
+              {isExpanded && (
+                <View style={styles.folderContent}>
+                  {brands.map((product) => (
+                    <TouchableOpacity
+                      key={product.id}
+                      style={[styles.folderBrandCard, { backgroundColor: colors.background }]}
+                      onPress={() => handleProductPress(product)}
+                      activeOpacity={0.7}
+                    >
+                      <Image
+                        source={{ uri: getLogoUrl(product.website || '') }}
+                        style={styles.folderBrandImage}
+                        contentFit="cover"
+                        transition={200}
+                        cachePolicy="memory-disk"
+                      />
+                      <View style={styles.folderBrandContent}>
+                        <Text style={[styles.folderBrandName, { color: colors.text }]} numberOfLines={2}>
+                          {product.name}
+                        </Text>
+                        <Text style={[styles.folderBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {product.category}
+                        </Text>
+                      </View>
+                      <View style={[styles.folderBrandBadge, { backgroundColor: colors.successLight }]}>
+                        <TrendingUp size={12} color={colors.success} strokeWidth={2.5} />
+                        <Text style={[styles.folderBrandScore, { color: colors.success }]}>{Math.abs(product.alignmentScore)}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </View>
+    );
+  };
 
   const renderMapView = () => {
     // Simple OpenStreetMap iframe embed — SSR-safe and dependency-free
@@ -898,6 +1167,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     lineHeight: 20,
   },
+  emptyText: {
+    fontSize: 15,
+    textAlign: 'center' as const,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    lineHeight: 22,
+  },
   productsContainer: {
     gap: 12,
   },
@@ -1030,7 +1306,7 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   viewModeSelector: {
-    flex: 1,
+    flex: 2,
     flexDirection: 'row',
     borderRadius: 10,
     padding: 3,
@@ -1050,24 +1326,36 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600' as const,
   },
-  distanceSelectorContainer: {
+  localButtonContainer: {
     position: 'relative' as const,
-    minWidth: 140,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'stretch',
     zIndex: 101,
   },
-  distanceButton: {
+  localButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    paddingVertical: 14,
+    paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 10,
     borderWidth: 1,
   },
-  distanceButtonText: {
-    fontSize: 13,
+  localButtonText: {
+    fontSize: 15,
     fontWeight: '600' as const,
-    flex: 1,
+  },
+  distanceArrow: {
+    marginLeft: -1,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(255, 255, 255, 0.2)',
   },
   distanceDropdown: {
     position: 'absolute' as const,
@@ -1095,6 +1383,7 @@ const styles = StyleSheet.create({
   },
   distanceOptionText: {
     fontSize: 14,
+    fontWeight: '500' as const,
   },
   distanceContainer: {
     flexDirection: 'row',

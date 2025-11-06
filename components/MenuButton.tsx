@@ -11,6 +11,7 @@ import {
   Switch,
   Image,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -249,7 +250,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingTop: '5%',
+    paddingTop: Platform.OS === 'web' && isMobile ? '15%' : '5%',
   },
   menuContainer: {
     width: '90%',
