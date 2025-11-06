@@ -1341,7 +1341,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 10,
+    paddingVertical: 13,
     paddingHorizontal: 12,
     borderRadius: 10,
     borderWidth: 1,
@@ -1353,7 +1353,7 @@ const styles = StyleSheet.create({
   distanceArrow: {
     marginLeft: -1,
     paddingHorizontal: 10,
-    paddingVertical: 10,
+    paddingVertical: 13,
     borderTopRightRadius: 10,
     borderBottomRightRadius: 10,
     borderWidth: 1,
