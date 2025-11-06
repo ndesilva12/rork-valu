@@ -9,12 +9,14 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Search, MapPin, QrCode, Hash, AlertCircle } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { getBusinessesAcceptingDiscounts, calculateDistance, BusinessUser } from '@/services/firebase/businessService';
 
 export default function BusinessesAcceptingDiscounts() {
+  const router = useRouter();
   const { isDarkMode, profile } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
@@ -152,6 +154,7 @@ export default function BusinessesAcceptingDiscounts() {
       <TouchableOpacity
         style={[styles.businessCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
         activeOpacity={0.7}
+        onPress={() => router.push(`/business/${item.id}`)}
       >
         <View style={styles.businessCardContent}>
           <View style={styles.businessInfo}>
