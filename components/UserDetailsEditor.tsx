@@ -96,7 +96,7 @@ export default function UserDetailsEditor() {
   };
 
   return (
-    <View style={[styles.section, Platform.OS === 'web' && styles.webContainer]}>
+    <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>User Details</Text>
         {!editing && (
@@ -373,11 +373,6 @@ export default function UserDetailsEditor() {
 const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
-  },
-  webContainer: {
-    maxWidth: '50%',
-    alignSelf: 'center' as const,
-    width: '100%',
   },
   sectionHeader: {
     flexDirection: 'row',

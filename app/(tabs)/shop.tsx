@@ -70,7 +70,7 @@ export default function DiscountScreen() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent, { paddingBottom: 100 }]}
+        contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
       >
         {/* CODE SECTION */}
         {isBusiness ? (
@@ -355,11 +355,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 20,
-  },
-  webContent: {
-    maxWidth: '50%',
-    alignSelf: 'center' as const,
-    width: '100%',
   },
   stickyHeaderContainer: {
     borderBottomWidth: 1,

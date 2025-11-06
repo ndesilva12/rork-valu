@@ -146,7 +146,7 @@ export default function BusinessDetailScreen() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}
         showsVerticalScrollIndicator={false}
       >
         {/* Business Header Card */}
@@ -374,6 +374,11 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 100,
+  },
+  webContent: {
+    maxWidth: '50%',
+    alignSelf: 'center' as const,
+    width: '100%',
   },
   loadingContainer: {
     flex: 1,
