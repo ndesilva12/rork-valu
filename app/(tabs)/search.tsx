@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { Search as SearchIcon, TrendingUp, TrendingDown, Minus, ScanBarcode, X, Heart, MessageCircle, Share2, ExternalLink } from 'lucide-react-native';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
 import {
   View,
@@ -30,6 +30,7 @@ import { Product } from '@/types';
 import { lookupBarcode, findBrandInDatabase, getBrandProduct } from '@/mocks/barcode-products';
 import { getLogoUrl } from '@/lib/logo';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
+import { getBusinessesAcceptingDiscounts, BusinessUser } from '@/services/firebase/businessService';
 
 interface Comment {
   id: string;
@@ -53,12 +54,26 @@ export default function SearchScreen() {
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Product[]>([]);
+  const [firebaseBusinesses, setFirebaseBusinesses] = useState<BusinessUser[]>([]);
   const [scannerVisible, setScannerVisible] = useState(false);
   const [scannedProduct, setScannedProduct] = useState<Product | null>(null);
   const [scannedInfo, setScannedInfo] = useState<{productName: string; brandName: string; imageUrl?: string; notInDatabase: boolean} | null>(null);
   const [scanning, setScanning] = useState(true);
   const [lookingUp, setLookingUp] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
+
+  // Fetch Firebase businesses on mount
+  useEffect(() => {
+    const fetchBusinesses = async () => {
+      try {
+        const businesses = await getBusinessesAcceptingDiscounts();
+        setFirebaseBusinesses(businesses);
+      } catch (error) {
+        console.error('Error fetching businesses:', error);
+      }
+    };
+    fetchBusinesses();
+  }, []);
 
   // Responsive grid columns
   const numColumns = useMemo(() => width > 768 ? 3 : 2, [width]);
@@ -281,8 +296,37 @@ export default function SearchScreen() {
       setQuery(text);
       if (text.trim().length > 0) {
         const userCauseIds = profile?.causes ? profile.causes.map(c => c.id) : [];
-        const searchResults = searchProducts(text, userCauseIds);
-        setResults(searchResults || []);
+        const productResults = searchProducts(text, userCauseIds);
+
+        // Search Firebase businesses
+        const businessResults = firebaseBusinesses
+          .filter(business => {
+            const searchLower = text.toLowerCase();
+            return (
+              business.businessInfo.name.toLowerCase().includes(searchLower) ||
+              business.businessInfo.category.toLowerCase().includes(searchLower) ||
+              business.businessInfo.location?.toLowerCase().includes(searchLower) ||
+              business.businessInfo.description?.toLowerCase().includes(searchLower)
+            );
+          })
+          .map(business => ({
+            id: `firebase-business-${business.id}`,
+            firebaseId: business.id, // Store original Firebase ID
+            name: business.businessInfo.name,
+            brand: business.businessInfo.name,
+            category: business.businessInfo.category,
+            description: business.businessInfo.description || '',
+            alignmentScore: 75, // Neutral score for now
+            exampleImageUrl: business.businessInfo.logoUrl,
+            website: business.businessInfo.website,
+            location: business.businessInfo.location,
+            valueAlignments: [],
+            isFirebaseBusiness: true, // Flag to identify Firebase businesses
+          } as Product & { firebaseId: string; isFirebaseBusiness: boolean }));
+
+        // Combine product results and business results
+        const combinedResults = [...(productResults || []), ...businessResults];
+        setResults(combinedResults);
       } else {
         setResults([]);
       }
@@ -292,14 +336,24 @@ export default function SearchScreen() {
     }
   };
 
-  const handleProductPress = (product: Product) => {
+  const handleProductPress = (product: Product | (Product & { firebaseId: string; isFirebaseBusiness: boolean })) => {
     if (query.trim().length > 0) {
       addToSearchHistory(query);
     }
-    router.push({
-      pathname: '/brand/[id]',
-      params: { id: product.id },
-    });
+
+    // Check if this is a Firebase business
+    const fbBusiness = product as Product & { firebaseId?: string; isFirebaseBusiness?: boolean };
+    if (fbBusiness.isFirebaseBusiness && fbBusiness.firebaseId) {
+      router.push({
+        pathname: '/business/[id]',
+        params: { id: fbBusiness.firebaseId },
+      });
+    } else {
+      router.push({
+        pathname: '/brand/[id]',
+        params: { id: product.id },
+      });
+    }
   };
 
   const handleGridCardPress = (product: Product & { matchingValues?: string[] }) => {
