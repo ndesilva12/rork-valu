@@ -198,23 +198,25 @@ export default function ValueCodeSettings() {
                   <View style={[styles.smallCounter, { backgroundColor: colors.background, borderColor: colors.border }]}>
                     <Text style={[styles.smallCounterLabel, { color: colors.textSecondary }]}>Customer %</Text>
                     <View style={styles.smallCounterControls}>
-                      <TouchableOpacity
-                        style={styles.smallCounterButton}
-                        onPress={() => handleChangeCustomerDiscount(customerDiscount - 0.5)}
-                        activeOpacity={0.7}
-                      >
-                        <Minus size={20} color={colors.text} strokeWidth={2} />
-                      </TouchableOpacity>
                       <Text style={[styles.largeCounterValue, { color: colors.primary }]}>
                         {customerDiscount.toFixed(1)}%
                       </Text>
-                      <TouchableOpacity
-                        style={styles.smallCounterButton}
-                        onPress={() => handleChangeCustomerDiscount(customerDiscount + 0.5)}
-                        activeOpacity={0.7}
-                      >
-                        <Plus size={20} color={colors.text} strokeWidth={2} />
-                      </TouchableOpacity>
+                      <View style={styles.smallCounterButtons}>
+                        <TouchableOpacity
+                          style={styles.smallCounterButton}
+                          onPress={() => handleChangeCustomerDiscount(customerDiscount - 0.5)}
+                          activeOpacity={0.7}
+                        >
+                          <Minus size={20} color={colors.text} strokeWidth={2} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.smallCounterButton}
+                          onPress={() => handleChangeCustomerDiscount(customerDiscount + 0.5)}
+                          activeOpacity={0.7}
+                        >
+                          <Plus size={20} color={colors.text} strokeWidth={2} />
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
 
@@ -222,23 +224,25 @@ export default function ValueCodeSettings() {
                   <View style={[styles.smallCounter, { backgroundColor: colors.background, borderColor: colors.border }]}>
                     <Text style={[styles.smallCounterLabel, { color: colors.textSecondary }]}>Donation %</Text>
                     <View style={styles.smallCounterControls}>
-                      <TouchableOpacity
-                        style={styles.smallCounterButton}
-                        onPress={() => handleChangeDonationDiscount(donationDiscount - 0.5)}
-                        activeOpacity={0.7}
-                      >
-                        <Minus size={20} color={colors.text} strokeWidth={2} />
-                      </TouchableOpacity>
                       <Text style={[styles.largeCounterValue, { color: colors.primary }]}>
                         {donationDiscount.toFixed(1)}%
                       </Text>
-                      <TouchableOpacity
-                        style={styles.smallCounterButton}
-                        onPress={() => handleChangeDonationDiscount(donationDiscount + 0.5)}
-                        activeOpacity={0.7}
-                      >
-                        <Plus size={20} color={colors.text} strokeWidth={2} />
-                      </TouchableOpacity>
+                      <View style={styles.smallCounterButtons}>
+                        <TouchableOpacity
+                          style={styles.smallCounterButton}
+                          onPress={() => handleChangeDonationDiscount(donationDiscount - 0.5)}
+                          activeOpacity={0.7}
+                        >
+                          <Minus size={20} color={colors.text} strokeWidth={2} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.smallCounterButton}
+                          onPress={() => handleChangeDonationDiscount(donationDiscount + 0.5)}
+                          activeOpacity={0.7}
+                        >
+                          <Plus size={20} color={colors.text} strokeWidth={2} />
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
 
@@ -287,6 +291,21 @@ export default function ValueCodeSettings() {
                 </TouchableOpacity>
               </View>
             )}
+          </>
+        )}
+
+        {acceptsDiscounts && (
+          <>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
+              <Text style={[styles.infoTitle, { color: colors.text }]}>
+                What You Get For Discounts
+              </Text>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                <Text style={styles.underlinedText}>When you accept discounts, you get invaluable insights about what your customers believe.</Text> Find out: ideologies, causes, social issues, interests, celebrity sentiments, religions, etc. These are deep connections to your customers that you cannot find anywhere else.
+              </Text>
+            </View>
           </>
         )}
       </View>
@@ -419,12 +438,20 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
   },
   smallCounterControls: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 8,
+  },
+  smallCounterButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 8,
+    justifyContent: 'center',
   },
   smallCounterButton: {
-    padding: 4,
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   smallCounterValue: {
     fontSize: 18,
@@ -477,5 +504,21 @@ const styles = StyleSheet.create({
   saveCustomButtonText: {
     fontSize: 16,
     fontWeight: '700' as const,
+  },
+  infoBox: {
+    padding: 16,
+    borderRadius: 12,
+  },
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 12,
+  },
+  infoText: {
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  underlinedText: {
+    textDecorationLine: 'underline' as const,
   },
 });
