@@ -9,6 +9,7 @@ import {
   Platform,
   Linking,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { User, Globe, MapPin, Facebook, Instagram, Twitter, Linkedin, ExternalLink, Camera } from 'lucide-react-native';
@@ -20,6 +21,8 @@ import LocationAutocomplete from '@/components/LocationAutocomplete';
 export default function UserDetailsEditor() {
   const { isDarkMode, profile, setUserDetails } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
 
   const userDetails = profile.userDetails || {
     name: '',
@@ -181,9 +184,9 @@ export default function UserDetailsEditor() {
 
         {/* Compact Form - 2 columns */}
         <View style={styles.formGrid}>
-          {/* Name & Location Row */}
-          <View style={styles.formRow}>
-            <View style={[styles.inputGroup, styles.halfWidth]}>
+          {/* Name & Location Row - stacked on mobile */}
+          <View style={isMobile ? styles.formColumn : styles.formRow}>
+            <View style={[styles.inputGroup, isMobile ? styles.fullWidth : styles.halfWidth]}>
               <Text style={[styles.label, { color: colors.text }]}>Name</Text>
               {editing ? (
                 <TextInput
@@ -199,7 +202,7 @@ export default function UserDetailsEditor() {
               )}
             </View>
 
-            <View style={[styles.inputGroup, styles.halfWidth]}>
+            <View style={[styles.inputGroup, isMobile ? styles.fullWidth : styles.halfWidth]}>
               <Text style={[styles.label, { color: colors.text }]}>Location</Text>
               {editing ? (
                 <LocationAutocomplete
@@ -274,8 +277,8 @@ export default function UserDetailsEditor() {
           <View style={styles.socialMediaSection}>
             <Text style={[styles.sectionSubtitle, { color: colors.text }]}>Social Media</Text>
 
-            <View style={styles.formRow}>
-              <View style={[styles.inputGroup, styles.halfWidth]}>
+            <View style={isMobile ? styles.formColumn : styles.formRow}>
+              <View style={[styles.inputGroup, isMobile ? styles.fullWidth : styles.halfWidth]}>
                 <View style={styles.labelRow}>
                   <Facebook size={14} color={colors.text} strokeWidth={2} />
                   <Text style={[styles.label, { color: colors.text }]}>Facebook</Text>
@@ -304,7 +307,7 @@ export default function UserDetailsEditor() {
                 )}
               </View>
 
-              <View style={[styles.inputGroup, styles.halfWidth]}>
+              <View style={[styles.inputGroup, isMobile ? styles.fullWidth : styles.halfWidth]}>
                 <View style={styles.labelRow}>
                   <Instagram size={14} color={colors.text} strokeWidth={2} />
                   <Text style={[styles.label, { color: colors.text }]}>Instagram</Text>
@@ -334,8 +337,8 @@ export default function UserDetailsEditor() {
               </View>
             </View>
 
-            <View style={styles.formRow}>
-              <View style={[styles.inputGroup, styles.halfWidth]}>
+            <View style={isMobile ? styles.formColumn : styles.formRow}>
+              <View style={[styles.inputGroup, isMobile ? styles.fullWidth : styles.halfWidth]}>
                 <View style={styles.labelRow}>
                   <Twitter size={14} color={colors.text} strokeWidth={2} />
                   <Text style={[styles.label, { color: colors.text }]}>Twitter/X</Text>
@@ -364,7 +367,7 @@ export default function UserDetailsEditor() {
                 )}
               </View>
 
-              <View style={[styles.inputGroup, styles.halfWidth]}>
+              <View style={[styles.inputGroup, isMobile ? styles.fullWidth : styles.halfWidth]}>
                 <View style={styles.labelRow}>
                   <Linkedin size={14} color={colors.text} strokeWidth={2} />
                   <Text style={[styles.label, { color: colors.text }]}>LinkedIn</Text>
@@ -508,11 +511,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
+  formColumn: {
+    flexDirection: 'column',
+    gap: 0,
+  },
   inputGroup: {
     marginBottom: 8,
   },
   halfWidth: {
     flex: 1,
+  },
+  fullWidth: {
+    width: '100%',
   },
   labelRow: {
     flexDirection: 'row',
