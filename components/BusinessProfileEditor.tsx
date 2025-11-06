@@ -176,13 +176,20 @@ export default function BusinessProfileEditor() {
   const handleLogoUpload = async () => {
     setUploadingImage(true);
     try {
+      console.log('[BusinessProfileEditor] Starting logo upload for business:', profile.id);
       const downloadURL = await pickAndUploadImage(profile.id, 'business');
+
       if (downloadURL) {
+        console.log('[BusinessProfileEditor] Logo uploaded successfully:', downloadURL);
         setLogoUrl(downloadURL);
-        Alert.alert('Success', 'Business logo uploaded!');
+        Alert.alert('Success', 'Business logo uploaded! Remember to click "Save Changes" to save it to your profile.');
+      } else {
+        console.log('[BusinessProfileEditor] Logo upload cancelled or failed');
+        Alert.alert('Cancelled', 'Image upload was cancelled.');
       }
     } catch (error) {
-      console.error('Error uploading business logo:', error);
+      console.error('[BusinessProfileEditor] Error uploading business logo:', error);
+      Alert.alert('Error', 'Failed to upload logo. Please try again.');
     } finally {
       setUploadingImage(false);
     }

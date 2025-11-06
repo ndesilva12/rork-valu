@@ -70,22 +70,20 @@ export default function BusinessSetupScreen() {
       return;
     }
 
-    // Save basic business info (including location if provided)
+    if (!location.trim() || latitude === undefined || longitude === undefined) {
+      Alert.alert('Required', 'Please enter your business location. This is required so customers can find you on the map.');
+      return;
+    }
+
+    // Save basic business info (including location - now required)
     const businessInfo: any = {
       name: businessName.trim(),
       category: selectedCategory,
+      location: location.trim(),
+      latitude: latitude,
+      longitude: longitude,
       acceptsValueCodes: false, // Default to false, can be changed in profile later
     };
-
-    if (location.trim()) {
-      businessInfo.location = location.trim();
-    }
-    if (latitude !== undefined) {
-      businessInfo.latitude = latitude;
-    }
-    if (longitude !== undefined) {
-      businessInfo.longitude = longitude;
-    }
 
     await setBusinessInfo(businessInfo);
 
@@ -217,7 +215,7 @@ export default function BusinessSetupScreen() {
           <View style={styles.labelRow}>
             <MapPin size={18} color={colors.text} strokeWidth={2} />
             <Text style={[styles.label, { color: colors.text }]}>
-              Location (Optional)
+              Location
             </Text>
           </View>
           <LocationAutocomplete
@@ -226,7 +224,7 @@ export default function BusinessSetupScreen() {
             isDarkMode={isDarkMode}
           />
           <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-            Adding your location helps customers find you on the map
+            Your business location is required so customers can find you on the map
           </Text>
         </View>
 
@@ -242,16 +240,16 @@ export default function BusinessSetupScreen() {
           style={[
             styles.continueButton,
             {
-              backgroundColor: businessName.trim() && selectedCategory ? colors.primary : colors.border,
+              backgroundColor: businessName.trim() && selectedCategory && location.trim() && latitude !== undefined && longitude !== undefined ? colors.primary : colors.border,
             }
           ]}
           onPress={handleContinue}
-          disabled={!businessName.trim() || !selectedCategory}
+          disabled={!businessName.trim() || !selectedCategory || !location.trim() || latitude === undefined || longitude === undefined}
           activeOpacity={0.8}
         >
           <Text style={[
             styles.continueButtonText,
-            { color: businessName.trim() && selectedCategory ? colors.white : colors.textSecondary }
+            { color: businessName.trim() && selectedCategory && location.trim() && latitude !== undefined && longitude !== undefined ? colors.white : colors.textSecondary }
           ]}>
             Continue to Value Selection
           </Text>
