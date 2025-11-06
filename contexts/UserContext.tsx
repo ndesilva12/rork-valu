@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { Cause, UserProfile, Charity, AccountType, BusinessInfo, UserDetails } from '@/types';
+import { saveUserProfile, getUserProfile, createUser, updateUserMetadata } from '@/services/firebase/userService';
 
 const DARK_MODE_KEY = '@dark_mode';
 const PROFILE_KEY = '@user_profile';
@@ -19,7 +20,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
   const [profile, setProfile] = useState<UserProfile>({
     causes: [],
     searchHistory: [],
-    promoCode: undefined,
+    promoCode: generatePromoCode(), // Always generate a promo code immediately
     donationAmount: 0,
     selectedCharities: [],
   });
@@ -32,9 +33,9 @@ export const [UserProvider, useUser] = createContextHook(() => {
     let mounted = true;
     const loadProfile = async () => {
       if (!clerkUser) {
-        console.log('[UserContext] No clerk user, resetting state');
+        console.log('[UserContext] ❌ No clerk user, resetting state');
         if (mounted) {
-          setProfile({ causes: [], searchHistory: [] });
+          setProfile({ causes: [], searchHistory: [], donationAmount: 0, selectedCharities: [] });
           setHasCompletedOnboarding(false);
           setIsNewUser(null);
           setIsLoading(false);
@@ -42,63 +43,149 @@ export const [UserProvider, useUser] = createContextHook(() => {
         return;
       }
 
+      console.log('[UserContext] ====== LOADING PROFILE ======');
+      console.log('[UserContext] Clerk User ID:', clerkUser.id);
+      console.log('[UserContext] Clerk Email:', clerkUser.primaryEmailAddress?.emailAddress);
+
       try {
         const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
         const isNewUserKey = `${IS_NEW_USER_KEY}_${clerkUser.id}`;
-        
-        const [storedProfile, storedIsNewUser] = await Promise.all([
-          AsyncStorage.getItem(storageKey),
-          AsyncStorage.getItem(isNewUserKey)
-        ]);
-        
-        if (storedProfile && mounted) {
-          const parsedProfile = JSON.parse(storedProfile) as UserProfile;
-          console.log('[UserContext] Loaded profile from AsyncStorage with', parsedProfile.causes.length, 'causes');
 
-          // Generate promo code if it doesn't exist
-          if (!parsedProfile.promoCode) {
-            parsedProfile.promoCode = generatePromoCode();
-            parsedProfile.donationAmount = parsedProfile.donationAmount ?? 0;
-            parsedProfile.selectedCharities = parsedProfile.selectedCharities ?? [];
-            await AsyncStorage.setItem(storageKey, JSON.stringify(parsedProfile));
-            console.log('[UserContext] Generated new promo code:', parsedProfile.promoCode);
+        // Check if this is a new user
+        const storedIsNewUser = await AsyncStorage.getItem(isNewUserKey);
+        const isFirstTime = storedIsNewUser === null;
+
+        console.log('[UserContext] 🔍 AsyncStorage check:');
+        console.log('[UserContext]   - isNewUserKey value:', storedIsNewUser);
+        console.log('[UserContext]   - isFirstTime:', isFirstTime);
+
+        // Try to load from Firebase first (source of truth)
+        console.log('[UserContext] 🔄 Attempting to load from Firebase...');
+        let firebaseProfile: UserProfile | null = null;
+        try {
+          firebaseProfile = await getUserProfile(clerkUser.id);
+          if (firebaseProfile) {
+            console.log('[UserContext] ✅ Firebase profile found:', JSON.stringify(firebaseProfile, null, 2));
+          } else {
+            console.log('[UserContext] ⚠️ No Firebase profile found for user');
+          }
+        } catch (firebaseError) {
+          console.error('[UserContext] ❌ Failed to load from Firebase:', firebaseError);
+        }
+
+        if (firebaseProfile && mounted) {
+          // Firebase has the profile - use it
+          console.log('[UserContext] 📥 Using Firebase profile with', firebaseProfile.causes.length, 'causes');
+
+          // Ensure promo code exists
+          if (!firebaseProfile.promoCode) {
+            firebaseProfile.promoCode = generatePromoCode();
+            console.log('[UserContext] Generated new promo code:', firebaseProfile.promoCode);
           }
 
-          setProfile(parsedProfile);
-          setHasCompletedOnboarding(parsedProfile.causes.length > 0);
-        } else if (mounted) {
-          console.log('[UserContext] No stored profile found, creating new profile with promo code');
-          const newProfile: UserProfile = {
+          // Ensure required fields are initialized
+          firebaseProfile.donationAmount = firebaseProfile.donationAmount ?? 0;
+          firebaseProfile.selectedCharities = firebaseProfile.selectedCharities ?? [];
+
+          setProfile(firebaseProfile);
+          setHasCompletedOnboarding(firebaseProfile.causes.length > 0);
+
+          // Update local cache
+          await AsyncStorage.setItem(storageKey, JSON.stringify(firebaseProfile));
+        } else {
+          // No Firebase profile - check local storage or create new
+          const storedProfile = await AsyncStorage.getItem(storageKey);
+
+          if (storedProfile && mounted) {
+            const parsedProfile = JSON.parse(storedProfile) as UserProfile;
+            console.log('[UserContext] Loaded profile from AsyncStorage with', parsedProfile.causes.length, 'causes');
+
+            // Generate promo code if it doesn't exist
+            if (!parsedProfile.promoCode) {
+              parsedProfile.promoCode = generatePromoCode();
+              console.log('[UserContext] Generated new promo code:', parsedProfile.promoCode);
+            }
+
+            parsedProfile.donationAmount = parsedProfile.donationAmount ?? 0;
+            parsedProfile.selectedCharities = parsedProfile.selectedCharities ?? [];
+
+            setProfile(parsedProfile);
+            setHasCompletedOnboarding(parsedProfile.causes.length > 0);
+
+            // Sync to Firebase
+            try {
+              if (isFirstTime) {
+                const userData = {
+                  email: clerkUser.primaryEmailAddress?.emailAddress,
+                  firstName: clerkUser.firstName || undefined,
+                  lastName: clerkUser.lastName || undefined,
+                  fullName: clerkUser.fullName || undefined,
+                  imageUrl: clerkUser.imageUrl || undefined,
+                };
+                await createUser(clerkUser.id, userData, parsedProfile);
+                console.log('[UserContext] ✅ New user created in Firebase');
+              } else {
+                await saveUserProfile(clerkUser.id, parsedProfile);
+                console.log('[UserContext] ✅ Profile synced to Firebase');
+              }
+            } catch (syncError) {
+              console.error('[UserContext] Failed to sync to Firebase:', syncError);
+            }
+          } else if (mounted) {
+            console.log('[UserContext] No stored profile found, creating new profile');
+            const newProfile: UserProfile = {
+              causes: [],
+              searchHistory: [],
+              promoCode: generatePromoCode(),
+              donationAmount: 0,
+              selectedCharities: [],
+            };
+            setProfile(newProfile);
+            setHasCompletedOnboarding(false);
+
+            // Create user in Firebase
+            try {
+              const userData = {
+                email: clerkUser.primaryEmailAddress?.emailAddress,
+                firstName: clerkUser.firstName || undefined,
+                lastName: clerkUser.lastName || undefined,
+                fullName: clerkUser.fullName || undefined,
+                imageUrl: clerkUser.imageUrl || undefined,
+              };
+              await createUser(clerkUser.id, userData, newProfile);
+              console.log('[UserContext] ✅ New user created in Firebase');
+            } catch (createError) {
+              console.error('[UserContext] Failed to create user in Firebase:', createError);
+            }
+
+            // Save to local storage
+            await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
+          }
+        }
+
+        if (mounted) {
+          if (isFirstTime) {
+            console.log('[UserContext] 🆕 FIRST TIME USER - marking as new (isNewUser = true)');
+            setIsNewUser(true);
+            // Don't mark as false yet - wait until onboarding is complete
+            // await AsyncStorage.setItem(isNewUserKey, 'false');
+          } else {
+            console.log('[UserContext] 👤 RETURNING USER - marking as existing (isNewUser = false)');
+            setIsNewUser(false);
+          }
+          console.log('[UserContext] ====== PROFILE LOADING COMPLETE ======');
+        }
+      } catch (error) {
+        console.error('[UserContext] Failed to load profile:', error);
+        if (mounted) {
+          const defaultProfile = {
             causes: [],
             searchHistory: [],
             promoCode: generatePromoCode(),
             donationAmount: 0,
             selectedCharities: [],
           };
-          setProfile(newProfile);
-          setHasCompletedOnboarding(false);
-        }
-        
-        if (mounted) {
-          if (storedIsNewUser === null) {
-            console.log('[UserContext] First time seeing this user - marking as new');
-            setIsNewUser(true);
-            await AsyncStorage.setItem(isNewUserKey, 'false');
-          } else {
-            console.log('[UserContext] User has logged in before - marking as existing');
-            setIsNewUser(false);
-          }
-        }
-      } catch (error) {
-        console.error('[UserContext] Failed to load profile:', error);
-        if (mounted) {
-          setProfile({
-            causes: [],
-            searchHistory: [],
-            promoCode: generatePromoCode(),
-            donationAmount: 0,
-            selectedCharities: [],
-          });
+          setProfile(defaultProfile);
           setHasCompletedOnboarding(false);
           setIsNewUser(false);
         }
@@ -148,20 +235,52 @@ export const [UserProvider, useUser] = createContextHook(() => {
       return;
     }
 
-    const newProfile = { ...profile, causes };
-    console.log('[UserContext] Saving', causes.length, 'causes to AsyncStorage for user:', clerkUser.id);
+    console.log('[UserContext] Adding', causes.length, 'causes for user:', clerkUser.id);
 
-    setProfile(newProfile);
+    // Use functional update to avoid stale closure
+    let newProfile: UserProfile | null = null;
+    setProfile((prevProfile) => {
+      newProfile = { ...prevProfile, causes };
+      console.log('[UserContext] Updated profile with causes. PromoCode:', newProfile!.promoCode);
+      return newProfile;
+    });
     setHasCompletedOnboarding(causes.length > 0);
 
+    // Wait for state update to propagate
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    if (!newProfile) {
+      console.error('[UserContext] Failed to create new profile');
+      return;
+    }
+
     try {
+      console.log('[UserContext] 🔄 Saving to AsyncStorage and Firebase...');
+
+      // Save to AsyncStorage (local cache)
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
       await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
-      console.log('[UserContext] Profile saved successfully to AsyncStorage');
+      console.log('[UserContext] ✅ Profile saved to AsyncStorage');
+
+      // Save to Firebase (source of truth)
+      console.log('[UserContext] 🔄 Calling saveUserProfile...');
+      await saveUserProfile(clerkUser.id, newProfile);
+      console.log('[UserContext] ✅ Profile synced to Firebase successfully');
+
+      // Mark user as no longer new after completing onboarding
+      if (isNewUser === true && causes.length > 0) {
+        console.log('[UserContext] 🎉 User completed onboarding - marking as existing user');
+        const isNewUserKey = `${IS_NEW_USER_KEY}_${clerkUser.id}`;
+        await AsyncStorage.setItem(isNewUserKey, 'false');
+        setIsNewUser(false);
+      }
     } catch (error) {
-      console.error('[UserContext] Failed to save profile to AsyncStorage:', error);
+      console.error('[UserContext] ❌ Failed to save profile:', error);
+      if (error instanceof Error) {
+        console.error('[UserContext] Error details:', error.message, error.stack);
+      }
     }
-  }, [clerkUser, profile]);
+  }, [clerkUser, isNewUser]);
 
   const removeCauses = useCallback(async (causeIds: string[]) => {
     if (!clerkUser) {
@@ -169,21 +288,28 @@ export const [UserProvider, useUser] = createContextHook(() => {
       return;
     }
 
-    const newCauses = profile.causes.filter(c => !causeIds.includes(c.id));
-    const newProfile = { ...profile, causes: newCauses };
-    console.log('[UserContext] Removing', causeIds.length, 'causes from AsyncStorage for user:', clerkUser.id);
+    console.log('[UserContext] Removing', causeIds.length, 'causes for user:', clerkUser.id);
 
-    setProfile(newProfile);
-    setHasCompletedOnboarding(newCauses.length > 0);
+    let newProfile: UserProfile | null = null;
+    setProfile((prevProfile) => {
+      const newCauses = prevProfile.causes.filter(c => !causeIds.includes(c.id));
+      newProfile = { ...prevProfile, causes: newCauses };
+      return newProfile;
+    });
+
+    if (!newProfile) return;
+
+    setHasCompletedOnboarding(newProfile.causes.length > 0);
 
     try {
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
       await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
-      console.log('[UserContext] Causes removed successfully');
+      await saveUserProfile(clerkUser.id, newProfile);
+      console.log('[UserContext] ✅ Causes removed and synced to Firebase');
     } catch (error) {
-      console.error('[UserContext] Failed to remove causes:', error);
+      console.error('[UserContext] ❌ Failed to remove causes:', error);
     }
-  }, [clerkUser, profile]);
+  }, [clerkUser]);
 
   const toggleCauseType = useCallback(async (cause: Cause, newType: 'support' | 'avoid' | 'remove') => {
     if (!clerkUser) {
@@ -216,26 +342,28 @@ export const [UserProvider, useUser] = createContextHook(() => {
     try {
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
       await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
-      console.log('[UserContext] Cause toggled successfully');
+      await saveUserProfile(clerkUser.id, newProfile);
+      console.log('[UserContext] ✅ Cause toggled and synced to Firebase');
     } catch (error) {
-      console.error('[UserContext] Failed to toggle cause:', error);
+      console.error('[UserContext] ❌ Failed to toggle cause:', error);
     }
   }, [clerkUser, profile]);
 
   const addToSearchHistory = useCallback(async (query: string) => {
     if (!clerkUser) {
-      console.error('Cannot save search history: User not logged in');
+      console.error('[UserContext] Cannot save search history: User not logged in');
       return;
     }
     const newHistory = [query, ...profile.searchHistory.filter(q => q !== query)].slice(0, 10);
     const newProfile = { ...profile, searchHistory: newHistory };
     setProfile(newProfile);
-    
+
     try {
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
       await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
+      await saveUserProfile(clerkUser.id, newProfile);
     } catch (error) {
-      console.error('Failed to save search history:', error);
+      console.error('[UserContext] Failed to save search history:', error);
     }
   }, [profile, clerkUser]);
 
@@ -245,23 +373,29 @@ export const [UserProvider, useUser] = createContextHook(() => {
       return;
     }
 
-    const newProfile = { ...profile, selectedCharities: charities };
     console.log('[UserContext] Updating selected charities:', charities.length);
 
-    setProfile(newProfile);
+    let newProfile: UserProfile | null = null;
+    setProfile((prevProfile) => {
+      newProfile = { ...prevProfile, selectedCharities: charities };
+      return newProfile;
+    });
+
+    if (!newProfile) return;
 
     try {
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
       await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
-      console.log('[UserContext] Selected charities saved successfully');
+      await saveUserProfile(clerkUser.id, newProfile);
+      console.log('[UserContext] ✅ Selected charities saved and synced to Firebase');
     } catch (error) {
-      console.error('[UserContext] Failed to save selected charities:', error);
+      console.error('[UserContext] ❌ Failed to save selected charities:', error);
     }
-  }, [clerkUser, profile]);
+  }, [clerkUser]);
 
   const resetProfile = useCallback(async () => {
     if (!clerkUser) {
-      console.error('Cannot reset profile: User not logged in');
+      console.error('[UserContext] Cannot reset profile: User not logged in');
       return;
     }
     try {
@@ -276,9 +410,10 @@ export const [UserProvider, useUser] = createContextHook(() => {
       setHasCompletedOnboarding(false);
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
       await AsyncStorage.setItem(storageKey, JSON.stringify(emptyProfile));
-      console.log('[UserContext] Profile reset successfully');
+      await saveUserProfile(clerkUser.id, emptyProfile);
+      console.log('[UserContext] ✅ Profile reset and synced to Firebase');
     } catch (error) {
-      console.error('Failed to reset profile:', error);
+      console.error('[UserContext] ❌ Failed to reset profile:', error);
     }
   }, [clerkUser, profile.promoCode]);
 
@@ -317,19 +452,25 @@ export const [UserProvider, useUser] = createContextHook(() => {
       return;
     }
 
-    const newProfile = { ...profile, accountType };
     console.log('[UserContext] Setting account type to:', accountType);
 
-    setProfile(newProfile);
+    let newProfile: UserProfile | null = null;
+    setProfile((prevProfile) => {
+      newProfile = { ...prevProfile, accountType };
+      return newProfile;
+    });
+
+    if (!newProfile) return;
 
     try {
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
       await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
-      console.log('[UserContext] Account type saved successfully');
+      await saveUserProfile(clerkUser.id, newProfile);
+      console.log('[UserContext] ✅ Account type saved and synced to Firebase');
     } catch (error) {
-      console.error('[UserContext] Failed to save account type:', error);
+      console.error('[UserContext] ❌ Failed to save account type:', error);
     }
-  }, [clerkUser, profile]);
+  }, [clerkUser]);
 
   const setBusinessInfo = useCallback(async (businessInfo: Partial<BusinessInfo>) => {
     if (!clerkUser) {
@@ -337,25 +478,31 @@ export const [UserProvider, useUser] = createContextHook(() => {
       return;
     }
 
-    const newProfile = {
-      ...profile,
-      businessInfo: {
-        ...profile.businessInfo,
-        ...businessInfo,
-      } as BusinessInfo,
-    };
     console.log('[UserContext] Updating business info');
 
-    setProfile(newProfile);
+    let newProfile: UserProfile | null = null;
+    setProfile((prevProfile) => {
+      newProfile = {
+        ...prevProfile,
+        businessInfo: {
+          ...prevProfile.businessInfo,
+          ...businessInfo,
+        } as BusinessInfo,
+      };
+      return newProfile;
+    });
+
+    if (!newProfile) return;
 
     try {
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
       await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
-      console.log('[UserContext] Business info saved successfully');
+      await saveUserProfile(clerkUser.id, newProfile);
+      console.log('[UserContext] ✅ Business info saved and synced to Firebase');
     } catch (error) {
-      console.error('[UserContext] Failed to save business info:', error);
+      console.error('[UserContext] ❌ Failed to save business info:', error);
     }
-  }, [clerkUser, profile]);
+  }, [clerkUser]);
 
   const setUserDetails = useCallback(async (userDetails: Partial<UserDetails>) => {
     if (!clerkUser) {
@@ -363,25 +510,65 @@ export const [UserProvider, useUser] = createContextHook(() => {
       return;
     }
 
-    const newProfile = {
-      ...profile,
-      userDetails: {
-        ...profile.userDetails,
-        ...userDetails,
-      } as UserDetails,
-    };
-    console.log('[UserContext] Updating user details');
+    console.log('[UserContext] Updating user details:', JSON.stringify(userDetails, null, 2));
 
-    setProfile(newProfile);
+    let newProfile: UserProfile | null = null;
+    setProfile((prevProfile) => {
+      newProfile = {
+        ...prevProfile,
+        userDetails: {
+          ...prevProfile.userDetails,
+          ...userDetails,
+        } as UserDetails,
+      };
+      return newProfile;
+    });
+
+    if (!newProfile) return;
 
     try {
       const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
       await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
-      console.log('[UserContext] User details saved successfully');
+      await saveUserProfile(clerkUser.id, newProfile);
+      console.log('[UserContext] ✅ User details saved to profile');
+
+      // Also update top-level user metadata in Firebase
+      const metadata: any = {};
+
+      // Extract name and location to top-level fields
+      if (userDetails.name) {
+        // Split name into first/last if possible
+        const nameParts = userDetails.name.trim().split(' ');
+        if (nameParts.length > 1) {
+          metadata.firstName = nameParts[0];
+          metadata.lastName = nameParts.slice(1).join(' ');
+          metadata.fullName = userDetails.name.trim();
+        } else {
+          metadata.firstName = userDetails.name.trim();
+          metadata.fullName = userDetails.name.trim();
+        }
+      }
+
+      if (userDetails.location || userDetails.latitude) {
+        metadata.location = {
+          city: userDetails.location,
+          ...(userDetails.latitude && userDetails.longitude ? {
+            coordinates: {
+              latitude: userDetails.latitude,
+              longitude: userDetails.longitude,
+            }
+          } : {})
+        };
+      }
+
+      if (Object.keys(metadata).length > 0) {
+        await updateUserMetadata(clerkUser.id, metadata);
+        console.log('[UserContext] ✅ User metadata updated in Firebase');
+      }
     } catch (error) {
-      console.error('[UserContext] Failed to save user details:', error);
+      console.error('[UserContext] ❌ Failed to save user details:', error);
     }
-  }, [clerkUser, profile]);
+  }, [clerkUser]);
 
   return useMemo(() => ({
     profile,

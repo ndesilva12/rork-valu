@@ -4,11 +4,12 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { UserProvider } from "@/contexts/UserContext";
+import { UserProvider, useUser } from "@/contexts/UserContext";
 import { trpc, trpcClient } from "@/lib/trpc";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { darkColors, lightColors } from "@/constants/colors";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -73,9 +74,26 @@ if (!publishableKey) {
 }
 
 function RootLayoutNav() {
+  const { isDarkMode } = useUser();
+  const colors = isDarkMode ? darkColors : lightColors;
+
   return (
-    <Stack screenOptions={{ headerBackTitle: "Back" }}>
+    <Stack
+      screenOptions={{
+        headerBackTitle: "Back",
+        headerStyle: {
+          backgroundColor: colors.background,
+        },
+        headerTintColor: colors.text,
+        headerTitleStyle: {
+          color: colors.text,
+        },
+      }}
+    >
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="account-type" options={{ headerShown: false }} />
+      <Stack.Screen name="business-setup" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="product/[id]" options={{ headerShown: false }} />
