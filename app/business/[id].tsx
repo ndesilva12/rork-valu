@@ -273,6 +273,8 @@ export default function BusinessDetailScreen() {
             contentFit="cover"
             transition={200}
             cachePolicy="memory-disk"
+            priority="high"
+            placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
           />
           {/* Back button on top left of cover photo */}
           <TouchableOpacity
@@ -303,6 +305,8 @@ export default function BusinessDetailScreen() {
               style={styles.headerLogo}
               contentFit="cover"
               transition={200}
+              cachePolicy="memory-disk"
+              placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
             />
 
             <View style={styles.titleContainer}>
@@ -459,6 +463,9 @@ export default function BusinessDetailScreen() {
                       source={{ uri: item.imageUrl }}
                       style={styles.galleryCardImage}
                       contentFit="cover"
+                      cachePolicy="memory-disk"
+                      transition={150}
+                      placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
                     />
                     {item.caption ? (
                       <View style={[styles.galleryCaptionOverlay, { backgroundColor: colors.background + 'DD' }]}>
@@ -600,6 +607,9 @@ export default function BusinessDetailScreen() {
                     source={{ uri: selectedGalleryImage.imageUrl }}
                     style={styles.modalImage}
                     contentFit="contain"
+                    cachePolicy="memory-disk"
+                    transition={200}
+                    placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
                   />
                   {selectedGalleryImage.caption ? (
                     <View style={[styles.modalCaptionContainer, { backgroundColor: colors.background }]}>
