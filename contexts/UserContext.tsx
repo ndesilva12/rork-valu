@@ -33,7 +33,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
     let mounted = true;
     const loadProfile = async () => {
       if (!clerkUser) {
-        console.log('[UserContext] No clerk user, resetting state');
+        console.log('[UserContext] ❌ No clerk user, resetting state');
         if (mounted) {
           setProfile({ causes: [], searchHistory: [], donationAmount: 0, selectedCharities: [] });
           setHasCompletedOnboarding(false);
@@ -43,6 +43,10 @@ export const [UserProvider, useUser] = createContextHook(() => {
         return;
       }
 
+      console.log('[UserContext] ====== LOADING PROFILE ======');
+      console.log('[UserContext] Clerk User ID:', clerkUser.id);
+      console.log('[UserContext] Clerk Email:', clerkUser.primaryEmailAddress?.emailAddress);
+
       try {
         const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
         const isNewUserKey = `${IS_NEW_USER_KEY}_${clerkUser.id}`;
@@ -51,17 +55,27 @@ export const [UserProvider, useUser] = createContextHook(() => {
         const storedIsNewUser = await AsyncStorage.getItem(isNewUserKey);
         const isFirstTime = storedIsNewUser === null;
 
+        console.log('[UserContext] 🔍 AsyncStorage check:');
+        console.log('[UserContext]   - isNewUserKey value:', storedIsNewUser);
+        console.log('[UserContext]   - isFirstTime:', isFirstTime);
+
         // Try to load from Firebase first (source of truth)
+        console.log('[UserContext] 🔄 Attempting to load from Firebase...');
         let firebaseProfile: UserProfile | null = null;
         try {
           firebaseProfile = await getUserProfile(clerkUser.id);
+          if (firebaseProfile) {
+            console.log('[UserContext] ✅ Firebase profile found:', JSON.stringify(firebaseProfile, null, 2));
+          } else {
+            console.log('[UserContext] ⚠️ No Firebase profile found for user');
+          }
         } catch (firebaseError) {
-          console.error('[UserContext] Failed to load from Firebase, will use local cache:', firebaseError);
+          console.error('[UserContext] ❌ Failed to load from Firebase:', firebaseError);
         }
 
         if (firebaseProfile && mounted) {
           // Firebase has the profile - use it
-          console.log('[UserContext] Loaded profile from Firebase with', firebaseProfile.causes.length, 'causes');
+          console.log('[UserContext] 📥 Using Firebase profile with', firebaseProfile.causes.length, 'causes');
 
           // Ensure promo code exists
           if (!firebaseProfile.promoCode) {
@@ -151,14 +165,15 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
         if (mounted) {
           if (isFirstTime) {
-            console.log('[UserContext] ✅ First time seeing this user - marking as new');
+            console.log('[UserContext] 🆕 FIRST TIME USER - marking as new (isNewUser = true)');
             setIsNewUser(true);
             // Don't mark as false yet - wait until onboarding is complete
             // await AsyncStorage.setItem(isNewUserKey, 'false');
           } else {
-            console.log('[UserContext] User has logged in before - marking as existing');
+            console.log('[UserContext] 👤 RETURNING USER - marking as existing (isNewUser = false)');
             setIsNewUser(false);
           }
+          console.log('[UserContext] ====== PROFILE LOADING COMPLETE ======');
         }
       } catch (error) {
         console.error('[UserContext] Failed to load profile:', error);

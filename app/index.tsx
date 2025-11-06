@@ -11,24 +11,26 @@ export default function Index() {
   const colors = isDarkMode ? darkColors : lightColors;
 
   useEffect(() => {
-    console.log('[Index] Render state:', {
-      isLoaded,
-      userLoading,
-      isSignedIn,
-      hasCompletedOnboarding,
-      isNewUser,
-      causeCount: profile.causes.length,
-    });
-  }, [isLoaded, userLoading, isSignedIn, hasCompletedOnboarding, isNewUser, profile.causes.length]);
+    console.log('[Index] ====== RENDER STATE ======');
+    console.log('[Index] isLoaded:', isLoaded);
+    console.log('[Index] userLoading:', userLoading);
+    console.log('[Index] isSignedIn:', isSignedIn);
+    console.log('[Index] hasCompletedOnboarding:', hasCompletedOnboarding);
+    console.log('[Index] isNewUser:', isNewUser, '(type:', typeof isNewUser, ')');
+    console.log('[Index] causeCount:', profile.causes.length);
+    console.log('[Index] accountType:', profile.accountType);
+    console.log('[Index] promoCode:', profile.promoCode);
+    console.log('[Index] ===========================');
+  }, [isLoaded, userLoading, isSignedIn, hasCompletedOnboarding, isNewUser, profile.causes.length, profile.accountType, profile.promoCode]);
 
   useEffect(() => {
     if (isSignedIn && !userLoading && profile.causes.length > 0 && !hasCompletedOnboarding) {
-      console.log('[Index] Detected mismatch: has causes but hasCompletedOnboarding is false');
+      console.log('[Index] ⚠️ MISMATCH: has causes but hasCompletedOnboarding is false');
     }
   }, [isSignedIn, userLoading, profile.causes.length, hasCompletedOnboarding]);
 
   if (!isLoaded || userLoading) {
-    console.log('[Index] Showing loading state');
+    console.log('[Index] 🔄 Showing loading state');
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -38,33 +40,45 @@ export default function Index() {
   }
 
   if (!isSignedIn) {
-    console.log('[Index] Redirecting to sign-in');
+    console.log('[Index] ➡️  Redirecting to sign-in (not signed in)');
     return <Redirect href="/(auth)/sign-in" />;
   }
 
   if (hasCompletedOnboarding) {
-    console.log('[Index] User has completed onboarding, redirecting to home');
+    console.log('[Index] ✅ User has completed onboarding, redirecting to home');
     return <Redirect href="/(tabs)/home" />;
   }
+
+  console.log('[Index] 🔍 Checking onboarding flow... isNewUser =', isNewUser);
 
   if (isNewUser === true) {
     // Check if account type has been selected
     if (!profile.accountType) {
-      console.log('[Index] New user without account type, redirecting to account type selection');
+      console.log('[Index] 🆕 NEW USER - No account type, redirecting to account-type');
       return <Redirect href="/account-type" />;
     }
 
     // Check if business user has set business info
     if (profile.accountType === 'business' && !profile.businessInfo) {
-      console.log('[Index] New business user without business info, redirecting to business setup');
+      console.log('[Index] 🏢 NEW BUSINESS USER - No business info, redirecting to business-setup');
       return <Redirect href="/business-setup" />;
     }
 
-    console.log('[Index] New user without onboarding, redirecting to onboarding');
+    console.log('[Index] 🆕 NEW USER - Has account type, redirecting to onboarding');
     return <Redirect href="/onboarding" />;
   }
 
-  console.log('[Index] Existing user without values, redirecting to home');
+  if (isNewUser === null) {
+    console.log('[Index] ⏳ isNewUser is null, still loading user state...');
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.text, marginTop: 16 }}>Loading profile...</Text>
+      </View>
+    );
+  }
+
+  console.log('[Index] 👤 EXISTING USER - No onboarding needed, redirecting to home');
   return <Redirect href="/(tabs)/home" />;
 }
 

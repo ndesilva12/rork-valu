@@ -150,17 +150,25 @@ export async function updateUserMetadata(
  */
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
   try {
-    console.log('[Firebase] Fetching profile for user:', userId);
+    console.log('[Firebase getUserProfile] 🔄 Fetching profile for user:', userId);
+
+    if (!db) {
+      console.error('[Firebase getUserProfile] ❌ db is null or undefined!');
+      throw new Error('Firebase db not initialized');
+    }
 
     const userRef = doc(db, 'users', userId);
+    console.log('[Firebase getUserProfile] 📍 Document reference created');
+
     const userSnap = await getDoc(userRef);
+    console.log('[Firebase getUserProfile] 📦 Document snapshot received, exists:', userSnap.exists());
 
     if (userSnap.exists()) {
       const data = userSnap.data();
-      console.log('[Firebase] ✅ Profile fetched successfully');
+      console.log('[Firebase getUserProfile] ✅ Document data:', JSON.stringify(data, null, 2));
 
       // Ensure required fields have defaults
-      return {
+      const profile = {
         causes: data.causes || [],
         searchHistory: data.searchHistory || [],
         promoCode: data.promoCode,
@@ -170,12 +178,19 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
         businessInfo: data.businessInfo,
         userDetails: data.userDetails,
       };
+
+      console.log('[Firebase getUserProfile] 📤 Returning profile with', profile.causes.length, 'causes');
+      return profile;
     } else {
-      console.log('[Firebase] No profile found for user');
+      console.log('[Firebase getUserProfile] ⚠️ No document found for user:', userId);
       return null;
     }
   } catch (error) {
-    console.error('[Firebase] ❌ Error fetching profile:', error);
+    console.error('[Firebase getUserProfile] ❌ Error fetching profile:', error);
+    if (error instanceof Error) {
+      console.error('[Firebase getUserProfile] Error message:', error.message);
+      console.error('[Firebase getUserProfile] Error stack:', error.stack);
+    }
     throw error;
   }
 }
