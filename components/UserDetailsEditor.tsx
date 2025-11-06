@@ -8,8 +8,11 @@ import {
   Alert,
   Platform,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
-import { User, Globe, MapPin, Facebook, Instagram, Twitter, Linkedin, ExternalLink } from 'lucide-react-native';
+import { Image } from 'expo-image';
+import { User, Globe, MapPin, Facebook, Instagram, Twitter, Linkedin, ExternalLink, Camera } from 'lucide-react-native';
+import { pickAndUploadImage } from '@/lib/imageUpload';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
@@ -44,11 +47,28 @@ export default function UserDetailsEditor() {
   const [instagram, setInstagram] = useState(userDetails.socialMedia?.instagram || '');
   const [twitter, setTwitter] = useState(userDetails.socialMedia?.twitter || '');
   const [linkedin, setLinkedin] = useState(userDetails.socialMedia?.linkedin || '');
+  const [profileImage, setProfileImage] = useState(userDetails.profileImage || '');
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const handleLocationSelect = (locationName: string, lat: number, lon: number) => {
     setLocation(locationName);
     setLatitude(lat);
     setLongitude(lon);
+  };
+
+  const handleUploadImage = async () => {
+    setUploadingImage(true);
+    try {
+      const downloadURL = await pickAndUploadImage(profile.id, 'profile');
+      if (downloadURL) {
+        setProfileImage(downloadURL);
+        Alert.alert('Success', 'Profile image uploaded!');
+      }
+    } catch (error) {
+      console.error('Error uploading profile image:', error);
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleSave = async () => {
@@ -73,6 +93,9 @@ export default function UserDetailsEditor() {
     if (longitude !== undefined) {
       updateInfo.longitude = longitude;
     }
+    if (profileImage) {
+      updateInfo.profileImage = profileImage;
+    }
 
     await setUserDetails(updateInfo);
 
@@ -92,6 +115,7 @@ export default function UserDetailsEditor() {
     setInstagram(userDetails.socialMedia?.instagram || '');
     setTwitter(userDetails.socialMedia?.twitter || '');
     setLinkedin(userDetails.socialMedia?.linkedin || '');
+    setProfileImage(userDetails.profileImage || '');
     setEditing(false);
   };
 
@@ -112,8 +136,27 @@ export default function UserDetailsEditor() {
       <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
         {/* Compact Header with Icon */}
         <View style={styles.compactHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <User size={32} color={colors.primary} strokeWidth={1.5} />
+          <View style={styles.profileImageWrapper}>
+            {profileImage ? (
+              <Image source={{ uri: profileImage }} style={styles.profileImage} contentFit="cover" />
+            ) : (
+              <View style={[styles.iconContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <User size={32} color={colors.primary} strokeWidth={1.5} />
+              </View>
+            )}
+            {editing && (
+              <TouchableOpacity
+                style={[styles.uploadImageButton, { backgroundColor: colors.primary }]}
+                onPress={handleUploadImage}
+                disabled={uploadingImage}
+              >
+                {uploadingImage ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Camera size={16} color={colors.white} strokeWidth={2} />
+                )}
+              </TouchableOpacity>
+            )}
           </View>
 
           <View style={styles.headerInfo}>
@@ -412,6 +455,24 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 12,
     borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileImageWrapper: {
+    position: 'relative',
+  },
+  profileImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+  },
+  uploadImageButton: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },

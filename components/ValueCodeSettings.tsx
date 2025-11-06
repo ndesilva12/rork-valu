@@ -230,32 +230,6 @@ export default function ValueCodeSettings() {
 
             {discountType === 'preset' ? (
               <>
-                {/* Total Discount - Big Counter */}
-                <View style={styles.mainCounter}>
-                  <Text style={[styles.counterLabel, { color: colors.textSecondary }]}>Total Discount</Text>
-                  <View style={styles.counterControls}>
-                    <TouchableOpacity
-                      style={[styles.counterButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                      onPress={() => handleChangeTotalDiscount(totalDiscount - 0.5)}
-                      activeOpacity={0.7}
-                    >
-                      <Minus size={24} color={colors.text} strokeWidth={2} />
-                    </TouchableOpacity>
-                    <View style={styles.counterValue}>
-                      <Text style={[styles.counterNumber, { color: colors.primary }]}>
-                        {totalDiscount.toFixed(1)}%
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      style={[styles.counterButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                      onPress={() => handleChangeTotalDiscount(totalDiscount + 0.5)}
-                      activeOpacity={0.7}
-                    >
-                      <Plus size={24} color={colors.text} strokeWidth={2} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
                 {/* Three Small Counters */}
                 <View style={styles.smallCountersGrid}>
                   {/* Customer Discount */}

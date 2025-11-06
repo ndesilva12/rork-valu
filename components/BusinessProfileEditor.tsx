@@ -5,12 +5,14 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Image,
   Alert,
   Platform,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
-import { Building2, ChevronDown, Globe, Upload, MapPin, Facebook, Instagram, Twitter, Linkedin, Plus, X, ExternalLink } from 'lucide-react-native';
+import { Image } from 'expo-image';
+import { Building2, ChevronDown, Globe, Upload, MapPin, Facebook, Instagram, Twitter, Linkedin, Plus, X, ExternalLink, Camera } from 'lucide-react-native';
+import { pickAndUploadImage } from '@/lib/imageUpload';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
@@ -73,6 +75,7 @@ export default function BusinessProfileEditor() {
   const [ownershipSources, setOwnershipSources] = useState(businessInfo.ownershipSources || '');
   const [affiliates, setAffiliates] = useState(businessInfo.affiliates || []);
   const [partnerships, setPartnerships] = useState(businessInfo.partnerships || []);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const handleLocationSelect = (locationName: string, lat: number, lon: number) => {
     setLocation(locationName);
@@ -170,13 +173,19 @@ export default function BusinessProfileEditor() {
     setEditing(false);
   };
 
-  const handleLogoUpload = () => {
-    // In a real app, this would open an image picker
-    Alert.alert(
-      'Upload Logo',
-      'Logo upload functionality will be available in a future update. For now, you can enter a logo URL directly.',
-      [{ text: 'OK' }]
-    );
+  const handleLogoUpload = async () => {
+    setUploadingImage(true);
+    try {
+      const downloadURL = await pickAndUploadImage(profile.id, 'business');
+      if (downloadURL) {
+        setLogoUrl(downloadURL);
+        Alert.alert('Success', 'Business logo uploaded!');
+      }
+    } catch (error) {
+      console.error('Error uploading business logo:', error);
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   // Ownership management
@@ -241,15 +250,30 @@ export default function BusinessProfileEditor() {
       <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
         {/* Logo and Basic Info - Compact Horizontal Layout */}
         <View style={styles.compactHeader}>
-          <View style={[styles.logoContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            {logoUrl || businessInfo.logoUrl ? (
-              <Image
-                source={{ uri: logoUrl || businessInfo.logoUrl }}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-            ) : (
-              <Building2 size={32} color={colors.textSecondary} strokeWidth={1.5} />
+          <View style={styles.logoWrapper}>
+            <View style={[styles.logoContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              {logoUrl || businessInfo.logoUrl ? (
+                <Image
+                  source={{ uri: logoUrl || businessInfo.logoUrl }}
+                  style={styles.logoImage}
+                  contentFit="contain"
+                />
+              ) : (
+                <Building2 size={32} color={colors.textSecondary} strokeWidth={1.5} />
+              )}
+            </View>
+            {editing && (
+              <TouchableOpacity
+                style={[styles.uploadImageButton, { backgroundColor: colors.primary }]}
+                onPress={handleLogoUpload}
+                disabled={uploadingImage}
+              >
+                {uploadingImage ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Camera size={16} color={colors.white} strokeWidth={2} />
+                )}
+              </TouchableOpacity>
             )}
           </View>
 
@@ -722,10 +746,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  logoWrapper: {
+    position: 'relative',
+  },
   logoImage: {
     width: 72,
     height: 72,
     borderRadius: 10,
+  },
+  uploadImageButton: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerInfo: {
     flex: 1,
