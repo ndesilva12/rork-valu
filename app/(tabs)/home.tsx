@@ -856,71 +856,174 @@ export default function HomeScreen() {
     );
   };
 
-  const renderFoldersView = () => (
-    <View style={styles.foldersContainer}>
-      {FOLDER_CATEGORIES.map((category) => {
-        const brands = categorizedBrands.get(category.id) || [];
-        const isExpanded = expandedFolder === category.id;
+  const renderFoldersView = () => {
+    // Show local businesses when "local" filter is active
+    if (distanceFilter === 'local') {
+      const { alignedBusinesses, unalignedBusinesses } = localBusinessData;
+      const allLocalBusinesses = [...alignedBusinesses, ...unalignedBusinesses];
 
-        if (brands.length === 0) return null;
+      // Group local businesses by category
+      const categorizedLocalBusinesses = new Map<string, typeof allLocalBusinesses>();
 
+      allLocalBusinesses.forEach((bizData) => {
+        const category = bizData.business.businessInfo.category;
+        if (!categorizedLocalBusinesses.has(category)) {
+          categorizedLocalBusinesses.set(category, []);
+        }
+        categorizedLocalBusinesses.get(category)!.push(bizData);
+      });
+
+      if (allLocalBusinesses.length === 0) {
         return (
-          <View key={category.id} style={[styles.folderCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-            <TouchableOpacity style={styles.folderHeader} onPress={() => setExpandedFolder(isExpanded ? null : category.id)} activeOpacity={0.7}>
-              <View style={styles.folderHeaderLeft}>
-                <View style={[styles.folderIconContainer, { backgroundColor: colors.primaryLight + '15' }]}>
-                  <category.Icon size={24} color={isDarkMode ? colors.white : colors.primary} strokeWidth={2} />
-                </View>
-                <View>
-                  <Text style={[styles.folderName, { color: colors.text }]}>{category.name}</Text>
-                  <Text style={[styles.folderCount, { color: colors.textSecondary }]}>{brands.length} brands</Text>
-                </View>
-              </View>
-              <ChevronRight
-                size={20}
-                color={colors.textSecondary}
-                strokeWidth={2}
-                style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}
-              />
-            </TouchableOpacity>
-
-            {isExpanded && (
-              <View style={styles.folderContent}>
-                {brands.map((product) => (
-                  <TouchableOpacity
-                    key={product.id}
-                    style={[styles.folderBrandCard, { backgroundColor: colors.background }]}
-                    onPress={() => handleProductPress(product)}
-                    activeOpacity={0.7}
-                  >
-                    <Image
-                      source={{ uri: getLogoUrl(product.website || '') }}
-                      style={styles.folderBrandImage}
-                      contentFit="cover"
-                      transition={200}
-                      cachePolicy="memory-disk"
-                    />
-                    <View style={styles.folderBrandContent}>
-                      <Text style={[styles.folderBrandName, { color: colors.text }]} numberOfLines={2}>
-                        {product.name}
-                      </Text>
-                      <Text style={[styles.folderBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                        {product.category}
-                      </Text>
-                    </View>
-                    <View style={[styles.folderBrandBadge, { backgroundColor: colors.successLight }]}>
-                      <TrendingUp size={12} color={colors.success} strokeWidth={2.5} />
-                      <Text style={[styles.folderBrandScore, { color: colors.success }]}>{Math.abs(product.alignmentScore)}</Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+          <View style={styles.foldersContainer}>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              No local businesses found within {localDistance} mile{localDistance !== 1 ? 's' : ''}
+            </Text>
           </View>
         );
-      })}
-    </View>
-  );
+      }
+
+      return (
+        <View style={styles.foldersContainer}>
+          {Array.from(categorizedLocalBusinesses.entries()).map(([category, businesses]) => {
+            const isExpanded = expandedFolder === category;
+
+            return (
+              <View key={category} style={[styles.folderCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <TouchableOpacity style={styles.folderHeader} onPress={() => setExpandedFolder(isExpanded ? null : category)} activeOpacity={0.7}>
+                  <View style={styles.folderHeaderLeft}>
+                    <View style={[styles.folderIconContainer, { backgroundColor: colors.primaryLight + '15' }]}>
+                      <Store size={24} color={isDarkMode ? colors.white : colors.primary} strokeWidth={2} />
+                    </View>
+                    <View>
+                      <Text style={[styles.folderName, { color: colors.text }]}>{category}</Text>
+                      <Text style={[styles.folderCount, { color: colors.textSecondary }]}>{businesses.length} business{businesses.length !== 1 ? 'es' : ''}</Text>
+                    </View>
+                  </View>
+                  <ChevronRight
+                    size={20}
+                    color={colors.textSecondary}
+                    strokeWidth={2}
+                    style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}
+                  />
+                </TouchableOpacity>
+
+                {isExpanded && (
+                  <View style={styles.folderContent}>
+                    {businesses.map((bizData) => {
+                      const isAligned = bizData.alignmentScore >= 50;
+                      const scoreColor = isAligned ? colors.success : colors.danger;
+                      const Icon = isAligned ? TrendingUp : TrendingDown;
+
+                      return (
+                        <TouchableOpacity
+                          key={bizData.business.id}
+                          style={[styles.folderBrandCard, { backgroundColor: colors.background }]}
+                          onPress={() => handleBusinessPress(bizData.business.id)}
+                          activeOpacity={0.7}
+                        >
+                          <Image
+                            source={{
+                              uri: bizData.business.businessInfo.logoUrl
+                                ? bizData.business.businessInfo.logoUrl
+                                : getLogoUrl(bizData.business.businessInfo.website || '')
+                            }}
+                            style={styles.folderBrandImage}
+                            contentFit="cover"
+                            transition={200}
+                            cachePolicy="memory-disk"
+                          />
+                          <View style={styles.folderBrandContent}>
+                            <Text style={[styles.folderBrandName, { color: colors.text }]} numberOfLines={2}>
+                              {bizData.business.businessInfo.name}
+                            </Text>
+                            <Text style={[styles.folderBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                              {bizData.distance !== undefined ? `${formatDistance(bizData.distance)} away` : bizData.business.businessInfo.category}
+                            </Text>
+                          </View>
+                          <View style={[styles.folderBrandBadge, { backgroundColor: isAligned ? colors.successLight : colors.dangerLight }]}>
+                            <Icon size={12} color={scoreColor} strokeWidth={2.5} />
+                            <Text style={[styles.folderBrandScore, { color: scoreColor }]}>{bizData.alignmentScore}</Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      );
+    }
+
+    // Show regular brands when not in "local" mode
+    return (
+      <View style={styles.foldersContainer}>
+        {FOLDER_CATEGORIES.map((category) => {
+          const brands = categorizedBrands.get(category.id) || [];
+          const isExpanded = expandedFolder === category.id;
+
+          if (brands.length === 0) return null;
+
+          return (
+            <View key={category.id} style={[styles.folderCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <TouchableOpacity style={styles.folderHeader} onPress={() => setExpandedFolder(isExpanded ? null : category.id)} activeOpacity={0.7}>
+                <View style={styles.folderHeaderLeft}>
+                  <View style={[styles.folderIconContainer, { backgroundColor: colors.primaryLight + '15' }]}>
+                    <category.Icon size={24} color={isDarkMode ? colors.white : colors.primary} strokeWidth={2} />
+                  </View>
+                  <View>
+                    <Text style={[styles.folderName, { color: colors.text }]}>{category.name}</Text>
+                    <Text style={[styles.folderCount, { color: colors.textSecondary }]}>{brands.length} brands</Text>
+                  </View>
+                </View>
+                <ChevronRight
+                  size={20}
+                  color={colors.textSecondary}
+                  strokeWidth={2}
+                  style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}
+                />
+              </TouchableOpacity>
+
+              {isExpanded && (
+                <View style={styles.folderContent}>
+                  {brands.map((product) => (
+                    <TouchableOpacity
+                      key={product.id}
+                      style={[styles.folderBrandCard, { backgroundColor: colors.background }]}
+                      onPress={() => handleProductPress(product)}
+                      activeOpacity={0.7}
+                    >
+                      <Image
+                        source={{ uri: getLogoUrl(product.website || '') }}
+                        style={styles.folderBrandImage}
+                        contentFit="cover"
+                        transition={200}
+                        cachePolicy="memory-disk"
+                      />
+                      <View style={styles.folderBrandContent}>
+                        <Text style={[styles.folderBrandName, { color: colors.text }]} numberOfLines={2}>
+                          {product.name}
+                        </Text>
+                        <Text style={[styles.folderBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {product.category}
+                        </Text>
+                      </View>
+                      <View style={[styles.folderBrandBadge, { backgroundColor: colors.successLight }]}>
+                        <TrendingUp size={12} color={colors.success} strokeWidth={2.5} />
+                        <Text style={[styles.folderBrandScore, { color: colors.success }]}>{Math.abs(product.alignmentScore)}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </View>
+    );
+  };
 
   const renderMapView = () => {
     // Simple OpenStreetMap iframe embed — SSR-safe and dependency-free
