@@ -109,6 +109,7 @@ export interface BusinessInfo {
   customerDiscountPercent?: number; // Customer discount portion
   donationPercent?: number; // Donation portion
   totalDonated?: number; // Track total donations facilitated
+  customDiscount?: string; // Custom discount text (requires admin approval)
   socialMedia?: SocialMedia;
   affiliates?: Affiliate[]; // Celebrity/influencer affiliates and their relationships
   partnerships?: Partnership[]; // Business partnerships and collaborations

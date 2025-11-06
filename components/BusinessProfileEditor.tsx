@@ -537,71 +537,32 @@ export default function BusinessProfileEditor() {
           </View>
         </View>
 
-        {/* Money Flow Section */}
+        {/* Money Flow Section - Admin Only */}
         <View style={styles.moneyFlowSection}>
-          <Text style={[styles.moneyFlowTitle, { color: colors.text }]}>Money Flow</Text>
+          <View style={styles.moneyFlowHeader}>
+            <Text style={[styles.moneyFlowTitle, { color: colors.text }]}>Money Flow</Text>
+            <Text style={[styles.adminOnlyNote, { color: colors.textSecondary }]}>
+              (Admin editable only via Firebase)
+            </Text>
+          </View>
 
           {/* Ownership Section */}
           <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
             <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.subsectionTitle, { color: colors.text }]}>OWNERSHIP</Text>
-              {editing && (
-                <TouchableOpacity onPress={addOwnership} activeOpacity={0.7}>
-                  <Plus size={20} color={colors.primary} strokeWidth={2} />
-                </TouchableOpacity>
-              )}
             </View>
 
             {ownership.length > 0 ? (
               <>
                 {ownership.map((owner, index) => (
                   <View key={`owner-${index}`} style={[styles.moneyFlowItem, { borderBottomColor: colors.border }]}>
-                    {editing ? (
-                      <>
-                        <View style={styles.moneyFlowItemInputs}>
-                          <TextInput
-                            style={[styles.moneyFlowInput, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text, flex: 1 }]}
-                            placeholder="Name (e.g., ABC Corp)"
-                            placeholderTextColor={colors.textSecondary}
-                            value={owner.name}
-                            onChangeText={(text) => updateOwnership(index, 'name', text)}
-                          />
-                          <TextInput
-                            style={[styles.moneyFlowInput, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text, flex: 1 }]}
-                            placeholder="Relationship (e.g., 60% Owner)"
-                            placeholderTextColor={colors.textSecondary}
-                            value={owner.relationship}
-                            onChangeText={(text) => updateOwnership(index, 'relationship', text)}
-                          />
-                        </View>
-                        <TouchableOpacity onPress={() => removeOwnership(index)} activeOpacity={0.7}>
-                          <X size={20} color={colors.danger} strokeWidth={2} />
-                        </TouchableOpacity>
-                      </>
-                    ) : (
-                      <View style={styles.moneyFlowItemRow}>
-                        <Text style={[styles.moneyFlowName, { color: colors.text }]}>{owner.name}</Text>
-                        <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>{owner.relationship}</Text>
-                      </View>
-                    )}
+                    <View style={styles.moneyFlowItemRow}>
+                      <Text style={[styles.moneyFlowName, { color: colors.text }]}>{owner.name}</Text>
+                      <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>{owner.relationship}</Text>
+                    </View>
                   </View>
                 ))}
-                {editing && (
-                  <View style={[styles.inputGroup, { marginTop: 12 }]}>
-                    <Text style={[styles.label, { color: colors.text }]}>Sources (optional)</Text>
-                    <TextInput
-                      style={[styles.input, styles.textArea, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                      placeholder="Citations or sources for ownership data..."
-                      placeholderTextColor={colors.textSecondary}
-                      value={ownershipSources}
-                      onChangeText={setOwnershipSources}
-                      multiline
-                      numberOfLines={2}
-                      textAlignVertical="top"
-                    />
-                  </View>
-                )}
-                {!editing && ownershipSources && (
+                {ownershipSources && (
                   <View style={[styles.sourcesContainer, { borderTopColor: colors.border }]}>
                     <Text style={[styles.sourcesLabel, { color: colors.text }]}>Sources:</Text>
                     <Text style={[styles.sourcesText, { color: colors.textSecondary }]}>{ownershipSources}</Text>
@@ -617,44 +578,15 @@ export default function BusinessProfileEditor() {
           <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
             <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.subsectionTitle, { color: colors.text }]}>AFFILIATES</Text>
-              {editing && (
-                <TouchableOpacity onPress={addAffiliate} activeOpacity={0.7}>
-                  <Plus size={20} color={colors.primary} strokeWidth={2} />
-                </TouchableOpacity>
-              )}
             </View>
 
             {affiliates.length > 0 ? (
               affiliates.map((affiliate, index) => (
                 <View key={`affiliate-${index}`} style={[styles.moneyFlowItem, { borderBottomColor: colors.border }]}>
-                  {editing ? (
-                    <>
-                      <View style={styles.moneyFlowItemInputs}>
-                        <TextInput
-                          style={[styles.moneyFlowInput, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text, flex: 1 }]}
-                          placeholder="Name (e.g., John Doe)"
-                          placeholderTextColor={colors.textSecondary}
-                          value={affiliate.name}
-                          onChangeText={(text) => updateAffiliate(index, 'name', text)}
-                        />
-                        <TextInput
-                          style={[styles.moneyFlowInput, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text, flex: 1 }]}
-                          placeholder="Relationship (e.g., Brand Ambassador)"
-                          placeholderTextColor={colors.textSecondary}
-                          value={affiliate.relationship}
-                          onChangeText={(text) => updateAffiliate(index, 'relationship', text)}
-                        />
-                      </View>
-                      <TouchableOpacity onPress={() => removeAffiliate(index)} activeOpacity={0.7}>
-                        <X size={20} color={colors.danger} strokeWidth={2} />
-                      </TouchableOpacity>
-                    </>
-                  ) : (
-                    <View style={styles.moneyFlowItemRow}>
-                      <Text style={[styles.moneyFlowName, { color: colors.text }]}>{affiliate.name}</Text>
-                      <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>{affiliate.relationship}</Text>
-                    </View>
-                  )}
+                  <View style={styles.moneyFlowItemRow}>
+                    <Text style={[styles.moneyFlowName, { color: colors.text }]}>{affiliate.name}</Text>
+                    <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>{affiliate.relationship}</Text>
+                  </View>
                 </View>
               ))
             ) : (
@@ -666,44 +598,15 @@ export default function BusinessProfileEditor() {
           <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
             <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.subsectionTitle, { color: colors.text }]}>PARTNERSHIPS</Text>
-              {editing && (
-                <TouchableOpacity onPress={addPartnership} activeOpacity={0.7}>
-                  <Plus size={20} color={colors.primary} strokeWidth={2} />
-                </TouchableOpacity>
-              )}
             </View>
 
             {partnerships.length > 0 ? (
               partnerships.map((partnership, index) => (
                 <View key={`partnership-${index}`} style={[styles.moneyFlowItem, { borderBottomColor: colors.border }]}>
-                  {editing ? (
-                    <>
-                      <View style={styles.moneyFlowItemInputs}>
-                        <TextInput
-                          style={[styles.moneyFlowInput, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text, flex: 1 }]}
-                          placeholder="Name (e.g., Tech Company)"
-                          placeholderTextColor={colors.textSecondary}
-                          value={partnership.name}
-                          onChangeText={(text) => updatePartnership(index, 'name', text)}
-                        />
-                        <TextInput
-                          style={[styles.moneyFlowInput, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text, flex: 1 }]}
-                          placeholder="Relationship (e.g., Technology Partner)"
-                          placeholderTextColor={colors.textSecondary}
-                          value={partnership.relationship}
-                          onChangeText={(text) => updatePartnership(index, 'relationship', text)}
-                        />
-                      </View>
-                      <TouchableOpacity onPress={() => removePartnership(index)} activeOpacity={0.7}>
-                        <X size={20} color={colors.danger} strokeWidth={2} />
-                      </TouchableOpacity>
-                    </>
-                  ) : (
-                    <View style={styles.moneyFlowItemRow}>
-                      <Text style={[styles.moneyFlowName, { color: colors.text }]}>{partnership.name}</Text>
-                      <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>{partnership.relationship}</Text>
-                    </View>
-                  )}
+                  <View style={styles.moneyFlowItemRow}>
+                    <Text style={[styles.moneyFlowName, { color: colors.text }]}>{partnership.name}</Text>
+                    <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>{partnership.relationship}</Text>
+                  </View>
                 </View>
               ))
             ) : (
@@ -923,10 +826,17 @@ const styles = StyleSheet.create({
     marginTop: 24,
     gap: 16,
   },
+  moneyFlowHeader: {
+    marginBottom: 8,
+  },
   moneyFlowTitle: {
     fontSize: 18,
     fontWeight: '700' as const,
-    marginBottom: 8,
+  },
+  adminOnlyNote: {
+    fontSize: 12,
+    fontStyle: 'italic' as const,
+    marginTop: 4,
   },
   moneyFlowCard: {
     borderRadius: 12,
