@@ -160,7 +160,7 @@ export default function DiscountScreen() {
                   </View>
                   <View style={styles.counterDivider} />
                   <View style={styles.counterItem}>
-                    <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Donated</Text>
+                    <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Total Donated</Text>
                     <Text style={[styles.donationAmount, { color: colors.primary }]}>
                       ${donationAmount.toFixed(2)}
                     </Text>
