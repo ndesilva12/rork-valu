@@ -224,9 +224,6 @@ export default function SignInScreen() {
                   onChangeText={(password) => setPassword(password)}
                   style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
                 />
-                <TouchableOpacity onPress={onForgotPasswordPress} style={styles.forgotPasswordLink}>
-                  <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>Forgot password?</Text>
-                </TouchableOpacity>
               </View>
               <TouchableOpacity onPress={onSignInPress} style={[styles.button, { backgroundColor: colors.primary }]} disabled={isSubmitting}>
                 {isSubmitting ? (
@@ -235,6 +232,11 @@ export default function SignInScreen() {
                   <Text style={styles.buttonText}>Continue</Text>
                 )}
               </TouchableOpacity>
+              <View style={styles.forgotPasswordContainer}>
+                <TouchableOpacity onPress={onForgotPasswordPress}>
+                  <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>Forgot password?</Text>
+                </TouchableOpacity>
+              </View>
               <View style={styles.linkContainer}>
                 <Text style={[styles.linkText, { color: colors.textSecondary }]}>Don&apos;t have an account? </Text>
                 <TouchableOpacity onPress={() => router.push('/(auth)/sign-up')}>
@@ -404,9 +406,9 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     lineHeight: 20,
   },
-  forgotPasswordLink: {
-    marginTop: 8,
-    alignSelf: 'flex-end',
+  forgotPasswordContainer: {
+    alignItems: 'center',
+    marginTop: 12,
   },
   forgotPasswordText: {
     fontSize: 13,

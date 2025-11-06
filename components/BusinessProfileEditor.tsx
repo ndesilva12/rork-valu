@@ -17,7 +17,7 @@ import { pickAndUploadImage } from '@/lib/imageUpload';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
-import { BusinessLocation } from '@/types';
+import { BusinessLocation, GalleryImage } from '@/types';
 
 const BUSINESS_CATEGORIES = [
   'Retail',
@@ -42,7 +42,7 @@ const BUSINESS_CATEGORIES = [
 ];
 
 export default function BusinessProfileEditor() {
-  const { isDarkMode, profile, setBusinessInfo } = useUser();
+  const { isDarkMode, profile, setBusinessInfo, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
   const businessInfo = profile.businessInfo || {
@@ -66,6 +66,8 @@ export default function BusinessProfileEditor() {
   const [description, setDescription] = useState(businessInfo.description || '');
   const [website, setWebsite] = useState(businessInfo.website || '');
   const [logoUrl, setLogoUrl] = useState(businessInfo.logoUrl || '');
+  const [coverImageUrl, setCoverImageUrl] = useState(businessInfo.coverImageUrl || '');
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(businessInfo.galleryImages || []);
 
   // Multiple locations support
   const [locations, setLocations] = useState<BusinessLocation[]>(() => {
@@ -132,6 +134,8 @@ export default function BusinessProfileEditor() {
     setDescription(businessInfo.description || '');
     setWebsite(businessInfo.website || '');
     setLogoUrl(businessInfo.logoUrl || '');
+    setCoverImageUrl(businessInfo.coverImageUrl || '');
+    setGalleryImages(businessInfo.galleryImages || []);
 
     // Sync locations
     if (businessInfo.locations && businessInfo.locations.length > 0) {
@@ -182,6 +186,8 @@ export default function BusinessProfileEditor() {
       description: description.trim(),
       website: website.trim(),
       logoUrl: logoUrl.trim(),
+      coverImageUrl: coverImageUrl.trim() || undefined,
+      galleryImages: galleryImages.length > 0 ? galleryImages : undefined,
       socialMedia: {
         facebook: facebook.trim(),
         instagram: instagram.trim(),
@@ -215,6 +221,8 @@ export default function BusinessProfileEditor() {
     setDescription(businessInfo.description || '');
     setWebsite(businessInfo.website || '');
     setLogoUrl(businessInfo.logoUrl || '');
+    setCoverImageUrl(businessInfo.coverImageUrl || '');
+    setGalleryImages(businessInfo.galleryImages || []);
 
     // Reset locations
     if (businessInfo.locations && businessInfo.locations.length > 0) {
@@ -237,25 +245,112 @@ export default function BusinessProfileEditor() {
   };
 
   const handleLogoUpload = async () => {
+    if (!clerkUser?.id) {
+      console.error('[BusinessProfileEditor] No clerk user ID available');
+      Alert.alert('Error', 'User not logged in. Please log in and try again.');
+      return;
+    }
+
+    console.log('[BusinessProfileEditor] Starting logo upload for user:', clerkUser.id);
     setUploadingImage(true);
     try {
-      console.log('[BusinessProfileEditor] Starting logo upload for business:', profile.id);
-      const downloadURL = await pickAndUploadImage(profile.id, 'business');
+      const downloadURL = await pickAndUploadImage(clerkUser.id, 'business');
+      console.log('[BusinessProfileEditor] Logo upload returned:', downloadURL);
 
       if (downloadURL) {
-        console.log('[BusinessProfileEditor] Logo uploaded successfully:', downloadURL);
+        console.log('[BusinessProfileEditor] Setting logo URL to:', downloadURL);
         setLogoUrl(downloadURL);
         Alert.alert('Success', 'Business logo uploaded! Remember to click "Save Changes" to save it to your profile.');
       } else {
-        console.log('[BusinessProfileEditor] Logo upload cancelled or failed');
-        Alert.alert('Cancelled', 'Image upload was cancelled.');
+        console.warn('[BusinessProfileEditor] Logo upload returned null - cancelled or failed');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[BusinessProfileEditor] Error uploading business logo:', error);
-      Alert.alert('Error', 'Failed to upload logo. Please try again.');
+      console.error('[BusinessProfileEditor] Error stack:', error?.stack);
+      Alert.alert('Error', `Failed to upload logo: ${error?.message || 'Unknown error'}`);
     } finally {
+      console.log('[BusinessProfileEditor] Logo upload complete, stopping spinner');
       setUploadingImage(false);
     }
+  };
+
+  const handleCoverImageUpload = async () => {
+    if (!clerkUser?.id) {
+      console.error('[BusinessProfileEditor] No clerk user ID available');
+      Alert.alert('Error', 'User not logged in. Please log in and try again.');
+      return;
+    }
+
+    console.log('[BusinessProfileEditor] Starting cover image upload for user:', clerkUser.id);
+    setUploadingImage(true);
+    try {
+      // Cover image should be wide (16:9 aspect ratio)
+      const downloadURL = await pickAndUploadImage(clerkUser.id, 'cover', [16, 9]);
+      console.log('[BusinessProfileEditor] Cover upload returned:', downloadURL);
+
+      if (downloadURL) {
+        console.log('[BusinessProfileEditor] Setting cover image URL to:', downloadURL);
+        setCoverImageUrl(downloadURL);
+        Alert.alert('Success', 'Cover image uploaded! Remember to click "Save Changes" to save it to your profile.');
+      } else {
+        console.warn('[BusinessProfileEditor] Cover upload returned null - cancelled or failed');
+      }
+    } catch (error: any) {
+      console.error('[BusinessProfileEditor] Error uploading cover image:', error);
+      console.error('[BusinessProfileEditor] Error stack:', error?.stack);
+      Alert.alert('Error', `Failed to upload cover: ${error?.message || 'Unknown error'}`);
+    } finally {
+      console.log('[BusinessProfileEditor] Cover upload complete, stopping spinner');
+      setUploadingImage(false);
+    }
+  };
+
+  const handleGalleryImageUpload = async () => {
+    if (!clerkUser?.id) {
+      console.error('[BusinessProfileEditor] No clerk user ID available');
+      Alert.alert('Error', 'User not logged in. Please log in and try again.');
+      return;
+    }
+
+    if (galleryImages.length >= 3) {
+      Alert.alert('Maximum Reached', 'You can only upload up to 3 gallery images.');
+      return;
+    }
+
+    console.log('[BusinessProfileEditor] Starting gallery image upload for user:', clerkUser.id);
+    console.log('[BusinessProfileEditor] Current gallery images count:', galleryImages.length);
+    setUploadingImage(true);
+    try {
+      // Gallery images should be square
+      const downloadURL = await pickAndUploadImage(clerkUser.id, 'gallery', [1, 1]);
+      console.log('[BusinessProfileEditor] Gallery upload returned:', downloadURL);
+
+      if (downloadURL) {
+        console.log('[BusinessProfileEditor] Adding gallery image to array');
+        // Add image with empty caption - user can add caption in text field
+        setGalleryImages([...galleryImages, { imageUrl: downloadURL, caption: '' }]);
+        Alert.alert('Success', 'Image uploaded! Add a caption below and click "Save Changes".');
+      } else {
+        console.warn('[BusinessProfileEditor] Gallery upload returned null - cancelled or failed');
+      }
+    } catch (error: any) {
+      console.error('[BusinessProfileEditor] Error uploading gallery image:', error);
+      console.error('[BusinessProfileEditor] Error stack:', error?.stack);
+      Alert.alert('Error', `Failed to upload gallery image: ${error?.message || 'Unknown error'}`);
+    } finally {
+      console.log('[BusinessProfileEditor] Gallery upload complete, stopping spinner');
+      setUploadingImage(false);
+    }
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setGalleryImages(galleryImages.filter((_, i) => i !== index));
+  };
+
+  const updateGalleryImageCaption = (index: number, caption: string) => {
+    const updated = [...galleryImages];
+    updated[index] = { ...updated[index], caption };
+    setGalleryImages(updated);
   };
 
   // Ownership management
@@ -363,27 +458,139 @@ export default function BusinessProfileEditor() {
           </View>
         </View>
 
-        {/* Logo URL and Upload (when editing) */}
+        {/* Logo Upload (when editing) */}
         {editing && (
           <View style={[styles.inputGroup, { marginTop: 16 }]}>
-            <Text style={[styles.label, { color: colors.text }]}>Logo URL</Text>
-            <View style={styles.logoInputRow}>
-              <TextInput
-                style={[styles.input, styles.logoUrlInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                placeholder="https://example.com/logo.png"
-                placeholderTextColor={colors.textSecondary}
-                value={logoUrl}
-                onChangeText={setLogoUrl}
-                autoCapitalize="none"
-                keyboardType="url"
-              />
+            <Text style={[styles.label, { color: colors.text }]}>Business Logo</Text>
+            <View style={styles.imageUploadContainer}>
+              <View style={[styles.imagePreviewBox, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                {logoUrl ? (
+                  <Image
+                    source={{ uri: logoUrl }}
+                    style={styles.imagePreview}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <Camera size={32} color={colors.textSecondary} strokeWidth={1.5} />
+                )}
+              </View>
               <TouchableOpacity
-                style={[styles.uploadButtonSmall, { backgroundColor: colors.primary }]}
+                style={[styles.uploadButton, { backgroundColor: colors.primary }]}
                 onPress={handleLogoUpload}
                 activeOpacity={0.7}
+                disabled={uploadingImage}
               >
-                <Upload size={16} color={colors.white} strokeWidth={2} />
+                {uploadingImage ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <>
+                    <Upload size={16} color={colors.white} strokeWidth={2} />
+                    <Text style={[styles.uploadButtonText, { color: colors.white }]}>Upload Logo</Text>
+                  </>
+                )}
               </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Cover Image Upload (when editing) */}
+        {editing && (
+          <View style={[styles.inputGroup, { marginTop: 16 }]}>
+            <Text style={[styles.label, { color: colors.text }]}>Cover Image (Optional)</Text>
+            <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+              Wide banner image displayed on your business page
+            </Text>
+            <View style={styles.imageUploadContainer}>
+              <View style={[styles.coverPreviewBox, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                {coverImageUrl ? (
+                  <Image
+                    source={{ uri: coverImageUrl }}
+                    style={styles.coverPreview}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <Camera size={32} color={colors.textSecondary} strokeWidth={1.5} />
+                )}
+              </View>
+              <TouchableOpacity
+                style={[styles.uploadButton, { backgroundColor: colors.primary }]}
+                onPress={handleCoverImageUpload}
+                activeOpacity={0.7}
+                disabled={uploadingImage}
+              >
+                {uploadingImage ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <>
+                    <Upload size={16} color={colors.white} strokeWidth={2} />
+                    <Text style={[styles.uploadButtonText, { color: colors.white }]}>Upload Cover</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Gallery Images Upload (when editing) */}
+        {editing && (
+          <View style={[styles.inputGroup, { marginTop: 16 }]}>
+            <Text style={[styles.label, { color: colors.text }]}>Gallery Images ({galleryImages.length}/3)</Text>
+            <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+              Add up to 3 images to showcase your business
+            </Text>
+
+            <View style={styles.galleryUploadGrid}>
+              {[0, 1, 2].map((slotIndex) => {
+                const image = galleryImages[slotIndex];
+                return (
+                  <View key={slotIndex} style={styles.gallerySlot}>
+                    <View style={[styles.galleryPreviewBox, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                      {image ? (
+                        <>
+                          <Image
+                            source={{ uri: image.imageUrl }}
+                            style={styles.galleryPreview}
+                            contentFit="cover"
+                          />
+                          <TouchableOpacity
+                            style={[styles.removeGalleryButton, { backgroundColor: colors.error }]}
+                            onPress={() => removeGalleryImage(slotIndex)}
+                            activeOpacity={0.7}
+                          >
+                            <X size={12} color={colors.white} strokeWidth={2.5} />
+                          </TouchableOpacity>
+                        </>
+                      ) : (
+                        <Camera size={24} color={colors.textSecondary} strokeWidth={1.5} />
+                      )}
+                    </View>
+
+                    {image ? (
+                      <TextInput
+                        style={[styles.galleryCaption, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
+                        placeholder="Caption..."
+                        placeholderTextColor={colors.textSecondary}
+                        value={image.caption}
+                        onChangeText={(text) => updateGalleryImageCaption(slotIndex, text)}
+                        multiline
+                      />
+                    ) : (
+                      <TouchableOpacity
+                        style={[styles.galleryUploadButton, { backgroundColor: colors.primary }]}
+                        onPress={handleGalleryImageUpload}
+                        activeOpacity={0.7}
+                        disabled={uploadingImage}
+                      >
+                        {uploadingImage ? (
+                          <ActivityIndicator size="small" color={colors.white} />
+                        ) : (
+                          <Plus size={14} color={colors.white} strokeWidth={2.5} />
+                        )}
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                );
+              })}
             </View>
           </View>
         )}
@@ -882,19 +1089,50 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 12,
   },
-  logoInputRow: {
+  // Image Upload Container
+  imageUploadContainer: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
+    alignItems: 'center',
+    marginTop: 8,
   },
-  logoUrlInput: {
-    flex: 1,
-  },
-  uploadButtonSmall: {
-    width: 44,
-    height: 44,
+  imagePreviewBox: {
+    width: 100,
+    height: 100,
     borderRadius: 12,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  imagePreview: {
+    width: '100%',
+    height: '100%',
+  },
+  coverPreviewBox: {
+    width: 160,
+    height: 90,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  coverPreview: {
+    width: '100%',
+    height: '100%',
+  },
+  uploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  uploadButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   // Compact Form Layout
   formGrid: {
@@ -1168,5 +1406,59 @@ const styles = StyleSheet.create({
   locationDisplayText: {
     fontSize: 14,
     flex: 1,
+  },
+  // Gallery Styles
+  helperText: {
+    fontSize: 12,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  galleryUploadGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  gallerySlot: {
+    flex: 1,
+    gap: 8,
+  },
+  galleryPreviewBox: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  galleryPreview: {
+    width: '100%',
+    height: '100%',
+  },
+  removeGalleryButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  galleryCaption: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    fontSize: 12,
+    minHeight: 36,
+    textAlignVertical: 'top',
+  },
+  galleryUploadButton: {
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

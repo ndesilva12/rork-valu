@@ -9,33 +9,38 @@ export interface ImageUploadResult {
 }
 
 /**
- * Helper function to fetch with timeout
+ * Convert local URI to Blob using XMLHttpRequest (more reliable than fetch in React Native)
  */
-async function fetchWithTimeout(uri: string, timeout = 30000): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+async function uriToBlob(uri: string): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
 
-  try {
-    const response = await fetch(uri, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    return response;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    throw error;
-  }
+    xhr.onload = function() {
+      resolve(xhr.response);
+    };
+
+    xhr.onerror = function() {
+      reject(new Error('Failed to read image file'));
+    };
+
+    xhr.responseType = 'blob';
+    xhr.open('GET', uri, true);
+    xhr.send(null);
+  });
 }
 
 /**
  * Pick an image from the device gallery
+ * @param aspect - Aspect ratio [width, height]. Default [1, 1] for square
  */
-export async function pickImage(): Promise<ImagePicker.ImagePickerResult | null> {
+export async function pickImage(aspect: [number, number] = [1, 1]): Promise<ImagePicker.ImagePickerResult | null> {
   // Request permission
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
   if (status !== 'granted') {
     Alert.alert(
       'Permission Required',
-      'Please allow access to your photos to upload a profile image.'
+      'Please allow access to your photos to upload an image.'
     );
     return null;
   }
@@ -44,7 +49,7 @@ export async function pickImage(): Promise<ImagePicker.ImagePickerResult | null>
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
     allowsEditing: true,
-    aspect: [1, 1], // Square aspect ratio for profile images
+    aspect: aspect,
     quality: 0.8,
   });
 
@@ -63,124 +68,128 @@ export async function pickImage(): Promise<ImagePicker.ImagePickerResult | null>
  */
 export async function uploadImageToFirebase(uri: string, path: string): Promise<string> {
   try {
-    console.log('[ImageUpload] Starting upload for URI:', uri);
+    console.log('[ImageUpload] Starting upload...');
+    console.log('[ImageUpload] URI:', uri);
+    console.log('[ImageUpload] Path:', path);
     console.log('[ImageUpload] Platform:', Platform.OS);
-    console.log('[ImageUpload] Storage path:', path);
 
-    // Fetch the image from the URI and convert to blob with timeout
-    console.log('[ImageUpload] Fetching image from URI...');
-    const response = await fetchWithTimeout(uri, 30000); // 30 second timeout
-    console.log('[ImageUpload] Fetch completed, status:', response.status);
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
-    }
-
-    console.log('[ImageUpload] Converting to blob...');
-    const blob = await response.blob();
-    console.log('[ImageUpload] Blob created, size:', blob.size, 'type:', blob.type);
+    // Convert URI to blob (using XMLHttpRequest for better React Native compatibility)
+    console.log('[ImageUpload] Converting image to blob...');
+    const blob = await uriToBlob(uri);
+    console.log('[ImageUpload] Blob created - Size:', blob.size, 'Type:', blob.type);
 
     if (blob.size === 0) {
-      throw new Error('Image blob is empty - the image file may be corrupted or inaccessible');
+      throw new Error('Image file is empty or could not be read');
     }
 
-    // Ensure blob has correct mime type
-    const mimeType = blob.type || 'image/jpeg';
-    const finalBlob = blob.type ? blob : new Blob([blob], { type: mimeType });
-    console.log('[ImageUpload] Final blob type:', finalBlob.type);
-
-    // Create a reference to the storage location
+    // Create Firebase Storage reference
     const storageRef = ref(storage, path);
-    console.log('[ImageUpload] Storage ref created for path:', path);
+    console.log('[ImageUpload] Uploading to Firebase Storage...');
 
-    // Upload the file to Firebase Storage
-    console.log('[ImageUpload] Starting upload to Firebase Storage...');
-    await uploadBytes(storageRef, finalBlob);
-    console.log('[ImageUpload] Upload completed successfully');
+    // Upload blob to Firebase
+    await uploadBytes(storageRef, blob);
+    console.log('[ImageUpload] Upload successful!');
 
-    // Get the download URL
-    console.log('[ImageUpload] Getting download URL...');
+    // Get download URL
     const downloadURL = await getDownloadURL(storageRef);
-    console.log('[ImageUpload] Download URL obtained:', downloadURL);
+    console.log('[ImageUpload] Download URL:', downloadURL);
 
     return downloadURL;
   } catch (error: any) {
-    console.error('[ImageUpload] Error uploading image:', error);
-    console.error('[ImageUpload] Error message:', error?.message);
-    console.error('[ImageUpload] Error code:', error?.code);
+    console.error('[ImageUpload] Upload failed:', error);
 
-    // Provide more specific error messages
-    if (error?.name === 'AbortError') {
-      throw new Error('Upload timed out. Please check your internet connection and try again.');
-    } else if (error?.code === 'storage/unauthorized') {
-      throw new Error('Permission denied. Please contact support.');
+    // Provide user-friendly error messages
+    if (error?.code === 'storage/unauthorized') {
+      throw new Error('Permission denied. Please check Firebase Storage rules.');
     } else if (error?.code === 'storage/canceled') {
       throw new Error('Upload was cancelled.');
-    } else if (error?.message?.includes('fetch')) {
-      throw new Error('Failed to read image file. Please try selecting a different image.');
+    } else if (error?.code === 'storage/retry-limit-exceeded') {
+      throw new Error('Upload failed after multiple retries. Please check your internet connection.');
+    } else if (error?.message) {
+      throw new Error(error.message);
     }
 
-    throw error;
+    throw new Error('Failed to upload image. Please try again.');
   }
 }
 
 /**
  * Complete flow: Pick and upload an image
  * @param userId - User ID for creating unique file path
- * @param imageType - Type of image ('profile' or 'business')
+ * @param imageType - Type of image ('profile', 'business', 'cover', or 'gallery')
+ * @param aspect - Optional aspect ratio [width, height]. Default [1, 1] for square
  * @returns Download URL of the uploaded image or null if canceled/failed
  */
 export async function pickAndUploadImage(
   userId: string,
-  imageType: 'profile' | 'business'
+  imageType: 'profile' | 'business' | 'cover' | 'gallery',
+  aspect: [number, number] = [1, 1]
 ): Promise<string | null> {
   try {
-    console.log('[pickAndUploadImage] Starting image picker for type:', imageType);
-    console.log('[pickAndUploadImage] User ID:', userId);
+    console.log('[pickAndUploadImage] Starting picker for', imageType, 'with aspect', aspect);
+    Alert.alert('Debug', `Starting ${imageType} upload...`);
 
-    // Pick image
-    const result = await pickImage();
+    // Pick image from gallery with specified aspect ratio
+    const result = await pickImage(aspect);
+    console.log('[pickAndUploadImage] Picker result:', result ? 'Got result' : 'No result');
 
-    if (!result) {
-      console.log('[pickAndUploadImage] No result from image picker');
+    // Check if user cancelled or no result
+    if (!result || result.canceled) {
+      console.log('[pickAndUploadImage] User cancelled');
+      Alert.alert('Debug', 'Upload cancelled by user');
       return null;
     }
 
-    if (result.canceled) {
-      console.log('[pickAndUploadImage] User cancelled image picker');
-      return null;
-    }
-
+    // Validate we got an image
     if (!result.assets || result.assets.length === 0) {
-      console.error('[pickAndUploadImage] No assets in result');
+      Alert.alert('Debug', 'No image assets found');
       throw new Error('No image was selected');
     }
 
     const imageUri = result.assets[0].uri;
-    console.log('[pickAndUploadImage] Image selected, URI:', imageUri);
-    console.log('[pickAndUploadImage] Image dimensions:', result.assets[0].width, 'x', result.assets[0].height);
+    console.log('[pickAndUploadImage] Image selected:', imageUri);
+    Alert.alert('Debug', `Image selected! URI: ${imageUri.substring(0, 50)}...`);
 
-    // Generate unique filename with timestamp
+    // Create unique filename
     const timestamp = Date.now();
-    const extension = imageUri.split('.').pop() || 'jpg';
+
+    // Extract extension properly (handle data URIs on web)
+    let extension = 'jpg';
+    if (imageUri.startsWith('data:')) {
+      // Data URI format: data:image/jpeg;base64,...
+      const mimeType = imageUri.split(';')[0].split(':')[1];
+      extension = mimeType.split('/')[1] || 'jpg';
+    } else {
+      // Regular file URI
+      extension = imageUri.split('.').pop() || 'jpg';
+    }
+
+    // Determine storage folder based on image type
+    const folder = imageType === 'profile' ? 'profile-images'
+                 : imageType === 'business' ? 'business-images'
+                 : imageType === 'cover' ? 'business-cover-images'
+                 : 'business-gallery-images';
+
     const filename = `${imageType}-${userId}-${timestamp}.${extension}`;
-    const storagePath = `${imageType}-images/${filename}`;
-    console.log('[pickAndUploadImage] Generated storage path:', storagePath);
+    const storagePath = `${folder}/${filename}`;
 
     // Upload to Firebase Storage
-    console.log('[pickAndUploadImage] Starting upload to Firebase...');
+    console.log('[pickAndUploadImage] Uploading to:', storagePath);
+    Alert.alert('Debug', 'Starting Firebase upload...');
+
     const downloadURL = await uploadImageToFirebase(imageUri, storagePath);
-    console.log('[pickAndUploadImage] Upload successful, URL:', downloadURL);
+
+    console.log('[pickAndUploadImage] Success!', downloadURL);
+    Alert.alert('Debug', `Upload complete! URL: ${downloadURL.substring(0, 50)}...`);
 
     return downloadURL;
   } catch (error: any) {
     console.error('[pickAndUploadImage] Error:', error);
-    console.error('[pickAndUploadImage] Error message:', error?.message);
     console.error('[pickAndUploadImage] Error stack:', error?.stack);
 
-    // Show user-friendly error message
+    // Show user-friendly error
     const errorMessage = error?.message || 'Failed to upload image. Please try again.';
-    Alert.alert('Upload Error', errorMessage);
+    Alert.alert('Upload Failed', `Error: ${errorMessage}\n\nStack: ${error?.stack?.substring(0, 100)}`);
     return null;
   }
 }
