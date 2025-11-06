@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Search, MapPin, QrCode, Hash, AlertCircle } from 'lucide-react-native';
+import { Search, MapPin, AlertCircle } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { getBusinessesAcceptingDiscounts, calculateDistance, BusinessUser } from '@/services/firebase/businessService';
@@ -135,19 +135,6 @@ export default function BusinessesAcceptingDiscounts() {
     const acceptsQR = businessInfo.acceptsQRCode ?? true;
     const acceptsValue = businessInfo.acceptsValueCode ?? true;
 
-    let acceptanceMethod = '';
-    let AcceptIcon = QrCode;
-    if (acceptsQR && acceptsValue) {
-      acceptanceMethod = 'QR Code / Value Code';
-      AcceptIcon = QrCode;
-    } else if (acceptsQR) {
-      acceptanceMethod = 'QR Code';
-      AcceptIcon = QrCode;
-    } else if (acceptsValue) {
-      acceptanceMethod = 'Value Code';
-      AcceptIcon = Hash;
-    }
-
     return (
       <TouchableOpacity
         style={[styles.businessCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
@@ -174,10 +161,12 @@ export default function BusinessesAcceptingDiscounts() {
           </View>
 
           <View style={styles.acceptanceInfo}>
-            <AcceptIcon size={16} color={colors.primary} strokeWidth={2} />
-            <Text style={[styles.acceptanceText, { color: colors.primary }]} numberOfLines={1}>
-              {acceptanceMethod}
-            </Text>
+            {acceptsQR && (
+              <Text style={[styles.acceptanceText, { color: colors.primary }]}>QR Code</Text>
+            )}
+            {acceptsValue && (
+              <Text style={[styles.acceptanceText, { color: colors.primary }]}>Value Code</Text>
+            )}
           </View>
         </View>
       </TouchableOpacity>
