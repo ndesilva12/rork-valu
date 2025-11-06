@@ -104,7 +104,14 @@ export default function MenuButton() {
           onPress={() => setIsMenuVisible(false)}
         >
           <TouchableOpacity
-            style={[styles.menuContainer, { backgroundColor: colors.background }]}
+            style={[
+              styles.menuContainer,
+              {
+                backgroundColor: isDarkMode ? '#1F2937' : '#F9FAFB',
+                borderWidth: 3,
+                borderColor: '#FFFFFF',
+              }
+            ]}
             activeOpacity={1}
             onPress={(e) => e.stopPropagation()}
           >
@@ -171,8 +178,9 @@ export default function MenuButton() {
                 <Switch
                   value={isDarkMode}
                   onValueChange={toggleDarkMode}
-                  trackColor={{ false: colors.border, true: colors.primary }}
-                  thumbColor={colors.white}
+                  trackColor={{ false: '#E5E7EB', true: '#9CA3AF' }}
+                  thumbColor='#FFFFFF'
+                  ios_backgroundColor='#E5E7EB'
                 />
               </View>
 

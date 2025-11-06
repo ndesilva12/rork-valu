@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   logoContainer: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 32,
   },
   logo: {

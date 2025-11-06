@@ -5,10 +5,14 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Image,
   Alert,
+  Platform,
+  Linking,
+  ActivityIndicator,
 } from 'react-native';
-import { Building2, ChevronDown, Globe, Upload, MapPin, Facebook, Instagram, Twitter, Linkedin, Plus, X } from 'lucide-react-native';
+import { Image } from 'expo-image';
+import { Building2, ChevronDown, Globe, Upload, MapPin, Facebook, Instagram, Twitter, Linkedin, Plus, X, ExternalLink, Camera } from 'lucide-react-native';
+import { pickAndUploadImage } from '@/lib/imageUpload';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
@@ -71,6 +75,7 @@ export default function BusinessProfileEditor() {
   const [ownershipSources, setOwnershipSources] = useState(businessInfo.ownershipSources || '');
   const [affiliates, setAffiliates] = useState(businessInfo.affiliates || []);
   const [partnerships, setPartnerships] = useState(businessInfo.partnerships || []);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const handleLocationSelect = (locationName: string, lat: number, lon: number) => {
     setLocation(locationName);
@@ -168,13 +173,19 @@ export default function BusinessProfileEditor() {
     setEditing(false);
   };
 
-  const handleLogoUpload = () => {
-    // In a real app, this would open an image picker
-    Alert.alert(
-      'Upload Logo',
-      'Logo upload functionality will be available in a future update. For now, you can enter a logo URL directly.',
-      [{ text: 'OK' }]
-    );
+  const handleLogoUpload = async () => {
+    setUploadingImage(true);
+    try {
+      const downloadURL = await pickAndUploadImage(profile.id, 'business');
+      if (downloadURL) {
+        setLogoUrl(downloadURL);
+        Alert.alert('Success', 'Business logo uploaded!');
+      }
+    } catch (error) {
+      console.error('Error uploading business logo:', error);
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   // Ownership management
@@ -239,15 +250,30 @@ export default function BusinessProfileEditor() {
       <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
         {/* Logo and Basic Info - Compact Horizontal Layout */}
         <View style={styles.compactHeader}>
-          <View style={[styles.logoContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            {logoUrl || businessInfo.logoUrl ? (
-              <Image
-                source={{ uri: logoUrl || businessInfo.logoUrl }}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-            ) : (
-              <Building2 size={32} color={colors.textSecondary} strokeWidth={1.5} />
+          <View style={styles.logoWrapper}>
+            <View style={[styles.logoContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              {logoUrl || businessInfo.logoUrl ? (
+                <Image
+                  source={{ uri: logoUrl || businessInfo.logoUrl }}
+                  style={styles.logoImage}
+                  contentFit="contain"
+                />
+              ) : (
+                <Building2 size={32} color={colors.textSecondary} strokeWidth={1.5} />
+              )}
+            </View>
+            {editing && (
+              <TouchableOpacity
+                style={[styles.uploadImageButton, { backgroundColor: colors.primary }]}
+                onPress={handleLogoUpload}
+                disabled={uploadingImage}
+              >
+                {uploadingImage ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Camera size={16} color={colors.white} strokeWidth={2} />
+                )}
+              </TouchableOpacity>
             )}
           </View>
 
@@ -435,10 +461,19 @@ export default function BusinessProfileEditor() {
                   autoCapitalize="none"
                   keyboardType="url"
                 />
+              ) : businessInfo.website ? (
+                <TouchableOpacity
+                  style={[styles.linkButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                  onPress={() => Linking.openURL(businessInfo.website.startsWith('http') ? businessInfo.website : `https://${businessInfo.website}`)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.linkButtonText, { color: colors.white }]} numberOfLines={1}>
+                    {businessInfo.website}
+                  </Text>
+                  <ExternalLink size={14} color={colors.white} strokeWidth={2} />
+                </TouchableOpacity>
               ) : (
-                <Text style={[styles.value, styles.link, { color: colors.primary }]} numberOfLines={1}>
-                  {businessInfo.website || 'Not set'}
-                </Text>
+                <Text style={[styles.value, { color: colors.textSecondary }]}>Not set</Text>
               )}
             </View>
           </View>
@@ -462,10 +497,18 @@ export default function BusinessProfileEditor() {
                     onChangeText={setFacebook}
                     autoCapitalize="none"
                   />
+                ) : businessInfo.socialMedia?.facebook ? (
+                  <TouchableOpacity
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    onPress={() => Linking.openURL(businessInfo.socialMedia.facebook.startsWith('http') ? businessInfo.socialMedia.facebook : `https://${businessInfo.socialMedia.facebook}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
+                      View Profile
+                    </Text>
+                  </TouchableOpacity>
                 ) : (
-                  <Text style={[styles.value, { color: colors.text }]} numberOfLines={1}>
-                    {businessInfo.socialMedia?.facebook || 'Not set'}
-                  </Text>
+                  <Text style={[styles.value, { color: colors.textSecondary }]}>Not set</Text>
                 )}
               </View>
 
@@ -483,10 +526,18 @@ export default function BusinessProfileEditor() {
                     onChangeText={setInstagram}
                     autoCapitalize="none"
                   />
+                ) : businessInfo.socialMedia?.instagram ? (
+                  <TouchableOpacity
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    onPress={() => Linking.openURL(businessInfo.socialMedia.instagram.startsWith('http') ? businessInfo.socialMedia.instagram : `https://instagram.com/${businessInfo.socialMedia.instagram.replace('@', '')}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
+                      View Profile
+                    </Text>
+                  </TouchableOpacity>
                 ) : (
-                  <Text style={[styles.value, { color: colors.text }]} numberOfLines={1}>
-                    {businessInfo.socialMedia?.instagram || 'Not set'}
-                  </Text>
+                  <Text style={[styles.value, { color: colors.textSecondary }]}>Not set</Text>
                 )}
               </View>
             </View>
@@ -506,10 +557,18 @@ export default function BusinessProfileEditor() {
                     onChangeText={setTwitter}
                     autoCapitalize="none"
                   />
+                ) : businessInfo.socialMedia?.twitter ? (
+                  <TouchableOpacity
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    onPress={() => Linking.openURL(businessInfo.socialMedia.twitter.startsWith('http') ? businessInfo.socialMedia.twitter : `https://twitter.com/${businessInfo.socialMedia.twitter.replace('@', '')}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
+                      View Profile
+                    </Text>
+                  </TouchableOpacity>
                 ) : (
-                  <Text style={[styles.value, { color: colors.text }]} numberOfLines={1}>
-                    {businessInfo.socialMedia?.twitter || 'Not set'}
-                  </Text>
+                  <Text style={[styles.value, { color: colors.textSecondary }]}>Not set</Text>
                 )}
               </View>
 
@@ -527,10 +586,18 @@ export default function BusinessProfileEditor() {
                     onChangeText={setLinkedin}
                     autoCapitalize="none"
                   />
+                ) : businessInfo.socialMedia?.linkedin ? (
+                  <TouchableOpacity
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    onPress={() => Linking.openURL(businessInfo.socialMedia.linkedin.startsWith('http') ? businessInfo.socialMedia.linkedin : `https://${businessInfo.socialMedia.linkedin}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
+                      View Profile
+                    </Text>
+                  </TouchableOpacity>
                 ) : (
-                  <Text style={[styles.value, { color: colors.text }]} numberOfLines={1}>
-                    {businessInfo.socialMedia?.linkedin || 'Not set'}
-                  </Text>
+                  <Text style={[styles.value, { color: colors.textSecondary }]}>Not set</Text>
                 )}
               </View>
             </View>
@@ -679,10 +746,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  logoWrapper: {
+    position: 'relative',
+  },
   logoImage: {
     width: 72,
     height: 72,
     borderRadius: 10,
+  },
+  uploadImageButton: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerInfo: {
     flex: 1,
@@ -770,6 +850,32 @@ const styles = StyleSheet.create({
   },
   link: {
     textDecorationLine: 'underline',
+  },
+  linkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+  },
+  linkButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    flex: 1,
+  },
+  socialButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  socialButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
   // Category Picker
   categoryPicker: {

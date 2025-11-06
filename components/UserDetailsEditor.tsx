@@ -6,8 +6,13 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  Platform,
+  Linking,
+  ActivityIndicator,
 } from 'react-native';
-import { User, Globe, MapPin, Facebook, Instagram, Twitter, Linkedin } from 'lucide-react-native';
+import { Image } from 'expo-image';
+import { User, Globe, MapPin, Facebook, Instagram, Twitter, Linkedin, ExternalLink, Camera } from 'lucide-react-native';
+import { pickAndUploadImage } from '@/lib/imageUpload';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
@@ -42,11 +47,28 @@ export default function UserDetailsEditor() {
   const [instagram, setInstagram] = useState(userDetails.socialMedia?.instagram || '');
   const [twitter, setTwitter] = useState(userDetails.socialMedia?.twitter || '');
   const [linkedin, setLinkedin] = useState(userDetails.socialMedia?.linkedin || '');
+  const [profileImage, setProfileImage] = useState(userDetails.profileImage || '');
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const handleLocationSelect = (locationName: string, lat: number, lon: number) => {
     setLocation(locationName);
     setLatitude(lat);
     setLongitude(lon);
+  };
+
+  const handleUploadImage = async () => {
+    setUploadingImage(true);
+    try {
+      const downloadURL = await pickAndUploadImage(profile.id, 'profile');
+      if (downloadURL) {
+        setProfileImage(downloadURL);
+        Alert.alert('Success', 'Profile image uploaded!');
+      }
+    } catch (error) {
+      console.error('Error uploading profile image:', error);
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleSave = async () => {
@@ -71,6 +93,9 @@ export default function UserDetailsEditor() {
     if (longitude !== undefined) {
       updateInfo.longitude = longitude;
     }
+    if (profileImage) {
+      updateInfo.profileImage = profileImage;
+    }
 
     await setUserDetails(updateInfo);
 
@@ -90,6 +115,7 @@ export default function UserDetailsEditor() {
     setInstagram(userDetails.socialMedia?.instagram || '');
     setTwitter(userDetails.socialMedia?.twitter || '');
     setLinkedin(userDetails.socialMedia?.linkedin || '');
+    setProfileImage(userDetails.profileImage || '');
     setEditing(false);
   };
 
@@ -110,8 +136,27 @@ export default function UserDetailsEditor() {
       <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
         {/* Compact Header with Icon */}
         <View style={styles.compactHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <User size={32} color={colors.primary} strokeWidth={1.5} />
+          <View style={styles.profileImageWrapper}>
+            {profileImage ? (
+              <Image source={{ uri: profileImage }} style={styles.profileImage} contentFit="cover" />
+            ) : (
+              <View style={[styles.iconContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <User size={32} color={colors.primary} strokeWidth={1.5} />
+              </View>
+            )}
+            {editing && (
+              <TouchableOpacity
+                style={[styles.uploadImageButton, { backgroundColor: colors.primary }]}
+                onPress={handleUploadImage}
+                disabled={uploadingImage}
+              >
+                {uploadingImage ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Camera size={16} color={colors.white} strokeWidth={2} />
+                )}
+              </TouchableOpacity>
+            )}
           </View>
 
           <View style={styles.headerInfo}>
@@ -202,10 +247,19 @@ export default function UserDetailsEditor() {
                 autoCapitalize="none"
                 keyboardType="url"
               />
+            ) : userDetails.website ? (
+              <TouchableOpacity
+                style={[styles.linkButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                onPress={() => Linking.openURL(userDetails.website.startsWith('http') ? userDetails.website : `https://${userDetails.website}`)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.linkButtonText, { color: colors.white }]} numberOfLines={1}>
+                  {userDetails.website}
+                </Text>
+                <ExternalLink size={14} color={colors.white} strokeWidth={2} />
+              </TouchableOpacity>
             ) : (
-              <Text style={[styles.value, styles.link, { color: colors.primary }]}>
-                {userDetails.website || 'Not set'}
-              </Text>
+              <Text style={[styles.value, { color: colors.textSecondary }]}>Not set</Text>
             )}
           </View>
 
@@ -228,10 +282,18 @@ export default function UserDetailsEditor() {
                     onChangeText={setFacebook}
                     autoCapitalize="none"
                   />
+                ) : userDetails.socialMedia?.facebook ? (
+                  <TouchableOpacity
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    onPress={() => Linking.openURL(userDetails.socialMedia.facebook.startsWith('http') ? userDetails.socialMedia.facebook : `https://${userDetails.socialMedia.facebook}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
+                      View Profile
+                    </Text>
+                  </TouchableOpacity>
                 ) : (
-                  <Text style={[styles.value, { color: colors.text }]} numberOfLines={1}>
-                    {userDetails.socialMedia?.facebook || 'Not set'}
-                  </Text>
+                  <Text style={[styles.value, { color: colors.textSecondary }]}>Not set</Text>
                 )}
               </View>
 
@@ -249,10 +311,18 @@ export default function UserDetailsEditor() {
                     onChangeText={setInstagram}
                     autoCapitalize="none"
                   />
+                ) : userDetails.socialMedia?.instagram ? (
+                  <TouchableOpacity
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    onPress={() => Linking.openURL(userDetails.socialMedia.instagram.startsWith('http') ? userDetails.socialMedia.instagram : `https://instagram.com/${userDetails.socialMedia.instagram.replace('@', '')}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
+                      View Profile
+                    </Text>
+                  </TouchableOpacity>
                 ) : (
-                  <Text style={[styles.value, { color: colors.text }]} numberOfLines={1}>
-                    {userDetails.socialMedia?.instagram || 'Not set'}
-                  </Text>
+                  <Text style={[styles.value, { color: colors.textSecondary }]}>Not set</Text>
                 )}
               </View>
             </View>
@@ -272,10 +342,18 @@ export default function UserDetailsEditor() {
                     onChangeText={setTwitter}
                     autoCapitalize="none"
                   />
+                ) : userDetails.socialMedia?.twitter ? (
+                  <TouchableOpacity
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    onPress={() => Linking.openURL(userDetails.socialMedia.twitter.startsWith('http') ? userDetails.socialMedia.twitter : `https://twitter.com/${userDetails.socialMedia.twitter.replace('@', '')}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
+                      View Profile
+                    </Text>
+                  </TouchableOpacity>
                 ) : (
-                  <Text style={[styles.value, { color: colors.text }]} numberOfLines={1}>
-                    {userDetails.socialMedia?.twitter || 'Not set'}
-                  </Text>
+                  <Text style={[styles.value, { color: colors.textSecondary }]}>Not set</Text>
                 )}
               </View>
 
@@ -293,10 +371,18 @@ export default function UserDetailsEditor() {
                     onChangeText={setLinkedin}
                     autoCapitalize="none"
                   />
+                ) : userDetails.socialMedia?.linkedin ? (
+                  <TouchableOpacity
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    onPress={() => Linking.openURL(userDetails.socialMedia.linkedin.startsWith('http') ? userDetails.socialMedia.linkedin : `https://${userDetails.socialMedia.linkedin}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
+                      View Profile
+                    </Text>
+                  </TouchableOpacity>
                 ) : (
-                  <Text style={[styles.value, { color: colors.text }]} numberOfLines={1}>
-                    {userDetails.socialMedia?.linkedin || 'Not set'}
-                  </Text>
+                  <Text style={[styles.value, { color: colors.textSecondary }]}>Not set</Text>
                 )}
               </View>
             </View>
@@ -372,6 +458,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  profileImageWrapper: {
+    position: 'relative',
+  },
+  profileImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+  },
+  uploadImageButton: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerInfo: {
     flex: 1,
     gap: 4,
@@ -430,6 +534,32 @@ const styles = StyleSheet.create({
   },
   link: {
     textDecorationLine: 'underline',
+  },
+  linkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+  },
+  linkButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    flex: 1,
+  },
+  socialButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  socialButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
   socialMediaSection: {
     marginTop: 8,

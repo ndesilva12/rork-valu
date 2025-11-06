@@ -28,20 +28,15 @@ export default function ValueCodeSettings() {
     customDiscount: '',
   };
 
-  const STAND_FEE = 2.5; // Fixed at 2.5%
-
   const [acceptsDiscounts, setAcceptsDiscounts] = useState(
     businessInfo.acceptsStandDiscounts ?? businessInfo.acceptsValueCodes ?? false
   );
   const [acceptsQRCode, setAcceptsQRCode] = useState(businessInfo.acceptsQRCode ?? true);
   const [acceptsPromoCode, setAcceptsPromoCode] = useState(businessInfo.acceptsValueCode ?? true);
   const [discountType, setDiscountType] = useState<'preset' | 'custom'>('preset');
-  const [totalDiscount, setTotalDiscount] = useState(businessInfo.valueCodeDiscount || 10);
   const [customerDiscount, setCustomerDiscount] = useState(businessInfo.customerDiscountPercent || 5);
+  const [donationDiscount, setDonationDiscount] = useState(businessInfo.donationPercent || 2.5);
   const [customDiscountText, setCustomDiscountText] = useState(businessInfo.customDiscount || '');
-
-  // Calculate donation automatically (total - customer - stand fee)
-  const donationDiscount = Math.max(0, totalDiscount - customerDiscount - STAND_FEE);
 
   const handleToggleDiscounts = async (value: boolean) => {
     setAcceptsDiscounts(value);
@@ -76,54 +71,18 @@ export default function ValueCodeSettings() {
     await setBusinessInfo({ acceptsValueCode: value });
   };
 
-  const handleChangeTotalDiscount = async (newTotal: number) => {
-    const minTotal = STAND_FEE + 0.5;
-    const maxTotal = 50;
-    const clampedTotal = Math.max(minTotal, Math.min(maxTotal, newTotal));
-
-    setTotalDiscount(clampedTotal);
-
-    // Adjust customer discount if it exceeds available amount
-    const maxCustomer = clampedTotal - STAND_FEE;
-    if (customerDiscount > maxCustomer) {
-      setCustomerDiscount(maxCustomer);
-      await setBusinessInfo({
-        valueCodeDiscount: clampedTotal,
-        customerDiscountPercent: maxCustomer,
-        donationPercent: 0,
-      });
-    } else {
-      const newDonation = clampedTotal - customerDiscount - STAND_FEE;
-      await setBusinessInfo({
-        valueCodeDiscount: clampedTotal,
-        donationPercent: Math.max(0, newDonation),
-      });
-    }
-  };
-
   const handleChangeCustomerDiscount = async (newCustomer: number) => {
-    const maxCustomer = totalDiscount - STAND_FEE;
-    const clampedCustomer = Math.max(0, Math.min(maxCustomer, newCustomer));
-
+    const clampedCustomer = Math.max(0, Math.min(50, newCustomer));
     setCustomerDiscount(clampedCustomer);
-
-    const newDonation = totalDiscount - clampedCustomer - STAND_FEE;
     await setBusinessInfo({
       customerDiscountPercent: clampedCustomer,
-      donationPercent: Math.max(0, newDonation),
     });
   };
 
   const handleChangeDonationDiscount = async (newDonation: number) => {
-    const maxDonation = totalDiscount - STAND_FEE;
-    const clampedDonation = Math.max(0, Math.min(maxDonation, newDonation));
-
-    // Calculate customer discount as remainder
-    const newCustomer = totalDiscount - clampedDonation - STAND_FEE;
-    setCustomerDiscount(Math.max(0, newCustomer));
-
+    const clampedDonation = Math.max(0, Math.min(50, newDonation));
+    setDonationDiscount(clampedDonation);
     await setBusinessInfo({
-      customerDiscountPercent: Math.max(0, newCustomer),
       donationPercent: clampedDonation,
     });
   };
@@ -156,8 +115,9 @@ export default function ValueCodeSettings() {
           <Switch
             value={acceptsDiscounts}
             onValueChange={handleToggleDiscounts}
-            trackColor={{ false: colors.border, true: colors.border }}
-            thumbColor={colors.white}
+            trackColor={{ false: '#E5E7EB', true: '#9CA3AF' }}
+            thumbColor='#FFFFFF'
+            ios_backgroundColor='#E5E7EB'
           />
         </View>
 
@@ -172,8 +132,9 @@ export default function ValueCodeSettings() {
                 <Switch
                   value={acceptsQRCode}
                   onValueChange={handleToggleQRCode}
-                  trackColor={{ false: colors.border, true: colors.border }}
-                  thumbColor={colors.white}
+                  trackColor={{ false: '#E5E7EB', true: '#9CA3AF' }}
+                  thumbColor='#FFFFFF'
+                  ios_backgroundColor='#E5E7EB'
                 />
               </View>
               <View style={styles.compactItem}>
@@ -181,8 +142,9 @@ export default function ValueCodeSettings() {
                 <Switch
                   value={acceptsPromoCode}
                   onValueChange={handleTogglePromoCode}
-                  trackColor={{ false: colors.border, true: colors.border }}
-                  thumbColor={colors.white}
+                  trackColor={{ false: '#E5E7EB', true: '#9CA3AF' }}
+                  thumbColor='#FFFFFF'
+                  ios_backgroundColor='#E5E7EB'
                 />
               </View>
             </View>
@@ -230,33 +192,7 @@ export default function ValueCodeSettings() {
 
             {discountType === 'preset' ? (
               <>
-                {/* Total Discount - Big Counter */}
-                <View style={styles.mainCounter}>
-                  <Text style={[styles.counterLabel, { color: colors.textSecondary }]}>Total Discount</Text>
-                  <View style={styles.counterControls}>
-                    <TouchableOpacity
-                      style={[styles.counterButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                      onPress={() => handleChangeTotalDiscount(totalDiscount - 0.5)}
-                      activeOpacity={0.7}
-                    >
-                      <Minus size={24} color={colors.text} strokeWidth={2} />
-                    </TouchableOpacity>
-                    <View style={styles.counterValue}>
-                      <Text style={[styles.counterNumber, { color: colors.primary }]}>
-                        {totalDiscount.toFixed(1)}%
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      style={[styles.counterButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                      onPress={() => handleChangeTotalDiscount(totalDiscount + 0.5)}
-                      activeOpacity={0.7}
-                    >
-                      <Plus size={24} color={colors.text} strokeWidth={2} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* Three Small Counters */}
+                {/* Three Counters: Customer %, Donation %, and Stand Fee % */}
                 <View style={styles.smallCountersGrid}>
                   {/* Customer Discount */}
                   <View style={[styles.smallCounter, { backgroundColor: colors.background, borderColor: colors.border }]}>
@@ -267,9 +203,9 @@ export default function ValueCodeSettings() {
                         onPress={() => handleChangeCustomerDiscount(customerDiscount - 0.5)}
                         activeOpacity={0.7}
                       >
-                        <Minus size={16} color={colors.text} strokeWidth={2} />
+                        <Minus size={20} color={colors.text} strokeWidth={2} />
                       </TouchableOpacity>
-                      <Text style={[styles.smallCounterValue, { color: colors.text }]}>
+                      <Text style={[styles.largeCounterValue, { color: colors.primary }]}>
                         {customerDiscount.toFixed(1)}%
                       </Text>
                       <TouchableOpacity
@@ -277,7 +213,7 @@ export default function ValueCodeSettings() {
                         onPress={() => handleChangeCustomerDiscount(customerDiscount + 0.5)}
                         activeOpacity={0.7}
                       >
-                        <Plus size={16} color={colors.text} strokeWidth={2} />
+                        <Plus size={20} color={colors.text} strokeWidth={2} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -291,9 +227,9 @@ export default function ValueCodeSettings() {
                         onPress={() => handleChangeDonationDiscount(donationDiscount - 0.5)}
                         activeOpacity={0.7}
                       >
-                        <Minus size={16} color={colors.text} strokeWidth={2} />
+                        <Minus size={20} color={colors.text} strokeWidth={2} />
                       </TouchableOpacity>
-                      <Text style={[styles.smallCounterValue, { color: colors.text }]}>
+                      <Text style={[styles.largeCounterValue, { color: colors.primary }]}>
                         {donationDiscount.toFixed(1)}%
                       </Text>
                       <TouchableOpacity
@@ -301,20 +237,20 @@ export default function ValueCodeSettings() {
                         onPress={() => handleChangeDonationDiscount(donationDiscount + 0.5)}
                         activeOpacity={0.7}
                       >
-                        <Plus size={16} color={colors.text} strokeWidth={2} />
+                        <Plus size={20} color={colors.text} strokeWidth={2} />
                       </TouchableOpacity>
                     </View>
                   </View>
 
                   {/* Stand Fee - Fixed */}
-                  <View style={[styles.smallCounter, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={[styles.smallCounter, styles.fixedCounter, { backgroundColor: '#FFFFFF', borderColor: colors.border }]}>
                     <Text style={[styles.smallCounterLabel, { color: colors.textSecondary }]}>Stand Fee %</Text>
                     <View style={styles.smallCounterControls}>
-                      <Text style={[styles.smallCounterValue, styles.fixedValue, { color: colors.textSecondary }]}>
-                        {STAND_FEE.toFixed(1)}%
+                      <Text style={[styles.largeCounterValue, { color: colors.textSecondary }]}>
+                        2.5%
                       </Text>
-                      <Text style={[styles.fixedLabel, { color: colors.textSecondary }]}>(fixed)</Text>
                     </View>
+                    <Text style={[styles.fixedLabel, { color: colors.textSecondary }]}>(fixed)</Text>
                   </View>
                 </View>
               </>
@@ -473,6 +409,9 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
   },
+  fixedCounter: {
+    // White background to distinguish from editable counters
+  },
   smallCounterLabel: {
     fontSize: 11,
     fontWeight: '600' as const,
@@ -491,6 +430,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700' as const,
     minWidth: 50,
+    textAlign: 'center' as const,
+  },
+  largeCounterValue: {
+    fontSize: 32,
+    fontWeight: '700' as const,
+    minWidth: 80,
     textAlign: 'center' as const,
   },
   fixedValue: {
