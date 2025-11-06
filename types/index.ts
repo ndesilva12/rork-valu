@@ -91,6 +91,8 @@ export interface SocialMedia {
   instagram?: string;
   twitter?: string;
   linkedin?: string;
+  yelp?: string;
+  youtube?: string;
 }
 
 export interface BusinessLocation {
