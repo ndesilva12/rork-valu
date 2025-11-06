@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, MapPin } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, MapPin, Navigation, Percent } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -123,6 +123,47 @@ export default function BusinessDetailScreen() {
       }
     } catch (error) {
       console.error('Error opening social URL:', error);
+    }
+  };
+
+  const handleViewOnMap = async () => {
+    if (!business) return;
+
+    // Get the primary location or first location
+    let latitude: number | undefined;
+    let longitude: number | undefined;
+    let address: string | undefined;
+
+    if (business.businessInfo.locations && business.businessInfo.locations.length > 0) {
+      const primaryLocation = business.businessInfo.locations.find(loc => loc.isPrimary) || business.businessInfo.locations[0];
+      latitude = primaryLocation.latitude;
+      longitude = primaryLocation.longitude;
+      address = primaryLocation.address;
+    } else if (business.businessInfo.latitude && business.businessInfo.longitude) {
+      latitude = business.businessInfo.latitude;
+      longitude = business.businessInfo.longitude;
+      address = business.businessInfo.location;
+    }
+
+    if (!latitude || !longitude) {
+      return;
+    }
+
+    try {
+      // Create Google Maps URL with coordinates
+      const label = encodeURIComponent(business.businessInfo.name);
+      const url = Platform.select({
+        ios: `maps:0,0?q=${latitude},${longitude}(${label})`,
+        android: `geo:0,0?q=${latitude},${longitude}(${label})`,
+        default: `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
+      });
+
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      }
+    } catch (error) {
+      console.error('Error opening maps:', error);
     }
   };
 
@@ -306,6 +347,51 @@ export default function BusinessDetailScreen() {
               </TouchableOpacity>
             )}
           </View>
+
+          {/* View on Map Button */}
+          {((business.businessInfo.locations && business.businessInfo.locations.length > 0) ||
+            (business.businessInfo.latitude && business.businessInfo.longitude)) && (
+            <TouchableOpacity
+              style={[styles.mapButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+              onPress={handleViewOnMap}
+              activeOpacity={0.7}
+            >
+              <Navigation size={20} color={colors.white} strokeWidth={2} />
+              <Text style={[styles.mapButtonText, { color: colors.white }]}>View on Map</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Stand Discount Section */}
+          {business.businessInfo.acceptsStandDiscounts && (
+            <View style={[styles.standDiscountSection, { backgroundColor: colors.backgroundSecondary }]}>
+              <View style={styles.discountHeader}>
+                <Percent size={20} color={colors.primary} strokeWidth={2} />
+                <Text style={[styles.discountHeaderText, { color: colors.text }]}>Stand Discount</Text>
+              </View>
+              <View style={[styles.discountCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
+                <View style={styles.discountRow}>
+                  <Text style={[styles.discountLabel, { color: colors.textSecondary }]}>Acceptance Method:</Text>
+                  <Text style={[styles.discountValue, { color: colors.primary }]}>
+                    {(business.businessInfo.acceptsQRCode ?? true) && (business.businessInfo.acceptsValueCode ?? true)
+                      ? 'QR Code / Value Code'
+                      : (business.businessInfo.acceptsQRCode ?? true) ? 'QR Code' : 'Value Code'}
+                  </Text>
+                </View>
+                <View style={styles.discountRow}>
+                  <Text style={[styles.discountLabel, { color: colors.textSecondary }]}>Discount %:</Text>
+                  <Text style={[styles.discountValue, { color: colors.primary }]}>
+                    {(business.businessInfo.customerDiscountPercent || 0).toFixed(1)}%
+                  </Text>
+                </View>
+                <View style={styles.discountRow}>
+                  <Text style={[styles.discountLabel, { color: colors.textSecondary }]}>Donation %:</Text>
+                  <Text style={[styles.discountValue, { color: colors.primary }]}>
+                    {(business.businessInfo.donationPercent || 0).toFixed(1)}%
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
 
           <View style={[styles.alignmentCard, { backgroundColor: alignmentColor + '15' }]}>
             <View style={styles.alignmentLabelRow}>
@@ -555,6 +641,60 @@ const styles = StyleSheet.create({
   socialButtonText: {
     fontSize: 13,
     fontWeight: '600' as const,
+  },
+  mapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 2,
+    marginBottom: 16,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  mapButtonText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  standDiscountSection: {
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 16,
+  },
+  discountHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  discountHeaderText: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  discountCard: {
+    borderRadius: 12,
+    borderWidth: 2,
+    padding: 16,
+  },
+  discountRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  discountLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  discountValue: {
+    fontSize: 16,
+    fontWeight: '700' as const,
   },
   scoreCircle: {
     width: 80,
