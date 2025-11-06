@@ -8,8 +8,17 @@ function removeUndefinedFields<T extends Record<string, any>>(obj: T): Partial<T
 
   for (const key in obj) {
     if (obj[key] !== undefined) {
+      // Recursively clean arrays of objects
+      if (Array.isArray(obj[key])) {
+        cleaned[key] = obj[key].map((item: any) => {
+          if (typeof item === 'object' && item !== null) {
+            return removeUndefinedFields(item);
+          }
+          return item;
+        });
+      }
       // Recursively clean nested objects
-      if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+      else if (typeof obj[key] === 'object' && obj[key] !== null) {
         cleaned[key] = removeUndefinedFields(obj[key]);
       } else {
         cleaned[key] = obj[key];
@@ -22,31 +31,21 @@ function removeUndefinedFields<T extends Record<string, any>>(obj: T): Partial<T
 
 // Clean user profile to ensure no undefined fields
 function cleanUserProfile(profile: UserProfile): Partial<UserProfile> {
-  const cleaned: Partial<UserProfile> = {
+  // Use removeUndefinedFields to recursively clean everything
+  const cleaned = removeUndefinedFields({
     causes: profile.causes || [],
     searchHistory: profile.searchHistory || [],
     donationAmount: profile.donationAmount ?? 0,
     selectedCharities: profile.selectedCharities || [],
-  };
+    ...(profile.promoCode !== undefined && { promoCode: profile.promoCode }),
+    ...(profile.accountType !== undefined && { accountType: profile.accountType }),
+    ...(profile.businessInfo !== undefined && { businessInfo: profile.businessInfo }),
+    ...(profile.userDetails !== undefined && { userDetails: profile.userDetails }),
+  });
 
-  // Only add fields that are actually defined
-  if (profile.promoCode !== undefined) {
-    cleaned.promoCode = profile.promoCode;
-  }
+  console.log('[Firebase cleanUserProfile] Cleaned profile:', JSON.stringify(cleaned, null, 2));
 
-  if (profile.accountType !== undefined) {
-    cleaned.accountType = profile.accountType;
-  }
-
-  if (profile.businessInfo !== undefined) {
-    cleaned.businessInfo = removeUndefinedFields(profile.businessInfo) as BusinessInfo;
-  }
-
-  if (profile.userDetails !== undefined) {
-    cleaned.userDetails = removeUndefinedFields(profile.userDetails) as UserDetails;
-  }
-
-  return cleaned;
+  return cleaned as Partial<UserProfile>;
 }
 
 /**
