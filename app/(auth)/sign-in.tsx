@@ -16,6 +16,10 @@ export default function SignInScreen() {
   const [password, setPassword] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState('');
+  const [showForgotPassword, setShowForgotPassword] = React.useState(false);
+  const [resetCode, setResetCode] = React.useState('');
+  const [newPassword, setNewPassword] = React.useState('');
+  const [resetStep, setResetStep] = React.useState<'email' | 'code' | 'password'>('email');
 
   React.useEffect(() => {
     if (authLoaded && isSignedIn) {
@@ -74,7 +78,106 @@ export default function SignInScreen() {
     }
   };
 
+  const onForgotPasswordPress = async () => {
+    if (!emailAddress) {
+      setError('Please enter your email address');
+      return;
+    }
 
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      await signIn.create({
+        strategy: 'reset_password_email_code',
+        identifier: emailAddress,
+      });
+
+      setShowForgotPassword(true);
+      setResetStep('code');
+    } catch (err: any) {
+      console.error('[Forgot Password] Error:', JSON.stringify(err, null, 2));
+      const errorMessage = err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || err?.message || 'Failed to send reset code';
+      setError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const onResetCodeSubmit = async () => {
+    if (!resetCode) {
+      setError('Please enter the verification code');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const result = await signIn.attemptFirstFactor({
+        strategy: 'reset_password_email_code',
+        code: resetCode,
+      });
+
+      if (result.status === 'needs_new_password') {
+        setResetStep('password');
+      } else {
+        setError('Verification failed. Please try again.');
+      }
+    } catch (err: any) {
+      console.error('[Reset Code] Error:', JSON.stringify(err, null, 2));
+      const errorMessage = err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || err?.message || 'Invalid verification code';
+      setError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const onNewPasswordSubmit = async () => {
+    if (!newPassword) {
+      setError('Please enter a new password');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setError('Password must be at least 8 characters long');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const result = await signIn.resetPassword({
+        password: newPassword,
+      });
+
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId });
+        setShowForgotPassword(false);
+        setResetStep('email');
+        setResetCode('');
+        setNewPassword('');
+        router.replace('/');
+      } else {
+        setError('Password reset failed. Please try again.');
+      }
+    } catch (err: any) {
+      console.error('[New Password] Error:', JSON.stringify(err, null, 2));
+      const errorMessage = err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || err?.message || 'Failed to reset password';
+      setError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const cancelForgotPassword = () => {
+    setShowForgotPassword(false);
+    setResetStep('email');
+    setResetCode('');
+    setNewPassword('');
+    setError('');
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
@@ -93,46 +196,115 @@ export default function SignInScreen() {
               resizeMode="contain"
             />
           </View>
-          <Text style={[styles.title, { color: colors.text }]}>Welcome back</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Sign in to your account</Text>
+          {!showForgotPassword ? (
+            <>
+              <Text style={[styles.title, { color: colors.text }]}>Welcome back</Text>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Sign in to your account</Text>
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          <View style={styles.inputContainer}>
-            <Text style={[styles.label, { color: colors.text }]}>Email</Text>
-            <TextInput
-              autoCapitalize="none"
-              value={emailAddress}
-              placeholder="Enter your email"
-              placeholderTextColor={colors.textSecondary}
-              onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
-              style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
-              keyboardType="email-address"
-            />
-          </View>
-          <View style={styles.inputContainer}>
-            <Text style={[styles.label, { color: colors.text }]}>Password</Text>
-            <TextInput
-              value={password}
-              placeholder="Enter your password"
-              placeholderTextColor={colors.textSecondary}
-              secureTextEntry={true}
-              onChangeText={(password) => setPassword(password)}
-              style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
-            />
-          </View>
-          <TouchableOpacity onPress={onSignInPress} style={[styles.button, { backgroundColor: colors.primary }]} disabled={isSubmitting}>
-            {isSubmitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Continue</Text>
-            )}
-          </TouchableOpacity>
-          <View style={styles.linkContainer}>
-            <Text style={[styles.linkText, { color: colors.textSecondary }]}>Don&apos;t have an account? </Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/sign-up')}>
-              <Text style={[styles.link, { color: colors.primary }]}>Sign up</Text>
-            </TouchableOpacity>
-          </View>
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
+              <View style={styles.inputContainer}>
+                <Text style={[styles.label, { color: colors.text }]}>Email</Text>
+                <TextInput
+                  autoCapitalize="none"
+                  value={emailAddress}
+                  placeholder="Enter your email"
+                  placeholderTextColor={colors.textSecondary}
+                  onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
+                  style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
+                  keyboardType="email-address"
+                />
+              </View>
+              <View style={styles.inputContainer}>
+                <Text style={[styles.label, { color: colors.text }]}>Password</Text>
+                <TextInput
+                  value={password}
+                  placeholder="Enter your password"
+                  placeholderTextColor={colors.textSecondary}
+                  secureTextEntry={true}
+                  onChangeText={(password) => setPassword(password)}
+                  style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
+                />
+                <TouchableOpacity onPress={onForgotPasswordPress} style={styles.forgotPasswordLink}>
+                  <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>Forgot password?</Text>
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity onPress={onSignInPress} style={[styles.button, { backgroundColor: colors.primary }]} disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Continue</Text>
+                )}
+              </TouchableOpacity>
+              <View style={styles.linkContainer}>
+                <Text style={[styles.linkText, { color: colors.textSecondary }]}>Don&apos;t have an account? </Text>
+                <TouchableOpacity onPress={() => router.push('/(auth)/sign-up')}>
+                  <Text style={[styles.link, { color: colors.primary }]}>Sign up</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <>
+              <Text style={[styles.title, { color: colors.text }]}>Reset Password</Text>
+              {resetStep === 'code' && (
+                <>
+                  <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                    We sent a verification code to {emailAddress}
+                  </Text>
+                  {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                  <View style={styles.inputContainer}>
+                    <Text style={[styles.label, { color: colors.text }]}>Verification Code</Text>
+                    <TextInput
+                      value={resetCode}
+                      placeholder="Enter the 6-digit code"
+                      placeholderTextColor={colors.textSecondary}
+                      onChangeText={setResetCode}
+                      style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
+                      keyboardType="number-pad"
+                      maxLength={6}
+                    />
+                  </View>
+                  <TouchableOpacity onPress={onResetCodeSubmit} style={[styles.button, { backgroundColor: colors.primary }]} disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.buttonText}>Verify Code</Text>
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
+              {resetStep === 'password' && (
+                <>
+                  <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                    Enter your new password
+                  </Text>
+                  {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                  <View style={styles.inputContainer}>
+                    <Text style={[styles.label, { color: colors.text }]}>New Password</Text>
+                    <TextInput
+                      value={newPassword}
+                      placeholder="Enter your new password"
+                      placeholderTextColor={colors.textSecondary}
+                      secureTextEntry={true}
+                      onChangeText={setNewPassword}
+                      style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
+                    />
+                  </View>
+                  <TouchableOpacity onPress={onNewPasswordSubmit} style={[styles.button, { backgroundColor: colors.primary }]} disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.buttonText}>Reset Password</Text>
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
+              <View style={styles.linkContainer}>
+                <TouchableOpacity onPress={cancelForgotPassword}>
+                  <Text style={[styles.link, { color: colors.primary }]}>Back to sign in</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -231,5 +403,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(239, 68, 68, 0.3)',
     textAlign: 'left',
     lineHeight: 20,
+  },
+  forgotPasswordLink: {
+    marginTop: 8,
+    alignSelf: 'flex-end',
+  },
+  forgotPasswordText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

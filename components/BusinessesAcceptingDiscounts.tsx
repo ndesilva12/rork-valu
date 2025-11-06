@@ -165,7 +165,7 @@ export default function BusinessesAcceptingDiscounts() {
               <Text style={[styles.acceptanceText, { color: colors.primary }]}>QR Code</Text>
             )}
             {acceptsValue && (
-              <Text style={[styles.acceptanceText, { color: colors.primary }]}>Value Code</Text>
+              <Text style={[styles.acceptanceText, { color: colors.primary }]}>Promo Code</Text>
             )}
           </View>
         </View>

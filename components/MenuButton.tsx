@@ -1,5 +1,5 @@
 import { useRouter, useSegments } from 'expo-router';
-import { Menu, Moon, Sun, RefreshCw, LogOut, Settings, Search as SearchIcon } from 'lucide-react-native';
+import { Menu, Moon, Sun, RefreshCw, LogOut, Settings, Search as SearchIcon, User } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   View,
@@ -83,6 +83,11 @@ export default function MenuButton() {
     router.push('/search');
   };
 
+  const handleNavigateToSettings = () => {
+    setIsMenuVisible(false);
+    router.push('/settings');
+  };
+
   return (
     <>
       <TouchableOpacity
@@ -144,6 +149,17 @@ export default function MenuButton() {
                   </View>
                 </View>
               )}
+
+              <TouchableOpacity
+                style={[styles.menuItem, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
+                onPress={handleNavigateToSettings}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemLeft}>
+                  <User size={26} color={colors.primary} strokeWidth={2} />
+                  <Text style={[styles.menuItemTitle, { color: colors.text }]}>Settings</Text>
+                </View>
+              </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.menuItem, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
