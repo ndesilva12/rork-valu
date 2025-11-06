@@ -206,14 +206,14 @@ export default function UserDetailsEditor() {
               />
             ) : userDetails.website ? (
               <TouchableOpacity
-                style={[styles.linkButton, { backgroundColor: colors.primary + '15', borderColor: colors.primary }]}
+                style={[styles.linkButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
                 onPress={() => Linking.openURL(userDetails.website.startsWith('http') ? userDetails.website : `https://${userDetails.website}`)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.linkButtonText, { color: colors.primary }]} numberOfLines={1}>
+                <Text style={[styles.linkButtonText, { color: colors.white }]} numberOfLines={1}>
                   {userDetails.website}
                 </Text>
-                <ExternalLink size={14} color={colors.primary} strokeWidth={2} />
+                <ExternalLink size={14} color={colors.white} strokeWidth={2} />
               </TouchableOpacity>
             ) : (
               <Text style={[styles.value, { color: colors.textSecondary }]}>Not set</Text>
@@ -241,11 +241,11 @@ export default function UserDetailsEditor() {
                   />
                 ) : userDetails.socialMedia?.facebook ? (
                   <TouchableOpacity
-                    style={[styles.socialButton, { backgroundColor: colors.primary + '10', borderColor: colors.border }]}
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
                     onPress={() => Linking.openURL(userDetails.socialMedia.facebook.startsWith('http') ? userDetails.socialMedia.facebook : `https://${userDetails.socialMedia.facebook}`)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.socialButtonText, { color: colors.primary }]} numberOfLines={1}>
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
                       View Profile
                     </Text>
                   </TouchableOpacity>
@@ -270,11 +270,11 @@ export default function UserDetailsEditor() {
                   />
                 ) : userDetails.socialMedia?.instagram ? (
                   <TouchableOpacity
-                    style={[styles.socialButton, { backgroundColor: colors.primary + '10', borderColor: colors.border }]}
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
                     onPress={() => Linking.openURL(userDetails.socialMedia.instagram.startsWith('http') ? userDetails.socialMedia.instagram : `https://instagram.com/${userDetails.socialMedia.instagram.replace('@', '')}`)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.socialButtonText, { color: colors.primary }]} numberOfLines={1}>
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
                       View Profile
                     </Text>
                   </TouchableOpacity>
@@ -301,11 +301,11 @@ export default function UserDetailsEditor() {
                   />
                 ) : userDetails.socialMedia?.twitter ? (
                   <TouchableOpacity
-                    style={[styles.socialButton, { backgroundColor: colors.primary + '10', borderColor: colors.border }]}
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
                     onPress={() => Linking.openURL(userDetails.socialMedia.twitter.startsWith('http') ? userDetails.socialMedia.twitter : `https://twitter.com/${userDetails.socialMedia.twitter.replace('@', '')}`)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.socialButtonText, { color: colors.primary }]} numberOfLines={1}>
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
                       View Profile
                     </Text>
                   </TouchableOpacity>
@@ -330,11 +330,11 @@ export default function UserDetailsEditor() {
                   />
                 ) : userDetails.socialMedia?.linkedin ? (
                   <TouchableOpacity
-                    style={[styles.socialButton, { backgroundColor: colors.primary + '10', borderColor: colors.border }]}
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
                     onPress={() => Linking.openURL(userDetails.socialMedia.linkedin.startsWith('http') ? userDetails.socialMedia.linkedin : `https://${userDetails.socialMedia.linkedin}`)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.socialButtonText, { color: colors.primary }]} numberOfLines={1}>
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
                       View Profile
                     </Text>
                   </TouchableOpacity>

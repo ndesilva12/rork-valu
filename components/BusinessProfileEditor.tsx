@@ -439,14 +439,14 @@ export default function BusinessProfileEditor() {
                 />
               ) : businessInfo.website ? (
                 <TouchableOpacity
-                  style={[styles.linkButton, { backgroundColor: colors.primary + '15', borderColor: colors.primary }]}
+                  style={[styles.linkButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
                   onPress={() => Linking.openURL(businessInfo.website.startsWith('http') ? businessInfo.website : `https://${businessInfo.website}`)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.linkButtonText, { color: colors.primary }]} numberOfLines={1}>
+                  <Text style={[styles.linkButtonText, { color: colors.white }]} numberOfLines={1}>
                     {businessInfo.website}
                   </Text>
-                  <ExternalLink size={14} color={colors.primary} strokeWidth={2} />
+                  <ExternalLink size={14} color={colors.white} strokeWidth={2} />
                 </TouchableOpacity>
               ) : (
                 <Text style={[styles.value, { color: colors.textSecondary }]}>Not set</Text>
@@ -475,11 +475,11 @@ export default function BusinessProfileEditor() {
                   />
                 ) : businessInfo.socialMedia?.facebook ? (
                   <TouchableOpacity
-                    style={[styles.socialButton, { backgroundColor: colors.primary + '10', borderColor: colors.border }]}
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
                     onPress={() => Linking.openURL(businessInfo.socialMedia.facebook.startsWith('http') ? businessInfo.socialMedia.facebook : `https://${businessInfo.socialMedia.facebook}`)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.socialButtonText, { color: colors.primary }]} numberOfLines={1}>
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
                       View Profile
                     </Text>
                   </TouchableOpacity>
@@ -504,11 +504,11 @@ export default function BusinessProfileEditor() {
                   />
                 ) : businessInfo.socialMedia?.instagram ? (
                   <TouchableOpacity
-                    style={[styles.socialButton, { backgroundColor: colors.primary + '10', borderColor: colors.border }]}
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
                     onPress={() => Linking.openURL(businessInfo.socialMedia.instagram.startsWith('http') ? businessInfo.socialMedia.instagram : `https://instagram.com/${businessInfo.socialMedia.instagram.replace('@', '')}`)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.socialButtonText, { color: colors.primary }]} numberOfLines={1}>
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
                       View Profile
                     </Text>
                   </TouchableOpacity>
@@ -535,11 +535,11 @@ export default function BusinessProfileEditor() {
                   />
                 ) : businessInfo.socialMedia?.twitter ? (
                   <TouchableOpacity
-                    style={[styles.socialButton, { backgroundColor: colors.primary + '10', borderColor: colors.border }]}
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
                     onPress={() => Linking.openURL(businessInfo.socialMedia.twitter.startsWith('http') ? businessInfo.socialMedia.twitter : `https://twitter.com/${businessInfo.socialMedia.twitter.replace('@', '')}`)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.socialButtonText, { color: colors.primary }]} numberOfLines={1}>
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
                       View Profile
                     </Text>
                   </TouchableOpacity>
@@ -564,11 +564,11 @@ export default function BusinessProfileEditor() {
                   />
                 ) : businessInfo.socialMedia?.linkedin ? (
                   <TouchableOpacity
-                    style={[styles.socialButton, { backgroundColor: colors.primary + '10', borderColor: colors.border }]}
+                    style={[styles.socialButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
                     onPress={() => Linking.openURL(businessInfo.socialMedia.linkedin.startsWith('http') ? businessInfo.socialMedia.linkedin : `https://${businessInfo.socialMedia.linkedin}`)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.socialButtonText, { color: colors.primary }]} numberOfLines={1}>
+                    <Text style={[styles.socialButtonText, { color: colors.white }]} numberOfLines={1}>
                       View Profile
                     </Text>
                   </TouchableOpacity>

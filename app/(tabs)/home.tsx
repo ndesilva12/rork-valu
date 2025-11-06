@@ -855,6 +855,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'web' ? 16 : 56,
     paddingBottom: 12,
@@ -862,7 +863,6 @@ const styles = StyleSheet.create({
   headerLogo: {
     width: 140,
     height: 41,
-    flex: 1,
   },
   headerTitleRow: {
     flex: 1,
