@@ -47,8 +47,7 @@ import { calculateDistance, formatDistance } from '@/lib/distance';
 import { getAllUserBusinesses, calculateAlignmentScore, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 
 type ViewMode = 'playbook' | 'browse';
-type DistanceFilter = 'any' | 'local' | 1 | 5 | 10 | 25 | 50 | 100 | 250 | 500;
-type LocalDistanceOption = 1 | 5 | 10 | 50;
+type LocalDistanceOption = 1 | 5 | 10 | 25 | 50;
 
 type FolderCategory = {
   id: string;
@@ -79,7 +78,7 @@ export default function HomeScreen() {
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
-  const [distanceFilter, setDistanceFilter] = useState<DistanceFilter>('any');
+  const [isLocalMode, setIsLocalMode] = useState<boolean>(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [showDistanceDropdown, setShowDistanceDropdown] = useState(false);
   const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(10);
@@ -118,16 +117,9 @@ export default function HomeScreen() {
     }
   };
 
-  // Request location when distance filter changes from "any" to a specific distance
-  useEffect(() => {
-    if (distanceFilter !== 'any' && !userLocation) {
-      requestLocation();
-    }
-  }, [distanceFilter]);
-
   // Fetch user businesses and request location when "local" mode is selected
   useEffect(() => {
-    if (distanceFilter === 'local') {
+    if (isLocalMode) {
       // Request location permission
       requestLocation();
 
@@ -146,7 +138,7 @@ export default function HomeScreen() {
 
       fetchUserBusinesses();
     }
-  }, [distanceFilter]);
+  }, [isLocalMode]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -321,62 +313,28 @@ export default function HomeScreen() {
       .filter((s) => s.totalAvoidScore > s.totalSupportScore && s.totalAvoidScore > 0)
       .sort((a, b) => a.alignmentStrength - b.alignmentStrength); // Lowest score first for unaligned
 
-    // Calculate distances if user location is available
-    const distancesMap = new Map<string, number>();
-    if (userLocation && distanceFilter !== 'any') {
-      currentBrands.forEach((product) => {
-        if (product.latitude && product.longitude) {
-          const distance = calculateDistance(
-            userLocation.latitude,
-            userLocation.longitude,
-            product.latitude,
-            product.longitude
-          );
-          distancesMap.set(product.id, distance);
-        }
-      });
-    }
-
-    // Filter by distance if a distance filter is active
-    let filteredSupport = allSupportSorted;
-    let filteredAvoid = allAvoidSorted;
-
-    if (distanceFilter !== 'any' && userLocation) {
-      filteredSupport = allSupportSorted.filter((s) => {
-        const distance = distancesMap.get(s.product.id);
-        return distance !== undefined && distance <= distanceFilter;
-      });
-      filteredAvoid = allAvoidSorted.filter((s) => {
-        const distance = distancesMap.get(s.product.id);
-        return distance !== undefined && distance <= distanceFilter;
-      });
-    }
-
     console.log('[Home] Scoring results:', {
-      alignedCount: filteredSupport.length,
-      unalignedCount: filteredAvoid.length,
-      distanceFilter,
-      hasLocation: !!userLocation,
-      topAligned: filteredSupport.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength })),
-      topUnaligned: filteredAvoid.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength }))
+      alignedCount: allSupportSorted.length,
+      unalignedCount: allAvoidSorted.length,
+      topAligned: allSupportSorted.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength })),
+      topUnaligned: allAvoidSorted.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength }))
     });
 
     const scoredMap = new Map(scored.map((s) => [s.product.id, s.alignmentStrength]));
 
     return {
-      topSupport: filteredSupport.slice(0, 10).map((s) => s.product),
-      topAvoid: filteredAvoid.slice(0, 10).map((s) => s.product),
-      allSupport: filteredSupport.map((s) => s.product),
-      allSupportFull: filteredSupport.map((s) => s.product),
-      allAvoidFull: filteredAvoid.map((s) => s.product),
+      topSupport: allSupportSorted.slice(0, 10).map((s) => s.product),
+      topAvoid: allAvoidSorted.slice(0, 10).map((s) => s.product),
+      allSupport: allSupportSorted.map((s) => s.product),
+      allSupportFull: allSupportSorted.map((s) => s.product),
+      allAvoidFull: allAvoidSorted.map((s) => s.product),
       scoredBrands: scoredMap,
-      brandDistances: distancesMap,
     };
-  }, [profile.causes, brands, localBusinesses, valuesMatrix, distanceFilter, userLocation]);
+  }, [profile.causes, brands, localBusinesses, valuesMatrix]);
 
   // Compute local businesses when "local" mode is active
   const localBusinessData = useMemo(() => {
-    if (distanceFilter !== 'local' || !userLocation || userBusinesses.length === 0) {
+    if (!isLocalMode || !userLocation || userBusinesses.length === 0) {
       return {
         alignedBusinesses: [],
         unalignedBusinesses: [],
@@ -431,7 +389,7 @@ export default function HomeScreen() {
       alignedBusinesses: aligned,
       unalignedBusinesses: unaligned,
     };
-  }, [distanceFilter, userLocation, userBusinesses, profile.causes, localDistance]);
+  }, [isLocalMode, userLocation, userBusinesses, profile.causes, localDistance]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
@@ -552,8 +510,6 @@ export default function HomeScreen() {
     const isSupport = type === 'support';
     const titleColor = isSupport ? '#22C55E' : '#EF4444';
     const alignmentScore = scoredBrands.get(product.id) || 0;
-    const distance = brandDistances.get(product.id);
-    const showDistance = distanceFilter !== 'any' && distance !== undefined;
 
     return (
       <TouchableOpacity
@@ -582,14 +538,6 @@ export default function HomeScreen() {
             <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
               {product.category}
             </Text>
-            {showDistance && (
-              <View style={styles.distanceContainer}>
-                <MapPin size={12} color={colors.textSecondary} strokeWidth={2} />
-                <Text style={[styles.distanceText, { color: colors.textSecondary }]}>
-                  {formatDistance(distance)}
-                </Text>
-              </View>
-            )}
           </View>
           <View style={styles.brandScoreContainer}>
             <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
@@ -658,8 +606,7 @@ export default function HomeScreen() {
     );
   };
 
-  const distanceOptions: DistanceFilter[] = ['any', 'local', 500, 250, 100, 50, 25, 10, 5, 1];
-  const localDistanceOptions: LocalDistanceOption[] = [1, 5, 10, 50];
+  const localDistanceOptions: LocalDistanceOption[] = [50, 25, 10, 5, 1];
 
   const renderViewModeSelector = () => (
     <View style={styles.selectionRow}>
@@ -687,79 +634,66 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Distance Selector */}
-      <View style={styles.distanceSelectorContainer}>
+      {/* Local Toggle Button */}
+      <View style={styles.localButtonContainer}>
         <TouchableOpacity
-          style={[styles.distanceButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-          onPress={() => setShowDistanceDropdown(!showDistanceDropdown)}
+          style={[
+            styles.localButton,
+            {
+              backgroundColor: isLocalMode ? colors.primary : colors.backgroundSecondary,
+              borderColor: isLocalMode ? colors.primary : colors.border,
+            }
+          ]}
+          onPress={() => {
+            setIsLocalMode(!isLocalMode);
+            setShowDistanceDropdown(false);
+          }}
           activeOpacity={0.7}
         >
-          <MapPin size={16} color={colors.textSecondary} strokeWidth={2} />
-          <Text style={[styles.distanceButtonText, { color: colors.text }]}>
-            {distanceFilter === 'any' ? 'Any Distance' : distanceFilter === 'local' ? `Local: ${localDistance} mi` : `${distanceFilter} mi`}
+          <MapPin size={16} color={isLocalMode ? colors.white : colors.textSecondary} strokeWidth={2} />
+          <Text style={[styles.localButtonText, { color: isLocalMode ? colors.white : colors.text }]}>
+            Local
           </Text>
-          <ChevronDown size={16} color={colors.textSecondary} strokeWidth={2} />
         </TouchableOpacity>
 
-        {showDistanceDropdown && (
+        {/* Distance Dropdown Arrow */}
+        {isLocalMode && (
+          <TouchableOpacity
+            style={[styles.distanceArrow, { backgroundColor: colors.primary }]}
+            onPress={() => setShowDistanceDropdown(!showDistanceDropdown)}
+            activeOpacity={0.7}
+          >
+            <ChevronDown size={14} color={colors.white} strokeWidth={2} />
+          </TouchableOpacity>
+        )}
+
+        {/* Distance Options Dropdown */}
+        {showDistanceDropdown && isLocalMode && (
           <View style={[styles.distanceDropdown, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <ScrollView style={styles.distanceDropdownScroll} nestedScrollEnabled>
-              {distanceOptions.map((option) => (
-                <View key={option}>
-                  <TouchableOpacity
+              {localDistanceOptions.map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={[
+                    styles.distanceOption,
+                    localDistance === option && { backgroundColor: colors.primary },
+                  ]}
+                  onPress={() => {
+                    setLocalDistance(option);
+                    setShowDistanceDropdown(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text
                     style={[
-                      styles.distanceOption,
-                      distanceFilter === option && { backgroundColor: colors.primary },
+                      styles.distanceOptionText,
+                      { color: colors.text },
+                      localDistance === option && { color: colors.white, fontWeight: '600' },
                     ]}
-                    onPress={() => {
-                      setDistanceFilter(option);
-                      if (option !== 'local') {
-                        setShowDistanceDropdown(false);
-                      }
-                    }}
-                    activeOpacity={0.7}
                   >
-                    <Text
-                      style={[
-                        styles.distanceOptionText,
-                        { color: colors.text },
-                        distanceFilter === option && { color: colors.white, fontWeight: '600' },
-                      ]}
-                    >
-                      {option === 'any' ? 'Any Distance' : option === 'local' ? 'Local' : `${option} miles`}
-                    </Text>
-                  </TouchableOpacity>
-
-                  {/* Show sub-options when "local" is selected */}
-                  {option === 'local' && distanceFilter === 'local' && (
-                    <View style={[styles.localSubOptions, { backgroundColor: colors.backgroundSecondary }]}>
-                      {localDistanceOptions.map((localOpt) => (
-                        <TouchableOpacity
-                          key={localOpt}
-                          style={[
-                            styles.localSubOption,
-                            localDistance === localOpt && { backgroundColor: colors.primary + '30' },
-                          ]}
-                          onPress={() => {
-                            setLocalDistance(localOpt);
-                            setShowDistanceDropdown(false);
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Text
-                            style={[
-                              styles.localSubOptionText,
-                              { color: colors.text },
-                              localDistance === localOpt && { fontWeight: '600', color: colors.primary },
-                            ]}
-                          >
-                            {localOpt} mile{localOpt !== 1 ? 's' : ''}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-                </View>
+                    {option} mile{option !== 1 ? 's' : ''}
+                  </Text>
+                </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
@@ -769,8 +703,8 @@ export default function HomeScreen() {
   );
 
   const renderPlaybookView = () => {
-    // Show local businesses when "local" filter is active
-    if (distanceFilter === 'local') {
+    // Show local businesses when "local" mode is active
+    if (isLocalMode) {
       const { alignedBusinesses, unalignedBusinesses } = localBusinessData;
 
       return (
@@ -857,8 +791,8 @@ export default function HomeScreen() {
   };
 
   const renderFoldersView = () => {
-    // Show local businesses when "local" filter is active
-    if (distanceFilter === 'local') {
+    // Show local businesses when "local" mode is active
+    if (isLocalMode) {
       const { alignedBusinesses, unalignedBusinesses } = localBusinessData;
       const allLocalBusinesses = [...alignedBusinesses, ...unalignedBusinesses];
 
@@ -1392,24 +1326,33 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600' as const,
   },
-  distanceSelectorContainer: {
+  localButtonContainer: {
     position: 'relative' as const,
-    minWidth: 140,
+    flexDirection: 'row',
+    alignItems: 'center',
     zIndex: 101,
   },
-  distanceButton: {
+  localButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: 10,
     borderWidth: 1,
   },
-  distanceButtonText: {
-    fontSize: 13,
+  localButtonText: {
+    fontSize: 14,
     fontWeight: '600' as const,
-    flex: 1,
+  },
+  distanceArrow: {
+    marginLeft: -1,
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(255, 255, 255, 0.2)',
   },
   distanceDropdown: {
     position: 'absolute' as const,
@@ -1438,19 +1381,6 @@ const styles = StyleSheet.create({
   distanceOptionText: {
     fontSize: 14,
     fontWeight: '500' as const,
-  },
-  localSubOptions: {
-    paddingLeft: 16,
-    paddingVertical: 4,
-  },
-  localSubOption: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    marginVertical: 2,
-  },
-  localSubOptionText: {
-    fontSize: 13,
   },
   distanceContainer: {
     flexDirection: 'row',
