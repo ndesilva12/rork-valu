@@ -13,7 +13,6 @@ import {
 import { MapPin, Search } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import { lightColors, darkColors } from '@/constants/colors';
-import { trpc } from '@/lib/trpc';
 
 interface LocationSuggestion {
   description: string;
@@ -27,11 +26,13 @@ interface LocationAutocompleteProps {
   placeholder?: string;
 }
 
+const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || '';
+
 export default function LocationAutocomplete({
   value,
   onLocationSelect,
   isDarkMode,
-  placeholder = "Type address and click search",
+  placeholder = "Type full address with city and state",
 }: LocationAutocompleteProps) {
   const colors = isDarkMode ? darkColors : lightColors;
   const [inputValue, setInputValue] = useState(value);
@@ -49,19 +50,22 @@ export default function LocationAutocomplete({
   }, [value]);
 
   const fetchSuggestions = async (text: string) => {
-    if (!text.trim() || text.length < 3) {
+    if (!text.trim() || text.length < 3 || !GOOGLE_API_KEY) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
     }
 
     try {
-      console.log('[Location] Fetching suggestions for:', text);
+      console.log('[Location] Fetching autocomplete for:', text);
 
-      const data = await trpc.location.autocomplete.query({ input: text });
-      console.log('[Location] API response:', data);
+      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_API_KEY}`;
+      const response = await fetch(url);
+      const data = await response.json();
 
-      if (data.predictions && data.predictions.length > 0) {
+      console.log('[Location] Autocomplete API response:', data.status);
+
+      if (data.status === 'OK' && data.predictions && data.predictions.length > 0) {
         console.log('[Location] Got', data.predictions.length, 'suggestions');
         setSuggestions(data.predictions);
         setShowSuggestions(true);
@@ -99,50 +103,71 @@ export default function LocationAutocomplete({
     setSuggestions([]);
     setIsLoading(true);
 
-    // Get coordinates for the selected place
+    // Get coordinates using Google Place Details API
     try {
-      const data = await trpc.location.placeDetails.query({ placeId: suggestion.place_id });
+      if (!GOOGLE_API_KEY) {
+        await geocodeAddressWithGoogle(suggestion.description);
+        setIsLoading(false);
+        return;
+      }
 
-      if (data.result?.geometry?.location) {
+      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${suggestion.place_id}&fields=geometry&key=${GOOGLE_API_KEY}`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.status === 'OK' && data.result?.geometry?.location) {
         const { lat, lng } = data.result.geometry.location;
-        console.log('[Location] Got coordinates from API:', { lat, lng });
+        console.log('[Location] Got coordinates from Place Details:', { lat, lng });
         onLocationSelect(suggestion.description, lat, lng);
+        Alert.alert('Location Set', `Location "${suggestion.description}" has been set. Click "Save Changes" to save.`);
       } else {
-        // Fallback to expo-location geocoding
-        console.log('[Location] No coordinates from API, using fallback geocoding');
-        await geocodeAddress(suggestion.description);
+        // Fallback to geocoding
+        await geocodeAddressWithGoogle(suggestion.description);
       }
     } catch (error) {
-      console.error('[Location] Error getting coordinates:', error);
-      await geocodeAddress(suggestion.description);
+      console.error('[Location] Error getting place details:', error);
+      await geocodeAddressWithGoogle(suggestion.description);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const geocodeAddress = async (address: string): Promise<boolean> => {
+  const geocodeAddressWithGoogle = async (address: string): Promise<boolean> => {
     try {
-      console.log('[Location] Geocoding address:', address);
-      const results = await Location.geocodeAsync(address);
-      console.log('[Location] Geocoding results:', results);
+      console.log('[Location] Geocoding with Google API:', address);
 
-      if (results && results.length > 0) {
-        const { latitude, longitude } = results[0];
-        console.log('[Location] SUCCESS - Geocoded to:', { latitude, longitude });
+      if (!GOOGLE_API_KEY) {
+        console.error('[Location] No Google API key available');
+        Alert.alert('Configuration Error', 'Google API key is not configured. Please contact support.');
+        return false;
+      }
+
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_API_KEY}`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      console.log('[Location] Geocoding API response:', data.status);
+
+      if (data.status === 'OK' && data.results && data.results.length > 0) {
+        const { lat, lng } = data.results[0].geometry.location;
+        console.log('[Location] SUCCESS - Geocoded to:', { lat, lng });
 
         // Call the callback to save location
-        onLocationSelect(address, latitude, longitude);
+        onLocationSelect(address, lat, lng);
 
         Alert.alert('Location Set', `Location "${address}" has been set. Click "Save Changes" to save.`);
         return true;
       } else {
-        console.warn('[Location] No geocoding results found');
-        Alert.alert('Location Not Found', 'Could not find coordinates for this address. Please try a different address or be more specific.');
+        console.warn('[Location] Geocoding failed with status:', data.status);
+        Alert.alert(
+          'Location Not Found',
+          'Could not find that address. Please include the full address with city and state (e.g., "123 Main St, New York, NY").'
+        );
         return false;
       }
     } catch (error) {
       console.error('[Location] Geocoding error:', error);
-      Alert.alert('Error', 'Failed to find this location. Please try again.');
+      Alert.alert('Error', 'Failed to find this location. Please check your internet connection and try again.');
       return false;
     }
   };
@@ -151,7 +176,7 @@ export default function LocationAutocomplete({
     const trimmedInput = inputValue.trim();
 
     if (!trimmedInput) {
-      Alert.alert('Enter Location', 'Please type an address or city name');
+      Alert.alert('Enter Location', 'Please type an address');
       return;
     }
 
@@ -159,7 +184,7 @@ export default function LocationAutocomplete({
     setIsLoading(true);
     setShowSuggestions(false);
 
-    const success = await geocodeAddress(trimmedInput);
+    const success = await geocodeAddressWithGoogle(trimmedInput);
     console.log('[Location] Search completed, success:', success);
 
     setIsLoading(false);
@@ -185,30 +210,52 @@ export default function LocationAutocomplete({
       const lon = currentLocation.coords.longitude;
       console.log('[Location] Current coordinates:', { lat, lon });
 
-      // Reverse geocode to get address in City, State format
-      const addresses = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
-      console.log('[Location] Reverse geocode result:', addresses);
+      // Use Google Reverse Geocoding API for consistent results
+      if (GOOGLE_API_KEY) {
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${GOOGLE_API_KEY}`;
+        const response = await fetch(url);
+        const data = await response.json();
 
-      if (addresses && addresses.length > 0) {
-        const addr = addresses[0];
-        // Format as "City, State" for human readability
-        const locationString = [addr.city, addr.region]
-          .filter(Boolean)
-          .join(', ');
+        if (data.status === 'OK' && data.results && data.results.length > 0) {
+          const address = data.results[0].formatted_address;
+          console.log('[Location] Reverse geocoded to:', address);
 
-        const displayLocation = locationString || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-        console.log('[Location] Formatted location:', displayLocation);
+          setInputValue(address);
+          onLocationSelect(address, lat, lon);
 
-        setInputValue(displayLocation);
-        onLocationSelect(displayLocation, lat, lon);
-
-        Alert.alert('Current Location Set', `Location set to "${displayLocation}". Click "Save Changes" to save.`);
+          Alert.alert('Current Location Set', `Location set to "${address}". Click "Save Changes" to save.`);
+        } else {
+          // Fallback to coordinates
+          const coords = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+          setInputValue(coords);
+          onLocationSelect(coords, lat, lon);
+          Alert.alert('Current Location Set', 'Location set to your coordinates. Click "Save Changes" to save.');
+        }
       } else {
-        // Fallback to coordinates if reverse geocoding fails
-        const coords = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-        setInputValue(coords);
-        onLocationSelect(coords, lat, lon);
-        Alert.alert('Current Location Set', 'Location set to your current coordinates. Click "Save Changes" to save.');
+        // No API key, try expo-location reverse geocoding (mobile only)
+        try {
+          const addresses = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
+          if (addresses && addresses.length > 0) {
+            const addr = addresses[0];
+            const locationString = [addr.city, addr.region].filter(Boolean).join(', ');
+            const displayLocation = locationString || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+
+            setInputValue(displayLocation);
+            onLocationSelect(displayLocation, lat, lon);
+            Alert.alert('Current Location Set', `Location set to "${displayLocation}". Click "Save Changes" to save.`);
+          } else {
+            const coords = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+            setInputValue(coords);
+            onLocationSelect(coords, lat, lon);
+            Alert.alert('Current Location Set', 'Location set. Click "Save Changes" to save.');
+          }
+        } catch (reverseError) {
+          console.error('[Location] Reverse geocoding failed:', reverseError);
+          const coords = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+          setInputValue(coords);
+          onLocationSelect(coords, lat, lon);
+          Alert.alert('Current Location Set', 'Location set. Click "Save Changes" to save.');
+        }
       }
     } catch (error: any) {
       console.error('[Location] Current location error:', error);
@@ -243,7 +290,11 @@ export default function LocationAutocomplete({
           value={inputValue}
           onChangeText={handleTextChange}
           onBlur={handleBlur}
-          onFocus={() => inputValue && inputValue.length >= 3 && fetchSuggestions(inputValue)}
+          onFocus={() => {
+            if (inputValue && inputValue.length >= 3) {
+              fetchSuggestions(inputValue);
+            }
+          }}
           autoCapitalize="words"
           returnKeyType="search"
           onSubmitEditing={handleSearchLocation}
