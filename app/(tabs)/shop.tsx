@@ -142,6 +142,13 @@ export default function DiscountScreen() {
                   )}
                 </View>
               )}
+
+              {/* How Your Code Works - Clickable Text */}
+              <TouchableOpacity onPress={() => setShowInfoModal(true)} activeOpacity={0.7} style={styles.howItWorksButton}>
+                <Text style={[styles.howItWorksText, { color: colors.primary }]}>
+                  How Your Code Works
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {/* Stand Discount Breakdown Section */}
@@ -192,18 +199,6 @@ export default function DiscountScreen() {
                 Each business sets their own discount and donation amounts. Check with the business for their current rates.
               </Text>
             </View>
-
-            {/* Info Icon - Click to learn more */}
-            <TouchableOpacity
-              style={[styles.infoIconButton, { backgroundColor: colors.backgroundSecondary }]}
-              onPress={() => setShowInfoModal(true)}
-              activeOpacity={0.7}
-            >
-              <Info size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.infoIconText, { color: colors.primary }]}>
-                How Your Code Works
-              </Text>
-            </TouchableOpacity>
 
             {/* Businesses Accepting Stand Discounts */}
             <BusinessesAcceptingDiscounts />
@@ -455,6 +450,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
   },
+  howItWorksButton: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+    alignItems: 'center',
+  },
+  howItWorksText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    textDecorationLine: 'underline' as const,
+  },
   section: {
     marginTop: 32,
     marginBottom: 24,
@@ -614,19 +621,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     fontStyle: 'italic' as const,
-  },
-  infoIconButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-    gap: 8,
-  },
-  infoIconText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
   },
   modalOverlay: {
     flex: 1,

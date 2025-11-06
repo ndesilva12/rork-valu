@@ -123,9 +123,7 @@ export default function BusinessesAcceptingDiscounts() {
       'To see businesses sorted by distance, please add your location in the Profile → Details tab.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Go to Profile', onPress: () => {
-          // Navigation handled by parent
-        }}
+        { text: 'Go to Profile', onPress: () => router.push('/values') }
       ]
     );
   };
@@ -202,26 +200,7 @@ export default function BusinessesAcceptingDiscounts() {
     <View style={styles.section}>
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Businesses Accepting Stand Discounts</Text>
 
-      {/* Location Prompt (if no location) */}
-      {!userLocation && (
-        <TouchableOpacity
-          style={[styles.locationPrompt, { backgroundColor: colors.primary + '15', borderColor: colors.primary }]}
-          onPress={handleEnableLocation}
-          activeOpacity={0.7}
-        >
-          <MapPin size={20} color={colors.primary} strokeWidth={2} />
-          <View style={styles.locationPromptText}>
-            <Text style={[styles.locationPromptTitle, { color: colors.text }]}>
-              Enable Location for Better Results
-            </Text>
-            <Text style={[styles.locationPromptSubtitle, { color: colors.textSecondary }]}>
-              See businesses sorted by distance from you
-            </Text>
-          </View>
-        </TouchableOpacity>
-      )}
-
-      {/* Search Bar */}
+      {/* Search Bar with Location Icon */}
       <View style={[styles.searchContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
         <Search size={20} color={colors.textSecondary} strokeWidth={2} />
         <TextInput
@@ -231,6 +210,11 @@ export default function BusinessesAcceptingDiscounts() {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
+        {!userLocation && (
+          <TouchableOpacity onPress={handleEnableLocation} activeOpacity={0.7} style={styles.locationIconButton}>
+            <MapPin size={20} color={colors.primary} strokeWidth={2} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Business List */}
@@ -276,26 +260,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
   },
-  locationPrompt: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    marginBottom: 16,
-  },
-  locationPromptText: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  locationPromptTitle: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    marginBottom: 2,
-  },
-  locationPromptSubtitle: {
-    fontSize: 13,
-  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -309,6 +273,10 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 12,
     fontSize: 15,
+  },
+  locationIconButton: {
+    padding: 4,
+    marginLeft: 8,
   },
   listContainer: {
     gap: 12,
