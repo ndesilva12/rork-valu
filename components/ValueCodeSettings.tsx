@@ -195,7 +195,16 @@ export default function ValueCodeSettings() {
 
             {discountType === 'preset' ? (
               <>
-                {/* Three Counters: Customer %, Donation %, and Stand Fee % */}
+                {/* Stand Fee text above counters on mobile */}
+                {isMobile && (
+                  <View style={styles.standFeeTextContainer}>
+                    <Text style={[styles.standFeeText, { color: colors.textSecondary }]}>
+                      Stand Fee: 2.5% Fixed
+                    </Text>
+                  </View>
+                )}
+
+                {/* Two or Three Counters: Customer %, Donation %, and (desktop only) Stand Fee % */}
                 <View style={styles.smallCountersGrid}>
                   {/* Customer Discount */}
                   <View style={styles.counterWrapper}>
@@ -293,16 +302,18 @@ export default function ValueCodeSettings() {
                     )}
                   </View>
 
-                  {/* Stand Fee - Fixed */}
-                  <View style={[styles.smallCounter, styles.fixedCounter, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                    <Text style={[styles.smallCounterLabel, { color: colors.textSecondary }]}>Stand Fee %</Text>
-                    <View style={styles.smallCounterControls}>
-                      <Text style={[styles.largeCounterValue, { color: '#FFFFFF' }]}>
-                        2.5%
-                      </Text>
+                  {/* Stand Fee - Fixed (only shown on larger screens) */}
+                  {!isMobile && (
+                    <View style={[styles.smallCounter, styles.fixedCounter, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                      <Text style={[styles.smallCounterLabel, { color: colors.textSecondary }]}>Stand Fee %</Text>
+                      <View style={styles.smallCounterControls}>
+                        <Text style={[styles.largeCounterValue, { color: '#FFFFFF' }]}>
+                          2.5%
+                        </Text>
+                      </View>
+                      <Text style={[styles.fixedLabel, { color: colors.textSecondary }]}>(fixed)</Text>
                     </View>
-                    <Text style={[styles.fixedLabel, { color: colors.textSecondary }]}>(fixed)</Text>
-                  </View>
+                  )}
                 </View>
               </>
             ) : (
@@ -461,6 +472,15 @@ const styles = StyleSheet.create({
   counterNumber: {
     fontSize: 48,
     fontWeight: '700' as const,
+  },
+  // Stand Fee Text (mobile only)
+  standFeeTextContainer: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  standFeeText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   // Small Counters Grid
   smallCountersGrid: {
