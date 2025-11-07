@@ -176,89 +176,54 @@ export async function getAllUserBusinesses(): Promise<BusinessUser[]> {
  * @returns Alignment score from 0-100
  */
 export function calculateAlignmentScore(userCauses: Cause[], businessCauses: Cause[]): number {
-  // Handle edge cases
-  if (!userCauses || userCauses.length === 0 || !businessCauses || businessCauses.length === 0) {
-    return 50; // Neutral score when one or both have no values
-  }
+  // Simple point-based scoring system:
+  // - Start at 50
+  // - Matching selection (both support or both avoid): +5
+  // - Opposite sentiment (one supports, one avoids): -5
+  // - One selected but other didn't: -2
 
-  // Import weight configuration
-  const { getValueWeight } = require('@/config/valueWeights');
+  let score = 50; // Start at neutral
 
-  // Create maps for quick lookup with full cause data
-  const userSupportMap = new Map(
-    userCauses.filter(c => c.type === 'support').map(c => [c.id, c])
-  );
-  const userAvoidMap = new Map(
-    userCauses.filter(c => c.type === 'avoid').map(c => [c.id, c])
-  );
-  const bizSupportMap = new Map(
-    businessCauses.filter(c => c.type === 'support').map(c => [c.id, c])
-  );
-  const bizAvoidMap = new Map(
-    businessCauses.filter(c => c.type === 'avoid').map(c => [c.id, c])
-  );
+  // Create sets for quick lookup
+  const userSupportSet = new Set(userCauses.filter(c => c.type === 'support').map(c => c.id));
+  const userAvoidSet = new Set(userCauses.filter(c => c.type === 'avoid').map(c => c.id));
+  const bizSupportSet = new Set(businessCauses.filter(c => c.type === 'support').map(c => c.id));
+  const bizAvoidSet = new Set(businessCauses.filter(c => c.type === 'avoid').map(c => c.id));
 
-  let weightedMatches = 0;           // Weighted sum of agreements
-  let weightedConflicts = 0;         // Weighted sum of conflicts
-  let weightedUserOnlyPenalty = 0;   // Weighted penalty for missing business positions
-
-  // Get all unique value IDs from the USER (what the user cares about)
-  const userValueIds = new Set([
-    ...userSupportMap.keys(),
-    ...userAvoidMap.keys(),
+  // Get all unique value IDs from both user and business
+  const allValueIds = new Set([
+    ...userSupportSet,
+    ...userAvoidSet,
+    ...bizSupportSet,
+    ...bizAvoidSet,
   ]);
 
-  // Check alignment for each value the user cares about
-  userValueIds.forEach(valueId => {
-    const userSupports = userSupportMap.has(valueId);
-    const userAvoids = userAvoidMap.has(valueId);
-    const bizSupports = bizSupportMap.has(valueId);
-    const bizAvoids = bizAvoidMap.has(valueId);
+  // Check alignment for each value
+  allValueIds.forEach(valueId => {
+    const userSupports = userSupportSet.has(valueId);
+    const userAvoids = userAvoidSet.has(valueId);
+    const bizSupports = bizSupportSet.has(valueId);
+    const bizAvoids = bizAvoidSet.has(valueId);
 
-    // Get the cause object from user to determine category and weight
-    const cause = userSupports ? userSupportMap.get(valueId) : userAvoidMap.get(valueId);
-
-    if (!cause) {
-      return; // Safety check (should never happen)
-    }
-
-    // Get weight for this value (uses individual weight override or category weight)
-    const weight = getValueWeight(valueId, cause.category);
-
+    const userHasPosition = userSupports || userAvoids;
     const bizHasPosition = bizSupports || bizAvoids;
 
-    if (bizHasPosition) {
+    if (userHasPosition && bizHasPosition) {
       // Both have positions - check if they match or conflict
       if ((userSupports && bizSupports) || (userAvoids && bizAvoids)) {
-        weightedMatches += weight;
+        score += 5; // Matching selection
       } else if ((userSupports && bizAvoids) || (userAvoids && bizSupports)) {
-        weightedConflicts += weight;
+        score -= 5; // Opposite sentiment
       }
-    } else {
-      // User has position but business doesn't - penalize for missing stance
-      // Apply 0.75 factor to the weight (missing position is 75% as bad as conflict)
-      weightedUserOnlyPenalty += weight * 0.75;
+    } else if (userHasPosition || bizHasPosition) {
+      // Only one has a position
+      score -= 2;
     }
+    // If neither has a position (both unselected), we can't detect it without a master list
   });
 
-  // Calculate score with weighted comparisons and penalties
-  // This prevents businesses from getting 100% by only matching on a few values
-  const totalWeightedComparisons = weightedMatches + weightedConflicts + weightedUserOnlyPenalty;
-
-  if (totalWeightedComparisons === 0) {
-    // No values to compare
-    return 50;
-  }
-
-  // Score = percentage of weighted matches out of all weighted comparisons (including penalties)
-  // Example: User has 10 values (each weight 1), Business has 3 (all matching)
-  //   - weightedMatches = 3, weightedConflicts = 0, userOnly = 7
-  //   - weighted penalty = 7 * 0.75 = 5.25
-  //   - total = 3 + 0 + 5.25 = 8.25
-  //   - score = 3 / 8.25 * 100 = 36% (not 100%!)
-  const score = (weightedMatches / totalWeightedComparisons) * 100;
-
-  return Math.round(score);
+  // Clamp score to reasonable range (0-100)
+  return Math.max(0, Math.min(100, Math.round(score)));
 }
 
 /**
