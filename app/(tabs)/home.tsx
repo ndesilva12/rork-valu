@@ -34,6 +34,7 @@ import {
   StatusBar,
   Alert,
   Modal,
+  Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
@@ -1209,6 +1210,10 @@ export default function HomeScreen() {
   );
 }
 
+// Detect mobile screen size for responsive map modal
+const { width: screenWidth } = Dimensions.get('window');
+const isMobileScreen = screenWidth < 768; // Mobile if width < 768px
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1872,14 +1877,14 @@ const styles = StyleSheet.create({
   mapModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
+    justifyContent: isMobileScreen ? 'flex-start' : 'center',
+    alignItems: isMobileScreen ? 'stretch' : 'center',
+    padding: isMobileScreen ? 0 : 16,
   },
   mapModalContainer: {
-    width: '90%',
-    height: '87.5%',
-    borderRadius: 20,
+    width: isMobileScreen ? '100%' : '90%',
+    height: isMobileScreen ? '100%' : '87.5%',
+    borderRadius: isMobileScreen ? 0 : 20,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -1892,7 +1897,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: isMobileScreen ? (Platform.OS === 'ios' ? 48 : 16) : 16, // Safe area for mobile
     paddingBottom: 12,
     borderBottomWidth: 1,
   },
