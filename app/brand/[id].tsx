@@ -16,7 +16,7 @@ import { lightColors, darkColors } from '@/constants/colors';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
-import { useRef, useMemo, useState, useCallback } from 'react';
+import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { getLogoUrl } from '@/lib/logo';
 
 export default function BrandDetailScreen() {
@@ -29,7 +29,13 @@ export default function BrandDetailScreen() {
   console.log('[BrandDetail] Loading brand with ID:', id);
 
   // Load brand data from DataContext (client-side, no Edge Function issues)
-  const { getBrandById, valuesMatrix, isLoading: dataLoading } = useData();
+  const { getBrandById, valuesMatrix, isLoading: dataLoading, refresh } = useData();
+
+  // Force refresh data when component mounts to get latest from Firebase
+  useEffect(() => {
+    console.log('[BrandDetail] Force refreshing data from Firebase...');
+    refresh();
+  }, [id, refresh]);
 
   const brand = id ? getBrandById(id as string) : undefined;
   const isLoading = dataLoading;

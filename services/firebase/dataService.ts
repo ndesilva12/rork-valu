@@ -28,15 +28,17 @@ export async function getBrandsFromFirebase(): Promise<Brand[]> {
     const brands: Brand[] = snapshot.docs.map((doc) => {
       const data = doc.data();
 
-      // Debug log money flow data from Firebase
-      if (data.affiliates || data.partnerships || data.ownership) {
-        console.log(`[DataService] Brand "${data.name || doc.id}" money flow from Firebase:`, {
-          affiliates: data.affiliates,
-          partnerships: data.partnerships,
-          ownership: data.ownership,
-          ownershipSources: data.ownershipSources
-        });
-      }
+      // Debug: Log ALL fields from Firebase to see what's actually there
+      console.log(`[DataService] Loading brand "${data.name || doc.id}" (${doc.id}):`, {
+        hasAffiliates: !!data.affiliates,
+        affiliates: data.affiliates,
+        hasPartnerships: !!data.partnerships,
+        partnerships: data.partnerships,
+        hasOwnership: !!data.ownership,
+        ownership: data.ownership,
+        ownershipSources: data.ownershipSources,
+        allFields: Object.keys(data)
+      });
 
       return {
         id: doc.id,
@@ -83,14 +85,27 @@ export async function getBrandsFromFirebase(): Promise<Brand[]> {
  */
 export async function getBrandById(brandId: string): Promise<Brand | null> {
   try {
+    console.log(`[DataService] Fetching single brand by ID: ${brandId}`);
     const brandRef = doc(db, 'brands', brandId);
     const brandDoc = await getDoc(brandRef);
 
     if (!brandDoc.exists()) {
+      console.log(`[DataService] Brand ${brandId} not found in Firebase`);
       return null;
     }
 
     const data = brandDoc.data();
+    console.log(`[DataService] Loaded brand "${data.name || brandId}" (${brandId}):`, {
+      hasAffiliates: !!data.affiliates,
+      affiliates: data.affiliates,
+      hasPartnerships: !!data.partnerships,
+      partnerships: data.partnerships,
+      hasOwnership: !!data.ownership,
+      ownership: data.ownership,
+      ownershipSources: data.ownershipSources,
+      allFields: Object.keys(data)
+    });
+
     return {
       id: brandDoc.id,
       name: data.name || brandDoc.id,
