@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import { BusinessUser } from '@/services/firebase/businessService';
+import { TrendingUp, TrendingDown, MapPin as MapPinIcon } from 'lucide-react-native';
 
 type Props = {
   businesses: Array<{
@@ -15,7 +16,16 @@ type Props = {
   onBusinessPress?: (businessId: string) => void;
 };
 
+type SelectedBusiness = {
+  business: BusinessUser;
+  alignmentScore: number;
+  distance?: number;
+  closestLocation?: string;
+} | null;
+
 export default function BusinessMapView({ businesses, userLocation, distanceRadius, onBusinessPress }: Props) {
+  const [selectedBusiness, setSelectedBusiness] = useState<SelectedBusiness>(null);
+
   // Calculate the appropriate zoom/delta based on distance radius
   const getLatLongDelta = (radiusMiles: number) => {
     // Rough approximation: 1 degree latitude ≈ 69 miles
@@ -61,7 +71,8 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
         )}
 
         {/* Business markers */}
-        {businesses.map(({ business, alignmentScore }) => {
+        {businesses.map((businessData) => {
+          const { business, alignmentScore, distance, closestLocation } = businessData;
           const location = business.businessInfo.locations?.[0] ||
                          (business.businessInfo.latitude && business.businessInfo.longitude
                            ? { latitude: business.businessInfo.latitude, longitude: business.businessInfo.longitude }
@@ -79,13 +90,84 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
                 longitude: location.longitude,
               }}
               pinColor={color}
-              title={business.businessInfo.name}
-              description={`Alignment Score: ${alignmentScore}`}
-              onPress={() => onBusinessPress && onBusinessPress(business.id)}
+              onPress={() => setSelectedBusiness(businessData)}
             />
           );
         })}
       </MapView>
+
+      {/* Selection Container */}
+      {selectedBusiness && (
+        <View style={styles.selectionContainer}>
+          <View style={styles.selectionCard}>
+            <View style={styles.selectionHeader}>
+              <View style={styles.selectionHeaderLeft}>
+                <Text style={styles.businessName}>{selectedBusiness.business.businessInfo.name}</Text>
+                <Text style={styles.businessCategory}>{selectedBusiness.business.businessInfo.category}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setSelectedBusiness(null)}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.selectionBody}>
+              {/* Alignment Score Badge */}
+              <View style={[
+                styles.scoreBadge,
+                { backgroundColor: selectedBusiness.alignmentScore >= 50 ? '#22C55E15' : '#EF444415' }
+              ]}>
+                {selectedBusiness.alignmentScore >= 50 ? (
+                  <TrendingUp size={16} color="#22C55E" strokeWidth={2.5} />
+                ) : (
+                  <TrendingDown size={16} color="#EF4444" strokeWidth={2.5} />
+                )}
+                <Text style={[
+                  styles.scoreText,
+                  { color: selectedBusiness.alignmentScore >= 50 ? '#22C55E' : '#EF4444' }
+                ]}>
+                  Score: {selectedBusiness.alignmentScore}
+                </Text>
+              </View>
+
+              {/* Address */}
+              <View style={styles.addressContainer}>
+                <MapPinIcon size={14} color="#6B7280" strokeWidth={2} />
+                <Text style={styles.addressText}>
+                  {selectedBusiness.closestLocation ||
+                   selectedBusiness.business.businessInfo.locations?.[0]?.address ||
+                   selectedBusiness.business.businessInfo.location ||
+                   'Address not available'}
+                </Text>
+              </View>
+
+              {/* Distance */}
+              {selectedBusiness.distance !== undefined && (
+                <Text style={styles.distanceText}>
+                  {selectedBusiness.distance < 1
+                    ? `${(selectedBusiness.distance * 5280).toFixed(0)} ft away`
+                    : `${selectedBusiness.distance.toFixed(1)} mi away`}
+                </Text>
+              )}
+
+              {/* View Details Button */}
+              <TouchableOpacity
+                style={styles.viewDetailsButton}
+                onPress={() => {
+                  setSelectedBusiness(null);
+                  if (onBusinessPress) {
+                    onBusinessPress(selectedBusiness.business.id);
+                  }
+                }}
+              >
+                <Text style={styles.viewDetailsButtonText}>View Details</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -95,5 +177,104 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
+  },
+  selectionContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    paddingTop: 12,
+  },
+  selectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  selectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  selectionHeaderLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
+  businessName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  businessCategory: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  closeButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeButtonText: {
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  selectionBody: {
+    padding: 16,
+    gap: 12,
+  },
+  scoreBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+  },
+  scoreText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  addressContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  addressText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 18,
+  },
+  distanceText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  viewDetailsButton: {
+    backgroundColor: '#3B82F6',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  viewDetailsButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

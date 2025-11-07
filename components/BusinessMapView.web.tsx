@@ -74,15 +74,15 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
         L.marker([userLocation.latitude, userLocation.longitude], {
           icon: L.divIcon({
             className: 'user-marker',
-            html: '<div style="background-color: #3B82F6; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
-            iconSize: [22, 22],
-            iconAnchor: [11, 11],
+            html: '<div style="background-color: #3B82F6; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+            iconSize: [26, 26],
+            iconAnchor: [13, 13],
           }),
         }).addTo(map).bindPopup('You are here');
       }
 
       // Add business markers
-      businesses.forEach(({ business, alignmentScore }) => {
+      businesses.forEach(({ business, alignmentScore, distance, closestLocation }) => {
         const location = business.businessInfo.locations?.[0] ||
                        (business.businessInfo.latitude && business.businessInfo.longitude
                          ? { latitude: business.businessInfo.latitude, longitude: business.businessInfo.longitude }
@@ -90,26 +90,61 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
 
         if (location && location.latitude && location.longitude) {
           const color = alignmentScore >= 50 ? '#22C55E' : '#EF4444';
+          const address = closestLocation || location.address || business.businessInfo.location || 'Address not available';
 
           L.marker([location.latitude, location.longitude], {
             icon: L.divIcon({
               className: 'business-marker',
-              html: `<div style="background-color: ${color}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-              iconSize: [16, 16],
-              iconAnchor: [8, 8],
+              html: `<div style="background-color: ${color}; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: pointer;"></div>`,
+              iconSize: [22, 22],
+              iconAnchor: [11, 11],
             }),
           })
             .addTo(map)
             .bindPopup(`
-              <div style="text-align: center;">
-                <strong>${business.businessInfo.name}</strong><br/>
-                <span style="color: ${color}; font-weight: bold;">Score: ${alignmentScore}</span>
+              <div style="min-width: 220px; padding: 8px;">
+                <div style="font-size: 16px; font-weight: bold; margin-bottom: 6px; color: #1f2937;">
+                  ${business.businessInfo.name}
+                </div>
+                <div style="font-size: 13px; color: #6b7280; margin-bottom: 8px;">
+                  ${business.businessInfo.category}
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                  <div style="background-color: ${color}15; color: ${color}; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 13px;">
+                    Score: ${alignmentScore}
+                  </div>
+                  ${distance !== undefined ? `
+                    <div style="color: #6b7280; font-size: 12px;">
+                      ${distance < 1 ? `${(distance * 5280).toFixed(0)} ft` : `${distance.toFixed(1)} mi`}
+                    </div>
+                  ` : ''}
+                </div>
+                <div style="font-size: 12px; color: #6b7280; margin-bottom: 10px; line-height: 1.4;">
+                  📍 ${address}
+                </div>
+                <button
+                  onclick="window.dispatchEvent(new CustomEvent('navigate-to-business', { detail: '${business.id}' }))"
+                  style="
+                    width: 100%;
+                    background-color: #3B82F6;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: background-color 0.2s;
+                  "
+                  onmouseover="this.style.backgroundColor='#2563EB'"
+                  onmouseout="this.style.backgroundColor='#3B82F6'"
+                >
+                  View Details
+                </button>
               </div>
-            `)
-            .on('click', () => {
-              if (onBusinessPress) {
-                onBusinessPress(business.id);
-              }
+            `, {
+              maxWidth: 280,
+              className: 'business-popup'
             });
         }
       });
@@ -118,11 +153,21 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
       (existingMap as any)._leaflet_map = map;
     }
 
+    // Listen for navigation events
+    const handleNavigate = (event: any) => {
+      if (onBusinessPress) {
+        onBusinessPress(event.detail);
+      }
+    };
+
+    window.addEventListener('navigate-to-business', handleNavigate);
+
     return () => {
       const existingMap = document.getElementById('business-map');
       if (existingMap && (existingMap as any)._leaflet_map) {
         (existingMap as any)._leaflet_map.remove();
       }
+      window.removeEventListener('navigate-to-business', handleNavigate);
     };
   }, [businesses, userLocation, distanceRadius]);
 
