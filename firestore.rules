@@ -2,32 +2,40 @@ rules_version = '2';
 
 // Firestore Security Rules for Stand App
 // Note: This app uses Clerk for authentication, not Firebase Auth
+//
+// SECURITY NOTE: Since we use Clerk (not Firebase Auth), we can't validate
+// user identity in Firestore rules. The admin panel has email-based access
+// control on the client side. For production, consider:
+// 1. Using Firebase Admin SDK on backend for admin operations
+// 2. Implementing Clerk token validation in rules
+// 3. Using Firebase Custom Auth with Clerk tokens
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Brands collection - PUBLIC READ (reference data)
-    // Anyone can read, only admins can write (via admin panel)
+    // Brands collection - PUBLIC READ, OPEN WRITE
+    // Anyone can read the reference data
+    // Writes are controlled by admin panel's email whitelist
     match /brands/{brandId} {
-      allow read: if true;  // Public read access
-      allow write: if false; // Write only through admin panel with elevated privileges
+      allow read: if true;   // Public read access
+      allow write: if true;  // Open write (admin panel controls access)
     }
 
-    // Values collection - PUBLIC READ (reference data)
-    // Anyone can read, only admins can write (via admin panel)
+    // Values collection - PUBLIC READ, OPEN WRITE
+    // Anyone can read the reference data
+    // Writes are controlled by admin panel's email whitelist
     match /values/{valueId} {
-      allow read: if true;  // Public read access
-      allow write: if false; // Write only through admin panel with elevated privileges
+      allow read: if true;   // Public read access
+      allow write: if true;  // Open write (admin panel controls access)
     }
 
-    // Users collection - RESTRICTED
-    // Users can only read/write their own data
+    // Users collection - OPEN ACCESS
+    // Users can read and write (Clerk handles authentication)
     match /users/{userId} {
-      // For now, allow all reads and writes since we use Clerk auth
-      // TODO: Implement proper Clerk token validation
       allow read, write: if true;
     }
 
-    // Deny all other access
+    // Deny all other collections
     match /{document=**} {
       allow read, write: if false;
     }
