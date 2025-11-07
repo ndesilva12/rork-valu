@@ -51,7 +51,7 @@ import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusin
 import BusinessMapView from '@/components/BusinessMapView';
 
 type ViewMode = 'playbook' | 'browse';
-type LocalDistanceOption = 1 | 5 | 10 | 25 | 50 | 100;
+type LocalDistanceOption = 1 | 5 | 10 | 50 | 100;
 
 type FolderCategory = {
   id: string;
@@ -631,7 +631,7 @@ export default function HomeScreen() {
     );
   };
 
-  const localDistanceOptions: LocalDistanceOption[] = [100, 50, 25, 10, 5, 1];
+  const localDistanceOptions: LocalDistanceOption[] = [100, 50, 10, 5, 1];
 
   const renderViewModeSelector = () => (
     <>
@@ -684,8 +684,8 @@ export default function HomeScreen() {
                 key={option}
                 style={[
                   styles.distanceFilterButton,
-                  { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-                  localDistance === option && { backgroundColor: colors.primary, borderColor: colors.primary },
+                  { backgroundColor: colors.background, borderColor: colors.border },
+                  localDistance === option && { borderColor: colors.primary, borderWidth: 2 },
                 ]}
                 onPress={() => setLocalDistance(option)}
                 activeOpacity={0.7}
@@ -694,10 +694,10 @@ export default function HomeScreen() {
                   style={[
                     styles.distanceFilterText,
                     { color: colors.text },
-                    localDistance === option && { color: colors.white, fontWeight: '600' },
+                    localDistance === option && { color: colors.primary, fontWeight: '600' },
                   ]}
                 >
-                  {option}
+                  {option} mi
                 </Text>
               </TouchableOpacity>
             ))}
