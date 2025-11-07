@@ -63,8 +63,8 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
       // Initialize map
       const map = L.map('business-map').setView([centerLat, centerLng], getZoomLevel(distanceRadius));
 
-      // Add tile layer with muted colors (CartoDB Positron)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      // Add tile layer with better labels and road distinction (CartoDB Voyager)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         attribution: '© OpenStreetMap contributors © CARTO',
         maxZoom: 19,
         subdomains: 'abcd',
