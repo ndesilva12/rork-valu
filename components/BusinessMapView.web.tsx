@@ -63,10 +63,11 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
       // Initialize map
       const map = L.map('business-map').setView([centerLat, centerLng], getZoomLevel(distanceRadius));
 
-      // Add tile layer
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
+      // Add tile layer with muted colors (CartoDB Positron)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors © CARTO',
         maxZoom: 19,
+        subdomains: 'abcd',
       }).addTo(map);
 
       // Add user location marker (blue dot)

@@ -175,12 +175,17 @@ export async function getAllUserBusinesses(): Promise<BusinessUser[]> {
  * @param businessCauses Array of business's selected causes
  * @returns Alignment score from 0-100
  */
-export function calculateAlignmentScore(userCauses: Cause[], businessCauses: Cause[]): number {
+export function calculateAlignmentScore(
+  userCauses: Cause[],
+  businessCauses: Cause[],
+  allValueIds?: string[]
+): number {
   // Simple point-based scoring system:
   // - Start at 50
   // - Matching selection (both support or both avoid): +5
   // - Opposite sentiment (one supports, one avoids): -5
   // - One selected but other didn't: -2
+  // - Both unselected: +1
 
   let score = 50; // Start at neutral
 
@@ -191,15 +196,15 @@ export function calculateAlignmentScore(userCauses: Cause[], businessCauses: Cau
   const bizAvoidSet = new Set(businessCauses.filter(c => c.type === 'avoid').map(c => c.id));
 
   // Get all unique value IDs from both user and business
-  const allValueIds = new Set([
+  const selectedValueIds = new Set([
     ...userSupportSet,
     ...userAvoidSet,
     ...bizSupportSet,
     ...bizAvoidSet,
   ]);
 
-  // Check alignment for each value
-  allValueIds.forEach(valueId => {
+  // Check alignment for each selected value
+  selectedValueIds.forEach(valueId => {
     const userSupports = userSupportSet.has(valueId);
     const userAvoids = userAvoidSet.has(valueId);
     const bizSupports = bizSupportSet.has(valueId);
@@ -219,8 +224,19 @@ export function calculateAlignmentScore(userCauses: Cause[], businessCauses: Cau
       // Only one has a position
       score -= 2;
     }
-    // If neither has a position (both unselected), we can't detect it without a master list
   });
+
+  // Add bonus for values both users didn't select
+  if (allValueIds && allValueIds.length > 0) {
+    allValueIds.forEach(valueId => {
+      const userHasPosition = userSupportSet.has(valueId) || userAvoidSet.has(valueId);
+      const bizHasPosition = bizSupportSet.has(valueId) || bizAvoidSet.has(valueId);
+
+      if (!userHasPosition && !bizHasPosition) {
+        score += 1; // Both unselected
+      }
+    });
+  }
 
   // Clamp score to reasonable range (0-100)
   return Math.max(0, Math.min(100, Math.round(score)));

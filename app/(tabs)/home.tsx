@@ -93,7 +93,7 @@ export default function HomeScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Fetch brands and values from Firebase via DataContext
-  const { brands, valuesMatrix, isLoading, error } = useData();
+  const { brands, values, valuesMatrix, isLoading, error } = useData();
 
   const viewModes: ViewMode[] = ['playbook', 'browse'];
 
@@ -368,7 +368,8 @@ export default function HomeScreen() {
 
     // Score each business based on alignment with user's values
     const scoredBusinesses = userBusinesses.map((business) => {
-      const alignmentScore = calculateAlignmentScore(profile.causes, business.causes || []);
+      const allValueIds = values.map(v => v.id);
+      const alignmentScore = calculateAlignmentScore(profile.causes, business.causes || [], allValueIds);
 
       // Check if business is within range
       const rangeResult = isBusinessWithinRange(business, userLocation.latitude, userLocation.longitude, localDistance);
@@ -682,51 +683,50 @@ export default function HomeScreen() {
         {/* Distance Options Dropdown */}
         {showDistanceDropdown && isLocalMode && (
           <View style={[styles.distanceDropdown, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <ScrollView style={styles.distanceDropdownScroll} nestedScrollEnabled>
-              {localDistanceOptions.map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  style={[
-                    styles.distanceOption,
-                    localDistance === option && { backgroundColor: colors.primary },
-                  ]}
-                  onPress={() => {
-                    setLocalDistance(option);
-                    setShowDistanceDropdown(false);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.distanceOptionText,
-                      { color: colors.text },
-                      localDistance === option && { color: colors.white, fontWeight: '600' },
-                    ]}
-                  >
-                    {option} mile{option !== 1 ? 's' : ''}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            {/* Map Option - moved to top */}
+            <TouchableOpacity
+              style={styles.distanceOption}
+              onPress={() => {
+                setShowDistanceDropdown(false);
+                setShowMapModal(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.distanceOptionText,
+                  { color: colors.primary, fontWeight: '600' },
+                ]}
+              >
+                Map View
+              </Text>
+            </TouchableOpacity>
 
-              {/* Map Option */}
+            {localDistanceOptions.map((option) => (
               <TouchableOpacity
-                style={[styles.distanceOption, { borderBottomWidth: 0 }]}
+                key={option}
+                style={[
+                  styles.distanceOption,
+                  localDistance === option && { backgroundColor: colors.primary },
+                  option === 1 && { borderBottomWidth: 0 }, // Remove border on last item
+                ]}
                 onPress={() => {
+                  setLocalDistance(option);
                   setShowDistanceDropdown(false);
-                  setShowMapModal(true);
                 }}
                 activeOpacity={0.7}
               >
                 <Text
                   style={[
                     styles.distanceOptionText,
-                    { color: colors.primary, fontWeight: '600' },
+                    { color: colors.text },
+                    localDistance === option && { color: colors.white, fontWeight: '600' },
                   ]}
                 >
-                  Map View
+                  {option} mile{option !== 1 ? 's' : ''}
                 </Text>
               </TouchableOpacity>
-            </ScrollView>
+            ))}
           </View>
         )}
       </View>
@@ -1465,7 +1465,6 @@ const styles = StyleSheet.create({
     top: 52,
     right: 0,
     width: 160,
-    maxHeight: 300,
     borderRadius: 12,
     borderWidth: 1,
     zIndex: 99999,
@@ -1474,9 +1473,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-  },
-  distanceDropdownScroll: {
-    maxHeight: 300,
   },
   distanceOption: {
     paddingVertical: 12,
