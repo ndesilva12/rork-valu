@@ -69,6 +69,7 @@ export default function DiscountScreen() {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
+        showsVerticalScrollIndicator={false}
       >
         {/* CODE SECTION */}
         {isBusiness ? (
