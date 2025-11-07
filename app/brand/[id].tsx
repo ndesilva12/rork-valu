@@ -45,6 +45,22 @@ export default function BrandDetailScreen() {
     hasValuesMatrix: !!valuesMatrix
   });
 
+  // Debug: Log money flow data
+  if (brand) {
+    console.log('[BrandDetail] Money Flow Data:', {
+      hasOwnership: !!brand.ownership,
+      ownershipLength: brand.ownership?.length || 0,
+      ownership: brand.ownership,
+      hasAffiliates: !!brand.affiliates,
+      affiliatesLength: brand.affiliates?.length || 0,
+      affiliates: brand.affiliates,
+      hasPartnerships: !!brand.partnerships,
+      partnershipsLength: brand.partnerships?.length || 0,
+      partnerships: brand.partnerships,
+      ownershipSources: brand.ownershipSources,
+    });
+  }
+
   interface Review {
     id: string;
     userName: string;

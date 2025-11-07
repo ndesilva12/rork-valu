@@ -27,6 +27,17 @@ export async function getBrandsFromFirebase(): Promise<Brand[]> {
 
     const brands: Brand[] = snapshot.docs.map((doc) => {
       const data = doc.data();
+
+      // Debug log money flow data from Firebase
+      if (data.affiliates || data.partnerships || data.ownership) {
+        console.log(`[DataService] Brand "${data.name || doc.id}" money flow from Firebase:`, {
+          affiliates: data.affiliates,
+          partnerships: data.partnerships,
+          ownership: data.ownership,
+          ownershipSources: data.ownershipSources
+        });
+      }
+
       return {
         id: doc.id,
         name: data.name || doc.id,

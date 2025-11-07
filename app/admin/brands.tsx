@@ -20,6 +20,7 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { collection, getDocs, doc, setDoc, deleteDoc, query, limit } from 'firebase/firestore';
 import { db } from '../../firebase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Affiliate {
   name: string;
@@ -197,6 +198,11 @@ export default function BrandsManagement() {
         ownershipSources: brandData.ownershipSources,
       });
 
+      // Clear the DataContext cache so changes are visible immediately
+      await AsyncStorage.removeItem('@brands_cache');
+      await AsyncStorage.removeItem('@data_cache_timestamp');
+      console.log('[BrandsAdmin] Cleared brands cache after save');
+
       Alert.alert(
         'Success',
         `Brand "${brandData.name}" ${editingBrand ? 'updated' : 'created'} successfully`
@@ -223,6 +229,12 @@ export default function BrandsManagement() {
             try {
               const brandRef = doc(db, 'brands', brand.id);
               await deleteDoc(brandRef);
+
+              // Clear the DataContext cache
+              await AsyncStorage.removeItem('@brands_cache');
+              await AsyncStorage.removeItem('@data_cache_timestamp');
+              console.log('[BrandsAdmin] Cleared brands cache after delete');
+
               Alert.alert('Success', `Brand "${brand.name}" deleted successfully`);
               loadBrands();
             } catch (error) {
