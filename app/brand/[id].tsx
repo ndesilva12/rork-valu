@@ -15,6 +15,7 @@ import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { useUser } from '@/contexts/UserContext';
+import { useData } from '@/contexts/DataContext';
 import { useRef, useMemo, useState, useCallback } from 'react';
 import { trpc } from '@/lib/trpc';
 import { getLogoUrl } from '@/lib/logo';
@@ -28,13 +29,13 @@ export default function BrandDetailScreen() {
 
   console.log('[BrandDetail] Loading brand with ID:', id);
 
-  // Fetch brand data and values matrix from tRPC
+  // Fetch brand data from tRPC (single brand is fine) and values matrix from DataContext
   const { data: brand, isLoading, error } = trpc.data.getBrand.useQuery(
     { id: id as string },
     { enabled: !!id }
   );
 
-  const { data: valuesMatrix } = trpc.data.getValuesMatrix.useQuery();
+  const { valuesMatrix } = useData();
 
   console.log('[BrandDetail] Query state:', {
     id,

@@ -39,6 +39,7 @@ import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
+import { useData } from '@/contexts/DataContext';
 import { Product } from '@/types';
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
@@ -91,10 +92,9 @@ export default function HomeScreen() {
 
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Fetch brands, local businesses, and values matrix from local data via tRPC
-  const { data: brands, isLoading, error } = trpc.data.getBrands.useQuery();
+  // Fetch brands and values from Firebase via DataContext
+  const { brands, valuesMatrix, isLoading, error } = useData();
   const { data: localBusinesses } = trpc.data.getLocalBusinesses.useQuery();
-  const { data: valuesMatrix } = trpc.data.getValuesMatrix.useQuery();
 
   const viewModes: ViewMode[] = ['playbook', 'browse'];
 
