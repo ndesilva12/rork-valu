@@ -15,6 +15,7 @@ import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { useUser } from '@/contexts/UserContext';
+import { useData } from '@/contexts/DataContext';
 import { useEffect, useState, useRef } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
@@ -34,6 +35,7 @@ export default function BusinessDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { profile, isDarkMode } = useUser();
+  const { values } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -192,8 +194,12 @@ export default function BusinessDetailScreen() {
   };
 
   if (business && business.causes && business.causes.length > 0) {
-    // Calculate alignment score
-    const alignmentScore = calculateAlignmentScore(profile.causes, business.causes);
+    // Calculate raw alignment score
+    const rawScore = calculateAlignmentScore(profile.causes, business.causes);
+
+    // For individual business view, map raw score to 0-100 range
+    // This is a simplified score since we don't have all businesses to normalize against
+    const alignmentScore = Math.max(0, Math.min(100, 50 + rawScore));
     const isAligned = alignmentScore >= 50;
 
     // Find matching values

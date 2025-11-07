@@ -175,95 +175,86 @@ export async function getAllUserBusinesses(): Promise<BusinessUser[]> {
  * @param businessCauses Array of business's selected causes
  * @returns Alignment score from 0-100
  */
-export function calculateAlignmentScore(userCauses: Cause[], businessCauses: Cause[]): number {
-  // Handle edge cases
-  if (!userCauses || userCauses.length === 0 || !businessCauses || businessCauses.length === 0) {
-    return 50; // Neutral score when one or both have no values
-  }
+export function calculateAlignmentScore(
+  userCauses: Cause[],
+  businessCauses: Cause[]
+): number {
+  // Calculate raw alignment score - will be normalized later to create bell curve
+  // Simple scoring: count matches, conflicts, and partial matches
 
-  // Import weight configuration
-  const { getValueWeight } = require('@/config/valueWeights');
+  // Create sets for quick lookup
+  const userSupportSet = new Set(userCauses.filter(c => c.type === 'support').map(c => c.id));
+  const userAvoidSet = new Set(userCauses.filter(c => c.type === 'avoid').map(c => c.id));
+  const bizSupportSet = new Set(businessCauses.filter(c => c.type === 'support').map(c => c.id));
+  const bizAvoidSet = new Set(businessCauses.filter(c => c.type === 'avoid').map(c => c.id));
 
-  // Create maps for quick lookup with full cause data
-  const userSupportMap = new Map(
-    userCauses.filter(c => c.type === 'support').map(c => [c.id, c])
-  );
-  const userAvoidMap = new Map(
-    userCauses.filter(c => c.type === 'avoid').map(c => [c.id, c])
-  );
-  const bizSupportMap = new Map(
-    businessCauses.filter(c => c.type === 'support').map(c => [c.id, c])
-  );
-  const bizAvoidMap = new Map(
-    businessCauses.filter(c => c.type === 'avoid').map(c => [c.id, c])
-  );
-
-  let weightedMatches = 0;      // Weighted sum of agreements
-  let weightedConflicts = 0;    // Weighted sum of conflicts
-
-  // Get all unique value IDs from both users
+  // Get all unique value IDs from both user and business
   const allValueIds = new Set([
-    ...userSupportMap.keys(),
-    ...userAvoidMap.keys(),
-    ...bizSupportMap.keys(),
-    ...bizAvoidMap.keys(),
+    ...userSupportSet,
+    ...userAvoidSet,
+    ...bizSupportSet,
+    ...bizAvoidSet,
   ]);
 
-  // For each value, check alignment ONLY where both have positions
+  let matches = 0;      // Both agree (support-support or avoid-avoid)
+  let conflicts = 0;    // Both disagree (support-avoid or avoid-support)
+  let partialMatch = 0; // Only one has a position
+
+  // Check alignment for each value where at least one has a position
   allValueIds.forEach(valueId => {
-    const userSupports = userSupportMap.has(valueId);
-    const userAvoids = userAvoidMap.has(valueId);
-    const bizSupports = bizSupportMap.has(valueId);
-    const bizAvoids = bizAvoidMap.has(valueId);
+    const userSupports = userSupportSet.has(valueId);
+    const userAvoids = userAvoidSet.has(valueId);
+    const bizSupports = bizSupportSet.has(valueId);
+    const bizAvoids = bizAvoidSet.has(valueId);
 
     const userHasPosition = userSupports || userAvoids;
     const bizHasPosition = bizSupports || bizAvoids;
 
-    // Skip if EITHER party has no position on this value
-    if (!userHasPosition || !bizHasPosition) {
-      return; // One or both neutral - doesn't count toward score
-    }
-
-    // Get the cause object (from either user or business) to determine category and weight
-    const cause = userSupports ? userSupportMap.get(valueId)
-              : userAvoids ? userAvoidMap.get(valueId)
-              : bizSupports ? bizSupportMap.get(valueId)
-              : bizAvoidMap.get(valueId);
-
-    if (!cause) {
-      return; // Safety check (should never happen)
-    }
-
-    // Get weight for this value (uses individual weight override or category weight)
-    const weight = getValueWeight(valueId, cause.category);
-
-    // Now we know BOTH have positions - check if they match or conflict
-
-    // MATCHES: Both support OR both avoid
-    if ((userSupports && bizSupports) || (userAvoids && bizAvoids)) {
-      weightedMatches += weight;
-    }
-    // CONFLICTS: Support vs Avoid (either direction)
-    else if ((userSupports && bizAvoids) || (userAvoids && bizSupports)) {
-      weightedConflicts += weight;
+    if (userHasPosition && bizHasPosition) {
+      // Both have positions - check if they match or conflict
+      if ((userSupports && bizSupports) || (userAvoids && bizAvoids)) {
+        matches++;
+      } else if ((userSupports && bizAvoids) || (userAvoids && bizSupports)) {
+        conflicts++;
+      }
+    } else if (userHasPosition || bizHasPosition) {
+      // Only one has a position
+      partialMatch++;
     }
   });
 
-  // Calculate score based ONLY on overlapping positions
-  const totalWeightedComparisons = weightedMatches + weightedConflicts;
+  // Simple raw score calculation
+  // Give weight to matches and conflicts, penalize partial matches
+  const rawScore = (matches * 10) - (conflicts * 10) - (partialMatch * 3);
 
-  if (totalWeightedComparisons === 0) {
-    // No overlapping positions at all - completely neutral
-    return 50;
+  return rawScore;
+}
+
+/**
+ * Normalize scores to create a bell curve distribution
+ * Maps scores to 10-90 range with midpoint at 50
+ *
+ * @param scores Array of raw scores
+ * @returns Array of normalized scores (10-90 range)
+ */
+export function normalizeScores(scores: number[]): number[] {
+  if (scores.length === 0) return [];
+  if (scores.length === 1) return [50]; // Single score gets midpoint
+
+  // Find min and max
+  const minScore = Math.min(...scores);
+  const maxScore = Math.max(...scores);
+
+  // If all scores are the same, return midpoint
+  if (minScore === maxScore) {
+    return scores.map(() => 50);
   }
 
-  // Score = percentage of weighted matches out of all weighted comparisons
-  // All matches (100%) = 100 score
-  // All conflicts (0%) = 0 score
-  // 50/50 mix = 50 score
-  const score = (weightedMatches / totalWeightedComparisons) * 100;
-
-  return Math.round(score);
+  // Normalize to 10-90 range with linear scaling
+  return scores.map(score => {
+    const normalized = ((score - minScore) / (maxScore - minScore)) * 80 + 10;
+    return Math.round(normalized);
+  });
 }
 
 /**

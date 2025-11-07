@@ -63,10 +63,11 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
       // Initialize map
       const map = L.map('business-map').setView([centerLat, centerLng], getZoomLevel(distanceRadius));
 
-      // Add tile layer
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
+      // Add tile layer with better labels and road distinction (CartoDB Voyager)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors © CARTO',
         maxZoom: 19,
+        subdomains: 'abcd',
       }).addTo(map);
 
       // Add user location marker (blue dot)
@@ -74,9 +75,13 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
         L.marker([userLocation.latitude, userLocation.longitude], {
           icon: L.divIcon({
             className: 'user-marker',
-            html: '<div style="background-color: #3B82F6; width: 16px; height: 16px; border-radius: 50%; border: 4px solid white; box-shadow: 0 0 0 2px #3B82F6, 0 2px 6px rgba(0,0,0,0.3);"></div>',
-            iconSize: [24, 24],
-            iconAnchor: [12, 12],
+            html: `<svg width="24" height="32" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 20 12 20s12-11 12-20c0-6.63-5.37-12-12-12z" fill="#3B82F6"/>
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 20 12 20s12-11 12-20c0-6.63-5.37-12-12-12z" stroke="white" stroke-width="2"/>
+              <circle cx="12" cy="12" r="4" fill="white"/>
+            </svg>`,
+            iconSize: [24, 32],
+            iconAnchor: [12, 32],
           }),
         }).addTo(map).bindPopup('You are here');
       }
@@ -111,9 +116,12 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
           L.marker([location.latitude, location.longitude], {
             icon: L.divIcon({
               className: 'business-marker',
-              html: `<div style="background-color: ${color}; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: pointer;"></div>`,
-              iconSize: [22, 22],
-              iconAnchor: [11, 11],
+              html: `<svg width="20" height="28" viewBox="0 0 20 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 0C4.48 0 0 4.48 0 10c0 7.5 10 18 10 18s10-10.5 10-18c0-5.52-4.48-10-10-10z" fill="${color}"/>
+                <path d="M10 0C4.48 0 0 4.48 0 10c0 7.5 10 18 10 18s10-10.5 10-18c0-5.52-4.48-10-10-10z" stroke="white" stroke-width="1.5"/>
+              </svg>`,
+              iconSize: [20, 28],
+              iconAnchor: [10, 28],
             }),
           })
             .addTo(map)
