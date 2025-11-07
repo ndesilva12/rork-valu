@@ -195,8 +195,8 @@ export default function BusinessDetailScreen() {
 
   if (business && business.causes && business.causes.length > 0) {
     // Calculate alignment score
-    const allValueIds = values.map(v => v.id);
-    const alignmentScore = calculateAlignmentScore(profile.causes, business.causes, allValueIds);
+    const availableValueIds = values.map(v => v.id);
+    const alignmentScore = calculateAlignmentScore(profile.causes, business.causes, availableValueIds);
     const isAligned = alignmentScore >= 50;
 
     // Find matching values
