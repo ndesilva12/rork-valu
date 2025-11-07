@@ -1,0 +1,35 @@
+rules_version = '2';
+
+// Firestore Security Rules for Stand App
+// Note: This app uses Clerk for authentication, not Firebase Auth
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Brands collection - PUBLIC READ (reference data)
+    // Anyone can read, only admins can write (via admin panel)
+    match /brands/{brandId} {
+      allow read: if true;  // Public read access
+      allow write: if false; // Write only through admin panel with elevated privileges
+    }
+
+    // Values collection - PUBLIC READ (reference data)
+    // Anyone can read, only admins can write (via admin panel)
+    match /values/{valueId} {
+      allow read: if true;  // Public read access
+      allow write: if false; // Write only through admin panel with elevated privileges
+    }
+
+    // Users collection - RESTRICTED
+    // Users can only read/write their own data
+    match /users/{userId} {
+      // For now, allow all reads and writes since we use Clerk auth
+      // TODO: Implement proper Clerk token validation
+      allow read, write: if true;
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
