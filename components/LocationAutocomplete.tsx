@@ -24,6 +24,7 @@ interface LocationAutocompleteProps {
   onLocationSelect: (location: string, latitude: number, longitude: number) => void;
   isDarkMode: boolean;
   placeholder?: string;
+  isConfirmed?: boolean;
 }
 
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || '';
@@ -33,6 +34,7 @@ export default function LocationAutocomplete({
   onLocationSelect,
   isDarkMode,
   placeholder = "Type full address with city and state",
+  isConfirmed = false,
 }: LocationAutocompleteProps) {
   const colors = isDarkMode ? darkColors : lightColors;
   const [inputValue, setInputValue] = useState(value);
@@ -40,6 +42,7 @@ export default function LocationAutocomplete({
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
+  const [showInfoTooltip, setShowInfoTooltip] = useState(false);
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Sync internal state with external value prop
@@ -270,7 +273,17 @@ export default function LocationAutocomplete({
     // Delay to allow suggestion click to register
     setTimeout(() => {
       setShowSuggestions(false);
+      setShowInfoTooltip(false);
     }, 300);
+  };
+
+  const handleFocus = () => {
+    if (!isConfirmed) {
+      setShowInfoTooltip(true);
+    }
+    if (inputValue && inputValue.length >= 3) {
+      fetchSuggestions(inputValue);
+    }
   };
 
   return (
@@ -281,7 +294,8 @@ export default function LocationAutocomplete({
             styles.input,
             {
               backgroundColor: colors.backgroundSecondary,
-              borderColor: colors.border,
+              borderColor: isConfirmed ? '#22C55E' : colors.border,
+              borderWidth: isConfirmed ? 2 : 1,
               color: colors.text,
             }
           ]}
@@ -290,11 +304,7 @@ export default function LocationAutocomplete({
           value={inputValue}
           onChangeText={handleTextChange}
           onBlur={handleBlur}
-          onFocus={() => {
-            if (inputValue && inputValue.length >= 3) {
-              fetchSuggestions(inputValue);
-            }
-          }}
+          onFocus={handleFocus}
           autoCapitalize="words"
           returnKeyType="search"
           onSubmitEditing={handleSearchLocation}
@@ -330,6 +340,21 @@ export default function LocationAutocomplete({
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Info Tooltip */}
+      {showInfoTooltip && !isConfirmed && (
+        <View style={[
+          styles.infoTooltip,
+          {
+            backgroundColor: colors.primary + '15',
+            borderColor: colors.primary + '40',
+          }
+        ]}>
+          <Text style={[styles.infoTooltipText, { color: colors.primary }]}>
+            💡 Click the search icon after typing your full address to confirm and save your location
+          </Text>
+        </View>
+      )}
 
       {/* Loading indicator */}
       {isLoading && (
@@ -446,5 +471,16 @@ const styles = StyleSheet.create({
   suggestionText: {
     fontSize: 15,
     flex: 1,
+  },
+  infoTooltip: {
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  infoTooltipText: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500' as const,
   },
 });

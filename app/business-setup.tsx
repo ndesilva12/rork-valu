@@ -295,6 +295,7 @@ export default function BusinessSetupScreen() {
                 value={location.address}
                 onLocationSelect={(address, lat, lon) => handleLocationSelect(index, address, lat, lon)}
                 isDarkMode={isDarkMode}
+                isConfirmed={location.latitude !== 0 && location.longitude !== 0}
               />
             </View>
           ))}
