@@ -50,25 +50,20 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
           longitudeDelta,
         }}
       >
-        {/* User location marker (blue dot) */}
+        {/* User location marker (location pin) */}
         {userLocation && (
           <Marker
             coordinate={userLocation}
-            anchor={{ x: 0.5, y: 0.5 }}
+            anchor={{ x: 0.5, y: 1 }}
           >
             <View style={{
-              width: 20,
-              height: 20,
-              borderRadius: 10,
-              backgroundColor: '#3B82F6',
-              borderWidth: 3,
-              borderColor: '#FFFFFF',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.3,
-              shadowRadius: 3,
-              elevation: 5,
-            }} />
+              width: 32,
+              height: 32,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <MapPinIcon size={32} color="#3B82F6" fill="#3B82F6" strokeWidth={1.5} />
+            </View>
           </Marker>
         )}
 
@@ -102,9 +97,18 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
                 latitude: location.latitude,
                 longitude: location.longitude,
               }}
-              pinColor={color}
+              anchor={{ x: 0.5, y: 1 }}
               onPress={() => setSelectedBusiness(businessData)}
-            />
+            >
+              <View style={{
+                width: 28,
+                height: 28,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <MapPinIcon size={28} color={color} fill={color} strokeWidth={1.5} />
+              </View>
+            </Marker>
           );
         })}
       </MapView>

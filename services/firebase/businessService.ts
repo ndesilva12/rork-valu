@@ -198,37 +198,25 @@ export function calculateAlignmentScore(userCauses: Cause[], businessCauses: Cau
     businessCauses.filter(c => c.type === 'avoid').map(c => [c.id, c])
   );
 
-  let weightedMatches = 0;      // Weighted sum of agreements
-  let weightedConflicts = 0;    // Weighted sum of conflicts
+  let weightedMatches = 0;           // Weighted sum of agreements
+  let weightedConflicts = 0;         // Weighted sum of conflicts
+  let weightedUserOnlyPenalty = 0;   // Weighted penalty for missing business positions
 
-  // Get all unique value IDs from both users
-  const allValueIds = new Set([
+  // Get all unique value IDs from the USER (what the user cares about)
+  const userValueIds = new Set([
     ...userSupportMap.keys(),
     ...userAvoidMap.keys(),
-    ...bizSupportMap.keys(),
-    ...bizAvoidMap.keys(),
   ]);
 
-  // For each value, check alignment ONLY where both have positions
-  allValueIds.forEach(valueId => {
+  // Check alignment for each value the user cares about
+  userValueIds.forEach(valueId => {
     const userSupports = userSupportMap.has(valueId);
     const userAvoids = userAvoidMap.has(valueId);
     const bizSupports = bizSupportMap.has(valueId);
     const bizAvoids = bizAvoidMap.has(valueId);
 
-    const userHasPosition = userSupports || userAvoids;
-    const bizHasPosition = bizSupports || bizAvoids;
-
-    // Skip if EITHER party has no position on this value
-    if (!userHasPosition || !bizHasPosition) {
-      return; // One or both neutral - doesn't count toward score
-    }
-
-    // Get the cause object (from either user or business) to determine category and weight
-    const cause = userSupports ? userSupportMap.get(valueId)
-              : userAvoids ? userAvoidMap.get(valueId)
-              : bizSupports ? bizSupportMap.get(valueId)
-              : bizAvoidMap.get(valueId);
+    // Get the cause object from user to determine category and weight
+    const cause = userSupports ? userSupportMap.get(valueId) : userAvoidMap.get(valueId);
 
     if (!cause) {
       return; // Safety check (should never happen)
@@ -237,30 +225,37 @@ export function calculateAlignmentScore(userCauses: Cause[], businessCauses: Cau
     // Get weight for this value (uses individual weight override or category weight)
     const weight = getValueWeight(valueId, cause.category);
 
-    // Now we know BOTH have positions - check if they match or conflict
+    const bizHasPosition = bizSupports || bizAvoids;
 
-    // MATCHES: Both support OR both avoid
-    if ((userSupports && bizSupports) || (userAvoids && bizAvoids)) {
-      weightedMatches += weight;
-    }
-    // CONFLICTS: Support vs Avoid (either direction)
-    else if ((userSupports && bizAvoids) || (userAvoids && bizSupports)) {
-      weightedConflicts += weight;
+    if (bizHasPosition) {
+      // Both have positions - check if they match or conflict
+      if ((userSupports && bizSupports) || (userAvoids && bizAvoids)) {
+        weightedMatches += weight;
+      } else if ((userSupports && bizAvoids) || (userAvoids && bizSupports)) {
+        weightedConflicts += weight;
+      }
+    } else {
+      // User has position but business doesn't - penalize for missing stance
+      // Apply 0.75 factor to the weight (missing position is 75% as bad as conflict)
+      weightedUserOnlyPenalty += weight * 0.75;
     }
   });
 
-  // Calculate score based ONLY on overlapping positions
-  const totalWeightedComparisons = weightedMatches + weightedConflicts;
+  // Calculate score with weighted comparisons and penalties
+  // This prevents businesses from getting 100% by only matching on a few values
+  const totalWeightedComparisons = weightedMatches + weightedConflicts + weightedUserOnlyPenalty;
 
   if (totalWeightedComparisons === 0) {
-    // No overlapping positions at all - completely neutral
+    // No values to compare
     return 50;
   }
 
-  // Score = percentage of weighted matches out of all weighted comparisons
-  // All matches (100%) = 100 score
-  // All conflicts (0%) = 0 score
-  // 50/50 mix = 50 score
+  // Score = percentage of weighted matches out of all weighted comparisons (including penalties)
+  // Example: User has 10 values (each weight 1), Business has 3 (all matching)
+  //   - weightedMatches = 3, weightedConflicts = 0, userOnly = 7
+  //   - weighted penalty = 7 * 0.75 = 5.25
+  //   - total = 3 + 0 + 5.25 = 8.25
+  //   - score = 3 / 8.25 * 100 = 36% (not 100%!)
   const score = (weightedMatches / totalWeightedComparisons) * 100;
 
   return Math.round(score);
