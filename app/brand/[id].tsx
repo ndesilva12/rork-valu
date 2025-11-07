@@ -572,10 +572,7 @@ export default function BrandDetailScreen() {
               ) : (
                 <View style={styles.shareholdersContainer}>
                   <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
-                    Elon Musk - CEO & Founder
-                  </Text>
-                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
-                    Gwynne Shotwell - President
+                    No affiliates data available
                   </Text>
                 </View>
               )}
@@ -603,10 +600,7 @@ export default function BrandDetailScreen() {
               ) : (
                 <View style={styles.shareholdersContainer}>
                   <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
-                    NASA - Launch Services Partner
-                  </Text>
-                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
-                    Panasonic - Battery Technology
+                    No partnerships data available
                   </Text>
                 </View>
               )}
