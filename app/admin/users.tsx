@@ -591,11 +591,29 @@ export default function UsersManagement() {
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Bulk Create User Profiles</Text>
               <Text style={styles.helpText}>
-                NOTE: This creates database profiles only. Authentication accounts must be created separately.
-                {'\n\n'}Format: userId,email,name,location
-                {'\n\n'}Example:{'\n'}
-                userId,email,name,location{'\n'}
-                user123,john@example.com,John Doe,New York NY
+                <Text style={styles.boldText}>NOTE:</Text> This creates database profiles only. Authentication accounts must be created separately.
+                {'\n\n'}
+                <Text style={styles.boldText}>Basic Format:</Text> userId,email,name,location
+                {'\n'}
+                <Text style={styles.boldText}>All Available Fields:</Text>
+                {'\n'}• Core: userId,email
+                {'\n'}• Profile: name,description,website,location,latitude,longitude
+                {'\n'}• Social: facebook,instagram,twitter,linkedin,yelp,youtube
+                {'\n'}• Other: promoCode,donationAmount,consentGivenAt,consentVersion
+                {'\n'}• Note: causes, searchHistory, selectedCharities are better managed through the edit interface
+                {'\n\n'}
+                <Text style={styles.boldText}>Format Details:</Text>
+                {'\n'}• Coordinates: latitude and longitude as decimal numbers (e.g., 40.7128, -74.0060)
+                {'\n'}• Social media: Full URLs (e.g., https://facebook.com/username)
+                {'\n'}• Dates: ISO format (e.g., 2025-01-15T10:30:00Z)
+                {'\n\n'}
+                <Text style={styles.boldText}>Basic Example:</Text>
+                {'\n'}userId,email,name,location
+                {'\n'}user123,john@example.com,John Doe,New York NY
+                {'\n\n'}
+                <Text style={styles.boldText}>Full Example:</Text>
+                {'\n'}userId,email,name,description,website,location,latitude,longitude,instagram,promoCode
+                {'\n'}user456,jane@example.com,Jane Smith,Coffee enthusiast,https://jane.com,Brooklyn NY,40.6782,-73.9442,https://instagram.com/janesmith,WELCOME2025
               </Text>
 
               <TextInput
@@ -818,6 +836,10 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 12,
     lineHeight: 18,
+  },
+  boldText: {
+    fontWeight: '600',
+    color: '#333',
   },
   label: {
     fontSize: 14,
