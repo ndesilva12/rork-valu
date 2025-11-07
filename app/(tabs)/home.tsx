@@ -51,7 +51,7 @@ import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusin
 import BusinessMapView from '@/components/BusinessMapView';
 
 type ViewMode = 'playbook' | 'browse';
-type LocalDistanceOption = 1 | 5 | 10 | 50 | 100;
+type LocalDistanceOption = 1 | 5 | 10 | 50 | 100 | null;
 
 type FolderCategory = {
   id: string;
@@ -85,7 +85,7 @@ export default function HomeScreen() {
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
   const [isLocalMode, setIsLocalMode] = useState<boolean>(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(100);
+  const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(null);
   const [userBusinesses, setUserBusinesses] = useState<BusinessUser[]>([]);
   const [showMapModal, setShowMapModal] = useState(false);
 
@@ -368,7 +368,19 @@ export default function HomeScreen() {
     // Calculate raw scores for all businesses
     const businessesWithRawScores = userBusinesses.map((business) => {
       const rawScore = calculateAlignmentScore(profile.causes, business.causes || []);
-      const rangeResult = isBusinessWithinRange(business, userLocation.latitude, userLocation.longitude, localDistance);
+
+      // Only check distance if a filter is selected, otherwise show all
+      let rangeResult;
+      if (localDistance === null) {
+        // No distance filter - calculate distance but consider all businesses in range
+        const tempResult = isBusinessWithinRange(business, userLocation.latitude, userLocation.longitude, 999999);
+        rangeResult = {
+          ...tempResult,
+          isWithinRange: true, // All businesses are "in range" when no filter is applied
+        };
+      } else {
+        rangeResult = isBusinessWithinRange(business, userLocation.latitude, userLocation.longitude, localDistance);
+      }
 
       return {
         business,
@@ -389,7 +401,7 @@ export default function HomeScreen() {
       alignmentScore: normalizedScores[index],
     }));
 
-    // Filter by distance
+    // Filter by distance (all will be in range if localDistance is null)
     const businessesInRange = scoredBusinesses.filter((b) => b.isWithinRange);
 
     // Split into aligned (≥50) and unaligned (<50)
@@ -664,7 +676,13 @@ export default function HomeScreen() {
         <View style={[styles.localButtonContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
           <TouchableOpacity
             style={[styles.localButton, isLocalMode && { backgroundColor: colors.primary }]}
-            onPress={() => setIsLocalMode(!isLocalMode)}
+            onPress={() => {
+              setIsLocalMode(!isLocalMode);
+              // Reset to "all" (no filter) when turning on Local mode
+              if (!isLocalMode) {
+                setLocalDistance(null);
+              }
+            }}
             activeOpacity={0.7}
           >
             <MapPin size={16} color={isLocalMode ? colors.white : colors.textSecondary} strokeWidth={2} />
@@ -736,7 +754,9 @@ export default function HomeScreen() {
                 (showAllAligned ? alignedBusinesses : alignedBusinesses.slice(0, 5)).map((biz) => renderLocalBusinessCard(biz, 'aligned'))
               ) : (
                 <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                  No aligned businesses found within {localDistance} mile{localDistance !== 1 ? 's' : ''}
+                  {localDistance === null
+                    ? 'No aligned businesses found'
+                    : `No aligned businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
                 </Text>
               )}
             </View>
@@ -757,7 +777,9 @@ export default function HomeScreen() {
                 (showAllLeast ? unalignedBusinesses : unalignedBusinesses.slice(0, 5)).map((biz) => renderLocalBusinessCard(biz, 'unaligned'))
               ) : (
                 <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                  No unaligned businesses found within {localDistance} mile{localDistance !== 1 ? 's' : ''}
+                  {localDistance === null
+                    ? 'No unaligned businesses found'
+                    : `No unaligned businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
                 </Text>
               )}
             </View>
@@ -823,7 +845,9 @@ export default function HomeScreen() {
         return (
           <View style={styles.foldersContainer}>
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              No local businesses found within {localDistance} mile{localDistance !== 1 ? 's' : ''}
+              {localDistance === null
+                ? 'No local businesses found'
+                : `No local businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
             </Text>
           </View>
         );
@@ -1133,7 +1157,9 @@ export default function HomeScreen() {
             {/* Header with close button */}
             <View style={[styles.mapModalHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
               <Text style={[styles.mapModalTitle, { color: colors.text }]}>
-                Local Businesses ({localDistance} mile{localDistance !== 1 ? 's' : ''})
+                {localDistance === null
+                  ? 'All Local Businesses'
+                  : `Local Businesses (${localDistance} mile${localDistance !== 1 ? 's' : ''})`}
               </Text>
               <TouchableOpacity
                 style={[styles.mapModalCloseButton, { backgroundColor: colors.backgroundSecondary }]}
@@ -1150,7 +1176,7 @@ export default function HomeScreen() {
               <BusinessMapView
                 businesses={[...localBusinessData.alignedBusinesses, ...localBusinessData.unalignedBusinesses]}
                 userLocation={userLocation}
-                distanceRadius={localDistance}
+                distanceRadius={localDistance || 999999}
                 onBusinessPress={(businessId) => {
                   setShowMapModal(false);
                   router.push({
