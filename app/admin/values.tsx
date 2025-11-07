@@ -449,11 +449,25 @@ export default function ValuesManagement() {
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Bulk Create Values</Text>
               <Text style={styles.helpText}>
-                Paste CSV data below. Format: id,name,category,aligned,unaligned
-                {'\n'}Use semicolons (;) to separate brand names in aligned/unaligned columns
-                {'\n\n'}Example:{'\n'}
-                id,name,category,aligned,unaligned{'\n'}
-                gun-rights,Gun Rights,ideology,Smith&Wesson;Glock,Apple;Nike
+                Paste CSV data below. First row must be headers.
+                {'\n\n'}
+                <Text style={styles.boldText}>Format:</Text> id,name,category,aligned,unaligned
+                {'\n'}
+                <Text style={styles.boldText}>All Available Fields:</Text>
+                {'\n'}• id (required): lowercase, hyphenated identifier (e.g., "gun-rights")
+                {'\n'}• name (required): display name (e.g., "Gun Rights")
+                {'\n'}• category (optional): e.g., "ideology", "religion", "social_issue"
+                {'\n'}• aligned (optional): brands supporting this value, separated by semicolons (;)
+                {'\n'}• unaligned (optional): brands opposing this value, separated by semicolons (;)
+                {'\n\n'}
+                <Text style={styles.boldText}>Basic Example:</Text>
+                {'\n'}id,name,category
+                {'\n'}gun-rights,Gun Rights,ideology
+                {'\n\n'}
+                <Text style={styles.boldText}>Full Example with Brand Alignments:</Text>
+                {'\n'}id,name,category,aligned,unaligned
+                {'\n'}gun-rights,Gun Rights,ideology,Smith & Wesson;Glock;Cabela's,Dick's Sporting Goods;REI
+                {'\n'}environmental-protection,Environmental Protection,social_issue,Patagonia;Ben & Jerry's;Seventh Generation,ExxonMobil;Shell
               </Text>
 
               <TextInput
@@ -708,6 +722,10 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 6,
     fontStyle: 'italic',
+  },
+  boldText: {
+    fontWeight: '600',
+    color: '#333',
   },
   modalActions: {
     flexDirection: 'row',

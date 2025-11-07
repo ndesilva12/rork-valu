@@ -739,11 +739,32 @@ export default function BusinessesManagement() {
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Bulk Create Business Profiles</Text>
               <Text style={styles.helpText}>
-                NOTE: This creates database profiles only. Authentication accounts must be created separately.
-                {'\n\n'}Format: userId,email,businessName,category
-                {'\n\n'}Example:{'\n'}
-                userId,email,businessName,category{'\n'}
-                business123,shop@example.com,Joe's Coffee,Restaurant
+                <Text style={styles.boldText}>NOTE:</Text> This creates database profiles only. Authentication accounts must be created separately.
+                {'\n\n'}
+                <Text style={styles.boldText}>Basic Format:</Text> userId,email,businessName,category
+                {'\n'}
+                <Text style={styles.boldText}>All Available Fields:</Text>
+                {'\n'}• Core: userId,email,businessName,category,description,website,logoUrl,coverImageUrl
+                {'\n'}• Locations: locations (format: address|lat|lng|primary;address2|lat2|lng2|)
+                {'\n'}• Gallery: galleryImage1Url,galleryImage1Caption,galleryImage2Url,galleryImage2Caption,galleryImage3Url,galleryImage3Caption
+                {'\n'}• Discounts: acceptsStandDiscounts,acceptsQRCode,acceptsValueCode,valueCodeDiscount,customerDiscountPercent,donationPercent,customDiscount
+                {'\n'}• Social: facebook,instagram,twitter,linkedin,yelp,youtube
+                {'\n'}• Money Flow: affiliates,partnerships,ownership,ownershipSources
+                {'\n\n'}
+                <Text style={styles.boldText}>Format Details:</Text>
+                {'\n'}• Boolean fields: true/false (acceptsStandDiscounts, acceptsQRCode, acceptsValueCode)
+                {'\n'}• Numbers: valueCodeDiscount, customerDiscountPercent, donationPercent (e.g., 10 for 10%)
+                {'\n'}• Locations: Use semicolons (;) to separate multiple locations, pipe (|) for address|lat|lng|primary
+                {'\n'}• Money Flow: Use semicolons (;) to separate entries, pipe (|) for name|relationship
+                {'\n\n'}
+                <Text style={styles.boldText}>Basic Example:</Text>
+                {'\n'}userId,email,businessName,category,description,website
+                {'\n'}biz001,shop@example.com,Joe's Coffee,Restaurant,Best coffee in town,https://joescoffee.com
+                {'\n\n'}
+                <Text style={styles.boldText}>Full Example (wrapped for readability):</Text>
+                {'\n'}Include all fields you want to populate. For money flow and locations, use the delimiters specified above.
+                {'\n'}Example locations: "123 Main St|40.7128|-74.0060|primary;456 2nd Ave|40.6782|-73.9442|"
+                {'\n'}Example affiliates: "Chef Gordon|Owner;Jamie Oliver|Consultant"
               </Text>
 
               <TextInput
@@ -966,6 +987,10 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 12,
     lineHeight: 18,
+  },
+  boldText: {
+    fontWeight: '600',
+    color: '#333',
   },
   label: {
     fontSize: 14,

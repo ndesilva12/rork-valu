@@ -248,6 +248,19 @@ export default function BrandsManagement() {
             continue;
           }
 
+          // Parse money flow fields if present
+          const parseMoneyFlowField = (field: string): { name: string; relationship: string }[] => {
+            if (!field) return [];
+            return field.split(';').map(entry => {
+              const [name, relationship] = entry.split('|').map(s => s.trim());
+              return { name: name || '', relationship: relationship || '' };
+            }).filter(item => item.name);
+          };
+
+          const affiliates = parseMoneyFlowField(brandData.affiliates || '');
+          const partnerships = parseMoneyFlowField(brandData.partnerships || '');
+          const ownership = parseMoneyFlowField(brandData.ownership || '');
+
           const brandRef = doc(db, 'brands', brandData.id);
           await setDoc(brandRef, {
             name: brandData.name,
@@ -255,10 +268,10 @@ export default function BrandsManagement() {
             description: brandData.description || '',
             website: brandData.website || '',
             location: brandData.location || '',
-            affiliates: [],
-            partnerships: [],
-            ownership: [],
-            ownershipSources: '',
+            affiliates,
+            partnerships,
+            ownership,
+            ownershipSources: brandData.ownershipSources || '',
           });
 
           successCount++;
@@ -569,10 +582,23 @@ export default function BrandsManagement() {
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Bulk Create Brands</Text>
               <Text style={styles.helpText}>
-                Paste CSV data below. Format: id,name,category,description,website,location
-                {'\n\n'}Example:{'\n'}
-                id,name,category,description,website,location{'\n'}
-                Apple,Apple Inc.,Technology,Electronics manufacturer,https://apple.com,Cupertino CA
+                Paste CSV data below. First row must be headers.
+                {'\n\n'}
+                <Text style={styles.boldText}>Basic Format:</Text> id,name,category,description,website,location
+                {'\n'}
+                <Text style={styles.boldText}>All Available Fields:</Text> id,name,category,description,website,location,affiliates,partnerships,ownership,ownershipSources
+                {'\n\n'}
+                <Text style={styles.boldText}>Field Details:</Text>
+                {'\n'}• affiliates, partnerships, ownership: Use semicolons (;) to separate entries, pipe (|) for name|relationship
+                {'\n'}• Example: "Taylor Swift|$5M endorsement;LeBron James|Brand Ambassador"
+                {'\n\n'}
+                <Text style={styles.boldText}>Basic Example:</Text>
+                {'\n'}id,name,category,description,website,location
+                {'\n'}Apple,Apple Inc.,Technology,Electronics manufacturer,https://apple.com,Cupertino CA
+                {'\n\n'}
+                <Text style={styles.boldText}>Full Example with Money Flow:</Text>
+                {'\n'}id,name,category,description,website,location,affiliates,partnerships,ownership,ownershipSources
+                {'\n'}Nike,Nike Inc.,Sportswear,Athletic apparel,https://nike.com,Beaverton OR,LeBron James|Athlete Endorser;Serena Williams|Brand Ambassador,Apple|Tech Partnership/2016;NBA|League Partner/2015,Vanguard|~8%;BlackRock|~6%,Stakes from Q3 2025 SEC filings
               </Text>
 
               <TextInput
@@ -697,6 +723,10 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 12,
     lineHeight: 18,
+  },
+  boldText: {
+    fontWeight: '600',
+    color: '#333',
   },
   scrollView: {
     flex: 1,
