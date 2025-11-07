@@ -16,13 +16,13 @@ type Props = {
 
 // Helper function to convert distance to zoom level
 function getZoomLevel(radiusMiles: number): number {
-  // Approximate zoom levels for different distances
-  if (radiusMiles <= 1) return 14;
-  if (radiusMiles <= 5) return 12;
-  if (radiusMiles <= 10) return 11;
-  if (radiusMiles <= 25) return 10;
-  if (radiusMiles <= 50) return 9;
-  return 8; // 100+ miles
+  // Approximate zoom levels for different distances (higher = more zoomed in)
+  if (radiusMiles <= 1) return 16;
+  if (radiusMiles <= 5) return 14;
+  if (radiusMiles <= 10) return 13;
+  if (radiusMiles <= 25) return 12;
+  if (radiusMiles <= 50) return 11;
+  return 10; // 100+ miles
 }
 
 export default function BusinessMapView({ businesses, userLocation, distanceRadius, onBusinessPress }: Props) {
@@ -69,14 +69,14 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
         maxZoom: 19,
       }).addTo(map);
 
-      // Add user location marker
+      // Add user location marker (blue dot)
       if (userLocation) {
         L.marker([userLocation.latitude, userLocation.longitude], {
           icon: L.divIcon({
             className: 'user-marker',
-            html: '<div style="background-color: #3B82F6; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
-            iconSize: [26, 26],
-            iconAnchor: [13, 13],
+            html: '<div style="background-color: #3B82F6; width: 16px; height: 16px; border-radius: 50%; border: 4px solid white; box-shadow: 0 0 0 2px #3B82F6, 0 2px 6px rgba(0,0,0,0.3);"></div>',
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
           }),
         }).addTo(map).bindPopup('You are here');
       }

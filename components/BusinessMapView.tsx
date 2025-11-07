@@ -29,8 +29,8 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
   // Calculate the appropriate zoom/delta based on distance radius
   const getLatLongDelta = (radiusMiles: number) => {
     // Rough approximation: 1 degree latitude ≈ 69 miles
-    // Add some padding for better view
-    const delta = (radiusMiles / 69) * 2.5;
+    // Smaller delta = more zoomed in
+    const delta = (radiusMiles / 69) * 1.5;
     return { latitudeDelta: delta, longitudeDelta: delta };
   };
 
@@ -50,13 +50,26 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
           longitudeDelta,
         }}
       >
-        {/* User location marker */}
+        {/* User location marker (blue dot) */}
         {userLocation && (
           <Marker
             coordinate={userLocation}
-            pinColor="#3B82F6"
-            title="You are here"
-          />
+            anchor={{ x: 0.5, y: 0.5 }}
+          >
+            <View style={{
+              width: 20,
+              height: 20,
+              borderRadius: 10,
+              backgroundColor: '#3B82F6',
+              borderWidth: 3,
+              borderColor: '#FFFFFF',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.3,
+              shadowRadius: 3,
+              elevation: 5,
+            }} />
+          </Marker>
         )}
 
         {/* Distance radius circle */}
