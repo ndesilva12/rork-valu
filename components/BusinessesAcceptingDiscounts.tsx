@@ -123,7 +123,7 @@ export default function BusinessesAcceptingDiscounts() {
       'To see businesses sorted by distance, please add your location in the Profile → Details tab.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Go to Profile', onPress: () => router.push('/values') }
+        { text: 'Go to Profile', onPress: () => router.push('/profile') }
       ]
     );
   };
