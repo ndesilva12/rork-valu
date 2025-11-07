@@ -118,7 +118,7 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
           })
             .addTo(map)
             .bindPopup(`
-              <div style="min-width: 220px; padding: 12px; border: 2px solid #00aaff; border-radius: 12px;">
+              <div style="min-width: 220px; padding: 12px;">
                 <div style="font-size: 16px; font-weight: bold; margin-bottom: 6px; color: #1f2937;">
                   ${business.businessInfo.name}
                 </div>
