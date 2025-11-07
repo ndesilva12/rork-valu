@@ -30,9 +30,19 @@ export const [DataProvider, useData] = createContextHook(() => {
   // Load data from Firebase (with AsyncStorage cache)
   const loadData = useCallback(async (forceRefresh = false) => {
     try {
-      console.log('[DataContext] 🔄 Loading brands and values...');
+      console.log(`[DataContext] 🔄 Loading brands and values... (forceRefresh: ${forceRefresh})`);
       setIsLoading(true);
       setError(null);
+
+      // If force refresh, clear the cache first
+      if (forceRefresh) {
+        console.log('[DataContext] 🗑️ Force refresh: Clearing cache...');
+        await Promise.all([
+          AsyncStorage.removeItem(BRANDS_CACHE_KEY),
+          AsyncStorage.removeItem(VALUES_CACHE_KEY),
+          AsyncStorage.removeItem(CACHE_TIMESTAMP_KEY),
+        ]);
+      }
 
       // Check cache timestamp
       const cacheTimestamp = await AsyncStorage.getItem(CACHE_TIMESTAMP_KEY);

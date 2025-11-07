@@ -25,26 +25,8 @@ interface ValueData {
   id: string;
   name: string;
   category?: string;
-  aligned1?: string;
-  aligned2?: string;
-  aligned3?: string;
-  aligned4?: string;
-  aligned5?: string;
-  aligned6?: string;
-  aligned7?: string;
-  aligned8?: string;
-  aligned9?: string;
-  aligned10?: string;
-  unaligned1?: string;
-  unaligned2?: string;
-  unaligned3?: string;
-  unaligned4?: string;
-  unaligned5?: string;
-  unaligned6?: string;
-  unaligned7?: string;
-  unaligned8?: string;
-  unaligned9?: string;
-  unaligned10?: string;
+  aligned?: string[]; // Array of aligned brand names
+  unaligned?: string[]; // Array of unaligned brand names
 }
 
 export default function ValuesManagement() {
@@ -54,12 +36,12 @@ export default function ValuesManagement() {
   const [editingValue, setEditingValue] = useState<ValueData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Form state for all 10 aligned and unaligned fields
+  // Form state - comma-separated strings for easy editing
   const [formId, setFormId] = useState('');
   const [formName, setFormName] = useState('');
   const [formCategory, setFormCategory] = useState('');
-  const [alignedFields, setAlignedFields] = useState<string[]>(Array(10).fill(''));
-  const [unalignedFields, setUnalignedFields] = useState<string[]>(Array(10).fill(''));
+  const [alignedText, setAlignedText] = useState(''); // Comma-separated brand names
+  const [unalignedText, setUnalignedText] = useState(''); // Comma-separated brand names
 
   useEffect(() => {
     loadValues();
@@ -73,30 +55,34 @@ export default function ValuesManagement() {
 
       const loadedValues: ValueData[] = snapshot.docs.map((doc) => {
         const data = doc.data();
+
+        // Handle new array format (after migration)
+        let aligned = data.aligned || [];
+        let unaligned = data.unaligned || [];
+
+        // Handle old format (before migration) - convert numbered fields to arrays
+        if (aligned.length === 0) {
+          const oldAligned = [];
+          for (let i = 1; i <= 10; i++) {
+            if (data[`aligned${i}`]) oldAligned.push(data[`aligned${i}`]);
+          }
+          if (oldAligned.length > 0) aligned = oldAligned;
+        }
+
+        if (unaligned.length === 0) {
+          const oldUnaligned = [];
+          for (let i = 1; i <= 10; i++) {
+            if (data[`unaligned${i}`]) oldUnaligned.push(data[`unaligned${i}`]);
+          }
+          if (oldUnaligned.length > 0) unaligned = oldUnaligned;
+        }
+
         return {
           id: doc.id,
           name: data.name || doc.id,
           category: data.category,
-          aligned1: data.aligned1,
-          aligned2: data.aligned2,
-          aligned3: data.aligned3,
-          aligned4: data.aligned4,
-          aligned5: data.aligned5,
-          aligned6: data.aligned6,
-          aligned7: data.aligned7,
-          aligned8: data.aligned8,
-          aligned9: data.aligned9,
-          aligned10: data.aligned10,
-          unaligned1: data.unaligned1,
-          unaligned2: data.unaligned2,
-          unaligned3: data.unaligned3,
-          unaligned4: data.unaligned4,
-          unaligned5: data.unaligned5,
-          unaligned6: data.unaligned6,
-          unaligned7: data.unaligned7,
-          unaligned8: data.unaligned8,
-          unaligned9: data.unaligned9,
-          unaligned10: data.unaligned10,
+          aligned,
+          unaligned,
         };
       });
 
@@ -114,8 +100,8 @@ export default function ValuesManagement() {
     setFormId('');
     setFormName('');
     setFormCategory('');
-    setAlignedFields(Array(10).fill(''));
-    setUnalignedFields(Array(10).fill(''));
+    setAlignedText('');
+    setUnalignedText('');
     setShowModal(true);
   };
 
@@ -125,19 +111,9 @@ export default function ValuesManagement() {
     setFormName(value.name);
     setFormCategory(value.category || '');
 
-    // Populate aligned fields
-    const aligned = [];
-    for (let i = 1; i <= 10; i++) {
-      aligned.push(value[`aligned${i}` as keyof ValueData] as string || '');
-    }
-    setAlignedFields(aligned);
-
-    // Populate unaligned fields
-    const unaligned = [];
-    for (let i = 1; i <= 10; i++) {
-      unaligned.push(value[`unaligned${i}` as keyof ValueData] as string || '');
-    }
-    setUnalignedFields(unaligned);
+    // Convert arrays to comma-separated strings
+    setAlignedText(value.aligned?.join(', ') || '');
+    setUnalignedText(value.unaligned?.join(', ') || '');
 
     setShowModal(true);
   };
@@ -154,27 +130,26 @@ export default function ValuesManagement() {
     }
 
     try {
+      // Parse comma-separated strings into arrays
+      const aligned = alignedText
+        .split(',')
+        .map(brand => brand.trim())
+        .filter(brand => brand.length > 0);
+
+      const unaligned = unalignedText
+        .split(',')
+        .map(brand => brand.trim())
+        .filter(brand => brand.length > 0);
+
       const valueData: any = {
         id: formId.trim(),
         name: formName.trim(),
+        aligned,
+        unaligned,
       };
 
       if (formCategory.trim()) {
         valueData.category = formCategory.trim();
-      }
-
-      // Add aligned fields
-      for (let i = 0; i < 10; i++) {
-        if (alignedFields[i]?.trim()) {
-          valueData[`aligned${i + 1}`] = alignedFields[i].trim();
-        }
-      }
-
-      // Add unaligned fields
-      for (let i = 0; i < 10; i++) {
-        if (unalignedFields[i]?.trim()) {
-          valueData[`unaligned${i + 1}`] = unalignedFields[i].trim();
-        }
       }
 
       const valueRef = doc(db, 'values', valueData.id);
@@ -224,40 +199,11 @@ export default function ValuesManagement() {
       value.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Helper to count non-empty aligned/unaligned brands
-  const countAligned = (value: ValueData) => {
-    let count = 0;
-    for (let i = 1; i <= 10; i++) {
-      if (value[`aligned${i}` as keyof ValueData]) count++;
-    }
-    return count;
-  };
-
-  const countUnaligned = (value: ValueData) => {
-    let count = 0;
-    for (let i = 1; i <= 10; i++) {
-      if (value[`unaligned${i}` as keyof ValueData]) count++;
-    }
-    return count;
-  };
-
-  const getAlignedList = (value: ValueData) => {
-    const brands = [];
-    for (let i = 1; i <= 10; i++) {
-      const brand = value[`aligned${i}` as keyof ValueData];
-      if (brand) brands.push(brand);
-    }
-    return brands;
-  };
-
-  const getUnalignedList = (value: ValueData) => {
-    const brands = [];
-    for (let i = 1; i <= 10; i++) {
-      const brand = value[`unaligned${i}` as keyof ValueData];
-      if (brand) brands.push(brand);
-    }
-    return brands;
-  };
+  // Helper functions for displaying aligned/unaligned brands
+  const countAligned = (value: ValueData) => value.aligned?.length || 0;
+  const countUnaligned = (value: ValueData) => value.unaligned?.length || 0;
+  const getAlignedList = (value: ValueData) => value.aligned || [];
+  const getUnalignedList = (value: ValueData) => value.unaligned || [];
 
   if (isLoading) {
     return (
@@ -387,39 +333,33 @@ export default function ValuesManagement() {
                 autoCapitalize="none"
               />
 
-              <Text style={styles.sectionTitle}>Aligned Brands (up to 10)</Text>
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((index) => (
-                <View key={`aligned-${index}`}>
-                  <Text style={styles.label}>Aligned {index + 1}</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder={`Brand name`}
-                    value={alignedFields[index]}
-                    onChangeText={(text) => {
-                      const newFields = [...alignedFields];
-                      newFields[index] = text;
-                      setAlignedFields(newFields);
-                    }}
-                  />
-                </View>
-              ))}
+              <Text style={styles.sectionTitle}>Aligned Brands</Text>
+              <Text style={styles.helpText}>
+                Enter brand names separated by commas (e.g., "Apple, Nike, Amazon")
+              </Text>
+              <TextInput
+                style={styles.textArea}
+                placeholder="Brand1, Brand2, Brand3, ..."
+                value={alignedText}
+                onChangeText={setAlignedText}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
 
-              <Text style={styles.sectionTitle}>Unaligned Brands (up to 10)</Text>
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((index) => (
-                <View key={`unaligned-${index}`}>
-                  <Text style={styles.label}>Unaligned {index + 1}</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder={`Brand name`}
-                    value={unalignedFields[index]}
-                    onChangeText={(text) => {
-                      const newFields = [...unalignedFields];
-                      newFields[index] = text;
-                      setUnalignedFields(newFields);
-                    }}
-                  />
-                </View>
-              ))}
+              <Text style={styles.sectionTitle}>Unaligned Brands</Text>
+              <Text style={styles.helpText}>
+                Enter brand names separated by commas (e.g., "Nike, Adidas, Starbucks")
+              </Text>
+              <TextInput
+                style={styles.textArea}
+                placeholder="Brand1, Brand2, Brand3, ..."
+                value={unalignedText}
+                onChangeText={setUnalignedText}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
 
               <View style={styles.modalActions}>
                 <TouchableOpacity style={styles.cancelButton} onPress={closeModal}>
@@ -626,6 +566,21 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     fontSize: 14,
+  },
+  textArea: {
+    minHeight: 100,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+  },
+  helpText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 6,
+    fontStyle: 'italic',
   },
   modalActions: {
     flexDirection: 'row',

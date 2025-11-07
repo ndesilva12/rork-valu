@@ -46,6 +46,7 @@ export async function getBusinessesAcceptingDiscounts(): Promise<BusinessUser[]>
           id: doc.id,
           email: data.email,
           businessInfo: data.businessInfo as BusinessInfo,
+          causes: data.causes as Cause[] || [], // Include causes for alignment scoring
         });
       } else {
         console.warn('[Firebase businessService] ⚠️ Business missing businessInfo:', doc.id);
@@ -53,6 +54,7 @@ export async function getBusinessesAcceptingDiscounts(): Promise<BusinessUser[]>
     });
 
     console.log('[Firebase businessService] ✅ Returning', businesses.length, 'valid businesses');
+    console.log('[Firebase businessService] Sample business causes:', businesses[0]?.causes?.length || 0);
     return businesses;
   } catch (error) {
     console.error('[Firebase businessService] ❌ Error fetching businesses:', error);

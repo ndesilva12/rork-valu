@@ -143,7 +143,7 @@ export default function ValueCodeSettings() {
                 <Switch
                   value={acceptsQRCode}
                   onValueChange={handleToggleQRCode}
-                  trackColor={{ false: '#E5E7EB', true: '#9CA3AF' }}
+                  trackColor={{ false: '#D1D5DB', true: '#000000' }}
                   thumbColor='#FFFFFF'
                   ios_backgroundColor='#E5E7EB'
                 />
@@ -153,7 +153,7 @@ export default function ValueCodeSettings() {
                 <Switch
                   value={acceptsPromoCode}
                   onValueChange={handleTogglePromoCode}
-                  trackColor={{ false: '#E5E7EB', true: '#9CA3AF' }}
+                  trackColor={{ false: '#D1D5DB', true: '#000000' }}
                   thumbColor='#FFFFFF'
                   ios_backgroundColor='#E5E7EB'
                 />
@@ -174,7 +174,7 @@ export default function ValueCodeSettings() {
             <Switch
               value={acceptsDiscounts}
               onValueChange={handleToggleDiscounts}
-              trackColor={{ false: '#E5E7EB', true: '#9CA3AF' }}
+              trackColor={{ false: '#D1D5DB', true: '#000000' }}
               thumbColor='#FFFFFF'
               ios_backgroundColor='#E5E7EB'
             />
@@ -405,7 +405,7 @@ export default function ValueCodeSettings() {
             <Switch
               value={makeDonations}
               onValueChange={handleToggleDonations}
-              trackColor={{ false: '#E5E7EB', true: '#9CA3AF' }}
+              trackColor={{ false: '#D1D5DB', true: '#000000' }}
               thumbColor='#FFFFFF'
               ios_backgroundColor='#E5E7EB'
             />

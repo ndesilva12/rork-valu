@@ -19,7 +19,6 @@ import {
   Store,
   DollarSign,
   Shirt,
-  ChevronDown,
   X,
 } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
@@ -34,6 +33,7 @@ import {
   StatusBar,
   Alert,
   Modal,
+  Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
@@ -51,7 +51,7 @@ import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusin
 import BusinessMapView from '@/components/BusinessMapView';
 
 type ViewMode = 'playbook' | 'browse';
-type LocalDistanceOption = 1 | 5 | 10 | 25 | 50 | 100;
+type LocalDistanceOption = 1 | 5 | 10 | 50 | 100;
 
 type FolderCategory = {
   id: string;
@@ -85,7 +85,6 @@ export default function HomeScreen() {
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
   const [isLocalMode, setIsLocalMode] = useState<boolean>(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [showDistanceDropdown, setShowDistanceDropdown] = useState(false);
   const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(100);
   const [userBusinesses, setUserBusinesses] = useState<BusinessUser[]>([]);
   const [showMapModal, setShowMapModal] = useState(false);
@@ -632,112 +631,87 @@ export default function HomeScreen() {
     );
   };
 
-  const localDistanceOptions: LocalDistanceOption[] = [100, 50, 25, 10, 5, 1];
+  const localDistanceOptions: LocalDistanceOption[] = [100, 50, 10, 5, 1];
 
   const renderViewModeSelector = () => (
-    <View style={styles.selectionRow}>
-      <View style={[styles.viewModeSelector, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-        <TouchableOpacity
-          style={[styles.viewModeButton, viewMode === 'playbook' && { backgroundColor: colors.primary }]}
-          onPress={() => setViewMode('playbook')}
-          activeOpacity={0.7}
-        >
-          <Target size={18} color={viewMode === 'playbook' ? colors.white : colors.textSecondary} strokeWidth={2} />
-          <Text style={[styles.viewModeText, { color: viewMode === 'playbook' ? colors.white : colors.textSecondary }]}>
-            Brands
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.viewModeButton, viewMode === 'browse' && { backgroundColor: colors.primary }]}
-          onPress={() => setViewMode('browse')}
-          activeOpacity={0.7}
-        >
-          <FolderOpen size={18} color={viewMode === 'browse' ? colors.white : colors.textSecondary} strokeWidth={2} />
-          <Text style={[styles.viewModeText, { color: viewMode === 'browse' ? colors.white : colors.textSecondary }]}>
-            Browse
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Local Toggle Button Container */}
-      <View style={[styles.localButtonContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-        <TouchableOpacity
-          style={[styles.localButton, isLocalMode && { backgroundColor: colors.primary }]}
-          onPress={() => {
-            setIsLocalMode(!isLocalMode);
-            setShowDistanceDropdown(false);
-          }}
-          activeOpacity={0.7}
-        >
-          <MapPin size={16} color={isLocalMode ? colors.white : colors.textSecondary} strokeWidth={2} />
-          <Text style={[styles.localButtonText, { color: isLocalMode ? colors.white : colors.textSecondary }]}>
-            Local
-          </Text>
-        </TouchableOpacity>
-
-        {/* Distance Dropdown Arrow Button */}
-        {isLocalMode && (
+    <>
+      <View style={styles.selectionRow}>
+        <View style={[styles.viewModeSelector, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
           <TouchableOpacity
-            style={styles.distanceArrowButton}
-            onPress={() => setShowDistanceDropdown(!showDistanceDropdown)}
+            style={[styles.viewModeButton, viewMode === 'playbook' && { backgroundColor: colors.primary }]}
+            onPress={() => setViewMode('playbook')}
             activeOpacity={0.7}
           >
-            <ChevronDown size={18} color={colors.primary} strokeWidth={2.5} />
+            <Target size={18} color={viewMode === 'playbook' ? colors.white : colors.textSecondary} strokeWidth={2} />
+            <Text style={[styles.viewModeText, { color: viewMode === 'playbook' ? colors.white : colors.textSecondary }]}>
+              Brands
+            </Text>
           </TouchableOpacity>
-        )}
 
-        {/* Distance Options Dropdown */}
-        {showDistanceDropdown && isLocalMode && (
-          <View style={[styles.distanceDropdown, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            {/* Map Option - moved to top */}
-            <TouchableOpacity
-              style={styles.distanceOption}
-              onPress={() => {
-                setShowDistanceDropdown(false);
-                setShowMapModal(true);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  styles.distanceOptionText,
-                  { color: colors.primary, fontWeight: '600' },
-                ]}
-              >
-                Map View
-              </Text>
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.viewModeButton, viewMode === 'browse' && { backgroundColor: colors.primary }]}
+            onPress={() => setViewMode('browse')}
+            activeOpacity={0.7}
+          >
+            <FolderOpen size={18} color={viewMode === 'browse' ? colors.white : colors.textSecondary} strokeWidth={2} />
+            <Text style={[styles.viewModeText, { color: viewMode === 'browse' ? colors.white : colors.textSecondary }]}>
+              Browse
+            </Text>
+          </TouchableOpacity>
+        </View>
 
+        {/* Local Toggle Button Container */}
+        <View style={[styles.localButtonContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+          <TouchableOpacity
+            style={[styles.localButton, isLocalMode && { backgroundColor: colors.primary }]}
+            onPress={() => setIsLocalMode(!isLocalMode)}
+            activeOpacity={0.7}
+          >
+            <MapPin size={16} color={isLocalMode ? colors.white : colors.textSecondary} strokeWidth={2} />
+            <Text style={[styles.localButtonText, { color: isLocalMode ? colors.white : colors.textSecondary }]}>
+              Local
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Distance Filter Row - Shows when Local is selected */}
+      {isLocalMode && (
+        <View style={styles.distanceFilterRow}>
+          <View style={styles.distanceOptionsContainer}>
             {localDistanceOptions.map((option) => (
               <TouchableOpacity
                 key={option}
                 style={[
-                  styles.distanceOption,
-                  localDistance === option && { backgroundColor: colors.primary },
-                  option === 1 && { borderBottomWidth: 0 }, // Remove border on last item
+                  styles.distanceFilterButton,
+                  { backgroundColor: colors.background, borderColor: colors.border },
+                  localDistance === option && { borderColor: colors.primary, borderWidth: 2 },
                 ]}
-                onPress={() => {
-                  setLocalDistance(option);
-                  setShowDistanceDropdown(false);
-                }}
+                onPress={() => setLocalDistance(option)}
                 activeOpacity={0.7}
               >
                 <Text
                   style={[
-                    styles.distanceOptionText,
+                    styles.distanceFilterText,
                     { color: colors.text },
-                    localDistance === option && { color: colors.white, fontWeight: '600' },
+                    localDistance === option && { color: colors.primary, fontWeight: '600' },
                   ]}
                 >
-                  {option} mile{option !== 1 ? 's' : ''}
+                  {option} mi
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-        )}
-      </View>
-    </View>
+          <TouchableOpacity
+            style={[styles.mapFilterButton, { backgroundColor: colors.primary }]}
+            onPress={() => setShowMapModal(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.mapFilterButtonText, { color: colors.white }]}>Map</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </>
   );
 
   const renderPlaybookView = () => {
@@ -1109,7 +1083,12 @@ export default function HomeScreen() {
         </View>
         {renderViewModeSelector()}
       </View>
-      <ScrollView ref={scrollViewRef} style={styles.scrollView} contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent, { paddingBottom: 100 }]}>
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent, { paddingBottom: 100 }]}
+        showsVerticalScrollIndicator={false}
+      >
         {viewMode === 'playbook' && renderPlaybookView()}
         {viewMode === 'browse' && renderFoldersView()}
 
@@ -1208,6 +1187,10 @@ export default function HomeScreen() {
     </View>
   );
 }
+
+// Detect mobile screen size for responsive map modal
+const { width: screenWidth } = Dimensions.get('window');
+const isMobileScreen = screenWidth < 768; // Mobile if width < 768px
 
 const styles = StyleSheet.create({
   container: {
@@ -1413,7 +1396,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 8,
     marginTop: 10,
-    zIndex: 100,
   },
   viewModeSelector: {
     flex: 2,
@@ -1437,13 +1419,11 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   localButtonContainer: {
-    position: 'relative' as const,
     flex: 1,
     flexDirection: 'row',
     borderRadius: 10,
     padding: 3,
     borderWidth: 1,
-    zIndex: 101,
   },
   localButton: {
     flex: 1,
@@ -1459,37 +1439,44 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600' as const,
   },
-  distanceArrowButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 10,
-    borderRadius: 8,
-    justifyContent: 'center',
+  distanceFilterRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 2,
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    gap: 6,
   },
-  distanceDropdown: {
-    position: 'absolute' as const,
-    top: 52,
-    right: 0,
-    width: 160,
-    borderRadius: 12,
+  distanceOptionsContainer: {
+    flexDirection: 'row',
+    gap: 5,
+    flex: 1,
+  },
+  distanceFilterButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 8,
     borderWidth: 1,
-    zIndex: 99999,
-    elevation: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    minWidth: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  distanceOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  distanceOptionText: {
-    fontSize: 14,
+  distanceFilterText: {
+    fontSize: 12,
     fontWeight: '500' as const,
+  },
+  mapFilterButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 70,
+  },
+  mapFilterButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   distanceContainer: {
     flexDirection: 'row',
@@ -1872,14 +1859,14 @@ const styles = StyleSheet.create({
   mapModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
+    justifyContent: isMobileScreen ? 'flex-start' : 'center',
+    alignItems: isMobileScreen ? 'stretch' : 'center',
+    padding: isMobileScreen ? 0 : 16,
   },
   mapModalContainer: {
-    width: '90%',
-    height: '87.5%',
-    borderRadius: 20,
+    width: isMobileScreen ? '100%' : '90%',
+    height: isMobileScreen ? '100%' : '87.5%',
+    borderRadius: isMobileScreen ? 0 : 20,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -1892,7 +1879,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: isMobileScreen ? (Platform.OS === 'ios' ? 48 : 16) : 16, // Safe area for mobile
     paddingBottom: 12,
     borderBottomWidth: 1,
   },

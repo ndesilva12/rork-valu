@@ -154,6 +154,7 @@ export default function ValuesScreen() {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
+        showsVerticalScrollIndicator={false}
       >
         {/* Action Buttons */}
         <View style={styles.actionButtonsContainer}>

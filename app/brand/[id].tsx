@@ -16,7 +16,7 @@ import { lightColors, darkColors } from '@/constants/colors';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
-import { useRef, useMemo, useState, useCallback } from 'react';
+import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { getLogoUrl } from '@/lib/logo';
 
 export default function BrandDetailScreen() {
@@ -29,7 +29,14 @@ export default function BrandDetailScreen() {
   console.log('[BrandDetail] Loading brand with ID:', id);
 
   // Load brand data from DataContext (client-side, no Edge Function issues)
-  const { getBrandById, valuesMatrix, isLoading: dataLoading } = useData();
+  const { getBrandById, valuesMatrix, isLoading: dataLoading, refresh } = useData();
+
+  // Force refresh data when component mounts to get latest from Firebase
+  useEffect(() => {
+    console.log('[BrandDetail] Component mounted, force refreshing data from Firebase for brand:', id);
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]); // Only depend on id, not refresh
 
   const brand = id ? getBrandById(id as string) : undefined;
   const isLoading = dataLoading;
@@ -44,6 +51,22 @@ export default function BrandDetailScreen() {
     brandName: brand?.name,
     hasValuesMatrix: !!valuesMatrix
   });
+
+  // Debug: Log money flow data
+  if (brand) {
+    console.log('[BrandDetail] Money Flow Data:', {
+      hasOwnership: !!brand.ownership,
+      ownershipLength: brand.ownership?.length || 0,
+      ownership: brand.ownership,
+      hasAffiliates: !!brand.affiliates,
+      affiliatesLength: brand.affiliates?.length || 0,
+      affiliates: brand.affiliates,
+      hasPartnerships: !!brand.partnerships,
+      partnershipsLength: brand.partnerships?.length || 0,
+      partnerships: brand.partnerships,
+      ownershipSources: brand.ownershipSources,
+    });
+  }
 
   interface Review {
     id: string;
@@ -572,10 +595,7 @@ export default function BrandDetailScreen() {
               ) : (
                 <View style={styles.shareholdersContainer}>
                   <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
-                    Elon Musk - CEO & Founder
-                  </Text>
-                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
-                    Gwynne Shotwell - President
+                    No affiliates data available
                   </Text>
                 </View>
               )}
@@ -603,10 +623,7 @@ export default function BrandDetailScreen() {
               ) : (
                 <View style={styles.shareholdersContainer}>
                   <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
-                    NASA - Launch Services Partner
-                  </Text>
-                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
-                    Panasonic - Battery Technology
+                    No partnerships data available
                   </Text>
                 </View>
               )}

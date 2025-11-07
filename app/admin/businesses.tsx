@@ -1,8 +1,7 @@
 /**
  * Admin Panel - User Businesses Management
  *
- * Edit user business profiles, especially money flow sections
- * (affiliates, partnerships, ownership)
+ * Edit ALL fields in user business profiles
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -15,6 +14,7 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -36,11 +36,46 @@ interface Ownership {
   relationship: string;
 }
 
+interface SocialMedia {
+  facebook?: string;
+  instagram?: string;
+  twitter?: string;
+  linkedin?: string;
+  yelp?: string;
+  youtube?: string;
+}
+
+interface BusinessLocation {
+  address: string;
+  latitude: number;
+  longitude: number;
+  isPrimary?: boolean;
+}
+
+interface GalleryImage {
+  imageUrl: string;
+  caption: string;
+}
+
 interface BusinessData {
   userId: string;
   email: string;
   businessName: string;
   category: string;
+  description?: string;
+  website?: string;
+  logoUrl?: string;
+  coverImageUrl?: string;
+  galleryImages?: GalleryImage[];
+  locations?: BusinessLocation[];
+  acceptsStandDiscounts: boolean;
+  acceptsQRCode?: boolean;
+  acceptsValueCode?: boolean;
+  valueCodeDiscount?: number;
+  customerDiscountPercent?: number;
+  donationPercent?: number;
+  customDiscount?: string;
+  socialMedia?: SocialMedia;
   affiliates?: Affiliate[];
   partnerships?: Partnership[];
   ownership?: Ownership[];
@@ -54,7 +89,43 @@ export default function BusinessesManagement() {
   const [editingBusiness, setEditingBusiness] = useState<BusinessData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Form state for money flow sections
+  // Form state - Basic Info
+  const [formName, setFormName] = useState('');
+  const [formCategory, setFormCategory] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formWebsite, setFormWebsite] = useState('');
+  const [formLogoUrl, setFormLogoUrl] = useState('');
+  const [formCoverImageUrl, setFormCoverImageUrl] = useState('');
+
+  // Form state - Gallery Images
+  const [formGalleryImage1Url, setFormGalleryImage1Url] = useState('');
+  const [formGalleryImage1Caption, setFormGalleryImage1Caption] = useState('');
+  const [formGalleryImage2Url, setFormGalleryImage2Url] = useState('');
+  const [formGalleryImage2Caption, setFormGalleryImage2Caption] = useState('');
+  const [formGalleryImage3Url, setFormGalleryImage3Url] = useState('');
+  const [formGalleryImage3Caption, setFormGalleryImage3Caption] = useState('');
+
+  // Form state - Locations (as text fields for simplicity)
+  const [formLocations, setFormLocations] = useState('');
+
+  // Form state - Discounts
+  const [formAcceptsStandDiscounts, setFormAcceptsStandDiscounts] = useState(false);
+  const [formAcceptsQRCode, setFormAcceptsQRCode] = useState(false);
+  const [formAcceptsValueCode, setFormAcceptsValueCode] = useState(false);
+  const [formValueCodeDiscount, setFormValueCodeDiscount] = useState('');
+  const [formCustomerDiscountPercent, setFormCustomerDiscountPercent] = useState('');
+  const [formDonationPercent, setFormDonationPercent] = useState('');
+  const [formCustomDiscount, setFormCustomDiscount] = useState('');
+
+  // Form state - Social Media
+  const [formFacebook, setFormFacebook] = useState('');
+  const [formInstagram, setFormInstagram] = useState('');
+  const [formTwitter, setFormTwitter] = useState('');
+  const [formLinkedin, setFormLinkedin] = useState('');
+  const [formYelp, setFormYelp] = useState('');
+  const [formYoutube, setFormYoutube] = useState('');
+
+  // Form state - Money Flow
   const [formAffiliates, setFormAffiliates] = useState('');
   const [formPartnerships, setFormPartnerships] = useState('');
   const [formOwnership, setFormOwnership] = useState('');
@@ -76,15 +147,30 @@ export default function BusinessesManagement() {
           const data = doc.data();
           if (!data.businessInfo) return null;
 
+          const biz = data.businessInfo;
           return {
             userId: doc.id,
             email: data.email || 'No email',
-            businessName: data.businessInfo.name || 'Unnamed Business',
-            category: data.businessInfo.category || 'Uncategorized',
-            affiliates: data.businessInfo.affiliates || [],
-            partnerships: data.businessInfo.partnerships || [],
-            ownership: data.businessInfo.ownership || [],
-            ownershipSources: data.businessInfo.ownershipSources || '',
+            businessName: biz.name || 'Unnamed Business',
+            category: biz.category || 'Uncategorized',
+            description: biz.description || '',
+            website: biz.website || '',
+            logoUrl: biz.logoUrl || '',
+            coverImageUrl: biz.coverImageUrl || '',
+            galleryImages: biz.galleryImages || [],
+            locations: biz.locations || [],
+            acceptsStandDiscounts: biz.acceptsStandDiscounts || false,
+            acceptsQRCode: biz.acceptsQRCode || false,
+            acceptsValueCode: biz.acceptsValueCode || false,
+            valueCodeDiscount: biz.valueCodeDiscount || 0,
+            customerDiscountPercent: biz.customerDiscountPercent || 0,
+            donationPercent: biz.donationPercent || 0,
+            customDiscount: biz.customDiscount || '',
+            socialMedia: biz.socialMedia || {},
+            affiliates: biz.affiliates || [],
+            partnerships: biz.partnerships || [],
+            ownership: biz.ownership || [],
+            ownershipSources: biz.ownershipSources || '',
           };
         })
         .filter((b): b is BusinessData => b !== null);
@@ -101,7 +187,49 @@ export default function BusinessesManagement() {
   const openEditModal = (business: BusinessData) => {
     setEditingBusiness(business);
 
-    // Format money flow sections
+    // Basic info
+    setFormName(business.businessName);
+    setFormCategory(business.category);
+    setFormDescription(business.description || '');
+    setFormWebsite(business.website || '');
+    setFormLogoUrl(business.logoUrl || '');
+    setFormCoverImageUrl(business.coverImageUrl || '');
+
+    // Gallery images
+    const gallery = business.galleryImages || [];
+    setFormGalleryImage1Url(gallery[0]?.imageUrl || '');
+    setFormGalleryImage1Caption(gallery[0]?.caption || '');
+    setFormGalleryImage2Url(gallery[1]?.imageUrl || '');
+    setFormGalleryImage2Caption(gallery[1]?.caption || '');
+    setFormGalleryImage3Url(gallery[2]?.imageUrl || '');
+    setFormGalleryImage3Caption(gallery[2]?.caption || '');
+
+    // Locations (formatted as address|lat|lng|isPrimary)
+    setFormLocations(
+      business.locations
+        ?.map((loc) => `${loc.address}|${loc.latitude}|${loc.longitude}|${loc.isPrimary ? 'primary' : ''}`)
+        .join('\n') || ''
+    );
+
+    // Discounts
+    setFormAcceptsStandDiscounts(business.acceptsStandDiscounts);
+    setFormAcceptsQRCode(business.acceptsQRCode || false);
+    setFormAcceptsValueCode(business.acceptsValueCode || false);
+    setFormValueCodeDiscount(business.valueCodeDiscount?.toString() || '');
+    setFormCustomerDiscountPercent(business.customerDiscountPercent?.toString() || '');
+    setFormDonationPercent(business.donationPercent?.toString() || '');
+    setFormCustomDiscount(business.customDiscount || '');
+
+    // Social media
+    const social = business.socialMedia || {};
+    setFormFacebook(social.facebook || '');
+    setFormInstagram(social.instagram || '');
+    setFormTwitter(social.twitter || '');
+    setFormLinkedin(social.linkedin || '');
+    setFormYelp(social.yelp || '');
+    setFormYoutube(social.youtube || '');
+
+    // Money flow
     setFormAffiliates(
       business.affiliates?.map((a) => `${a.name}|${a.relationship}`).join('\n') || ''
     );
@@ -112,6 +240,7 @@ export default function BusinessesManagement() {
       business.ownership?.map((o) => `${o.name}|${o.relationship}`).join('\n') || ''
     );
     setFormOwnershipSources(business.ownershipSources || '');
+
     setShowModal(true);
   };
 
@@ -132,11 +261,65 @@ export default function BusinessesManagement() {
       .filter((item) => item.name);
   };
 
+  const parseLocations = (text: string): BusinessLocation[] => {
+    return text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line)
+      .map((line) => {
+        const [address, lat, lng, isPrimaryStr] = line.split('|').map((s) => s.trim());
+        return {
+          address: address || '',
+          latitude: parseFloat(lat) || 0,
+          longitude: parseFloat(lng) || 0,
+          isPrimary: isPrimaryStr === 'primary',
+        };
+      })
+      .filter((loc) => loc.address);
+  };
+
   const handleSave = async () => {
     if (!editingBusiness) return;
 
     try {
+      // Build gallery images array
+      const galleryImages: GalleryImage[] = [];
+      if (formGalleryImage1Url) {
+        galleryImages.push({ imageUrl: formGalleryImage1Url, caption: formGalleryImage1Caption });
+      }
+      if (formGalleryImage2Url) {
+        galleryImages.push({ imageUrl: formGalleryImage2Url, caption: formGalleryImage2Caption });
+      }
+      if (formGalleryImage3Url) {
+        galleryImages.push({ imageUrl: formGalleryImage3Url, caption: formGalleryImage3Caption });
+      }
+
+      // Build social media object
+      const socialMedia: SocialMedia = {};
+      if (formFacebook) socialMedia.facebook = formFacebook;
+      if (formInstagram) socialMedia.instagram = formInstagram;
+      if (formTwitter) socialMedia.twitter = formTwitter;
+      if (formLinkedin) socialMedia.linkedin = formLinkedin;
+      if (formYelp) socialMedia.yelp = formYelp;
+      if (formYoutube) socialMedia.youtube = formYoutube;
+
       const updatedBusinessInfo = {
+        name: formName,
+        category: formCategory,
+        description: formDescription,
+        website: formWebsite,
+        logoUrl: formLogoUrl,
+        coverImageUrl: formCoverImageUrl,
+        galleryImages: galleryImages,
+        locations: parseLocations(formLocations),
+        acceptsStandDiscounts: formAcceptsStandDiscounts,
+        acceptsQRCode: formAcceptsQRCode,
+        acceptsValueCode: formAcceptsValueCode,
+        valueCodeDiscount: parseFloat(formValueCodeDiscount) || 0,
+        customerDiscountPercent: parseFloat(formCustomerDiscountPercent) || 0,
+        donationPercent: parseFloat(formDonationPercent) || 0,
+        customDiscount: formCustomDiscount,
+        socialMedia: socialMedia,
         affiliates: parseMoneyFlowSection(formAffiliates),
         partnerships: parseMoneyFlowSection(formPartnerships),
         ownership: parseMoneyFlowSection(formOwnership),
@@ -145,17 +328,14 @@ export default function BusinessesManagement() {
 
       const userRef = doc(db, 'users', editingBusiness.userId);
 
-      // Update only the money flow fields within businessInfo
+      // Update the entire businessInfo object
       await updateDoc(userRef, {
-        'businessInfo.affiliates': updatedBusinessInfo.affiliates,
-        'businessInfo.partnerships': updatedBusinessInfo.partnerships,
-        'businessInfo.ownership': updatedBusinessInfo.ownership,
-        'businessInfo.ownershipSources': updatedBusinessInfo.ownershipSources,
+        businessInfo: updatedBusinessInfo,
       });
 
       Alert.alert(
         'Success',
-        `Money flow data for "${editingBusiness.businessName}" updated successfully`
+        `Business "${formName}" updated successfully`
       );
 
       closeModal();
@@ -229,28 +409,16 @@ export default function BusinessesManagement() {
                     style={styles.editButton}
                     onPress={() => openEditModal(business)}
                   >
-                    <Text style={styles.editButtonText}>Edit Money Flow</Text>
+                    <Text style={styles.editButtonText}>Edit All Fields</Text>
                   </TouchableOpacity>
                 </View>
 
-                {/* Money Flow Summary */}
-                <View style={styles.moneyFlowSummary}>
-                  <Text style={styles.moneyFlowLabel}>Money Flow:</Text>
-                  <Text style={styles.moneyFlowText}>
-                    {business.affiliates?.length || 0} affiliates, {business.partnerships?.length || 0}{' '}
-                    partnerships, {business.ownership?.length || 0} ownership entries
-                  </Text>
-                </View>
-
                 {/* Quick Preview */}
-                {(business.affiliates && business.affiliates.length > 0) && (
-                  <View style={styles.previewSection}>
-                    <Text style={styles.previewLabel}>Affiliates:</Text>
-                    <Text style={styles.previewText}>
-                      {business.affiliates.slice(0, 2).map(a => a.name).join(', ')}
-                      {business.affiliates.length > 2 && '...'}
-                    </Text>
-                  </View>
+                {business.website && (
+                  <Text style={styles.previewText}>🌐 {business.website}</Text>
+                )}
+                {business.locations && business.locations.length > 0 && (
+                  <Text style={styles.previewText}>📍 {business.locations.length} location(s)</Text>
                 )}
               </View>
             ))
@@ -264,24 +432,249 @@ export default function BusinessesManagement() {
           <ScrollView>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>
-                Edit Money Flow - {editingBusiness?.businessName}
+                Edit Business - {editingBusiness?.businessName}
               </Text>
 
               <View style={styles.businessDetails}>
                 <Text style={styles.detailLabel}>Email:</Text>
                 <Text style={styles.detailValue}>{editingBusiness?.email}</Text>
-                <Text style={styles.detailLabel}>Category:</Text>
-                <Text style={styles.detailValue}>{editingBusiness?.category}</Text>
               </View>
 
+              {/* BASIC INFO */}
+              <Text style={styles.sectionTitle}>📋 Basic Information</Text>
+
+              <Text style={styles.label}>Business Name *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Business name"
+                value={formName}
+                onChangeText={setFormName}
+              />
+
+              <Text style={styles.label}>Category *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., Restaurant, Retail, Service"
+                value={formCategory}
+                onChangeText={setFormCategory}
+              />
+
+              <Text style={styles.label}>Description</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="Business description"
+                value={formDescription}
+                onChangeText={setFormDescription}
+                multiline
+                numberOfLines={4}
+              />
+
+              <Text style={styles.label}>Website</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://example.com"
+                value={formWebsite}
+                onChangeText={setFormWebsite}
+              />
+
+              <Text style={styles.label}>Logo URL</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://example.com/logo.png"
+                value={formLogoUrl}
+                onChangeText={setFormLogoUrl}
+              />
+
+              <Text style={styles.label}>Cover Image URL</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://example.com/cover.jpg"
+                value={formCoverImageUrl}
+                onChangeText={setFormCoverImageUrl}
+              />
+
+              {/* GALLERY IMAGES */}
+              <Text style={styles.sectionTitle}>🖼️ Gallery Images (up to 3)</Text>
+
+              <Text style={styles.label}>Gallery Image 1 URL</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://example.com/gallery1.jpg"
+                value={formGalleryImage1Url}
+                onChangeText={setFormGalleryImage1Url}
+              />
+              <Text style={styles.label}>Gallery Image 1 Caption</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Caption for image 1"
+                value={formGalleryImage1Caption}
+                onChangeText={setFormGalleryImage1Caption}
+              />
+
+              <Text style={styles.label}>Gallery Image 2 URL</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://example.com/gallery2.jpg"
+                value={formGalleryImage2Url}
+                onChangeText={setFormGalleryImage2Url}
+              />
+              <Text style={styles.label}>Gallery Image 2 Caption</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Caption for image 2"
+                value={formGalleryImage2Caption}
+                onChangeText={setFormGalleryImage2Caption}
+              />
+
+              <Text style={styles.label}>Gallery Image 3 URL</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://example.com/gallery3.jpg"
+                value={formGalleryImage3Url}
+                onChangeText={setFormGalleryImage3Url}
+              />
+              <Text style={styles.label}>Gallery Image 3 Caption</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Caption for image 3"
+                value={formGalleryImage3Caption}
+                onChangeText={setFormGalleryImage3Caption}
+              />
+
+              {/* LOCATIONS */}
+              <Text style={styles.sectionTitle}>📍 Locations</Text>
+              <Text style={styles.helpText}>
+                Format: address|latitude|longitude|primary (one per line). Add "primary" at the end for primary location.
+              </Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="123 Main St, New York, NY|40.7128|-74.0060|primary&#10;456 2nd Ave, Brooklyn, NY|40.6782|-73.9442|"
+                value={formLocations}
+                onChangeText={setFormLocations}
+                multiline
+                numberOfLines={5}
+              />
+
+              {/* DISCOUNTS & CODES */}
+              <Text style={styles.sectionTitle}>💳 Discounts & Value Codes</Text>
+
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Accepts Stand Discounts</Text>
+                <Switch
+                  value={formAcceptsStandDiscounts}
+                  onValueChange={setFormAcceptsStandDiscounts}
+                />
+              </View>
+
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Accepts QR Code</Text>
+                <Switch
+                  value={formAcceptsQRCode}
+                  onValueChange={setFormAcceptsQRCode}
+                />
+              </View>
+
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Accepts Value Code</Text>
+                <Switch
+                  value={formAcceptsValueCode}
+                  onValueChange={setFormAcceptsValueCode}
+                />
+              </View>
+
+              <Text style={styles.label}>Value Code Discount (%)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="10"
+                value={formValueCodeDiscount}
+                onChangeText={setFormValueCodeDiscount}
+                keyboardType="numeric"
+              />
+
+              <Text style={styles.label}>Customer Discount Percent (%)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="5"
+                value={formCustomerDiscountPercent}
+                onChangeText={setFormCustomerDiscountPercent}
+                keyboardType="numeric"
+              />
+
+              <Text style={styles.label}>Donation Percent (%)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="5"
+                value={formDonationPercent}
+                onChangeText={setFormDonationPercent}
+                keyboardType="numeric"
+              />
+
+              <Text style={styles.label}>Custom Discount Text</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., Buy one get one free"
+                value={formCustomDiscount}
+                onChangeText={setFormCustomDiscount}
+              />
+
+              {/* SOCIAL MEDIA */}
+              <Text style={styles.sectionTitle}>📱 Social Media</Text>
+
+              <Text style={styles.label}>Facebook</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://facebook.com/..."
+                value={formFacebook}
+                onChangeText={setFormFacebook}
+              />
+
+              <Text style={styles.label}>Instagram</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://instagram.com/..."
+                value={formInstagram}
+                onChangeText={setFormInstagram}
+              />
+
+              <Text style={styles.label}>Twitter</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://twitter.com/..."
+                value={formTwitter}
+                onChangeText={setFormTwitter}
+              />
+
+              <Text style={styles.label}>LinkedIn</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://linkedin.com/..."
+                value={formLinkedin}
+                onChangeText={setFormLinkedin}
+              />
+
+              <Text style={styles.label}>Yelp</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://yelp.com/..."
+                value={formYelp}
+                onChangeText={setFormYelp}
+              />
+
+              <Text style={styles.label}>YouTube</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://youtube.com/..."
+                value={formYoutube}
+                onChangeText={setFormYoutube}
+              />
+
+              {/* MONEY FLOW */}
               <Text style={styles.sectionTitle}>💰 Money Flow Sections</Text>
               <Text style={styles.helpText}>
-                Edit the money flow sections for this business. Format: Name|Relationship (one per line)
+                Format: Name|Relationship (one per line)
               </Text>
 
-              <Text style={styles.label}>
-                Affiliates (celebrities/influencers)
-              </Text>
+              <Text style={styles.label}>Affiliates (celebrities/influencers)</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 placeholder="Taylor Swift|Multi-million&#10;LeBron James|$5M endorsement"
@@ -291,9 +684,7 @@ export default function BusinessesManagement() {
                 numberOfLines={5}
               />
 
-              <Text style={styles.label}>
-                Partnerships (business partnerships)
-              </Text>
+              <Text style={styles.label}>Partnerships (business partnerships)</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 placeholder="TSMC|Silicon Supply Chain/2010&#10;Foxconn|Manufacturing/2005"
@@ -303,9 +694,7 @@ export default function BusinessesManagement() {
                 numberOfLines={5}
               />
 
-              <Text style={styles.label}>
-                Ownership (shareholders/investors)
-              </Text>
+              <Text style={styles.label}>Ownership (shareholders/investors)</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 placeholder="Vanguard Group|~9.5%&#10;BlackRock|~7.2%"
@@ -330,7 +719,7 @@ export default function BusinessesManagement() {
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                  <Text style={styles.saveButtonText}>Save All Changes</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -454,35 +843,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  moneyFlowSummary: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
-  },
-  moneyFlowLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#555',
-  },
-  moneyFlowText: {
-    fontSize: 13,
-    color: '#666',
-  },
-  previewSection: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  previewLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#555',
-    marginBottom: 4,
-  },
   previewText: {
     fontSize: 12,
     color: '#666',
+    marginTop: 4,
   },
   modalContainer: {
     flex: 1,
@@ -518,13 +882,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginTop: 12,
-    marginBottom: 8,
+    marginTop: 24,
+    marginBottom: 12,
   },
   helpText: {
     fontSize: 13,
     color: '#666',
-    marginBottom: 16,
+    marginBottom: 12,
     lineHeight: 18,
   },
   label: {
@@ -532,13 +896,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#555',
     marginBottom: 6,
-    marginTop: 16,
+    marginTop: 12,
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
     paddingHorizontal: 12,
+    paddingVertical: 10,
     fontSize: 14,
   },
   textArea: {
@@ -546,10 +911,24 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     textAlignVertical: 'top',
   },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  switchLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#555',
+  },
   modalActions: {
     flexDirection: 'row',
     gap: 12,
     marginTop: 32,
+    marginBottom: 40,
   },
   cancelButton: {
     flex: 1,
