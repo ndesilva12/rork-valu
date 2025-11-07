@@ -141,28 +141,12 @@ export async function getValuesFromFirebase(): Promise<ValueData[]> {
     const values: ValueData[] = snapshot.docs.map((doc) => {
       const data = doc.data();
 
-      // Convert aligned1-10 and unaligned1-10 fields to arrays
-      const support: string[] = [];
-      const oppose: string[] = [];
-
-      for (let i = 1; i <= 10; i++) {
-        const alignedKey = `aligned${i}`;
-        const unalignedKey = `unaligned${i}`;
-
-        if (data[alignedKey]) {
-          support.push(data[alignedKey]);
-        }
-
-        if (data[unalignedKey]) {
-          oppose.push(data[unalignedKey]);
-        }
-      }
-
+      // Data is now in the new array format after migration
       return {
         id: doc.id,
         name: data.name || doc.id,
-        support,
-        oppose,
+        support: data.aligned || [],
+        oppose: data.unaligned || [],
       };
     });
 
