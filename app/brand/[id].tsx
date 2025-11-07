@@ -17,7 +17,6 @@ import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 import { useRef, useMemo, useState, useCallback } from 'react';
-import { trpc } from '@/lib/trpc';
 import { getLogoUrl } from '@/lib/logo';
 
 export default function BrandDetailScreen() {
@@ -29,13 +28,12 @@ export default function BrandDetailScreen() {
 
   console.log('[BrandDetail] Loading brand with ID:', id);
 
-  // Fetch brand data from tRPC (single brand is fine) and values matrix from DataContext
-  const { data: brand, isLoading, error } = trpc.data.getBrand.useQuery(
-    { id: id as string },
-    { enabled: !!id }
-  );
+  // Load brand data from DataContext (client-side, no Edge Function issues)
+  const { getBrandById, valuesMatrix, isLoading: dataLoading } = useData();
 
-  const { valuesMatrix } = useData();
+  const brand = id ? getBrandById(id as string) : undefined;
+  const isLoading = dataLoading;
+  const error = !isLoading && !brand ? { message: 'Brand not found' } : null;
 
   console.log('[BrandDetail] Query state:', {
     id,
