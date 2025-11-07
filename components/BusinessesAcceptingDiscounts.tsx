@@ -45,7 +45,7 @@ export default function BusinessesAcceptingDiscounts() {
     }
   }, [profile.userDetails]);
 
-  // Fetch businesses from Firebase
+  // Fetch businesses from Firebase (once on mount)
   useEffect(() => {
     loadBusinesses();
   }, []);
@@ -54,14 +54,24 @@ export default function BusinessesAcceptingDiscounts() {
     try {
       setIsLoading(true);
       const fetchedBusinesses = await getBusinessesAcceptingDiscounts();
+      setBusinesses(fetchedBusinesses);
+    } catch (error) {
+      console.error('[BusinessesAcceptingDiscounts] Error loading businesses:', error);
+      Alert.alert('Error', 'Failed to load businesses. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      // Calculate distances if user has location
-      const businessesWithDistance = fetchedBusinesses.map((business) => {
-        if (
-          userLocation &&
-          business.businessInfo.latitude &&
-          business.businessInfo.longitude
-        ) {
+  // Apply distance calculation, filtering, and sorting
+  useEffect(() => {
+    let filtered = [...businesses];
+
+    // Calculate distances and apply distance filter if location is available
+    if (userLocation && businesses.length > 0) {
+      // First, calculate distances for all businesses
+      filtered = filtered.map((business) => {
+        if (business.businessInfo.latitude && business.businessInfo.longitude) {
           const distance = calculateDistance(
             userLocation.latitude,
             userLocation.longitude,
@@ -73,22 +83,7 @@ export default function BusinessesAcceptingDiscounts() {
         return business;
       });
 
-      setBusinesses(businessesWithDistance);
-      setFilteredBusinesses(businessesWithDistance);
-    } catch (error) {
-      console.error('[BusinessesAcceptingDiscounts] Error loading businesses:', error);
-      Alert.alert('Error', 'Failed to load businesses. Please try again later.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Filter businesses by distance and sort
-  useEffect(() => {
-    let filtered = [...businesses];
-
-    // Filter by distance if location is available
-    if (userLocation) {
+      // Then filter by distance
       filtered = filtered.filter((business) => {
         if (!business.distance) return false;
         return business.distance <= distanceFilter;
@@ -108,27 +103,20 @@ export default function BusinessesAcceptingDiscounts() {
       filtered.sort(() => Math.random() - 0.5);
     }
 
-    setFilteredBusinesses(filtered);
-  }, [userLocation, businesses, distanceFilter]);
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((business) => {
+        const name = business.businessInfo.name.toLowerCase();
+        const category = business.businessInfo.category?.toLowerCase() || '';
+        const location = business.businessInfo.location?.toLowerCase() || '';
 
-  // Handle search
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredBusinesses(businesses);
-      return;
+        return name.includes(query) || category.includes(query) || location.includes(query);
+      });
     }
 
-    const query = searchQuery.toLowerCase();
-    const filtered = businesses.filter((business) => {
-      const name = business.businessInfo.name.toLowerCase();
-      const category = business.businessInfo.category?.toLowerCase() || '';
-      const location = business.businessInfo.location?.toLowerCase() || '';
-
-      return name.includes(query) || category.includes(query) || location.includes(query);
-    });
-
     setFilteredBusinesses(filtered);
-  }, [searchQuery, businesses]);
+  }, [userLocation, businesses, distanceFilter, searchQuery]);
 
   const handleEnableLocation = () => {
     Alert.alert(
