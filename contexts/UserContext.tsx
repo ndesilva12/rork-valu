@@ -5,7 +5,6 @@ import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { Cause, UserProfile, Charity, AccountType, BusinessInfo, UserDetails } from '@/types';
 import { saveUserProfile, getUserProfile, createUser, updateUserMetadata } from '@/services/firebase/userService';
 
-const DARK_MODE_KEY = '@dark_mode';
 const PROFILE_KEY = '@user_profile';
 const IS_NEW_USER_KEY = '@is_new_user';
 
@@ -201,33 +200,6 @@ export const [UserProvider, useUser] = createContextHook(() => {
       mounted = false;
     };
   }, [clerkUser]);
-
-  useEffect(() => {
-    let mounted = true;
-    const loadDarkMode = async () => {
-      try {
-        const darkModeStored = await AsyncStorage.getItem(DARK_MODE_KEY);
-        if (darkModeStored !== null && mounted) {
-          try {
-            setIsDarkMode(JSON.parse(darkModeStored));
-          } catch (parseError) {
-            console.error('[UserContext] Failed to parse dark mode, using default:', parseError);
-            setIsDarkMode(true);
-            await AsyncStorage.setItem(DARK_MODE_KEY, JSON.stringify(true));
-          }
-        } else if (mounted) {
-          setIsDarkMode(true);
-          await AsyncStorage.setItem(DARK_MODE_KEY, JSON.stringify(true));
-        }
-      } catch (error) {
-        console.error('[UserContext] Failed to load dark mode:', error);
-      }
-    };
-    loadDarkMode();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   const addCauses = useCallback(async (causes: Cause[]) => {
     if (!clerkUser) {
@@ -429,22 +401,11 @@ export const [UserProvider, useUser] = createContextHook(() => {
         selectedCharities: [],
       });
       setHasCompletedOnboarding(false);
-      setIsDarkMode(true);
       console.log('[UserContext] All data cleared successfully');
     } catch (error) {
       console.error('[UserContext] Failed to clear all data:', error);
     }
   }, []);
-
-  const toggleDarkMode = useCallback(async () => {
-    try {
-      const newValue = !isDarkMode;
-      await AsyncStorage.setItem(DARK_MODE_KEY, JSON.stringify(newValue));
-      setIsDarkMode(newValue);
-    } catch (error) {
-      console.error('Failed to toggle dark mode:', error);
-    }
-  }, [isDarkMode]);
 
   const setAccountType = useCallback(async (accountType: AccountType) => {
     if (!clerkUser) {
@@ -583,10 +544,9 @@ export const [UserProvider, useUser] = createContextHook(() => {
     resetProfile,
     clearAllStoredData,
     isDarkMode,
-    toggleDarkMode,
     clerkUser,
     setAccountType,
     setBusinessInfo,
     setUserDetails,
-  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, removeCauses, toggleCauseType, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, toggleDarkMode, clerkUser, setAccountType, setBusinessInfo, setUserDetails]);
+  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, removeCauses, toggleCauseType, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, clerkUser, setAccountType, setBusinessInfo, setUserDetails]);
 });

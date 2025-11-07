@@ -21,8 +21,14 @@ export default function SignUpScreen() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [showConsentModal, setShowConsentModal] = React.useState(false);
   const [consentChecked, setConsentChecked] = React.useState(false);
+  const consentScrollRef = React.useRef<ScrollView>(null);
 
-
+  // Scroll consent modal to top when shown
+  React.useEffect(() => {
+    if (showConsentModal && consentScrollRef.current) {
+      consentScrollRef.current.scrollTo({ y: 0, animated: false });
+    }
+  }, [showConsentModal]);
 
   const resetForm = React.useCallback(() => {
     setEmailAddress('');
@@ -396,7 +402,7 @@ export default function SignUpScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={true}>
+            <ScrollView ref={consentScrollRef} style={styles.modalScroll} showsVerticalScrollIndicator={true}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
                 Personalized Code Generation and Vendor Sharing Consent
               </Text>

@@ -295,6 +295,7 @@ export default function BusinessSetupScreen() {
                 value={location.address}
                 onLocationSelect={(address, lat, lon) => handleLocationSelect(index, address, lat, lon)}
                 isDarkMode={isDarkMode}
+                isConfirmed={location.latitude !== 0 && location.longitude !== 0}
               />
             </View>
           ))}
@@ -316,7 +317,7 @@ export default function BusinessSetupScreen() {
         </View>
 
         {/* Info Box */}
-        <View style={[styles.infoBox, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}>
+        <View style={[styles.infoBox, { backgroundColor: colors.background, borderColor: colors.primary }]}>
           <Text style={[styles.infoText, { color: colors.text }]}>
             You'll be able to add more details like your logo, description, and website in your profile settings after completing value selection.
           </Text>

@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
 import {
   TrendingUp,
@@ -75,6 +75,7 @@ const FOLDER_CATEGORIES: FolderCategory[] = [
 
 export default function HomeScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const [viewMode, setViewMode] = useState<ViewMode>('playbook');
@@ -143,6 +144,19 @@ export default function HomeScreen() {
       fetchUserBusinesses();
     }
   }, [isLocalMode]);
+
+  // Reopen map if returning from business detail page
+  useEffect(() => {
+    if (params.fromMap === 'true') {
+      // Clear the parameter and reopen the map
+      router.setParams({ fromMap: undefined });
+      setShowMapModal(true);
+      // Ensure local mode is active
+      if (!isLocalMode) {
+        setIsLocalMode(true);
+      }
+    }
+  }, [params.fromMap]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -1116,24 +1130,33 @@ export default function HomeScreen() {
       {/* Map Modal */}
       <Modal
         visible={showMapModal}
-        animationType="slide"
-        transparent={false}
+        animationType="fade"
+        transparent={true}
         onRequestClose={() => setShowMapModal(false)}
       >
-        <View style={[styles.mapModalContainer, { backgroundColor: colors.background }]}>
-          {/* Header with close button */}
-          <View style={[styles.mapModalHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-            <Text style={[styles.mapModalTitle, { color: colors.text }]}>
-              Local Businesses ({localDistance} mile{localDistance !== 1 ? 's' : ''})
-            </Text>
-            <TouchableOpacity
-              style={[styles.mapModalCloseButton, { backgroundColor: colors.backgroundSecondary }]}
-              onPress={() => setShowMapModal(false)}
-              activeOpacity={0.7}
-            >
-              <X size={24} color={colors.text} strokeWidth={2} />
-            </TouchableOpacity>
-          </View>
+        <TouchableOpacity
+          style={styles.mapModalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowMapModal(false)}
+        >
+          <TouchableOpacity
+            style={[styles.mapModalContainer, { backgroundColor: colors.background }]}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            {/* Header with close button */}
+            <View style={[styles.mapModalHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+              <Text style={[styles.mapModalTitle, { color: colors.text }]}>
+                Local Businesses ({localDistance} mile{localDistance !== 1 ? 's' : ''})
+              </Text>
+              <TouchableOpacity
+                style={[styles.mapModalCloseButton, { backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => setShowMapModal(false)}
+                activeOpacity={0.7}
+              >
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
 
           {/* Map */}
           <View style={styles.mapModalContent}>
@@ -1146,7 +1169,7 @@ export default function HomeScreen() {
                   setShowMapModal(false);
                   router.push({
                     pathname: '/business/[id]',
-                    params: { id: businessId },
+                    params: { id: businessId, fromMap: 'true' },
                   });
                 }}
               />
@@ -1172,7 +1195,8 @@ export default function HomeScreen() {
               </View>
             )}
           </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
@@ -1842,15 +1866,30 @@ const styles = StyleSheet.create({
   webView: {
     flex: 1,
   },
-  mapModalContainer: {
+  mapModalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  mapModalContainer: {
+    width: '90%',
+    height: '87.5%',
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 10,
   },
   mapModalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'web' ? 16 : 56,
+    paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
   },

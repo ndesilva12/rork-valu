@@ -1,5 +1,5 @@
 import { useRouter, useSegments } from 'expo-router';
-import { Menu, Moon, Sun, RefreshCw, LogOut, Settings, Search as SearchIcon, User } from 'lucide-react-native';
+import { Menu, RefreshCw, LogOut, Settings, Search as SearchIcon, User } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   View,
@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
-  Switch,
   Image,
   Dimensions,
   Platform,
@@ -183,24 +182,6 @@ export default function MenuButton() {
                 </View>
               </TouchableOpacity>
 
-              <View style={[styles.menuItem, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}>
-                <View style={styles.menuItemLeft}>
-                  {isDarkMode ? (
-                    <Moon size={26} color={colors.primary} strokeWidth={2} />
-                  ) : (
-                    <Sun size={26} color={colors.primary} strokeWidth={2} />
-                  )}
-                  <Text style={[styles.menuItemTitle, { color: colors.text }]}>Dark Mode</Text>
-                </View>
-                <Switch
-                  value={isDarkMode}
-                  onValueChange={toggleDarkMode}
-                  trackColor={{ false: '#E5E7EB', true: '#9CA3AF' }}
-                  thumbColor='#FFFFFF'
-                  ios_backgroundColor='#E5E7EB'
-                />
-              </View>
-
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={handleSignOut}
@@ -276,7 +257,7 @@ const styles = StyleSheet.create({
     maxHeight: '92%',
   },
   logoContainer: {
-    padding: 28,
+    padding: Platform.OS === 'web' && isMobile ? 20 : 28,
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
@@ -292,7 +273,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 24,
+    paddingVertical: Platform.OS === 'web' && isMobile ? 18 : 24,
     paddingHorizontal: 28,
   },
   menuItemLeft: {

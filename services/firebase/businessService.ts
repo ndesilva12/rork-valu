@@ -155,10 +155,20 @@ export async function getAllUserBusinesses(): Promise<BusinessUser[]> {
 /**
  * Calculate alignment score between user and business based on their selected values
  *
- * Scoring method:
- * - Perfect match (all values align): 100
- * - Complete opposite (no overlap, all conflicts): 0
- * - Uses Jaccard similarity coefficient with adjustments for opposite stances
+ * NEW Scoring method (focuses ONLY on shared positions):
+ * - Only counts values where BOTH parties have taken a position (support or avoid)
+ * - Ignores values where only one party has selected (neutral = doesn't count)
+ * - Perfect match: 100 (all shared positions align)
+ * - Complete opposite: 0 (all shared positions conflict)
+ * - No overlap: 50 (neutral - no shared positions to compare)
+ *
+ * Scoring rules:
+ * - Both support same value: +1 point (alignment)
+ * - Both avoid same value: +1 point (alignment)
+ * - One supports, other avoids: -1 point (conflict)
+ * - One has position, other neutral: 0 points (IGNORED - doesn't count)
+ *
+ * Final Score = (matches / (matches + conflicts)) * 100
  *
  * @param userCauses Array of user's selected causes
  * @param businessCauses Array of business's selected causes
@@ -176,9 +186,8 @@ export function calculateAlignmentScore(userCauses: Cause[], businessCauses: Cau
   const bizSupportSet = new Set(businessCauses.filter(c => c.type === 'support').map(c => c.id));
   const bizAvoidSet = new Set(businessCauses.filter(c => c.type === 'avoid').map(c => c.id));
 
-  let positivePoints = 0;
-  let negativePoints = 0;
-  let totalComparisons = 0;
+  let matches = 0;      // Both agree (support-support or avoid-avoid)
+  let conflicts = 0;    // Both disagree (support-avoid or avoid-support)
 
   // Get all unique value IDs from both users
   const allValueIds = new Set([
@@ -188,60 +197,49 @@ export function calculateAlignmentScore(userCauses: Cause[], businessCauses: Cau
     ...bizAvoidSet,
   ]);
 
-  // For each value, check alignment
+  // For each value, check alignment ONLY where both have positions
   allValueIds.forEach(valueId => {
     const userSupports = userSupportSet.has(valueId);
     const userAvoids = userAvoidSet.has(valueId);
     const bizSupports = bizSupportSet.has(valueId);
     const bizAvoids = bizAvoidSet.has(valueId);
 
-    // Skip if neither selected this value
-    if (!userSupports && !userAvoids && !bizSupports && !bizAvoids) {
-      return;
+    const userHasPosition = userSupports || userAvoids;
+    const bizHasPosition = bizSupports || bizAvoids;
+
+    // KEY CHANGE: Skip if EITHER party has no position on this value
+    // This removes the inflation from "shared neutrality"
+    if (!userHasPosition || !bizHasPosition) {
+      return; // One or both neutral - doesn't count toward score
     }
 
-    totalComparisons++;
+    // Now we know BOTH have positions - check if they match or conflict
 
-    // Both support the same value: +2 points (strong alignment)
-    if (userSupports && bizSupports) {
-      positivePoints += 2;
+    // MATCHES: Both support OR both avoid
+    if ((userSupports && bizSupports) || (userAvoids && bizAvoids)) {
+      matches++;
     }
-    // Both avoid the same value: +2 points (strong alignment)
-    else if (userAvoids && bizAvoids) {
-      positivePoints += 2;
-    }
-    // User supports but business avoids: -2 points (strong conflict)
-    else if (userSupports && bizAvoids) {
-      negativePoints += 2;
-    }
-    // User avoids but business supports: -2 points (strong conflict)
-    else if (userAvoids && bizSupports) {
-      negativePoints += 2;
-    }
-    // One selected but other didn't: +1 point (mild alignment)
-    else {
-      positivePoints += 1;
+    // CONFLICTS: Support vs Avoid (either direction)
+    else if ((userSupports && bizAvoids) || (userAvoids && bizSupports)) {
+      conflicts++;
     }
   });
 
-  // Calculate score
+  // Calculate score based ONLY on overlapping positions
+  const totalComparisons = matches + conflicts;
+
   if (totalComparisons === 0) {
-    return 50; // Neutral if no comparable values
+    // No overlapping positions at all - completely neutral
+    return 50;
   }
 
-  // Score = (positivePoints - negativePoints) / (maxPossiblePoints) * 100
-  // MaxPossiblePoints = totalComparisons * 2 (all strong alignments)
-  const maxPoints = totalComparisons * 2;
-  const netPoints = positivePoints - negativePoints;
+  // Score = percentage of matches out of all comparisons
+  // All matches (100%) = 100 score
+  // All conflicts (0%) = 0 score
+  // 50/50 mix = 50 score
+  const score = (matches / totalComparisons) * 100;
 
-  // Normalize to 0-100 range
-  // -maxPoints (all conflicts) -> 0
-  // 0 (neutral) -> 50
-  // +maxPoints (all alignments) -> 100
-  const score = 50 + (netPoints / maxPoints) * 50;
-
-  // Clamp to 0-100
-  return Math.max(0, Math.min(100, Math.round(score)));
+  return Math.round(score);
 }
 
 /**
