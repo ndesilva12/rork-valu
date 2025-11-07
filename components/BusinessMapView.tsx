@@ -110,77 +110,110 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
       </MapView>
 
       {/* Selection Container */}
-      {selectedBusiness && (
-        <View style={styles.selectionContainer}>
-          <View style={styles.selectionCard}>
-            <View style={styles.selectionHeader}>
-              <View style={styles.selectionHeaderLeft}>
-                <Text style={styles.businessName}>{selectedBusiness.business.businessInfo.name}</Text>
-                <Text style={styles.businessCategory}>{selectedBusiness.business.businessInfo.category}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setSelectedBusiness(null)}
-              >
-                <Text style={styles.closeButtonText}>✕</Text>
-              </TouchableOpacity>
-            </View>
+      {selectedBusiness && (() => {
+        const acceptsStand = selectedBusiness.business.businessInfo.acceptsStandDiscounts;
+        const acceptsQR = selectedBusiness.business.businessInfo.acceptsQRCode ?? true;
+        const acceptsPromo = selectedBusiness.business.businessInfo.acceptsValueCode ?? true;
+        const discountPercent = selectedBusiness.business.businessInfo.customerDiscountPercent || 0;
+        const donationPercent = selectedBusiness.business.businessInfo.donationPercent || 0;
 
-            <View style={styles.selectionBody}>
-              {/* Alignment Score Badge */}
-              <View style={[
-                styles.scoreBadge,
-                { backgroundColor: selectedBusiness.alignmentScore >= 50 ? '#22C55E15' : '#EF444415' }
-              ]}>
-                {selectedBusiness.alignmentScore >= 50 ? (
-                  <TrendingUp size={16} color="#22C55E" strokeWidth={2.5} />
-                ) : (
-                  <TrendingDown size={16} color="#EF4444" strokeWidth={2.5} />
-                )}
-                <Text style={[
-                  styles.scoreText,
-                  { color: selectedBusiness.alignmentScore >= 50 ? '#22C55E' : '#EF4444' }
+        let acceptanceMethod = '';
+        if (acceptsQR && acceptsPromo) {
+          acceptanceMethod = 'QR Code / Promo Code';
+        } else if (acceptsQR) {
+          acceptanceMethod = 'QR Code';
+        } else if (acceptsPromo) {
+          acceptanceMethod = 'Promo Code';
+        }
+
+        return (
+          <View style={styles.selectionContainer}>
+            <View style={styles.selectionCard}>
+              <View style={styles.selectionHeader}>
+                <View style={styles.selectionHeaderLeft}>
+                  <Text style={styles.businessName}>{selectedBusiness.business.businessInfo.name}</Text>
+                  <Text style={styles.businessCategory}>{selectedBusiness.business.businessInfo.category}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setSelectedBusiness(null)}
+                >
+                  <Text style={styles.closeButtonText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.selectionBody}>
+                {/* Alignment Score Badge */}
+                <View style={[
+                  styles.scoreBadge,
+                  { backgroundColor: selectedBusiness.alignmentScore >= 50 ? '#22C55E15' : '#EF444415' }
                 ]}>
-                  Score: {selectedBusiness.alignmentScore}
-                </Text>
+                  {selectedBusiness.alignmentScore >= 50 ? (
+                    <TrendingUp size={16} color="#22C55E" strokeWidth={2.5} />
+                  ) : (
+                    <TrendingDown size={16} color="#EF4444" strokeWidth={2.5} />
+                  )}
+                  <Text style={[
+                    styles.scoreText,
+                    { color: selectedBusiness.alignmentScore >= 50 ? '#22C55E' : '#EF4444' }
+                  ]}>
+                    Score: {selectedBusiness.alignmentScore}
+                  </Text>
+                </View>
+
+                {/* Address */}
+                <View style={styles.addressContainer}>
+                  <MapPinIcon size={14} color="#6B7280" strokeWidth={2} />
+                  <Text style={styles.addressText}>
+                    {selectedBusiness.closestLocation ||
+                     selectedBusiness.business.businessInfo.locations?.[0]?.address ||
+                     selectedBusiness.business.businessInfo.location ||
+                     'Address not available'}
+                  </Text>
+                </View>
+
+                {/* Distance */}
+                {selectedBusiness.distance !== undefined && (
+                  <Text style={styles.distanceText}>
+                    {selectedBusiness.distance < 1
+                      ? `${(selectedBusiness.distance * 5280).toFixed(0)} ft away`
+                      : `${selectedBusiness.distance.toFixed(1)} mi away`}
+                  </Text>
+                )}
+
+                {/* Stand Contributions */}
+                {acceptsStand && (
+                  <View style={styles.standContributionsBox}>
+                    <Text style={styles.standContributionsTitle}>⭐ Stand Contributions Accepted</Text>
+                    <Text style={styles.standContributionsAccepts}>Accepts: {acceptanceMethod}</Text>
+                    <View style={styles.standContributionsPercents}>
+                      <Text style={styles.standContributionsPercentText}>
+                        Discount: <Text style={styles.standContributionsPercentBold}>{discountPercent.toFixed(1)}%</Text>
+                      </Text>
+                      <Text style={styles.standContributionsPercentText}>
+                        Donation: <Text style={styles.standContributionsPercentBold}>{donationPercent.toFixed(1)}%</Text>
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* View Details Button */}
+                <TouchableOpacity
+                  style={styles.viewDetailsButton}
+                  onPress={() => {
+                    setSelectedBusiness(null);
+                    if (onBusinessPress) {
+                      onBusinessPress(selectedBusiness.business.id);
+                    }
+                  }}
+                >
+                  <Text style={styles.viewDetailsButtonText}>View Details</Text>
+                </TouchableOpacity>
               </View>
-
-              {/* Address */}
-              <View style={styles.addressContainer}>
-                <MapPinIcon size={14} color="#6B7280" strokeWidth={2} />
-                <Text style={styles.addressText}>
-                  {selectedBusiness.closestLocation ||
-                   selectedBusiness.business.businessInfo.locations?.[0]?.address ||
-                   selectedBusiness.business.businessInfo.location ||
-                   'Address not available'}
-                </Text>
-              </View>
-
-              {/* Distance */}
-              {selectedBusiness.distance !== undefined && (
-                <Text style={styles.distanceText}>
-                  {selectedBusiness.distance < 1
-                    ? `${(selectedBusiness.distance * 5280).toFixed(0)} ft away`
-                    : `${selectedBusiness.distance.toFixed(1)} mi away`}
-                </Text>
-              )}
-
-              {/* View Details Button */}
-              <TouchableOpacity
-                style={styles.viewDetailsButton}
-                onPress={() => {
-                  setSelectedBusiness(null);
-                  if (onBusinessPress) {
-                    onBusinessPress(selectedBusiness.business.id);
-                  }
-                }}
-              >
-                <Text style={styles.viewDetailsButtonText}>View Details</Text>
-              </TouchableOpacity>
             </View>
           </View>
-        </View>
-      )}
+        );
+      })()}
     </View>
   );
 }
@@ -203,6 +236,8 @@ const styles = StyleSheet.create({
   selectionCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#00aaff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -277,8 +312,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#9CA3AF',
   },
+  standContributionsBox: {
+    backgroundColor: '#f0f9ff',
+    borderWidth: 1,
+    borderColor: '#00aaff',
+    borderRadius: 10,
+    padding: 12,
+  },
+  standContributionsTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#00aaff',
+    marginBottom: 6,
+  },
+  standContributionsAccepts: {
+    fontSize: 12,
+    color: '#4B5563',
+    marginBottom: 4,
+  },
+  standContributionsPercents: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  standContributionsPercentText: {
+    fontSize: 12,
+    color: '#4B5563',
+  },
+  standContributionsPercentBold: {
+    fontWeight: '700',
+  },
   viewDetailsButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#00aaff',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 10,

@@ -92,6 +92,22 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
           const color = alignmentScore >= 50 ? '#22C55E' : '#EF4444';
           const address = closestLocation || location.address || business.businessInfo.location || 'Address not available';
 
+          // Stand discount information
+          const acceptsStand = business.businessInfo.acceptsStandDiscounts;
+          const acceptsQR = business.businessInfo.acceptsQRCode ?? true;
+          const acceptsPromo = business.businessInfo.acceptsValueCode ?? true;
+          const discountPercent = business.businessInfo.customerDiscountPercent || 0;
+          const donationPercent = business.businessInfo.donationPercent || 0;
+
+          let acceptanceMethod = '';
+          if (acceptsQR && acceptsPromo) {
+            acceptanceMethod = 'QR Code / Promo Code';
+          } else if (acceptsQR) {
+            acceptanceMethod = 'QR Code';
+          } else if (acceptsPromo) {
+            acceptanceMethod = 'Promo Code';
+          }
+
           L.marker([location.latitude, location.longitude], {
             icon: L.divIcon({
               className: 'business-marker',
@@ -102,7 +118,7 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
           })
             .addTo(map)
             .bindPopup(`
-              <div style="min-width: 220px; padding: 8px;">
+              <div style="min-width: 220px; padding: 12px; border: 2px solid #00aaff; border-radius: 12px;">
                 <div style="font-size: 16px; font-weight: bold; margin-bottom: 6px; color: #1f2937;">
                   ${business.businessInfo.name}
                 </div>
@@ -122,11 +138,27 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
                 <div style="font-size: 12px; color: #6b7280; margin-bottom: 10px; line-height: 1.4;">
                   📍 ${address}
                 </div>
+
+                ${acceptsStand ? `
+                  <div style="background-color: #f0f9ff; border: 1px solid #00aaff; border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+                    <div style="font-size: 12px; font-weight: 600; color: #00aaff; margin-bottom: 6px;">
+                      ⭐ Stand Contributions Accepted
+                    </div>
+                    <div style="font-size: 11px; color: #4b5563; margin-bottom: 3px;">
+                      Accepts: ${acceptanceMethod}
+                    </div>
+                    <div style="display: flex; gap: 12px; font-size: 11px; color: #4b5563;">
+                      <div>Discount: <strong>${discountPercent.toFixed(1)}%</strong></div>
+                      <div>Donation: <strong>${donationPercent.toFixed(1)}%</strong></div>
+                    </div>
+                  </div>
+                ` : ''}
+
                 <button
                   onclick="window.dispatchEvent(new CustomEvent('navigate-to-business', { detail: '${business.id}' }))"
                   style="
                     width: 100%;
-                    background-color: #3B82F6;
+                    background-color: #00aaff;
                     color: white;
                     border: none;
                     padding: 8px 16px;
@@ -136,14 +168,14 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
                     cursor: pointer;
                     transition: background-color 0.2s;
                   "
-                  onmouseover="this.style.backgroundColor='#2563EB'"
-                  onmouseout="this.style.backgroundColor='#3B82F6'"
+                  onmouseover="this.style.backgroundColor='#0099ee'"
+                  onmouseout="this.style.backgroundColor='#00aaff'"
                 >
                   View Details
                 </button>
               </div>
             `, {
-              maxWidth: 280,
+              maxWidth: 300,
               className: 'business-popup'
             });
         }
