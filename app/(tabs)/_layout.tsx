@@ -103,7 +103,7 @@ export default function TabLayout() {
               }}
             />
             <Tabs.Screen
-              name="local"
+              name="values"
               options={{
                 title: "Values",
                 tabBarIcon: renderTabIconWithLabel(Heart, "Values", colors.primary),
@@ -117,14 +117,14 @@ export default function TabLayout() {
               }}
             />
             <Tabs.Screen
-              name="shop"
+              name="money"
               options={{
                 title: "Money",
                 tabBarIcon: renderTabIconWithLabel(DollarSign, "Money", colors.primary),
               }}
             />
             <Tabs.Screen
-              name="values"
+              name="profile"
               options={{
                 title: "Profile",
                 tabBarIcon: renderTabIconWithLabel(User, "Profile", colors.primary),

@@ -39,6 +39,7 @@ import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
+import { useData } from '@/contexts/DataContext';
 import { Product } from '@/types';
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
@@ -91,10 +92,8 @@ export default function HomeScreen() {
 
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Fetch brands, local businesses, and values matrix from local data via tRPC
-  const { data: brands, isLoading, error } = trpc.data.getBrands.useQuery();
-  const { data: localBusinesses } = trpc.data.getLocalBusinesses.useQuery();
-  const { data: valuesMatrix } = trpc.data.getValuesMatrix.useQuery();
+  // Fetch brands and values from Firebase via DataContext
+  const { brands, valuesMatrix, isLoading, error } = useData();
 
   const viewModes: ViewMode[] = ['playbook', 'browse'];
 
@@ -123,25 +122,26 @@ export default function HomeScreen() {
   };
 
   // Fetch user businesses and request location when "local" mode is selected
+  // Fetch user businesses on mount
+  useEffect(() => {
+    const fetchUserBusinesses = async () => {
+      try {
+        console.log('[Home] Fetching user businesses');
+        const businesses = await getAllUserBusinesses();
+        console.log('[Home] Fetched user businesses:', businesses.length);
+        setUserBusinesses(businesses);
+      } catch (error) {
+        console.error('[Home] Error fetching user businesses:', error);
+      }
+    };
+
+    fetchUserBusinesses();
+  }, []);
+
+  // Request location when local mode is activated
   useEffect(() => {
     if (isLocalMode) {
-      // Request location permission
       requestLocation();
-
-      // Fetch all user businesses
-      const fetchUserBusinesses = async () => {
-        try {
-          console.log('[Home] Fetching user businesses for local mode');
-          const businesses = await getAllUserBusinesses();
-          console.log('[Home] Fetched user businesses:', businesses.length);
-          setUserBusinesses(businesses);
-        } catch (error) {
-          console.error('[Home] Error fetching user businesses:', error);
-          Alert.alert('Error', 'Could not load local businesses. Please try again.');
-        }
-      };
-
-      fetchUserBusinesses();
     }
   }, [isLocalMode]);
 
@@ -176,9 +176,9 @@ export default function HomeScreen() {
   ).current;
 
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands, brandDistances } = useMemo(() => {
-    // Combine brands from CSV and local businesses
+    // Combine brands from CSV and user businesses
     const csvBrands = brands || [];
-    const localBizList = localBusinesses || [];
+    const localBizList = userBusinesses || [];
 
     // Filter local businesses to only include those with >50% value overlap with user
     const userValueIds = new Set(profile.causes.map(c => c.id));
@@ -348,7 +348,7 @@ export default function HomeScreen() {
       allAvoidFull: allAvoidSorted.map((s) => s.product),
       scoredBrands: scoredMap,
     };
-  }, [profile.causes, brands, localBusinesses, valuesMatrix]);
+  }, [profile.causes, brands, userBusinesses, valuesMatrix]);
 
   // Compute local businesses when "local" mode is active
   const localBusinessData = useMemo(() => {
