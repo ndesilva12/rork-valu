@@ -140,16 +140,16 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
                 </div>
 
                 ${acceptsStand ? `
-                  <div style="background-color: #f0f9ff; border: 1px solid #00aaff; border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+                  <div style="background-color: #f0f9ff; border-radius: 8px; padding: 10px; margin-bottom: 10px;">
                     <div style="font-size: 12px; font-weight: 600; color: #00aaff; margin-bottom: 6px;">
-                      ⭐ Stand Contributions Accepted
+                      Stand Contributions Accepted
                     </div>
                     <div style="font-size: 11px; color: #4b5563; margin-bottom: 3px;">
                       Accepts: ${acceptanceMethod}
                     </div>
                     <div style="display: flex; gap: 12px; font-size: 11px; color: #4b5563;">
-                      <div>Discount: <strong>${discountPercent.toFixed(1)}%</strong></div>
-                      <div>Donation: <strong>${donationPercent.toFixed(1)}%</strong></div>
+                      <div>Discount: <strong style="font-size: 14px;">${discountPercent.toFixed(1)}%</strong></div>
+                      <div>Donation: <strong style="font-size: 14px;">${donationPercent.toFixed(1)}%</strong></div>
                     </div>
                   </div>
                 ` : ''}

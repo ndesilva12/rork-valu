@@ -184,7 +184,7 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
                 {/* Stand Contributions */}
                 {acceptsStand && (
                   <View style={styles.standContributionsBox}>
-                    <Text style={styles.standContributionsTitle}>⭐ Stand Contributions Accepted</Text>
+                    <Text style={styles.standContributionsTitle}>Stand Contributions Accepted</Text>
                     <Text style={styles.standContributionsAccepts}>Accepts: {acceptanceMethod}</Text>
                     <View style={styles.standContributionsPercents}>
                       <Text style={styles.standContributionsPercentText}>
@@ -314,8 +314,6 @@ const styles = StyleSheet.create({
   },
   standContributionsBox: {
     backgroundColor: '#f0f9ff',
-    borderWidth: 1,
-    borderColor: '#00aaff',
     borderRadius: 10,
     padding: 12,
   },
@@ -340,6 +338,7 @@ const styles = StyleSheet.create({
   },
   standContributionsPercentBold: {
     fontWeight: '700',
+    fontSize: 16,
   },
   viewDetailsButton: {
     backgroundColor: '#00aaff',
