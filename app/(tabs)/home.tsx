@@ -20,6 +20,7 @@ import {
   DollarSign,
   Shirt,
   ChevronDown,
+  X,
 } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import {
@@ -32,6 +33,7 @@ import {
   PanResponder,
   StatusBar,
   Alert,
+  Modal,
 } from 'react-native';
 import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
@@ -45,6 +47,7 @@ import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
 import { getAllUserBusinesses, calculateAlignmentScore, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
+import BusinessMapView from '@/components/BusinessMapView';
 
 type ViewMode = 'playbook' | 'browse';
 type LocalDistanceOption = 1 | 5 | 10 | 25 | 50 | 100;
@@ -83,6 +86,7 @@ export default function HomeScreen() {
   const [showDistanceDropdown, setShowDistanceDropdown] = useState(false);
   const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(100);
   const [userBusinesses, setUserBusinesses] = useState<BusinessUser[]>([]);
+  const [showMapModal, setShowMapModal] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -634,18 +638,10 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Local Toggle Button */}
-      <View style={styles.localButtonContainer}>
+      {/* Local Toggle Button Container */}
+      <View style={[styles.localButtonContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
         <TouchableOpacity
-          style={[
-            styles.localButton,
-            {
-              backgroundColor: isLocalMode ? colors.primary : colors.backgroundSecondary,
-              borderColor: isLocalMode ? colors.primary : colors.border,
-              borderTopRightRadius: isLocalMode ? 0 : 10,
-              borderBottomRightRadius: isLocalMode ? 0 : 10,
-            }
-          ]}
+          style={[styles.localButton, isLocalMode && { backgroundColor: colors.primary }]}
           onPress={() => {
             setIsLocalMode(!isLocalMode);
             setShowDistanceDropdown(false);
@@ -653,19 +649,19 @@ export default function HomeScreen() {
           activeOpacity={0.7}
         >
           <MapPin size={16} color={isLocalMode ? colors.white : colors.textSecondary} strokeWidth={2} />
-          <Text style={[styles.localButtonText, { color: isLocalMode ? colors.white : colors.text }]}>
+          <Text style={[styles.localButtonText, { color: isLocalMode ? colors.white : colors.textSecondary }]}>
             Local
           </Text>
         </TouchableOpacity>
 
-        {/* Distance Dropdown Arrow */}
+        {/* Distance Dropdown Arrow Button */}
         {isLocalMode && (
           <TouchableOpacity
-            style={[styles.distanceArrow, { backgroundColor: colors.background, borderColor: colors.primary }]}
+            style={styles.distanceArrowButton}
             onPress={() => setShowDistanceDropdown(!showDistanceDropdown)}
             activeOpacity={0.7}
           >
-            <ChevronDown size={20} color={colors.primary} strokeWidth={2.5} />
+            <ChevronDown size={18} color={colors.primary} strokeWidth={2.5} />
           </TouchableOpacity>
         )}
 
@@ -697,6 +693,25 @@ export default function HomeScreen() {
                   </Text>
                 </TouchableOpacity>
               ))}
+
+              {/* Map Option */}
+              <TouchableOpacity
+                style={[styles.distanceOption, { borderBottomWidth: 0 }]}
+                onPress={() => {
+                  setShowDistanceDropdown(false);
+                  setShowMapModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.distanceOptionText,
+                    { color: colors.primary, fontWeight: '600' },
+                  ]}
+                >
+                  Map View
+                </Text>
+              </TouchableOpacity>
             </ScrollView>
           </View>
         )}
@@ -1097,6 +1112,68 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      {/* Map Modal */}
+      <Modal
+        visible={showMapModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowMapModal(false)}
+      >
+        <View style={[styles.mapModalContainer, { backgroundColor: colors.background }]}>
+          {/* Header with close button */}
+          <View style={[styles.mapModalHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+            <Text style={[styles.mapModalTitle, { color: colors.text }]}>
+              Local Businesses ({localDistance} mile{localDistance !== 1 ? 's' : ''})
+            </Text>
+            <TouchableOpacity
+              style={[styles.mapModalCloseButton, { backgroundColor: colors.backgroundSecondary }]}
+              onPress={() => setShowMapModal(false)}
+              activeOpacity={0.7}
+            >
+              <X size={24} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Map */}
+          <View style={styles.mapModalContent}>
+            {userLocation && localBusinessData.alignedBusinesses.length + localBusinessData.unalignedBusinesses.length > 0 ? (
+              <BusinessMapView
+                businesses={[...localBusinessData.alignedBusinesses, ...localBusinessData.unalignedBusinesses]}
+                userLocation={userLocation}
+                distanceRadius={localDistance}
+                onBusinessPress={(businessId) => {
+                  setShowMapModal(false);
+                  router.push({
+                    pathname: '/business/[id]',
+                    params: { id: businessId },
+                  });
+                }}
+              />
+            ) : (
+              <View style={styles.mapModalEmpty}>
+                <MapPin size={48} color={colors.textSecondary} strokeWidth={1.5} />
+                <Text style={[styles.mapModalEmptyText, { color: colors.text }]}>
+                  {!userLocation
+                    ? 'Location access required to view map'
+                    : 'No businesses found in this area'}
+                </Text>
+                {!userLocation && (
+                  <TouchableOpacity
+                    style={[styles.mapModalEmptyButton, { backgroundColor: colors.primary }]}
+                    onPress={requestLocation}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.mapModalEmptyButtonText, { color: colors.white }]}>
+                      Enable Location
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1332,7 +1409,9 @@ const styles = StyleSheet.create({
     position: 'relative' as const,
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'stretch',
+    borderRadius: 10,
+    padding: 3,
+    borderWidth: 1,
     zIndex: 101,
   },
   localButton: {
@@ -1341,28 +1420,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 13,
+    paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
+    borderRadius: 8,
   },
   localButtonText: {
     fontSize: 15,
     fontWeight: '600' as const,
   },
-  distanceArrow: {
-    marginLeft: -1,
-    paddingHorizontal: 10,
-    paddingVertical: 13,
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
-    borderWidth: 1,
+  distanceArrowButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: 2,
   },
   distanceDropdown: {
     position: 'absolute' as const,
-    top: 48,
+    top: 52,
     right: 0,
     width: 160,
     maxHeight: 300,
@@ -1765,5 +1841,53 @@ const styles = StyleSheet.create({
   },
   webView: {
     flex: 1,
+  },
+  mapModalContainer: {
+    flex: 1,
+  },
+  mapModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'web' ? 16 : 56,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+  },
+  mapModalTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
+  mapModalCloseButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapModalContent: {
+    flex: 1,
+  },
+  mapModalEmpty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 16,
+  },
+  mapModalEmptyText: {
+    fontSize: 16,
+    textAlign: 'center' as const,
+    lineHeight: 24,
+  },
+  mapModalEmptyButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  mapModalEmptyButtonText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
   },
 });
