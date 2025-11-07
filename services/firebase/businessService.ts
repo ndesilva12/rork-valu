@@ -155,20 +155,21 @@ export async function getAllUserBusinesses(): Promise<BusinessUser[]> {
 /**
  * Calculate alignment score between user and business based on their selected values
  *
- * NEW Scoring method (focuses ONLY on shared positions):
+ * WEIGHTED Scoring method (focuses ONLY on shared positions with importance weighting):
  * - Only counts values where BOTH parties have taken a position (support or avoid)
  * - Ignores values where only one party has selected (neutral = doesn't count)
+ * - Applies weights to values based on category and individual importance
  * - Perfect match: 100 (all shared positions align)
  * - Complete opposite: 0 (all shared positions conflict)
  * - No overlap: 50 (neutral - no shared positions to compare)
  *
  * Scoring rules:
- * - Both support same value: +1 point (alignment)
- * - Both avoid same value: +1 point (alignment)
- * - One supports, other avoids: -1 point (conflict)
+ * - Both support same value: +weight points (alignment)
+ * - Both avoid same value: +weight points (alignment)
+ * - One supports, other avoids: -weight points (conflict)
  * - One has position, other neutral: 0 points (IGNORED - doesn't count)
  *
- * Final Score = (matches / (matches + conflicts)) * 100
+ * Final Score = (weighted_matches / (weighted_matches + weighted_conflicts)) * 100
  *
  * @param userCauses Array of user's selected causes
  * @param businessCauses Array of business's selected causes
@@ -180,64 +181,87 @@ export function calculateAlignmentScore(userCauses: Cause[], businessCauses: Cau
     return 50; // Neutral score when one or both have no values
   }
 
-  // Create maps for quick lookup
-  const userSupportSet = new Set(userCauses.filter(c => c.type === 'support').map(c => c.id));
-  const userAvoidSet = new Set(userCauses.filter(c => c.type === 'avoid').map(c => c.id));
-  const bizSupportSet = new Set(businessCauses.filter(c => c.type === 'support').map(c => c.id));
-  const bizAvoidSet = new Set(businessCauses.filter(c => c.type === 'avoid').map(c => c.id));
+  // Import weight configuration
+  const { getValueWeight } = require('@/config/valueWeights');
 
-  let matches = 0;      // Both agree (support-support or avoid-avoid)
-  let conflicts = 0;    // Both disagree (support-avoid or avoid-support)
+  // Create maps for quick lookup with full cause data
+  const userSupportMap = new Map(
+    userCauses.filter(c => c.type === 'support').map(c => [c.id, c])
+  );
+  const userAvoidMap = new Map(
+    userCauses.filter(c => c.type === 'avoid').map(c => [c.id, c])
+  );
+  const bizSupportMap = new Map(
+    businessCauses.filter(c => c.type === 'support').map(c => [c.id, c])
+  );
+  const bizAvoidMap = new Map(
+    businessCauses.filter(c => c.type === 'avoid').map(c => [c.id, c])
+  );
+
+  let weightedMatches = 0;      // Weighted sum of agreements
+  let weightedConflicts = 0;    // Weighted sum of conflicts
 
   // Get all unique value IDs from both users
   const allValueIds = new Set([
-    ...userSupportSet,
-    ...userAvoidSet,
-    ...bizSupportSet,
-    ...bizAvoidSet,
+    ...userSupportMap.keys(),
+    ...userAvoidMap.keys(),
+    ...bizSupportMap.keys(),
+    ...bizAvoidMap.keys(),
   ]);
 
   // For each value, check alignment ONLY where both have positions
   allValueIds.forEach(valueId => {
-    const userSupports = userSupportSet.has(valueId);
-    const userAvoids = userAvoidSet.has(valueId);
-    const bizSupports = bizSupportSet.has(valueId);
-    const bizAvoids = bizAvoidSet.has(valueId);
+    const userSupports = userSupportMap.has(valueId);
+    const userAvoids = userAvoidMap.has(valueId);
+    const bizSupports = bizSupportMap.has(valueId);
+    const bizAvoids = bizAvoidMap.has(valueId);
 
     const userHasPosition = userSupports || userAvoids;
     const bizHasPosition = bizSupports || bizAvoids;
 
-    // KEY CHANGE: Skip if EITHER party has no position on this value
-    // This removes the inflation from "shared neutrality"
+    // Skip if EITHER party has no position on this value
     if (!userHasPosition || !bizHasPosition) {
       return; // One or both neutral - doesn't count toward score
     }
+
+    // Get the cause object (from either user or business) to determine category and weight
+    const cause = userSupports ? userSupportMap.get(valueId)
+              : userAvoids ? userAvoidMap.get(valueId)
+              : bizSupports ? bizSupportMap.get(valueId)
+              : bizAvoidMap.get(valueId);
+
+    if (!cause) {
+      return; // Safety check (should never happen)
+    }
+
+    // Get weight for this value (uses individual weight override or category weight)
+    const weight = getValueWeight(valueId, cause.category);
 
     // Now we know BOTH have positions - check if they match or conflict
 
     // MATCHES: Both support OR both avoid
     if ((userSupports && bizSupports) || (userAvoids && bizAvoids)) {
-      matches++;
+      weightedMatches += weight;
     }
     // CONFLICTS: Support vs Avoid (either direction)
     else if ((userSupports && bizAvoids) || (userAvoids && bizSupports)) {
-      conflicts++;
+      weightedConflicts += weight;
     }
   });
 
   // Calculate score based ONLY on overlapping positions
-  const totalComparisons = matches + conflicts;
+  const totalWeightedComparisons = weightedMatches + weightedConflicts;
 
-  if (totalComparisons === 0) {
+  if (totalWeightedComparisons === 0) {
     // No overlapping positions at all - completely neutral
     return 50;
   }
 
-  // Score = percentage of matches out of all comparisons
+  // Score = percentage of weighted matches out of all weighted comparisons
   // All matches (100%) = 100 score
   // All conflicts (0%) = 0 score
   // 50/50 mix = 50 score
-  const score = (matches / totalComparisons) * 100;
+  const score = (weightedMatches / totalWeightedComparisons) * 100;
 
   return Math.round(score);
 }

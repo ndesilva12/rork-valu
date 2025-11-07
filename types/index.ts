@@ -15,6 +15,7 @@ export interface Cause {
   category: CauseCategory;
   type: AlignmentType;
   description?: string;
+  weight?: number; // Weight for alignment scoring (default: 1.0)
 }
 
 export interface Shareholder {
