@@ -33,9 +33,10 @@ export default function BrandDetailScreen() {
 
   // Force refresh data when component mounts to get latest from Firebase
   useEffect(() => {
-    console.log('[BrandDetail] Force refreshing data from Firebase...');
+    console.log('[BrandDetail] Component mounted, force refreshing data from Firebase for brand:', id);
     refresh();
-  }, [id, refresh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]); // Only depend on id, not refresh
 
   const brand = id ? getBrandById(id as string) : undefined;
   const isLoading = dataLoading;
