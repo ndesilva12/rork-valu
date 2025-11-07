@@ -1,7 +1,7 @@
 /**
- * Admin Panel - Individual Users Management
+ * Admin Panel - Users Management
  *
- * Edit ALL fields for individual user accounts
+ * Edit ALL fields for user accounts
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -70,6 +70,8 @@ export default function UsersManagement() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkData, setBulkData] = useState('');
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -291,7 +293,7 @@ export default function UsersManagement() {
       <SafeAreaView style={styles.container}>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#007bff" />
-          <Text style={styles.loadingText}>Loading individual users...</Text>
+          <Text style={styles.loadingText}>Loading users...</Text>
         </View>
       </SafeAreaView>
     );
@@ -304,20 +306,23 @@ export default function UsersManagement() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Individual Users Management</Text>
+        <Text style={styles.title}>Users Management</Text>
         <Text style={styles.subtitle}>
-          {users.length} individual accounts ({filteredUsers.length} filtered)
+          {users.length} user accounts ({filteredUsers.length} filtered)
         </Text>
       </View>
 
       {/* Search Bar */}
-      <View style={styles.searchBar}>
+      <View style={[styles.searchBar, styles.actionsBar]}>
         <TextInput
           style={styles.searchInput}
           placeholder="Search by name, email, or location..."
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
+        <TouchableOpacity style={styles.bulkButton} onPress={() => setShowBulkModal(true)}>
+          <Text style={styles.bulkButtonText}>Bulk Create</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Users List */}
@@ -326,7 +331,7 @@ export default function UsersManagement() {
           {filteredUsers.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>
-                {searchQuery ? 'No users found matching your search' : 'No individual user accounts yet'}
+                {searchQuery ? 'No users found matching your search' : 'No user accounts yet'}
               </Text>
             </View>
           ) : (
@@ -578,6 +583,49 @@ export default function UsersManagement() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+
+      {/* Bulk Create Modal */}
+      <Modal visible={showBulkModal} animationType="slide" transparent={false}>
+        <SafeAreaView style={styles.modalContainer}>
+          <ScrollView>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Bulk Create User Profiles</Text>
+              <Text style={styles.helpText}>
+                NOTE: This creates database profiles only. Authentication accounts must be created separately.
+                {'\n\n'}Format: userId,email,name,location
+                {'\n\n'}Example:{'\n'}
+                userId,email,name,location{'\n'}
+                user123,john@example.com,John Doe,New York NY
+              </Text>
+
+              <TextInput
+                style={[styles.input, styles.bulkTextArea]}
+                placeholder="Paste CSV data here..."
+                value={bulkData}
+                onChangeText={setBulkData}
+                multiline
+                numberOfLines={15}
+                textAlignVertical="top"
+              />
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => {
+                    setShowBulkModal(false);
+                    setBulkData('');
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveButton} onPress={() => Alert.alert('Info', 'Bulk creation for users requires additional setup. Please use individual creation for now.')}>
+                  <Text style={styles.saveButtonText}>Create All</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -625,6 +673,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+  },
+  actionsBar: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  bulkButton: {
+    backgroundColor: '#6c757d',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  bulkButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  bulkTextArea: {
+    height: 300,
+    paddingTop: 12,
+    textAlignVertical: 'top',
+    fontFamily: 'monospace',
   },
   searchInput: {
     height: 40,

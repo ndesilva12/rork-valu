@@ -56,6 +56,8 @@ export default function BrandsManagement() {
   const [brands, setBrands] = useState<BrandData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkData, setBulkData] = useState('');
   const [editingBrand, setEditingBrand] = useState<BrandData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
@@ -216,6 +218,74 @@ export default function BrandsManagement() {
     }
   };
 
+  const handleBulkCreate = async () => {
+    if (!bulkData.trim()) {
+      Alert.alert('Error', 'Please enter CSV data');
+      return;
+    }
+
+    try {
+      const lines = bulkData.trim().split('\n');
+      const headers = lines[0].split(',').map(h => h.trim());
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+
+        try {
+          const values = lines[i].split(',').map(v => v.trim());
+          const brandData: any = {};
+
+          headers.forEach((header, index) => {
+            if (values[index]) {
+              brandData[header] = values[index];
+            }
+          });
+
+          if (!brandData.id || !brandData.name) {
+            errorCount++;
+            continue;
+          }
+
+          const brandRef = doc(db, 'brands', brandData.id);
+          await setDoc(brandRef, {
+            name: brandData.name,
+            category: brandData.category || '',
+            description: brandData.description || '',
+            website: brandData.website || '',
+            location: brandData.location || '',
+            affiliates: [],
+            partnerships: [],
+            ownership: [],
+            ownershipSources: '',
+          });
+
+          successCount++;
+        } catch (err) {
+          console.error('Error creating brand:', err);
+          errorCount++;
+        }
+      }
+
+      // Clear cache
+      await AsyncStorage.removeItem('@brands_cache');
+      await AsyncStorage.removeItem('@data_cache_timestamp');
+
+      Alert.alert(
+        'Bulk Create Complete',
+        `Successfully created ${successCount} brands. ${errorCount} errors.`
+      );
+
+      setShowBulkModal(false);
+      setBulkData('');
+      loadBrands();
+    } catch (error) {
+      console.error('Error in bulk create:', error);
+      Alert.alert('Error', 'Failed to bulk create brands');
+    }
+  };
+
   const handleDelete = (brand: BrandData) => {
     Alert.alert(
       'Confirm Delete',
@@ -296,6 +366,9 @@ export default function BrandsManagement() {
             setCurrentPage(0);
           }}
         />
+        <TouchableOpacity style={styles.bulkButton} onPress={() => setShowBulkModal(true)}>
+          <Text style={styles.bulkButtonText}>Bulk Create</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
           <Text style={styles.addButtonText}>+ Add Brand</Text>
         </TouchableOpacity>
@@ -488,6 +561,48 @@ export default function BrandsManagement() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+
+      {/* Bulk Create Modal */}
+      <Modal visible={showBulkModal} animationType="slide" transparent={false}>
+        <SafeAreaView style={styles.modalContainer}>
+          <ScrollView>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Bulk Create Brands</Text>
+              <Text style={styles.helpText}>
+                Paste CSV data below. Format: id,name,category,description,website,location
+                {'\n\n'}Example:{'\n'}
+                id,name,category,description,website,location{'\n'}
+                Apple,Apple Inc.,Technology,Electronics manufacturer,https://apple.com,Cupertino CA
+              </Text>
+
+              <TextInput
+                style={[styles.input, styles.bulkTextArea]}
+                placeholder="Paste CSV data here..."
+                value={bulkData}
+                onChangeText={setBulkData}
+                multiline
+                numberOfLines={15}
+                textAlignVertical="top"
+              />
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => {
+                    setShowBulkModal(false);
+                    setBulkData('');
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveButton} onPress={handleBulkCreate}>
+                  <Text style={styles.saveButtonText}>Create All</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -547,6 +662,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 14,
   },
+  bulkButton: {
+    backgroundColor: '#6c757d',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  bulkButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   addButton: {
     backgroundColor: '#28a745',
     paddingHorizontal: 16,
@@ -558,6 +685,18 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  bulkTextArea: {
+    height: 300,
+    paddingTop: 12,
+    textAlignVertical: 'top',
+    fontFamily: 'monospace',
+  },
+  helpText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 12,
+    lineHeight: 18,
   },
   scrollView: {
     flex: 1,
