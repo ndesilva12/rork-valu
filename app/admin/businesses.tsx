@@ -1,7 +1,7 @@
 /**
- * Admin Panel - User Businesses Management
+ * Admin Panel - Businesses Management
  *
- * Edit ALL fields in user business profiles
+ * Edit ALL fields in business profiles
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -86,6 +86,8 @@ export default function BusinessesManagement() {
   const [businesses, setBusinesses] = useState<BusinessData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkData, setBulkData] = useState('');
   const [editingBusiness, setEditingBusiness] = useState<BusinessData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -371,20 +373,23 @@ export default function BusinessesManagement() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>User Businesses Management</Text>
+        <Text style={styles.title}>Businesses Management</Text>
         <Text style={styles.subtitle}>
           {businesses.length} business accounts ({filteredBusinesses.length} filtered)
         </Text>
       </View>
 
       {/* Search Bar */}
-      <View style={styles.searchBar}>
+      <View style={[styles.searchBar, styles.actionsBar]}>
         <TextInput
           style={styles.searchInput}
           placeholder="Search by business name, email, or category..."
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
+        <TouchableOpacity style={styles.bulkButton} onPress={() => setShowBulkModal(true)}>
+          <Text style={styles.bulkButtonText}>Bulk Create</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Businesses List */}
@@ -726,6 +731,49 @@ export default function BusinessesManagement() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+
+      {/* Bulk Create Modal */}
+      <Modal visible={showBulkModal} animationType="slide" transparent={false}>
+        <SafeAreaView style={styles.modalContainer}>
+          <ScrollView>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Bulk Create Business Profiles</Text>
+              <Text style={styles.helpText}>
+                NOTE: This creates database profiles only. Authentication accounts must be created separately.
+                {'\n\n'}Format: userId,email,businessName,category
+                {'\n\n'}Example:{'\n'}
+                userId,email,businessName,category{'\n'}
+                business123,shop@example.com,Joe's Coffee,Restaurant
+              </Text>
+
+              <TextInput
+                style={[styles.input, styles.bulkTextArea]}
+                placeholder="Paste CSV data here..."
+                value={bulkData}
+                onChangeText={setBulkData}
+                multiline
+                numberOfLines={15}
+                textAlignVertical="top"
+              />
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => {
+                    setShowBulkModal(false);
+                    setBulkData('');
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveButton} onPress={() => Alert.alert('Info', 'Bulk creation for businesses requires additional setup. Please use individual creation for now.')}>
+                  <Text style={styles.saveButtonText}>Create All</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -773,6 +821,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+  },
+  actionsBar: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  bulkButton: {
+    backgroundColor: '#6c757d',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  bulkButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  bulkTextArea: {
+    height: 300,
+    paddingTop: 12,
+    textAlignVertical: 'top',
+    fontFamily: 'monospace',
+  },
+  helpText: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 12,
+    lineHeight: 18,
   },
   searchInput: {
     height: 40,

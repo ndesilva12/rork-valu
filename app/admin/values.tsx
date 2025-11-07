@@ -33,6 +33,8 @@ export default function ValuesManagement() {
   const [values, setValues] = useState<ValueData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkData, setBulkData] = useState('');
   const [editingValue, setEditingValue] = useState<ValueData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -168,6 +170,69 @@ export default function ValuesManagement() {
     }
   };
 
+  const handleBulkCreate = async () => {
+    if (!bulkData.trim()) {
+      Alert.alert('Error', 'Please enter CSV data');
+      return;
+    }
+
+    try {
+      const lines = bulkData.trim().split('\n');
+      const headers = lines[0].split(',').map(h => h.trim());
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+
+        try {
+          const values = lines[i].split(',').map(v => v.trim());
+          const valueData: any = {};
+
+          headers.forEach((header, index) => {
+            if (values[index]) {
+              valueData[header] = values[index];
+            }
+          });
+
+          if (!valueData.id || !valueData.name) {
+            errorCount++;
+            continue;
+          }
+
+          // Parse aligned and unaligned as comma-separated strings if present
+          const aligned = valueData.aligned ? valueData.aligned.split(';').map((b: string) => b.trim()).filter((b: string) => b) : [];
+          const unaligned = valueData.unaligned ? valueData.unaligned.split(';').map((b: string) => b.trim()).filter((b: string) => b) : [];
+
+          const valueRef = doc(db, 'values', valueData.id);
+          await setDoc(valueRef, {
+            name: valueData.name,
+            category: valueData.category || '',
+            aligned,
+            unaligned,
+          });
+
+          successCount++;
+        } catch (err) {
+          console.error('Error creating value:', err);
+          errorCount++;
+        }
+      }
+
+      Alert.alert(
+        'Bulk Create Complete',
+        `Successfully created ${successCount} values. ${errorCount} errors.`
+      );
+
+      setShowBulkModal(false);
+      setBulkData('');
+      loadValues();
+    } catch (error) {
+      console.error('Error in bulk create:', error);
+      Alert.alert('Error', 'Failed to bulk create values');
+    }
+  };
+
   const handleDelete = (value: ValueData) => {
     Alert.alert(
       'Confirm Delete',
@@ -235,6 +300,9 @@ export default function ValuesManagement() {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
+        <TouchableOpacity style={styles.bulkButton} onPress={() => setShowBulkModal(true)}>
+          <Text style={styles.bulkButtonText}>Bulk Create</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
           <Text style={styles.addButtonText}>+ Add Value</Text>
         </TouchableOpacity>
@@ -373,6 +441,49 @@ export default function ValuesManagement() {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Bulk Create Modal */}
+      <Modal visible={showBulkModal} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <ScrollView contentContainerStyle={styles.modalScrollContent}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Bulk Create Values</Text>
+              <Text style={styles.helpText}>
+                Paste CSV data below. Format: id,name,category,aligned,unaligned
+                {'\n'}Use semicolons (;) to separate brand names in aligned/unaligned columns
+                {'\n\n'}Example:{'\n'}
+                id,name,category,aligned,unaligned{'\n'}
+                gun-rights,Gun Rights,ideology,Smith&Wesson;Glock,Apple;Nike
+              </Text>
+
+              <TextInput
+                style={[styles.textArea, styles.bulkTextArea]}
+                placeholder="Paste CSV data here..."
+                value={bulkData}
+                onChangeText={setBulkData}
+                multiline
+                numberOfLines={15}
+                textAlignVertical="top"
+              />
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => {
+                    setShowBulkModal(false);
+                    setBulkData('');
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveButton} onPress={handleBulkCreate}>
+                  <Text style={styles.saveButtonText}>Create All</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -432,6 +543,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 14,
   },
+  bulkButton: {
+    backgroundColor: '#6c757d',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  bulkButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   addButton: {
     backgroundColor: '#28a745',
     paddingHorizontal: 16,
@@ -443,6 +566,10 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  bulkTextArea: {
+    height: 300,
+    fontFamily: 'monospace',
   },
   scrollView: {
     flex: 1,

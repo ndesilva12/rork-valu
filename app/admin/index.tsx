@@ -4,7 +4,8 @@
  * Provides access to manage:
  * - Values (causes)
  * - Brands
- * - User businesses
+ * - Businesses
+ * - Users
  */
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
@@ -67,7 +68,7 @@ export default function AdminDashboard() {
         <View style={styles.header}>
           <Text style={styles.title}>Admin Panel</Text>
           <Text style={styles.subtitle}>
-            Manage values, brands, user businesses, and individual users
+            Manage values, brands, businesses, and users
           </Text>
         </View>
 
@@ -96,27 +97,27 @@ export default function AdminDashboard() {
             </Text>
           </TouchableOpacity>
 
-          {/* User Business Management */}
+          {/* Business Management */}
           <TouchableOpacity
             style={styles.card}
             onPress={() => router.push('/admin/businesses')}
           >
             <Text style={styles.cardIcon}>👥</Text>
-            <Text style={styles.cardTitle}>User Businesses</Text>
+            <Text style={styles.cardTitle}>Businesses</Text>
             <Text style={styles.cardDescription}>
-              Edit user business profiles and all business data
+              Edit business profiles and all business data
             </Text>
           </TouchableOpacity>
 
-          {/* Individual Users Management */}
+          {/* Users Management */}
           <TouchableOpacity
             style={styles.card}
             onPress={() => router.push('/admin/users')}
           >
             <Text style={styles.cardIcon}>👤</Text>
-            <Text style={styles.cardTitle}>Individual Users</Text>
+            <Text style={styles.cardTitle}>Users</Text>
             <Text style={styles.cardDescription}>
-              Edit individual user profiles, causes, and personal data
+              Edit user profiles, causes, and personal data
             </Text>
           </TouchableOpacity>
 
