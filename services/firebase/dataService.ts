@@ -28,55 +28,11 @@ export async function getBrandsFromFirebase(): Promise<Brand[]> {
     const brands: Brand[] = snapshot.docs.map((doc) => {
       const data = doc.data();
 
-      // Convert old format (affiliate1, $affiliate1, etc.) to new format (affiliates array)
-      const convertToArray = (fieldPrefix: string, dollarPrefix?: string) => {
-        const result: { name: string; relationship: string }[] = [];
-        for (let i = 1; i <= 20; i++) {
-          const nameField = `${fieldPrefix}${i}`;
-          const relationshipField = dollarPrefix ? `${dollarPrefix}${i}` : null;
-
-          if (data[nameField]) {
-            result.push({
-              name: data[nameField],
-              relationship: relationshipField && data[relationshipField] ? data[relationshipField] : ''
-            });
-          }
-        }
-        return result;
-      };
-
-      // Try new format first, fall back to old format
-      let affiliates = data.affiliates || [];
-      let partnerships = data.partnerships || [];
-      let ownership = data.ownership || [];
-
-      // If new format is empty, try converting from old format
-      if (affiliates.length === 0) {
-        const converted = convertToArray('affiliate', '$affiliate');
-        if (converted.length > 0) {
-          affiliates = converted;
-          console.log(`[DataService] Converted ${converted.length} affiliates for ${data.name || doc.id}`);
-        }
-      }
-
-      if (partnerships.length === 0) {
-        const converted = convertToArray('Partnership');
-        if (converted.length > 0) {
-          partnerships = converted;
-          console.log(`[DataService] Converted ${converted.length} partnerships for ${data.name || doc.id}`);
-        }
-      }
-
-      if (ownership.length === 0) {
-        const converted = convertToArray('ownership');
-        if (converted.length > 0) {
-          ownership = converted;
-          console.log(`[DataService] Converted ${converted.length} ownership entries for ${data.name || doc.id}`);
-        }
-      }
-
-      // Get ownership sources from either new or old format
-      const ownershipSources = data.ownershipSources || data['ownership Sources'] || undefined;
+      // Data is now in the new array format after migration
+      const affiliates = data.affiliates || [];
+      const partnerships = data.partnerships || [];
+      const ownership = data.ownership || [];
+      const ownershipSources = data.ownershipSources || undefined;
 
       return {
         id: doc.id,
@@ -134,55 +90,11 @@ export async function getBrandById(brandId: string): Promise<Brand | null> {
 
     const data = brandDoc.data();
 
-    // Convert old format (affiliate1, $affiliate1, etc.) to new format (affiliates array)
-    const convertToArray = (fieldPrefix: string, dollarPrefix?: string) => {
-      const result: { name: string; relationship: string }[] = [];
-      for (let i = 1; i <= 20; i++) {
-        const nameField = `${fieldPrefix}${i}`;
-        const relationshipField = dollarPrefix ? `${dollarPrefix}${i}` : null;
-
-        if (data[nameField]) {
-          result.push({
-            name: data[nameField],
-            relationship: relationshipField && data[relationshipField] ? data[relationshipField] : ''
-          });
-        }
-      }
-      return result;
-    };
-
-    // Try new format first, fall back to old format
-    let affiliates = data.affiliates || [];
-    let partnerships = data.partnerships || [];
-    let ownership = data.ownership || [];
-
-    // If new format is empty, try converting from old format
-    if (affiliates.length === 0) {
-      const converted = convertToArray('affiliate', '$affiliate');
-      if (converted.length > 0) {
-        affiliates = converted;
-        console.log(`[DataService] Converted ${converted.length} affiliates for ${data.name || brandId}`);
-      }
-    }
-
-    if (partnerships.length === 0) {
-      const converted = convertToArray('Partnership');
-      if (converted.length > 0) {
-        partnerships = converted;
-        console.log(`[DataService] Converted ${converted.length} partnerships for ${data.name || brandId}`);
-      }
-    }
-
-    if (ownership.length === 0) {
-      const converted = convertToArray('ownership');
-      if (converted.length > 0) {
-        ownership = converted;
-        console.log(`[DataService] Converted ${converted.length} ownership entries for ${data.name || brandId}`);
-      }
-    }
-
-    // Get ownership sources from either new or old format
-    const ownershipSources = data.ownershipSources || data['ownership Sources'] || undefined;
+    // Data is now in the new array format after migration
+    const affiliates = data.affiliates || [];
+    const partnerships = data.partnerships || [];
+    const ownership = data.ownership || [];
+    const ownershipSources = data.ownershipSources || undefined;
 
     return {
       id: brandDoc.id,
