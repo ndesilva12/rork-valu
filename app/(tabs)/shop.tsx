@@ -207,32 +207,6 @@ export default function DiscountScreen() {
           </>
         )}
 
-        {/* DONATE SECTION - Business Only */}
-        {isBusiness && (
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Donation Contributions
-          </Text>
-
-          <View style={[styles.donationCard, { backgroundColor: colors.backgroundSecondary }]}>
-            <View style={styles.donationAmountContainer}>
-              <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Total Donated Through Stand</Text>
-              <Text style={[styles.donationAmount, { color: colors.primary }]}>
-                ${businessDonationAmount.toFixed(2)}
-              </Text>
-            </View>
-
-            <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
-              <Text style={[styles.infoTitle, { color: colors.text }]}>
-                What You Get For Donations
-              </Text>
-              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                <Text style={styles.underlinedText}>When you contribute donations, you get immediate tax deductible write offs that your CUSTOMERS get to choose the destination for.</Text> Your customers will be more incentivized to do business with you because they have the final say where the donations go. Your donation goes to our 501(c)(3) - and then directed to the various charities and organizations chosen by the customer but the tax benefit is YOURS, not ours.
-              </Text>
-            </View>
-          </View>
-        </View>
-        )}
       </ScrollView>
 
       {/* Info Modal - How Your Code Works */}

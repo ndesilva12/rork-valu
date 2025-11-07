@@ -34,12 +34,19 @@ export default function ValueCodeSettings() {
   const [acceptsDiscounts, setAcceptsDiscounts] = useState(
     businessInfo.acceptsStandDiscounts ?? businessInfo.acceptsValueCodes ?? false
   );
+  const [makeDonations, setMakeDonations] = useState(
+    businessInfo.makesDonations ?? false
+  );
   const [acceptsQRCode, setAcceptsQRCode] = useState(businessInfo.acceptsQRCode ?? true);
   const [acceptsPromoCode, setAcceptsPromoCode] = useState(businessInfo.acceptsValueCode ?? true);
   const [discountType, setDiscountType] = useState<'preset' | 'custom'>('preset');
+  const [donationType, setDonationType] = useState<'preset' | 'custom'>('preset');
   const [customerDiscount, setCustomerDiscount] = useState(businessInfo.customerDiscountPercent || 5);
   const [donationDiscount, setDonationDiscount] = useState(businessInfo.donationPercent || 2.5);
   const [customDiscountText, setCustomDiscountText] = useState(businessInfo.customDiscount || '');
+  const [customDonationText, setCustomDonationText] = useState(businessInfo.customDonation || '');
+
+  const businessDonationAmount = businessInfo.totalDonated || 0;
 
   const handleToggleDiscounts = async (value: boolean) => {
     setAcceptsDiscounts(value);
@@ -51,6 +58,21 @@ export default function ValueCodeSettings() {
       Alert.alert(
         'Discounts Enabled',
         'Customers can now use Stand to receive discounts at your business!',
+        [{ text: 'Great!' }]
+      );
+    }
+  };
+
+  const handleToggleDonations = async (value: boolean) => {
+    setMakeDonations(value);
+    await setBusinessInfo({
+      makesDonations: value,
+    });
+
+    if (value) {
+      Alert.alert(
+        'Donations Enabled',
+        'You can now contribute donations through Stand transactions!',
         [{ text: 'Great!' }]
       );
     }
@@ -107,28 +129,14 @@ export default function ValueCodeSettings() {
     );
   };
 
+  const showCodeSelector = acceptsDiscounts || makeDonations;
+
   return (
-    <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Stand Discount Settings</Text>
-
-      <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
-        {/* Main Toggle */}
-        <View style={styles.settingRow}>
-          <Text style={[styles.settingLabel, { color: colors.text }]}>Accept Discounts</Text>
-          <Switch
-            value={acceptsDiscounts}
-            onValueChange={handleToggleDiscounts}
-            trackColor={{ false: '#E5E7EB', true: '#9CA3AF' }}
-            thumbColor='#FFFFFF'
-            ios_backgroundColor='#E5E7EB'
-          />
-        </View>
-
-        {acceptsDiscounts && (
-          <>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-            {/* QR Codes & Promo Codes - One Line */}
+    <>
+      {/* QR/Promo Code Selector - Shown when at least one section is active */}
+      {showCodeSelector && (
+        <View style={styles.section}>
+          <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
             <View style={styles.compactRow}>
               <View style={styles.compactItem}>
                 <Text style={[styles.compactLabel, { color: colors.text }]}>QR Codes</Text>
@@ -151,7 +159,39 @@ export default function ValueCodeSettings() {
                 />
               </View>
             </View>
+          </View>
+        </View>
+      )}
 
+      {/* DISCOUNTS SECTION */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Discounts</Text>
+
+        <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
+          {/* Toggle */}
+          <View style={styles.settingRow}>
+            <Text style={[styles.settingLabel, { color: colors.text }]}>Accept Discounts</Text>
+            <Switch
+              value={acceptsDiscounts}
+              onValueChange={handleToggleDiscounts}
+              trackColor={{ false: '#E5E7EB', true: '#9CA3AF' }}
+              thumbColor='#FFFFFF'
+              ios_backgroundColor='#E5E7EB'
+            />
+          </View>
+
+          {/* What You Get box - Always visible */}
+          <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
+            <Text style={[styles.infoTitle, { color: colors.text }]}>
+              What You Get For Discounts
+            </Text>
+            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+              <Text style={styles.underlinedText}>When you accept discounts, you get invaluable insights about what your customers believe.</Text> Find out: ideologies, causes, social issues, interests, celebrity sentiments, religions, etc. These are deep connections to your customers that you cannot find anywhere else.
+            </Text>
+          </View>
+
+        {acceptsDiscounts && (
+          <>
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
             {/* Discount Type Selection */}
@@ -351,23 +391,177 @@ export default function ValueCodeSettings() {
             )}
           </>
         )}
+        </View>
+      </View>
 
-        {acceptsDiscounts && (
+      {/* DONATIONS SECTION */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Donations</Text>
+
+        <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
+          {/* Toggle */}
+          <View style={styles.settingRow}>
+            <Text style={[styles.settingLabel, { color: colors.text }]}>Make Donations</Text>
+            <Switch
+              value={makeDonations}
+              onValueChange={handleToggleDonations}
+              trackColor={{ false: '#E5E7EB', true: '#9CA3AF' }}
+              thumbColor='#FFFFFF'
+              ios_backgroundColor='#E5E7EB'
+            />
+          </View>
+
+          {/* What You Get box - Always visible */}
+          <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
+            <Text style={[styles.infoTitle, { color: colors.text }]}>
+              What You Get For Donations
+            </Text>
+            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+              <Text style={styles.underlinedText}>When you contribute donations, you get immediate tax deductible write offs that your CUSTOMERS get to choose the destination for.</Text> Your customers will be more incentivized to do business with you because they have the final say where the donations go. Your donation goes to our 501(c)(3) - and then directed to the various charities and organizations chosen by the customer but the tax benefit is YOURS, not ours.
+            </Text>
+          </View>
+
+        {makeDonations && (
           <>
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-            <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
-              <Text style={[styles.infoTitle, { color: colors.text }]}>
-                What You Get For Discounts
-              </Text>
-              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                <Text style={styles.underlinedText}>When you accept discounts, you get invaluable insights about what your customers believe.</Text> Find out: ideologies, causes, social issues, interests, celebrity sentiments, religions, etc. These are deep connections to your customers that you cannot find anywhere else.
+            {/* Total Donated Counter */}
+            <View style={styles.donationAmountContainer}>
+              <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Total Donated Through Stand</Text>
+              <Text style={[styles.donationAmount, { color: colors.primary }]}>
+                ${businessDonationAmount.toFixed(2)}
               </Text>
             </View>
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            {/* Donation Type Selection */}
+            <View style={styles.discountTypeSection}>
+              <Text style={[styles.subsectionTitle, { color: colors.text }]}>Set Your Donation</Text>
+              <View style={styles.discountTypeButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.typeButton,
+                    { borderColor: colors.border, backgroundColor: colors.background },
+                    donationType === 'preset' && { borderColor: colors.primary }
+                  ]}
+                  onPress={() => setDonationType('preset')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.typeButtonText,
+                    { color: donationType === 'preset' ? colors.primary : colors.text }
+                  ]}>
+                    Preset Donation
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.typeButton,
+                    { borderColor: colors.border, backgroundColor: colors.background },
+                    donationType === 'custom' && { borderColor: colors.primary }
+                  ]}
+                  onPress={() => setDonationType('custom')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.typeButtonText,
+                    { color: donationType === 'custom' ? colors.primary : colors.text }
+                  ]}>
+                    Custom Donation
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {donationType === 'preset' ? (
+              <>
+                {/* Donation percentage counter */}
+                <View style={styles.counterWrapper}>
+                  <View style={[styles.smallCounter, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Text style={[styles.smallCounterLabel, { color: colors.textSecondary }]}>Donation %</Text>
+                    <View style={isMobile ? styles.smallCounterControlsMobile : styles.smallCounterControlsDesktop}>
+                      {!isMobile && (
+                        <TouchableOpacity
+                          style={styles.smallCounterButton}
+                          onPress={() => handleChangeDonationDiscount(donationDiscount - 0.5)}
+                          activeOpacity={0.7}
+                        >
+                          <Minus size={20} color={colors.text} strokeWidth={2} />
+                        </TouchableOpacity>
+                      )}
+                      <Text style={[styles.largeCounterValue, { color: colors.primary }]}>
+                        {donationDiscount.toFixed(1)}%
+                      </Text>
+                      {!isMobile && (
+                        <TouchableOpacity
+                          style={styles.smallCounterButton}
+                          onPress={() => handleChangeDonationDiscount(donationDiscount + 0.5)}
+                          activeOpacity={0.7}
+                        >
+                          <Plus size={20} color={colors.text} strokeWidth={2} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                  {isMobile && (
+                    <View style={styles.mobileButtonsOutside}>
+                      <TouchableOpacity
+                        style={[styles.mobileButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                        onPress={() => handleChangeDonationDiscount(donationDiscount - 0.5)}
+                        activeOpacity={0.7}
+                      >
+                        <Minus size={28} color={colors.text} strokeWidth={2} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.mobileButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                        onPress={() => handleChangeDonationDiscount(donationDiscount + 0.5)}
+                        activeOpacity={0.7}
+                      >
+                        <Plus size={28} color={colors.text} strokeWidth={2} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              </>
+            ) : (
+              /* Custom Donation Input */
+              <View style={styles.customDiscountSection}>
+                <Text style={[styles.customDiscountLabel, { color: colors.textSecondary }]}>
+                  Describe your custom donation structure
+                </Text>
+                <TextInput
+                  style={[
+                    styles.customDiscountInput,
+                    { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }
+                  ]}
+                  placeholder="e.g., $1 per transaction to local charities..."
+                  placeholderTextColor={colors.textSecondary}
+                  value={customDonationText}
+                  onChangeText={setCustomDonationText}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+                <Text style={[styles.customDiscountNote, { color: colors.textSecondary }]}>
+                  Note: We will reach out to you to confirm and approve your custom donation.
+                </Text>
+                <TouchableOpacity
+                  style={[styles.saveCustomButton, { backgroundColor: colors.primary }]}
+                  onPress={handleSaveCustomDiscount}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.saveCustomButtonText, { color: colors.white }]}>
+                    Submit Custom Donation
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </>
         )}
+        </View>
       </View>
-    </View>
+    </>
   );
 }
 
@@ -607,5 +801,24 @@ const styles = StyleSheet.create({
   },
   underlinedText: {
     textDecorationLine: 'underline' as const,
+  },
+  donationAmountContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  donationLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    textAlign: 'center' as const,
+  },
+  donationAmount: {
+    fontSize: 42,
+    fontWeight: '700' as const,
   },
 });
