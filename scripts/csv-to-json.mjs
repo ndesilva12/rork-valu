@@ -190,24 +190,50 @@ async function convertBrands() {
   const rows = parseCSV(csvContent);
 
   const brands = await Promise.all(rows.map(async row => {
-    // Parse affiliates from affiliate1-5 and $affiliate1-5 columns
+    // Parse affiliates from affiliate1-20 and $affiliate1-20 columns
     const affiliates = [];
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 20; i++) {
       const name = row[`affiliate${i}`];
       const relationship = row[`$affiliate${i}`];
 
       if (name && name.trim()) {
         affiliates.push({
           name: name.trim(),
-          relationship: relationship ? relationship.trim() : 'Unknown'
+          relationship: relationship ? relationship.trim() : ''
         });
       }
     }
 
-    // Parse ownership from ownership1-5 columns
+    // Parse partnerships from Partnership1-20 columns
+    const partnerships = [];
+    for (let i = 1; i <= 20; i++) {
+      const partnershipEntry = row[`Partnership${i}`];
+
+      if (partnershipEntry && partnershipEntry.trim()) {
+        const entry = partnershipEntry.trim();
+        // Match pattern: "Name (details)" or just "Name"
+        const match = entry.match(/^(.+?)\s*\(([^)]+)\)$/);
+
+        if (match) {
+          // Found parentheses - split into name and relationship
+          partnerships.push({
+            name: match[1].trim(),
+            relationship: match[2].trim()
+          });
+        } else {
+          // No parentheses - use full text as name
+          partnerships.push({
+            name: entry,
+            relationship: ''
+          });
+        }
+      }
+    }
+
+    // Parse ownership from ownership1-20 columns
     // Extracts percentages or other info in parentheses into relationship field
     const ownership = [];
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 20; i++) {
       const ownershipEntry = row[`ownership${i}`];
 
       if (ownershipEntry && ownershipEntry.trim()) {
@@ -265,6 +291,7 @@ async function convertBrands() {
       description: row.description || '',
       website: row.website || '',
       affiliates: affiliates,
+      partnerships: partnerships,
       ownership: ownership
     };
 
