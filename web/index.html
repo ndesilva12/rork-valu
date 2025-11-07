@@ -4,6 +4,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Valu</title>
+    <style>
+      /* Hide scrollbars globally while maintaining scroll functionality */
+
+      /* Firefox */
+      * {
+        scrollbar-width: none;
+      }
+
+      /* Chrome, Safari, Edge */
+      *::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+      }
+
+      /* Ensure body and html can still scroll */
+      html, body {
+        overflow: auto;
+        -ms-overflow-style: none;
+      }
+
+      /* Hide scrollbars on all elements */
+      * {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
