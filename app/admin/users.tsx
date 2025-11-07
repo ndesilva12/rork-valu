@@ -1,0 +1,802 @@
+/**
+ * Admin Panel - Individual Users Management
+ *
+ * Edit ALL fields for individual user accounts
+ */
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  Alert,
+  Modal,
+  ActivityIndicator,
+} from 'react-native';
+import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { collection, getDocs, doc, updateDoc, query, where } from 'firebase/firestore';
+import { db } from '../../firebase';
+
+interface SocialMedia {
+  facebook?: string;
+  instagram?: string;
+  twitter?: string;
+  linkedin?: string;
+  yelp?: string;
+  youtube?: string;
+}
+
+interface UserDetails {
+  name?: string;
+  description?: string;
+  website?: string;
+  location?: string;
+  latitude?: number;
+  longitude?: number;
+  socialMedia?: SocialMedia;
+}
+
+interface Cause {
+  id: string;
+  name: string;
+  category: string;
+  type: 'support' | 'avoid';
+}
+
+interface Charity {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+}
+
+interface UserData {
+  userId: string;
+  email: string;
+  userDetails?: UserDetails;
+  causes: Cause[];
+  searchHistory: string[];
+  promoCode?: string;
+  donationAmount?: number;
+  selectedCharities?: Charity[];
+  consentGivenAt?: string;
+  consentVersion?: string;
+}
+
+export default function UsersManagement() {
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Form state - User Details
+  const [formName, setFormName] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formWebsite, setFormWebsite] = useState('');
+  const [formLocation, setFormLocation] = useState('');
+  const [formLatitude, setFormLatitude] = useState('');
+  const [formLongitude, setFormLongitude] = useState('');
+
+  // Form state - Social Media
+  const [formFacebook, setFormFacebook] = useState('');
+  const [formInstagram, setFormInstagram] = useState('');
+  const [formTwitter, setFormTwitter] = useState('');
+  const [formLinkedin, setFormLinkedin] = useState('');
+  const [formYelp, setFormYelp] = useState('');
+  const [formYoutube, setFormYoutube] = useState('');
+
+  // Form state - Other fields
+  const [formCauses, setFormCauses] = useState('');
+  const [formSearchHistory, setFormSearchHistory] = useState('');
+  const [formPromoCode, setFormPromoCode] = useState('');
+  const [formDonationAmount, setFormDonationAmount] = useState('');
+  const [formSelectedCharities, setFormSelectedCharities] = useState('');
+  const [formConsentGivenAt, setFormConsentGivenAt] = useState('');
+  const [formConsentVersion, setFormConsentVersion] = useState('');
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    try {
+      setIsLoading(true);
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('accountType', '==', 'individual'));
+      const snapshot = await getDocs(q);
+
+      const loadedUsers: UserData[] = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          userId: doc.id,
+          email: data.email || 'No email',
+          userDetails: data.userDetails || {},
+          causes: data.causes || [],
+          searchHistory: data.searchHistory || [],
+          promoCode: data.promoCode || '',
+          donationAmount: data.donationAmount || 0,
+          selectedCharities: data.selectedCharities || [],
+          consentGivenAt: data.consentGivenAt || '',
+          consentVersion: data.consentVersion || '',
+        };
+      });
+
+      setUsers(loadedUsers);
+    } catch (error) {
+      console.error('Error loading users:', error);
+      Alert.alert('Error', 'Failed to load users from Firebase');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const openEditModal = (user: UserData) => {
+    setEditingUser(user);
+
+    // User details
+    const details = user.userDetails || {};
+    setFormName(details.name || '');
+    setFormDescription(details.description || '');
+    setFormWebsite(details.website || '');
+    setFormLocation(details.location || '');
+    setFormLatitude(details.latitude?.toString() || '');
+    setFormLongitude(details.longitude?.toString() || '');
+
+    // Social media
+    const social = details.socialMedia || {};
+    setFormFacebook(social.facebook || '');
+    setFormInstagram(social.instagram || '');
+    setFormTwitter(social.twitter || '');
+    setFormLinkedin(social.linkedin || '');
+    setFormYelp(social.yelp || '');
+    setFormYoutube(social.youtube || '');
+
+    // Causes (formatted as id|name|category|type)
+    setFormCauses(
+      user.causes?.map((c) => `${c.id}|${c.name}|${c.category}|${c.type}`).join('\n') || ''
+    );
+
+    // Search history (one per line)
+    setFormSearchHistory(user.searchHistory?.join('\n') || '');
+
+    // Promo code
+    setFormPromoCode(user.promoCode || '');
+
+    // Donation amount
+    setFormDonationAmount(user.donationAmount?.toString() || '');
+
+    // Selected charities (formatted as id|name|description|category)
+    setFormSelectedCharities(
+      user.selectedCharities?.map((c) => `${c.id}|${c.name}|${c.description}|${c.category}`).join('\n') || ''
+    );
+
+    // Consent
+    setFormConsentGivenAt(user.consentGivenAt || '');
+    setFormConsentVersion(user.consentVersion || '');
+
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingUser(null);
+  };
+
+  const parseCauses = (text: string): Cause[] => {
+    return text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line)
+      .map((line) => {
+        const [id, name, category, type] = line.split('|').map((s) => s.trim());
+        return {
+          id: id || '',
+          name: name || '',
+          category: category || '',
+          type: (type as 'support' | 'avoid') || 'support',
+        };
+      })
+      .filter((item) => item.id && item.name);
+  };
+
+  const parseCharities = (text: string): Charity[] => {
+    return text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line)
+      .map((line) => {
+        const [id, name, description, category] = line.split('|').map((s) => s.trim());
+        return {
+          id: id || '',
+          name: name || '',
+          description: description || '',
+          category: category || '',
+        };
+      })
+      .filter((item) => item.id && item.name);
+  };
+
+  const handleSave = async () => {
+    if (!editingUser) return;
+
+    try {
+      // Build social media object
+      const socialMedia: SocialMedia = {};
+      if (formFacebook) socialMedia.facebook = formFacebook;
+      if (formInstagram) socialMedia.instagram = formInstagram;
+      if (formTwitter) socialMedia.twitter = formTwitter;
+      if (formLinkedin) socialMedia.linkedin = formLinkedin;
+      if (formYelp) socialMedia.yelp = formYelp;
+      if (formYoutube) socialMedia.youtube = formYoutube;
+
+      // Build user details object
+      const userDetails: UserDetails = {
+        name: formName,
+        description: formDescription,
+        website: formWebsite,
+        location: formLocation,
+        latitude: parseFloat(formLatitude) || undefined,
+        longitude: parseFloat(formLongitude) || undefined,
+        socialMedia: Object.keys(socialMedia).length > 0 ? socialMedia : undefined,
+      };
+
+      // Parse search history
+      const searchHistory = formSearchHistory
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line);
+
+      const updatedData = {
+        userDetails: userDetails,
+        causes: parseCauses(formCauses),
+        searchHistory: searchHistory,
+        promoCode: formPromoCode,
+        donationAmount: parseFloat(formDonationAmount) || 0,
+        selectedCharities: parseCharities(formSelectedCharities),
+        consentGivenAt: formConsentGivenAt,
+        consentVersion: formConsentVersion,
+      };
+
+      const userRef = doc(db, 'users', editingUser.userId);
+
+      // Update all user fields
+      await updateDoc(userRef, updatedData);
+
+      Alert.alert(
+        'Success',
+        `User "${formName || editingUser.email}" updated successfully`
+      );
+
+      closeModal();
+      loadUsers();
+    } catch (error) {
+      console.error('Error updating user:', error);
+      Alert.alert('Error', 'Failed to update user data');
+    }
+  };
+
+  const filteredUsers = users.filter(
+    (user) =>
+      (user.userDetails?.name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.userDetails?.location?.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color="#007bff" />
+          <Text style={styles.loadingText}>Loading individual users...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>Individual Users Management</Text>
+        <Text style={styles.subtitle}>
+          {users.length} individual accounts ({filteredUsers.length} filtered)
+        </Text>
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchBar}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by name, email, or location..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
+      {/* Users List */}
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.listContainer}>
+          {filteredUsers.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>
+                {searchQuery ? 'No users found matching your search' : 'No individual user accounts yet'}
+              </Text>
+            </View>
+          ) : (
+            filteredUsers.map((user) => (
+              <View key={user.userId} style={styles.userCard}>
+                <View style={styles.userHeader}>
+                  <View style={styles.userInfo}>
+                    <Text style={styles.userName}>{user.userDetails?.name || 'Unnamed User'}</Text>
+                    <Text style={styles.userEmail}>{user.email}</Text>
+                    {user.userDetails?.location && (
+                      <Text style={styles.userLocation}>📍 {user.userDetails.location}</Text>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={() => openEditModal(user)}
+                  >
+                    <Text style={styles.editButtonText}>Edit All Fields</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Quick Preview */}
+                <View style={styles.previewSection}>
+                  <Text style={styles.previewText}>
+                    {user.causes?.length || 0} causes • {user.searchHistory?.length || 0} searches
+                  </Text>
+                  {user.promoCode && (
+                    <Text style={styles.previewText}>💳 Promo: {user.promoCode}</Text>
+                  )}
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Edit Modal */}
+      <Modal visible={showModal} animationType="slide" transparent={false}>
+        <SafeAreaView style={styles.modalContainer}>
+          <ScrollView>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>
+                Edit User - {editingUser?.userDetails?.name || editingUser?.email}
+              </Text>
+
+              <View style={styles.userDetails}>
+                <Text style={styles.detailLabel}>Email:</Text>
+                <Text style={styles.detailValue}>{editingUser?.email}</Text>
+                <Text style={styles.detailLabel}>User ID:</Text>
+                <Text style={styles.detailValue}>{editingUser?.userId}</Text>
+              </View>
+
+              {/* USER DETAILS */}
+              <Text style={styles.sectionTitle}>👤 User Details</Text>
+
+              <Text style={styles.label}>Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="User's name"
+                value={formName}
+                onChangeText={setFormName}
+              />
+
+              <Text style={styles.label}>Description</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="User bio or description"
+                value={formDescription}
+                onChangeText={setFormDescription}
+                multiline
+                numberOfLines={4}
+              />
+
+              <Text style={styles.label}>Website</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://example.com"
+                value={formWebsite}
+                onChangeText={setFormWebsite}
+              />
+
+              <Text style={styles.label}>Location</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., New York, NY"
+                value={formLocation}
+                onChangeText={setFormLocation}
+              />
+
+              <Text style={styles.label}>Latitude</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="40.7128"
+                value={formLatitude}
+                onChangeText={setFormLatitude}
+                keyboardType="numeric"
+              />
+
+              <Text style={styles.label}>Longitude</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="-74.0060"
+                value={formLongitude}
+                onChangeText={setFormLongitude}
+                keyboardType="numeric"
+              />
+
+              {/* SOCIAL MEDIA */}
+              <Text style={styles.sectionTitle}>📱 Social Media</Text>
+
+              <Text style={styles.label}>Facebook</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://facebook.com/..."
+                value={formFacebook}
+                onChangeText={setFormFacebook}
+              />
+
+              <Text style={styles.label}>Instagram</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://instagram.com/..."
+                value={formInstagram}
+                onChangeText={setFormInstagram}
+              />
+
+              <Text style={styles.label}>Twitter</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://twitter.com/..."
+                value={formTwitter}
+                onChangeText={setFormTwitter}
+              />
+
+              <Text style={styles.label}>LinkedIn</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://linkedin.com/..."
+                value={formLinkedin}
+                onChangeText={setFormLinkedin}
+              />
+
+              <Text style={styles.label}>Yelp</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://yelp.com/..."
+                value={formYelp}
+                onChangeText={setFormYelp}
+              />
+
+              <Text style={styles.label}>YouTube</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://youtube.com/..."
+                value={formYoutube}
+                onChangeText={setFormYoutube}
+              />
+
+              {/* CAUSES / VALUES */}
+              <Text style={styles.sectionTitle}>⭐ Causes / Values</Text>
+              <Text style={styles.helpText}>
+                Format: id|name|category|type (one per line). Type should be "support" or "avoid".
+              </Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="abortion|Abortion|social_issue|support&#10;climate|Climate Change|social_issue|avoid"
+                value={formCauses}
+                onChangeText={setFormCauses}
+                multiline
+                numberOfLines={10}
+              />
+
+              {/* SEARCH HISTORY */}
+              <Text style={styles.sectionTitle}>🔍 Search History</Text>
+              <Text style={styles.helpText}>
+                One search term per line
+              </Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="nike&#10;starbucks&#10;apple"
+                value={formSearchHistory}
+                onChangeText={setFormSearchHistory}
+                multiline
+                numberOfLines={5}
+              />
+
+              {/* PROMO & DONATIONS */}
+              <Text style={styles.sectionTitle}>💰 Promo & Donations</Text>
+
+              <Text style={styles.label}>Promo Code</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., SAVE20"
+                value={formPromoCode}
+                onChangeText={setFormPromoCode}
+              />
+
+              <Text style={styles.label}>Donation Amount</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="0.00"
+                value={formDonationAmount}
+                onChangeText={setFormDonationAmount}
+                keyboardType="numeric"
+              />
+
+              {/* SELECTED CHARITIES */}
+              <Text style={styles.sectionTitle}>🏥 Selected Charities</Text>
+              <Text style={styles.helpText}>
+                Format: id|name|description|category (one per line)
+              </Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="redcross|Red Cross|Humanitarian aid|Health&#10;unicef|UNICEF|Children's welfare|Children"
+                value={formSelectedCharities}
+                onChangeText={setFormSelectedCharities}
+                multiline
+                numberOfLines={5}
+              />
+
+              {/* CONSENT */}
+              <Text style={styles.sectionTitle}>✅ Consent Information</Text>
+
+              <Text style={styles.label}>Consent Given At (ISO timestamp)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="2024-01-01T00:00:00.000Z"
+                value={formConsentGivenAt}
+                onChangeText={setFormConsentGivenAt}
+              />
+
+              <Text style={styles.label}>Consent Version</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="1.0"
+                value={formConsentVersion}
+                onChangeText={setFormConsentVersion}
+              />
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.cancelButton} onPress={closeModal}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+                  <Text style={styles.saveButtonText}>Save All Changes</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
+  },
+  header: {
+    padding: 20,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  backButton: {
+    marginBottom: 12,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#007bff',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+  },
+  searchBar: {
+    padding: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  searchInput: {
+    height: 40,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 14,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  listContainer: {
+    padding: 16,
+    gap: 12,
+  },
+  emptyState: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#999',
+    textAlign: 'center',
+  },
+  userCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  userHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 4,
+  },
+  userLocation: {
+    fontSize: 12,
+    color: '#666',
+  },
+  editButton: {
+    backgroundColor: '#007bff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  editButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  previewSection: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  previewText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  modalContent: {
+    padding: 24,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 16,
+  },
+  userDetails: {
+    backgroundColor: '#f0f4f8',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  detailLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#555',
+    marginTop: 8,
+    marginBottom: 2,
+  },
+  detailValue: {
+    fontSize: 14,
+    color: '#333',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 24,
+    marginBottom: 12,
+  },
+  helpText: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#555',
+    marginBottom: 6,
+    marginTop: 12,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  textArea: {
+    height: 100,
+    paddingTop: 12,
+    textAlignVertical: 'top',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 32,
+    marginBottom: 40,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#6c757d',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: '#28a745',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
