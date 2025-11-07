@@ -11,10 +11,11 @@ import {
   Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Location from 'expo-location';
 import { Search, MapPin, AlertCircle, ChevronDown, Map as MapIcon, X } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
-import { getBusinessesAcceptingDiscounts, calculateDistance, BusinessUser, isBusinessWithinRange } from '@/services/firebase/businessService';
+import { getBusinessesAcceptingDiscounts, calculateDistance, calculateAlignmentScore, normalizeScores, BusinessUser } from '@/services/firebase/businessService';
 import BusinessMapView from './BusinessMapView';
 
 type LocalDistanceOption = 1 | 5 | 10 | 25 | 50 | 100;
@@ -28,22 +29,34 @@ export default function BusinessesAcceptingDiscounts() {
   const [filteredBusinesses, setFilteredBusinesses] = useState<BusinessUser[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [distanceFilter, setDistanceFilter] = useState<LocalDistanceOption>(100);
   const [showDistanceMenu, setShowDistanceMenu] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
 
-  // Check if user has location from profile
+  // Request GPS location permission and get current location
   useEffect(() => {
-    if (profile.userDetails?.latitude && profile.userDetails?.longitude) {
+    requestLocation();
+  }, []);
+
+  const requestLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('[BusinessesAcceptingDiscounts] Location permission denied');
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
       setUserLocation({
-        latitude: profile.userDetails.latitude,
-        longitude: profile.userDetails.longitude,
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
       });
-      setHasLocationPermission(true);
+      console.log('[BusinessesAcceptingDiscounts] Got GPS location:', location.coords);
+    } catch (error) {
+      console.error('[BusinessesAcceptingDiscounts] Error getting location:', error);
     }
-  }, [profile.userDetails]);
+  };
 
   // Fetch businesses from Firebase (once on mount)
   useEffect(() => {
@@ -63,34 +76,55 @@ export default function BusinessesAcceptingDiscounts() {
     }
   };
 
-  // Apply distance calculation, filtering, and sorting
+  // Apply distance calculation, alignment scoring, filtering, and sorting
   useEffect(() => {
-    let filtered = [...businesses];
+    if (businesses.length === 0) {
+      setFilteredBusinesses([]);
+      return;
+    }
 
-    // Calculate distances and apply distance filter if location is available
-    if (userLocation && businesses.length > 0) {
-      // First, calculate distances for all businesses
-      filtered = filtered.map((business) => {
-        if (business.businessInfo.latitude && business.businessInfo.longitude) {
-          const distance = calculateDistance(
-            userLocation.latitude,
-            userLocation.longitude,
-            business.businessInfo.latitude,
-            business.businessInfo.longitude
-          );
-          return { ...business, distance };
-        }
-        return business;
-      });
+    // Create new array to avoid mutating original
+    let processed = businesses.map((business) => {
+      const newBusiness = { ...business };
 
-      // Then filter by distance
-      filtered = filtered.filter((business) => {
+      // Calculate distance if location available
+      if (userLocation && business.businessInfo.latitude && business.businessInfo.longitude) {
+        newBusiness.distance = calculateDistance(
+          userLocation.latitude,
+          userLocation.longitude,
+          business.businessInfo.latitude,
+          business.businessInfo.longitude
+        );
+      }
+
+      // Calculate alignment score if user has causes
+      if (profile.causes && profile.causes.length > 0) {
+        const rawScore = calculateAlignmentScore(profile.causes, business.causes || []);
+        newBusiness.alignmentScore = rawScore;
+      }
+
+      return newBusiness;
+    });
+
+    // Normalize alignment scores if we have them
+    if (processed.some(b => b.alignmentScore !== undefined)) {
+      const rawScores = processed.map(b => b.alignmentScore || 50);
+      const normalizedScores = normalizeScores(rawScores);
+      processed = processed.map((business, index) => ({
+        ...business,
+        alignmentScore: normalizedScores[index],
+      }));
+    }
+
+    // Filter by distance if location is available
+    if (userLocation) {
+      processed = processed.filter((business) => {
         if (!business.distance) return false;
         return business.distance <= distanceFilter;
       });
 
       // Sort by distance (businesses with location first)
-      filtered.sort((a, b) => {
+      processed.sort((a, b) => {
         if (a.distance !== undefined && b.distance !== undefined) {
           return a.distance - b.distance;
         }
@@ -100,13 +134,13 @@ export default function BusinessesAcceptingDiscounts() {
       });
     } else {
       // Random sort if no location
-      filtered.sort(() => Math.random() - 0.5);
+      processed.sort(() => Math.random() - 0.5);
     }
 
     // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((business) => {
+      processed = processed.filter((business) => {
         const name = business.businessInfo.name.toLowerCase();
         const category = business.businessInfo.category?.toLowerCase() || '';
         const location = business.businessInfo.location?.toLowerCase() || '';
@@ -115,16 +149,16 @@ export default function BusinessesAcceptingDiscounts() {
       });
     }
 
-    setFilteredBusinesses(filtered);
-  }, [userLocation, businesses, distanceFilter, searchQuery]);
+    setFilteredBusinesses(processed);
+  }, [userLocation, businesses, distanceFilter, searchQuery, profile.causes]);
 
   const handleEnableLocation = () => {
     Alert.alert(
       'Enable Location',
-      'To see businesses sorted by distance, please add your location in the Profile → Details tab.',
+      'To see businesses sorted by distance, please enable location permissions.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Go to Profile', onPress: () => router.push('/profile') }
+        { text: 'Enable', onPress: requestLocation }
       ]
     );
   };
@@ -329,7 +363,7 @@ export default function BusinessesAcceptingDiscounts() {
                 <BusinessMapView
                   businesses={filteredBusinesses.map(business => ({
                     business,
-                    alignmentScore: 75, // Default score
+                    alignmentScore: business.alignmentScore || 50, // Use calculated score or default
                     distance: business.distance,
                   }))}
                   userLocation={userLocation}
