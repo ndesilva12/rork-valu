@@ -47,7 +47,7 @@ import { trpc } from '@/lib/trpc';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
-import { getAllUserBusinesses, calculateAlignmentScore, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
+import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 import BusinessMapView from '@/components/BusinessMapView';
 
 type ViewMode = 'playbook' | 'browse';
@@ -366,22 +366,29 @@ export default function HomeScreen() {
       userLocation,
     });
 
-    // Score each business based on alignment with user's values
-    const scoredBusinesses = userBusinesses.map((business) => {
-      const allValueIds = values.map(v => v.id);
-      const alignmentScore = calculateAlignmentScore(profile.causes, business.causes || [], allValueIds);
-
-      // Check if business is within range
+    // Calculate raw scores for all businesses
+    const businessesWithRawScores = userBusinesses.map((business) => {
+      const rawScore = calculateAlignmentScore(profile.causes, business.causes || []);
       const rangeResult = isBusinessWithinRange(business, userLocation.latitude, userLocation.longitude, localDistance);
 
       return {
         business,
-        alignmentScore,
+        rawScore,
         distance: rangeResult.closestDistance,
         closestLocation: rangeResult.closestLocation,
         isWithinRange: rangeResult.isWithinRange,
       };
     });
+
+    // Normalize scores to 10-90 range with bell curve distribution
+    const rawScores = businessesWithRawScores.map(b => b.rawScore);
+    const normalizedScores = normalizeScores(rawScores);
+
+    // Map normalized scores back to businesses
+    const scoredBusinesses = businessesWithRawScores.map((b, index) => ({
+      ...b,
+      alignmentScore: normalizedScores[index],
+    }));
 
     // Filter by distance
     const businessesInRange = scoredBusinesses.filter((b) => b.isWithinRange);

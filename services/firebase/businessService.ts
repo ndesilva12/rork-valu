@@ -177,17 +177,10 @@ export async function getAllUserBusinesses(): Promise<BusinessUser[]> {
  */
 export function calculateAlignmentScore(
   userCauses: Cause[],
-  businessCauses: Cause[],
-  allValueIds?: string[]
+  businessCauses: Cause[]
 ): number {
-  // Simple point-based scoring system:
-  // - Start at 50
-  // - Matching selection (both support or both avoid): +5
-  // - Opposite sentiment (one supports, one avoids): -5
-  // - One selected but other didn't: -2
-  // - Both unselected: +1
-
-  let score = 50; // Start at neutral
+  // Calculate raw alignment score - will be normalized later to create bell curve
+  // Simple scoring: count matches, conflicts, and partial matches
 
   // Create sets for quick lookup
   const userSupportSet = new Set(userCauses.filter(c => c.type === 'support').map(c => c.id));
@@ -196,15 +189,19 @@ export function calculateAlignmentScore(
   const bizAvoidSet = new Set(businessCauses.filter(c => c.type === 'avoid').map(c => c.id));
 
   // Get all unique value IDs from both user and business
-  const selectedValueIds = new Set([
+  const allValueIds = new Set([
     ...userSupportSet,
     ...userAvoidSet,
     ...bizSupportSet,
     ...bizAvoidSet,
   ]);
 
-  // Check alignment for each selected value
-  selectedValueIds.forEach(valueId => {
+  let matches = 0;      // Both agree (support-support or avoid-avoid)
+  let conflicts = 0;    // Both disagree (support-avoid or avoid-support)
+  let partialMatch = 0; // Only one has a position
+
+  // Check alignment for each value where at least one has a position
+  allValueIds.forEach(valueId => {
     const userSupports = userSupportSet.has(valueId);
     const userAvoids = userAvoidSet.has(valueId);
     const bizSupports = bizSupportSet.has(valueId);
@@ -216,30 +213,48 @@ export function calculateAlignmentScore(
     if (userHasPosition && bizHasPosition) {
       // Both have positions - check if they match or conflict
       if ((userSupports && bizSupports) || (userAvoids && bizAvoids)) {
-        score += 5; // Matching selection
+        matches++;
       } else if ((userSupports && bizAvoids) || (userAvoids && bizSupports)) {
-        score -= 5; // Opposite sentiment
+        conflicts++;
       }
     } else if (userHasPosition || bizHasPosition) {
       // Only one has a position
-      score -= 2;
+      partialMatch++;
     }
   });
 
-  // Add bonus for values both users didn't select
-  if (allValueIds && allValueIds.length > 0) {
-    allValueIds.forEach(valueId => {
-      const userHasPosition = userSupportSet.has(valueId) || userAvoidSet.has(valueId);
-      const bizHasPosition = bizSupportSet.has(valueId) || bizAvoidSet.has(valueId);
+  // Simple raw score calculation
+  // Give weight to matches and conflicts, penalize partial matches
+  const rawScore = (matches * 10) - (conflicts * 10) - (partialMatch * 3);
 
-      if (!userHasPosition && !bizHasPosition) {
-        score += 1; // Both unselected
-      }
-    });
+  return rawScore;
+}
+
+/**
+ * Normalize scores to create a bell curve distribution
+ * Maps scores to 10-90 range with midpoint at 50
+ *
+ * @param scores Array of raw scores
+ * @returns Array of normalized scores (10-90 range)
+ */
+export function normalizeScores(scores: number[]): number[] {
+  if (scores.length === 0) return [];
+  if (scores.length === 1) return [50]; // Single score gets midpoint
+
+  // Find min and max
+  const minScore = Math.min(...scores);
+  const maxScore = Math.max(...scores);
+
+  // If all scores are the same, return midpoint
+  if (minScore === maxScore) {
+    return scores.map(() => 50);
   }
 
-  // Clamp score to reasonable range (0-100)
-  return Math.max(0, Math.min(100, Math.round(score)));
+  // Normalize to 10-90 range with linear scaling
+  return scores.map(score => {
+    const normalized = ((score - minScore) / (maxScore - minScore)) * 80 + 10;
+    return Math.round(normalized);
+  });
 }
 
 /**
