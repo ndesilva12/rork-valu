@@ -41,20 +41,33 @@ export default function BusinessesAcceptingDiscounts() {
 
   const requestLocation = async () => {
     try {
+      console.log('[BusinessesAcceptingDiscounts] Requesting location permission...');
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        console.log('[BusinessesAcceptingDiscounts] Location permission denied');
+        console.log('[BusinessesAcceptingDiscounts] ❌ Location permission denied');
+        Alert.alert(
+          'Location Required',
+          'Location access is needed to show nearby businesses.',
+          [{ text: 'OK' }]
+        );
         return;
       }
 
+      console.log('[BusinessesAcceptingDiscounts] ✅ Permission granted, getting location...');
       const location = await Location.getCurrentPositionAsync({});
-      setUserLocation({
+      const newLocation = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-      });
-      console.log('[BusinessesAcceptingDiscounts] Got GPS location:', location.coords);
+      };
+      setUserLocation(newLocation);
+      console.log('[BusinessesAcceptingDiscounts] ✅ Got GPS location:', newLocation);
     } catch (error) {
-      console.error('[BusinessesAcceptingDiscounts] Error getting location:', error);
+      console.error('[BusinessesAcceptingDiscounts] ❌ Error getting location:', error);
+      Alert.alert(
+        'Location Error',
+        'Failed to get your location. Please try again.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
@@ -78,6 +91,14 @@ export default function BusinessesAcceptingDiscounts() {
 
   // Apply distance calculation, alignment scoring, filtering, and sorting
   useEffect(() => {
+    console.log('[BusinessesAcceptingDiscounts] Processing businesses:', {
+      totalBusinesses: businesses.length,
+      hasLocation: !!userLocation,
+      userLocation,
+      userCausesCount: profile.causes?.length || 0,
+      distanceFilter,
+    });
+
     if (businesses.length === 0) {
       setFilteredBusinesses([]);
       return;
@@ -106,6 +127,12 @@ export default function BusinessesAcceptingDiscounts() {
       return newBusiness;
     });
 
+    console.log('[BusinessesAcceptingDiscounts] Sample processed business:', {
+      name: processed[0]?.businessInfo.name,
+      distance: processed[0]?.distance,
+      alignmentScore: processed[0]?.alignmentScore,
+    });
+
     // Normalize alignment scores if we have them
     if (processed.some(b => b.alignmentScore !== undefined)) {
       const rawScores = processed.map(b => b.alignmentScore || 50);
@@ -114,13 +141,21 @@ export default function BusinessesAcceptingDiscounts() {
         ...business,
         alignmentScore: normalizedScores[index],
       }));
+      console.log('[BusinessesAcceptingDiscounts] Normalized sample score:', processed[0]?.alignmentScore);
     }
 
     // Filter by distance if location is available
     if (userLocation) {
+      const beforeFilter = processed.length;
       processed = processed.filter((business) => {
         if (!business.distance) return false;
         return business.distance <= distanceFilter;
+      });
+      console.log('[BusinessesAcceptingDiscounts] Distance filtering:', {
+        beforeFilter,
+        afterFilter: processed.length,
+        distanceFilter,
+        sampleDistance: processed[0]?.distance,
       });
 
       // Sort by distance (businesses with location first)
@@ -133,6 +168,7 @@ export default function BusinessesAcceptingDiscounts() {
         return 0;
       });
     } else {
+      console.log('[BusinessesAcceptingDiscounts] No location, showing all businesses');
       // Random sort if no location
       processed.sort(() => Math.random() - 0.5);
     }
@@ -149,6 +185,7 @@ export default function BusinessesAcceptingDiscounts() {
       });
     }
 
+    console.log('[BusinessesAcceptingDiscounts] ✅ Final filtered businesses:', processed.length);
     setFilteredBusinesses(processed);
   }, [userLocation, businesses, distanceFilter, searchQuery, profile.causes]);
 
