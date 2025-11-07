@@ -9,10 +9,8 @@ import {
   StatusBar,
   useWindowDimensions,
   Image,
-  Modal,
 } from 'react-native';
 import { useState, useEffect } from 'react';
-import { Info, X as XIcon } from 'lucide-react-native';
 import QRCode from 'react-native-qrcode-svg';
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
@@ -28,8 +26,6 @@ export default function DiscountScreen() {
 
   const isBusiness = profile.accountType === 'business';
   const [showQRCode, setShowQRCode] = useState(false);
-  const [showInfoModal, setShowInfoModal] = useState(false);
-  const [showDonationsModal, setShowDonationsModal] = useState(false);
 
   // Generate a random QR code value that changes on each render
   const [qrValue, setQrValue] = useState('');
@@ -83,18 +79,14 @@ export default function DiscountScreen() {
         ) : (
           /* Individual Code: Value Code & QR Generator */
           <>
-            {/* Value Code Section */}
+            {/* Promo Code Section */}
             <View style={[styles.promoSection, { borderColor: colors.primary, backgroundColor: colors.backgroundSecondary }]}>
-              <Text style={[styles.promoLabel, { color: colors.textSecondary }]}>Your Value Code</Text>
-              <Text style={[styles.promoCode, { color: colors.primary }]}>{profile.promoCode || 'VALU000000'}</Text>
-              <Text style={[styles.promoDescription, { color: colors.textSecondary }]}>
-                Use this code (Promo or QR) to get discounts on purchases plus donations made to your chosen organizations. See below for participating locations in your area.
-              </Text>
+              <Text style={[styles.promoLabel, { color: colors.textSecondary }]}>Your Promo Code</Text>
+              <Text style={[styles.promoCode, { color: colors.primary }]}>{profile.promoCode || 'STAND00000'}</Text>
 
-              {/* QR Code Toggle Section */}
+              {/* QR Code Toggle Section - Moved directly beneath promo code */}
               {qrValue && (
                 <View style={styles.qrCodeSection}>
-                  <View style={styles.qrDivider} />
                   {!showQRCode ? (
                     <TouchableOpacity
                       style={[styles.generateQRButton, { backgroundColor: colors.primary }]}
@@ -132,19 +124,10 @@ export default function DiscountScreen() {
                 </View>
               )}
 
-              {/* Clickable Text Links - Side by Side */}
-              <View style={styles.infoLinksRow}>
-                <TouchableOpacity onPress={() => setShowInfoModal(true)} activeOpacity={0.7} style={styles.infoLinkButton}>
-                  <Text style={[styles.howItWorksText, { color: colors.primary }]}>
-                    How Your Code Works
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setShowDonationsModal(true)} activeOpacity={0.7} style={styles.infoLinkButton}>
-                  <Text style={[styles.howItWorksText, { color: colors.primary }]}>
-                    How Donations Work
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              {/* Explainer Text */}
+              <Text style={[styles.promoDescription, { color: colors.textSecondary }]}>
+                Use these codes at participating locations to receive discounts and accumulate donations to your chosen organizations.
+              </Text>
 
               {/* Impact Dashboard Content */}
               <View style={styles.impactDashboardSection}>
@@ -208,63 +191,6 @@ export default function DiscountScreen() {
         )}
 
       </ScrollView>
-
-      {/* Info Modal - How Your Code Works */}
-      <Modal
-        visible={showInfoModal}
-        animationType="fade"
-        transparent
-        onRequestClose={() => setShowInfoModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>How Your Code Works</Text>
-              <TouchableOpacity onPress={() => setShowInfoModal(false)} activeOpacity={0.7}>
-                <XIcon size={24} color={colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalContent}>
-              <Text style={[styles.modalText, { color: colors.textSecondary }]}>
-                Every time you use your Value code at participating businesses, you'll receive a discount
-                and help support the causes you care about through automatic donations.
-              </Text>
-              <Text style={[styles.modalText, { color: colors.textSecondary }]}>
-                Use the Impact Dashboard below to select which organizations receive your donation contributions.
-              </Text>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Donations Modal - How Donations Work */}
-      <Modal
-        visible={showDonationsModal}
-        animationType="fade"
-        transparent
-        onRequestClose={() => setShowDonationsModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>How Donations Work</Text>
-              <TouchableOpacity onPress={() => setShowDonationsModal(false)} activeOpacity={0.7}>
-                <XIcon size={24} color={colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalContent}>
-              <Text style={[styles.modalText, { color: colors.textSecondary }]}>
-                Every time you use your Value code, a portion of the transaction is donated to your
-                selected organizations.
-              </Text>
-              <Text style={[styles.modalText, { color: colors.textSecondary }]}>
-                You can select up to 3 organizations to support. Donations are split equally among
-                your chosen organizations.
-              </Text>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -378,24 +304,6 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(0, 0, 0, 0.1)',
     alignItems: 'center',
   },
-  infoLinksRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    gap: 16,
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  infoLinkButton: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  howItWorksText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    textDecorationLine: 'underline' as const,
-  },
   impactDashboardSection: {
     marginTop: 20,
   },
@@ -503,40 +411,5 @@ const styles = StyleSheet.create({
   infoBox: {
     padding: 16,
     borderRadius: 12,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContainer: {
-    width: '100%',
-    maxWidth: 500,
-    borderRadius: 16,
-    padding: 24,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-  },
-  modalContent: {
-    maxHeight: 400,
-  },
-  modalText: {
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 16,
-  },
-  underlinedText: {
-    textDecorationLine: 'underline' as const,
   },
 });

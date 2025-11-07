@@ -8,10 +8,10 @@ import { saveUserProfile, getUserProfile, createUser, updateUserMetadata } from 
 const PROFILE_KEY = '@user_profile';
 const IS_NEW_USER_KEY = '@is_new_user';
 
-// Generate a random 6-digit promo code
+// Generate a random 5-digit promo code
 const generatePromoCode = (): string => {
-  const digits = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-  return `VALU${digits}`;
+  const digits = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+  return `STAND${digits}`;
 };
 
 export const [UserProvider, useUser] = createContextHook(() => {

@@ -8,12 +8,16 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Search, MapPin, AlertCircle } from 'lucide-react-native';
+import { Search, MapPin, AlertCircle, ChevronDown, Map as MapIcon, X } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
-import { getBusinessesAcceptingDiscounts, calculateDistance, BusinessUser } from '@/services/firebase/businessService';
+import { getBusinessesAcceptingDiscounts, calculateDistance, BusinessUser, isBusinessWithinRange } from '@/services/firebase/businessService';
+import BusinessMapView from './BusinessMapView';
+
+type LocalDistanceOption = 1 | 5 | 10 | 25 | 50 | 100;
 
 export default function BusinessesAcceptingDiscounts() {
   const router = useRouter();
@@ -26,6 +30,9 @@ export default function BusinessesAcceptingDiscounts() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [distanceFilter, setDistanceFilter] = useState<LocalDistanceOption>(100);
+  const [showDistanceMenu, setShowDistanceMenu] = useState(false);
+  const [showMapModal, setShowMapModal] = useState(false);
 
   // Check if user has location from profile
   useEffect(() => {
@@ -76,13 +83,19 @@ export default function BusinessesAcceptingDiscounts() {
     }
   };
 
-  // Sort businesses by distance or randomly
+  // Filter businesses by distance and sort
   useEffect(() => {
-    let sorted = [...filteredBusinesses];
+    let filtered = [...businesses];
 
+    // Filter by distance if location is available
     if (userLocation) {
+      filtered = filtered.filter((business) => {
+        if (!business.distance) return false;
+        return business.distance <= distanceFilter;
+      });
+
       // Sort by distance (businesses with location first)
-      sorted.sort((a, b) => {
+      filtered.sort((a, b) => {
         if (a.distance !== undefined && b.distance !== undefined) {
           return a.distance - b.distance;
         }
@@ -91,12 +104,12 @@ export default function BusinessesAcceptingDiscounts() {
         return 0;
       });
     } else {
-      // Random sort
-      sorted.sort(() => Math.random() - 0.5);
+      // Random sort if no location
+      filtered.sort(() => Math.random() - 0.5);
     }
 
-    setFilteredBusinesses(sorted);
-  }, [userLocation, businesses]);
+    setFilteredBusinesses(filtered);
+  }, [userLocation, businesses, distanceFilter]);
 
   // Handle search
   useEffect(() => {
@@ -206,6 +219,32 @@ export default function BusinessesAcceptingDiscounts() {
         )}
       </View>
 
+      {/* Distance Filter and Map Button */}
+      {userLocation && (
+        <View style={styles.filtersRow}>
+          <TouchableOpacity
+            style={[styles.distanceButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+            onPress={() => setShowDistanceMenu(true)}
+            activeOpacity={0.7}
+          >
+            <MapPin size={16} color={colors.primary} strokeWidth={2} />
+            <Text style={[styles.distanceButtonText, { color: colors.text }]}>
+              {distanceFilter} mile{distanceFilter !== 1 ? 's' : ''}
+            </Text>
+            <ChevronDown size={16} color={colors.textSecondary} strokeWidth={2} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.mapButton, { backgroundColor: colors.primary }]}
+            onPress={() => setShowMapModal(true)}
+            activeOpacity={0.7}
+          >
+            <MapIcon size={16} color={colors.white} strokeWidth={2} />
+            <Text style={[styles.mapButtonText, { color: colors.white }]}>Map</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Business List */}
       {filteredBusinesses.length > 0 ? (
         <FlatList
@@ -226,6 +265,104 @@ export default function BusinessesAcceptingDiscounts() {
           </Text>
         </View>
       )}
+
+      {/* Distance Filter Menu Modal */}
+      <Modal
+        visible={showDistanceMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDistanceMenu(false)}
+      >
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={() => setShowDistanceMenu(false)}
+        >
+          <View style={[styles.menuContainer, { backgroundColor: colors.background }]}>
+            <Text style={[styles.menuTitle, { color: colors.text }]}>Distance Filter</Text>
+            {([1, 5, 10, 25, 50, 100] as LocalDistanceOption[]).map((distance) => (
+              <TouchableOpacity
+                key={distance}
+                style={[
+                  styles.menuItem,
+                  { borderBottomColor: colors.border },
+                  distanceFilter === distance && { backgroundColor: colors.backgroundSecondary }
+                ]}
+                onPress={() => {
+                  setDistanceFilter(distance);
+                  setShowDistanceMenu(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.menuItemText,
+                  { color: distanceFilter === distance ? colors.primary : colors.text }
+                ]}>
+                  {distance} mile{distance !== 1 ? 's' : ''}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Map Modal */}
+      <Modal
+        visible={showMapModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowMapModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.mapModalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowMapModal(false)}
+        >
+          <TouchableOpacity
+            style={[styles.mapModalContainer, { backgroundColor: colors.background }]}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={[styles.mapModalHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+              <Text style={[styles.mapModalTitle, { color: colors.text }]}>
+                Businesses ({distanceFilter} mile{distanceFilter !== 1 ? 's' : ''})
+              </Text>
+              <TouchableOpacity
+                style={[styles.mapModalCloseButton, { backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => setShowMapModal(false)}
+                activeOpacity={0.7}
+              >
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.mapModalContent}>
+              {userLocation && filteredBusinesses.length > 0 ? (
+                <BusinessMapView
+                  businesses={filteredBusinesses.map(business => ({
+                    business,
+                    alignmentScore: 75, // Default score
+                    distance: business.distance,
+                  }))}
+                  userLocation={userLocation}
+                  distanceRadius={distanceFilter}
+                  onBusinessPress={(businessId) => {
+                    setShowMapModal(false);
+                    router.push(`/business/${businessId}`);
+                  }}
+                />
+              ) : (
+                <View style={styles.mapModalEmpty}>
+                  <MapPin size={48} color={colors.textSecondary} strokeWidth={1.5} />
+                  <Text style={[styles.mapModalEmptyText, { color: colors.text }]}>
+                    No businesses found in this area
+                  </Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -326,6 +463,124 @@ const styles = StyleSheet.create({
   emptySubtext: {
     fontSize: 14,
     marginTop: 8,
+    textAlign: 'center',
+  },
+  filtersRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  distanceButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  distanceButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  mapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+  },
+  mapButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  menuContainer: {
+    width: '80%',
+    maxWidth: 300,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  menuTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  menuItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+  },
+  menuItemText: {
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  mapModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  mapModalContainer: {
+    width: '90%',
+    height: '87.5%',
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  mapModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+  },
+  mapModalTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
+  mapModalCloseButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapModalContent: {
+    flex: 1,
+  },
+  mapModalEmpty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 16,
+  },
+  mapModalEmptyText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
     textAlign: 'center',
   },
 });
