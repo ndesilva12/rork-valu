@@ -634,18 +634,10 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Local Toggle Button */}
-      <View style={styles.localButtonContainer}>
+      {/* Local Toggle Button Container */}
+      <View style={[styles.localButtonContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
         <TouchableOpacity
-          style={[
-            styles.localButton,
-            {
-              backgroundColor: isLocalMode ? colors.primary : colors.backgroundSecondary,
-              borderColor: isLocalMode ? colors.primary : colors.border,
-              borderTopRightRadius: isLocalMode ? 0 : 10,
-              borderBottomRightRadius: isLocalMode ? 0 : 10,
-            }
-          ]}
+          style={[styles.localButton, isLocalMode && { backgroundColor: colors.primary }]}
           onPress={() => {
             setIsLocalMode(!isLocalMode);
             setShowDistanceDropdown(false);
@@ -653,19 +645,19 @@ export default function HomeScreen() {
           activeOpacity={0.7}
         >
           <MapPin size={16} color={isLocalMode ? colors.white : colors.textSecondary} strokeWidth={2} />
-          <Text style={[styles.localButtonText, { color: isLocalMode ? colors.white : colors.text }]}>
+          <Text style={[styles.localButtonText, { color: isLocalMode ? colors.white : colors.textSecondary }]}>
             Local
           </Text>
         </TouchableOpacity>
 
-        {/* Distance Dropdown Arrow */}
+        {/* Distance Dropdown Arrow Button */}
         {isLocalMode && (
           <TouchableOpacity
-            style={[styles.distanceArrow, { backgroundColor: colors.background, borderColor: colors.primary }]}
+            style={styles.distanceArrowButton}
             onPress={() => setShowDistanceDropdown(!showDistanceDropdown)}
             activeOpacity={0.7}
           >
-            <ChevronDown size={20} color={colors.primary} strokeWidth={2.5} />
+            <ChevronDown size={18} color={colors.primary} strokeWidth={2.5} />
           </TouchableOpacity>
         )}
 
@@ -1332,7 +1324,9 @@ const styles = StyleSheet.create({
     position: 'relative' as const,
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'stretch',
+    borderRadius: 10,
+    padding: 3,
+    borderWidth: 1,
     zIndex: 101,
   },
   localButton: {
@@ -1341,28 +1335,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 13,
+    paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
+    borderRadius: 8,
   },
   localButtonText: {
     fontSize: 15,
     fontWeight: '600' as const,
   },
-  distanceArrow: {
-    marginLeft: -1,
-    paddingHorizontal: 10,
-    paddingVertical: 13,
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
-    borderWidth: 1,
+  distanceArrowButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: 2,
   },
   distanceDropdown: {
     position: 'absolute' as const,
-    top: 48,
+    top: 52,
     right: 0,
     width: 160,
     maxHeight: 300,
