@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { publicProcedure } from "../../../create-context";
-import { fetchBrandsFromFirebase, fetchLocalBusinessesFromFirebase } from "../../../../services/firebase-data";
+import { fetchBrandsFromSheets, fetchLocalBusinessesFromSheets } from "../../../../services/local-data";
 
 // Helper to slugify a string (convert to lowercase, replace spaces/special chars with hyphens)
 function slugify(text: string): string {
@@ -17,8 +17,8 @@ export const getBrandProcedure = publicProcedure
   .query(async ({ input }) => {
     // Search in both brands and local businesses
     const [brands, businesses] = await Promise.all([
-      fetchBrandsFromFirebase(),
-      fetchLocalBusinessesFromFirebase(),
+      fetchBrandsFromSheets(),
+      fetchLocalBusinessesFromSheets(),
     ]);
 
     const allBrands = [...brands, ...businesses];

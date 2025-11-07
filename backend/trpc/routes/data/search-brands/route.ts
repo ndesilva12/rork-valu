@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { publicProcedure } from "../../../create-context";
-import { fetchBrandsFromFirebase, searchBrands } from "../../../../services/firebase-data";
+import { fetchBrandsFromSheets, searchBrands } from "../../../../services/local-data";
 
 export const searchBrandsProcedure = publicProcedure
   .input(
@@ -10,7 +10,7 @@ export const searchBrandsProcedure = publicProcedure
     })
   )
   .query(async ({ input }) => {
-    const allBrands = await fetchBrandsFromFirebase();
+    const allBrands = await fetchBrandsFromSheets();
     const results = searchBrands(allBrands, input.query, input.userCauses);
     return results;
   });
