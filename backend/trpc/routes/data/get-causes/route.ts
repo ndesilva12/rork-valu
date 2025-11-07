@@ -1,7 +1,7 @@
 import { publicProcedure } from "../../../create-context";
-import { fetchCausesFromSheets } from "../../../../services/local-data";
+import { fetchValuesFromFirebase } from "../../../../services/firebase-data";
 
 export const getCausesProcedure = publicProcedure.query(async () => {
-  const causes = await fetchCausesFromSheets();
+  const causes = await fetchValuesFromFirebase();
   return causes;
 });

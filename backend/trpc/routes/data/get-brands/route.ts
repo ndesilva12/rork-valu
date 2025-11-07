@@ -1,7 +1,7 @@
 import { publicProcedure } from "../../../create-context";
-import { fetchBrandsFromSheets } from "../../../../services/local-data";
+import { fetchBrandsFromFirebase } from "../../../../services/firebase-data";
 
 export const getBrandsProcedure = publicProcedure.query(async () => {
-  const brands = await fetchBrandsFromSheets();
+  const brands = await fetchBrandsFromFirebase();
   return brands;
 });
