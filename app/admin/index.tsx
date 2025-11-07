@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Admin email whitelist
 const ADMIN_EMAILS = [
-  'ndesilva12@gmail.com',
+  'normancdesilva@gmail.com',
   // Add more admin emails here
 ];
 
