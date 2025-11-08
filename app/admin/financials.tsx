@@ -28,9 +28,10 @@ type BusinessAccount = {
   id: string;
   name: string;
   email: string;
+  totalRevenue: number;
   totalDiscountGiven: number;
   totalDonations: number;
-  standFeesOwed: number; // 2.5% of discounts
+  standFeesOwed: number; // 2.5% of purchase amounts
   donationsOwed: number; // Full donation amount
   totalOwed: number;
   transactionCount: number;
@@ -114,6 +115,7 @@ export default function AdminFinancials() {
             id: merchantId,
             name: data.merchantName || 'Unknown',
             email: '', // Will fetch from user profile
+            totalRevenue: 0,
             totalDiscountGiven: data.discountAmount || 0,
             totalDonations: data.donationAmount || 0,
             standFeesOwed: 0,
@@ -128,17 +130,32 @@ export default function AdminFinancials() {
       // Calculate fees and totals
       let totalFeesOwed = 0;
       let totalDonationsOwed = 0;
+      let totalRevenue = 0;
+
+      // First pass: calculate total revenue per business
+      const revenueMap = new Map<string, number>();
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const merchantId = data.merchantId;
+        if (!merchantId) return;
+
+        const currentRevenue = revenueMap.get(merchantId) || 0;
+        revenueMap.set(merchantId, currentRevenue + (data.purchaseAmount || 0));
+      });
 
       const businessAccounts = Array.from(businessMap.values()).map((biz) => {
-        const standFees = biz.totalDiscountGiven * 0.025; // 2.5% of discounts
+        const revenue = revenueMap.get(biz.id) || 0;
+        const standFees = revenue * 0.025; // 2.5% of purchase amounts (not discounts)
         const donations = biz.totalDonations;
         const totalOwed = standFees + donations;
 
         totalFeesOwed += standFees;
         totalDonationsOwed += donations;
+        totalRevenue += revenue;
 
         return {
           ...biz,
+          totalRevenue: revenue,
           standFeesOwed: standFees,
           donationsOwed: donations,
           totalOwed: totalOwed,
@@ -307,12 +324,17 @@ export default function AdminFinancials() {
                   </View>
 
                   <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Total Revenue:</Text>
+                    <Text style={styles.detailValue}>{formatCurrency(biz.totalRevenue)}</Text>
+                  </View>
+
+                  <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Total Discounts Given:</Text>
                     <Text style={styles.detailValue}>{formatCurrency(biz.totalDiscountGiven)}</Text>
                   </View>
 
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Stand Fees (2.5%):</Text>
+                    <Text style={styles.detailLabel}>Stand Fees (2.5% of revenue):</Text>
                     <Text style={[styles.detailValue, styles.feeValue]}>
                       {formatCurrency(biz.standFeesOwed)}
                     </Text>
