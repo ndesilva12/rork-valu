@@ -229,7 +229,7 @@ export default function MerchantVerify() {
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Purchase Amount (Original)</Text>
           <View style={styles.inputContainer}>
-            <Text style={[styles.dollarSign, { color: colors.white }]}>$</Text>
+            <Text style={styles.dollarSign}>$</Text>
             <TextInput
               style={[styles.input, { color: colors.text, borderColor: colors.border }]}
               placeholder="0.00"
@@ -242,25 +242,37 @@ export default function MerchantVerify() {
           </View>
 
           {purchaseAmount && parseFloat(purchaseAmount) > 0 && (
-            <View style={styles.calculationBox}>
-              <Text style={[styles.finalAmountLabel, { color: colors.text }]}>
-                Final Purchase Amount:
-              </Text>
-              <Text style={[styles.finalAmountValue, { color: colors.primary }]}>
-                ${(parseFloat(purchaseAmount) - (parseFloat(purchaseAmount) * (profile.businessInfo?.customerDiscountPercent || 0)) / 100).toFixed(2)}
-              </Text>
+            <>
+              {/* Divider */}
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-              <Text style={[styles.calculationText, { color: colors.textSecondary }]}>
-                Customer Saves: ${((parseFloat(purchaseAmount) * (profile.businessInfo?.customerDiscountPercent || 0)) / 100).toFixed(2)}
-              </Text>
+              {/* Final Amount - Prominent Display */}
+              <View style={[styles.finalAmountContainer, { backgroundColor: colors.backgroundSecondary }]}>
+                <Text style={[styles.finalAmountLabel, { color: colors.text }]}>
+                  Final Purchase Amount:
+                </Text>
+                <Text style={[styles.finalAmountValue, { color: colors.primary }]}>
+                  ${(parseFloat(purchaseAmount) - (parseFloat(purchaseAmount) * (profile.businessInfo?.customerDiscountPercent || 0)) / 100).toFixed(2)}
+                </Text>
+              </View>
 
-              <Text style={[styles.donationLabel, { color: colors.text }]}>
-                Donation Committed:
-              </Text>
-              <Text style={[styles.donationValue, { color: colors.primary }]}>
-                ${((parseFloat(purchaseAmount) * (profile.businessInfo?.donationPercent || 0)) / 100).toFixed(2)}
-              </Text>
-            </View>
+              {/* Divider */}
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+              {/* Breakdown */}
+              <View style={styles.calculationBox}>
+                <Text style={[styles.calculationText, { color: colors.textSecondary }]}>
+                  Customer Saves: ${((parseFloat(purchaseAmount) * (profile.businessInfo?.customerDiscountPercent || 0)) / 100).toFixed(2)}
+                </Text>
+
+                <Text style={[styles.donationLabel, { color: colors.text }]}>
+                  Donation Committed:
+                </Text>
+                <Text style={[styles.donationValue, { color: colors.primary }]}>
+                  ${((parseFloat(purchaseAmount) * (profile.businessInfo?.donationPercent || 0)) / 100).toFixed(2)}
+                </Text>
+              </View>
+            </>
           )}
         </View>
 
@@ -354,6 +366,7 @@ const styles = StyleSheet.create({
   dollarSign: {
     fontSize: 32,
     fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   input: {
     flex: 1,
@@ -364,31 +377,40 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     maxWidth: '100%',
   },
-  calculationBox: {
-    marginTop: 16,
+  divider: {
+    height: 1,
+    marginVertical: 16,
+  },
+  finalAmountContainer: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
     gap: 8,
   },
   finalAmountLabel: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginTop: 8,
+    fontSize: 16,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   finalAmountValue: {
-    fontSize: 28,
+    fontSize: 40,
     fontWeight: 'bold',
-    marginBottom: 12,
+  },
+  calculationBox: {
+    gap: 8,
   },
   calculationText: {
     fontSize: 14,
     marginBottom: 8,
   },
   donationLabel: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     marginTop: 8,
   },
   donationValue: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
   },
   confirmButton: {
