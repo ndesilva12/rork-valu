@@ -11,7 +11,11 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { darkColors, lightColors } from "@/constants/colors";
-import { StripeProvider } from '@stripe/stripe-react-native';
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
+
+// Initialize Stripe for web
+const stripePromise = loadStripe(process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
 SplashScreen.preventAutoHideAsync();
 
@@ -112,10 +116,7 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <StripeProvider
-      publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''}
-      merchantIdentifier="merchant.com.stand.app"
-    >
+    <Elements stripe={stripePromise}>
       <SafeAreaProvider>
         <ClerkProvider publishableKey={publishableKey!} tokenCache={tokenCache}>
           <ClerkLoaded>
@@ -133,6 +134,6 @@ export default function RootLayout() {
           </ClerkLoaded>
         </ClerkProvider>
       </SafeAreaProvider>
-    </StripeProvider>
+    </Elements>
   );
 }
