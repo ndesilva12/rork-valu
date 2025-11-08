@@ -1,7 +1,7 @@
 {
   "name": "Stand",
   "short_name": "Stand",
-  "description": "Stand - Shop Your Values",
+  "description": "Stand - Vote With Your Money",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",

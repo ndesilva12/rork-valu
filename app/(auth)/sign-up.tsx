@@ -335,6 +335,7 @@ export default function SignUpScreen() {
               style={styles.logo}
               resizeMode="contain"
             />
+            <Text style={[styles.tagline, { color: colors.primary }]}>Vote With Your Money</Text>
           </View>
           <Text style={[styles.title, { color: colors.text }]}>Create your account</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Sign up to get started</Text>
@@ -516,6 +517,12 @@ const styles = StyleSheet.create({
     width: 180,
     height: 180,
     tintColor: undefined,
+  },
+  tagline: {
+    fontSize: 18,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginTop: -20,
   },
   title: {
     fontSize: 28,
