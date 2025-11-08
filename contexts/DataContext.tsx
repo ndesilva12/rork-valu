@@ -156,10 +156,28 @@ export const [DataProvider, useData] = createContextHook(() => {
     return Math.abs(brand.alignmentScore);
   };
 
-  // Get brand by ID
+  // Get brand by ID (or by name as fallback)
   const getBrandById = useCallback(
     (brandId: string): Brand | undefined => {
-      return brands.find((b) => b.id === brandId);
+      // First try to find by exact ID match
+      let brand = brands.find((b) => b.id === brandId);
+
+      // If not found and ID looks like a generated fallback ID, try to extract brand name
+      if (!brand && brandId.includes('-')) {
+        // Extract potential brand name from IDs like "gun-control-support-walmart-0"
+        const parts = brandId.split('-');
+        // Try to find by matching the name portion
+        for (let i = parts.length; i >= 0; i--) {
+          const possibleName = parts.slice(2, i).join(' '); // Skip first 2 parts (value id)
+          brand = brands.find((b) =>
+            b.name.toLowerCase() === possibleName.toLowerCase() ||
+            b.name.toLowerCase().includes(possibleName.toLowerCase())
+          );
+          if (brand) break;
+        }
+      }
+
+      return brand;
     },
     [brands]
   );

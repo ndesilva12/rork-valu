@@ -374,6 +374,14 @@ export default function BrandDetailScreen() {
           <Text style={[styles.errorSubtext, { color: colors.textSecondary }]}>
             {error.message || 'Please try again later'}
           </Text>
+          <TouchableOpacity
+            style={[styles.backButton, { backgroundColor: colors.primary }]}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={20} color={colors.white} strokeWidth={2} />
+            <Text style={[styles.backButtonText, { color: colors.white }]}>Go Back</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -386,6 +394,14 @@ export default function BrandDetailScreen() {
         <View style={styles.errorContainer}>
           <AlertCircle size={48} color={colors.danger} />
           <Text style={[styles.errorText, { color: colors.text }]}>Brand not found</Text>
+          <TouchableOpacity
+            style={[styles.backButton, { backgroundColor: colors.primary }]}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={20} color={colors.white} strokeWidth={2} />
+            <Text style={[styles.backButtonText, { color: colors.white }]}>Go Back</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -1035,6 +1051,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 16,
+    padding: 20,
   },
   errorText: {
     fontSize: 18,
@@ -1044,6 +1061,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center' as const,
     marginTop: 8,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginTop: 16,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
   reviewsHeader: {
     flexDirection: 'row',
