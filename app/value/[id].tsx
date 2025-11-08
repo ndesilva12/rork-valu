@@ -219,12 +219,10 @@ export default function ValueDetailScreen() {
                   key={`${id}-support-${driver.name}-${index}`}
                   style={[styles.driverCard, styles.supportingCard, { backgroundColor: colors.backgroundSecondary }]}
                   onPress={() => {
-                    if (driver.id) {
-                      router.push(`/brand/${driver.id}`);
-                    }
+                    // Always pass brand name so we can find it even if ID doesn't match
+                    router.push(`/brand/${driver.id}?name=${encodeURIComponent(driver.name)}`);
                   }}
                   activeOpacity={0.7}
-                  disabled={!driver.id}
                 >
                   <View style={styles.cardContent}>
                     <View style={styles.leftContent}>
@@ -273,12 +271,10 @@ export default function ValueDetailScreen() {
                   key={`${id}-oppose-${driver.name}-${index}`}
                   style={[styles.driverCard, styles.opposingCard, { backgroundColor: colors.backgroundSecondary }]}
                   onPress={() => {
-                    if (driver.id) {
-                      router.push(`/brand/${driver.id}`);
-                    }
+                    // Always pass brand name so we can find it even if ID doesn't match
+                    router.push(`/brand/${driver.id}?name=${encodeURIComponent(driver.name)}`);
                   }}
                   activeOpacity={0.7}
-                  disabled={!driver.id}
                 >
                   <View style={styles.cardContent}>
                     <View style={styles.leftContent}>

@@ -20,16 +20,16 @@ import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { getLogoUrl } from '@/lib/logo';
 
 export default function BrandDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
   const router = useRouter();
   const { profile, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const scrollViewRef = useRef<ScrollView>(null);
 
-  console.log('[BrandDetail] Loading brand with ID:', id);
+  console.log('[BrandDetail] Loading brand with ID:', id, 'Name:', name);
 
   // Load brand data from DataContext (client-side, no Edge Function issues)
-  const { getBrandById, valuesMatrix, isLoading: dataLoading, refresh } = useData();
+  const { getBrandById, getBrandByName, valuesMatrix, isLoading: dataLoading, refresh } = useData();
 
   // Force refresh data when component mounts to get latest from Firebase
   useEffect(() => {
@@ -38,7 +38,13 @@ export default function BrandDetailScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]); // Only depend on id, not refresh
 
-  const brand = id ? getBrandById(id as string) : undefined;
+  // Try to find brand by ID first, then by name if provided
+  let brand = id ? getBrandById(id as string) : undefined;
+  if (!brand && name) {
+    console.log('[BrandDetail] Brand not found by ID, trying by name:', name);
+    brand = getBrandByName(name as string);
+  }
+
   const isLoading = dataLoading;
   const error = !isLoading && !brand ? { message: 'Brand not found' } : null;
 
