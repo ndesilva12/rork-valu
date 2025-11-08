@@ -156,6 +156,16 @@ export default function CustomerProfileScreen() {
           <Text style={[styles.customerEmail, { color: colors.textSecondary }]}>
             {customerEmail}
           </Text>
+          {customerProfile?.location && (
+            <Text style={[styles.customerLocation, { color: colors.textSecondary }]}>
+              📍 {customerProfile.location}
+            </Text>
+          )}
+          {customerProfile?.bio && (
+            <Text style={[styles.customerBio, { color: colors.text }]}>
+              {customerProfile.bio}
+            </Text>
+          )}
         </View>
 
         {/* Stats Cards */}
@@ -203,33 +213,72 @@ export default function CustomerProfileScreen() {
             <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
               What this customer cares about
             </Text>
-            <View style={styles.causesGrid}>
-              {customerProfile.causes.map((cause: any, index: number) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.causeChip,
-                    {
-                      backgroundColor: colors.background,
-                      borderColor: cause.type === 'support' ? colors.success : colors.danger,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.causeText,
-                      {
-                        color: cause.type === 'support' ? colors.success : colors.danger,
-                      },
-                    ]}
-                  >
-                    {cause.type === 'support' ? '✓' : '✗'} {cause.name}
+            <View style={styles.valuesColumns}>
+              {/* Aligned Values Column (Left) */}
+              <View style={styles.valuesColumn}>
+                <Text style={[styles.columnHeader, { color: colors.success }]}>
+                  ✓ Aligned Values
+                </Text>
+                {customerProfile.causes
+                  .filter((cause: any) => cause.type === 'support')
+                  .map((cause: any, index: number) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.causeChip,
+                        {
+                          backgroundColor: colors.background,
+                          borderColor: colors.success,
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.causeText, { color: colors.success }]}>
+                        {cause.name}
+                      </Text>
+                      <Text style={[styles.causeCategory, { color: colors.textSecondary }]}>
+                        {cause.category}
+                      </Text>
+                    </View>
+                  ))}
+                {customerProfile.causes.filter((cause: any) => cause.type === 'support').length === 0 && (
+                  <Text style={[styles.emptyColumnText, { color: colors.textSecondary }]}>
+                    None
                   </Text>
-                  <Text style={[styles.causeCategory, { color: colors.textSecondary }]}>
-                    {cause.category}
+                )}
+              </View>
+
+              {/* Unaligned Values Column (Right) */}
+              <View style={styles.valuesColumn}>
+                <Text style={[styles.columnHeader, { color: colors.danger }]}>
+                  ✗ Unaligned Values
+                </Text>
+                {customerProfile.causes
+                  .filter((cause: any) => cause.type === 'oppose')
+                  .map((cause: any, index: number) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.causeChip,
+                        {
+                          backgroundColor: colors.background,
+                          borderColor: colors.danger,
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.causeText, { color: colors.danger }]}>
+                        {cause.name}
+                      </Text>
+                      <Text style={[styles.causeCategory, { color: colors.textSecondary }]}>
+                        {cause.category}
+                      </Text>
+                    </View>
+                  ))}
+                {customerProfile.causes.filter((cause: any) => cause.type === 'oppose').length === 0 && (
+                  <Text style={[styles.emptyColumnText, { color: colors.textSecondary }]}>
+                    None
                   </Text>
-                </View>
-              ))}
+                )}
+              </View>
             </View>
           </View>
         )}
@@ -358,6 +407,17 @@ const styles = StyleSheet.create({
   customerEmail: {
     fontSize: 16,
   },
+  customerLocation: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  customerBio: {
+    fontSize: 15,
+    marginTop: 12,
+    lineHeight: 22,
+    textAlign: 'center' as const,
+    paddingHorizontal: 16,
+  },
   statsContainer: {
     flexDirection: 'row',
     padding: 16,
@@ -397,6 +457,24 @@ const styles = StyleSheet.create({
   sectionDescription: {
     fontSize: 14,
     marginBottom: 16,
+  },
+  valuesColumns: {
+    flexDirection: 'row' as const,
+    gap: 12,
+    marginTop: 12,
+  },
+  valuesColumn: {
+    flex: 1,
+  },
+  columnHeader: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginBottom: 12,
+  },
+  emptyColumnText: {
+    fontSize: 14,
+    fontStyle: 'italic' as const,
+    marginTop: 8,
   },
   causesGrid: {
     flexDirection: 'row',
