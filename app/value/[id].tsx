@@ -206,7 +206,7 @@ export default function ValueDetailScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <TrendingUp size={24} color={colors.success} strokeWidth={2} />
+            <TrendingUp size={24} color={colors.primaryLight} strokeWidth={2} />
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Supports This Value</Text>
           </View>
           <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
@@ -235,7 +235,7 @@ export default function ValueDetailScreen() {
                       </View>
                     </View>
                     <TouchableOpacity
-                      style={[styles.shopButton, { backgroundColor: colors.success }]}
+                      style={[styles.shopButton, { backgroundColor: colors.primaryLight }]}
                       onPress={(e) => {
                         e.stopPropagation();
                         handleShopPress(driver.websiteUrl || '');
