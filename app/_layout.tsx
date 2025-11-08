@@ -11,11 +11,23 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { darkColors, lightColors } from "@/constants/colors";
-import { Elements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
 
-// Initialize Stripe for web
-const stripePromise = loadStripe(process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
+// Platform-specific Stripe imports
+let Elements: any;
+let stripePromise: any;
+let StripeProvider: any;
+
+if (Platform.OS === 'web') {
+  // Web: Use @stripe/react-stripe-js
+  const { Elements: WebElements } = require('@stripe/react-stripe-js');
+  const { loadStripe } = require('@stripe/stripe-js');
+  Elements = WebElements;
+  stripePromise = loadStripe(process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
+} else {
+  // Mobile: Use @stripe/stripe-react-native
+  const { StripeProvider: NativeStripeProvider } = require('@stripe/stripe-react-native');
+  StripeProvider = NativeStripeProvider;
+}
 
 SplashScreen.preventAutoHideAsync();
 
@@ -115,8 +127,26 @@ export default function RootLayout() {
     SplashScreen.hideAsync();
   }, []);
 
+  // Platform-specific Stripe wrapper
+  const StripeWrapper = ({ children }: { children: React.ReactNode }) => {
+    if (Platform.OS === 'web') {
+      // Web: Use Elements provider
+      return <Elements stripe={stripePromise}>{children}</Elements>;
+    } else {
+      // Mobile: Use StripeProvider
+      return (
+        <StripeProvider
+          publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''}
+          merchantIdentifier="merchant.com.stand.app"
+        >
+          {children}
+        </StripeProvider>
+      );
+    }
+  };
+
   return (
-    <Elements stripe={stripePromise}>
+    <StripeWrapper>
       <SafeAreaProvider>
         <ClerkProvider publishableKey={publishableKey!} tokenCache={tokenCache}>
           <ClerkLoaded>
@@ -134,6 +164,6 @@ export default function RootLayout() {
           </ClerkLoaded>
         </ClerkProvider>
       </SafeAreaProvider>
-    </Elements>
+    </StripeWrapper>
   );
 }

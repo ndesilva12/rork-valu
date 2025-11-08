@@ -5,14 +5,30 @@
  * - Stand fees (2.5% of purchase amounts)
  * - Committed donations
  *
- * Uses Stripe Payment Element for secure web payment processing
+ * Cross-platform: Uses Stripe Payment Element on web, Payment Sheet on mobile
  */
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, StyleSheet, Platform } from 'react-native';
 import { DollarSign, CreditCard } from 'lucide-react-native';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app } from '@/firebase';
-import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+
+// Platform-specific Stripe imports
+let useStripe: any;
+let useElements: any;
+let PaymentElement: any;
+
+if (Platform.OS === 'web') {
+  // Web imports
+  const webStripe = require('@stripe/react-stripe-js');
+  useStripe = webStripe.useStripe;
+  useElements = webStripe.useElements;
+  PaymentElement = webStripe.PaymentElement;
+} else {
+  // Mobile imports
+  const mobileStripe = require('@stripe/stripe-react-native');
+  useStripe = mobileStripe.useStripe;
+}
 
 type Props = {
   amountOwed: number;
@@ -32,7 +48,7 @@ export default function BusinessPayment({
   colors,
 }: Props) {
   const stripe = useStripe();
-  const elements = useElements();
+  const elements = Platform.OS === 'web' ? useElements() : null;
   const [isLoading, setIsLoading] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
@@ -55,8 +71,15 @@ export default function BusinessPayment({
 
       const { clientSecret: secret } = result.data as { clientSecret: string };
       setClientSecret(secret);
-      setShowPaymentForm(true);
-      setIsLoading(false);
+
+      if (Platform.OS === 'web') {
+        // Web: Show payment form inline
+        setShowPaymentForm(true);
+        setIsLoading(false);
+      } else {
+        // Mobile: Initialize and present payment sheet
+        await handleMobilePayment(secret);
+      }
     } catch (error: any) {
       console.error('Payment error:', error);
       Alert.alert(
@@ -67,8 +90,45 @@ export default function BusinessPayment({
     }
   };
 
-  const handleSubmitPayment = async () => {
-    if (!stripe || !elements || !clientSecret) {
+  const handleMobilePayment = async (secret: string) => {
+    if (!stripe || Platform.OS === 'web') return;
+
+    try {
+      // Initialize payment sheet
+      const { error: initError } = await stripe.initPaymentSheet({
+        paymentIntentClientSecret: secret,
+        merchantDisplayName: 'Stand App',
+        returnURL: 'stand://payment-complete',
+      });
+
+      if (initError) {
+        Alert.alert('Error', initError.message);
+        setIsLoading(false);
+        return;
+      }
+
+      // Present payment sheet
+      const { error: presentError } = await stripe.presentPaymentSheet();
+
+      if (presentError) {
+        Alert.alert('Payment Cancelled', presentError.message);
+      } else {
+        Alert.alert(
+          'Success',
+          'Payment completed successfully! Your account will be updated shortly.'
+        );
+      }
+    } catch (error: any) {
+      console.error('Mobile payment error:', error);
+      Alert.alert('Error', 'Failed to process payment');
+    } finally {
+      setIsLoading(false);
+      setClientSecret(null);
+    }
+  };
+
+  const handleWebPayment = async () => {
+    if (!stripe || !elements || !clientSecret || Platform.OS !== 'web') {
       return;
     }
 
@@ -94,7 +154,7 @@ export default function BusinessPayment({
         setClientSecret(null);
       }
     } catch (error: any) {
-      console.error('Payment error:', error);
+      console.error('Web payment error:', error);
       Alert.alert('Error', 'Failed to process payment');
     } finally {
       setIsLoading(false);
@@ -148,12 +208,12 @@ export default function BusinessPayment({
         </View>
       </View>
 
-      {/* Payment Form */}
-      {showPaymentForm && clientSecret ? (
+      {/* Web Payment Form */}
+      {Platform.OS === 'web' && showPaymentForm && clientSecret ? (
         <View style={styles.paymentFormContainer}>
           <PaymentElement />
           <TouchableOpacity
-            onPress={handleSubmitPayment}
+            onPress={handleWebPayment}
             disabled={isLoading || !stripe || !elements}
             style={[
               styles.payButton,
@@ -170,7 +230,7 @@ export default function BusinessPayment({
         </View>
       ) : (
         <>
-          {/* Payment Button */}
+          {/* Payment Button (both platforms) */}
           <TouchableOpacity
             onPress={initiatePayment}
             disabled={isLoading}
@@ -198,6 +258,11 @@ export default function BusinessPayment({
             <Text style={[styles.infoText, { color: colors.textSecondary }]}>
               • Credit/Debit Cards (2.9% + $0.30, instant)
             </Text>
+            {Platform.OS !== 'web' && (
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                • Apple Pay / Google Pay (when available)
+              </Text>
+            )}
           </View>
         </>
       )}
