@@ -158,7 +158,9 @@ export default function CustomerProfileScreen() {
           </Text>
           {customerProfile?.location && (
             <Text style={[styles.customerLocation, { color: colors.textSecondary }]}>
-              📍 {customerProfile.location}
+              📍 {typeof customerProfile.location === 'string'
+                    ? customerProfile.location
+                    : customerProfile.location?.city || 'Location unavailable'}
             </Text>
           )}
           {customerProfile?.bio && (
