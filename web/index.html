@@ -34,11 +34,10 @@
         scrollbar-width: none;
       }
 
-      /* Fix for iOS PWA white strip at bottom */
+      /* Fix for iOS PWA safe areas */
       html {
         height: 100%;
         width: 100%;
-        position: fixed;
         overflow: hidden;
       }
 
@@ -47,18 +46,27 @@
         padding: 0;
         height: 100%;
         width: 100%;
-        position: fixed;
         overflow: hidden;
         background-color: #111827;
-        /* Use CSS env() for safe areas on iOS */
-        padding-bottom: env(safe-area-inset-bottom);
       }
 
       #root {
         height: 100%;
         width: 100%;
-        position: fixed;
         overflow: auto;
+      }
+
+      /* PWA-specific safe area handling */
+      @media (display-mode: standalone) {
+        body {
+          /* In PWA mode, use CSS environment variables for safe areas */
+          padding-top: env(safe-area-inset-top);
+          padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        #root {
+          height: calc(100% - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        }
       }
     </style>
   </head>

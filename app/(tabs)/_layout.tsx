@@ -20,8 +20,11 @@ export default function TabLayout() {
 
   // Use safe area insets to avoid content going under system UI (status bar / home indicator)
   const insets = useSafeAreaInsets();
-  const topInset = insets.top || 0;
-  const bottomInset = insets.bottom || 0;
+
+  // In PWA/standalone mode, CSS handles safe areas, so we don't use SafeAreaView edges
+  // In regular mobile browser, use safe area insets as normal
+  const topInset = (isStandalone && Platform.OS === 'web') ? 0 : (insets.top || 0);
+  const bottomInset = (isStandalone && Platform.OS === 'web') ? 0 : (insets.bottom || 0);
 
   // helper to render icon + label beside it on wide screens
   const renderTabIconWithLabel = (Icon: React.ComponentType<any>, label: string, focusedColor: string) => {
@@ -47,9 +50,12 @@ export default function TabLayout() {
     };
   };
 
+  // Conditionally use SafeAreaView edges based on standalone mode
+  // In PWA mode, don't use edges since CSS handles it
+  const safeAreaEdges = (isStandalone && Platform.OS === 'web') ? [] : ['top', 'bottom'] as const;
+
   return (
-    // Always reserve safe area for top and bottom so content doesn't shift under system UI.
-    <SafeAreaView edges={['top','bottom']} style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         // Keep translucent false to avoid content being pushed under the status bar on many phones.
@@ -75,7 +81,8 @@ export default function TabLayout() {
                 left: 0,
                 right: 0,
                 height: tabBarHeight,
-                paddingBottom: isTabletOrLarger ? 0 : 4,
+                // In PWA mode, reduce padding since CSS safe areas handle spacing
+                paddingBottom: isTabletOrLarger ? 0 : (isStandalone && Platform.OS === 'web' ? 0 : 4),
                 paddingTop: isTabletOrLarger ? 0 : 12,
                 borderTopWidth: isTabletOrLarger ? 0 : 1,
                 borderBottomWidth: isTabletOrLarger ? 1 : 0,
@@ -87,7 +94,8 @@ export default function TabLayout() {
               },
               tabBarItemStyle: {
                 paddingTop: isTabletOrLarger ? 0 : 4,
-                paddingBottom: isTabletOrLarger ? 0 : 12,
+                // In PWA mode, reduce bottom padding
+                paddingBottom: isTabletOrLarger ? 0 : (isStandalone && Platform.OS === 'web' ? 4 : 12),
               },
               contentStyle: {
                 // Reserve space for the top tab bar + system top inset on wide screens,
