@@ -1,73 +1,235 @@
+/**
+ * Stand App - Firebase Cloud Functions
+ *
+ * Handles payment processing with Stripe for business-to-Stand payments
+ */
+
 import * as functions from 'firebase-functions';
+import * as admin from 'firebase-admin';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(functions.config().stripe.secret_key, {
-  apiVersion: '2023-10-16',
+// Initialize Firebase Admin
+admin.initializeApp();
+
+// Initialize Stripe with secret key from environment variables
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || functions.config().stripe?.secret_key || '', {
+  apiVersion: '2024-11-20.acacia',
 });
 
-// Create payment intent for business payment
+const db = admin.firestore();
+
+/**
+ * Creates a Stripe Payment Intent for business payments
+ *
+ * Called from the app when a business wants to pay Stand fees + donations
+ */
 export const createPaymentIntent = functions.https.onCall(async (data, context) => {
-  // Verify user is authenticated
+  // Verify authentication
   if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    throw new functions.https.HttpsError(
+      'unauthenticated',
+      'User must be authenticated to create payment intent'
+    );
   }
 
-  const { amount, businessId, businessName, description } = data;
+  const {
+    amount,
+    businessId,
+    businessName,
+    description,
+  } = data;
+
+  // Validate inputs
+  if (!amount || amount <= 0) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'Amount must be greater than 0'
+    );
+  }
+
+  if (!businessId || !businessName) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'Business information is required'
+    );
+  }
 
   try {
     // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
       currency: 'usd',
+      description: description || `Payment from ${businessName}`,
       metadata: {
         businessId,
         businessName,
-        description,
+        userId: context.auth.uid,
       },
+      // Enable payment methods
       automatic_payment_methods: {
         enabled: true,
       },
+    });
+
+    functions.logger.info('Payment intent created', {
+      paymentIntentId: paymentIntent.id,
+      businessId,
+      amount,
     });
 
     return {
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
     };
-  } catch (error) {
-    console.error('Error creating payment intent:', error);
-    throw new functions.https.HttpsError('internal', 'Failed to create payment intent');
+  } catch (error: any) {
+    functions.logger.error('Error creating payment intent', {
+      error: error.message,
+      businessId,
+    });
+
+    throw new functions.https.HttpsError(
+      'internal',
+      'Failed to create payment intent',
+      error.message
+    );
   }
 });
 
-// Webhook to handle payment confirmation
+/**
+ * Stripe Webhook Handler
+ *
+ * Handles payment confirmation events from Stripe
+ * Records successful payments in Firestore
+ */
 export const stripeWebhook = functions.https.onRequest(async (req, res) => {
   const sig = req.headers['stripe-signature'] as string;
-  const webhookSecret = functions.config().stripe.webhook_secret;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || functions.config().stripe?.webhook_secret || '';
+
+  let event: Stripe.Event;
 
   try {
-    const event = stripe.webhooks.constructEvent(req.rawBody, sig, webhookSecret);
+    // Verify webhook signature
+    event = stripe.webhooks.constructEvent(
+      req.rawBody,
+      sig,
+      webhookSecret
+    );
+  } catch (error: any) {
+    functions.logger.error('Webhook signature verification failed', {
+      error: error.message,
+    });
+    res.status(400).send(`Webhook Error: ${error.message}`);
+    return;
+  }
 
-    if (event.type === 'payment_intent.succeeded') {
-      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+  // Handle the event
+  try {
+    switch (event.type) {
+      case 'payment_intent.succeeded': {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        await handlePaymentSuccess(paymentIntent);
+        break;
+      }
 
-      // Record payment in Firestore
-      const admin = require('firebase-admin');
-      const db = admin.firestore();
+      case 'payment_intent.payment_failed': {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        await handlePaymentFailure(paymentIntent);
+        break;
+      }
 
-      await db.collection('payments').doc(paymentIntent.id).set({
-        paymentId: paymentIntent.id,
-        businessId: paymentIntent.metadata.businessId,
-        businessName: paymentIntent.metadata.businessName,
-        amount: paymentIntent.amount / 100,
-        status: 'completed',
-        stripePaymentIntentId: paymentIntent.id,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
+      default:
+        functions.logger.info('Unhandled event type', { type: event.type });
     }
 
     res.json({ received: true });
-  } catch (error) {
-    console.error('Webhook error:', error);
-    res.status(400).send(`Webhook Error: ${error.message}`);
+  } catch (error: any) {
+    functions.logger.error('Error processing webhook', {
+      error: error.message,
+      eventType: event.type,
+    });
+    res.status(500).send('Webhook processing failed');
   }
 });
+
+/**
+ * Handles successful payment confirmation
+ */
+async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
+  const {
+    id,
+    amount,
+    metadata,
+    charges,
+  } = paymentIntent;
+
+  const { businessId, businessName, userId } = metadata;
+
+  // Get charge details for fees
+  const charge = charges.data[0];
+  const stripeFee = charge?.balance_transaction
+    ? (await stripe.balanceTransactions.retrieve(charge.balance_transaction as string)).fee
+    : 0;
+
+  // Record payment in Firestore
+  const paymentRef = db.collection('payments').doc(id);
+
+  await paymentRef.set({
+    paymentIntentId: id,
+    businessId,
+    businessName,
+    userId,
+    amount: amount / 100, // Convert from cents to dollars
+    stripeFee: stripeFee / 100,
+    netAmount: (amount - stripeFee) / 100,
+    status: 'succeeded',
+    paymentMethod: charge?.payment_method_details?.type || 'unknown',
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    processedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  functions.logger.info('Payment recorded successfully', {
+    paymentIntentId: id,
+    businessId,
+    amount: amount / 100,
+  });
+
+  // TODO: Update business account balance
+  // TODO: Send confirmation email to business
+}
+
+/**
+ * Handles failed payment
+ */
+async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent) {
+  const {
+    id,
+    amount,
+    metadata,
+    last_payment_error,
+  } = paymentIntent;
+
+  const { businessId, businessName } = metadata;
+
+  // Record failed payment attempt
+  const paymentRef = db.collection('payments').doc(id);
+
+  await paymentRef.set({
+    paymentIntentId: id,
+    businessId,
+    businessName,
+    amount: amount / 100,
+    status: 'failed',
+    errorMessage: last_payment_error?.message || 'Unknown error',
+    errorCode: last_payment_error?.code || 'unknown',
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    failedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  functions.logger.warn('Payment failed', {
+    paymentIntentId: id,
+    businessId,
+    error: last_payment_error?.message,
+  });
+
+  // TODO: Send notification to business about failed payment
+}

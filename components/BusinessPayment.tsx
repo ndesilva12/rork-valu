@@ -11,6 +11,8 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { useStripe } from '@stripe/stripe-react-native';
 import { DollarSign, CreditCard } from 'lucide-react-native';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { app } from '@/firebase';
 
 type Props = {
   amountOwed: number;
@@ -36,24 +38,10 @@ export default function BusinessPayment({
     setIsLoading(true);
 
     try {
-      // TODO: This will call a Cloud Function once Firebase Functions are set up
-      // For now, show a message that the feature is coming soon
-      Alert.alert(
-        'Payment Processing Coming Soon',
-        `Once Stripe Cloud Functions are deployed, you'll be able to pay:\n\n` +
-          `Stand Fees: $${standFees.toFixed(2)}\n` +
-          `Donations: $${donationsOwed.toFixed(2)}\n` +
-          `Total: $${amountOwed.toFixed(2)}\n\n` +
-          `Payment methods will include:\n` +
-          `• ACH Direct Debit (0.8% fee)\n` +
-          `• Credit/Debit Cards (2.9% + $0.30)\n\n` +
-          `See STRIPE_INTEGRATION.md for setup instructions.`,
-        [{ text: 'OK' }]
-      );
+      // Get Firebase Functions instance
+      const functions = getFunctions(app);
 
-      /*
-      // UNCOMMENT THIS ONCE CLOUD FUNCTIONS ARE DEPLOYED:
-
+      // Call the Cloud Function to create a payment intent
       const createPaymentIntent = httpsCallable(functions, 'createPaymentIntent');
       const result = await createPaymentIntent({
         amount: amountOwed,
@@ -88,10 +76,12 @@ export default function BusinessPayment({
           'Payment completed successfully! Your account will be updated shortly.'
         );
       }
-      */
-    } catch (error) {
+    } catch (error: any) {
       console.error('Payment error:', error);
-      Alert.alert('Error', 'Failed to process payment');
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to process payment. Please ensure Cloud Functions are deployed.'
+      );
     } finally {
       setIsLoading(false);
     }
