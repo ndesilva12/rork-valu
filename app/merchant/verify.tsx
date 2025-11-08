@@ -1,0 +1,397 @@
+/**
+ * Merchant Verification Page
+ *
+ * This page is opened when a merchant scans a customer's QR code
+ * Handles transaction confirmation and recording
+ */
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { useLocalSearchParams, router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useUser } from '@/contexts/UserContext';
+import { useUser as useClerkUser } from '@clerk/clerk-expo';
+import { lightColors, darkColors } from '@/constants/colors';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/firebase';
+
+export default function MerchantVerify() {
+  const { profile, isDarkMode } = useUser();
+  const { user: clerkUser } = useClerkUser();
+  const colors = isDarkMode ? darkColors : lightColors;
+
+  // Get URL parameters from QR code scan
+  const params = useLocalSearchParams();
+  const {
+    userId: customerUserId,
+    code: transactionCode,
+    exp: expiryTime,
+    name: customerName,
+  } = params;
+
+  const [purchaseAmount, setPurchaseAmount] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isExpired, setIsExpired] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+
+  // Check if merchant is logged in as business account
+  const isBusiness = profile.accountType === 'business';
+
+  // Verify QR code hasn't expired
+  useEffect(() => {
+    if (expiryTime) {
+      const expiry = parseInt(expiryTime as string, 10);
+      const now = Date.now();
+      if (now > expiry) {
+        setIsExpired(true);
+      }
+    }
+  }, [expiryTime]);
+
+  // Check if user is signed in and is a business
+  if (!clerkUser) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.centered}>
+          <Text style={[styles.title, { color: colors.text }]}>Sign In Required</Text>
+          <Text style={[styles.message, { color: colors.textSecondary }]}>
+            Please sign in to your merchant account to verify this discount.
+          </Text>
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: colors.primary }]}
+            onPress={() => router.push('/sign-in')}
+          >
+            <Text style={styles.buttonText}>Sign In</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!isBusiness) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.centered}>
+          <Text style={[styles.title, { color: colors.text }]}>Merchant Account Required</Text>
+          <Text style={[styles.message, { color: colors.textSecondary }]}>
+            This page is only accessible to business accounts.
+          </Text>
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: colors.primary }]}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.buttonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (isExpired) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.centered}>
+          <Text style={[styles.title, { color: colors.text }]}>QR Code Expired</Text>
+          <Text style={[styles.message, { color: colors.textSecondary }]}>
+            This QR code has expired. Please ask the customer to generate a new one.
+          </Text>
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: colors.primary }]}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.buttonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (isVerified) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.centered}>
+          <Text style={[styles.successTitle, { color: '#28a745' }]}>✓ Transaction Recorded</Text>
+          <Text style={[styles.message, { color: colors.textSecondary }]}>
+            Discount applied successfully for {customerName}
+          </Text>
+          <Text style={[styles.amountText, { color: colors.text }]}>
+            Purchase Amount: ${purchaseAmount}
+          </Text>
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: colors.primary }]}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.buttonText}>Done</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const handleConfirmTransaction = async () => {
+    if (!purchaseAmount || parseFloat(purchaseAmount) <= 0) {
+      Alert.alert('Error', 'Please enter a valid purchase amount');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // Record transaction in Firebase
+      const transactionRef = doc(db, 'transactions', transactionCode as string);
+
+      // Get merchant business info
+      const merchantName = profile.businessInfo?.name || 'Unknown Business';
+      const merchantDiscount = profile.businessInfo?.customerDiscountPercent || 10;
+      const merchantDonation = profile.businessInfo?.donationPercent || 0;
+
+      await setDoc(transactionRef, {
+        transactionId: transactionCode,
+        customerId: customerUserId,
+        customerName: customerName,
+        merchantId: clerkUser.id,
+        merchantName: merchantName,
+        purchaseAmount: parseFloat(purchaseAmount),
+        discountPercent: merchantDiscount,
+        donationPercent: merchantDonation,
+        discountAmount: (parseFloat(purchaseAmount) * merchantDiscount) / 100,
+        donationAmount: (parseFloat(purchaseAmount) * merchantDonation) / 100,
+        status: 'completed',
+        createdAt: serverTimestamp(),
+        verifiedAt: serverTimestamp(),
+      });
+
+      console.log('[MerchantVerify] Transaction recorded:', transactionCode);
+      setIsVerified(true);
+
+      // TODO: Send push notification to customer
+
+    } catch (error) {
+      console.error('[MerchantVerify] Error recording transaction:', error);
+      Alert.alert(
+        'Error',
+        'Failed to record transaction. Please try again.'
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Verify Discount</Text>
+      </View>
+
+      <View style={styles.content}>
+        {/* Customer Info */}
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Customer</Text>
+          <Text style={[styles.customerName, { color: colors.text }]}>
+            {customerName || 'Unknown'}
+          </Text>
+          <Text style={[styles.customerDetail, { color: colors.textSecondary }]}>
+            User ID: {customerUserId}
+          </Text>
+        </View>
+
+        {/* Discount Info */}
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Your Offer</Text>
+          <Text style={[styles.discountText, { color: colors.text }]}>
+            {profile.businessInfo?.customerDiscountPercent || 10}% Customer Discount
+          </Text>
+          {(profile.businessInfo?.donationPercent || 0) > 0 && (
+            <Text style={[styles.donationText, { color: colors.textSecondary }]}>
+              + {profile.businessInfo?.donationPercent}% Donation
+            </Text>
+          )}
+        </View>
+
+        {/* Purchase Amount Input */}
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Purchase Amount</Text>
+          <View style={styles.inputContainer}>
+            <Text style={styles.dollarSign}>$</Text>
+            <TextInput
+              style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+              placeholder="0.00"
+              placeholderTextColor={colors.textSecondary}
+              value={purchaseAmount}
+              onChangeText={setPurchaseAmount}
+              keyboardType="decimal-pad"
+              autoFocus
+            />
+          </View>
+
+          {purchaseAmount && parseFloat(purchaseAmount) > 0 && (
+            <View style={styles.calculationBox}>
+              <Text style={[styles.calculationText, { color: colors.textSecondary }]}>
+                Customer saves: ${((parseFloat(purchaseAmount) * (profile.businessInfo?.customerDiscountPercent || 10)) / 100).toFixed(2)}
+              </Text>
+              {(profile.businessInfo?.donationPercent || 0) > 0 && (
+                <Text style={[styles.calculationText, { color: colors.textSecondary }]}>
+                  You donate: ${((parseFloat(purchaseAmount) * (profile.businessInfo?.donationPercent || 0)) / 100).toFixed(2)}
+                </Text>
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Confirm Button */}
+        <TouchableOpacity
+          style={[
+            styles.confirmButton,
+            {
+              backgroundColor: purchaseAmount && !isProcessing ? colors.primary : '#ccc',
+            },
+          ]}
+          onPress={handleConfirmTransaction}
+          disabled={!purchaseAmount || isProcessing}
+        >
+          {isProcessing ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Confirm Transaction</Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Cancel Button */}
+        <TouchableOpacity
+          style={[styles.cancelButton, { borderColor: colors.border }]}
+          onPress={() => router.back()}
+          disabled={isProcessing}
+        >
+          <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    padding: 16,
+    borderBottomWidth: 1,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+    gap: 16,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+    gap: 16,
+  },
+  card: {
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  customerName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  customerDetail: {
+    fontSize: 12,
+  },
+  discountText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  donationText: {
+    fontSize: 16,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dollarSign: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  input: {
+    flex: 1,
+    fontSize: 32,
+    fontWeight: 'bold',
+    padding: 12,
+    borderWidth: 2,
+    borderRadius: 8,
+  },
+  calculationBox: {
+    marginTop: 8,
+    gap: 4,
+  },
+  calculationText: {
+    fontSize: 14,
+  },
+  confirmButton: {
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  cancelButton: {
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  button: {
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    minWidth: 200,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  message: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  successTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+  },
+  amountText: {
+    fontSize: 20,
+    fontWeight: '600',
+  },
+});

@@ -99,6 +99,8 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="product/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="value/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="customer-discount" options={{ headerShown: false }} />
+      <Stack.Screen name="merchant/verify" options={{ headerShown: false }} />
     </Stack>
   );
 }

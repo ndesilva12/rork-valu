@@ -6,7 +6,9 @@ import {
   Platform,
   StatusBar,
   Image,
+  TouchableOpacity,
 } from 'react-native';
+import { router } from 'expo-router';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -40,6 +42,20 @@ export default function ProfileScreen() {
         style={styles.scrollView}
         contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
       >
+        {/* Get Discount Button - Only for regular users */}
+        {!isBusiness && (
+          <TouchableOpacity
+            style={[styles.discountButton, { backgroundColor: colors.primary }]}
+            onPress={() => router.push('/customer-discount')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.discountButtonText}>🎟️ Get Discount Code</Text>
+            <Text style={styles.discountButtonSubtext}>
+              Show this QR code to participating merchants
+            </Text>
+          </TouchableOpacity>
+        )}
+
         {/* Profile Details - styled to match brand detail page */}
         {isBusiness ? (
           <BusinessProfileEditor />
@@ -77,5 +93,27 @@ const styles = StyleSheet.create({
   headerLogo: {
     width: 140,
     height: 41,
+  },
+  discountButton: {
+    padding: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  discountButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  discountButtonSubtext: {
+    fontSize: 12,
+    color: '#fff',
+    opacity: 0.9,
   },
 });
