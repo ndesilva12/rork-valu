@@ -2,10 +2,10 @@ const lightColors = {
   primary: 'rgb(3, 68, 102)',
   primaryDark: 'rgb(2, 48, 72)',
   primaryLight: 'rgb(0, 170, 250)',
-  
-  success: '#1DB100',
-  successNeon: '#39FF14',
-  successLight: '#B3FFB3',
+
+  success: '#1E88E5', // Changed from green to blue
+  successNeon: '#00AAFA', // Bright blue matching primaryLight
+  successLight: '#DBEAFE', // Light blue background
   
   danger: '#FF1F7A',
   dangerLight: '#FFD6E8',
@@ -34,10 +34,10 @@ const darkColors = {
   primary: 'rgb(0, 170, 250)',
   primaryDark: 'rgb(0, 120, 180)',
   primaryLight: 'rgb(51, 193, 255)',
-  
-  success: '#1DB100',
-  successNeon: '#39FF14',
-  successLight: '#0F5700',
+
+  success: '#1E88E5', // Changed from green to blue
+  successNeon: '#00BFFF', // Bright sky blue for dark mode
+  successLight: '#1E3A8A', // Dark blue background
   
   danger: '#FF1F7A',
   dangerLight: '#5C0A2C',
