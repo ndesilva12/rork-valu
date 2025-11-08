@@ -57,7 +57,7 @@ export default function DiscountScreen() {
         totalDonations += data.donationAmount || 0;
       });
 
-      const standFees = totalRevenue * 0.025; // 2.5% of purchase amounts
+      const standFees = (totalRevenue + totalDonations) * 0.025; // 2.5% of purchase amounts + donations
       const totalOwed = standFees + totalDonations;
 
       setBusinessFinancials({

@@ -157,7 +157,7 @@ export default function BusinessPayment({
         amount: amountOwed,
         businessId,
         businessName,
-        description: `Stand fees ($${standFees.toFixed(2)}) + Donations ($${donationsOwed.toFixed(2)})`,
+        description: `Stand fees (2.5%: $${standFees.toFixed(2)}) + Donations ($${donationsOwed.toFixed(2)})`,
       });
 
       const { clientSecret: secret } = result.data as { clientSecret: string };
@@ -248,7 +248,7 @@ export default function BusinessPayment({
       <View style={styles.breakdown}>
         <View style={styles.breakdownRow}>
           <Text style={[styles.breakdownLabel, { color: colors.textSecondary }]}>
-            Stand Fees (2.5% of sales):
+            Stand Fees (2.5% of sales + donations):
           </Text>
           <Text style={[styles.breakdownValue, { color: colors.text }]}>
             ${standFees.toFixed(2)}
