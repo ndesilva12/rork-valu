@@ -1,0 +1,56 @@
+name: Deploy Firebase Functions
+
+on:
+  push:
+    branches:
+      - main
+      - claude/*
+    paths:
+      - 'functions/**'
+      - '.github/workflows/deploy-functions.yml'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  deploy:
+    name: Deploy to Firebase
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Install dependencies
+        working-directory: functions
+        run: npm ci
+
+      - name: Build TypeScript
+        working-directory: functions
+        run: npm run build
+
+      - name: Create .env file
+        working-directory: functions
+        run: |
+          echo "STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}" > .env
+          echo "STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}" >> .env
+
+      - name: Deploy to Firebase
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy --only functions --project stand-3cd5c
+        env:
+          GCP_SA_KEY: ${{ secrets.FIREBASE_TOKEN }}
+
+      - name: Deployment Summary
+        run: |
+          echo "✅ Firebase Functions deployed successfully!"
+          echo "📍 Project: stand-3cd5c"
+          echo "🔗 Functions:"
+          echo "   - createPaymentIntent (callable)"
+          echo "   - stripeWebhook (https)"
