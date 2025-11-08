@@ -8,18 +8,20 @@ import {
   StatusBar,
   Image,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { ChevronDown, ChevronRight, Users, Receipt, TrendingDown, Heart } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, Users, Receipt, TrendingDown, Heart, BarChart3, TrendingUp, DollarSign } from 'lucide-react-native';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { aggregateBusinessTransactions } from '@/services/firebase/userService';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
+import { PieChart, BarChart } from 'react-native-chart-kit';
 
-type CollapsibleSection = 'customers' | 'transactions' | 'discounts' | 'donations';
+type CollapsibleSection = 'customers' | 'transactions' | 'discounts' | 'donations' | 'customerMetrics';
 
 export default function DataScreen() {
   const { profile, isDarkMode, clerkUser } = useUser();
@@ -35,6 +37,7 @@ export default function DataScreen() {
   });
   const [transactions, setTransactions] = useState<any[]>([]);
   const [customers, setCustomers] = useState<Map<string, any>>(new Map());
+  const [customerValues, setCustomerValues] = useState<Map<string, number>>(new Map());
 
   // Load business data - refreshes when screen comes into focus
   const loadBusinessData = useCallback(async () => {
@@ -58,6 +61,7 @@ export default function DataScreen() {
 
       const txns: any[] = [];
       const customerMap = new Map<string, any>();
+      const customerIds = new Set<string>();
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -65,6 +69,8 @@ export default function DataScreen() {
 
         // Aggregate customer data
         const customerId = data.customerId;
+        customerIds.add(customerId);
+
         if (customerMap.has(customerId)) {
           const customer = customerMap.get(customerId);
           customer.transactionCount += 1;
@@ -85,6 +91,61 @@ export default function DataScreen() {
 
       setTransactions(txns);
       setCustomers(customerMap);
+
+      // Fetch customer profiles to get their selected causes/values
+      const valuesMap = new Map<string, number>();
+      const categoriesMap = new Map<string, number>(); // Track cause categories
+      const uniqueCustomerIds = Array.from(customerIds);
+
+      console.log('[DataScreen] 🔍 Fetching profiles for', uniqueCustomerIds.length, 'customers');
+
+      for (const customerId of uniqueCustomerIds) {
+        try {
+          // Use the Clerk user ID as the document ID directly
+          const userDocRef = doc(db, 'users', customerId);
+          const userSnapshot = await getDoc(userDocRef);
+
+          if (userSnapshot.exists()) {
+            const userData = userSnapshot.data();
+            const causes = userData.causes || [];
+
+            console.log(`[DataScreen] ✅ Found ${causes.length} causes for customer ${customerId}`);
+
+            // Update customer map with causes data
+            if (customerMap.has(customerId)) {
+              const customer = customerMap.get(customerId);
+              customer.causes = causes;
+            }
+
+            // Count each cause and category
+            causes.forEach((cause: any) => {
+              const causeName = cause.name || cause;
+              const causeCategory = cause.category || 'Other';
+
+              // Count individual causes
+              const currentCount = valuesMap.get(causeName) || 0;
+              valuesMap.set(causeName, currentCount + 1);
+
+              // Count categories
+              const categoryCount = categoriesMap.get(causeCategory) || 0;
+              categoriesMap.set(causeCategory, categoryCount + 1);
+            });
+          } else {
+            console.log(`[DataScreen] ⚠️ No profile found for customer ${customerId}`);
+          }
+        } catch (error) {
+          console.error(`[DataScreen] ❌ Error fetching profile for customer ${customerId}:`, error);
+        }
+      }
+
+      setCustomerValues(valuesMap);
+      setCustomers(customerMap);
+
+      console.log('[DataScreen] 📊 Customer metrics:', {
+        totalValues: valuesMap.size,
+        totalCategories: categoriesMap.size,
+        topValue: Array.from(valuesMap.entries()).sort((a, b) => b[1] - a[1])[0],
+      });
       console.log('[DataScreen] ✅ Business data loaded:', {
         transactions: txns.length,
         customers: customerMap.size,
@@ -462,6 +523,195 @@ export default function DataScreen() {
             </View>
           )}
         </View>
+
+        {/* Customer Metrics Section */}
+        <View style={[styles.section, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('customerMetrics')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <BarChart3 size={24} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Customer Metrics</Text>
+            </View>
+            <View style={styles.sectionHeaderRight}>
+              <Text style={[styles.sectionMetric, { color: colors.primary }]}>
+                {customerValues.size} values
+              </Text>
+              {expandedSection === 'customerMetrics' ? (
+                <ChevronDown size={24} color={colors.text} strokeWidth={2} />
+              ) : (
+                <ChevronRight size={24} color={colors.text} strokeWidth={2} />
+              )}
+            </View>
+          </TouchableOpacity>
+
+          {expandedSection === 'customerMetrics' && (
+            <View style={[styles.sectionContent, { borderTopColor: colors.border }]}>
+              {customerValues.size === 0 ? (
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                  No customer data yet. Complete a transaction to see insights!
+                </Text>
+              ) : (
+                <>
+                  {/* Key Metrics Cards */}
+                  <View style={styles.metricsCardsContainer}>
+                    <View style={[styles.metricCard, { backgroundColor: colors.background }]}>
+                      <Users size={20} color={colors.primary} strokeWidth={2} />
+                      <Text style={[styles.metricCardValue, { color: colors.text }]}>
+                        {customers.size}
+                      </Text>
+                      <Text style={[styles.metricCardLabel, { color: colors.textSecondary }]}>
+                        Unique Customers
+                      </Text>
+                    </View>
+
+                    <View style={[styles.metricCard, { backgroundColor: colors.background }]}>
+                      <TrendingUp size={20} color={colors.primary} strokeWidth={2} />
+                      <Text style={[styles.metricCardValue, { color: colors.text }]}>
+                        {customerValues.size}
+                      </Text>
+                      <Text style={[styles.metricCardLabel, { color: colors.textSecondary }]}>
+                        Unique Values
+                      </Text>
+                    </View>
+
+                    <View style={[styles.metricCard, { backgroundColor: colors.background }]}>
+                      <DollarSign size={20} color={colors.primary} strokeWidth={2} />
+                      <Text style={[styles.metricCardValue, { color: colors.text }]}>
+                        ${(businessMetrics.totalRevenue / customers.size || 0).toFixed(0)}
+                      </Text>
+                      <Text style={[styles.metricCardLabel, { color: colors.textSecondary }]}>
+                        Avg Customer Value
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Top Values Pie Chart */}
+                  {customerValues.size > 0 && (
+                    <View style={styles.chartContainer}>
+                      <Text style={[styles.chartTitle, { color: colors.text }]}>
+                        Top Customer Values
+                      </Text>
+                      <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>
+                        Distribution of causes your customers care about
+                      </Text>
+                      <PieChart
+                        data={Array.from(customerValues.entries())
+                          .sort((a, b) => b[1] - a[1])
+                          .slice(0, 8)
+                          .map(([name, count], index) => ({
+                            name: name.length > 20 ? name.substring(0, 17) + '...' : name,
+                            population: count,
+                            color: [
+                              '#FF6384',
+                              '#36A2EB',
+                              '#FFCE56',
+                              '#4BC0C0',
+                              '#9966FF',
+                              '#FF9F40',
+                              '#FF6384',
+                              '#C9CBCF',
+                            ][index],
+                            legendFontColor: isDarkMode ? '#F9FAFB' : '#111827',
+                            legendFontSize: 12,
+                          }))}
+                        width={Dimensions.get('window').width - 64}
+                        height={220}
+                        chartConfig={{
+                          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                          labelColor: (opacity = 1) => (isDarkMode ? `rgba(249, 250, 251, ${opacity})` : `rgba(17, 24, 39, ${opacity})`),
+                        }}
+                        accessor="population"
+                        backgroundColor="transparent"
+                        paddingLeft="15"
+                        absolute
+                      />
+                    </View>
+                  )}
+
+                  {/* Detailed Values List */}
+                  <View style={styles.valuesListContainer}>
+                    <Text style={[styles.chartTitle, { color: colors.text }]}>
+                      All Customer Values
+                    </Text>
+                    <Text style={[styles.chartSubtitle, { color: colors.textSecondary, marginBottom: 12 }]}>
+                      Complete breakdown of what matters to your customers
+                    </Text>
+
+                    {Array.from(customerValues.entries())
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([causeName, count], index) => {
+                        const percentage = ((count / customers.size) * 100).toFixed(1);
+                        const rank = index + 1;
+                        return (
+                          <View
+                            key={causeName}
+                            style={[styles.valueRow, { borderBottomColor: colors.border }]}
+                          >
+                            <View style={styles.valueRowWithRank}>
+                              <View style={[styles.rankBadge, { backgroundColor: rank <= 3 ? colors.primary : colors.backgroundSecondary }]}>
+                                <Text style={[styles.rankText, { color: rank <= 3 ? colors.white : colors.text }]}>
+                                  #{rank}
+                                </Text>
+                              </View>
+                              <View style={styles.valueRowLeft}>
+                                <Text style={[styles.valueName, { color: colors.text }]}>
+                                  {causeName}
+                                </Text>
+                                <View style={styles.valueBar}>
+                                  <View
+                                    style={[
+                                      styles.valueBarFill,
+                                      {
+                                        backgroundColor: colors.primary,
+                                        width: `${percentage}%`
+                                      }
+                                    ]}
+                                  />
+                                </View>
+                              </View>
+                            </View>
+                            <View style={styles.valueRowRight}>
+                              <Text style={[styles.valuePercentage, { color: colors.primary }]}>
+                                {percentage}%
+                              </Text>
+                              <Text style={[styles.valueCount, { color: colors.textSecondary }]}>
+                                {count} {count === 1 ? 'customer' : 'customers'}
+                              </Text>
+                            </View>
+                          </View>
+                        );
+                      })}
+                  </View>
+
+                  {/* Insights */}
+                  <View style={[styles.insightsContainer, { backgroundColor: colors.background }]}>
+                    <Text style={[styles.chartTitle, { color: colors.text, marginBottom: 12 }]}>
+                      💡 Key Insights
+                    </Text>
+                    {Array.from(customerValues.entries())
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 3)
+                      .map(([name, count], index) => {
+                        const percentage = ((count / customers.size) * 100).toFixed(0);
+                        return (
+                          <View key={name} style={styles.insightRow}>
+                            <Text style={[styles.insightBullet, { color: colors.primary }]}>•</Text>
+                            <Text style={[styles.insightText, { color: colors.text }]}>
+                              <Text style={{ fontWeight: '700' }}>{percentage}%</Text> of your customers care about{' '}
+                              <Text style={{ fontWeight: '700' }}>{name}</Text>
+                            </Text>
+                          </View>
+                        );
+                      })}
+                  </View>
+                </>
+              )}
+            </View>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -595,5 +845,125 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 12,
     fontStyle: 'italic' as const,
+  },
+  sectionDescription: {
+    fontSize: 13,
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  valueRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    gap: 16,
+  },
+  valueRowLeft: {
+    flex: 1,
+  },
+  valueName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+  },
+  valueBar: {
+    height: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  valueBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  valueRowRight: {
+    alignItems: 'flex-end',
+  },
+  valuePercentage: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 2,
+  },
+  valueCount: {
+    fontSize: 12,
+  },
+  // Customer Metrics Enhancements
+  metricsCardsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  metricCard: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  metricCardValue: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+  },
+  metricCardLabel: {
+    fontSize: 11,
+    textAlign: 'center' as const,
+  },
+  chartContainer: {
+    marginBottom: 24,
+    paddingTop: 16,
+  },
+  chartTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  chartSubtitle: {
+    fontSize: 13,
+    marginBottom: 16,
+  },
+  valuesListContainer: {
+    marginBottom: 24,
+  },
+  valueRowWithRank: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  rankBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rankText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+  },
+  insightsContainer: {
+    padding: 16,
+    borderRadius: 12,
+    gap: 12,
+  },
+  insightRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  insightBullet: {
+    fontSize: 20,
+    lineHeight: 20,
+  },
+  insightText: {
+    fontSize: 14,
+    lineHeight: 20,
+    flex: 1,
   },
 });
