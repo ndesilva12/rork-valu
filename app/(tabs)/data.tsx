@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
+import { router } from 'expo-router';
 import { ChevronDown, ChevronRight, Users, Receipt, TrendingDown, Heart, BarChart3, TrendingUp, DollarSign } from 'lucide-react-native';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -272,14 +273,21 @@ export default function DataScreen() {
                 </Text>
               ) : (
                 customersList.map((customer) => (
-                  <View
+                  <TouchableOpacity
                     key={customer.id}
                     style={[styles.dataRow, { borderBottomColor: colors.border }]}
+                    onPress={() => router.push(`/customer-profile/${customer.id}`)}
+                    activeOpacity={0.7}
                   >
                     <View style={styles.dataRowMain}>
-                      <Text style={[styles.dataRowTitle, { color: colors.text }]}>
-                        {customer.name}
-                      </Text>
+                      <View style={styles.customerInfoColumn}>
+                        <Text style={[styles.dataRowTitle, { color: colors.text }]}>
+                          {customer.email || 'No email'}
+                        </Text>
+                        <Text style={[styles.customerNameSecondary, { color: colors.textSecondary }]}>
+                          {customer.name}
+                        </Text>
+                      </View>
                       <Text style={[styles.dataRowValue, { color: colors.primary }]}>
                         {formatCurrency(customer.totalSpent)}
                       </Text>
@@ -292,7 +300,7 @@ export default function DataScreen() {
                         Saved: {formatCurrency(customer.totalSaved)}
                       </Text>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 ))
               )}
             </View>
@@ -815,10 +823,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
+  customerInfoColumn: {
+    flex: 1,
+    gap: 4,
+  },
   dataRowTitle: {
     fontSize: 15,
     fontWeight: '600' as const,
-    flex: 1,
+  },
+  customerNameSecondary: {
+    fontSize: 13,
   },
   dataRowValue: {
     fontSize: 16,

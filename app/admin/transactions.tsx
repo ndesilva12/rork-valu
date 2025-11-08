@@ -88,7 +88,7 @@ export default function AdminTransactions() {
         totalDonations += data.donationAmount || 0;
       });
 
-      const standFees = totalDiscounts * 0.025; // 2.5% of discounts
+      const standFees = totalRevenue * 0.025; // 2.5% of purchase amounts (not discounts)
 
       setTransactions(txns);
       setFilteredTransactions(txns);
@@ -221,9 +221,9 @@ export default function AdminTransactions() {
                 </View>
 
                 <View style={styles.transactionRow}>
-                  <Text style={styles.label}>Stand Fee (2.5%):</Text>
+                  <Text style={styles.label}>Stand Fee (2.5% of purchase):</Text>
                   <Text style={[styles.value, styles.feeValue]}>
-                    {formatCurrency(txn.discountAmount * 0.025)}
+                    {formatCurrency(txn.purchaseAmount * 0.025)}
                   </Text>
                 </View>
 
