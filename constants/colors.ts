@@ -5,7 +5,7 @@ const lightColors = {
 
   success: '#1E88E5', // Changed from green to blue
   successNeon: '#00AAFA', // Bright blue matching primaryLight
-  successLight: '#DBEAFE', // Light blue background
+  successLight: '#EFF6FF', // Lighter blue background for better readability
   
   danger: '#FF1F7A',
   dangerLight: '#FFD6E8',
@@ -37,7 +37,7 @@ const darkColors = {
 
   success: '#1E88E5', // Changed from green to blue
   successNeon: '#00BFFF', // Bright sky blue for dark mode
-  successLight: '#1E3A8A', // Dark blue background
+  successLight: '#1E40AF', // Brighter blue background for better contrast
   
   danger: '#FF1F7A',
   dangerLight: '#5C0A2C',

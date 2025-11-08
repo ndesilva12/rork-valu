@@ -545,7 +545,7 @@ export default function HomeScreen() {
 
   const renderBrandCard = (product: Product, type: 'support' | 'avoid') => {
     const isSupport = type === 'support';
-    const titleColor = isSupport ? '#22C55E' : '#EF4444';
+    const titleColor = isSupport ? colors.success : colors.danger;
     const alignmentScore = scoredBrands.get(product.id) || 0;
 
     return (
@@ -596,7 +596,7 @@ export default function HomeScreen() {
     type: 'aligned' | 'unaligned'
   ) => {
     const isAligned = type === 'aligned';
-    const titleColor = isAligned ? '#22C55E' : '#EF4444';
+    const titleColor = isAligned ? colors.success : colors.danger;
     const { business, alignmentScore, distance, closestLocation } = businessData;
 
     return (
