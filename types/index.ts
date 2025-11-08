@@ -172,4 +172,5 @@ export interface UserProfile {
   userDetails?: UserDetails; // Only for individual accounts
   consentGivenAt?: string; // ISO timestamp when user gave consent
   consentVersion?: string; // Version of consent agreement accepted
+  codeSharing?: boolean; // Whether user allows code sharing with merchants (default: true if consented)
 }

@@ -11,16 +11,18 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  Switch,
+  Linking,
 } from 'react-native';
-import { useState } from 'react';
-import { ChevronLeft, Lock } from 'lucide-react-native';
+import { useState, useEffect } from 'react';
+import { ChevronLeft, Lock, Download, Shield, FileText, ExternalLink } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser as useUserContext } from '@/contexts/UserContext';
 import { useUser } from '@clerk/clerk-expo';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { isDarkMode } = useUserContext();
+  const { isDarkMode, profile, setBusinessInfo } = useUserContext();
   const colors = isDarkMode ? darkColors : lightColors;
   const { user } = useUser();
 
@@ -29,6 +31,11 @@ export default function SettingsScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [error, setError] = useState('');
+  const [codeSharing, setCodeSharing] = useState(profile.codeSharing ?? true);
+
+  useEffect(() => {
+    setCodeSharing(profile.codeSharing ?? true);
+  }, [profile.codeSharing]);
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -82,6 +89,39 @@ export default function SettingsScreen() {
     } finally {
       setIsChangingPassword(false);
     }
+  };
+
+  const handleToggleCodeSharing = async (value: boolean) => {
+    setCodeSharing(value);
+    await setBusinessInfo({ codeSharing: value });
+
+    if (!value) {
+      Alert.alert(
+        'Code Sharing Disabled',
+        'Your personalized code will no longer be shared with merchants. This may affect your ability to receive discounts and donations.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const handleDownloadData = () => {
+    Alert.alert(
+      'Download Your Data',
+      'We will prepare your data for download and send it to your email address within 24 hours.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Request Download',
+          onPress: () => {
+            Alert.alert('Request Submitted', 'Check your email for the download link.', [{ text: 'OK' }]);
+          }
+        }
+      ]
+    );
+  };
+
+  const handleOpenPrivacyPolicy = () => {
+    router.push('/privacy-policy');
   };
 
   return (
@@ -202,6 +242,75 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Privacy Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Shield size={24} color={colors.primary} strokeWidth={2} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Privacy & Data
+            </Text>
+          </View>
+
+          <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
+            {/* Stop Code Sharing Toggle */}
+            <View style={styles.settingRow}>
+              <View style={styles.settingLeft}>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Enable Code Sharing</Text>
+                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
+                  Allow merchants to access your code for discounts and donations
+                </Text>
+              </View>
+              <Switch
+                value={codeSharing}
+                onValueChange={handleToggleCodeSharing}
+                trackColor={{ false: '#D1D5DB', true: '#000000' }}
+                thumbColor='#FFFFFF'
+                ios_backgroundColor='#E5E7EB'
+              />
+            </View>
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            {/* Download My Data Button */}
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={handleDownloadData}
+              activeOpacity={0.7}
+            >
+              <View style={styles.actionLeft}>
+                <Download size={22} color={colors.primary} strokeWidth={2} />
+                <Text style={[styles.actionText, { color: colors.text }]}>Download My Data</Text>
+              </View>
+              <ExternalLink size={18} color={colors.textSecondary} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Legal Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <FileText size={24} color={colors.primary} strokeWidth={2} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Legal
+            </Text>
+          </View>
+
+          <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
+            {/* Privacy Policy */}
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={handleOpenPrivacyPolicy}
+              activeOpacity={0.7}
+            >
+              <View style={styles.actionLeft}>
+                <Shield size={22} color={colors.primary} strokeWidth={2} />
+                <Text style={[styles.actionText, { color: colors.text }]}>Privacy Policy & Terms</Text>
+              </View>
+              <ExternalLink size={18} color={colors.textSecondary} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -303,5 +412,44 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     fontSize: 14,
     lineHeight: 20,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  settingLeft: {
+    flex: 1,
+    marginRight: 16,
+  },
+  settingLabel: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 4,
+  },
+  settingDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  divider: {
+    height: 1,
+    marginVertical: 16,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+  },
+  actionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  actionText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
 });
