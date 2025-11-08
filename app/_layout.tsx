@@ -11,12 +11,11 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { darkColors, lightColors } from "@/constants/colors";
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 
-// Conditionally import StripeProvider only on native platforms
-let StripeProvider: any;
-if (Platform.OS !== 'web') {
-  StripeProvider = require('@stripe/stripe-react-native').StripeProvider;
-}
+// Initialize Stripe for web
+const stripePromise = loadStripe(process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
 SplashScreen.preventAutoHideAsync();
 
@@ -116,25 +115,8 @@ export default function RootLayout() {
     SplashScreen.hideAsync();
   }, []);
 
-  const AppProviders = ({ children }: { children: React.ReactNode }) => {
-    // Only use StripeProvider on native platforms (iOS/Android)
-    if (Platform.OS !== 'web' && StripeProvider) {
-      return (
-        <StripeProvider
-          publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''}
-          merchantIdentifier="merchant.com.stand.app"
-        >
-          {children}
-        </StripeProvider>
-      );
-    }
-
-    // On web, skip StripeProvider
-    return <>{children}</>;
-  };
-
   return (
-    <AppProviders>
+    <Elements stripe={stripePromise}>
       <SafeAreaProvider>
         <ClerkProvider publishableKey={publishableKey!} tokenCache={tokenCache}>
           <ClerkLoaded>
@@ -152,6 +134,6 @@ export default function RootLayout() {
           </ClerkLoaded>
         </ClerkProvider>
       </SafeAreaProvider>
-    </AppProviders>
+    </Elements>
   );
 }

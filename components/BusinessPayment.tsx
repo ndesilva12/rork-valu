@@ -5,20 +5,14 @@
  * - Stand fees (2.5% of purchase amounts)
  * - Committed donations
  *
- * Uses Stripe Payment Sheet for secure payment processing (mobile only)
+ * Uses Stripe Payment Element for secure web payment processing
  */
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { DollarSign, CreditCard } from 'lucide-react-native';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app } from '@/firebase';
-
-// Conditionally import useStripe hook only on native platforms
-let useStripe: any;
-if (Platform.OS !== 'web') {
-  const stripeModule = require('@stripe/stripe-react-native');
-  useStripe = stripeModule.useStripe;
-}
+import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 type Props = {
   amountOwed: number;
@@ -37,21 +31,13 @@ export default function BusinessPayment({
   businessName,
   colors,
 }: Props) {
-  // Only use Stripe hooks on native platforms
-  const stripe = Platform.OS !== 'web' && useStripe ? useStripe() : { initPaymentSheet: null, presentPaymentSheet: null };
-  const { initPaymentSheet, presentPaymentSheet } = stripe;
+  const stripe = useStripe();
+  const elements = useElements();
   const [isLoading, setIsLoading] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   const initiatePayment = async () => {
-    // Payment processing only available on mobile apps
-    if (Platform.OS === 'web') {
-      Alert.alert(
-        'Mobile Only Feature',
-        'Payment processing is only available on the Stand mobile app (iOS/Android). Please use the mobile app to make payments.'
-      );
-      return;
-    }
-
     setIsLoading(true);
 
     try {
@@ -67,38 +53,49 @@ export default function BusinessPayment({
         description: `Stand fees ($${standFees.toFixed(2)}) + Donations ($${donationsOwed.toFixed(2)})`,
       });
 
-      const { clientSecret } = result.data as { clientSecret: string };
+      const { clientSecret: secret } = result.data as { clientSecret: string };
+      setClientSecret(secret);
+      setShowPaymentForm(true);
+      setIsLoading(false);
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to initialize payment. Please ensure Cloud Functions are deployed.'
+      );
+      setIsLoading(false);
+    }
+  };
 
-      // Initialize payment sheet
-      const { error: initError } = await initPaymentSheet!({
-        paymentIntentClientSecret: clientSecret,
-        merchantDisplayName: 'Stand App',
-        returnURL: 'stand://payment-complete',
+  const handleSubmitPayment = async () => {
+    if (!stripe || !elements || !clientSecret) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.origin + '/payment-complete',
+        },
+        redirect: 'if_required',
       });
 
-      if (initError) {
-        Alert.alert('Error', initError.message);
-        setIsLoading(false);
-        return;
-      }
-
-      // Present payment sheet
-      const { error: presentError } = await presentPaymentSheet!();
-
-      if (presentError) {
-        Alert.alert('Payment Cancelled', presentError.message);
+      if (error) {
+        Alert.alert('Payment Failed', error.message || 'Payment could not be processed');
       } else {
         Alert.alert(
           'Success',
           'Payment completed successfully! Your account will be updated shortly.'
         );
+        setShowPaymentForm(false);
+        setClientSecret(null);
       }
     } catch (error: any) {
       console.error('Payment error:', error);
-      Alert.alert(
-        'Error',
-        error.message || 'Failed to process payment. Please ensure Cloud Functions are deployed.'
-      );
+      Alert.alert('Error', 'Failed to process payment');
     } finally {
       setIsLoading(false);
     }
@@ -151,35 +148,59 @@ export default function BusinessPayment({
         </View>
       </View>
 
-      {/* Payment Button */}
-      <TouchableOpacity
-        onPress={initiatePayment}
-        disabled={isLoading}
-        style={[
-          styles.payButton,
-          { backgroundColor: colors.primary },
-          isLoading && styles.payButtonDisabled,
-        ]}
-        activeOpacity={0.7}
-      >
-        <CreditCard size={20} color={colors.white} strokeWidth={2} />
-        <Text style={[styles.payButtonText, { color: colors.white }]}>
-          {isLoading ? 'Processing...' : 'Pay Now'}
-        </Text>
-      </TouchableOpacity>
+      {/* Payment Form */}
+      {showPaymentForm && clientSecret ? (
+        <View style={styles.paymentFormContainer}>
+          <PaymentElement />
+          <TouchableOpacity
+            onPress={handleSubmitPayment}
+            disabled={isLoading || !stripe || !elements}
+            style={[
+              styles.payButton,
+              { backgroundColor: colors.primary },
+              (isLoading || !stripe || !elements) && styles.payButtonDisabled,
+            ]}
+            activeOpacity={0.7}
+          >
+            <CreditCard size={20} color={colors.white} strokeWidth={2} />
+            <Text style={[styles.payButtonText, { color: colors.white }]}>
+              {isLoading ? 'Processing...' : 'Complete Payment'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <>
+          {/* Payment Button */}
+          <TouchableOpacity
+            onPress={initiatePayment}
+            disabled={isLoading}
+            style={[
+              styles.payButton,
+              { backgroundColor: colors.primary },
+              isLoading && styles.payButtonDisabled,
+            ]}
+            activeOpacity={0.7}
+          >
+            <CreditCard size={20} color={colors.white} strokeWidth={2} />
+            <Text style={[styles.payButtonText, { color: colors.white }]}>
+              {isLoading ? 'Loading...' : 'Pay Now'}
+            </Text>
+          </TouchableOpacity>
 
-      {/* Payment Methods Info */}
-      <View style={styles.infoContainer}>
-        <Text style={[styles.infoTitle, { color: colors.text }]}>
-          Accepted Payment Methods:
-        </Text>
-        <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-          • ACH Direct Debit (0.8% fee, 3-5 business days)
-        </Text>
-        <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-          • Credit/Debit Cards (2.9% + $0.30, instant)
-        </Text>
-      </View>
+          {/* Payment Methods Info */}
+          <View style={styles.infoContainer}>
+            <Text style={[styles.infoTitle, { color: colors.text }]}>
+              Accepted Payment Methods:
+            </Text>
+            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+              • ACH Direct Debit (0.8% fee, 3-5 business days)
+            </Text>
+            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+              • Credit/Debit Cards (2.9% + $0.30, instant)
+            </Text>
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -232,6 +253,9 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
   },
+  paymentFormContainer: {
+    marginBottom: 16,
+  },
   payButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -240,6 +264,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 8,
     marginBottom: 16,
+    marginTop: 16,
   },
   payButtonDisabled: {
     opacity: 0.6,
