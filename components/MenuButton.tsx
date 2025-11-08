@@ -19,11 +19,13 @@ import { useClerk } from '@clerk/clerk-expo';
 export default function MenuButton() {
   const router = useRouter();
   const segments = useSegments();
-  const { isDarkMode, toggleDarkMode, clerkUser, resetProfile } = useUser();
+  const { isDarkMode, toggleDarkMode, clerkUser, resetProfile, profile } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const { signOut } = useClerk();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  const isBusiness = profile.accountType === 'business';
 
   const handleUpdate = () => {
     setIsMenuVisible(false);
@@ -159,6 +161,20 @@ export default function MenuButton() {
                   <Text style={[styles.menuItemTitle, { color: colors.text }]}>Settings</Text>
                 </View>
               </TouchableOpacity>
+
+              {/* Search menu item - only for business accounts */}
+              {isBusiness && (
+                <TouchableOpacity
+                  style={[styles.menuItem, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
+                  onPress={handleNavigateToSearch}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <SearchIcon size={26} color={colors.primary} strokeWidth={2} />
+                    <Text style={[styles.menuItemTitle, { color: colors.text }]}>Search</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
 
               <TouchableOpacity
                 style={[styles.menuItem, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}

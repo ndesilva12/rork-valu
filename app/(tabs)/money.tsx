@@ -7,11 +7,9 @@ import {
   TouchableOpacity,
   Platform,
   StatusBar,
-  useWindowDimensions,
   Image,
 } from 'react-native';
-import { useState, useEffect } from 'react';
-import QRCode from 'react-native-qrcode-svg';
+import { useEffect } from 'react';
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -20,20 +18,14 @@ import BusinessesAcceptingDiscounts from '@/components/BusinessesAcceptingDiscou
 
 export default function DiscountScreen() {
   const router = useRouter();
-  const { profile, isDarkMode } = useUser();
+  const { profile, isDarkMode, refreshTransactionTotals } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
-  const { height } = useWindowDimensions();
 
   const isBusiness = profile.accountType === 'business';
-  const [showQRCode, setShowQRCode] = useState(false);
 
-  // Generate a random QR code value that changes on each render
-  const [qrValue, setQrValue] = useState('');
-
+  // Refresh transaction totals when component mounts
   useEffect(() => {
-    // Generate random string for QR code
-    const randomString = `VALU-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    setQrValue(randomString);
+    refreshTransactionTotals();
   }, []);
 
   const handleSelectCharities = () => {
@@ -44,10 +36,6 @@ export default function DiscountScreen() {
   const donationAmount = profile.donationAmount || 0;
   const totalSavings = profile.totalSavings || 0;
   const businessDonationAmount = profile.businessInfo?.totalDonated || 0;
-
-  // Calculate QR code size (max 50% of scroll area height, maintain 1:1 ratio)
-  const maxQRSize = Math.min(height * 0.5, 300); // Max 50% of height or 300px
-  const qrSize = Math.min(maxQRSize, 250); // Constrain to reasonable size
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -85,45 +73,17 @@ export default function DiscountScreen() {
               <Text style={[styles.promoLabel, { color: colors.textSecondary }]}>Your Promo Code</Text>
               <Text style={[styles.promoCode, { color: colors.primary }]}>{profile.promoCode || 'STAND00000'}</Text>
 
-              {/* QR Code Toggle Section - Moved directly beneath promo code */}
-              {qrValue && (
-                <View style={styles.qrCodeSection}>
-                  {!showQRCode ? (
-                    <TouchableOpacity
-                      style={[styles.generateQRButton, { backgroundColor: colors.primary }]}
-                      onPress={() => setShowQRCode(true)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.generateQRButtonText, { color: colors.white }]}>
-                        Generate QR Code
-                      </Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <>
-                      <View style={[styles.qrCodeContainer, { width: qrSize, height: qrSize }]}>
-                        <QRCode
-                          value={qrValue}
-                          size={qrSize - 32}
-                          color="#000000"
-                          backgroundColor="#ffffff"
-                        />
-                      </View>
-                      <Text style={[styles.qrSubtitle, { color: colors.textSecondary }]}>
-                        Present this at checkout for discount and donation credit
-                      </Text>
-                      <TouchableOpacity
-                        style={[styles.closeQRButton, { borderColor: colors.border }]}
-                        onPress={() => setShowQRCode(false)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.closeQRButtonText, { color: colors.text }]}>
-                          Close
-                        </Text>
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              )}
+              {/* Get Discount Code Button */}
+              <TouchableOpacity
+                style={[styles.discountButton, { backgroundColor: colors.primary }]}
+                onPress={() => router.push('/customer-discount')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.discountButtonText}>🎟️ Get Discount Code</Text>
+                <Text style={styles.discountButtonSubtext}>
+                  Show this QR code to participating merchants
+                </Text>
+              </TouchableOpacity>
 
               {/* Explainer Text */}
               <Text style={[styles.promoDescription, { color: colors.textSecondary }]}>
@@ -249,61 +209,35 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
-  qrCodeSection: {
-    marginTop: 24,
+  discountButton: {
+    padding: 20,
+    borderRadius: 12,
     alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
     width: '100%',
+  },
+  discountButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  discountButtonSubtext: {
+    fontSize: 12,
+    color: '#fff',
+    opacity: 0.9,
   },
   qrDivider: {
     width: '80%',
     height: 1,
     backgroundColor: 'rgba(128, 128, 128, 0.2)',
     marginBottom: 20,
-  },
-  qrCodeContainer: {
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  qrSubtitle: {
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginTop: 16,
-  },
-  generateQRButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 56,
-  },
-  generateQRButtonText: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-  },
-  closeQRButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-    borderWidth: 1,
-  },
-  closeQRButtonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  howItWorksButton: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
-    alignItems: 'center',
   },
   impactDashboardSection: {
     marginTop: 20,
