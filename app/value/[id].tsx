@@ -206,7 +206,7 @@ export default function ValueDetailScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <TrendingUp size={24} color={colors.success} strokeWidth={2} />
+            <TrendingUp size={24} color={colors.primaryLight} strokeWidth={2} />
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Supports This Value</Text>
           </View>
           <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
@@ -219,12 +219,10 @@ export default function ValueDetailScreen() {
                   key={`${id}-support-${driver.name}-${index}`}
                   style={[styles.driverCard, styles.supportingCard, { backgroundColor: colors.backgroundSecondary }]}
                   onPress={() => {
-                    if (driver.id) {
-                      router.push(`/brand/${driver.id}`);
-                    }
+                    // Always pass brand name so we can find it even if ID doesn't match
+                    router.push(`/brand/${driver.id}?name=${encodeURIComponent(driver.name)}`);
                   }}
                   activeOpacity={0.7}
-                  disabled={!driver.id}
                 >
                   <View style={styles.cardContent}>
                     <View style={styles.leftContent}>
@@ -237,7 +235,7 @@ export default function ValueDetailScreen() {
                       </View>
                     </View>
                     <TouchableOpacity
-                      style={[styles.shopButton, { backgroundColor: colors.success }]}
+                      style={[styles.shopButton, { backgroundColor: colors.primaryLight }]}
                       onPress={(e) => {
                         e.stopPropagation();
                         handleShopPress(driver.websiteUrl || '');
@@ -273,12 +271,10 @@ export default function ValueDetailScreen() {
                   key={`${id}-oppose-${driver.name}-${index}`}
                   style={[styles.driverCard, styles.opposingCard, { backgroundColor: colors.backgroundSecondary }]}
                   onPress={() => {
-                    if (driver.id) {
-                      router.push(`/brand/${driver.id}`);
-                    }
+                    // Always pass brand name so we can find it even if ID doesn't match
+                    router.push(`/brand/${driver.id}?name=${encodeURIComponent(driver.name)}`);
                   }}
                   activeOpacity={0.7}
-                  disabled={!driver.id}
                 >
                   <View style={styles.cardContent}>
                     <View style={styles.leftContent}>

@@ -156,10 +156,18 @@ export const [DataProvider, useData] = createContextHook(() => {
     return Math.abs(brand.alignmentScore);
   };
 
-  // Get brand by ID
+  // Get brand by ID (exact match only)
   const getBrandById = useCallback(
     (brandId: string): Brand | undefined => {
       return brands.find((b) => b.id === brandId);
+    },
+    [brands]
+  );
+
+  // Get brand by name (for fallback when ID doesn't match)
+  const getBrandByName = useCallback(
+    (brandName: string): Brand | undefined => {
+      return brands.find((b) => b.name.toLowerCase() === brandName.toLowerCase());
     },
     [brands]
   );
@@ -177,6 +185,7 @@ export const [DataProvider, useData] = createContextHook(() => {
     error,
     searchBrands,
     getBrandById,
+    getBrandByName,
     refresh,
   };
 });
