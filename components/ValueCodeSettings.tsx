@@ -37,8 +37,6 @@ export default function ValueCodeSettings() {
   const [makeDonations, setMakeDonations] = useState(
     businessInfo.makesDonations ?? false
   );
-  const [acceptsQRCode, setAcceptsQRCode] = useState(businessInfo.acceptsQRCode ?? true);
-  const [acceptsPromoCode, setAcceptsPromoCode] = useState(businessInfo.acceptsValueCode ?? true);
   const [discountType, setDiscountType] = useState<'preset' | 'custom'>('preset');
   const [donationType, setDonationType] = useState<'preset' | 'custom'>('preset');
   const [customerDiscount, setCustomerDiscount] = useState(businessInfo.customerDiscountPercent || 5);
@@ -78,24 +76,6 @@ export default function ValueCodeSettings() {
     }
   };
 
-  const handleToggleQRCode = async (value: boolean) => {
-    if (!value && !acceptsPromoCode) {
-      Alert.alert('Error', 'You must accept at least one method');
-      return;
-    }
-    setAcceptsQRCode(value);
-    await setBusinessInfo({ acceptsQRCode: value });
-  };
-
-  const handleTogglePromoCode = async (value: boolean) => {
-    if (!value && !acceptsQRCode) {
-      Alert.alert('Error', 'You must accept at least one method');
-      return;
-    }
-    setAcceptsPromoCode(value);
-    await setBusinessInfo({ acceptsValueCode: value });
-  };
-
   const handleChangeCustomerDiscount = async (newCustomer: number) => {
     const clampedCustomer = Math.max(0, Math.min(50, newCustomer));
     setCustomerDiscount(clampedCustomer);
@@ -129,40 +109,8 @@ export default function ValueCodeSettings() {
     );
   };
 
-  const showCodeSelector = acceptsDiscounts || makeDonations;
-
   return (
     <>
-      {/* QR/Promo Code Selector - Shown when at least one section is active */}
-      {showCodeSelector && (
-        <View style={styles.section}>
-          <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
-            <View style={styles.compactRow}>
-              <View style={styles.compactItem}>
-                <Text style={[styles.compactLabel, { color: colors.text }]}>QR Codes</Text>
-                <Switch
-                  value={acceptsQRCode}
-                  onValueChange={handleToggleQRCode}
-                  trackColor={{ false: '#D1D5DB', true: '#000000' }}
-                  thumbColor='#FFFFFF'
-                  ios_backgroundColor='#E5E7EB'
-                />
-              </View>
-              <View style={styles.compactItem}>
-                <Text style={[styles.compactLabel, { color: colors.text }]}>Promo Codes</Text>
-                <Switch
-                  value={acceptsPromoCode}
-                  onValueChange={handleTogglePromoCode}
-                  trackColor={{ false: '#D1D5DB', true: '#000000' }}
-                  thumbColor='#FFFFFF'
-                  ios_backgroundColor='#E5E7EB'
-                />
-              </View>
-            </View>
-          </View>
-        </View>
-      )}
-
       {/* DISCOUNTS SECTION */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Discounts</Text>
@@ -571,22 +519,22 @@ export default function ValueCodeSettings() {
 
 const styles = StyleSheet.create({
   section: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700' as const,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   card: {
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
   },
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   settingLabel: {
     fontSize: 16,
@@ -594,27 +542,11 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    marginVertical: 16,
-  },
-  // Compact Row for QR & Promo Codes
-  compactRow: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 16,
-  },
-  compactItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  compactLabel: {
-    fontSize: 14,
-    fontWeight: '600' as const,
+    marginVertical: 12,
   },
   // Discount Type Selection
   discountTypeSection: {
-    marginBottom: 20,
+    marginBottom: 12,
   },
   subsectionTitle: {
     fontSize: 16,
@@ -684,7 +616,7 @@ const styles = StyleSheet.create({
   smallCountersGrid: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   smallCounter: {
     flex: 1,
@@ -759,7 +691,7 @@ const styles = StyleSheet.create({
   },
   // Custom Discount Section
   customDiscountSection: {
-    marginTop: 20,
+    marginTop: 12,
   },
   customDiscountLabel: {
     fontSize: 14,
@@ -791,25 +723,26 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
   },
   infoBox: {
-    padding: 16,
+    padding: 12,
     borderRadius: 12,
+    marginTop: 8,
   },
   infoTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '700' as const,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   infoText: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 13,
+    lineHeight: 19,
   },
   underlinedText: {
     textDecorationLine: 'underline' as const,
   },
   donationAmountContainer: {
     alignItems: 'center',
-    marginBottom: 20,
-    paddingBottom: 20,
+    marginBottom: 16,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.05)',
   },
