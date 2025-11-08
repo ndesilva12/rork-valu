@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   supportBadge: {
-    backgroundColor: '#B3FFB3',
+    backgroundColor: '#EFF6FF',
   },
   avoidBadge: {
     backgroundColor: '#FFD6E8',
