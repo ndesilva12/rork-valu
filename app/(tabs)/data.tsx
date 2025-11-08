@@ -9,7 +9,8 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { ChevronDown, ChevronRight, Users, Receipt, TrendingDown, Heart } from 'lucide-react-native';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -35,64 +36,73 @@ export default function DataScreen() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [customers, setCustomers] = useState<Map<string, any>>(new Map());
 
-  // Load business data
-  useEffect(() => {
-    const loadBusinessData = async () => {
-      if (!clerkUser) return;
+  // Load business data - refreshes when screen comes into focus
+  const loadBusinessData = useCallback(async () => {
+    if (!clerkUser) return;
 
-      try {
-        setIsLoading(true);
+    try {
+      setIsLoading(true);
 
-        // Get aggregated metrics
-        const metrics = await aggregateBusinessTransactions(clerkUser.id);
-        setBusinessMetrics(metrics);
+      // Get aggregated metrics
+      const metrics = await aggregateBusinessTransactions(clerkUser.id);
+      setBusinessMetrics(metrics);
 
-        // Get all transactions
-        const transactionsRef = collection(db, 'transactions');
-        const q = query(
-          transactionsRef,
-          where('merchantId', '==', clerkUser.id),
-          where('status', '==', 'completed')
-        );
-        const querySnapshot = await getDocs(q);
+      // Get all transactions
+      const transactionsRef = collection(db, 'transactions');
+      const q = query(
+        transactionsRef,
+        where('merchantId', '==', clerkUser.id),
+        where('status', '==', 'completed')
+      );
+      const querySnapshot = await getDocs(q);
 
-        const txns: any[] = [];
-        const customerMap = new Map<string, any>();
+      const txns: any[] = [];
+      const customerMap = new Map<string, any>();
 
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          txns.push({ id: doc.id, ...data });
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        txns.push({ id: doc.id, ...data });
 
-          // Aggregate customer data
-          const customerId = data.customerId;
-          if (customerMap.has(customerId)) {
-            const customer = customerMap.get(customerId);
-            customer.transactionCount += 1;
-            customer.totalSpent += data.purchaseAmount || 0;
-            customer.totalSaved += data.discountAmount || 0;
-          } else {
-            customerMap.set(customerId, {
-              id: customerId,
-              name: data.customerName || 'Unknown',
-              transactionCount: 1,
-              totalSpent: data.purchaseAmount || 0,
-              totalSaved: data.discountAmount || 0,
-              lastTransaction: data.createdAt,
-            });
-          }
-        });
+        // Aggregate customer data
+        const customerId = data.customerId;
+        if (customerMap.has(customerId)) {
+          const customer = customerMap.get(customerId);
+          customer.transactionCount += 1;
+          customer.totalSpent += data.purchaseAmount || 0;
+          customer.totalSaved += data.discountAmount || 0;
+        } else {
+          customerMap.set(customerId, {
+            id: customerId,
+            name: data.customerName || 'Unknown',
+            email: data.customerEmail || '',
+            transactionCount: 1,
+            totalSpent: data.purchaseAmount || 0,
+            totalSaved: data.discountAmount || 0,
+            lastTransaction: data.createdAt,
+          });
+        }
+      });
 
-        setTransactions(txns);
-        setCustomers(customerMap);
-      } catch (error) {
-        console.error('[DataScreen] Error loading business data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadBusinessData();
+      setTransactions(txns);
+      setCustomers(customerMap);
+      console.log('[DataScreen] ✅ Business data loaded:', {
+        transactions: txns.length,
+        customers: customerMap.size,
+        metrics
+      });
+    } catch (error) {
+      console.error('[DataScreen] ❌ Error loading business data:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }, [clerkUser]);
+
+  // Reload data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadBusinessData();
+    }, [loadBusinessData])
+  );
 
   const toggleSection = (section: CollapsibleSection) => {
     setExpandedSection(expandedSection === section ? null : section);

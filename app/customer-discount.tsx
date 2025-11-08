@@ -48,7 +48,8 @@ export default function CustomerDiscount() {
       `userId=${clerkUser.id}&` +
       `code=${transactionId}&` +
       `exp=${expiry}&` +
-      `name=${encodeURIComponent(clerkUser.fullName || 'User')}`;
+      `name=${encodeURIComponent(clerkUser.fullName || 'User')}&` +
+      `email=${encodeURIComponent(clerkUser.primaryEmailAddress?.emailAddress || '')}`;
 
     setQrData(verifyUrl);
     setExpiresAt(expiry);

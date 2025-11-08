@@ -81,9 +81,12 @@ export default function ConsentScreen() {
             <View style={styles.bulletItem}>
               <Text style={[styles.bullet, { color: colors.textSecondary }]}>•</Text>
               <Text style={[styles.bulletText, { color: colors.text }]}>
-                The Company may also share insights derived from my spending habits and behavior (obtained from my connected bank account or App usage) with these vendors to facilitate tailored offers, or with other third parties for analytical or marketing purposes, in accordance with the Company's Privacy Policy available at{' '}
-                <Text style={{ color: colors.primary, textDecorationLine: 'underline' }}>
-                  [Privacy Policy URL]
+                The Company may also share insights derived from my spending habits and behavior (obtained from my connected bank account or App usage) with these vendors to facilitate tailored offers, or with other third parties for analytical or marketing purposes, in accordance with the Company's{' '}
+                <Text
+                  style={{ color: colors.primary, textDecorationLine: 'underline' }}
+                  onPress={() => router.push('/privacy-policy')}
+                >
+                  Privacy Policy & Terms of Service
                 </Text>.
               </Text>
             </View>
@@ -104,7 +107,13 @@ export default function ConsentScreen() {
           </View>
 
           <Text style={[styles.bodyText, { color: colors.text }]}>
-            I have read and understand the Company's Privacy Policy and Terms of Service, and I consent to the generation of the code and the associated data sharing as described above.
+            I have read and understand the Company's{' '}
+            <Text
+              style={{ color: colors.primary, textDecorationLine: 'underline' }}
+              onPress={() => router.push('/privacy-policy')}
+            >
+              Privacy Policy & Terms of Service
+            </Text>, and I consent to the generation of the code and the associated data sharing as described above.
           </Text>
         </View>
 

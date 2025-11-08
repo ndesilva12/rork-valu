@@ -42,6 +42,9 @@ function cleanUserProfile(profile: UserProfile): Partial<UserProfile> {
     ...(profile.accountType !== undefined && { accountType: profile.accountType }),
     ...(profile.businessInfo !== undefined && { businessInfo: profile.businessInfo }),
     ...(profile.userDetails !== undefined && { userDetails: profile.userDetails }),
+    ...(profile.codeSharing !== undefined && { codeSharing: profile.codeSharing }),
+    ...(profile.consentGivenAt !== undefined && { consentGivenAt: profile.consentGivenAt }),
+    ...(profile.consentVersion !== undefined && { consentVersion: profile.consentVersion }),
   });
 
   console.log('[Firebase cleanUserProfile] Cleaned profile:', JSON.stringify(cleaned, null, 2));
@@ -178,6 +181,9 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
         accountType: data.accountType,
         businessInfo: data.businessInfo,
         userDetails: data.userDetails,
+        codeSharing: data.codeSharing ?? true, // Default to true if not set
+        consentGivenAt: data.consentGivenAt,
+        consentVersion: data.consentVersion,
       };
 
       console.log('[Firebase getUserProfile] 📤 Returning profile with', profile.causes.length, 'causes');
