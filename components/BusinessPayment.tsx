@@ -17,6 +17,8 @@ import { app } from '@/firebase';
 let useStripe: any;
 let useElements: any;
 let PaymentElement: any;
+let Elements: any;
+let loadStripe: any;
 
 if (Platform.OS === 'web') {
   // Web imports
@@ -24,6 +26,9 @@ if (Platform.OS === 'web') {
   useStripe = webStripe.useStripe;
   useElements = webStripe.useElements;
   PaymentElement = webStripe.PaymentElement;
+  Elements = webStripe.Elements;
+  const stripeJs = require('@stripe/stripe-js');
+  loadStripe = stripeJs.loadStripe;
 } else {
   // Mobile imports
   const mobileStripe = require('@stripe/stripe-react-native');
@@ -39,6 +44,90 @@ type Props = {
   colors: any;
 };
 
+// Web Payment Form Component (needs to be inside Elements with clientSecret)
+const WebPaymentForm = Platform.OS === 'web'
+  ? function WebPaymentFormComponent({
+      colors,
+      onComplete
+    }: {
+      colors: any;
+      onComplete: () => void;
+    }) {
+      const stripe = useStripe();
+      const elements = useElements();
+      const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!stripe || !elements) {
+      console.error('[Payment] Stripe or Elements not loaded');
+      return;
+    }
+
+    setIsLoading(true);
+    console.log('[Payment] Starting payment confirmation...');
+
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.origin + '/payment-complete',
+        },
+        redirect: 'if_required',
+      });
+
+      if (error) {
+        console.error('[Payment] Stripe error details:', {
+          type: error.type,
+          code: error.code,
+          message: error.message,
+          declineCode: error.decline_code,
+          param: error.param,
+          fullError: error
+        });
+        Alert.alert('Payment Failed', error.message || 'Payment could not be processed');
+      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+        console.log('[Payment] Payment successful!', paymentIntent);
+        Alert.alert(
+          'Success',
+          'Payment completed successfully! Your account will be updated shortly.'
+        );
+        onComplete();
+      } else {
+        console.log('[Payment] Unexpected payment state:', paymentIntent?.status);
+        Alert.alert('Payment Processing', 'Your payment is being processed.');
+        onComplete();
+      }
+    } catch (error: any) {
+      console.error('[Payment] Web payment error:', error);
+      Alert.alert('Error', error?.message || 'Failed to process payment');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+      return (
+        <View style={styles.paymentFormContainer}>
+          <PaymentElement />
+          <TouchableOpacity
+            onPress={handleSubmit}
+            disabled={isLoading || !stripe || !elements}
+            style={[
+              styles.payButton,
+              { backgroundColor: colors.primary },
+              (isLoading || !stripe || !elements) && styles.payButtonDisabled,
+            ]}
+            activeOpacity={0.7}
+          >
+            <CreditCard size={20} color={colors.white} strokeWidth={2} />
+            <Text style={[styles.payButtonText, { color: colors.white }]}>
+              {isLoading ? 'Processing...' : 'Complete Payment'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+  : () => null;
+
 export default function BusinessPayment({
   amountOwed,
   standFees,
@@ -47,11 +136,13 @@ export default function BusinessPayment({
   businessName,
   colors,
 }: Props) {
-  const stripe = useStripe();
-  const elements = Platform.OS === 'web' ? useElements() : null;
+  const stripe = Platform.OS === 'web' ? null : useStripe();
   const [isLoading, setIsLoading] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [stripePromise] = useState(() =>
+    Platform.OS === 'web' ? loadStripe(process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '') : null
+  );
 
   const initiatePayment = async () => {
     setIsLoading(true);
@@ -127,38 +218,9 @@ export default function BusinessPayment({
     }
   };
 
-  const handleWebPayment = async () => {
-    if (!stripe || !elements || !clientSecret || Platform.OS !== 'web') {
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const { error } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: window.location.origin + '/payment-complete',
-        },
-        redirect: 'if_required',
-      });
-
-      if (error) {
-        Alert.alert('Payment Failed', error.message || 'Payment could not be processed');
-      } else {
-        Alert.alert(
-          'Success',
-          'Payment completed successfully! Your account will be updated shortly.'
-        );
-        setShowPaymentForm(false);
-        setClientSecret(null);
-      }
-    } catch (error: any) {
-      console.error('Web payment error:', error);
-      Alert.alert('Error', 'Failed to process payment');
-    } finally {
-      setIsLoading(false);
-    }
+  const handlePaymentComplete = () => {
+    setShowPaymentForm(false);
+    setClientSecret(null);
   };
 
   if (amountOwed <= 0) {
@@ -209,25 +271,10 @@ export default function BusinessPayment({
       </View>
 
       {/* Web Payment Form */}
-      {Platform.OS === 'web' && showPaymentForm && clientSecret ? (
-        <View style={styles.paymentFormContainer}>
-          <PaymentElement />
-          <TouchableOpacity
-            onPress={handleWebPayment}
-            disabled={isLoading || !stripe || !elements}
-            style={[
-              styles.payButton,
-              { backgroundColor: colors.primary },
-              (isLoading || !stripe || !elements) && styles.payButtonDisabled,
-            ]}
-            activeOpacity={0.7}
-          >
-            <CreditCard size={20} color={colors.white} strokeWidth={2} />
-            <Text style={[styles.payButtonText, { color: colors.white }]}>
-              {isLoading ? 'Processing...' : 'Complete Payment'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+      {Platform.OS === 'web' && showPaymentForm && clientSecret && stripePromise ? (
+        <Elements stripe={stripePromise} options={{ clientSecret }}>
+          <WebPaymentForm colors={colors} onComplete={handlePaymentComplete} />
+        </Elements>
       ) : (
         <>
           {/* Payment Button (both platforms) */}

@@ -24,14 +24,6 @@ const db = admin.firestore();
  * Called from the app when a business wants to pay Stand fees + donations
  */
 export const createPaymentIntent = functions.https.onCall(async (data, context) => {
-  // Verify authentication
-  if (!context.auth) {
-    throw new functions.https.HttpsError(
-      'unauthenticated',
-      'User must be authenticated to create payment intent'
-    );
-  }
-
   const {
     amount,
     businessId,
@@ -54,16 +46,39 @@ export const createPaymentIntent = functions.https.onCall(async (data, context) 
     );
   }
 
+  // Verify that the business exists in Firestore
   try {
+    const businessDoc = await db.collection('users').doc(businessId).get();
+    if (!businessDoc.exists) {
+      throw new functions.https.HttpsError(
+        'not-found',
+        'Business account not found'
+      );
+    }
+  } catch (error) {
+    functions.logger.error('Error verifying business:', error);
+    throw new functions.https.HttpsError(
+      'internal',
+      'Failed to verify business account'
+    );
+  }
+
+  try {
+    // Get business email for receipt
+    const businessDoc = await db.collection('users').doc(businessId).get();
+    const businessData = businessDoc.data();
+    const receipt_email = businessData?.email || undefined;
+
     // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
       currency: 'usd',
       description: description || `Payment from ${businessName}`,
+      receipt_email,
       metadata: {
         businessId,
         businessName,
-        userId: context.auth.uid,
+        userId: context.auth?.uid || businessId,
       },
       // Enable payment methods
       automatic_payment_methods: {

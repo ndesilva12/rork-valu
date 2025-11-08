@@ -1,10 +1,10 @@
 /**
  * Logo URL utility for generating brand logos using logo.dev API
- * Falls back to Valu app logo if logo.dev fails
+ * Falls back to Stand app logo if logo.dev fails
  */
 
-// Valu app logo fallback
-const VALU_LOGO_FALLBACK = 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/01zd2yjl9h93g2cu0yb3u';
+// Stand app logo fallback
+const STAND_LOGO_FALLBACK = 'https://standing.vercel.app/icon-512.png';
 
 // Logo.dev API key (use publishable key for client-side requests)
 const LOGO_DEV_API_KEY = process.env.EXPO_PUBLIC_LOGO_DEV_API_KEY || 'pk_NmXtbgd3TRWfEXgPZ_qtzw';
@@ -42,7 +42,7 @@ export function getLogoUrl(
     fallback?: string;
   } = {}
 ): string {
-  const { size = 128, format = 'png', fallback = VALU_LOGO_FALLBACK } = options;
+  const { size = 128, format = 'png', fallback = STAND_LOGO_FALLBACK } = options;
 
   // If no website URL provided, return fallback
   if (!websiteUrl || websiteUrl.trim() === '') {
@@ -56,11 +56,11 @@ export function getLogoUrl(
 }
 
 /**
- * Get fallback logo URL (Valu app logo)
- * @returns Valu logo URL
+ * Get fallback logo URL (Stand app logo)
+ * @returns Stand logo URL
  */
 export function getFallbackLogoUrl(): string {
-  return VALU_LOGO_FALLBACK;
+  return STAND_LOGO_FALLBACK;
 }
 
 /**

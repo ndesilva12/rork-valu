@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Valu</title>
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="rgb(3, 68, 102)" />
+    <title>Stand</title>
     <style>
       /* Hide scrollbars globally while maintaining scroll functionality */
 
@@ -29,6 +32,33 @@
       * {
         -ms-overflow-style: none;
         scrollbar-width: none;
+      }
+
+      /* Fix for iOS PWA white strip at bottom */
+      html {
+        height: 100%;
+        width: 100%;
+        position: fixed;
+        overflow: hidden;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+        position: fixed;
+        overflow: hidden;
+        background-color: #111827;
+        /* Use CSS env() for safe areas on iOS */
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+
+      #root {
+        height: 100%;
+        width: 100%;
+        position: fixed;
+        overflow: auto;
       }
     </style>
   </head>

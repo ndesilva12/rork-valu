@@ -195,6 +195,7 @@ export default function SignInScreen() {
               style={styles.logo}
               resizeMode="contain"
             />
+            <Text style={[styles.tagline, { color: colors.primary }]}>Vote With Your Money</Text>
           </View>
           {!showForgotPassword ? (
             <>
@@ -336,6 +337,12 @@ const styles = StyleSheet.create({
     width: 180,
     height: 180,
     tintColor: undefined,
+  },
+  tagline: {
+    fontSize: 18,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginTop: -20,
   },
   title: {
     fontSize: 28,
