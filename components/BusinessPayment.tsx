@@ -76,7 +76,14 @@ const WebPaymentForm = Platform.OS === 'web'
       });
 
       if (error) {
-        console.error('[Payment] Stripe error:', error);
+        console.error('[Payment] Stripe error details:', {
+          type: error.type,
+          code: error.code,
+          message: error.message,
+          declineCode: error.decline_code,
+          param: error.param,
+          fullError: error
+        });
         Alert.alert('Payment Failed', error.message || 'Payment could not be processed');
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
         console.log('[Payment] Payment successful!', paymentIntent);
