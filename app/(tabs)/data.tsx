@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { ChevronDown, ChevronRight, Users, Receipt, TrendingDown, Heart } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, Users, Receipt, TrendingDown, Heart, BarChart3 } from 'lucide-react-native';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -19,7 +19,7 @@ import { aggregateBusinessTransactions } from '@/services/firebase/userService';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase';
 
-type CollapsibleSection = 'customers' | 'transactions' | 'discounts' | 'donations';
+type CollapsibleSection = 'customers' | 'transactions' | 'discounts' | 'donations' | 'customerMetrics';
 
 export default function DataScreen() {
   const { profile, isDarkMode, clerkUser } = useUser();
@@ -35,6 +35,7 @@ export default function DataScreen() {
   });
   const [transactions, setTransactions] = useState<any[]>([]);
   const [customers, setCustomers] = useState<Map<string, any>>(new Map());
+  const [customerValues, setCustomerValues] = useState<Map<string, number>>(new Map());
 
   // Load business data - refreshes when screen comes into focus
   const loadBusinessData = useCallback(async () => {
@@ -58,6 +59,7 @@ export default function DataScreen() {
 
       const txns: any[] = [];
       const customerMap = new Map<string, any>();
+      const customerIds = new Set<string>();
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -65,6 +67,8 @@ export default function DataScreen() {
 
         // Aggregate customer data
         const customerId = data.customerId;
+        customerIds.add(customerId);
+
         if (customerMap.has(customerId)) {
           const customer = customerMap.get(customerId);
           customer.transactionCount += 1;
@@ -85,6 +89,34 @@ export default function DataScreen() {
 
       setTransactions(txns);
       setCustomers(customerMap);
+
+      // Fetch customer profiles to get their selected causes/values
+      const valuesMap = new Map<string, number>();
+      const uniqueCustomerIds = Array.from(customerIds);
+
+      for (const customerId of uniqueCustomerIds) {
+        try {
+          const usersRef = collection(db, 'users');
+          const userQuery = query(usersRef, where('clerkUserId', '==', customerId));
+          const userSnapshot = await getDocs(userQuery);
+
+          if (!userSnapshot.empty) {
+            const userData = userSnapshot.docs[0].data();
+            const selectedCauses = userData.selectedCauses || [];
+
+            // Count each cause
+            selectedCauses.forEach((cause: any) => {
+              const causeName = cause.name || cause;
+              const currentCount = valuesMap.get(causeName) || 0;
+              valuesMap.set(causeName, currentCount + 1);
+            });
+          }
+        } catch (error) {
+          console.error(`[DataScreen] Error fetching profile for customer ${customerId}:`, error);
+        }
+      }
+
+      setCustomerValues(valuesMap);
       console.log('[DataScreen] ✅ Business data loaded:', {
         transactions: txns.length,
         customers: customerMap.size,
@@ -462,6 +494,83 @@ export default function DataScreen() {
             </View>
           )}
         </View>
+
+        {/* Customer Metrics Section */}
+        <View style={[styles.section, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('customerMetrics')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <BarChart3 size={24} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Customer Values</Text>
+            </View>
+            <View style={styles.sectionHeaderRight}>
+              <Text style={[styles.sectionMetric, { color: colors.primary }]}>
+                {customerValues.size}
+              </Text>
+              {expandedSection === 'customerMetrics' ? (
+                <ChevronDown size={24} color={colors.text} strokeWidth={2} />
+              ) : (
+                <ChevronRight size={24} color={colors.text} strokeWidth={2} />
+              )}
+            </View>
+          </TouchableOpacity>
+
+          {expandedSection === 'customerMetrics' && (
+            <View style={[styles.sectionContent, { borderTopColor: colors.border }]}>
+              {customerValues.size === 0 ? (
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                  No customer data yet
+                </Text>
+              ) : (
+                <>
+                  <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
+                    Top causes and values your customers care about
+                  </Text>
+
+                  {Array.from(customerValues.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([causeName, count]) => {
+                      const percentage = ((count / customers.size) * 100).toFixed(1);
+                      return (
+                        <View
+                          key={causeName}
+                          style={[styles.valueRow, { borderBottomColor: colors.border }]}
+                        >
+                          <View style={styles.valueRowLeft}>
+                            <Text style={[styles.valueName, { color: colors.text }]}>
+                              {causeName}
+                            </Text>
+                            <View style={styles.valueBar}>
+                              <View
+                                style={[
+                                  styles.valueBarFill,
+                                  {
+                                    backgroundColor: colors.primary,
+                                    width: `${percentage}%`
+                                  }
+                                ]}
+                              />
+                            </View>
+                          </View>
+                          <View style={styles.valueRowRight}>
+                            <Text style={[styles.valuePercentage, { color: colors.primary }]}>
+                              {percentage}%
+                            </Text>
+                            <Text style={[styles.valueCount, { color: colors.textSecondary }]}>
+                              {count} {count === 1 ? 'customer' : 'customers'}
+                            </Text>
+                          </View>
+                        </View>
+                      );
+                    })}
+                </>
+              )}
+            </View>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -595,5 +704,47 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 12,
     fontStyle: 'italic' as const,
+  },
+  sectionDescription: {
+    fontSize: 13,
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  valueRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    gap: 16,
+  },
+  valueRowLeft: {
+    flex: 1,
+  },
+  valueName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+  },
+  valueBar: {
+    height: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  valueBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  valueRowRight: {
+    alignItems: 'flex-end',
+  },
+  valuePercentage: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 2,
+  },
+  valueCount: {
+    fontSize: 12,
   },
 });

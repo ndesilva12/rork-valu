@@ -121,6 +121,30 @@ export default function AdminDashboard() {
             </Text>
           </TouchableOpacity>
 
+          {/* Transactions */}
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => router.push('/admin/transactions')}
+          >
+            <Text style={styles.cardIcon}>💳</Text>
+            <Text style={styles.cardTitle}>All Transactions</Text>
+            <Text style={styles.cardDescription}>
+              View all transactions across all businesses
+            </Text>
+          </TouchableOpacity>
+
+          {/* Business Financials */}
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => router.push('/admin/financials')}
+          >
+            <Text style={styles.cardIcon}>💰</Text>
+            <Text style={styles.cardTitle}>Business Financials</Text>
+            <Text style={styles.cardDescription}>
+              Manage business accounts, amounts owed, and record payments
+            </Text>
+          </TouchableOpacity>
+
           {/* Database Stats */}
           <View style={[styles.card, styles.statsCard]}>
             <Text style={styles.cardIcon}>📈</Text>
@@ -128,7 +152,7 @@ export default function AdminDashboard() {
             <View style={styles.statsContainer}>
               <View style={styles.statRow}>
                 <Text style={styles.statLabel}>Collections:</Text>
-                <Text style={styles.statValue}>brands, values, users</Text>
+                <Text style={styles.statValue}>brands, values, users, transactions</Text>
               </View>
               <View style={styles.statRow}>
                 <Text style={styles.statLabel}>Admin:</Text>
