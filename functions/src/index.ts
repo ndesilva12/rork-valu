@@ -64,11 +64,17 @@ export const createPaymentIntent = functions.https.onCall(async (data, context) 
   }
 
   try {
+    // Get business email for receipt
+    const businessDoc = await db.collection('users').doc(businessId).get();
+    const businessData = businessDoc.data();
+    const receipt_email = businessData?.email || undefined;
+
     // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
       currency: 'usd',
       description: description || `Payment from ${businessName}`,
+      receipt_email,
       metadata: {
         businessId,
         businessName,

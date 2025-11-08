@@ -59,13 +59,15 @@ const WebPaymentForm = Platform.OS === 'web'
 
   const handleSubmit = async () => {
     if (!stripe || !elements) {
+      console.error('[Payment] Stripe or Elements not loaded');
       return;
     }
 
     setIsLoading(true);
+    console.log('[Payment] Starting payment confirmation...');
 
     try {
-      const { error } = await stripe.confirmPayment({
+      const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url: window.location.origin + '/payment-complete',
@@ -74,17 +76,23 @@ const WebPaymentForm = Platform.OS === 'web'
       });
 
       if (error) {
+        console.error('[Payment] Stripe error:', error);
         Alert.alert('Payment Failed', error.message || 'Payment could not be processed');
-      } else {
+      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+        console.log('[Payment] Payment successful!', paymentIntent);
         Alert.alert(
           'Success',
           'Payment completed successfully! Your account will be updated shortly.'
         );
         onComplete();
+      } else {
+        console.log('[Payment] Unexpected payment state:', paymentIntent?.status);
+        Alert.alert('Payment Processing', 'Your payment is being processed.');
+        onComplete();
       }
     } catch (error: any) {
-      console.error('Web payment error:', error);
-      Alert.alert('Error', 'Failed to process payment');
+      console.error('[Payment] Web payment error:', error);
+      Alert.alert('Error', error?.message || 'Failed to process payment');
     } finally {
       setIsLoading(false);
     }
