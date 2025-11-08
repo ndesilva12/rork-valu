@@ -13,7 +13,7 @@ admin.initializeApp();
 
 // Initialize Stripe with secret key from environment variables
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || functions.config().stripe?.secret_key || '', {
-  apiVersion: '2024-11-20.acacia',
+  apiVersion: '2023-10-16',
 });
 
 const db = admin.firestore();
@@ -159,16 +159,28 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
     id,
     amount,
     metadata,
-    charges,
   } = paymentIntent;
 
   const { businessId, businessName, userId } = metadata;
 
-  // Get charge details for fees
-  const charge = charges.data[0];
-  const stripeFee = charge?.balance_transaction
-    ? (await stripe.balanceTransactions.retrieve(charge.balance_transaction as string)).fee
-    : 0;
+  // Fetch the latest charge to get fee information
+  let stripeFee = 0;
+  let paymentMethod = 'unknown';
+
+  try {
+    if (paymentIntent.latest_charge) {
+      const charge = await stripe.charges.retrieve(paymentIntent.latest_charge as string);
+      if (charge.balance_transaction) {
+        const balanceTransaction = await stripe.balanceTransactions.retrieve(
+          charge.balance_transaction as string
+        );
+        stripeFee = balanceTransaction.fee;
+      }
+      paymentMethod = charge.payment_method_details?.type || 'unknown';
+    }
+  } catch (error: any) {
+    functions.logger.warn('Could not retrieve charge details', { error: error.message });
+  }
 
   // Record payment in Firestore
   const paymentRef = db.collection('payments').doc(id);
@@ -182,7 +194,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
     stripeFee: stripeFee / 100,
     netAmount: (amount - stripeFee) / 100,
     status: 'succeeded',
-    paymentMethod: charge?.payment_method_details?.type || 'unknown',
+    paymentMethod,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     processedAt: admin.firestore.FieldValue.serverTimestamp(),
   });
