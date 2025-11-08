@@ -112,10 +112,15 @@ export default function DataScreen() {
 
             console.log(`[DataScreen] ✅ Found ${causes.length} causes for customer ${customerId}`);
 
-            // Update customer map with causes data
+            // Update customer map with user profile data
             if (customerMap.has(customerId)) {
               const customer = customerMap.get(customerId);
               customer.causes = causes;
+              // Update email and name from user document if available
+              customer.email = userData.email || customer.email || '';
+              customer.name = userData.name || customer.name || 'Unknown';
+              customer.location = userData.location || '';
+              customer.bio = userData.bio || '';
             }
 
             // Count each cause and category
