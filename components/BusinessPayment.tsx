@@ -5,14 +5,20 @@
  * - Stand fees (2.5% of purchase amounts)
  * - Committed donations
  *
- * Uses Stripe Payment Sheet for secure payment processing
+ * Uses Stripe Payment Sheet for secure payment processing (mobile only)
  */
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
-import { useStripe } from '@stripe/stripe-react-native';
+import { View, Text, TouchableOpacity, Alert, StyleSheet, Platform } from 'react-native';
 import { DollarSign, CreditCard } from 'lucide-react-native';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app } from '@/firebase';
+
+// Conditionally import useStripe hook only on native platforms
+let useStripe: any;
+if (Platform.OS !== 'web') {
+  const stripeModule = require('@stripe/stripe-react-native');
+  useStripe = stripeModule.useStripe;
+}
 
 type Props = {
   amountOwed: number;
@@ -31,10 +37,21 @@ export default function BusinessPayment({
   businessName,
   colors,
 }: Props) {
-  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  // Only use Stripe hooks on native platforms
+  const stripe = Platform.OS !== 'web' && useStripe ? useStripe() : { initPaymentSheet: null, presentPaymentSheet: null };
+  const { initPaymentSheet, presentPaymentSheet } = stripe;
   const [isLoading, setIsLoading] = useState(false);
 
   const initiatePayment = async () => {
+    // Payment processing only available on mobile apps
+    if (Platform.OS === 'web') {
+      Alert.alert(
+        'Mobile Only Feature',
+        'Payment processing is only available on the Stand mobile app (iOS/Android). Please use the mobile app to make payments.'
+      );
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -53,7 +70,7 @@ export default function BusinessPayment({
       const { clientSecret } = result.data as { clientSecret: string };
 
       // Initialize payment sheet
-      const { error: initError } = await initPaymentSheet({
+      const { error: initError } = await initPaymentSheet!({
         paymentIntentClientSecret: clientSecret,
         merchantDisplayName: 'Stand App',
         returnURL: 'stand://payment-complete',
@@ -66,7 +83,7 @@ export default function BusinessPayment({
       }
 
       // Present payment sheet
-      const { error: presentError } = await presentPaymentSheet();
+      const { error: presentError } = await presentPaymentSheet!();
 
       if (presentError) {
         Alert.alert('Payment Cancelled', presentError.message);
