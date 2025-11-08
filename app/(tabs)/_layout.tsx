@@ -112,25 +112,23 @@ export default function TabLayout() {
               }}
             />
             {/* Search tab - only for individual users */}
-            {!isBusiness && (
-              <Tabs.Screen
-                name="search"
-                options={{
-                  title: "Search",
-                  tabBarIcon: renderTabIconWithLabel(Search, "Search", colors.primary),
-                }}
-              />
-            )}
+            <Tabs.Screen
+              name="search"
+              options={{
+                title: "Search",
+                tabBarIcon: renderTabIconWithLabel(Search, "Search", colors.primary),
+                href: isBusiness ? null : undefined,
+              }}
+            />
             {/* Data tab - only for business users */}
-            {isBusiness && (
-              <Tabs.Screen
-                name="data"
-                options={{
-                  title: "Data",
-                  tabBarIcon: renderTabIconWithLabel(BarChart3, "Data", colors.primary),
-                }}
-              />
-            )}
+            <Tabs.Screen
+              name="data"
+              options={{
+                title: "Data",
+                tabBarIcon: renderTabIconWithLabel(BarChart3, "Data", colors.primary),
+                href: !isBusiness ? null : undefined,
+              }}
+            />
             <Tabs.Screen
               name="money"
               options={{
