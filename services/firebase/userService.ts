@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { UserProfile, Cause, Charity, AccountType, BusinessInfo, UserDetails } from '@/types';
 
@@ -36,6 +36,7 @@ function cleanUserProfile(profile: UserProfile): Partial<UserProfile> {
     causes: profile.causes || [],
     searchHistory: profile.searchHistory || [],
     donationAmount: profile.donationAmount ?? 0,
+    totalSavings: profile.totalSavings ?? 0,
     selectedCharities: profile.selectedCharities || [],
     ...(profile.promoCode !== undefined && { promoCode: profile.promoCode }),
     ...(profile.accountType !== undefined && { accountType: profile.accountType }),
@@ -172,6 +173,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
         searchHistory: data.searchHistory || [],
         promoCode: data.promoCode,
         donationAmount: data.donationAmount ?? 0,
+        totalSavings: data.totalSavings ?? 0,
         selectedCharities: data.selectedCharities || [],
         accountType: data.accountType,
         businessInfo: data.businessInfo,
@@ -246,6 +248,94 @@ export async function createUser(
     console.log('[Firebase] ✅ User created successfully');
   } catch (error) {
     console.error('[Firebase] ❌ Error creating user:', error);
+    throw error;
+  }
+}
+
+/**
+ * Aggregate transaction data for a user
+ * @param userId - The Clerk user ID
+ * @returns Object with totalSavings and totalDonations
+ */
+export async function aggregateUserTransactions(userId: string): Promise<{
+  totalSavings: number;
+  totalDonations: number;
+}> {
+  try {
+    console.log('[Firebase] Aggregating transactions for user:', userId);
+
+    const transactionsRef = collection(db, 'transactions');
+    const q = query(transactionsRef, where('customerId', '==', userId), where('status', '==', 'completed'));
+
+    const querySnapshot = await getDocs(q);
+
+    let totalSavings = 0;
+    let totalDonations = 0;
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      totalSavings += data.discountAmount || 0;
+      totalDonations += data.donationAmount || 0;
+    });
+
+    console.log('[Firebase] ✅ Aggregated transactions:', {
+      totalSavings,
+      totalDonations,
+      transactionCount: querySnapshot.size
+    });
+
+    return { totalSavings, totalDonations };
+  } catch (error) {
+    console.error('[Firebase] ❌ Error aggregating transactions:', error);
+    throw error;
+  }
+}
+
+/**
+ * Aggregate transaction data for a business
+ * @param businessId - The Clerk user ID of the business
+ * @returns Object with business metrics
+ */
+export async function aggregateBusinessTransactions(businessId: string): Promise<{
+  totalDonated: number;
+  totalDiscountGiven: number;
+  transactionCount: number;
+  totalRevenue: number;
+}> {
+  try {
+    console.log('[Firebase] Aggregating business transactions for:', businessId);
+
+    const transactionsRef = collection(db, 'transactions');
+    const q = query(transactionsRef, where('merchantId', '==', businessId), where('status', '==', 'completed'));
+
+    const querySnapshot = await getDocs(q);
+
+    let totalDonated = 0;
+    let totalDiscountGiven = 0;
+    let totalRevenue = 0;
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      totalDonated += data.donationAmount || 0;
+      totalDiscountGiven += data.discountAmount || 0;
+      totalRevenue += data.purchaseAmount || 0;
+    });
+
+    console.log('[Firebase] ✅ Aggregated business transactions:', {
+      totalDonated,
+      totalDiscountGiven,
+      totalRevenue,
+      transactionCount: querySnapshot.size
+    });
+
+    return {
+      totalDonated,
+      totalDiscountGiven,
+      transactionCount: querySnapshot.size,
+      totalRevenue
+    };
+  } catch (error) {
+    console.error('[Firebase] ❌ Error aggregating business transactions:', error);
     throw error;
   }
 }

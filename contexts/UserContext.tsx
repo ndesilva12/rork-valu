@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { Cause, UserProfile, Charity, AccountType, BusinessInfo, UserDetails } from '@/types';
-import { saveUserProfile, getUserProfile, createUser, updateUserMetadata } from '@/services/firebase/userService';
+import { saveUserProfile, getUserProfile, createUser, updateUserMetadata, aggregateUserTransactions, aggregateBusinessTransactions } from '@/services/firebase/userService';
 
 const PROFILE_KEY = '@user_profile';
 const IS_NEW_USER_KEY = '@is_new_user';
@@ -531,6 +531,53 @@ export const [UserProvider, useUser] = createContextHook(() => {
     }
   }, [clerkUser]);
 
+  const refreshTransactionTotals = useCallback(async () => {
+    if (!clerkUser) {
+      console.error('[UserContext] Cannot refresh transactions: User not logged in');
+      return;
+    }
+
+    try {
+      console.log('[UserContext] 🔄 Refreshing transaction totals for user:', clerkUser.id);
+
+      const isBusiness = profile.accountType === 'business';
+
+      if (isBusiness) {
+        // For business accounts, aggregate business transactions
+        const businessMetrics = await aggregateBusinessTransactions(clerkUser.id);
+
+        // Update business info with total donated
+        const updatedBusinessInfo = {
+          ...profile.businessInfo,
+          totalDonated: businessMetrics.totalDonated,
+        };
+
+        const newProfile = { ...profile, businessInfo: updatedBusinessInfo };
+        setProfile(newProfile);
+
+        // Save to Firebase
+        await saveUserProfile(clerkUser.id, newProfile);
+        console.log('[UserContext] ✅ Business transaction totals refreshed:', businessMetrics);
+      } else {
+        // For individual accounts, aggregate user transactions
+        const { totalSavings, totalDonations } = await aggregateUserTransactions(clerkUser.id);
+
+        const newProfile = {
+          ...profile,
+          totalSavings,
+          donationAmount: totalDonations,
+        };
+        setProfile(newProfile);
+
+        // Save to Firebase
+        await saveUserProfile(clerkUser.id, newProfile);
+        console.log('[UserContext] ✅ User transaction totals refreshed:', { totalSavings, totalDonations });
+      }
+    } catch (error) {
+      console.error('[UserContext] ❌ Failed to refresh transaction totals:', error);
+    }
+  }, [clerkUser, profile]);
+
   return useMemo(() => ({
     profile,
     isLoading: isLoading || !isClerkLoaded,
@@ -548,5 +595,6 @@ export const [UserProvider, useUser] = createContextHook(() => {
     setAccountType,
     setBusinessInfo,
     setUserDetails,
-  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, removeCauses, toggleCauseType, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, clerkUser, setAccountType, setBusinessInfo, setUserDetails]);
+    refreshTransactionTotals,
+  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, removeCauses, toggleCauseType, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, clerkUser, setAccountType, setBusinessInfo, setUserDetails, refreshTransactionTotals]);
 });

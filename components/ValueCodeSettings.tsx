@@ -180,15 +180,17 @@ export default function ValueCodeSettings() {
             />
           </View>
 
-          {/* What You Get box - Always visible */}
-          <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
-            <Text style={[styles.infoTitle, { color: colors.text }]}>
-              What You Get For Discounts
-            </Text>
-            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-              <Text style={styles.underlinedText}>When you accept discounts, you get invaluable insights about what your customers believe.</Text> Find out: ideologies, causes, social issues, interests, celebrity sentiments, religions, etc. These are deep connections to your customers that you cannot find anywhere else.
-            </Text>
-          </View>
+          {/* What You Get box - Only visible when discounts are NOT accepted */}
+          {!acceptsDiscounts && (
+            <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
+              <Text style={[styles.infoTitle, { color: colors.text }]}>
+                What You Get For Discounts
+              </Text>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                <Text style={styles.underlinedText}>When you accept discounts, you get invaluable insights about what your customers believe.</Text> Find out: ideologies, causes, social issues, interests, celebrity sentiments, religions, etc. These are deep connections to your customers that you cannot find anywhere else.
+              </Text>
+            </View>
+          )}
 
         {acceptsDiscounts && (
           <>
@@ -411,15 +413,17 @@ export default function ValueCodeSettings() {
             />
           </View>
 
-          {/* What You Get box - Always visible */}
-          <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
-            <Text style={[styles.infoTitle, { color: colors.text }]}>
-              What You Get For Donations
-            </Text>
-            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-              <Text style={styles.underlinedText}>When you contribute donations, you get immediate tax deductible write offs that your CUSTOMERS get to choose the destination for.</Text> Your customers will be more incentivized to do business with you because they have the final say where the donations go. Your donation goes to our 501(c)(3) - and then directed to the various charities and organizations chosen by the customer but the tax benefit is YOURS, not ours.
-            </Text>
-          </View>
+          {/* What You Get box - Only visible when donations are NOT accepted */}
+          {!makeDonations && (
+            <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
+              <Text style={[styles.infoTitle, { color: colors.text }]}>
+                What You Get For Donations
+              </Text>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                <Text style={styles.underlinedText}>When you contribute donations, you get immediate tax deductible write offs that your CUSTOMERS get to choose the destination for.</Text> Your customers will be more incentivized to do business with you because they have the final say where the donations go. Your donation goes to our 501(c)(3) - and then directed to the various charities and organizations chosen by the customer but the tax benefit is YOURS, not ours.
+              </Text>
+            </View>
+          )}
 
         {makeDonations && (
           <>

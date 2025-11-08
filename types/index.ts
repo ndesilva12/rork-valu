@@ -164,7 +164,8 @@ export interface UserProfile {
   causes: Cause[];
   searchHistory: string[];
   promoCode?: string;
-  donationAmount?: number;
+  donationAmount?: number; // Total donations committed through transactions
+  totalSavings?: number; // Total discount amount saved through transactions
   selectedCharities?: Charity[];
   businessInfo?: BusinessInfo; // Only for business accounts
   valueCodeCustomers?: ValueCodeCustomer[]; // Only for business accounts

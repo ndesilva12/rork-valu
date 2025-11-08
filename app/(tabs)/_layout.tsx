@@ -1,5 +1,5 @@
 import { Tabs, useSegments } from "expo-router";
-import { BookOpen, DollarSign, Heart, Search, User } from "lucide-react-native";
+import { BookOpen, DollarSign, Heart, Search, User, BarChart3 } from "lucide-react-native";
 import React from "react";
 import { Platform, useWindowDimensions, StyleSheet, StatusBar, View, Text } from "react-native";
 import { lightColors, darkColors } from "@/constants/colors";
@@ -9,9 +9,11 @@ import { useIsStandalone } from "@/hooks/useIsStandalone";
 
 export default function TabLayout() {
   const isStandalone = useIsStandalone();
-  const { isDarkMode } = useUser();
+  const { isDarkMode, profile } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const { width } = useWindowDimensions();
+
+  const isBusiness = profile.accountType === 'business';
 
   const isTabletOrLarger = Platform.OS === 'web' && width >= 768;
   const tabBarHeight = isTabletOrLarger ? 64 : 64;
@@ -109,13 +111,26 @@ export default function TabLayout() {
                 tabBarIcon: renderTabIconWithLabel(Heart, "Values", colors.primary),
               }}
             />
-            <Tabs.Screen
-              name="search"
-              options={{
-                title: "Search",
-                tabBarIcon: renderTabIconWithLabel(Search, "Search", colors.primary),
-              }}
-            />
+            {/* Search tab - only for individual users */}
+            {!isBusiness && (
+              <Tabs.Screen
+                name="search"
+                options={{
+                  title: "Search",
+                  tabBarIcon: renderTabIconWithLabel(Search, "Search", colors.primary),
+                }}
+              />
+            )}
+            {/* Data tab - only for business users */}
+            {isBusiness && (
+              <Tabs.Screen
+                name="data"
+                options={{
+                  title: "Data",
+                  tabBarIcon: renderTabIconWithLabel(BarChart3, "Data", colors.primary),
+                }}
+              />
+            )}
             <Tabs.Screen
               name="money"
               options={{

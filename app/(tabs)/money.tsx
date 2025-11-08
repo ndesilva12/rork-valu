@@ -9,6 +9,7 @@ import {
   StatusBar,
   Image,
 } from 'react-native';
+import { useEffect } from 'react';
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -17,10 +18,15 @@ import BusinessesAcceptingDiscounts from '@/components/BusinessesAcceptingDiscou
 
 export default function DiscountScreen() {
   const router = useRouter();
-  const { profile, isDarkMode } = useUser();
+  const { profile, isDarkMode, refreshTransactionTotals } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
   const isBusiness = profile.accountType === 'business';
+
+  // Refresh transaction totals when component mounts
+  useEffect(() => {
+    refreshTransactionTotals();
+  }, []);
 
   const handleSelectCharities = () => {
     router.push('/select-charities');
