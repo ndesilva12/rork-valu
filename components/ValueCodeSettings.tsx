@@ -185,15 +185,6 @@ export default function ValueCodeSettings() {
 
             {discountType === 'preset' ? (
               <>
-                {/* Stand Fee text above counters on mobile */}
-                {isMobile && (
-                  <View style={styles.standFeeTextContainer}>
-                    <Text style={[styles.standFeeText, { color: colors.textSecondary }]}>
-                      Stand Fee: 2.5% Fixed
-                    </Text>
-                  </View>
-                )}
-
                 {/* Customer Discount Counter with buttons on left/right */}
                 <View style={styles.singleCounterRow}>
                   <TouchableOpacity
@@ -373,6 +364,13 @@ export default function ValueCodeSettings() {
                   >
                     <Plus size={24} color={colors.text} strokeWidth={2} />
                   </TouchableOpacity>
+                </View>
+
+                {/* Stand Fee text */}
+                <View style={styles.standFeeTextContainer}>
+                  <Text style={[styles.standFeeText, { color: colors.textSecondary }]}>
+                    Stand Fee: 2.5% Fixed
+                  </Text>
                 </View>
               </>
             ) : (
