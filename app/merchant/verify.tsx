@@ -34,6 +34,7 @@ export default function MerchantVerify() {
     code: transactionCode,
     exp: expiryTime,
     name: customerName,
+    email: customerEmail,
   } = params;
 
   const [purchaseAmount, setPurchaseAmount] = useState('');
@@ -149,13 +150,21 @@ export default function MerchantVerify() {
 
       // Get merchant business info
       const merchantName = profile.businessInfo?.name || 'Unknown Business';
-      const merchantDiscount = profile.businessInfo?.customerDiscountPercent || 10;
+      const merchantDiscount = profile.businessInfo?.customerDiscountPercent || 0;
       const merchantDonation = profile.businessInfo?.donationPercent || 0;
+
+      console.log('[MerchantVerify] Recording transaction with:', {
+        merchantDiscount,
+        merchantDonation,
+        purchaseAmount: parseFloat(purchaseAmount),
+        businessInfo: profile.businessInfo
+      });
 
       await setDoc(transactionRef, {
         transactionId: transactionCode,
         customerId: customerUserId,
         customerName: customerName,
+        customerEmail: customerEmail,
         merchantId: clerkUser.id,
         merchantName: merchantName,
         purchaseAmount: parseFloat(purchaseAmount),
@@ -168,16 +177,16 @@ export default function MerchantVerify() {
         verifiedAt: serverTimestamp(),
       });
 
-      console.log('[MerchantVerify] Transaction recorded:', transactionCode);
+      console.log('[MerchantVerify] ✅ Transaction recorded successfully:', transactionCode);
       setIsVerified(true);
 
       // TODO: Send push notification to customer
 
     } catch (error) {
-      console.error('[MerchantVerify] Error recording transaction:', error);
+      console.error('[MerchantVerify] ❌ Error recording transaction:', error);
       Alert.alert(
         'Error',
-        'Failed to record transaction. Please try again.'
+        `Failed to record transaction: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     } finally {
       setIsProcessing(false);
@@ -199,7 +208,7 @@ export default function MerchantVerify() {
             {customerName || 'Unknown'}
           </Text>
           <Text style={[styles.customerDetail, { color: colors.textSecondary }]}>
-            User ID: {customerUserId}
+            {customerEmail || customerUserId}
           </Text>
         </View>
 
@@ -218,9 +227,9 @@ export default function MerchantVerify() {
 
         {/* Purchase Amount Input */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Purchase Amount</Text>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Purchase Amount (Original)</Text>
           <View style={styles.inputContainer}>
-            <Text style={styles.dollarSign}>$</Text>
+            <Text style={[styles.dollarSign, { color: colors.white }]}>$</Text>
             <TextInput
               style={[styles.input, { color: colors.text, borderColor: colors.border }]}
               placeholder="0.00"
@@ -234,14 +243,23 @@ export default function MerchantVerify() {
 
           {purchaseAmount && parseFloat(purchaseAmount) > 0 && (
             <View style={styles.calculationBox}>
-              <Text style={[styles.calculationText, { color: colors.textSecondary }]}>
-                Customer saves: ${((parseFloat(purchaseAmount) * (profile.businessInfo?.customerDiscountPercent || 10)) / 100).toFixed(2)}
+              <Text style={[styles.finalAmountLabel, { color: colors.text }]}>
+                Final Purchase Amount:
               </Text>
-              {(profile.businessInfo?.donationPercent || 0) > 0 && (
-                <Text style={[styles.calculationText, { color: colors.textSecondary }]}>
-                  You donate: ${((parseFloat(purchaseAmount) * (profile.businessInfo?.donationPercent || 0)) / 100).toFixed(2)}
-                </Text>
-              )}
+              <Text style={[styles.finalAmountValue, { color: colors.primary }]}>
+                ${(parseFloat(purchaseAmount) - (parseFloat(purchaseAmount) * (profile.businessInfo?.customerDiscountPercent || 0)) / 100).toFixed(2)}
+              </Text>
+
+              <Text style={[styles.calculationText, { color: colors.textSecondary }]}>
+                Customer Saves: ${((parseFloat(purchaseAmount) * (profile.businessInfo?.customerDiscountPercent || 0)) / 100).toFixed(2)}
+              </Text>
+
+              <Text style={[styles.donationLabel, { color: colors.text }]}>
+                Donation Committed:
+              </Text>
+              <Text style={[styles.donationValue, { color: colors.primary }]}>
+                ${((parseFloat(purchaseAmount) * (profile.businessInfo?.donationPercent || 0)) / 100).toFixed(2)}
+              </Text>
             </View>
           )}
         </View>
@@ -336,7 +354,6 @@ const styles = StyleSheet.create({
   dollarSign: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#000',
   },
   input: {
     flex: 1,
@@ -345,13 +362,34 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 2,
     borderRadius: 8,
+    maxWidth: '100%',
   },
   calculationBox: {
+    marginTop: 16,
+    gap: 8,
+  },
+  finalAmountLabel: {
+    fontSize: 18,
+    fontWeight: '700',
     marginTop: 8,
-    gap: 4,
+  },
+  finalAmountValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 12,
   },
   calculationText: {
     fontSize: 14,
+    marginBottom: 8,
+  },
+  donationLabel: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  donationValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
   },
   confirmButton: {
     padding: 16,
