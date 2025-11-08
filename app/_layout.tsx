@@ -11,6 +11,7 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { darkColors, lightColors } from "@/constants/colors";
+import { StripeProvider } from '@stripe/stripe-react-native';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -111,22 +112,27 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <ClerkProvider publishableKey={publishableKey!} tokenCache={tokenCache}>
-        <ClerkLoaded>
-          <trpc.Provider client={trpcClient} queryClient={queryClient}>
-            <QueryClientProvider client={queryClient}>
-              <UserProvider>
-                <DataProvider>
-                  <GestureHandlerRootView>
-                    <RootLayoutNav />
-                  </GestureHandlerRootView>
-                </DataProvider>
-              </UserProvider>
-            </QueryClientProvider>
-          </trpc.Provider>
-        </ClerkLoaded>
-      </ClerkProvider>
-    </SafeAreaProvider>
+    <StripeProvider
+      publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''}
+      merchantIdentifier="merchant.com.stand.app"
+    >
+      <SafeAreaProvider>
+        <ClerkProvider publishableKey={publishableKey!} tokenCache={tokenCache}>
+          <ClerkLoaded>
+            <trpc.Provider client={trpcClient} queryClient={queryClient}>
+              <QueryClientProvider client={queryClient}>
+                <UserProvider>
+                  <DataProvider>
+                    <GestureHandlerRootView>
+                      <RootLayoutNav />
+                    </GestureHandlerRootView>
+                  </DataProvider>
+                </UserProvider>
+              </QueryClientProvider>
+            </trpc.Provider>
+          </ClerkLoaded>
+        </ClerkProvider>
+      </SafeAreaProvider>
+    </StripeProvider>
   );
 }

@@ -9,24 +9,77 @@ import {
   StatusBar,
   Image,
 } from 'react-native';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import ValueCodeSettings from '@/components/ValueCodeSettings';
 import BusinessesAcceptingDiscounts from '@/components/BusinessesAcceptingDiscounts';
+import BusinessPayment from '@/components/BusinessPayment';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/firebase';
 
 export default function DiscountScreen() {
   const router = useRouter();
-  const { profile, isDarkMode, refreshTransactionTotals } = useUser();
+  const { profile, isDarkMode, refreshTransactionTotals, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
   const isBusiness = profile.accountType === 'business';
 
+  // Business financial state
+  const [businessFinancials, setBusinessFinancials] = useState({
+    totalRevenue: 0,
+    totalDonations: 0,
+    standFees: 0,
+    totalOwed: 0,
+    isLoading: true,
+  });
+
+  // Load business financial data
+  const loadBusinessFinancials = async () => {
+    if (!isBusiness || !clerkUser) return;
+
+    try {
+      const transactionsRef = collection(db, 'transactions');
+      const q = query(
+        transactionsRef,
+        where('merchantId', '==', clerkUser.id),
+        where('status', '==', 'completed')
+      );
+
+      const querySnapshot = await getDocs(q);
+      let totalRevenue = 0;
+      let totalDonations = 0;
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        totalRevenue += data.purchaseAmount || 0;
+        totalDonations += data.donationAmount || 0;
+      });
+
+      const standFees = totalRevenue * 0.025; // 2.5% of purchase amounts
+      const totalOwed = standFees + totalDonations;
+
+      setBusinessFinancials({
+        totalRevenue,
+        totalDonations,
+        standFees,
+        totalOwed,
+        isLoading: false,
+      });
+    } catch (error) {
+      console.error('[Money] Error loading business financials:', error);
+      setBusinessFinancials((prev) => ({ ...prev, isLoading: false }));
+    }
+  };
+
   // Refresh transaction totals when component mounts
   useEffect(() => {
     refreshTransactionTotals();
-  }, []);
+    if (isBusiness) {
+      loadBusinessFinancials();
+    }
+  }, [isBusiness]);
 
   const handleSelectCharities = () => {
     router.push('/select-charities');
@@ -64,6 +117,16 @@ export default function DiscountScreen() {
           /* Business Code: Value Code Settings */
           <>
             <ValueCodeSettings />
+
+            {/* Business Payment Section */}
+            <BusinessPayment
+              amountOwed={businessFinancials.totalOwed}
+              standFees={businessFinancials.standFees}
+              donationsOwed={businessFinancials.totalDonations}
+              businessId={clerkUser?.id || ''}
+              businessName={profile.businessInfo?.name || 'Your Business'}
+              colors={colors}
+            />
           </>
         ) : (
           /* Individual Code: Value Code & QR Generator */
