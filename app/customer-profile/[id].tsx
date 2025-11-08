@@ -236,7 +236,7 @@ export default function CustomerProfileScreen() {
                         {cause.name}
                       </Text>
                       <Text style={[styles.causeCategory, { color: colors.textSecondary }]}>
-                        {cause.category}
+                        {cause.category || ''}
                       </Text>
                     </View>
                   ))}
@@ -253,7 +253,7 @@ export default function CustomerProfileScreen() {
                   ✗ Unaligned Values
                 </Text>
                 {customerProfile.causes
-                  .filter((cause: any) => cause.type === 'oppose')
+                  .filter((cause: any) => cause.type === 'avoid')
                   .map((cause: any, index: number) => (
                     <View
                       key={index}
@@ -269,11 +269,11 @@ export default function CustomerProfileScreen() {
                         {cause.name}
                       </Text>
                       <Text style={[styles.causeCategory, { color: colors.textSecondary }]}>
-                        {cause.category}
+                        {cause.category || ''}
                       </Text>
                     </View>
                   ))}
-                {customerProfile.causes.filter((cause: any) => cause.type === 'oppose').length === 0 && (
+                {customerProfile.causes.filter((cause: any) => cause.type === 'avoid').length === 0 && (
                   <Text style={[styles.emptyColumnText, { color: colors.textSecondary }]}>
                     None
                   </Text>
