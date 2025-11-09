@@ -426,12 +426,12 @@ export default function BusinessDetailScreen() {
             </TouchableOpacity>
           )}
 
-          {/* Stand Discount Section */}
+          {/* Upright Discount Section */}
           {business.businessInfo.acceptsStandDiscounts && (
             <View style={[styles.standDiscountSection, { backgroundColor: colors.backgroundSecondary }]}>
               <View style={styles.discountHeader}>
                 <Percent size={20} color={colors.primary} strokeWidth={2} />
-                <Text style={[styles.discountHeaderText, { color: colors.text }]}>Stand Discount</Text>
+                <Text style={[styles.discountHeaderText, { color: colors.text }]}>Upright Discount</Text>
               </View>
               <View style={[styles.discountCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
                 <View style={styles.discountRow}>
@@ -458,13 +458,10 @@ export default function BusinessDetailScreen() {
             </View>
           )}
 
-          <View style={[styles.alignmentCard, { backgroundColor: alignmentColor + '15' }]}>
+          <View style={[styles.alignmentCard, { backgroundColor: colors.backgroundSecondary }]}>
             <View style={styles.alignmentLabelRow}>
-              <Text style={[styles.alignmentLabel, { color: alignmentColor }]}>
-                {alignmentLabel}
-              </Text>
-              <Text style={[styles.alignmentDescription, { color: colors.textSecondary }]}>
-                {' '}based on your values:
+              <Text style={[styles.alignmentLabel, { color: colors.text }]}>
+                Why
               </Text>
             </View>
             {alignmentData.matchingValues.length > 0 && (
@@ -690,7 +687,7 @@ const styles = StyleSheet.create({
   },
   backButtonOverlay: {
     position: 'absolute' as const,
-    top: 16,
+    bottom: 16,
     left: 16,
     width: 40,
     height: 40,

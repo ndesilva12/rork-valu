@@ -5,8 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="rgb(3, 68, 102)" />
-    <title>Stand</title>
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+
+    <title>Upright - Vote With Your Money</title>
+    <meta name="description" content="Upright helps you shop according to your values. Discover brands and businesses that align with what you believe in." />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://upright.money/" />
+    <meta property="og:title" content="Upright - Vote With Your Money" />
+    <meta property="og:description" content="Upright helps you shop according to your values. Discover brands and businesses that align with what you believe in." />
+    <meta property="og:image" content="https://upright.money/og-image.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://upright.money/" />
+    <meta property="twitter:title" content="Upright - Vote With Your Money" />
+    <meta property="twitter:description" content="Upright helps you shop according to your values. Discover brands and businesses that align with what you believe in." />
+    <meta property="twitter:image" content="https://upright.money/og-image.png" />
     <style>
       /* Hide scrollbars globally while maintaining scroll functionality */
 
@@ -34,11 +55,10 @@
         scrollbar-width: none;
       }
 
-      /* Fix for iOS PWA white strip at bottom */
+      /* Fix for iOS PWA safe areas */
       html {
         height: 100%;
         width: 100%;
-        position: fixed;
         overflow: hidden;
       }
 
@@ -47,18 +67,37 @@
         padding: 0;
         height: 100%;
         width: 100%;
-        position: fixed;
         overflow: hidden;
-        background-color: #111827;
-        /* Use CSS env() for safe areas on iOS */
-        padding-bottom: env(safe-area-inset-bottom);
+        background-color: #FFFFFF;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #111827;
+        }
       }
 
       #root {
         height: 100%;
         width: 100%;
-        position: fixed;
         overflow: auto;
+      }
+
+      /* Mobile browser - pull content up under status bar */
+      @media (display-mode: browser) {
+        #root {
+          margin-top: calc(-1 * env(safe-area-inset-top));
+          padding-top: env(safe-area-inset-top);
+        }
+      }
+
+      /* PWA-specific safe area handling */
+      @media (display-mode: standalone) {
+        /* Use viewport height to prevent excess bottom space in PWA */
+        html, body, #root {
+          height: 100vh;
+          max-height: 100vh;
+        }
       }
     </style>
   </head>

@@ -36,7 +36,7 @@ export default function PrivacyPolicyScreen() {
           <ChevronLeft size={28} color={colors.text} strokeWidth={2} />
         </TouchableOpacity>
         <Image
-          source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
+          source={require('@/assets/images/upright logo white wide.png')}
           style={styles.headerLogo}
           resizeMode="contain"
         />
@@ -60,7 +60,7 @@ export default function PrivacyPolicyScreen() {
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Privacy Policy</Text>
 
         <Text style={[styles.bodyText, { color: colors.text }]}>
-          Stand Corp ("we," "us," or "Stand") operates the Stand App (the "App"), a values-based shopping and discovery platform available at standing.vercel.app and via mobile applications.
+          Upright Corp ("we," "us," or "Upright") operates the Upright App (the "App"), a values-based shopping and discovery platform available at standing.vercel.app and via mobile applications.
         </Text>
 
         <Text style={[styles.bodyText, { color: colors.text }]}>
@@ -176,7 +176,7 @@ export default function PrivacyPolicyScreen() {
         {/* Section 10 */}
         <Text style={[styles.sectionHeading, { color: colors.text }]}>10. Contact Us</Text>
         <Text style={[styles.bodyText, { color: colors.text }]}>
-          Stand Corp{'\n'}
+          Upright Corp{'\n'}
           Email: privacy@stand.app{'\n'}
           Address: Remote – USA
         </Text>
@@ -207,7 +207,7 @@ export default function PrivacyPolicyScreen() {
 
         <Text style={[styles.sectionHeading, { color: colors.text }]}>4. Intellectual Property</Text>
         <Text style={[styles.bodyText, { color: colors.text }]}>
-          All content, logos, and code are owned by Stand Corp.
+          All content, logos, and code are owned by Upright Corp.
         </Text>
 
         <Text style={[styles.sectionHeading, { color: colors.text }]}>5. Disclaimer of Warranties</Text>
@@ -217,7 +217,7 @@ export default function PrivacyPolicyScreen() {
 
         <Text style={[styles.sectionHeading, { color: colors.text }]}>6. Limitation of Liability</Text>
         <Text style={[styles.bodyText, { color: colors.text }]}>
-          To the fullest extent allowed by law, Stand Corp is not liable for indirect damages or losses from merchant actions.
+          To the fullest extent allowed by law, Upright Corp is not liable for indirect damages or losses from merchant actions.
         </Text>
 
         <Text style={[styles.sectionHeading, { color: colors.text }]}>7. Termination</Text>

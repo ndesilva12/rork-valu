@@ -141,7 +141,7 @@ export default function SettingsScreen() {
           <ChevronLeft size={28} color={colors.text} strokeWidth={2} />
         </TouchableOpacity>
         <Image
-          source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
+          source={require('@/assets/images/upright logo white wide.png')}
           style={styles.headerLogo}
           resizeMode="contain"
         />

@@ -124,7 +124,7 @@ export default function MenuButton() {
           >
             <View style={styles.logoContainer}>
               <Image
-                source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
+                source={require('@/assets/images/upright logo white wide.png')}
                 style={styles.menuLogo}
                 resizeMode="contain"
               />

@@ -20,8 +20,11 @@ export default function TabLayout() {
 
   // Use safe area insets to avoid content going under system UI (status bar / home indicator)
   const insets = useSafeAreaInsets();
-  const topInset = insets.top || 0;
-  const bottomInset = insets.bottom || 0;
+
+  // On web (PWA or regular browser), don't use SafeAreaView edges - let browser/CSS handle it
+  // On native mobile, use top and bottom safe areas normally
+  const topInset = Platform.OS === 'web' ? 0 : (insets.top || 0);
+  const bottomInset = (isStandalone && Platform.OS === 'web') ? 0 : (insets.bottom || 0);
 
   // helper to render icon + label beside it on wide screens
   const renderTabIconWithLabel = (Icon: React.ComponentType<any>, label: string, focusedColor: string) => {
@@ -47,13 +50,17 @@ export default function TabLayout() {
     };
   };
 
+  // On web, don't use SafeAreaView edges (no safe area padding)
+  // On native mobile, use both top and bottom edges
+  const safeAreaEdges = Platform.OS === 'web' ? [] : ['top', 'bottom'] as const;
+
   return (
-    // Always reserve safe area for top and bottom so content doesn't shift under system UI.
-    <SafeAreaView edges={['top','bottom']} style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        // Keep translucent false to avoid content being pushed under the status bar on many phones.
-        translucent={false}
+        // On web, make translucent so content bleeds under status bar
+        // On native mobile, keep false to avoid issues
+        translucent={Platform.OS === 'web'}
         backgroundColor={colors.background}
       />
 
@@ -75,7 +82,8 @@ export default function TabLayout() {
                 left: 0,
                 right: 0,
                 height: tabBarHeight,
-                paddingBottom: isTabletOrLarger ? 0 : 4,
+                // Remove bottom padding on web to eliminate gap
+                paddingBottom: isTabletOrLarger ? 0 : (Platform.OS === 'web' ? 0 : 4),
                 paddingTop: isTabletOrLarger ? 0 : 12,
                 borderTopWidth: isTabletOrLarger ? 0 : 1,
                 borderBottomWidth: isTabletOrLarger ? 1 : 0,
@@ -87,13 +95,16 @@ export default function TabLayout() {
               },
               tabBarItemStyle: {
                 paddingTop: isTabletOrLarger ? 0 : 4,
-                paddingBottom: isTabletOrLarger ? 0 : 12,
+                // Remove bottom padding on web
+                paddingBottom: isTabletOrLarger ? 0 : (Platform.OS === 'web' ? 0 : 12),
               },
               contentStyle: {
                 // Reserve space for the top tab bar + system top inset on wide screens,
                 // and reserve space for the bottom tab bar + bottom inset on mobile.
                 paddingTop: isTabletOrLarger ? (tabBarHeight + topInset) : topInset,
-                paddingBottom: isTabletOrLarger ? bottomInset : (tabBarHeight + bottomInset),
+                // In PWA standalone, use less bottom padding to eliminate excess space
+                paddingBottom: isTabletOrLarger ? bottomInset :
+                  (isStandalone && Platform.OS === 'web' ? tabBarHeight - 12 : (tabBarHeight + bottomInset)),
               },
             }}
           >

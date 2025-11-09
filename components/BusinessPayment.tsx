@@ -2,7 +2,7 @@
  * Business Payment Component
  *
  * Allows businesses to pay Stand for:
- * - Stand fees (2.5% of purchase amounts)
+ * - Upright fees (2.5% of purchase amounts)
  * - Committed donations
  *
  * Cross-platform: Uses Stripe Payment Element on web, Payment Sheet on mobile
@@ -157,7 +157,7 @@ export default function BusinessPayment({
         amount: amountOwed,
         businessId,
         businessName,
-        description: `Stand fees (2.5%: $${standFees.toFixed(2)}) + Donations ($${donationsOwed.toFixed(2)})`,
+        description: `Upright fees (2.5%: $${standFees.toFixed(2)}) + Donations ($${donationsOwed.toFixed(2)})`,
       });
 
       const { clientSecret: secret } = result.data as { clientSecret: string };
@@ -241,14 +241,14 @@ export default function BusinessPayment({
     <View style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
       <View style={styles.header}>
         <DollarSign size={24} color={colors.primary} strokeWidth={2} />
-        <Text style={[styles.title, { color: colors.text }]}>Payment Due to Stand</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Payment Due to Upright</Text>
       </View>
 
       {/* Breakdown */}
       <View style={styles.breakdown}>
         <View style={styles.breakdownRow}>
           <Text style={[styles.breakdownLabel, { color: colors.textSecondary }]}>
-            Stand Fees (2.5% of sales + donations):
+            Upright Fees (2.5% of sales + donations):
           </Text>
           <Text style={[styles.breakdownValue, { color: colors.text }]}>
             ${standFees.toFixed(2)}

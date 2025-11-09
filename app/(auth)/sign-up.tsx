@@ -286,7 +286,7 @@ export default function SignUpScreen() {
           >
             <View style={styles.logoContainer}>
               <Image
-                source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
+                source={require('@/assets/images/upright logo white wide.png')}
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -331,7 +331,7 @@ export default function SignUpScreen() {
         >
           <View style={styles.logoContainer}>
             <Image
-              source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
+              source={require('@/assets/images/upright logo white wide.png')}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     letterSpacing: 0.5,
-    marginTop: -20,
+    marginTop: -40,
   },
   title: {
     fontSize: 28,

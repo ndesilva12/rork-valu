@@ -597,8 +597,8 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   mapModalContainer: {
-    width: '90%',
-    height: '87.5%',
+    width: '95%',
+    height: '80%',
     borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -609,11 +609,12 @@ const styles = StyleSheet.create({
   },
   mapModalHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 12,
+    paddingBottom: 16,
+    minHeight: 100,
     borderBottomWidth: 1,
   },
   mapModalTitle: {

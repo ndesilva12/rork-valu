@@ -237,7 +237,7 @@ export default function AdminTransactions() {
             <Text style={styles.statValue}>{formatCurrency(totalStats.totalDonations)}</Text>
           </View>
           <View style={[styles.statCard, styles.standFeeCard]}>
-            <Text style={styles.statLabel}>Stand Fees (2.5%)</Text>
+            <Text style={styles.statLabel}>Upright Fees (2.5%)</Text>
             <Text style={[styles.statValue, styles.standFeeValue]}>
               {formatCurrency(totalStats.standFees)}
             </Text>
@@ -306,7 +306,7 @@ export default function AdminTransactions() {
                 </View>
 
                 <View style={styles.transactionRow}>
-                  <Text style={styles.label}>Stand Fee (2.5% of purchase):</Text>
+                  <Text style={styles.label}>Upright Fee (2.5% of purchase):</Text>
                   <Text style={[styles.value, styles.feeValue]}>
                     {formatCurrency(txn.purchaseAmount * 0.025)}
                   </Text>

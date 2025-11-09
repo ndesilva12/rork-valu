@@ -28,7 +28,7 @@ export default function ProfileScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
+            source={require('@/assets/images/upright logo white wide.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -71,11 +71,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'web' ? 16 : 56,
+    paddingTop: Platform.OS === 'web' ? 0 : 56,
     paddingBottom: 12,
   },
   headerLogo: {
-    width: 140,
-    height: 41,
+    width: 210,
+    height: 61.5,
+    marginTop: 8,
   },
 });

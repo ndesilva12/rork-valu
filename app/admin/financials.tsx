@@ -271,7 +271,7 @@ export default function AdminFinancials() {
             <Text style={styles.statValue}>{totalStats.businessCount}</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Stand Fees Owed</Text>
+            <Text style={styles.statLabel}>Upright Fees Owed</Text>
             <Text style={styles.statValue}>{formatCurrency(totalStats.totalFeesOwed)}</Text>
           </View>
           <View style={styles.statCard}>
@@ -334,7 +334,7 @@ export default function AdminFinancials() {
                   </View>
 
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Stand Fees (2.5% of revenue):</Text>
+                    <Text style={styles.detailLabel}>Upright Fees (2.5% of revenue):</Text>
                     <Text style={[styles.detailValue, styles.feeValue]}>
                       {formatCurrency(biz.standFeesOwed)}
                     </Text>

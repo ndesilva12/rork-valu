@@ -517,13 +517,10 @@ export default function BrandDetailScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={[styles.alignmentCard, { backgroundColor: alignmentColor + '15' }]}>
+          <View style={[styles.alignmentCard, { backgroundColor: colors.backgroundSecondary }]}>
             <View style={styles.alignmentLabelRow}>
-              <Text style={[styles.alignmentLabel, { color: alignmentColor }]}>
-                {alignmentLabel}
-              </Text>
-              <Text style={[styles.alignmentDescription, { color: colors.textSecondary }]}>
-                {' '}based on your values:
+              <Text style={[styles.alignmentLabel, { color: colors.text }]}>
+                Why
               </Text>
             </View>
             {alignmentData.matchingValues.length > 0 && (
@@ -784,7 +781,7 @@ const styles = StyleSheet.create({
   },
   backButtonOverlay: {
     position: 'absolute' as const,
-    top: 16,
+    bottom: 16,
     left: 16,
     width: 40,
     height: 40,
