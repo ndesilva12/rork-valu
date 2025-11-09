@@ -56,16 +56,10 @@
         overflow: auto;
       }
 
-      /* PWA-specific safe area handling - bottom only */
+      /* PWA-specific safe area handling */
       @media (display-mode: standalone) {
-        body {
-          /* In PWA mode, only handle bottom safe area */
-          padding-bottom: env(safe-area-inset-bottom);
-        }
-
-        #root {
-          height: calc(100% - env(safe-area-inset-bottom));
-        }
+        /* No additional CSS padding needed in PWA mode */
+        /* React Native SafeAreaView and tab bar handle spacing */
       }
     </style>
   </head>

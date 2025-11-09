@@ -750,7 +750,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'web' ? 16 : 56,
+    paddingTop: Platform.OS === 'web' ? 8 : 56,
     paddingBottom: 12,
   },
   headerLogo: {
