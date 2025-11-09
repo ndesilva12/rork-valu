@@ -690,7 +690,7 @@ const styles = StyleSheet.create({
   },
   backButtonOverlay: {
     position: 'absolute' as const,
-    top: 16,
+    bottom: 16,
     left: 16,
     width: 40,
     height: 40,

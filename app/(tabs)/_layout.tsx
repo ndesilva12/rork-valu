@@ -21,9 +21,9 @@ export default function TabLayout() {
   // Use safe area insets to avoid content going under system UI (status bar / home indicator)
   const insets = useSafeAreaInsets();
 
-  // In PWA/standalone mode, CSS handles bottom safe area, so we don't use it here
-  // But we still need top safe area
-  const topInset = insets.top || 0;
+  // On web (PWA or regular browser), don't use SafeAreaView edges - let browser/CSS handle it
+  // On native mobile, use top and bottom safe areas normally
+  const topInset = Platform.OS === 'web' ? 0 : (insets.top || 0);
   const bottomInset = (isStandalone && Platform.OS === 'web') ? 0 : (insets.bottom || 0);
 
   // helper to render icon + label beside it on wide screens
@@ -50,9 +50,9 @@ export default function TabLayout() {
     };
   };
 
-  // Conditionally use SafeAreaView edges based on standalone mode
-  // In PWA mode, only use top edge (CSS handles bottom)
-  const safeAreaEdges = (isStandalone && Platform.OS === 'web') ? ['top'] as const : ['top', 'bottom'] as const;
+  // On web, don't use SafeAreaView edges (no safe area padding)
+  // On native mobile, use both top and bottom edges
+  const safeAreaEdges = Platform.OS === 'web' ? [] : ['top', 'bottom'] as const;
 
   return (
     <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: colors.background }}>

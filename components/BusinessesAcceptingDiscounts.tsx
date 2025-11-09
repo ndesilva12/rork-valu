@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
-  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
@@ -18,7 +17,6 @@ import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { getBusinessesAcceptingDiscounts, calculateDistance, calculateAlignmentScore, normalizeScores, BusinessUser } from '@/services/firebase/businessService';
 import BusinessMapView from './BusinessMapView';
-import { useIsStandalone } from '@/hooks/useIsStandalone';
 
 type LocalDistanceOption = 1 | 5 | 10 | 25 | 50 | 100;
 
@@ -26,7 +24,6 @@ export default function BusinessesAcceptingDiscounts() {
   const router = useRouter();
   const { isDarkMode, profile } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
-  const isStandalone = useIsStandalone();
 
   const [businesses, setBusinesses] = useState<BusinessUser[]>([]);
   const [filteredBusinesses, setFilteredBusinesses] = useState<BusinessUser[]>([]);
@@ -381,12 +378,7 @@ export default function BusinessesAcceptingDiscounts() {
           onPress={() => setShowMapModal(false)}
         >
           <TouchableOpacity
-            style={[
-              styles.mapModalContainer,
-              { backgroundColor: colors.background },
-              // In PWA mode, use 90% height so close button isn't blocked by status bar
-              isStandalone && Platform.OS === 'web' ? { height: '90%' } : {}
-            ]}
+            style={[styles.mapModalContainer, { backgroundColor: colors.background }]}
             activeOpacity={1}
             onPress={(e) => e.stopPropagation()}
           >
@@ -617,11 +609,12 @@ const styles = StyleSheet.create({
   },
   mapModalHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 12,
+    paddingBottom: 16,
+    minHeight: 100,
     borderBottomWidth: 1,
   },
   mapModalTitle: {
