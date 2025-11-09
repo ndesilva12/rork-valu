@@ -208,7 +208,7 @@ export default function DataScreen() {
         <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
           <View style={[styles.header, { backgroundColor: colors.background }]}>
             <Image
-              source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
+              source={require('@/assets/images/upright logo white wide.png')}
               style={styles.headerLogo}
               resizeMode="contain"
             />
@@ -234,7 +234,7 @@ export default function DataScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
+            source={require('@/assets/images/upright logo white wide.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />

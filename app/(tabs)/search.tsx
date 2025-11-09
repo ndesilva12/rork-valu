@@ -321,7 +321,7 @@ export default function SearchScreen() {
             website: business.businessInfo.website,
             location: business.businessInfo.location,
             valueAlignments: [],
-            keyReasons: [`Accepts Stand Discounts at ${business.businessInfo.name}`],
+            keyReasons: [`Accepts Upright Discounts at ${business.businessInfo.name}`],
             moneyFlow: { company: business.businessInfo.name, shareholders: [], overallAlignment: 0 },
             relatedValues: [],
             isFirebaseBusiness: true, // Flag to identify Firebase businesses
@@ -726,7 +726,7 @@ export default function SearchScreen() {
       <View style={[styles.stickyHeader, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={styles.header}>
           <Image
-            source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
+            source={require('@/assets/images/upright logo white wide.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />

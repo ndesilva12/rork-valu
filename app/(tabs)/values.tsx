@@ -143,7 +143,7 @@ export default function ValuesScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
+            source={require('@/assets/images/upright logo white wide.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />

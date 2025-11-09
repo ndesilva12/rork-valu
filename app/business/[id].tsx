@@ -426,12 +426,12 @@ export default function BusinessDetailScreen() {
             </TouchableOpacity>
           )}
 
-          {/* Stand Discount Section */}
+          {/* Upright Discount Section */}
           {business.businessInfo.acceptsStandDiscounts && (
             <View style={[styles.standDiscountSection, { backgroundColor: colors.backgroundSecondary }]}>
               <View style={styles.discountHeader}>
                 <Percent size={20} color={colors.primary} strokeWidth={2} />
-                <Text style={[styles.discountHeaderText, { color: colors.text }]}>Stand Discount</Text>
+                <Text style={[styles.discountHeaderText, { color: colors.text }]}>Upright Discount</Text>
               </View>
               <View style={[styles.discountCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
                 <View style={styles.discountRow}>

@@ -211,10 +211,10 @@ export default function ValueCodeSettings() {
                   </TouchableOpacity>
                 </View>
 
-                {/* Stand Fee text */}
+                {/* Upright Fee text */}
                 <View style={styles.standFeeTextContainer}>
                   <Text style={[styles.standFeeText, { color: colors.textSecondary }]}>
-                    Stand Fee: 2.5% Fixed
+                    Upright Fee: 2.5% Fixed
                   </Text>
                 </View>
               </>
@@ -366,10 +366,10 @@ export default function ValueCodeSettings() {
                   </TouchableOpacity>
                 </View>
 
-                {/* Stand Fee text */}
+                {/* Upright Fee text */}
                 <View style={styles.standFeeTextContainer}>
                   <Text style={[styles.standFeeText, { color: colors.textSecondary }]}>
-                    Stand Fee: 2.5% Fixed
+                    Upright Fee: 2.5% Fixed
                   </Text>
                 </View>
               </>
@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
     fontSize: 48,
     fontWeight: '700' as const,
   },
-  // Stand Fee Text
+  // Upright Fee Text
   standFeeTextContainer: {
     alignItems: 'center',
     marginTop: 12,
