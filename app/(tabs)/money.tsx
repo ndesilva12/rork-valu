@@ -244,8 +244,9 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   headerLogo: {
-    width: 140,
-    height: 41,
+    width: 210,
+    height: 61.5,
+    marginTop: 8,
   },
   promoSection: {
     borderWidth: 3,
