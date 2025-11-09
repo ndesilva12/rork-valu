@@ -597,8 +597,8 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   mapModalContainer: {
-    width: '90%',
-    height: '87.5%',
+    width: '95%',
+    height: '80%',
     borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',

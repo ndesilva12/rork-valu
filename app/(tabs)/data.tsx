@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
@@ -27,6 +28,7 @@ type CollapsibleSection = 'customers' | 'transactions' | 'discounts' | 'donation
 export default function DataScreen() {
   const { profile, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+  const insets = useSafeAreaInsets();
 
   const [expandedSection, setExpandedSection] = useState<CollapsibleSection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -206,7 +208,11 @@ export default function DataScreen() {
           backgroundColor={colors.background}
         />
         <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-          <View style={[styles.header, { backgroundColor: colors.background }]}>
+          <View style={[
+          styles.header,
+          { backgroundColor: colors.background },
+          Platform.OS === 'web' ? { paddingTop: Math.max(insets.top, 8) } : {}
+        ]}>
             <Image
               source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
               style={styles.headerLogo}
@@ -232,7 +238,11 @@ export default function DataScreen() {
         backgroundColor={colors.background}
       />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <View style={[styles.header, { backgroundColor: colors.background }]}>
+        <View style={[
+          styles.header,
+          { backgroundColor: colors.background },
+          Platform.OS === 'web' ? { paddingTop: Math.max(insets.top, 8) } : {}
+        ]}>
           <Image
             source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
             style={styles.headerLogo}
@@ -750,7 +760,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'web' ? 8 : 56,
+    paddingTop: Platform.OS === 'web' ? 0 : 56,
     paddingBottom: 12,
   },
   headerLogo: {

@@ -10,6 +10,7 @@ import {
   Alert,
   Image,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronRight, ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Plus, Edit3, X } from 'lucide-react-native';
 import { useState } from 'react';
 import MenuButton from '@/components/MenuButton';
@@ -42,6 +43,7 @@ export default function ValuesScreen() {
   const router = useRouter();
   const { profile, isDarkMode, removeCauses, toggleCauseType } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+  const insets = useSafeAreaInsets();
   const [expandedCategories, setExpandedCategories] = useState<Set<CauseCategory>>(new Set());
   const [editingValueId, setEditingValueId] = useState<string | null>(null);
   const [addingValueId, setAddingValueId] = useState<string | null>(null);
@@ -141,7 +143,11 @@ export default function ValuesScreen() {
         backgroundColor={colors.background}
       />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
-        <View style={[styles.header, { backgroundColor: colors.background }]}>
+        <View style={[
+          styles.header,
+          { backgroundColor: colors.background },
+          Platform.OS === 'web' ? { paddingTop: Math.max(insets.top, 8) } : {}
+        ]}>
           <Image
             source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
             style={styles.headerLogo}
@@ -455,7 +461,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'web' ? 8 : 56,
+    paddingTop: Platform.OS === 'web' ? 0 : 56,
     paddingBottom: 12,
   },
   headerLogo: {
