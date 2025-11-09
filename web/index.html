@@ -56,6 +56,14 @@
         overflow: auto;
       }
 
+      /* Mobile browser - pull content up under status bar */
+      @media (display-mode: browser) {
+        #root {
+          margin-top: calc(-1 * env(safe-area-inset-top));
+          padding-top: env(safe-area-inset-top);
+        }
+      }
+
       /* PWA-specific safe area handling */
       @media (display-mode: standalone) {
         /* Use viewport height to prevent excess bottom space in PWA */
