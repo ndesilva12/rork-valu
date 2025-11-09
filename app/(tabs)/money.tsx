@@ -241,12 +241,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'web' ? 0 : 56,
-    paddingBottom: 12,
+    paddingBottom: 4,
   },
   headerLogo: {
-    width: 210,
-    height: 61.5,
+    width: 189,
+    height: 55.35,
     marginTop: 8,
+    alignSelf: 'flex-start',
   },
   promoSection: {
     borderWidth: 3,

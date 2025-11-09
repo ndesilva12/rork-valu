@@ -81,13 +81,12 @@
         height: 100%;
         width: 100%;
         overflow: auto;
+        background-color: #FFFFFF;
       }
 
-      /* Mobile browser - pull content up under status bar */
-      @media (display-mode: browser) {
+      @media (prefers-color-scheme: dark) {
         #root {
-          margin-top: calc(-1 * env(safe-area-inset-top));
-          padding-top: env(safe-area-inset-top);
+          background-color: #111827;
         }
       }
 
