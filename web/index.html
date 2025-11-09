@@ -58,8 +58,11 @@
 
       /* PWA-specific safe area handling */
       @media (display-mode: standalone) {
-        /* No additional CSS padding needed in PWA mode */
-        /* React Native SafeAreaView and tab bar handle spacing */
+        /* Use viewport height to prevent excess bottom space in PWA */
+        html, body, #root {
+          height: 100vh;
+          max-height: 100vh;
+        }
       }
     </style>
   </head>

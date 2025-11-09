@@ -58,8 +58,9 @@ export default function TabLayout() {
     <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        // Keep translucent false to avoid content being pushed under the status bar on many phones.
-        translucent={false}
+        // On web, make translucent so content bleeds under status bar
+        // On native mobile, keep false to avoid issues
+        translucent={Platform.OS === 'web'}
         backgroundColor={colors.background}
       />
 
@@ -101,7 +102,9 @@ export default function TabLayout() {
                 // Reserve space for the top tab bar + system top inset on wide screens,
                 // and reserve space for the bottom tab bar + bottom inset on mobile.
                 paddingTop: isTabletOrLarger ? (tabBarHeight + topInset) : topInset,
-                paddingBottom: isTabletOrLarger ? bottomInset : (tabBarHeight + bottomInset),
+                // In PWA standalone, use less bottom padding to eliminate excess space
+                paddingBottom: isTabletOrLarger ? bottomInset :
+                  (isStandalone && Platform.OS === 'web' ? tabBarHeight - 12 : (tabBarHeight + bottomInset)),
               },
             }}
           >
