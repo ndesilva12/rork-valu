@@ -56,16 +56,15 @@
         overflow: auto;
       }
 
-      /* PWA-specific safe area handling */
+      /* PWA-specific safe area handling - bottom only */
       @media (display-mode: standalone) {
         body {
-          /* In PWA mode, use CSS environment variables for safe areas */
-          padding-top: env(safe-area-inset-top);
+          /* In PWA mode, only handle bottom safe area */
           padding-bottom: env(safe-area-inset-bottom);
         }
 
         #root {
-          height: calc(100% - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+          height: calc(100% - env(safe-area-inset-bottom));
         }
       }
     </style>
