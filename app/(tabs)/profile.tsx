@@ -7,7 +7,6 @@ import {
   StatusBar,
   Image,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -17,7 +16,6 @@ import BusinessProfileEditor from '@/components/BusinessProfileEditor';
 export default function ProfileScreen() {
   const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
-  const insets = useSafeAreaInsets();
 
   const isBusiness = profile.accountType === 'business';
 
@@ -28,11 +26,7 @@ export default function ProfileScreen() {
         backgroundColor={colors.background}
       />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
-        <View style={[
-          styles.header,
-          { backgroundColor: colors.background },
-          Platform.OS === 'web' ? { paddingTop: Math.max(insets.top, 8) } : {}
-        ]}>
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
             source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
             style={styles.headerLogo}

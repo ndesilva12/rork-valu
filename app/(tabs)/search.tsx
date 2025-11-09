@@ -19,7 +19,6 @@ import {
   Dimensions,
   useWindowDimensions,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
@@ -51,7 +50,6 @@ export default function SearchScreen() {
   const router = useRouter();
   const { profile, addToSearchHistory, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
-  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
 
   const [query, setQuery] = useState('');

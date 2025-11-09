@@ -81,8 +81,8 @@ export default function TabLayout() {
                 left: 0,
                 right: 0,
                 height: tabBarHeight,
-                // In PWA mode, reduce padding since CSS safe areas handle spacing
-                paddingBottom: isTabletOrLarger ? 0 : (isStandalone && Platform.OS === 'web' ? 0 : 4),
+                // Remove bottom padding on web to eliminate gap
+                paddingBottom: isTabletOrLarger ? 0 : (Platform.OS === 'web' ? 0 : 4),
                 paddingTop: isTabletOrLarger ? 0 : 12,
                 borderTopWidth: isTabletOrLarger ? 0 : 1,
                 borderBottomWidth: isTabletOrLarger ? 1 : 0,
@@ -94,8 +94,8 @@ export default function TabLayout() {
               },
               tabBarItemStyle: {
                 paddingTop: isTabletOrLarger ? 0 : 4,
-                // In PWA mode, reduce bottom padding
-                paddingBottom: isTabletOrLarger ? 0 : (isStandalone && Platform.OS === 'web' ? 4 : 12),
+                // Remove bottom padding on web
+                paddingBottom: isTabletOrLarger ? 0 : (Platform.OS === 'web' ? 0 : 12),
               },
               contentStyle: {
                 // Reserve space for the top tab bar + system top inset on wide screens,

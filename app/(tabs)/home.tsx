@@ -35,7 +35,6 @@ import {
   Modal,
   Dimensions,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -80,7 +79,6 @@ export default function HomeScreen() {
   const params = useLocalSearchParams();
   const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
-  const insets = useSafeAreaInsets();
   const [viewMode, setViewMode] = useState<ViewMode>('playbook');
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
@@ -1029,11 +1027,7 @@ export default function HomeScreen() {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-        <View style={[
-          styles.header,
-          { backgroundColor: colors.background },
-          Platform.OS === 'web' ? { paddingTop: Math.max(insets.top, 8) } : {}
-        ]}>
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
             source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
             style={styles.headerLogo}
@@ -1053,11 +1047,7 @@ export default function HomeScreen() {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-        <View style={[
-          styles.header,
-          { backgroundColor: colors.background },
-          Platform.OS === 'web' ? { paddingTop: Math.max(insets.top, 8) } : {}
-        ]}>
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
             source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
             style={styles.headerLogo}
@@ -1079,11 +1069,7 @@ export default function HomeScreen() {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-        <View style={[
-          styles.header,
-          { backgroundColor: colors.background },
-          Platform.OS === 'web' ? { paddingTop: Math.max(insets.top, 8) } : {}
-        ]}>
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
             source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
             style={styles.headerLogo}
@@ -1111,11 +1097,7 @@ export default function HomeScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
-        <View style={[
-          styles.header,
-          { backgroundColor: colors.background },
-          Platform.OS === 'web' ? { paddingTop: Math.max(insets.top, 8) } : {}
-        ]}>
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
             source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
             style={styles.headerLogo}

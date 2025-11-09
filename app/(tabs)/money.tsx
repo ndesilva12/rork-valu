@@ -18,13 +18,11 @@ import BusinessesAcceptingDiscounts from '@/components/BusinessesAcceptingDiscou
 import BusinessPayment from '@/components/BusinessPayment';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function DiscountScreen() {
   const router = useRouter();
   const { profile, isDarkMode, refreshTransactionTotals, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
-  const insets = useSafeAreaInsets();
 
   const isBusiness = profile.accountType === 'business';
 
@@ -99,11 +97,7 @@ export default function DiscountScreen() {
         backgroundColor={colors.background}
       />
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
-        <View style={[
-          styles.header,
-          { backgroundColor: colors.background },
-          Platform.OS === 'web' ? { paddingTop: Math.max(insets.top, 8) } : {}
-        ]}>
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
             source={isDarkMode ? require('@/assets/images/stand logo white.png') : require('@/assets/images/stand logo.png')}
             style={styles.headerLogo}
