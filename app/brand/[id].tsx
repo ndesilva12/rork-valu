@@ -524,22 +524,13 @@ export default function BrandDetailScreen() {
             <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
           </TouchableOpacity>
 
-          <View style={styles.heroButtons}>
-            <TouchableOpacity
-              style={[styles.addToListButton, { backgroundColor: colors.background }]}
-              onPress={handleQuickAdd}
-              activeOpacity={0.7}
-            >
-              <Plus size={20} color={colors.primary} strokeWidth={2.5} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.visitButton, { backgroundColor: colors.primary }]}
-              onPress={handleShopPress}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.visitButtonText, { color: colors.white }]}>Visit</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={[styles.visitButton, { backgroundColor: colors.primary }]}
+            onPress={handleShopPress}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.visitButtonText, { color: colors.white }]}>Visit</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.content}>
@@ -565,11 +556,20 @@ export default function BrandDetailScreen() {
                 </View>
               )}
             </View>
-            <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.backgroundSecondary }]}>
-              <AlignmentIcon size={24} color={alignmentColor} strokeWidth={2.5} />
-              <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
-                {alignmentData.alignmentStrength}
-              </Text>
+            <View style={styles.badgeAndButtonContainer}>
+              <TouchableOpacity
+                style={[styles.addToListButtonHeader, { backgroundColor: colors.background, borderColor: colors.border }]}
+                onPress={handleQuickAdd}
+                activeOpacity={0.7}
+              >
+                <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+              </TouchableOpacity>
+              <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.backgroundSecondary }]}>
+                <AlignmentIcon size={24} color={alignmentColor} strokeWidth={2.5} />
+                <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
+                  {alignmentData.alignmentStrength}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -1386,24 +1386,18 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   // Quick-add styles
-  heroButtons: {
-    position: 'absolute' as const,
-    right: 16,
-    bottom: 16,
+  badgeAndButtonContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
-  addToListButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  addToListButtonHeader: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    borderWidth: 1,
   },
   modalOverlay: {
     flex: 1,

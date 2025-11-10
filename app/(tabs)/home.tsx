@@ -976,6 +976,10 @@ export default function HomeScreen() {
 
   // Library handler functions
   const handleCreateList = async () => {
+    console.log('[Home] handleCreateList called');
+    console.log('[Home] newListName:', newListName);
+    console.log('[Home] profile.id:', profile.id);
+
     if (!newListName.trim()) {
       Alert.alert('Error', 'Please enter a list name');
       return;
@@ -987,6 +991,7 @@ export default function HomeScreen() {
     }
 
     try {
+      console.log('[Home] Creating list...');
       await createList(profile.id, newListName.trim(), newListDescription.trim());
       setNewListName('');
       setNewListDescription('');
@@ -1565,7 +1570,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalContent}>
+            <View style={styles.modalContent}>
               <Text style={[styles.modalLabel, { color: colors.text }]}>List Name *</Text>
               <TextInput
                 style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
@@ -1589,12 +1594,15 @@ export default function HomeScreen() {
 
               <TouchableOpacity
                 style={[styles.modalButton, { backgroundColor: colors.primary }]}
-                onPress={handleCreateList}
+                onPress={() => {
+                  console.log('[Home] Create List button pressed!');
+                  handleCreateList();
+                }}
                 activeOpacity={0.7}
               >
                 <Text style={[styles.modalButtonText, { color: colors.white }]}>Create List</Text>
               </TouchableOpacity>
-            </ScrollView>
+            </View>
           </Pressable>
         </View>
       </Modal>
