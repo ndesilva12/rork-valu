@@ -26,6 +26,10 @@ import {
   Trash2,
   Edit,
   Search,
+  MoreVertical,
+  ExternalLink,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import {
@@ -59,7 +63,7 @@ import { calculateDistance, formatDistance } from '@/lib/distance';
 import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 import BusinessMapView from '@/components/BusinessMapView';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
-import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList } from '@/services/firebase/listService';
+import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList, updateListMetadata } from '@/services/firebase/listService';
 
 type MainView = 'forYou' | 'myLibrary' | 'local';
 type ForYouSubsection = 'aligned' | 'unaligned' | 'news';
@@ -111,6 +115,10 @@ export default function HomeScreen() {
   const [newListName, setNewListName] = useState('');
   const [newListDescription, setNewListDescription] = useState('');
   const [isLoadingLists, setIsLoadingLists] = useState(false);
+  const [showListOptionsMenu, setShowListOptionsMenu] = useState(false);
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [renameListName, setRenameListName] = useState('');
+  const [renameListDescription, setRenameListDescription] = useState('');
 
   // Quick-add state
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
@@ -1018,6 +1026,7 @@ export default function HomeScreen() {
             try {
               await deleteList(listId);
               await loadUserLists();
+              handleBackToLibrary();
               Alert.alert('Success', 'List deleted successfully');
             } catch (error) {
               console.error('[Home] Error deleting list:', error);
@@ -1029,6 +1038,57 @@ export default function HomeScreen() {
     );
   };
 
+  const handleOpenRenameModal = () => {
+    if (selectedList && selectedList !== 'browse') {
+      const list = selectedList as UserList;
+      setRenameListName(list.name);
+      setRenameListDescription(list.description || '');
+      setShowListOptionsMenu(false);
+      setShowRenameModal(true);
+    }
+  };
+
+  const handleRenameList = async () => {
+    if (!renameListName.trim()) {
+      Alert.alert('Error', 'Please enter a list name');
+      return;
+    }
+
+    if (selectedList && selectedList !== 'browse') {
+      const list = selectedList as UserList;
+      try {
+        await updateListMetadata(list.id, {
+          name: renameListName.trim(),
+          description: renameListDescription.trim(),
+        });
+        setShowRenameModal(false);
+        setRenameListName('');
+        setRenameListDescription('');
+        await loadUserLists();
+
+        // Update selectedList with new data
+        const updatedLists = await getUserLists(clerkUser?.id || '');
+        const updatedList = updatedLists.find(l => l.id === list.id);
+        if (updatedList) {
+          setSelectedList(updatedList);
+        }
+
+        Alert.alert('Success', 'List renamed successfully!');
+      } catch (error) {
+        console.error('[Home] Error renaming list:', error);
+        Alert.alert('Error', 'Could not rename list. Please try again.');
+      }
+    }
+  };
+
+  const handleDeleteCurrentList = () => {
+    if (selectedList && selectedList !== 'browse') {
+      const list = selectedList as UserList;
+      setShowListOptionsMenu(false);
+      handleDeleteList(list.id);
+    }
+  };
+
   const handleOpenList = (list: UserList | 'browse') => {
     setSelectedList(list);
     setLibraryView('detail');
@@ -1037,6 +1097,44 @@ export default function HomeScreen() {
   const handleBackToLibrary = () => {
     setLibraryView('overview');
     setSelectedList(null);
+    setShowListOptionsMenu(false);
+  };
+
+  const handleMoveListUp = (index: number) => {
+    if (index > 0) {
+      const newLists = [...userLists];
+      const temp = newLists[index];
+      newLists[index] = newLists[index - 1];
+      newLists[index - 1] = temp;
+      setUserLists(newLists);
+    }
+  };
+
+  const handleMoveListDown = (index: number) => {
+    if (index < userLists.length - 1) {
+      const newLists = [...userLists];
+      const temp = newLists[index];
+      newLists[index] = newLists[index + 1];
+      newLists[index + 1] = temp;
+      setUserLists(newLists);
+    }
+  };
+
+  const handleEntryClick = (entry: ListEntry) => {
+    if (entry.type === 'brand' && 'brandId' in entry) {
+      router.push(`/brand/${entry.brandId}`);
+    } else if (entry.type === 'value' && 'valueId' in entry) {
+      router.push(`/value/${entry.valueId}`);
+    } else if (entry.type === 'link' && 'url' in entry) {
+      // Open link in browser
+      if (Platform.OS === 'web') {
+        window.open(entry.url, '_blank');
+      } else {
+        // For mobile, you might want to use Linking
+        // Linking.openURL(entry.url);
+      }
+    }
+    // Text entries are not clickable
   };
 
   // Quick-add handler functions
@@ -1190,9 +1288,9 @@ export default function HomeScreen() {
                 activeOpacity={0.7}
               >
                 <ArrowLeft
-                  size={24}
+                  size={28}
                   color={colors.primary}
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                 />
                 <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
               </TouchableOpacity>
@@ -1241,18 +1339,48 @@ export default function HomeScreen() {
               activeOpacity={0.7}
             >
               <ArrowLeft
-                size={24}
+                size={28}
                 color={colors.primary}
-                strokeWidth={2}
+                strokeWidth={2.5}
               />
               <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
             </TouchableOpacity>
-            <Text style={[styles.listDetailTitle, { color: colors.text }]}>{list.name}</Text>
+            <View style={styles.listDetailTitleContainer}>
+              <Text style={[styles.listDetailTitle, { color: colors.text }]}>{list.name}</Text>
+              <TouchableOpacity
+                style={styles.listOptionsButton}
+                onPress={() => setShowListOptionsMenu(!showListOptionsMenu)}
+                activeOpacity={0.7}
+              >
+                <MoreVertical size={24} color={colors.textSecondary} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
           </View>
           {list.description && (
             <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
               {list.description}
             </Text>
+          )}
+          {showListOptionsMenu && (
+            <View style={[styles.listOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={handleOpenRenameModal}
+                activeOpacity={0.7}
+              >
+                <Edit size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+              </TouchableOpacity>
+              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={handleDeleteCurrentList}
+                activeOpacity={0.7}
+              >
+                <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
 
@@ -1265,26 +1393,45 @@ export default function HomeScreen() {
             </View>
           ) : (
             <View style={styles.listEntriesContainer}>
-              {list.entries.map((entry) => (
-                <View key={entry.id} style={[styles.listEntryCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                  <View style={styles.listEntryContent}>
-                    <Text style={[styles.listEntryType, { color: colors.textSecondary }]}>
-                      {entry.type.charAt(0).toUpperCase() + entry.type.slice(1)}
-                    </Text>
-                    <Text style={[styles.listEntryName, { color: colors.text }]}>
-                      {'brandName' in entry ? entry.brandName :
-                       'businessName' in entry ? entry.businessName :
-                       'valueName' in entry ? entry.valueName :
-                       'title' in entry ? entry.title : 'Text'}
-                    </Text>
-                    {entry.type === 'value' && 'mode' in entry && (
-                      <Text style={[styles.listEntryMode, { color: entry.mode === 'maxPain' ? colors.danger : colors.success }]}>
-                        {entry.mode === 'maxPain' ? 'Max Pain' : 'Max Benefit'}
+              {list.entries.map((entry) => {
+                const isClickable = entry.type === 'brand' || entry.type === 'value' || entry.type === 'link';
+                const EntryWrapper = isClickable ? TouchableOpacity : View;
+
+                return (
+                  <EntryWrapper
+                    key={entry.id}
+                    style={[styles.listEntryCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                    onPress={isClickable ? () => handleEntryClick(entry) : undefined}
+                    activeOpacity={isClickable ? 0.7 : 1}
+                  >
+                    <View style={styles.listEntryContent}>
+                      <Text style={[styles.listEntryType, { color: colors.textSecondary }]}>
+                        {entry.type.charAt(0).toUpperCase() + entry.type.slice(1)}
                       </Text>
-                    )}
-                  </View>
-                </View>
-              ))}
+                      <Text style={[styles.listEntryName, { color: colors.text }]}>
+                        {'brandName' in entry ? entry.brandName :
+                         'businessName' in entry ? entry.businessName :
+                         'valueName' in entry ? entry.valueName :
+                         'title' in entry ? entry.title :
+                         'content' in entry ? entry.content : 'Text'}
+                      </Text>
+                      {entry.type === 'value' && 'mode' in entry && (
+                        <Text style={[styles.listEntryMode, { color: entry.mode === 'maxPain' ? colors.danger : colors.success }]}>
+                          {entry.mode === 'maxPain' ? 'Max Pain' : 'Max Benefit'}
+                        </Text>
+                      )}
+                      {entry.type === 'link' && 'url' in entry && (
+                        <View style={styles.linkUrlContainer}>
+                          <ExternalLink size={14} color={colors.textSecondary} strokeWidth={2} />
+                          <Text style={[styles.linkUrl, { color: colors.textSecondary }]} numberOfLines={1}>
+                            {entry.url}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </EntryWrapper>
+                );
+              })}
             </View>
           )}
         </ScrollView>
@@ -1356,35 +1503,62 @@ export default function HomeScreen() {
               </Text>
             </View>
           ) : (
-            userLists.map((list) => (
-              <TouchableOpacity
-                key={list.id}
-                style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                onPress={() => handleOpenList(list)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.listCardContent}>
-                  <View style={styles.listCardHeader}>
-                    <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
-                      <List size={20} color={colors.primary} strokeWidth={2} />
+            userLists.map((list, index) => (
+              <View key={list.id} style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={styles.listCardClickable}
+                  onPress={() => handleOpenList(list)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.listCardContent}>
+                    <View style={styles.listCardHeader}>
+                      <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+                        <List size={20} color={colors.primary} strokeWidth={2} />
+                      </View>
+                      <View style={styles.listCardInfo}>
+                        <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                          {list.name}
+                        </Text>
+                        <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                          {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
+                        </Text>
+                      </View>
+                      <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
                     </View>
-                    <View style={styles.listCardInfo}>
-                      <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
-                        {list.name}
+                    {list.description && (
+                      <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                        {list.description}
                       </Text>
-                      <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
-                        {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
-                      </Text>
-                    </View>
-                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                    )}
                   </View>
-                  {list.description && (
-                    <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                      {list.description}
-                    </Text>
-                  )}
+                </TouchableOpacity>
+                <View style={styles.listCardReorderButtons}>
+                  <TouchableOpacity
+                    onPress={() => handleMoveListUp(index)}
+                    disabled={index === 0}
+                    style={styles.reorderButton}
+                    activeOpacity={0.7}
+                  >
+                    <ChevronUp
+                      size={18}
+                      color={index === 0 ? colors.textSecondary : colors.text}
+                      strokeWidth={2}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleMoveListDown(index)}
+                    disabled={index === userLists.length - 1}
+                    style={styles.reorderButton}
+                    activeOpacity={0.7}
+                  >
+                    <ChevronDown
+                      size={18}
+                      color={index === userLists.length - 1 ? colors.textSecondary : colors.text}
+                      strokeWidth={2}
+                    />
+                  </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
+              </View>
             ))
           )}
         </View>
@@ -1604,6 +1778,78 @@ export default function HomeScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.modalButtonText, { color: colors.white }]}>Create List</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </View>
+      </Modal>
+
+      {/* Rename List Modal */}
+      <Modal
+        visible={showRenameModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowRenameModal(false);
+          setRenameListName('');
+          setRenameListDescription('');
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              setShowRenameModal(false);
+              setRenameListName('');
+              setRenameListDescription('');
+            }}
+          >
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Pressable
+            style={[styles.createListModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Rename List</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowRenameModal(false);
+                  setRenameListName('');
+                  setRenameListDescription('');
+                }}
+              >
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalContent}>
+              <Text style={[styles.modalLabel, { color: colors.text }]}>List Name *</Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                placeholder="Enter list name"
+                placeholderTextColor={colors.textSecondary}
+                value={renameListName}
+                onChangeText={setRenameListName}
+                autoFocus
+              />
+
+              <Text style={[styles.modalLabel, { color: colors.text }]}>Description (Optional)</Text>
+              <TextInput
+                style={[styles.modalTextArea, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                placeholder="Enter list description"
+                placeholderTextColor={colors.textSecondary}
+                value={renameListDescription}
+                onChangeText={setRenameListDescription}
+                multiline
+                numberOfLines={3}
+              />
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                onPress={handleRenameList}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.white }]}>Save Changes</Text>
               </TouchableOpacity>
             </View>
           </Pressable>
@@ -2653,9 +2899,21 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     overflow: 'hidden',
+    flexDirection: 'row',
+  },
+  listCardClickable: {
+    flex: 1,
   },
   listCardContent: {
     padding: 16,
+  },
+  listCardReorderButtons: {
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    gap: 4,
+  },
+  reorderButton: {
+    padding: 4,
   },
   listCardHeader: {
     flexDirection: 'row',
@@ -2868,15 +3126,53 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   backButtonText: {
-    fontSize: 16,
-    fontWeight: '600' as const,
+    fontSize: 18,
+    fontWeight: '700' as const,
   },
   listDetailTitle: {
     fontSize: 28,
     fontWeight: '700' as const,
+  },
+  listDetailTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  listOptionsButton: {
+    padding: 4,
+  },
+  listOptionsDropdown: {
+    position: 'absolute',
+    top: 50,
+    right: 0,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 4,
+    minWidth: 160,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    zIndex: 1000,
+  },
+  listOptionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  listOptionText: {
+    fontSize: 15,
+    fontWeight: '500' as const,
+  },
+  listOptionDivider: {
+    height: 1,
+    marginVertical: 4,
   },
   listDetailDescription: {
     fontSize: 15,
@@ -2910,6 +3206,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600' as const,
     marginTop: 4,
+  },
+  linkUrlContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+  },
+  linkUrl: {
+    fontSize: 13,
+    flex: 1,
   },
   // Browse list styles
   browseCategory: {
