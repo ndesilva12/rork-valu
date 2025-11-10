@@ -65,9 +65,9 @@ export default function TabLayout() {
       />
 
       {/* Center and constrain the app content on wide screens so nothing stretches beyond 50% of the viewport */}
-      <View style={{ flex: 1, alignItems: 'center' }}>
+      <View style={{ flex: 1, alignItems: 'center', backgroundColor: colors.background }}>
         {/* Ensure this inner container fills vertical space so Tabs layout behaves correctly */}
-        <View style={{ width: '100%', maxWidth: isTabletOrLarger ? '50%' : 768, flex: 1 }}>
+        <View style={{ width: '100%', maxWidth: isTabletOrLarger ? '50%' : 768, flex: 1, backgroundColor: colors.background }}>
           <Tabs
             screenOptions={{
               tabBarActiveTintColor: colors.primary,

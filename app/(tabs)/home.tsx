@@ -99,8 +99,21 @@ export default function HomeScreen() {
   // Request location permission and get user's location
   const requestLocation = async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      console.log('[Home] Requesting location...');
+
+      // Check if permission is already granted
+      let { status } = await Location.getForegroundPermissionsAsync();
+      console.log('[Home] Current permission status:', status);
+
+      // If not granted, request permission
       if (status !== 'granted') {
+        const result = await Location.requestForegroundPermissionsAsync();
+        status = result.status;
+        console.log('[Home] Permission request result:', status);
+      }
+
+      if (status !== 'granted') {
+        console.log('[Home] ❌ Location permission denied');
         Alert.alert(
           'Location Permission Required',
           'Please enable location access to filter brands by distance.',
@@ -109,13 +122,16 @@ export default function HomeScreen() {
         return;
       }
 
+      console.log('[Home] ✅ Permission granted, getting location...');
       const location = await Location.getCurrentPositionAsync({});
-      setUserLocation({
+      const newLocation = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-      });
+      };
+      setUserLocation(newLocation);
+      console.log('[Home] ✅ Got location:', newLocation);
     } catch (error) {
-      console.error('Error getting location:', error);
+      console.error('[Home] ❌ Error getting location:', error);
       Alert.alert('Error', 'Could not get your location. Please try again.');
     }
   };
@@ -1029,7 +1045,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright logo white wide.png')}
+            source={require('@/assets/images/upright dark wide invert21.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -1049,7 +1065,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright logo white wide.png')}
+            source={require('@/assets/images/upright dark wide invert21.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -1071,7 +1087,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright logo white wide.png')}
+            source={require('@/assets/images/upright dark wide invert21.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -1099,7 +1115,7 @@ export default function HomeScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright logo white wide.png')}
+            source={require('@/assets/images/upright dark wide invert21.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -1149,10 +1165,8 @@ export default function HomeScreen() {
           activeOpacity={1}
           onPress={() => setShowMapModal(false)}
         >
-          <TouchableOpacity
+          <View
             style={[styles.mapModalContainer, { backgroundColor: colors.background }]}
-            activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
           >
             {/* Header with close button */}
             <View style={[styles.mapModalHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
@@ -1207,7 +1221,7 @@ export default function HomeScreen() {
               </View>
             )}
           </View>
-          </TouchableOpacity>
+          </View>
         </TouchableOpacity>
       </Modal>
     </View>
@@ -1246,12 +1260,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'web' ? 0 : 56,
-    paddingBottom: 12,
+    paddingBottom: 4,
   },
   headerLogo: {
-    width: 210,
-    height: 61.5,
+    width: 189,
+    height: 55.35,
     marginTop: 8,
+    alignSelf: 'flex-start',
   },
   headerTitleRow: {
     flex: 1,

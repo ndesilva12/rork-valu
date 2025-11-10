@@ -1,11 +1,11 @@
 {
-  "name": "Stand",
-  "short_name": "Stand",
-  "description": "Stand - Vote With Your Money",
+  "name": "Upright",
+  "short_name": "Upright",
+  "description": "Upright - Vote With Your Money",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "rgb(3, 68, 102)",
+  "theme_color": "#ffffff",
   "orientation": "portrait",
   "scope": "/",
   "icons": [

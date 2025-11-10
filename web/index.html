@@ -9,8 +9,11 @@
     <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="apple-touch-icon" href="/favicon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
+    <link rel="shortcut icon" href="/favicon.png" />
 
     <title>Upright - Vote With Your Money</title>
     <meta name="description" content="Upright helps you shop according to your values. Discover brands and businesses that align with what you believe in." />
@@ -81,13 +84,12 @@
         height: 100%;
         width: 100%;
         overflow: auto;
+        background-color: #FFFFFF;
       }
 
-      /* Mobile browser - pull content up under status bar */
-      @media (display-mode: browser) {
+      @media (prefers-color-scheme: dark) {
         #root {
-          margin-top: calc(-1 * env(safe-area-inset-top));
-          padding-top: env(safe-area-inset-top);
+          background-color: #111827;
         }
       }
 

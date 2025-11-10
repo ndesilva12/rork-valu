@@ -12,19 +12,19 @@ export interface BusinessUser {
 }
 
 /**
- * Get all businesses that accept Stand discounts from Firebase
+ * Get all businesses that accept Upright discounts from Firebase
  * @returns Array of business users
  */
 export async function getBusinessesAcceptingDiscounts(): Promise<BusinessUser[]> {
   try {
-    console.log('[Firebase businessService] 🔄 Fetching businesses accepting Stand discounts');
+    console.log('[Firebase businessService] 🔄 Fetching businesses accepting Upright discounts');
 
     if (!db) {
       console.error('[Firebase businessService] ❌ db is null or undefined!');
       throw new Error('Firebase db not initialized');
     }
 
-    // Query users collection for businesses accepting Stand discounts
+    // Query users collection for businesses accepting Upright discounts
     const usersRef = collection(db, 'users');
     const q = query(
       usersRef,
