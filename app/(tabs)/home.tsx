@@ -1187,11 +1187,10 @@ export default function HomeScreen() {
               onPress={handleBackToLibrary}
               activeOpacity={0.7}
             >
-              <ChevronRight
+              <ArrowLeft
                 size={24}
                 color={colors.primary}
                 strokeWidth={2}
-                style={{ transform: [{ rotate: '180deg' }] }}
               />
               <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
             </TouchableOpacity>
@@ -1237,11 +1236,10 @@ export default function HomeScreen() {
             onPress={handleBackToLibrary}
             activeOpacity={0.7}
           >
-            <ChevronRight
+            <ArrowLeft
               size={24}
               color={colors.primary}
               strokeWidth={2}
-              style={{ transform: [{ rotate: '180deg' }] }}
             />
             <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
           </TouchableOpacity>
