@@ -208,7 +208,7 @@ export default function DataScreen() {
         <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
           <View style={[styles.header, { backgroundColor: colors.background }]}>
             <Image
-              source={require('@/assets/images/upright logo white wide.png')}
+              source={require('@/assets/images/upright wide logo1.png')}
               style={styles.headerLogo}
               resizeMode="contain"
             />
