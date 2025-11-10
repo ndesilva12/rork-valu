@@ -244,13 +244,13 @@ export default function BrandDetailScreen() {
 
   // Quick-add handlers
   const handleQuickAdd = async () => {
-    if (!profile.id) {
+    if (!clerkUser?.id) {
       Alert.alert('Error', 'You must be logged in to add to lists');
       return;
     }
 
     try {
-      const lists = await getUserLists(profile.id);
+      const lists = await getUserLists(clerkUser.id);
       setUserLists(lists);
       setShowQuickAddModal(true);
     } catch (error) {
@@ -284,10 +284,10 @@ export default function BrandDetailScreen() {
       return;
     }
 
-    if (!profile.id || !brand) return;
+    if (!clerkUser?.id || !brand) return;
 
     try {
-      const listId = await createList(profile.id, newListName.trim(), newListDescription.trim());
+      const listId = await createList(clerkUser.id, newListName.trim(), newListDescription.trim());
 
       const entry: Omit<ListEntry, 'id' | 'createdAt'> = {
         type: 'brand',

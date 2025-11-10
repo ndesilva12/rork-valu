@@ -46,7 +46,7 @@ const CATEGORY_LABELS: Record<CauseCategory, string> = {
 
 export default function ValuesScreen() {
   const router = useRouter();
-  const { profile, isDarkMode, removeCauses, toggleCauseType } = useUser();
+  const { profile, isDarkMode, removeCauses, toggleCauseType, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const [expandedCategories, setExpandedCategories] = useState<Set<CauseCategory>>(new Set());
   const [editingValueId, setEditingValueId] = useState<string | null>(null);
@@ -151,7 +151,7 @@ export default function ValuesScreen() {
 
   // Quick-add handlers
   const handleQuickAdd = async (cause: Cause) => {
-    if (!profile.id) {
+    if (!clerkUser?.id) {
       Alert.alert('Error', 'You must be logged in to add to lists');
       return;
     }
@@ -165,7 +165,7 @@ export default function ValuesScreen() {
     setShowModeSelectionModal(false);
 
     try {
-      const lists = await getUserLists(profile.id);
+      const lists = await getUserLists(clerkUser!.id);
       setUserLists(lists);
       setShowListSelectionModal(true);
     } catch (error) {
@@ -202,10 +202,10 @@ export default function ValuesScreen() {
       return;
     }
 
-    if (!profile.id || !selectedValue || !selectedMode) return;
+    if (!clerkUser?.id || !selectedValue || !selectedMode) return;
 
     try {
-      const listId = await createList(profile.id, newListName.trim(), newListDescription.trim());
+      const listId = await createList(clerkUser.id, newListName.trim(), newListDescription.trim());
 
       const entry: Omit<ListEntry, 'id' | 'createdAt'> = {
         type: 'value',
