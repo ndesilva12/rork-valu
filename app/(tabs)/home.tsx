@@ -1045,7 +1045,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright dark wide invert21.png')}
+            source={require('@/assets/images/upright dark B1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -1065,7 +1065,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright dark wide invert21.png')}
+            source={require('@/assets/images/upright dark B1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -1087,7 +1087,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright dark wide invert21.png')}
+            source={require('@/assets/images/upright dark B1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -1115,7 +1115,7 @@ export default function HomeScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright dark wide invert21.png')}
+            source={require('@/assets/images/upright dark B1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -1263,8 +1263,8 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   headerLogo: {
-    width: 189,
-    height: 55.35,
+    width: 161,
+    height: 47,
     marginTop: 8,
     alignSelf: 'flex-start',
   },
