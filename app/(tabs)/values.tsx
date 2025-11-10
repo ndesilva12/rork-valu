@@ -143,7 +143,7 @@ export default function ValuesScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright dark wide invert21.png')}
+            source={require('@/assets/images/upright dark B1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -459,8 +459,8 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   headerLogo: {
-    width: 189,
-    height: 55.35,
+    width: 161,
+    height: 47,
     marginTop: 8,
     alignSelf: 'flex-start',
   },

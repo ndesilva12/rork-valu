@@ -191,7 +191,7 @@ export default function SignInScreen() {
         >
           <View style={styles.logoContainer}>
             <Image
-              source={require('@/assets/images/upright dark invert1.png')}
+              source={require('@/assets/images/upright dark A1A.png')}
               style={styles.logo}
               resizeMode="contain"
             />

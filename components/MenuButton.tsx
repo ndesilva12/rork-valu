@@ -124,7 +124,7 @@ export default function MenuButton() {
           >
             <View style={styles.logoContainer}>
               <Image
-                source={require('@/assets/images/upright dark wide invert21.png')}
+                source={require('@/assets/images/upright dark B1.png')}
                 style={styles.menuLogo}
                 resizeMode="contain"
               />
