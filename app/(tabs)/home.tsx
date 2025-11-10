@@ -99,8 +99,21 @@ export default function HomeScreen() {
   // Request location permission and get user's location
   const requestLocation = async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      console.log('[Home] Requesting location...');
+
+      // Check if permission is already granted
+      let { status } = await Location.getForegroundPermissionsAsync();
+      console.log('[Home] Current permission status:', status);
+
+      // If not granted, request permission
       if (status !== 'granted') {
+        const result = await Location.requestForegroundPermissionsAsync();
+        status = result.status;
+        console.log('[Home] Permission request result:', status);
+      }
+
+      if (status !== 'granted') {
+        console.log('[Home] ❌ Location permission denied');
         Alert.alert(
           'Location Permission Required',
           'Please enable location access to filter brands by distance.',
@@ -109,13 +122,16 @@ export default function HomeScreen() {
         return;
       }
 
+      console.log('[Home] ✅ Permission granted, getting location...');
       const location = await Location.getCurrentPositionAsync({});
-      setUserLocation({
+      const newLocation = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-      });
+      };
+      setUserLocation(newLocation);
+      console.log('[Home] ✅ Got location:', newLocation);
     } catch (error) {
-      console.error('Error getting location:', error);
+      console.error('[Home] ❌ Error getting location:', error);
       Alert.alert('Error', 'Could not get your location. Please try again.');
     }
   };
