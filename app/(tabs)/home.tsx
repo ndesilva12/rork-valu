@@ -20,6 +20,11 @@ import {
   DollarSign,
   Shirt,
   X,
+  Plus,
+  List,
+  Trash2,
+  Edit,
+  Search,
 } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import {
@@ -34,6 +39,7 @@ import {
   Alert,
   Modal,
   Dimensions,
+  TextInput,
 } from 'react-native';
 import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
@@ -49,6 +55,8 @@ import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
 import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 import BusinessMapView from '@/components/BusinessMapView';
+import { UserList, ListEntry, ValueListMode } from '@/types/library';
+import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList } from '@/services/firebase/listService';
 
 type MainView = 'forYou' | 'myLibrary' | 'local';
 type ForYouSubsection = 'aligned' | 'unaligned' | 'news';
@@ -91,6 +99,15 @@ export default function HomeScreen() {
   const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(null);
   const [userBusinesses, setUserBusinesses] = useState<BusinessUser[]>([]);
   const [showMapModal, setShowMapModal] = useState(false);
+
+  // Library state
+  const [userLists, setUserLists] = useState<UserList[]>([]);
+  const [showCreateListModal, setShowCreateListModal] = useState(false);
+  const [showEditListModal, setShowEditListModal] = useState(false);
+  const [selectedList, setSelectedList] = useState<UserList | null>(null);
+  const [newListName, setNewListName] = useState('');
+  const [newListDescription, setNewListDescription] = useState('');
+  const [isLoadingLists, setIsLoadingLists] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -173,6 +190,28 @@ export default function HomeScreen() {
       }
     }
   }, [params.fromMap]);
+
+  // Fetch user lists when library view is activated
+  useEffect(() => {
+    if (mainView === 'myLibrary' && profile.id) {
+      loadUserLists();
+    }
+  }, [mainView, profile.id]);
+
+  const loadUserLists = async () => {
+    if (!profile.id) return;
+
+    setIsLoadingLists(true);
+    try {
+      const lists = await getUserLists(profile.id);
+      setUserLists(lists);
+    } catch (error) {
+      console.error('[Home] Error loading user lists:', error);
+      Alert.alert('Error', 'Could not load your lists. Please try again.');
+    } finally {
+      setIsLoadingLists(false);
+    }
+  };
 
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands, brandDistances } = useMemo(() => {
     // Combine brands from CSV and user businesses
@@ -902,15 +941,139 @@ export default function HomeScreen() {
     );
   };
 
+  // Library handler functions
+  const handleCreateList = async () => {
+    if (!newListName.trim()) {
+      Alert.alert('Error', 'Please enter a list name');
+      return;
+    }
+
+    if (!profile.id) {
+      Alert.alert('Error', 'You must be logged in to create a list');
+      return;
+    }
+
+    try {
+      await createList(profile.id, newListName.trim(), newListDescription.trim());
+      setNewListName('');
+      setNewListDescription('');
+      setShowCreateListModal(false);
+      await loadUserLists();
+      Alert.alert('Success', 'List created successfully!');
+    } catch (error) {
+      console.error('[Home] Error creating list:', error);
+      Alert.alert('Error', 'Could not create list. Please try again.');
+    }
+  };
+
+  const handleDeleteList = async (listId: string) => {
+    Alert.alert(
+      'Delete List',
+      'Are you sure you want to delete this list? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteList(listId);
+              await loadUserLists();
+              Alert.alert('Success', 'List deleted successfully');
+            } catch (error) {
+              console.error('[Home] Error deleting list:', error);
+              Alert.alert('Error', 'Could not delete list. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleOpenList = (list: UserList) => {
+    setSelectedList(list);
+    setShowEditListModal(true);
+  };
+
   const renderMyLibraryView = () => {
+    if (isLoadingLists) {
+      return (
+        <View style={styles.section}>
+          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+              Loading your lists...
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    if (userLists.length === 0) {
+      return (
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={[styles.createListButton, { backgroundColor: colors.primary }]}
+            onPress={() => setShowCreateListModal(true)}
+            activeOpacity={0.7}
+          >
+            <Plus size={24} color={colors.white} strokeWidth={2} />
+            <Text style={[styles.createListButtonText, { color: colors.white }]}>
+              Create Your First List
+            </Text>
+          </TouchableOpacity>
+
+          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            <List size={48} color={colors.textSecondary} strokeWidth={1.5} />
+            <Text style={[styles.placeholderTitle, { color: colors.text }]}>No Lists Yet</Text>
+            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+              Create custom lists to organize brands, businesses, values, links, and notes.
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
     return (
       <View style={styles.section}>
-        <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
-          <FolderOpen size={48} color={colors.textSecondary} strokeWidth={1.5} />
-          <Text style={[styles.placeholderTitle, { color: colors.text }]}>My Library</Text>
-          <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-            Create and manage your custom lists of brands here. This feature is coming soon!
-          </Text>
+        <TouchableOpacity
+          style={[styles.createListButtonSmall, { backgroundColor: colors.primary }]}
+          onPress={() => setShowCreateListModal(true)}
+          activeOpacity={0.7}
+        >
+          <Plus size={20} color={colors.white} strokeWidth={2.5} />
+        </TouchableOpacity>
+
+        <View style={styles.listsContainer}>
+          {userLists.map((list) => (
+            <TouchableOpacity
+              key={list.id}
+              style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+              onPress={() => handleOpenList(list)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.listCardContent}>
+                <View style={styles.listCardHeader}>
+                  <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+                    <List size={20} color={colors.primary} strokeWidth={2} />
+                  </View>
+                  <View style={styles.listCardInfo}>
+                    <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                      {list.name}
+                    </Text>
+                    <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                      {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
+                    </Text>
+                  </View>
+                  <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                </View>
+                {list.description && (
+                  <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                    {list.description}
+                  </Text>
+                )}
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
     );
@@ -1058,6 +1221,77 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      {/* Create List Modal */}
+      <Modal
+        visible={showCreateListModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowCreateListModal(false);
+          setNewListName('');
+          setNewListDescription('');
+        }}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => {
+            setShowCreateListModal(false);
+            setNewListName('');
+            setNewListDescription('');
+          }}
+        >
+          <View
+            style={[styles.createListModalContainer, { backgroundColor: colors.background }]}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Create New List</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowCreateListModal(false);
+                  setNewListName('');
+                  setNewListDescription('');
+                }}
+              >
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent}>
+              <Text style={[styles.modalLabel, { color: colors.text }]}>List Name *</Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                placeholder="Enter list name"
+                placeholderTextColor={colors.textSecondary}
+                value={newListName}
+                onChangeText={setNewListName}
+                autoFocus
+              />
+
+              <Text style={[styles.modalLabel, { color: colors.text }]}>Description (Optional)</Text>
+              <TextInput
+                style={[styles.modalTextArea, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                placeholder="Enter list description"
+                placeholderTextColor={colors.textSecondary}
+                value={newListDescription}
+                onChangeText={setNewListDescription}
+                multiline
+                numberOfLines={3}
+              />
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                onPress={handleCreateList}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.white }]}>Create List</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Map Modal */}
       <Modal
@@ -1892,6 +2126,125 @@ const styles = StyleSheet.create({
   },
   mapModalEmptyButtonText: {
     fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  // Library styles
+  listsContainer: {
+    gap: 12,
+    marginTop: 12,
+  },
+  listCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  listCardContent: {
+    padding: 16,
+  },
+  listCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  listIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listCardInfo: {
+    flex: 1,
+  },
+  listCardTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  listCardCount: {
+    fontSize: 13,
+  },
+  listCardDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 8,
+  },
+  createListButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    gap: 8,
+    marginBottom: 16,
+  },
+  createListButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  createListButtonSmall: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-end',
+    marginBottom: 12,
+  },
+  createListModalContainer: {
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '80%',
+    borderRadius: 20,
+    overflow: 'hidden',
+    alignSelf: 'center',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
+  modalContent: {
+    padding: 20,
+  },
+  modalLabel: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+  },
+  modalTextArea: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  modalButton: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  modalButtonText: {
+    fontSize: 16,
     fontWeight: '600' as const,
   },
 });

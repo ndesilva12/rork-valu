@@ -1,0 +1,239 @@
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  Timestamp,
+  serverTimestamp
+} from 'firebase/firestore';
+import { db } from '@/config/firebase';
+import { UserList, ListEntry } from '@/types/library';
+
+const LISTS_COLLECTION = 'userLists';
+
+// Convert Firestore timestamp to Date
+const timestampToDate = (timestamp: any): Date => {
+  if (timestamp?.toDate) {
+    return timestamp.toDate();
+  }
+  return new Date(timestamp);
+};
+
+// Get all lists for a user
+export const getUserLists = async (userId: string): Promise<UserList[]> => {
+  try {
+    const listsRef = collection(db, LISTS_COLLECTION);
+    const q = query(
+      listsRef,
+      where('userId', '==', userId),
+      orderBy('updatedAt', 'desc')
+    );
+
+    const querySnapshot = await getDocs(q);
+    const lists: UserList[] = [];
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      lists.push({
+        id: doc.id,
+        userId: data.userId,
+        name: data.name,
+        description: data.description,
+        entries: data.entries || [],
+        createdAt: timestampToDate(data.createdAt),
+        updatedAt: timestampToDate(data.updatedAt),
+        isPublic: data.isPublic || false,
+      });
+    });
+
+    return lists;
+  } catch (error) {
+    console.error('Error getting user lists:', error);
+    throw error;
+  }
+};
+
+// Get a single list by ID
+export const getList = async (listId: string): Promise<UserList | null> => {
+  try {
+    const listRef = doc(db, LISTS_COLLECTION, listId);
+    const listDoc = await getDoc(listRef);
+
+    if (!listDoc.exists()) {
+      return null;
+    }
+
+    const data = listDoc.data();
+    return {
+      id: listDoc.id,
+      userId: data.userId,
+      name: data.name,
+      description: data.description,
+      entries: data.entries || [],
+      createdAt: timestampToDate(data.createdAt),
+      updatedAt: timestampToDate(data.updatedAt),
+      isPublic: data.isPublic || false,
+    };
+  } catch (error) {
+    console.error('Error getting list:', error);
+    throw error;
+  }
+};
+
+// Create a new list
+export const createList = async (
+  userId: string,
+  name: string,
+  description?: string
+): Promise<string> => {
+  try {
+    const listsRef = collection(db, LISTS_COLLECTION);
+    const newList = {
+      userId,
+      name,
+      description: description || '',
+      entries: [],
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      isPublic: false,
+    };
+
+    const docRef = await addDoc(listsRef, newList);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating list:', error);
+    throw error;
+  }
+};
+
+// Update list metadata (name, description)
+export const updateListMetadata = async (
+  listId: string,
+  updates: { name?: string; description?: string; isPublic?: boolean }
+): Promise<void> => {
+  try {
+    const listRef = doc(db, LISTS_COLLECTION, listId);
+    await updateDoc(listRef, {
+      ...updates,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error updating list metadata:', error);
+    throw error;
+  }
+};
+
+// Add entry to list
+export const addEntryToList = async (
+  listId: string,
+  entry: Omit<ListEntry, 'id' | 'createdAt'>
+): Promise<void> => {
+  try {
+    const list = await getList(listId);
+    if (!list) {
+      throw new Error('List not found');
+    }
+
+    const newEntry: ListEntry = {
+      ...entry,
+      id: `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date(),
+    } as ListEntry;
+
+    const updatedEntries = [...list.entries, newEntry];
+
+    const listRef = doc(db, LISTS_COLLECTION, listId);
+    await updateDoc(listRef, {
+      entries: updatedEntries,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error adding entry to list:', error);
+    throw error;
+  }
+};
+
+// Remove entry from list
+export const removeEntryFromList = async (
+  listId: string,
+  entryId: string
+): Promise<void> => {
+  try {
+    const list = await getList(listId);
+    if (!list) {
+      throw new Error('List not found');
+    }
+
+    const updatedEntries = list.entries.filter((entry) => entry.id !== entryId);
+
+    const listRef = doc(db, LISTS_COLLECTION, listId);
+    await updateDoc(listRef, {
+      entries: updatedEntries,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error removing entry from list:', error);
+    throw error;
+  }
+};
+
+// Update entry in list
+export const updateEntryInList = async (
+  listId: string,
+  entryId: string,
+  updates: Partial<ListEntry>
+): Promise<void> => {
+  try {
+    const list = await getList(listId);
+    if (!list) {
+      throw new Error('List not found');
+    }
+
+    const updatedEntries = list.entries.map((entry) =>
+      entry.id === entryId ? { ...entry, ...updates } : entry
+    );
+
+    const listRef = doc(db, LISTS_COLLECTION, listId);
+    await updateDoc(listRef, {
+      entries: updatedEntries,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error updating entry in list:', error);
+    throw error;
+  }
+};
+
+// Delete a list
+export const deleteList = async (listId: string): Promise<void> => {
+  try {
+    const listRef = doc(db, LISTS_COLLECTION, listId);
+    await deleteDoc(listRef);
+  } catch (error) {
+    console.error('Error deleting list:', error);
+    throw error;
+  }
+};
+
+// Reorder entries in a list
+export const reorderListEntries = async (
+  listId: string,
+  entries: ListEntry[]
+): Promise<void> => {
+  try {
+    const listRef = doc(db, LISTS_COLLECTION, listId);
+    await updateDoc(listRef, {
+      entries,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error reordering list entries:', error);
+    throw error;
+  }
+};
