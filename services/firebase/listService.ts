@@ -31,8 +31,7 @@ export const getUserLists = async (userId: string): Promise<UserList[]> => {
     const listsRef = collection(db, LISTS_COLLECTION);
     const q = query(
       listsRef,
-      where('userId', '==', userId),
-      orderBy('updatedAt', 'desc')
+      where('userId', '==', userId)
     );
 
     const querySnapshot = await getDocs(q);
@@ -51,6 +50,9 @@ export const getUserLists = async (userId: string): Promise<UserList[]> => {
         isPublic: data.isPublic || false,
       });
     });
+
+    // Sort by updatedAt in JavaScript to avoid needing composite index
+    lists.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 
     return lists;
   } catch (error) {

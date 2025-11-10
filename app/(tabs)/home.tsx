@@ -1183,19 +1183,21 @@ export default function HomeScreen() {
       return (
         <View style={styles.section}>
           <View style={styles.listDetailHeader}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={handleBackToLibrary}
-              activeOpacity={0.7}
-            >
-              <ArrowLeft
-                size={24}
-                color={colors.primary}
-                strokeWidth={2}
-              />
-              <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
-            </TouchableOpacity>
-            <Text style={[styles.listDetailTitle, { color: colors.text }]}>Browse</Text>
+            <View style={styles.listDetailHeaderRow}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={handleBackToLibrary}
+                activeOpacity={0.7}
+              >
+                <ArrowLeft
+                  size={24}
+                  color={colors.primary}
+                  strokeWidth={2}
+                />
+                <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
+              </TouchableOpacity>
+              <Text style={[styles.listDetailTitle, { color: colors.text }]}>Browse</Text>
+            </View>
           </View>
 
           <ScrollView style={styles.listDetailContent}>
@@ -1232,19 +1234,21 @@ export default function HomeScreen() {
     return (
       <View style={styles.section}>
         <View style={styles.listDetailHeader}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={handleBackToLibrary}
-            activeOpacity={0.7}
-          >
-            <ArrowLeft
-              size={24}
-              color={colors.primary}
-              strokeWidth={2}
-            />
-            <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
-          </TouchableOpacity>
-          <Text style={[styles.listDetailTitle, { color: colors.text }]}>{list.name}</Text>
+          <View style={styles.listDetailHeaderRow}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={handleBackToLibrary}
+              activeOpacity={0.7}
+            >
+              <ArrowLeft
+                size={24}
+                color={colors.primary}
+                strokeWidth={2}
+              />
+              <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
+            </TouchableOpacity>
+            <Text style={[styles.listDetailTitle, { color: colors.text }]}>{list.name}</Text>
+          </View>
           {list.description && (
             <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
               {list.description}
@@ -2855,11 +2859,16 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
     marginBottom: 16,
   },
+  listDetailHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginBottom: 12,
   },
   backButtonText: {
     fontSize: 16,
@@ -2868,7 +2877,6 @@ const styles = StyleSheet.create({
   listDetailTitle: {
     fontSize: 28,
     fontWeight: '700' as const,
-    marginBottom: 4,
   },
   listDetailDescription: {
     fontSize: 15,
