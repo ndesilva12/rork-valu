@@ -12,7 +12,7 @@ import {
   Timestamp,
   serverTimestamp
 } from 'firebase/firestore';
-import { db } from '@/config/firebase';
+import { db } from '@/firebase';
 import { UserList, ListEntry } from '@/types/library';
 
 const LISTS_COLLECTION = 'userLists';
