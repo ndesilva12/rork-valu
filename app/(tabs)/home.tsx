@@ -4,6 +4,7 @@ import {
   TrendingUp,
   TrendingDown,
   ChevronRight,
+  ArrowLeft,
   Target,
   FolderOpen,
   MapPin,
@@ -20,6 +21,11 @@ import {
   DollarSign,
   Shirt,
   X,
+  Plus,
+  List,
+  Trash2,
+  Edit,
+  Search,
 } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import {
@@ -34,6 +40,9 @@ import {
   Alert,
   Modal,
   Dimensions,
+  TextInput,
+  Pressable,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
@@ -49,8 +58,11 @@ import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
 import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 import BusinessMapView from '@/components/BusinessMapView';
+import { UserList, ListEntry, ValueListMode } from '@/types/library';
+import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList } from '@/services/firebase/listService';
 
-type ViewMode = 'playbook' | 'browse';
+type MainView = 'forYou' | 'myLibrary' | 'local';
+type ForYouSubsection = 'aligned' | 'unaligned' | 'news';
 type LocalDistanceOption = 1 | 5 | 10 | 50 | 100 | null;
 
 type FolderCategory = {
@@ -77,24 +89,39 @@ const FOLDER_CATEGORIES: FolderCategory[] = [
 export default function HomeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { profile, isDarkMode } = useUser();
+  const { profile, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
-  const [viewMode, setViewMode] = useState<ViewMode>('playbook');
+  const [mainView, setMainView] = useState<MainView>('forYou');
+  const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
-  const [isLocalMode, setIsLocalMode] = useState<boolean>(false);
+  const [alignedLoadCount, setAlignedLoadCount] = useState<number>(10);
+  const [unalignedLoadCount, setUnalignedLoadCount] = useState<number>(10);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(null);
   const [userBusinesses, setUserBusinesses] = useState<BusinessUser[]>([]);
   const [showMapModal, setShowMapModal] = useState(false);
 
+  // Library state
+  const [userLists, setUserLists] = useState<UserList[]>([]);
+  const [showCreateListModal, setShowCreateListModal] = useState(false);
+  const [libraryView, setLibraryView] = useState<'overview' | 'detail'>('overview');
+  const [selectedList, setSelectedList] = useState<UserList | 'browse' | null>(null);
+  const [newListName, setNewListName] = useState('');
+  const [newListDescription, setNewListDescription] = useState('');
+  const [isLoadingLists, setIsLoadingLists] = useState(false);
+
+  // Quick-add state
+  const [showQuickAddModal, setShowQuickAddModal] = useState(false);
+  const [quickAddItem, setQuickAddItem] = useState<{type: 'brand' | 'business' | 'value', id: string, name: string} | null>(null);
+  const [selectedValueMode, setSelectedValueMode] = useState<ValueListMode | null>(null);
+  const [showValueModeModal, setShowValueModeModal] = useState(false);
+
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Fetch brands and values from Firebase via DataContext
   const { brands, values, valuesMatrix, isLoading, error } = useData();
-
-  const viewModes: ViewMode[] = ['playbook', 'browse'];
 
   // Request location permission and get user's location
   const requestLocation = async () => {
@@ -153,12 +180,12 @@ export default function HomeScreen() {
     fetchUserBusinesses();
   }, []);
 
-  // Request location when local mode is activated
+  // Request location when local view is activated
   useEffect(() => {
-    if (isLocalMode) {
+    if (mainView === 'local') {
       requestLocation();
     }
-  }, [isLocalMode]);
+  }, [mainView]);
 
   // Reopen map if returning from business detail page
   useEffect(() => {
@@ -166,29 +193,39 @@ export default function HomeScreen() {
       // Clear the parameter and reopen the map
       router.setParams({ fromMap: undefined });
       setShowMapModal(true);
-      // Ensure local mode is active
-      if (!isLocalMode) {
-        setIsLocalMode(true);
+      // Ensure local view is active
+      if (mainView !== 'local') {
+        setMainView('local');
       }
     }
   }, [params.fromMap]);
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (evt, gestureState) => {
-        return Math.abs(gestureState.dx) > 30 && Math.abs(gestureState.dy) < 50;
-      },
-      onPanResponderRelease: (evt, gestureState) => {
-        const currentIndex = viewModes.indexOf(viewMode);
+  // Fetch user lists when library view is activated
+  useEffect(() => {
+    if (mainView === 'myLibrary' && clerkUser?.id) {
+      loadUserLists();
+    }
+    // Reset to overview when leaving library
+    if (mainView !== 'myLibrary') {
+      setLibraryView('overview');
+      setSelectedList(null);
+    }
+  }, [mainView, clerkUser?.id]);
 
-        if (gestureState.dx < -100 && currentIndex < viewModes.length - 1) {
-          setViewMode(viewModes[currentIndex + 1]);
-        } else if (gestureState.dx > 100 && currentIndex > 0) {
-          setViewMode(viewModes[currentIndex - 1]);
-        }
-      },
-    })
-  ).current;
+  const loadUserLists = async () => {
+    if (!clerkUser?.id) return;
+
+    setIsLoadingLists(true);
+    try {
+      const lists = await getUserLists(clerkUser.id);
+      setUserLists(lists);
+    } catch (error) {
+      console.error('[Home] Error loading user lists:', error);
+      Alert.alert('Error', 'Could not load your lists. Please try again.');
+    } finally {
+      setIsLoadingLists(false);
+    }
+  };
 
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands, brandDistances } = useMemo(() => {
     // Combine brands from CSV and user businesses
@@ -365,9 +402,9 @@ export default function HomeScreen() {
     };
   }, [profile.causes, brands, userBusinesses, valuesMatrix]);
 
-  // Compute local businesses when "local" mode is active
+  // Compute local businesses when "local" view is active
   const localBusinessData = useMemo(() => {
-    if (!isLocalMode || !userLocation || userBusinesses.length === 0) {
+    if (mainView !== 'local' || !userLocation || userBusinesses.length === 0) {
       return {
         alignedBusinesses: [],
         unalignedBusinesses: [],
@@ -442,7 +479,7 @@ export default function HomeScreen() {
       alignedBusinesses: aligned,
       unalignedBusinesses: unaligned,
     };
-  }, [isLocalMode, userLocation, userBusinesses, profile.causes, localDistance]);
+  }, [mainView, userLocation, userBusinesses, profile.causes, localDistance]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
@@ -595,6 +632,16 @@ export default function HomeScreen() {
           <View style={styles.brandScoreContainer}>
             <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
           </View>
+          <TouchableOpacity
+            style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleQuickAdd('brand', product.id, product.name);
+            }}
+            activeOpacity={0.7}
+          >
+            <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
@@ -654,6 +701,16 @@ export default function HomeScreen() {
           <View style={styles.brandScoreContainer}>
             <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
           </View>
+          <TouchableOpacity
+            style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleQuickAdd('business', business.id, business.businessInfo.name);
+            }}
+            activeOpacity={0.7}
+          >
+            <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
@@ -661,56 +718,111 @@ export default function HomeScreen() {
 
   const localDistanceOptions: LocalDistanceOption[] = [100, 50, 10, 5, 1];
 
-  const renderViewModeSelector = () => (
+  const renderMainViewSelector = () => (
     <>
-      <View style={styles.selectionRow}>
-        <View style={[styles.viewModeSelector, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+      {/* Main View Selector - Three Views */}
+      <View style={styles.mainViewRow}>
+        <View style={[styles.mainViewSelector, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
           <TouchableOpacity
-            style={[styles.viewModeButton, viewMode === 'playbook' && { backgroundColor: colors.primary }]}
-            onPress={() => setViewMode('playbook')}
+            style={[styles.mainViewButton, mainView === 'forYou' && { backgroundColor: colors.primary }]}
+            onPress={() => setMainView('forYou')}
             activeOpacity={0.7}
           >
-            <Target size={18} color={viewMode === 'playbook' ? colors.white : colors.textSecondary} strokeWidth={2} />
-            <Text style={[styles.viewModeText, { color: viewMode === 'playbook' ? colors.white : colors.textSecondary }]}>
-              Brands
+            <Text style={[styles.mainViewText, { color: mainView === 'forYou' ? colors.white : colors.textSecondary }]}>
+              For You
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.viewModeButton, viewMode === 'browse' && { backgroundColor: colors.primary }]}
-            onPress={() => setViewMode('browse')}
+            style={[styles.mainViewButton, mainView === 'myLibrary' && { backgroundColor: colors.primary }]}
+            onPress={() => setMainView('myLibrary')}
             activeOpacity={0.7}
           >
-            <FolderOpen size={18} color={viewMode === 'browse' ? colors.white : colors.textSecondary} strokeWidth={2} />
-            <Text style={[styles.viewModeText, { color: viewMode === 'browse' ? colors.white : colors.textSecondary }]}>
-              Browse
+            <Text style={[styles.mainViewText, { color: mainView === 'myLibrary' ? colors.white : colors.textSecondary }]}>
+              My Library
             </Text>
           </TouchableOpacity>
-        </View>
 
-        {/* Local Toggle Button Container */}
-        <View style={[styles.localButtonContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
           <TouchableOpacity
-            style={[styles.localButton, isLocalMode && { backgroundColor: colors.primary }]}
+            style={[styles.mainViewButton, mainView === 'local' && { backgroundColor: colors.primary }]}
             onPress={() => {
-              setIsLocalMode(!isLocalMode);
-              // Reset to "all" (no filter) when turning on Local mode
-              if (!isLocalMode) {
-                setLocalDistance(null);
-              }
+              setMainView('local');
+              // Reset to "all" (no filter) when switching to Local view
+              setLocalDistance(null);
             }}
             activeOpacity={0.7}
           >
-            <MapPin size={16} color={isLocalMode ? colors.white : colors.textSecondary} strokeWidth={2} />
-            <Text style={[styles.localButtonText, { color: isLocalMode ? colors.white : colors.textSecondary }]}>
+            <Text style={[styles.mainViewText, { color: mainView === 'local' ? colors.white : colors.textSecondary }]}>
               Local
             </Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Distance Filter Row - Shows when Local is selected */}
-      {isLocalMode && (
+      {/* For You Subsection Selector */}
+      {mainView === 'forYou' && (
+        <View style={styles.subsectionRow}>
+          <TouchableOpacity
+            style={[
+              styles.subsectionButton,
+              forYouSubsection === 'aligned' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }
+            ]}
+            onPress={() => setForYouSubsection('aligned')}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.subsectionText,
+                { color: forYouSubsection === 'aligned' ? colors.text : colors.textSecondary },
+                forYouSubsection === 'aligned' && styles.subsectionTextActive,
+              ]}
+            >
+              Aligned
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.subsectionButton,
+              forYouSubsection === 'unaligned' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }
+            ]}
+            onPress={() => setForYouSubsection('unaligned')}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.subsectionText,
+                { color: forYouSubsection === 'unaligned' ? colors.text : colors.textSecondary },
+                forYouSubsection === 'unaligned' && styles.subsectionTextActive,
+              ]}
+            >
+              Unaligned
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.subsectionButton,
+              forYouSubsection === 'news' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }
+            ]}
+            onPress={() => setForYouSubsection('news')}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.subsectionText,
+                { color: forYouSubsection === 'news' ? colors.text : colors.textSecondary },
+                forYouSubsection === 'news' && styles.subsectionTextActive,
+              ]}
+            >
+              News
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Distance Filter Row - Shows when Local view is selected */}
+      {mainView === 'local' && (
         <View style={styles.distanceFilterRow}>
           <View style={styles.distanceOptionsContainer}>
             {localDistanceOptions.map((option) => (
@@ -748,77 +860,92 @@ export default function HomeScreen() {
     </>
   );
 
-  const renderPlaybookView = () => {
-    // Show local businesses when "local" mode is active
-    if (isLocalMode) {
-      const { alignedBusinesses, unalignedBusinesses } = localBusinessData;
-
+  const renderForYouView = () => {
+    // Aligned subsection
+    if (forYouSubsection === 'aligned') {
       return (
-        <>
-          <View style={styles.section}>
-            <View style={styles.sectionHeaderRow}>
-              <View style={styles.sectionHeader}>
-                <TrendingUp size={24} color={colors.success} strokeWidth={2} />
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Aligned Businesses</Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowAllAligned(!showAllAligned)} activeOpacity={0.7}>
-                <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllAligned ? 'Hide' : 'Show All'}</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.brandsContainer}>
-              {alignedBusinesses.length > 0 ? (
-                (showAllAligned ? alignedBusinesses : alignedBusinesses.slice(0, 5)).map((biz) => renderLocalBusinessCard(biz, 'aligned'))
-              ) : (
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                  {localDistance === null
-                    ? 'No aligned businesses found'
-                    : `No aligned businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
+        <View style={styles.section}>
+          <View style={styles.brandsContainer}>
+            {allSupportFull.slice(0, alignedLoadCount).map((product) => renderBrandCard(product, 'support'))}
+            {alignedLoadCount < allSupportFull.length && (
+              <TouchableOpacity
+                style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => setAlignedLoadCount(alignedLoadCount + 10)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                  Load More ({allSupportFull.length - alignedLoadCount} remaining)
                 </Text>
-              )}
-            </View>
-          </View>
-
-          <View style={[styles.section, { marginTop: 4, marginBottom: 14 }]}>
-            <View style={styles.sectionHeaderRow}>
-              <View style={styles.sectionHeader}>
-                <TrendingDown size={24} color={colors.danger} strokeWidth={2} />
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Unaligned Businesses</Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowAllLeast(!showAllLeast)} activeOpacity={0.7}>
-                <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllLeast ? 'Hide' : 'Show All'}</Text>
               </TouchableOpacity>
-            </View>
-            <View style={styles.brandsContainer}>
-              {unalignedBusinesses.length > 0 ? (
-                (showAllLeast ? unalignedBusinesses : unalignedBusinesses.slice(0, 5)).map((biz) => renderLocalBusinessCard(biz, 'unaligned'))
-              ) : (
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                  {localDistance === null
-                    ? 'No unaligned businesses found'
-                    : `No unaligned businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
-                </Text>
-              )}
-            </View>
+            )}
           </View>
-        </>
+        </View>
       );
     }
 
-    // Show regular brands when not in "local" mode
+    // Unaligned subsection
+    if (forYouSubsection === 'unaligned') {
+      return (
+        <View style={styles.section}>
+          <View style={styles.brandsContainer}>
+            {allAvoidFull.slice(0, unalignedLoadCount).map((product) => renderBrandCard(product, 'avoid'))}
+            {unalignedLoadCount < allAvoidFull.length && (
+              <TouchableOpacity
+                style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => setUnalignedLoadCount(unalignedLoadCount + 10)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                  Load More ({allAvoidFull.length - unalignedLoadCount} remaining)
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      );
+    }
+
+    // News subsection
+    if (forYouSubsection === 'news') {
+      return (
+        <View style={styles.section}>
+          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+              News feed coming soon! This will show X posts about aligned and unaligned brands.
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    return null;
+  };
+
+  const renderLocalView = () => {
+    const { alignedBusinesses, unalignedBusinesses } = localBusinessData;
+
     return (
       <>
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <View style={styles.sectionHeader}>
               <TrendingUp size={24} color={colors.success} strokeWidth={2} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Aligned Brands</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Aligned Businesses</Text>
             </View>
             <TouchableOpacity onPress={() => setShowAllAligned(!showAllAligned)} activeOpacity={0.7}>
               <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllAligned ? 'Hide' : 'Show All'}</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.brandsContainer}>
-            {(showAllAligned ? allSupportFull : topSupport.slice(0, 5)).map((product) => renderBrandCard(product, 'support'))}
+            {alignedBusinesses.length > 0 ? (
+              (showAllAligned ? alignedBusinesses : alignedBusinesses.slice(0, 5)).map((biz) => renderLocalBusinessCard(biz, 'aligned'))
+            ) : (
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                {localDistance === null
+                  ? 'No aligned businesses found'
+                  : `No aligned businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
+              </Text>
+            )}
           </View>
         </View>
 
@@ -826,187 +953,437 @@ export default function HomeScreen() {
           <View style={styles.sectionHeaderRow}>
             <View style={styles.sectionHeader}>
               <TrendingDown size={24} color={colors.danger} strokeWidth={2} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Unaligned Brands</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Unaligned Businesses</Text>
             </View>
             <TouchableOpacity onPress={() => setShowAllLeast(!showAllLeast)} activeOpacity={0.7}>
               <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllLeast ? 'Hide' : 'Show All'}</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.brandsContainer}>
-            {(showAllLeast ? allAvoidFull : topAvoid.slice(0, 5)).map((product) => renderBrandCard(product, 'avoid'))}
+            {unalignedBusinesses.length > 0 ? (
+              (showAllLeast ? unalignedBusinesses : unalignedBusinesses.slice(0, 5)).map((biz) => renderLocalBusinessCard(biz, 'unaligned'))
+            ) : (
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                {localDistance === null
+                  ? 'No unaligned businesses found'
+                  : `No unaligned businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
+              </Text>
+            )}
           </View>
         </View>
       </>
     );
   };
 
-  const renderFoldersView = () => {
-    // Show local businesses when "local" mode is active
-    if (isLocalMode) {
-      const { alignedBusinesses, unalignedBusinesses } = localBusinessData;
-      const allLocalBusinesses = [...alignedBusinesses, ...unalignedBusinesses];
+  // Library handler functions
+  const handleCreateList = async () => {
+    console.log('[Home] handleCreateList called');
+    console.log('[Home] newListName:', newListName);
+    console.log('[Home] clerkUser.id:', clerkUser?.id);
 
-      // Group local businesses by category
-      const categorizedLocalBusinesses = new Map<string, typeof allLocalBusinesses>();
+    if (!newListName.trim()) {
+      Alert.alert('Error', 'Please enter a list name');
+      return;
+    }
 
-      allLocalBusinesses.forEach((bizData) => {
-        const category = bizData.business.businessInfo.category;
-        if (!categorizedLocalBusinesses.has(category)) {
-          categorizedLocalBusinesses.set(category, []);
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'You must be logged in to create a list');
+      return;
+    }
+
+    try {
+      console.log('[Home] Creating list...');
+      await createList(clerkUser.id, newListName.trim(), newListDescription.trim());
+      setNewListName('');
+      setNewListDescription('');
+      setShowCreateListModal(false);
+      await loadUserLists();
+      Alert.alert('Success', 'List created successfully!');
+    } catch (error) {
+      console.error('[Home] Error creating list:', error);
+      Alert.alert('Error', 'Could not create list. Please try again.');
+    }
+  };
+
+  const handleDeleteList = async (listId: string) => {
+    Alert.alert(
+      'Delete List',
+      'Are you sure you want to delete this list? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteList(listId);
+              await loadUserLists();
+              Alert.alert('Success', 'List deleted successfully');
+            } catch (error) {
+              console.error('[Home] Error deleting list:', error);
+              Alert.alert('Error', 'Could not delete list. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleOpenList = (list: UserList | 'browse') => {
+    setSelectedList(list);
+    setLibraryView('detail');
+  };
+
+  const handleBackToLibrary = () => {
+    setLibraryView('overview');
+    setSelectedList(null);
+  };
+
+  // Quick-add handler functions
+  const handleQuickAdd = async (type: 'brand' | 'business' | 'value', id: string, name: string) => {
+    // Load lists if not already loaded
+    if (userLists.length === 0 && clerkUser?.id) {
+      try {
+        const lists = await getUserLists(clerkUser.id);
+        setUserLists(lists);
+      } catch (error) {
+        console.error('[Home] Error loading lists for quick-add:', error);
+      }
+    }
+
+    // For values, show mode selection first
+    if (type === 'value') {
+      setQuickAddItem({ type, id, name });
+      setShowValueModeModal(true);
+    } else {
+      // For brands and businesses, go straight to list selection
+      setQuickAddItem({ type, id, name });
+      setShowQuickAddModal(true);
+    }
+  };
+
+  const handleValueModeSelected = (mode: ValueListMode) => {
+    setSelectedValueMode(mode);
+    setShowValueModeModal(false);
+    setShowQuickAddModal(true);
+  };
+
+  const handleAddToList = async (listId: string) => {
+    if (!quickAddItem) return;
+
+    try {
+      let entry: Omit<ListEntry, 'id' | 'createdAt'>;
+
+      if (quickAddItem.type === 'brand') {
+        entry = {
+          type: 'brand',
+          brandId: quickAddItem.id,
+          brandName: quickAddItem.name,
+        };
+      } else if (quickAddItem.type === 'business') {
+        entry = {
+          type: 'business',
+          businessId: quickAddItem.id,
+          businessName: quickAddItem.name,
+        };
+      } else if (quickAddItem.type === 'value') {
+        if (!selectedValueMode) {
+          Alert.alert('Error', 'Please select Max Pain or Max Benefit');
+          return;
         }
-        categorizedLocalBusinesses.get(category)!.push(bizData);
-      });
-
-      if (allLocalBusinesses.length === 0) {
-        return (
-          <View style={styles.foldersContainer}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              {localDistance === null
-                ? 'No local businesses found'
-                : `No local businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
-            </Text>
-          </View>
-        );
+        entry = {
+          type: 'value',
+          valueId: quickAddItem.id,
+          valueName: quickAddItem.name,
+          mode: selectedValueMode,
+        };
+      } else {
+        return;
       }
 
+      await addEntryToList(listId, entry);
+      setShowQuickAddModal(false);
+      setQuickAddItem(null);
+      setSelectedValueMode(null);
+      Alert.alert('Success', `Added ${quickAddItem.name} to list!`);
+
+      // Reload lists if in library view
+      if (mainView === 'myLibrary') {
+        await loadUserLists();
+      }
+    } catch (error) {
+      console.error('[Home] Error adding to list:', error);
+      Alert.alert('Error', 'Could not add item to list. Please try again.');
+    }
+  };
+
+  const handleCreateAndAddToList = async () => {
+    if (!newListName.trim()) {
+      Alert.alert('Error', 'Please enter a list name');
+      return;
+    }
+
+    if (!clerkUser?.id || !quickAddItem) return;
+
+    try {
+      const listId = await createList(clerkUser.id, newListName.trim(), newListDescription.trim());
+
+      // Add the item to the new list
+      let entry: Omit<ListEntry, 'id' | 'createdAt'>;
+
+      if (quickAddItem.type === 'brand') {
+        entry = {
+          type: 'brand',
+          brandId: quickAddItem.id,
+          brandName: quickAddItem.name,
+        };
+      } else if (quickAddItem.type === 'business') {
+        entry = {
+          type: 'business',
+          businessId: quickAddItem.id,
+          businessName: quickAddItem.name,
+        };
+      } else if (quickAddItem.type === 'value') {
+        if (!selectedValueMode) {
+          Alert.alert('Error', 'Please select Max Pain or Max Benefit');
+          return;
+        }
+        entry = {
+          type: 'value',
+          valueId: quickAddItem.id,
+          valueName: quickAddItem.name,
+          mode: selectedValueMode,
+        };
+      } else {
+        return;
+      }
+
+      await addEntryToList(listId, entry);
+
+      // Clean up state
+      setNewListName('');
+      setNewListDescription('');
+      setShowQuickAddModal(false);
+      setQuickAddItem(null);
+      setSelectedValueMode(null);
+      await loadUserLists();
+
+      Alert.alert('Success', `Created list and added ${quickAddItem.name}!`);
+    } catch (error) {
+      console.error('[Home] Error creating list and adding item:', error);
+      Alert.alert('Error', 'Could not create list. Please try again.');
+    }
+  };
+
+  const renderListDetailView = () => {
+    if (!selectedList) return null;
+
+    // Browse list - show categories with aligned brands
+    if (selectedList === 'browse') {
       return (
-        <View style={styles.foldersContainer}>
-          {Array.from(categorizedLocalBusinesses.entries()).map(([category, businesses]) => {
-            const isExpanded = expandedFolder === category;
+        <View style={styles.section}>
+          <View style={styles.listDetailHeader}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={handleBackToLibrary}
+              activeOpacity={0.7}
+            >
+              <ArrowLeft
+                size={24}
+                color={colors.primary}
+                strokeWidth={2}
+              />
+              <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
+            </TouchableOpacity>
+            <Text style={[styles.listDetailTitle, { color: colors.text }]}>Browse</Text>
+          </View>
 
-            return (
-              <View key={category} style={[styles.folderCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                <TouchableOpacity style={styles.folderHeader} onPress={() => setExpandedFolder(isExpanded ? null : category)} activeOpacity={0.7}>
-                  <View style={styles.folderHeaderLeft}>
-                    <View style={[styles.folderIconContainer, { backgroundColor: colors.primaryLight + '15' }]}>
-                      <Store size={24} color={isDarkMode ? colors.white : colors.primary} strokeWidth={2} />
+          <ScrollView style={styles.listDetailContent}>
+            {FOLDER_CATEGORIES.map((category) => {
+              const categoryBrands = categorizedBrands.get(category.id) || [];
+              if (categoryBrands.length === 0) return null;
+
+              return (
+                <View key={category.id} style={styles.browseCategory}>
+                  <View style={styles.browseCategoryHeader}>
+                    <View style={[styles.browseCategoryIcon, { backgroundColor: colors.primaryLight + '20' }]}>
+                      <category.Icon size={20} color={colors.primary} strokeWidth={2} />
                     </View>
-                    <View>
-                      <Text style={[styles.folderName, { color: colors.text }]}>{category}</Text>
-                      <Text style={[styles.folderCount, { color: colors.textSecondary }]}>{businesses.length} business{businesses.length !== 1 ? 'es' : ''}</Text>
-                    </View>
+                    <Text style={[styles.browseCategoryTitle, { color: colors.text }]}>
+                      {category.name}
+                    </Text>
+                    <Text style={[styles.browseCategoryCount, { color: colors.textSecondary }]}>
+                      {categoryBrands.length}
+                    </Text>
                   </View>
-                  <ChevronRight
-                    size={20}
-                    color={colors.textSecondary}
-                    strokeWidth={2}
-                    style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}
-                  />
-                </TouchableOpacity>
-
-                {isExpanded && (
-                  <View style={styles.folderContent}>
-                    {businesses.map((bizData) => {
-                      const isAligned = bizData.alignmentScore >= 50;
-                      const scoreColor = isAligned ? colors.success : colors.danger;
-                      const Icon = isAligned ? TrendingUp : TrendingDown;
-
-                      return (
-                        <TouchableOpacity
-                          key={bizData.business.id}
-                          style={[styles.folderBrandCard, { backgroundColor: colors.background }]}
-                          onPress={() => handleBusinessPress(bizData.business.id)}
-                          activeOpacity={0.7}
-                        >
-                          <Image
-                            source={{
-                              uri: bizData.business.businessInfo.logoUrl
-                                ? bizData.business.businessInfo.logoUrl
-                                : getLogoUrl(bizData.business.businessInfo.website || '')
-                            }}
-                            style={styles.folderBrandImage}
-                            contentFit="cover"
-                            transition={200}
-                            cachePolicy="memory-disk"
-                          />
-                          <View style={styles.folderBrandContent}>
-                            <Text style={[styles.folderBrandName, { color: colors.text }]} numberOfLines={2}>
-                              {bizData.business.businessInfo.name}
-                            </Text>
-                            <Text style={[styles.folderBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                              {bizData.distance !== undefined ? `${formatDistance(bizData.distance)} away` : bizData.business.businessInfo.category}
-                            </Text>
-                          </View>
-                          <View style={[styles.folderBrandBadge, { backgroundColor: isAligned ? colors.successLight : colors.dangerLight }]}>
-                            <Icon size={12} color={scoreColor} strokeWidth={2.5} />
-                            <Text style={[styles.folderBrandScore, { color: scoreColor }]}>{bizData.alignmentScore}</Text>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
+                  <View style={styles.brandsContainer}>
+                    {categoryBrands.slice(0, 5).map((product) => renderBrandCard(product, 'support'))}
                   </View>
-                )}
-              </View>
-            );
-          })}
+                </View>
+              );
+            })}
+          </ScrollView>
         </View>
       );
     }
 
-    // Show regular brands when not in "local" mode
+    // User list detail
+    const list = selectedList as UserList;
     return (
-      <View style={styles.foldersContainer}>
-        {FOLDER_CATEGORIES.map((category) => {
-          const brands = categorizedBrands.get(category.id) || [];
-          const isExpanded = expandedFolder === category.id;
+      <View style={styles.section}>
+        <View style={styles.listDetailHeader}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={handleBackToLibrary}
+            activeOpacity={0.7}
+          >
+            <ArrowLeft
+              size={24}
+              color={colors.primary}
+              strokeWidth={2}
+            />
+            <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
+          </TouchableOpacity>
+          <Text style={[styles.listDetailTitle, { color: colors.text }]}>{list.name}</Text>
+          {list.description && (
+            <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
+              {list.description}
+            </Text>
+          )}
+        </View>
 
-          if (brands.length === 0) return null;
-
-          return (
-            <View key={category.id} style={[styles.folderCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              <TouchableOpacity style={styles.folderHeader} onPress={() => setExpandedFolder(isExpanded ? null : category.id)} activeOpacity={0.7}>
-                <View style={styles.folderHeaderLeft}>
-                  <View style={[styles.folderIconContainer, { backgroundColor: colors.primaryLight + '15' }]}>
-                    <category.Icon size={24} color={isDarkMode ? colors.white : colors.primary} strokeWidth={2} />
-                  </View>
-                  <View>
-                    <Text style={[styles.folderName, { color: colors.text }]}>{category.name}</Text>
-                    <Text style={[styles.folderCount, { color: colors.textSecondary }]}>{brands.length} brands</Text>
-                  </View>
-                </View>
-                <ChevronRight
-                  size={20}
-                  color={colors.textSecondary}
-                  strokeWidth={2}
-                  style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}
-                />
-              </TouchableOpacity>
-
-              {isExpanded && (
-                <View style={styles.folderContent}>
-                  {brands.map((product) => (
-                    <TouchableOpacity
-                      key={product.id}
-                      style={[styles.folderBrandCard, { backgroundColor: colors.background }]}
-                      onPress={() => handleProductPress(product)}
-                      activeOpacity={0.7}
-                    >
-                      <Image
-                        source={{ uri: getLogoUrl(product.website || '') }}
-                        style={styles.folderBrandImage}
-                        contentFit="cover"
-                        transition={200}
-                        cachePolicy="memory-disk"
-                      />
-                      <View style={styles.folderBrandContent}>
-                        <Text style={[styles.folderBrandName, { color: colors.text }]} numberOfLines={2}>
-                          {product.name}
-                        </Text>
-                        <Text style={[styles.folderBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                          {product.category}
-                        </Text>
-                      </View>
-                      <View style={[styles.folderBrandBadge, { backgroundColor: colors.successLight }]}>
-                        <TrendingUp size={12} color={colors.success} strokeWidth={2.5} />
-                        <Text style={[styles.folderBrandScore, { color: colors.success }]}>{Math.abs(product.alignmentScore)}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
+        <ScrollView style={styles.listDetailContent}>
+          {list.entries.length === 0 ? (
+            <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+                No items in this list yet. Use the + button on brands, businesses, or values to add them here.
+              </Text>
             </View>
-          );
-        })}
+          ) : (
+            <View style={styles.listEntriesContainer}>
+              {list.entries.map((entry) => (
+                <View key={entry.id} style={[styles.listEntryCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                  <View style={styles.listEntryContent}>
+                    <Text style={[styles.listEntryType, { color: colors.textSecondary }]}>
+                      {entry.type.charAt(0).toUpperCase() + entry.type.slice(1)}
+                    </Text>
+                    <Text style={[styles.listEntryName, { color: colors.text }]}>
+                      {'brandName' in entry ? entry.brandName :
+                       'businessName' in entry ? entry.businessName :
+                       'valueName' in entry ? entry.valueName :
+                       'title' in entry ? entry.title : 'Text'}
+                    </Text>
+                    {entry.type === 'value' && 'mode' in entry && (
+                      <Text style={[styles.listEntryMode, { color: entry.mode === 'maxPain' ? colors.danger : colors.success }]}>
+                        {entry.mode === 'maxPain' ? 'Max Pain' : 'Max Benefit'}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    );
+  };
+
+  const renderMyLibraryView = () => {
+    // If viewing a list detail, show that instead
+    if (libraryView === 'detail') {
+      return renderListDetailView();
+    }
+
+    // Otherwise show the library overview
+    if (isLoadingLists) {
+      return (
+        <View style={styles.section}>
+          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+              Loading your lists...
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.section}>
+        <TouchableOpacity
+          style={[styles.createListButtonSmall, { backgroundColor: colors.primary }]}
+          onPress={() => setShowCreateListModal(true)}
+          activeOpacity={0.7}
+        >
+          <Plus size={20} color={colors.white} strokeWidth={2.5} />
+        </TouchableOpacity>
+
+        <View style={styles.listsContainer}>
+          {/* Browse List - Always at top */}
+          <TouchableOpacity
+            style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+            onPress={() => handleOpenList('browse')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.listCardContent}>
+              <View style={styles.listCardHeader}>
+                <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+                  <FolderOpen size={20} color={colors.primary} strokeWidth={2} />
+                </View>
+                <View style={styles.listCardInfo}>
+                  <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                    Browse
+                  </Text>
+                  <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                    All categories • {allSupport.length} aligned brands
+                  </Text>
+                </View>
+                <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {/* User Lists */}
+          {userLists.length === 0 ? (
+            <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+              <List size={48} color={colors.textSecondary} strokeWidth={1.5} />
+              <Text style={[styles.placeholderTitle, { color: colors.text }]}>No Custom Lists Yet</Text>
+              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+                Create custom lists to organize brands, businesses, values, links, and notes.
+              </Text>
+            </View>
+          ) : (
+            userLists.map((list) => (
+              <TouchableOpacity
+                key={list.id}
+                style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                onPress={() => handleOpenList(list)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.listCardContent}>
+                  <View style={styles.listCardHeader}>
+                    <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+                      <List size={20} color={colors.primary} strokeWidth={2} />
+                    </View>
+                    <View style={styles.listCardInfo}>
+                      <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                        {list.name}
+                      </Text>
+                      <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                        {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
+                      </Text>
+                    </View>
+                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                  </View>
+                  {list.description && (
+                    <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                      {list.description}
+                    </Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
       </View>
     );
   };
@@ -1121,7 +1498,7 @@ export default function HomeScreen() {
           />
           <MenuButton />
         </View>
-        {renderViewModeSelector()}
+        {renderMainViewSelector()}
       </View>
       <ScrollView
         ref={scrollViewRef}
@@ -1129,8 +1506,9 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent, { paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        {viewMode === 'playbook' && renderPlaybookView()}
-        {viewMode === 'browse' && renderFoldersView()}
+        {mainView === 'forYou' && renderForYouView()}
+        {mainView === 'myLibrary' && renderMyLibraryView()}
+        {mainView === 'local' && renderLocalView()}
 
         {(
           <TouchableOpacity
@@ -1152,6 +1530,278 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      {/* Create List Modal */}
+      <Modal
+        visible={showCreateListModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowCreateListModal(false);
+          setNewListName('');
+          setNewListDescription('');
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              setShowCreateListModal(false);
+              setNewListName('');
+              setNewListDescription('');
+            }}
+          >
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Pressable
+            style={[styles.createListModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Create New List</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowCreateListModal(false);
+                  setNewListName('');
+                  setNewListDescription('');
+                }}
+              >
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalContent}>
+              <Text style={[styles.modalLabel, { color: colors.text }]}>List Name *</Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                placeholder="Enter list name"
+                placeholderTextColor={colors.textSecondary}
+                value={newListName}
+                onChangeText={setNewListName}
+                autoFocus
+              />
+
+              <Text style={[styles.modalLabel, { color: colors.text }]}>Description (Optional)</Text>
+              <TextInput
+                style={[styles.modalTextArea, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                placeholder="Enter list description"
+                placeholderTextColor={colors.textSecondary}
+                value={newListDescription}
+                onChangeText={setNewListDescription}
+                multiline
+                numberOfLines={3}
+              />
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  console.log('[Home] Create List button pressed!');
+                  handleCreateList();
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.white }]}>Create List</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </View>
+      </Modal>
+
+      {/* Value Mode Selection Modal */}
+      <Modal
+        visible={showValueModeModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowValueModeModal(false);
+          setQuickAddItem(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              setShowValueModeModal(false);
+              setQuickAddItem(null);
+            }}
+          >
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Pressable
+            style={[styles.quickAddModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Add Value: {quickAddItem?.name}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowValueModeModal(false);
+                  setQuickAddItem(null);
+                }}
+              >
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalContent}>
+              <Text style={[styles.modalLabel, { color: colors.text }]}>
+                Choose how to add this value:
+              </Text>
+
+              <TouchableOpacity
+                style={[styles.valueModeButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                onPress={() => handleValueModeSelected('maxPain')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.valueModeContent}>
+                  <Text style={[styles.valueModeTitle, { color: colors.danger }]}>Max Pain</Text>
+                  <Text style={[styles.valueModeDescription, { color: colors.textSecondary }]}>
+                    Add brands that are unaligned with this value
+                  </Text>
+                </View>
+                <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.valueModeButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                onPress={() => handleValueModeSelected('maxBenefit')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.valueModeContent}>
+                  <Text style={[styles.valueModeTitle, { color: colors.success }]}>Max Benefit</Text>
+                  <Text style={[styles.valueModeDescription, { color: colors.textSecondary }]}>
+                    Add brands that are aligned with this value
+                  </Text>
+                </View>
+                <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </View>
+      </Modal>
+
+      {/* Quick Add Modal - Choose List */}
+      <Modal
+        visible={showQuickAddModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowQuickAddModal(false);
+          setQuickAddItem(null);
+          setSelectedValueMode(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              setShowQuickAddModal(false);
+              setQuickAddItem(null);
+              setSelectedValueMode(null);
+            }}
+          >
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Pressable
+            style={[styles.quickAddModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Add to List
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowQuickAddModal(false);
+                  setQuickAddItem(null);
+                  setSelectedValueMode(null);
+                }}
+              >
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent}>
+              <Text style={[styles.quickAddItemName, { color: colors.primary }]}>
+                {quickAddItem?.name}
+                {quickAddItem?.type === 'value' && selectedValueMode && (
+                  <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                    {' '}({selectedValueMode === 'maxPain' ? 'Max Pain' : 'Max Benefit'})
+                  </Text>
+                )}
+              </Text>
+
+              <Text style={[styles.modalLabel, { color: colors.text, marginTop: 16 }]}>
+                Select a list:
+              </Text>
+
+              {userLists.length === 0 ? (
+                <Text style={[styles.emptyListText, { color: colors.textSecondary }]}>
+                  You don't have any lists yet. Create one below!
+                </Text>
+              ) : (
+                <View style={styles.quickAddListsContainer}>
+                  {userLists.map((list) => (
+                    <TouchableOpacity
+                      key={list.id}
+                      style={[styles.quickAddListItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                      onPress={() => handleAddToList(list.id)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+                        <List size={18} color={colors.primary} strokeWidth={2} />
+                      </View>
+                      <View style={styles.quickAddListInfo}>
+                        <Text style={[styles.quickAddListName, { color: colors.text }]} numberOfLines={1}>
+                          {list.name}
+                        </Text>
+                        <Text style={[styles.quickAddListCount, { color: colors.textSecondary }]}>
+                          {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
+                        </Text>
+                      </View>
+                      <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              <View style={styles.dividerContainer}>
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                <Text style={[styles.dividerText, { color: colors.textSecondary }]}>OR</Text>
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              </View>
+
+              <Text style={[styles.modalLabel, { color: colors.text }]}>Create new list:</Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                placeholder="List name"
+                placeholderTextColor={colors.textSecondary}
+                value={newListName}
+                onChangeText={setNewListName}
+              />
+
+              <TextInput
+                style={[styles.modalTextArea, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                placeholder="Description (optional)"
+                placeholderTextColor={colors.textSecondary}
+                value={newListDescription}
+                onChangeText={setNewListDescription}
+                multiline
+                numberOfLines={2}
+              />
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                onPress={handleCreateAndAddToList}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.white }]}>
+                  Create List & Add Item
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </Pressable>
+        </View>
+      </Modal>
 
       {/* Map Modal */}
       <Modal
@@ -1431,55 +2081,82 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
   },
-  selectionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  mainViewRow: {
     marginHorizontal: 16,
     marginBottom: 8,
     marginTop: 10,
   },
-  viewModeSelector: {
-    flex: 2,
+  mainViewSelector: {
     flexDirection: 'row',
     borderRadius: 10,
     padding: 3,
     borderWidth: 1,
   },
-  viewModeButton: {
+  mainViewButton: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 8,
-    gap: 6,
   },
-  viewModeText: {
+  mainViewText: {
     fontSize: 15,
     fontWeight: '600' as const,
   },
-  localButtonContainer: {
-    flex: 1,
+  subsectionRow: {
     flexDirection: 'row',
-    borderRadius: 10,
-    padding: 3,
-    borderWidth: 1,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    marginTop: 4,
+    justifyContent: 'space-evenly',
   },
-  localButton: {
+  subsectionButton: {
     flex: 1,
-    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  subsectionButtonActive: {
+    borderBottomWidth: 2,
+  },
+  subsectionText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  subsectionTextActive: {
+    fontWeight: '600' as const,
+  },
+  loadMoreButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  loadMoreText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  placeholderContainer: {
+    padding: 40,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    marginTop: 32,
   },
-  localButtonText: {
+  placeholderTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  placeholderText: {
     fontSize: 15,
-    fontWeight: '600' as const,
+    textAlign: 'center' as const,
+    lineHeight: 22,
   },
   distanceFilterRow: {
     flexDirection: 'row',
@@ -1793,7 +2470,9 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingTop: 60,
   },
   modalContent: {
     borderTopLeftRadius: 20,
@@ -1959,6 +2638,295 @@ const styles = StyleSheet.create({
   },
   mapModalEmptyButtonText: {
     fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  // Library styles
+  listsContainer: {
+    gap: 12,
+    marginTop: 12,
+  },
+  listCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  listCardContent: {
+    padding: 16,
+  },
+  listCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  listIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listCardInfo: {
+    flex: 1,
+  },
+  listCardTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  listCardCount: {
+    fontSize: 13,
+  },
+  listCardDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 8,
+  },
+  createListButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    gap: 8,
+    marginBottom: 16,
+  },
+  createListButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  createListButtonSmall: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-end',
+    marginBottom: 12,
+  },
+  createListModalContainer: {
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '80%',
+    borderRadius: 20,
+    overflow: 'hidden',
+    alignSelf: 'center',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
+  modalContent: {
+    padding: 20,
+  },
+  modalLabel: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+  },
+  modalTextArea: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  modalButton: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  // Quick-add styles
+  quickAddButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  quickAddModalContainer: {
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '85%',
+    borderRadius: 20,
+    overflow: 'hidden',
+    alignSelf: 'center',
+  },
+  valueModeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 12,
+  },
+  valueModeContent: {
+    flex: 1,
+  },
+  valueModeTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  valueModeDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  quickAddItemName: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    textAlign: 'center' as const,
+    marginTop: 8,
+  },
+  quickAddListsContainer: {
+    gap: 8,
+    marginTop: 8,
+  },
+  quickAddListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 12,
+  },
+  quickAddListInfo: {
+    flex: 1,
+  },
+  quickAddListName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 2,
+  },
+  quickAddListCount: {
+    fontSize: 12,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+    gap: 12,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  emptyListText: {
+    fontSize: 14,
+    textAlign: 'center' as const,
+    paddingVertical: 16,
+    lineHeight: 20,
+  },
+  // List detail view styles
+  listDetailHeader: {
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    marginBottom: 16,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 12,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  listDetailTitle: {
+    fontSize: 28,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  listDetailDescription: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  listDetailContent: {
+    flex: 1,
+  },
+  listEntriesContainer: {
+    gap: 10,
+  },
+  listEntryCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+  },
+  listEntryContent: {
+    gap: 4,
+  },
+  listEntryType: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  listEntryName: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  listEntryMode: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    marginTop: 4,
+  },
+  // Browse list styles
+  browseCategory: {
+    marginBottom: 24,
+  },
+  browseCategoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  browseCategoryIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  browseCategoryTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    flex: 1,
+  },
+  browseCategoryCount: {
+    fontSize: 14,
     fontWeight: '600' as const,
   },
 });

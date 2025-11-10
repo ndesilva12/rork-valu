@@ -142,16 +142,11 @@ export default function DiscountScreen() {
                 onPress={() => router.push('/customer-discount')}
                 activeOpacity={0.8}
               >
-                <Text style={styles.discountButtonText}>🎟️ Get Discount Code</Text>
+                <Text style={styles.discountButtonText}>Generate Code</Text>
                 <Text style={styles.discountButtonSubtext}>
                   Show this QR code to participating merchants
                 </Text>
               </TouchableOpacity>
-
-              {/* Explainer Text */}
-              <Text style={[styles.promoDescription, { color: colors.textSecondary }]}>
-                Use these codes at participating locations to receive discounts and accumulate donations to your chosen organizations.
-              </Text>
 
               {/* Impact Dashboard Content */}
               <View style={styles.impactDashboardSection}>
@@ -279,7 +274,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 16,
-    marginBottom: 8,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -288,13 +283,13 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   discountButtonText: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   discountButtonSubtext: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#fff',
     opacity: 0.9,
   },

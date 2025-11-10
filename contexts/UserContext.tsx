@@ -83,6 +83,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
           }
 
           // Ensure required fields are initialized
+          firebaseProfile.id = clerkUser.id;
           firebaseProfile.donationAmount = firebaseProfile.donationAmount ?? 0;
           firebaseProfile.selectedCharities = firebaseProfile.selectedCharities ?? [];
 
@@ -105,6 +106,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
               console.log('[UserContext] Generated new promo code:', parsedProfile.promoCode);
             }
 
+            parsedProfile.id = clerkUser.id;
             parsedProfile.donationAmount = parsedProfile.donationAmount ?? 0;
             parsedProfile.selectedCharities = parsedProfile.selectedCharities ?? [];
 
@@ -133,6 +135,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
           } else if (mounted) {
             console.log('[UserContext] No stored profile found, creating new profile');
             const newProfile: UserProfile = {
+              id: clerkUser.id,
               causes: [],
               searchHistory: [],
               promoCode: generatePromoCode(),
@@ -178,6 +181,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
         console.error('[UserContext] Failed to load profile:', error);
         if (mounted) {
           const defaultProfile = {
+            id: clerkUser.id,
             causes: [],
             searchHistory: [],
             promoCode: generatePromoCode(),
@@ -372,6 +376,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
     }
     try {
       const emptyProfile: UserProfile = {
+        id: clerkUser.id,
         causes: [],
         searchHistory: [],
         promoCode: profile.promoCode || generatePromoCode(),
