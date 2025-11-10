@@ -737,13 +737,14 @@ export default function SearchScreen() {
         <View style={[styles.searchInputContainer, { backgroundColor: isDarkMode ? colors.backgroundSecondary : colors.white, borderColor: '#FFFFFF' }]}>
           <SearchIcon size={20} color={colors.primaryLight} strokeWidth={2} />
           <TextInput
-            style={[styles.searchInput, { color: colors.primary }]}
+            style={[styles.searchInput, { color: colors.primary, outlineStyle: 'none' } as any]}
             placeholder="Search products, brands..."
             placeholderTextColor={colors.textLight}
             value={query}
             onChangeText={handleSearch}
             autoCapitalize="none"
             autoCorrect={false}
+            underlineColorAndroid="transparent"
           />
           {query.length > 0 && (
             <TouchableOpacity
@@ -1127,15 +1128,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 16,
     gap: 12,
     borderWidth: 1,
     height: 56,
   },
   searchInput: {
     flex: 1,
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: '700' as const,
+    height: '100%',
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    margin: 0,
+    borderWidth: 0,
+    outlineWidth: 0,
   },
   clearButton: {
     width: 32,
