@@ -1316,24 +1316,24 @@ export default function HomeScreen() {
         <View style={styles.listsContainer}>
           {/* Browse List - Always at top */}
           <TouchableOpacity
-            style={[styles.listCard, styles.browseListCard, { backgroundColor: colors.primaryLight + '10', borderColor: colors.primary }]}
+            style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
             onPress={() => handleOpenList('browse')}
             activeOpacity={0.7}
           >
             <View style={styles.listCardContent}>
               <View style={styles.listCardHeader}>
-                <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
-                  <FolderOpen size={20} color={colors.white} strokeWidth={2} />
+                <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+                  <FolderOpen size={20} color={colors.primary} strokeWidth={2} />
                 </View>
                 <View style={styles.listCardInfo}>
-                  <Text style={[styles.listCardTitle, { color: colors.primary }]} numberOfLines={1}>
+                  <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
                     Browse
                   </Text>
                   <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
                     All categories • {allSupport.length} aligned brands
                   </Text>
                 </View>
-                <ChevronRight size={20} color={colors.primary} strokeWidth={2} />
+                <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
               </View>
             </View>
           </TouchableOpacity>
@@ -1550,6 +1550,7 @@ export default function HomeScreen() {
           </TouchableWithoutFeedback>
           <Pressable
             style={[styles.createListModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
           >
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>Create New List</Text>
@@ -1619,6 +1620,7 @@ export default function HomeScreen() {
           </TouchableWithoutFeedback>
           <Pressable
             style={[styles.quickAddModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
           >
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
@@ -1694,6 +1696,7 @@ export default function HomeScreen() {
           </TouchableWithoutFeedback>
           <Pressable
             style={[styles.quickAddModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
           >
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
@@ -2460,7 +2463,9 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingTop: 60,
   },
   modalContent: {
     borderTopLeftRadius: 20,
@@ -2892,9 +2897,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   // Browse list styles
-  browseListCard: {
-    borderWidth: 2,
-  },
   browseCategory: {
     marginBottom: 24,
   },

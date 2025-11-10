@@ -871,7 +871,10 @@ export default function BrandDetailScreen() {
           >
             <View style={StyleSheet.absoluteFill} />
           </TouchableWithoutFeedback>
-          <Pressable style={[styles.quickAddModalContainer, { backgroundColor: colors.background }]}>
+          <Pressable
+            style={[styles.quickAddModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
+          >
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
                 Add to List
@@ -1404,9 +1407,10 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingTop: 60,
   },
   quickAddModalContainer: {
     width: '100%',
