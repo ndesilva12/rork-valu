@@ -50,7 +50,8 @@ import { calculateDistance, formatDistance } from '@/lib/distance';
 import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 import BusinessMapView from '@/components/BusinessMapView';
 
-type ViewMode = 'playbook' | 'browse';
+type MainView = 'forYou' | 'myLibrary' | 'local';
+type ForYouSubsection = 'aligned' | 'unaligned' | 'news';
 type LocalDistanceOption = 1 | 5 | 10 | 50 | 100 | null;
 
 type FolderCategory = {
@@ -79,11 +80,13 @@ export default function HomeScreen() {
   const params = useLocalSearchParams();
   const { profile, isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
-  const [viewMode, setViewMode] = useState<ViewMode>('playbook');
+  const [mainView, setMainView] = useState<MainView>('forYou');
+  const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
-  const [isLocalMode, setIsLocalMode] = useState<boolean>(false);
+  const [alignedLoadCount, setAlignedLoadCount] = useState<number>(10);
+  const [unalignedLoadCount, setUnalignedLoadCount] = useState<number>(10);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(null);
   const [userBusinesses, setUserBusinesses] = useState<BusinessUser[]>([]);
@@ -93,8 +96,6 @@ export default function HomeScreen() {
 
   // Fetch brands and values from Firebase via DataContext
   const { brands, values, valuesMatrix, isLoading, error } = useData();
-
-  const viewModes: ViewMode[] = ['playbook', 'browse'];
 
   // Request location permission and get user's location
   const requestLocation = async () => {
@@ -153,12 +154,12 @@ export default function HomeScreen() {
     fetchUserBusinesses();
   }, []);
 
-  // Request location when local mode is activated
+  // Request location when local view is activated
   useEffect(() => {
-    if (isLocalMode) {
+    if (mainView === 'local') {
       requestLocation();
     }
-  }, [isLocalMode]);
+  }, [mainView]);
 
   // Reopen map if returning from business detail page
   useEffect(() => {
@@ -166,29 +167,12 @@ export default function HomeScreen() {
       // Clear the parameter and reopen the map
       router.setParams({ fromMap: undefined });
       setShowMapModal(true);
-      // Ensure local mode is active
-      if (!isLocalMode) {
-        setIsLocalMode(true);
+      // Ensure local view is active
+      if (mainView !== 'local') {
+        setMainView('local');
       }
     }
   }, [params.fromMap]);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (evt, gestureState) => {
-        return Math.abs(gestureState.dx) > 30 && Math.abs(gestureState.dy) < 50;
-      },
-      onPanResponderRelease: (evt, gestureState) => {
-        const currentIndex = viewModes.indexOf(viewMode);
-
-        if (gestureState.dx < -100 && currentIndex < viewModes.length - 1) {
-          setViewMode(viewModes[currentIndex + 1]);
-        } else if (gestureState.dx > 100 && currentIndex > 0) {
-          setViewMode(viewModes[currentIndex - 1]);
-        }
-      },
-    })
-  ).current;
 
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands, brandDistances } = useMemo(() => {
     // Combine brands from CSV and user businesses
@@ -365,9 +349,9 @@ export default function HomeScreen() {
     };
   }, [profile.causes, brands, userBusinesses, valuesMatrix]);
 
-  // Compute local businesses when "local" mode is active
+  // Compute local businesses when "local" view is active
   const localBusinessData = useMemo(() => {
-    if (!isLocalMode || !userLocation || userBusinesses.length === 0) {
+    if (mainView !== 'local' || !userLocation || userBusinesses.length === 0) {
       return {
         alignedBusinesses: [],
         unalignedBusinesses: [],
@@ -442,7 +426,7 @@ export default function HomeScreen() {
       alignedBusinesses: aligned,
       unalignedBusinesses: unaligned,
     };
-  }, [isLocalMode, userLocation, userBusinesses, profile.causes, localDistance]);
+  }, [mainView, userLocation, userBusinesses, profile.causes, localDistance]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
@@ -661,56 +645,111 @@ export default function HomeScreen() {
 
   const localDistanceOptions: LocalDistanceOption[] = [100, 50, 10, 5, 1];
 
-  const renderViewModeSelector = () => (
+  const renderMainViewSelector = () => (
     <>
-      <View style={styles.selectionRow}>
-        <View style={[styles.viewModeSelector, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+      {/* Main View Selector - Three Views */}
+      <View style={styles.mainViewRow}>
+        <View style={[styles.mainViewSelector, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
           <TouchableOpacity
-            style={[styles.viewModeButton, viewMode === 'playbook' && { backgroundColor: colors.primary }]}
-            onPress={() => setViewMode('playbook')}
+            style={[styles.mainViewButton, mainView === 'forYou' && { backgroundColor: colors.primary }]}
+            onPress={() => setMainView('forYou')}
             activeOpacity={0.7}
           >
-            <Target size={18} color={viewMode === 'playbook' ? colors.white : colors.textSecondary} strokeWidth={2} />
-            <Text style={[styles.viewModeText, { color: viewMode === 'playbook' ? colors.white : colors.textSecondary }]}>
-              Brands
+            <Text style={[styles.mainViewText, { color: mainView === 'forYou' ? colors.white : colors.textSecondary }]}>
+              For You
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.viewModeButton, viewMode === 'browse' && { backgroundColor: colors.primary }]}
-            onPress={() => setViewMode('browse')}
+            style={[styles.mainViewButton, mainView === 'myLibrary' && { backgroundColor: colors.primary }]}
+            onPress={() => setMainView('myLibrary')}
             activeOpacity={0.7}
           >
-            <FolderOpen size={18} color={viewMode === 'browse' ? colors.white : colors.textSecondary} strokeWidth={2} />
-            <Text style={[styles.viewModeText, { color: viewMode === 'browse' ? colors.white : colors.textSecondary }]}>
-              Browse
+            <Text style={[styles.mainViewText, { color: mainView === 'myLibrary' ? colors.white : colors.textSecondary }]}>
+              My Library
             </Text>
           </TouchableOpacity>
-        </View>
 
-        {/* Local Toggle Button Container */}
-        <View style={[styles.localButtonContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
           <TouchableOpacity
-            style={[styles.localButton, isLocalMode && { backgroundColor: colors.primary }]}
+            style={[styles.mainViewButton, mainView === 'local' && { backgroundColor: colors.primary }]}
             onPress={() => {
-              setIsLocalMode(!isLocalMode);
-              // Reset to "all" (no filter) when turning on Local mode
-              if (!isLocalMode) {
-                setLocalDistance(null);
-              }
+              setMainView('local');
+              // Reset to "all" (no filter) when switching to Local view
+              setLocalDistance(null);
             }}
             activeOpacity={0.7}
           >
-            <MapPin size={16} color={isLocalMode ? colors.white : colors.textSecondary} strokeWidth={2} />
-            <Text style={[styles.localButtonText, { color: isLocalMode ? colors.white : colors.textSecondary }]}>
+            <Text style={[styles.mainViewText, { color: mainView === 'local' ? colors.white : colors.textSecondary }]}>
               Local
             </Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Distance Filter Row - Shows when Local is selected */}
-      {isLocalMode && (
+      {/* For You Subsection Selector */}
+      {mainView === 'forYou' && (
+        <View style={styles.subsectionRow}>
+          <TouchableOpacity
+            style={[
+              styles.subsectionButton,
+              forYouSubsection === 'aligned' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }
+            ]}
+            onPress={() => setForYouSubsection('aligned')}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.subsectionText,
+                { color: forYouSubsection === 'aligned' ? colors.text : colors.textSecondary },
+                forYouSubsection === 'aligned' && styles.subsectionTextActive,
+              ]}
+            >
+              Aligned
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.subsectionButton,
+              forYouSubsection === 'unaligned' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }
+            ]}
+            onPress={() => setForYouSubsection('unaligned')}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.subsectionText,
+                { color: forYouSubsection === 'unaligned' ? colors.text : colors.textSecondary },
+                forYouSubsection === 'unaligned' && styles.subsectionTextActive,
+              ]}
+            >
+              Unaligned
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.subsectionButton,
+              forYouSubsection === 'news' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }
+            ]}
+            onPress={() => setForYouSubsection('news')}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.subsectionText,
+                { color: forYouSubsection === 'news' ? colors.text : colors.textSecondary },
+                forYouSubsection === 'news' && styles.subsectionTextActive,
+              ]}
+            >
+              News
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Distance Filter Row - Shows when Local view is selected */}
+      {mainView === 'local' && (
         <View style={styles.distanceFilterRow}>
           <View style={styles.distanceOptionsContainer}>
             {localDistanceOptions.map((option) => (
@@ -748,77 +787,92 @@ export default function HomeScreen() {
     </>
   );
 
-  const renderPlaybookView = () => {
-    // Show local businesses when "local" mode is active
-    if (isLocalMode) {
-      const { alignedBusinesses, unalignedBusinesses } = localBusinessData;
-
+  const renderForYouView = () => {
+    // Aligned subsection
+    if (forYouSubsection === 'aligned') {
       return (
-        <>
-          <View style={styles.section}>
-            <View style={styles.sectionHeaderRow}>
-              <View style={styles.sectionHeader}>
-                <TrendingUp size={24} color={colors.success} strokeWidth={2} />
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Aligned Businesses</Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowAllAligned(!showAllAligned)} activeOpacity={0.7}>
-                <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllAligned ? 'Hide' : 'Show All'}</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.brandsContainer}>
-              {alignedBusinesses.length > 0 ? (
-                (showAllAligned ? alignedBusinesses : alignedBusinesses.slice(0, 5)).map((biz) => renderLocalBusinessCard(biz, 'aligned'))
-              ) : (
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                  {localDistance === null
-                    ? 'No aligned businesses found'
-                    : `No aligned businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
+        <View style={styles.section}>
+          <View style={styles.brandsContainer}>
+            {allSupportFull.slice(0, alignedLoadCount).map((product) => renderBrandCard(product, 'support'))}
+            {alignedLoadCount < allSupportFull.length && (
+              <TouchableOpacity
+                style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => setAlignedLoadCount(alignedLoadCount + 10)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                  Load More ({allSupportFull.length - alignedLoadCount} remaining)
                 </Text>
-              )}
-            </View>
-          </View>
-
-          <View style={[styles.section, { marginTop: 4, marginBottom: 14 }]}>
-            <View style={styles.sectionHeaderRow}>
-              <View style={styles.sectionHeader}>
-                <TrendingDown size={24} color={colors.danger} strokeWidth={2} />
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Unaligned Businesses</Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowAllLeast(!showAllLeast)} activeOpacity={0.7}>
-                <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllLeast ? 'Hide' : 'Show All'}</Text>
               </TouchableOpacity>
-            </View>
-            <View style={styles.brandsContainer}>
-              {unalignedBusinesses.length > 0 ? (
-                (showAllLeast ? unalignedBusinesses : unalignedBusinesses.slice(0, 5)).map((biz) => renderLocalBusinessCard(biz, 'unaligned'))
-              ) : (
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                  {localDistance === null
-                    ? 'No unaligned businesses found'
-                    : `No unaligned businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
-                </Text>
-              )}
-            </View>
+            )}
           </View>
-        </>
+        </View>
       );
     }
 
-    // Show regular brands when not in "local" mode
+    // Unaligned subsection
+    if (forYouSubsection === 'unaligned') {
+      return (
+        <View style={styles.section}>
+          <View style={styles.brandsContainer}>
+            {allAvoidFull.slice(0, unalignedLoadCount).map((product) => renderBrandCard(product, 'avoid'))}
+            {unalignedLoadCount < allAvoidFull.length && (
+              <TouchableOpacity
+                style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => setUnalignedLoadCount(unalignedLoadCount + 10)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                  Load More ({allAvoidFull.length - unalignedLoadCount} remaining)
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      );
+    }
+
+    // News subsection
+    if (forYouSubsection === 'news') {
+      return (
+        <View style={styles.section}>
+          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+              News feed coming soon! This will show X posts about aligned and unaligned brands.
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    return null;
+  };
+
+  const renderLocalView = () => {
+    const { alignedBusinesses, unalignedBusinesses } = localBusinessData;
+
     return (
       <>
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <View style={styles.sectionHeader}>
               <TrendingUp size={24} color={colors.success} strokeWidth={2} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Aligned Brands</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Aligned Businesses</Text>
             </View>
             <TouchableOpacity onPress={() => setShowAllAligned(!showAllAligned)} activeOpacity={0.7}>
               <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllAligned ? 'Hide' : 'Show All'}</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.brandsContainer}>
-            {(showAllAligned ? allSupportFull : topSupport.slice(0, 5)).map((product) => renderBrandCard(product, 'support'))}
+            {alignedBusinesses.length > 0 ? (
+              (showAllAligned ? alignedBusinesses : alignedBusinesses.slice(0, 5)).map((biz) => renderLocalBusinessCard(biz, 'aligned'))
+            ) : (
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                {localDistance === null
+                  ? 'No aligned businesses found'
+                  : `No aligned businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
+              </Text>
+            )}
           </View>
         </View>
 
@@ -826,187 +880,38 @@ export default function HomeScreen() {
           <View style={styles.sectionHeaderRow}>
             <View style={styles.sectionHeader}>
               <TrendingDown size={24} color={colors.danger} strokeWidth={2} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Unaligned Brands</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Unaligned Businesses</Text>
             </View>
             <TouchableOpacity onPress={() => setShowAllLeast(!showAllLeast)} activeOpacity={0.7}>
               <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllLeast ? 'Hide' : 'Show All'}</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.brandsContainer}>
-            {(showAllLeast ? allAvoidFull : topAvoid.slice(0, 5)).map((product) => renderBrandCard(product, 'avoid'))}
+            {unalignedBusinesses.length > 0 ? (
+              (showAllLeast ? unalignedBusinesses : unalignedBusinesses.slice(0, 5)).map((biz) => renderLocalBusinessCard(biz, 'unaligned'))
+            ) : (
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                {localDistance === null
+                  ? 'No unaligned businesses found'
+                  : `No unaligned businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
+              </Text>
+            )}
           </View>
         </View>
       </>
     );
   };
 
-  const renderFoldersView = () => {
-    // Show local businesses when "local" mode is active
-    if (isLocalMode) {
-      const { alignedBusinesses, unalignedBusinesses } = localBusinessData;
-      const allLocalBusinesses = [...alignedBusinesses, ...unalignedBusinesses];
-
-      // Group local businesses by category
-      const categorizedLocalBusinesses = new Map<string, typeof allLocalBusinesses>();
-
-      allLocalBusinesses.forEach((bizData) => {
-        const category = bizData.business.businessInfo.category;
-        if (!categorizedLocalBusinesses.has(category)) {
-          categorizedLocalBusinesses.set(category, []);
-        }
-        categorizedLocalBusinesses.get(category)!.push(bizData);
-      });
-
-      if (allLocalBusinesses.length === 0) {
-        return (
-          <View style={styles.foldersContainer}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              {localDistance === null
-                ? 'No local businesses found'
-                : `No local businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
-            </Text>
-          </View>
-        );
-      }
-
-      return (
-        <View style={styles.foldersContainer}>
-          {Array.from(categorizedLocalBusinesses.entries()).map(([category, businesses]) => {
-            const isExpanded = expandedFolder === category;
-
-            return (
-              <View key={category} style={[styles.folderCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                <TouchableOpacity style={styles.folderHeader} onPress={() => setExpandedFolder(isExpanded ? null : category)} activeOpacity={0.7}>
-                  <View style={styles.folderHeaderLeft}>
-                    <View style={[styles.folderIconContainer, { backgroundColor: colors.primaryLight + '15' }]}>
-                      <Store size={24} color={isDarkMode ? colors.white : colors.primary} strokeWidth={2} />
-                    </View>
-                    <View>
-                      <Text style={[styles.folderName, { color: colors.text }]}>{category}</Text>
-                      <Text style={[styles.folderCount, { color: colors.textSecondary }]}>{businesses.length} business{businesses.length !== 1 ? 'es' : ''}</Text>
-                    </View>
-                  </View>
-                  <ChevronRight
-                    size={20}
-                    color={colors.textSecondary}
-                    strokeWidth={2}
-                    style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}
-                  />
-                </TouchableOpacity>
-
-                {isExpanded && (
-                  <View style={styles.folderContent}>
-                    {businesses.map((bizData) => {
-                      const isAligned = bizData.alignmentScore >= 50;
-                      const scoreColor = isAligned ? colors.success : colors.danger;
-                      const Icon = isAligned ? TrendingUp : TrendingDown;
-
-                      return (
-                        <TouchableOpacity
-                          key={bizData.business.id}
-                          style={[styles.folderBrandCard, { backgroundColor: colors.background }]}
-                          onPress={() => handleBusinessPress(bizData.business.id)}
-                          activeOpacity={0.7}
-                        >
-                          <Image
-                            source={{
-                              uri: bizData.business.businessInfo.logoUrl
-                                ? bizData.business.businessInfo.logoUrl
-                                : getLogoUrl(bizData.business.businessInfo.website || '')
-                            }}
-                            style={styles.folderBrandImage}
-                            contentFit="cover"
-                            transition={200}
-                            cachePolicy="memory-disk"
-                          />
-                          <View style={styles.folderBrandContent}>
-                            <Text style={[styles.folderBrandName, { color: colors.text }]} numberOfLines={2}>
-                              {bizData.business.businessInfo.name}
-                            </Text>
-                            <Text style={[styles.folderBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                              {bizData.distance !== undefined ? `${formatDistance(bizData.distance)} away` : bizData.business.businessInfo.category}
-                            </Text>
-                          </View>
-                          <View style={[styles.folderBrandBadge, { backgroundColor: isAligned ? colors.successLight : colors.dangerLight }]}>
-                            <Icon size={12} color={scoreColor} strokeWidth={2.5} />
-                            <Text style={[styles.folderBrandScore, { color: scoreColor }]}>{bizData.alignmentScore}</Text>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                )}
-              </View>
-            );
-          })}
-        </View>
-      );
-    }
-
-    // Show regular brands when not in "local" mode
+  const renderMyLibraryView = () => {
     return (
-      <View style={styles.foldersContainer}>
-        {FOLDER_CATEGORIES.map((category) => {
-          const brands = categorizedBrands.get(category.id) || [];
-          const isExpanded = expandedFolder === category.id;
-
-          if (brands.length === 0) return null;
-
-          return (
-            <View key={category.id} style={[styles.folderCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              <TouchableOpacity style={styles.folderHeader} onPress={() => setExpandedFolder(isExpanded ? null : category.id)} activeOpacity={0.7}>
-                <View style={styles.folderHeaderLeft}>
-                  <View style={[styles.folderIconContainer, { backgroundColor: colors.primaryLight + '15' }]}>
-                    <category.Icon size={24} color={isDarkMode ? colors.white : colors.primary} strokeWidth={2} />
-                  </View>
-                  <View>
-                    <Text style={[styles.folderName, { color: colors.text }]}>{category.name}</Text>
-                    <Text style={[styles.folderCount, { color: colors.textSecondary }]}>{brands.length} brands</Text>
-                  </View>
-                </View>
-                <ChevronRight
-                  size={20}
-                  color={colors.textSecondary}
-                  strokeWidth={2}
-                  style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}
-                />
-              </TouchableOpacity>
-
-              {isExpanded && (
-                <View style={styles.folderContent}>
-                  {brands.map((product) => (
-                    <TouchableOpacity
-                      key={product.id}
-                      style={[styles.folderBrandCard, { backgroundColor: colors.background }]}
-                      onPress={() => handleProductPress(product)}
-                      activeOpacity={0.7}
-                    >
-                      <Image
-                        source={{ uri: getLogoUrl(product.website || '') }}
-                        style={styles.folderBrandImage}
-                        contentFit="cover"
-                        transition={200}
-                        cachePolicy="memory-disk"
-                      />
-                      <View style={styles.folderBrandContent}>
-                        <Text style={[styles.folderBrandName, { color: colors.text }]} numberOfLines={2}>
-                          {product.name}
-                        </Text>
-                        <Text style={[styles.folderBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                          {product.category}
-                        </Text>
-                      </View>
-                      <View style={[styles.folderBrandBadge, { backgroundColor: colors.successLight }]}>
-                        <TrendingUp size={12} color={colors.success} strokeWidth={2.5} />
-                        <Text style={[styles.folderBrandScore, { color: colors.success }]}>{Math.abs(product.alignmentScore)}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
-          );
-        })}
+      <View style={styles.section}>
+        <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+          <FolderOpen size={48} color={colors.textSecondary} strokeWidth={1.5} />
+          <Text style={[styles.placeholderTitle, { color: colors.text }]}>My Library</Text>
+          <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+            Create and manage your custom lists of brands here. This feature is coming soon!
+          </Text>
+        </View>
       </View>
     );
   };
@@ -1121,7 +1026,7 @@ export default function HomeScreen() {
           />
           <MenuButton />
         </View>
-        {renderViewModeSelector()}
+        {renderMainViewSelector()}
       </View>
       <ScrollView
         ref={scrollViewRef}
@@ -1129,8 +1034,9 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent, { paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        {viewMode === 'playbook' && renderPlaybookView()}
-        {viewMode === 'browse' && renderFoldersView()}
+        {mainView === 'forYou' && renderForYouView()}
+        {mainView === 'myLibrary' && renderMyLibraryView()}
+        {mainView === 'local' && renderLocalView()}
 
         {(
           <TouchableOpacity
@@ -1431,55 +1337,82 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
   },
-  selectionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  mainViewRow: {
     marginHorizontal: 16,
     marginBottom: 8,
     marginTop: 10,
   },
-  viewModeSelector: {
-    flex: 2,
+  mainViewSelector: {
     flexDirection: 'row',
     borderRadius: 10,
     padding: 3,
     borderWidth: 1,
   },
-  viewModeButton: {
+  mainViewButton: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 8,
-    gap: 6,
   },
-  viewModeText: {
+  mainViewText: {
     fontSize: 15,
     fontWeight: '600' as const,
   },
-  localButtonContainer: {
-    flex: 1,
+  subsectionRow: {
     flexDirection: 'row',
-    borderRadius: 10,
-    padding: 3,
-    borderWidth: 1,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    marginTop: 4,
+    justifyContent: 'space-evenly',
   },
-  localButton: {
+  subsectionButton: {
     flex: 1,
-    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  subsectionButtonActive: {
+    borderBottomWidth: 2,
+  },
+  subsectionText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  subsectionTextActive: {
+    fontWeight: '600' as const,
+  },
+  loadMoreButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  loadMoreText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  placeholderContainer: {
+    padding: 40,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    marginTop: 32,
   },
-  localButtonText: {
+  placeholderTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  placeholderText: {
     fontSize: 15,
-    fontWeight: '600' as const,
+    textAlign: 'center' as const,
+    lineHeight: 22,
   },
   distanceFilterRow: {
     flexDirection: 'row',
