@@ -4,6 +4,7 @@ import {
   TrendingUp,
   TrendingDown,
   ChevronRight,
+  ArrowLeft,
   Target,
   FolderOpen,
   MapPin,
@@ -88,7 +89,7 @@ const FOLDER_CATEGORIES: FolderCategory[] = [
 export default function HomeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { profile, isDarkMode } = useUser();
+  const { profile, isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const [mainView, setMainView] = useState<MainView>('forYou');
   const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
@@ -201,7 +202,7 @@ export default function HomeScreen() {
 
   // Fetch user lists when library view is activated
   useEffect(() => {
-    if (mainView === 'myLibrary' && profile.id) {
+    if (mainView === 'myLibrary' && clerkUser?.id) {
       loadUserLists();
     }
     // Reset to overview when leaving library
@@ -209,14 +210,14 @@ export default function HomeScreen() {
       setLibraryView('overview');
       setSelectedList(null);
     }
-  }, [mainView, profile.id]);
+  }, [mainView, clerkUser?.id]);
 
   const loadUserLists = async () => {
-    if (!profile.id) return;
+    if (!clerkUser?.id) return;
 
     setIsLoadingLists(true);
     try {
-      const lists = await getUserLists(profile.id);
+      const lists = await getUserLists(clerkUser.id);
       setUserLists(lists);
     } catch (error) {
       console.error('[Home] Error loading user lists:', error);
@@ -978,21 +979,21 @@ export default function HomeScreen() {
   const handleCreateList = async () => {
     console.log('[Home] handleCreateList called');
     console.log('[Home] newListName:', newListName);
-    console.log('[Home] profile.id:', profile.id);
+    console.log('[Home] clerkUser.id:', clerkUser?.id);
 
     if (!newListName.trim()) {
       Alert.alert('Error', 'Please enter a list name');
       return;
     }
 
-    if (!profile.id) {
+    if (!clerkUser?.id) {
       Alert.alert('Error', 'You must be logged in to create a list');
       return;
     }
 
     try {
       console.log('[Home] Creating list...');
-      await createList(profile.id, newListName.trim(), newListDescription.trim());
+      await createList(clerkUser.id, newListName.trim(), newListDescription.trim());
       setNewListName('');
       setNewListDescription('');
       setShowCreateListModal(false);
@@ -1041,9 +1042,9 @@ export default function HomeScreen() {
   // Quick-add handler functions
   const handleQuickAdd = async (type: 'brand' | 'business' | 'value', id: string, name: string) => {
     // Load lists if not already loaded
-    if (userLists.length === 0 && profile.id) {
+    if (userLists.length === 0 && clerkUser?.id) {
       try {
-        const lists = await getUserLists(profile.id);
+        const lists = await getUserLists(clerkUser.id);
         setUserLists(lists);
       } catch (error) {
         console.error('[Home] Error loading lists for quick-add:', error);
@@ -1122,10 +1123,10 @@ export default function HomeScreen() {
       return;
     }
 
-    if (!profile.id || !quickAddItem) return;
+    if (!clerkUser?.id || !quickAddItem) return;
 
     try {
-      const listId = await createList(profile.id, newListName.trim(), newListDescription.trim());
+      const listId = await createList(clerkUser.id, newListName.trim(), newListDescription.trim());
 
       // Add the item to the new list
       let entry: Omit<ListEntry, 'id' | 'createdAt'>;

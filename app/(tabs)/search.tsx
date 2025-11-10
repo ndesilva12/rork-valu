@@ -734,12 +734,12 @@ export default function SearchScreen() {
         </View>
 
         <View style={[styles.searchContainer, { backgroundColor: colors.background }]}>
-        <View style={[styles.searchInputContainer, { backgroundColor: isDarkMode ? colors.backgroundSecondary : colors.white, borderColor: '#FFFFFF' }]}>
+        <View style={[styles.searchInputContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
           <SearchIcon size={20} color={colors.primaryLight} strokeWidth={2} />
           <TextInput
             style={[styles.searchInput, { color: colors.primary, outlineStyle: 'none' } as any]}
-            placeholder="Search products, brands..."
-            placeholderTextColor={colors.textLight}
+            placeholder="Search"
+            placeholderTextColor={colors.textSecondary}
             value={query}
             onChangeText={handleSearch}
             autoCapitalize="none"
