@@ -109,6 +109,12 @@ export default function HomeScreen() {
   const [newListDescription, setNewListDescription] = useState('');
   const [isLoadingLists, setIsLoadingLists] = useState(false);
 
+  // Quick-add state
+  const [showQuickAddModal, setShowQuickAddModal] = useState(false);
+  const [quickAddItem, setQuickAddItem] = useState<{type: 'brand' | 'business' | 'value', id: string, name: string} | null>(null);
+  const [selectedValueMode, setSelectedValueMode] = useState<ValueListMode | null>(null);
+  const [showValueModeModal, setShowValueModeModal] = useState(false);
+
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Fetch brands and values from Firebase via DataContext
@@ -618,6 +624,16 @@ export default function HomeScreen() {
           <View style={styles.brandScoreContainer}>
             <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
           </View>
+          <TouchableOpacity
+            style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleQuickAdd('brand', product.id, product.name);
+            }}
+            activeOpacity={0.7}
+          >
+            <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
@@ -677,6 +693,16 @@ export default function HomeScreen() {
           <View style={styles.brandScoreContainer}>
             <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
           </View>
+          <TouchableOpacity
+            style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleQuickAdd('business', business.id, business.businessInfo.name);
+            }}
+            activeOpacity={0.7}
+          >
+            <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
@@ -995,6 +1021,142 @@ export default function HomeScreen() {
     setShowEditListModal(true);
   };
 
+  // Quick-add handler functions
+  const handleQuickAdd = async (type: 'brand' | 'business' | 'value', id: string, name: string) => {
+    // Load lists if not already loaded
+    if (userLists.length === 0 && profile.id) {
+      try {
+        const lists = await getUserLists(profile.id);
+        setUserLists(lists);
+      } catch (error) {
+        console.error('[Home] Error loading lists for quick-add:', error);
+      }
+    }
+
+    // For values, show mode selection first
+    if (type === 'value') {
+      setQuickAddItem({ type, id, name });
+      setShowValueModeModal(true);
+    } else {
+      // For brands and businesses, go straight to list selection
+      setQuickAddItem({ type, id, name });
+      setShowQuickAddModal(true);
+    }
+  };
+
+  const handleValueModeSelected = (mode: ValueListMode) => {
+    setSelectedValueMode(mode);
+    setShowValueModeModal(false);
+    setShowQuickAddModal(true);
+  };
+
+  const handleAddToList = async (listId: string) => {
+    if (!quickAddItem) return;
+
+    try {
+      let entry: Omit<ListEntry, 'id' | 'createdAt'>;
+
+      if (quickAddItem.type === 'brand') {
+        entry = {
+          type: 'brand',
+          brandId: quickAddItem.id,
+          brandName: quickAddItem.name,
+        };
+      } else if (quickAddItem.type === 'business') {
+        entry = {
+          type: 'business',
+          businessId: quickAddItem.id,
+          businessName: quickAddItem.name,
+        };
+      } else if (quickAddItem.type === 'value') {
+        if (!selectedValueMode) {
+          Alert.alert('Error', 'Please select Max Pain or Max Benefit');
+          return;
+        }
+        entry = {
+          type: 'value',
+          valueId: quickAddItem.id,
+          valueName: quickAddItem.name,
+          mode: selectedValueMode,
+        };
+      } else {
+        return;
+      }
+
+      await addEntryToList(listId, entry);
+      setShowQuickAddModal(false);
+      setQuickAddItem(null);
+      setSelectedValueMode(null);
+      Alert.alert('Success', `Added ${quickAddItem.name} to list!`);
+
+      // Reload lists if in library view
+      if (mainView === 'myLibrary') {
+        await loadUserLists();
+      }
+    } catch (error) {
+      console.error('[Home] Error adding to list:', error);
+      Alert.alert('Error', 'Could not add item to list. Please try again.');
+    }
+  };
+
+  const handleCreateAndAddToList = async () => {
+    if (!newListName.trim()) {
+      Alert.alert('Error', 'Please enter a list name');
+      return;
+    }
+
+    if (!profile.id || !quickAddItem) return;
+
+    try {
+      const listId = await createList(profile.id, newListName.trim(), newListDescription.trim());
+
+      // Add the item to the new list
+      let entry: Omit<ListEntry, 'id' | 'createdAt'>;
+
+      if (quickAddItem.type === 'brand') {
+        entry = {
+          type: 'brand',
+          brandId: quickAddItem.id,
+          brandName: quickAddItem.name,
+        };
+      } else if (quickAddItem.type === 'business') {
+        entry = {
+          type: 'business',
+          businessId: quickAddItem.id,
+          businessName: quickAddItem.name,
+        };
+      } else if (quickAddItem.type === 'value') {
+        if (!selectedValueMode) {
+          Alert.alert('Error', 'Please select Max Pain or Max Benefit');
+          return;
+        }
+        entry = {
+          type: 'value',
+          valueId: quickAddItem.id,
+          valueName: quickAddItem.name,
+          mode: selectedValueMode,
+        };
+      } else {
+        return;
+      }
+
+      await addEntryToList(listId, entry);
+
+      // Clean up state
+      setNewListName('');
+      setNewListDescription('');
+      setShowQuickAddModal(false);
+      setQuickAddItem(null);
+      setSelectedValueMode(null);
+      await loadUserLists();
+
+      Alert.alert('Success', `Created list and added ${quickAddItem.name}!`);
+    } catch (error) {
+      console.error('[Home] Error creating list and adding item:', error);
+      Alert.alert('Error', 'Could not create list. Please try again.');
+    }
+  };
+
   const renderMyLibraryView = () => {
     if (isLoadingLists) {
       return (
@@ -1287,6 +1449,201 @@ export default function HomeScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.modalButtonText, { color: colors.white }]}>Create List</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Value Mode Selection Modal */}
+      <Modal
+        visible={showValueModeModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowValueModeModal(false);
+          setQuickAddItem(null);
+        }}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => {
+            setShowValueModeModal(false);
+            setQuickAddItem(null);
+          }}
+        >
+          <View
+            style={[styles.quickAddModalContainer, { backgroundColor: colors.background }]}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Add Value: {quickAddItem?.name}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowValueModeModal(false);
+                  setQuickAddItem(null);
+                }}
+              >
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalContent}>
+              <Text style={[styles.modalLabel, { color: colors.text }]}>
+                Choose how to add this value:
+              </Text>
+
+              <TouchableOpacity
+                style={[styles.valueModeButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                onPress={() => handleValueModeSelected('maxPain')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.valueModeContent}>
+                  <Text style={[styles.valueModeTitle, { color: colors.danger }]}>Max Pain</Text>
+                  <Text style={[styles.valueModeDescription, { color: colors.textSecondary }]}>
+                    Add brands that are unaligned with this value
+                  </Text>
+                </View>
+                <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.valueModeButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                onPress={() => handleValueModeSelected('maxBenefit')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.valueModeContent}>
+                  <Text style={[styles.valueModeTitle, { color: colors.success }]}>Max Benefit</Text>
+                  <Text style={[styles.valueModeDescription, { color: colors.textSecondary }]}>
+                    Add brands that are aligned with this value
+                  </Text>
+                </View>
+                <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Quick Add Modal - Choose List */}
+      <Modal
+        visible={showQuickAddModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowQuickAddModal(false);
+          setQuickAddItem(null);
+          setSelectedValueMode(null);
+        }}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => {
+            setShowQuickAddModal(false);
+            setQuickAddItem(null);
+            setSelectedValueMode(null);
+          }}
+        >
+          <View
+            style={[styles.quickAddModalContainer, { backgroundColor: colors.background }]}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Add to List
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowQuickAddModal(false);
+                  setQuickAddItem(null);
+                  setSelectedValueMode(null);
+                }}
+              >
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent}>
+              <Text style={[styles.quickAddItemName, { color: colors.primary }]}>
+                {quickAddItem?.name}
+                {quickAddItem?.type === 'value' && selectedValueMode && (
+                  <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                    {' '}({selectedValueMode === 'maxPain' ? 'Max Pain' : 'Max Benefit'})
+                  </Text>
+                )}
+              </Text>
+
+              <Text style={[styles.modalLabel, { color: colors.text, marginTop: 16 }]}>
+                Select a list:
+              </Text>
+
+              {userLists.length === 0 ? (
+                <Text style={[styles.emptyListText, { color: colors.textSecondary }]}>
+                  You don't have any lists yet. Create one below!
+                </Text>
+              ) : (
+                <View style={styles.quickAddListsContainer}>
+                  {userLists.map((list) => (
+                    <TouchableOpacity
+                      key={list.id}
+                      style={[styles.quickAddListItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                      onPress={() => handleAddToList(list.id)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+                        <List size={18} color={colors.primary} strokeWidth={2} />
+                      </View>
+                      <View style={styles.quickAddListInfo}>
+                        <Text style={[styles.quickAddListName, { color: colors.text }]} numberOfLines={1}>
+                          {list.name}
+                        </Text>
+                        <Text style={[styles.quickAddListCount, { color: colors.textSecondary }]}>
+                          {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
+                        </Text>
+                      </View>
+                      <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              <View style={styles.dividerContainer}>
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                <Text style={[styles.dividerText, { color: colors.textSecondary }]}>OR</Text>
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              </View>
+
+              <Text style={[styles.modalLabel, { color: colors.text }]}>Create new list:</Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                placeholder="List name"
+                placeholderTextColor={colors.textSecondary}
+                value={newListName}
+                onChangeText={setNewListName}
+              />
+
+              <TextInput
+                style={[styles.modalTextArea, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                placeholder="Description (optional)"
+                placeholderTextColor={colors.textSecondary}
+                value={newListDescription}
+                onChangeText={setNewListDescription}
+                multiline
+                numberOfLines={2}
+              />
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                onPress={handleCreateAndAddToList}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.white }]}>
+                  Create List & Add Item
+                </Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -2246,5 +2603,94 @@ const styles = StyleSheet.create({
   modalButtonText: {
     fontSize: 16,
     fontWeight: '600' as const,
+  },
+  // Quick-add styles
+  quickAddButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  quickAddModalContainer: {
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '85%',
+    borderRadius: 20,
+    overflow: 'hidden',
+    alignSelf: 'center',
+  },
+  valueModeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 12,
+  },
+  valueModeContent: {
+    flex: 1,
+  },
+  valueModeTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  valueModeDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  quickAddItemName: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    textAlign: 'center' as const,
+    marginTop: 8,
+  },
+  quickAddListsContainer: {
+    gap: 8,
+    marginTop: 8,
+  },
+  quickAddListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 12,
+  },
+  quickAddListInfo: {
+    flex: 1,
+  },
+  quickAddListName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 2,
+  },
+  quickAddListCount: {
+    fontSize: 12,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+    gap: 12,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  emptyListText: {
+    fontSize: 14,
+    textAlign: 'center' as const,
+    paddingVertical: 16,
+    lineHeight: 20,
   },
 });
