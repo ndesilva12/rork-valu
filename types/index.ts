@@ -160,6 +160,7 @@ export interface ValueCodeCustomer {
 }
 
 export interface UserProfile {
+  id?: string; // User ID from Clerk
   accountType?: AccountType; // Default: 'individual'
   causes: Cause[];
   searchHistory: string[];

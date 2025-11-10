@@ -733,25 +733,28 @@ export default function SearchScreen() {
           <MenuButton />
         </View>
 
-        <View style={[styles.searchContainer, { backgroundColor: colors.backgroundSecondary, borderBottomColor: colors.primaryLight }]}>
-        <View style={[styles.searchInputContainer, { backgroundColor: isDarkMode ? colors.backgroundSecondary : colors.white, borderColor: colors.primaryLight }]}>
+        <View style={[styles.searchContainer, { backgroundColor: colors.background }]}>
+        <View style={[styles.searchInputContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
           <SearchIcon size={20} color={colors.primaryLight} strokeWidth={2} />
           <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
-            placeholder="Search products, brands..."
-            placeholderTextColor={colors.textLight}
+            style={[styles.searchInput, { color: colors.primary, outlineStyle: 'none' } as any]}
+            placeholder="Search"
+            placeholderTextColor={colors.textSecondary}
             value={query}
             onChangeText={handleSearch}
             autoCapitalize="none"
             autoCorrect={false}
+            underlineColorAndroid="transparent"
           />
-          <TouchableOpacity
-            onPress={handleOpenScanner}
-            style={[styles.scanButton, { backgroundColor: colors.primary }]}
-            activeOpacity={0.7}
-          >
-            <ScanBarcode size={20} color={colors.white} strokeWidth={2} />
-          </TouchableOpacity>
+          {query.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setQuery('')}
+              style={styles.clearButton}
+              activeOpacity={0.7}
+            >
+              <X size={20} color={colors.textSecondary} strokeWidth={2} />
+            </TouchableOpacity>
+          )}
         </View>
         </View>
       </View>
@@ -1119,25 +1122,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    borderBottomWidth: 2,
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
     gap: 12,
-    borderWidth: 2,
+    borderWidth: 1,
+    height: 56,
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 26,
+    fontWeight: '700' as const,
+    height: '100%',
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    margin: 0,
+    borderWidth: 0,
+    outlineWidth: 0,
   },
-  scanButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
+  clearButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
