@@ -40,6 +40,8 @@ import {
   Modal,
   Dimensions,
   TextInput,
+  Pressable,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
@@ -103,8 +105,8 @@ export default function HomeScreen() {
   // Library state
   const [userLists, setUserLists] = useState<UserList[]>([]);
   const [showCreateListModal, setShowCreateListModal] = useState(false);
-  const [showEditListModal, setShowEditListModal] = useState(false);
-  const [selectedList, setSelectedList] = useState<UserList | null>(null);
+  const [libraryView, setLibraryView] = useState<'overview' | 'detail'>('overview');
+  const [selectedList, setSelectedList] = useState<UserList | 'browse' | null>(null);
   const [newListName, setNewListName] = useState('');
   const [newListDescription, setNewListDescription] = useState('');
   const [isLoadingLists, setIsLoadingLists] = useState(false);
@@ -201,6 +203,11 @@ export default function HomeScreen() {
   useEffect(() => {
     if (mainView === 'myLibrary' && profile.id) {
       loadUserLists();
+    }
+    // Reset to overview when leaving library
+    if (mainView !== 'myLibrary') {
+      setLibraryView('overview');
+      setSelectedList(null);
     }
   }, [mainView, profile.id]);
 
@@ -1016,9 +1023,14 @@ export default function HomeScreen() {
     );
   };
 
-  const handleOpenList = (list: UserList) => {
+  const handleOpenList = (list: UserList | 'browse') => {
     setSelectedList(list);
-    setShowEditListModal(true);
+    setLibraryView('detail');
+  };
+
+  const handleBackToLibrary = () => {
+    setLibraryView('overview');
+    setSelectedList(null);
   };
 
   // Quick-add handler functions
@@ -1157,38 +1169,134 @@ export default function HomeScreen() {
     }
   };
 
+  const renderListDetailView = () => {
+    if (!selectedList) return null;
+
+    // Browse list - show categories with aligned brands
+    if (selectedList === 'browse') {
+      return (
+        <View style={styles.section}>
+          <View style={styles.listDetailHeader}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={handleBackToLibrary}
+              activeOpacity={0.7}
+            >
+              <ChevronRight
+                size={24}
+                color={colors.primary}
+                strokeWidth={2}
+                style={{ transform: [{ rotate: '180deg' }] }}
+              />
+              <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
+            </TouchableOpacity>
+            <Text style={[styles.listDetailTitle, { color: colors.text }]}>Browse</Text>
+          </View>
+
+          <ScrollView style={styles.listDetailContent}>
+            {FOLDER_CATEGORIES.map((category) => {
+              const categoryBrands = categorizedBrands.get(category.id) || [];
+              if (categoryBrands.length === 0) return null;
+
+              return (
+                <View key={category.id} style={styles.browseCategory}>
+                  <View style={styles.browseCategoryHeader}>
+                    <View style={[styles.browseCategoryIcon, { backgroundColor: colors.primaryLight + '20' }]}>
+                      <category.Icon size={20} color={colors.primary} strokeWidth={2} />
+                    </View>
+                    <Text style={[styles.browseCategoryTitle, { color: colors.text }]}>
+                      {category.name}
+                    </Text>
+                    <Text style={[styles.browseCategoryCount, { color: colors.textSecondary }]}>
+                      {categoryBrands.length}
+                    </Text>
+                  </View>
+                  <View style={styles.brandsContainer}>
+                    {categoryBrands.slice(0, 5).map((product) => renderBrandCard(product, 'support'))}
+                  </View>
+                </View>
+              );
+            })}
+          </ScrollView>
+        </View>
+      );
+    }
+
+    // User list detail
+    const list = selectedList as UserList;
+    return (
+      <View style={styles.section}>
+        <View style={styles.listDetailHeader}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={handleBackToLibrary}
+            activeOpacity={0.7}
+          >
+            <ChevronRight
+              size={24}
+              color={colors.primary}
+              strokeWidth={2}
+              style={{ transform: [{ rotate: '180deg' }] }}
+            />
+            <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
+          </TouchableOpacity>
+          <Text style={[styles.listDetailTitle, { color: colors.text }]}>{list.name}</Text>
+          {list.description && (
+            <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
+              {list.description}
+            </Text>
+          )}
+        </View>
+
+        <ScrollView style={styles.listDetailContent}>
+          {list.entries.length === 0 ? (
+            <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+                No items in this list yet. Use the + button on brands, businesses, or values to add them here.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.listEntriesContainer}>
+              {list.entries.map((entry) => (
+                <View key={entry.id} style={[styles.listEntryCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                  <View style={styles.listEntryContent}>
+                    <Text style={[styles.listEntryType, { color: colors.textSecondary }]}>
+                      {entry.type.charAt(0).toUpperCase() + entry.type.slice(1)}
+                    </Text>
+                    <Text style={[styles.listEntryName, { color: colors.text }]}>
+                      {'brandName' in entry ? entry.brandName :
+                       'businessName' in entry ? entry.businessName :
+                       'valueName' in entry ? entry.valueName :
+                       'title' in entry ? entry.title : 'Text'}
+                    </Text>
+                    {entry.type === 'value' && 'mode' in entry && (
+                      <Text style={[styles.listEntryMode, { color: entry.mode === 'maxPain' ? colors.danger : colors.success }]}>
+                        {entry.mode === 'maxPain' ? 'Max Pain' : 'Max Benefit'}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    );
+  };
+
   const renderMyLibraryView = () => {
+    // If viewing a list detail, show that instead
+    if (libraryView === 'detail') {
+      return renderListDetailView();
+    }
+
+    // Otherwise show the library overview
     if (isLoadingLists) {
       return (
         <View style={styles.section}>
           <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
             <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
               Loading your lists...
-            </Text>
-          </View>
-        </View>
-      );
-    }
-
-    if (userLists.length === 0) {
-      return (
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={[styles.createListButton, { backgroundColor: colors.primary }]}
-            onPress={() => setShowCreateListModal(true)}
-            activeOpacity={0.7}
-          >
-            <Plus size={24} color={colors.white} strokeWidth={2} />
-            <Text style={[styles.createListButtonText, { color: colors.white }]}>
-              Create Your First List
-            </Text>
-          </TouchableOpacity>
-
-          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
-            <List size={48} color={colors.textSecondary} strokeWidth={1.5} />
-            <Text style={[styles.placeholderTitle, { color: colors.text }]}>No Lists Yet</Text>
-            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-              Create custom lists to organize brands, businesses, values, links, and notes.
             </Text>
           </View>
         </View>
@@ -1206,36 +1314,71 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         <View style={styles.listsContainer}>
-          {userLists.map((list) => (
-            <TouchableOpacity
-              key={list.id}
-              style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-              onPress={() => handleOpenList(list)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.listCardContent}>
-                <View style={styles.listCardHeader}>
-                  <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
-                    <List size={20} color={colors.primary} strokeWidth={2} />
-                  </View>
-                  <View style={styles.listCardInfo}>
-                    <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
-                      {list.name}
-                    </Text>
-                    <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
-                      {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
-                    </Text>
-                  </View>
-                  <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+          {/* Browse List - Always at top */}
+          <TouchableOpacity
+            style={[styles.listCard, styles.browseListCard, { backgroundColor: colors.primaryLight + '10', borderColor: colors.primary }]}
+            onPress={() => handleOpenList('browse')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.listCardContent}>
+              <View style={styles.listCardHeader}>
+                <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
+                  <FolderOpen size={20} color={colors.white} strokeWidth={2} />
                 </View>
-                {list.description && (
-                  <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                    {list.description}
+                <View style={styles.listCardInfo}>
+                  <Text style={[styles.listCardTitle, { color: colors.primary }]} numberOfLines={1}>
+                    Browse
                   </Text>
-                )}
+                  <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                    All categories • {allSupport.length} aligned brands
+                  </Text>
+                </View>
+                <ChevronRight size={20} color={colors.primary} strokeWidth={2} />
               </View>
-            </TouchableOpacity>
-          ))}
+            </View>
+          </TouchableOpacity>
+
+          {/* User Lists */}
+          {userLists.length === 0 ? (
+            <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+              <List size={48} color={colors.textSecondary} strokeWidth={1.5} />
+              <Text style={[styles.placeholderTitle, { color: colors.text }]}>No Custom Lists Yet</Text>
+              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+                Create custom lists to organize brands, businesses, values, links, and notes.
+              </Text>
+            </View>
+          ) : (
+            userLists.map((list) => (
+              <TouchableOpacity
+                key={list.id}
+                style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                onPress={() => handleOpenList(list)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.listCardContent}>
+                  <View style={styles.listCardHeader}>
+                    <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+                      <List size={20} color={colors.primary} strokeWidth={2} />
+                    </View>
+                    <View style={styles.listCardInfo}>
+                      <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                        {list.name}
+                      </Text>
+                      <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                        {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
+                      </Text>
+                    </View>
+                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                  </View>
+                  {list.description && (
+                    <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                      {list.description}
+                    </Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </View>
     );
@@ -1395,18 +1538,18 @@ export default function HomeScreen() {
           setNewListDescription('');
         }}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => {
-            setShowCreateListModal(false);
-            setNewListName('');
-            setNewListDescription('');
-          }}
-        >
-          <View
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              setShowCreateListModal(false);
+              setNewListName('');
+              setNewListDescription('');
+            }}
+          >
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Pressable
             style={[styles.createListModalContainer, { backgroundColor: colors.background }]}
-            onStartShouldSetResponder={() => true}
           >
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>Create New List</Text>
@@ -1451,8 +1594,8 @@ export default function HomeScreen() {
                 <Text style={[styles.modalButtonText, { color: colors.white }]}>Create List</Text>
               </TouchableOpacity>
             </ScrollView>
-          </View>
-        </TouchableOpacity>
+          </Pressable>
+        </View>
       </Modal>
 
       {/* Value Mode Selection Modal */}
@@ -1465,17 +1608,17 @@ export default function HomeScreen() {
           setQuickAddItem(null);
         }}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => {
-            setShowValueModeModal(false);
-            setQuickAddItem(null);
-          }}
-        >
-          <View
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              setShowValueModeModal(false);
+              setQuickAddItem(null);
+            }}
+          >
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Pressable
             style={[styles.quickAddModalContainer, { backgroundColor: colors.background }]}
-            onStartShouldSetResponder={() => true}
           >
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
@@ -1524,8 +1667,8 @@ export default function HomeScreen() {
                 <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
               </TouchableOpacity>
             </View>
-          </View>
-        </TouchableOpacity>
+          </Pressable>
+        </View>
       </Modal>
 
       {/* Quick Add Modal - Choose List */}
@@ -1539,18 +1682,18 @@ export default function HomeScreen() {
           setSelectedValueMode(null);
         }}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => {
-            setShowQuickAddModal(false);
-            setQuickAddItem(null);
-            setSelectedValueMode(null);
-          }}
-        >
-          <View
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              setShowQuickAddModal(false);
+              setQuickAddItem(null);
+              setSelectedValueMode(null);
+            }}
+          >
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Pressable
             style={[styles.quickAddModalContainer, { backgroundColor: colors.background }]}
-            onStartShouldSetResponder={() => true}
           >
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
@@ -1646,8 +1789,8 @@ export default function HomeScreen() {
                 </Text>
               </TouchableOpacity>
             </ScrollView>
-          </View>
-        </TouchableOpacity>
+          </Pressable>
+        </View>
       </Modal>
 
       {/* Map Modal */}
@@ -2692,5 +2835,89 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
     paddingVertical: 16,
     lineHeight: 20,
+  },
+  // List detail view styles
+  listDetailHeader: {
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    marginBottom: 16,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 12,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  listDetailTitle: {
+    fontSize: 28,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  listDetailDescription: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  listDetailContent: {
+    flex: 1,
+  },
+  listEntriesContainer: {
+    gap: 10,
+  },
+  listEntryCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+  },
+  listEntryContent: {
+    gap: 4,
+  },
+  listEntryType: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  listEntryName: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  listEntryMode: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    marginTop: 4,
+  },
+  // Browse list styles
+  browseListCard: {
+    borderWidth: 2,
+  },
+  browseCategory: {
+    marginBottom: 24,
+  },
+  browseCategoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  browseCategoryIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  browseCategoryTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    flex: 1,
+  },
+  browseCategoryCount: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
 });
