@@ -43,7 +43,7 @@ export default function CustomerDiscount() {
     const transactionId = `txn_${now}_${Math.random().toString(36).substring(7)}`;
 
     // Generate URL that will be scanned by merchant's camera
-    const baseUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://standing.vercel.app';
+    const baseUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://upright.money';
     const verifyUrl = `${baseUrl}/merchant/verify?` +
       `userId=${clerkUser.id}&` +
       `code=${transactionId}&` +

@@ -58,7 +58,7 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
 import { trpc } from '@/lib/trpc';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
-// import { AVAILABLE_VALUES } from '@/mocks/causes'; // Removed - using values from DataContext instead
+import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
 import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
@@ -1166,8 +1166,8 @@ export default function HomeScreen() {
   };
 
   const handleCreateListFromValues = async () => {
-    if (selectedValuesForList.length < 3) {
-      Alert.alert('Error', 'Please select at least 3 values');
+    if (selectedValuesForList.length < 5) {
+      Alert.alert('Error', 'Please select at least 5 values');
       return;
     }
 
@@ -1282,6 +1282,8 @@ export default function HomeScreen() {
   const handleOpenList = (list: UserList | 'browse') => {
     setSelectedList(list);
     setLibraryView('detail');
+    // Scroll to top when opening a list
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
   };
 
   const handleBackToLibrary = () => {
@@ -1665,7 +1667,10 @@ export default function HomeScreen() {
     }
 
     try {
-      await updateListMetadata(cardRenameListId, cardRenameListName.trim(), cardRenameListDescription.trim());
+      await updateListMetadata(cardRenameListId, {
+        name: cardRenameListName.trim(),
+        description: cardRenameListDescription.trim()
+      });
       await loadUserLists();
       setShowCardRenameModal(false);
       setCardRenameListId(null);
@@ -1745,12 +1750,50 @@ export default function HomeScreen() {
           logoUrl: itemData.logoUrl,
         };
       } else if (addItemType === 'value' && itemData.valueId && itemData.mode) {
-        entry = {
-          type: 'value',
-          valueId: itemData.valueId,
-          valueName: itemData.name,
-          mode: itemData.mode,
-        };
+        // Add the top brands for this value instead of the value card
+        const causeData = valuesMatrix[itemData.valueId];
+        if (!causeData) {
+          Alert.alert('Error', 'Value data not found');
+          return;
+        }
+
+        const brandList = itemData.mode === 'maxBenefit' ? causeData.support : causeData.avoid;
+        if (!brandList || brandList.length === 0) {
+          Alert.alert('Error', 'No brands found for this value');
+          return;
+        }
+
+        // Add top 10 brands (or all if less than 10)
+        const brandsToAdd = brandList.slice(0, 10);
+        let addedCount = 0;
+
+        for (const brandName of brandsToAdd) {
+          const brand = brands?.find(b => b.name === brandName);
+          if (brand) {
+            const brandEntry: Omit<ListEntry, 'id' | 'createdAt'> = {
+              type: 'brand',
+              brandId: brand.id,
+              brandName: brand.name,
+              website: brand.website,
+            };
+            await addEntryToList(list.id, brandEntry);
+            addedCount++;
+          }
+        }
+
+        // Reload the list
+        const updatedLists = await getUserLists(clerkUser?.id || '');
+        setUserLists(updatedLists);
+        const updatedList = updatedLists.find(l => l.id === list.id);
+        if (updatedList) {
+          setSelectedList(updatedList);
+        }
+
+        setShowAddItemModal(false);
+        setAddItemType(null);
+        setAddItemSearchQuery('');
+        Alert.alert('Success', `Added ${addedCount} brands from ${itemData.name} to list!`);
+        return;
       } else if (addItemType === 'link') {
         if (!linkUrl.trim()) {
           Alert.alert('Error', 'Please enter a URL');
@@ -1974,17 +2017,21 @@ export default function HomeScreen() {
                 // Render based on entry type
                 if (entry.type === 'brand' && 'brandId' in entry) {
                   return (
-                    <View key={entry.id} style={styles.listEntryWrapper}>
-                      <TouchableOpacity
-                        style={[
-                          styles.brandCard,
-                          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
-                        ]}
-                        onPress={() => !isEditMode && router.push(`/brand/${entry.brandId}`)}
-                        activeOpacity={0.7}
-                        disabled={isEditMode}
-                      >
-                        <View style={styles.brandCardInner}>
+                    <View key={entry.id} style={styles.listEntryRow}>
+                      <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
+                        {entryIndex + 1}
+                      </Text>
+                      <View style={styles.listEntryWrapper}>
+                        <TouchableOpacity
+                          style={[
+                            styles.brandCard,
+                            { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                          ]}
+                          onPress={() => !isEditMode && router.push(`/brand/${entry.brandId}`)}
+                          activeOpacity={0.7}
+                          disabled={isEditMode}
+                        >
+                          <View style={styles.brandCardInner}>
                           <View style={styles.brandLogoContainer}>
                             <Image
                               source={{ uri: entry.logoUrl || getLogoUrl(entry.website || (entry.type === 'brand' && 'brandId' in entry ? getBrandWebsite(entry.brandId) : '') || '') }}
@@ -2041,31 +2088,16 @@ export default function HomeScreen() {
                           )}
                         </View>
                       </TouchableOpacity>
-                      {activeItemOptionsMenu === entry.id && !isEditMode && (
-                        <>
-                          <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
-                            <View style={styles.dropdownOverlay} />
-                          </TouchableWithoutFeedback>
-                          <View style={[styles.listEntryOptionsDropdownFixed, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                            <TouchableOpacity
-                              style={styles.listOptionItem}
-                              onPress={() => {
-                                setActiveItemOptionsMenu(null);
-                                handleDeleteEntry(entry.id);
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <Trash2 size={16} color={colors.danger} strokeWidth={2} />
-                              <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
-                            </TouchableOpacity>
-                          </View>
-                        </>
-                      )}
+                      </View>
                     </View>
                   );
                 } else if (entry.type === 'business' && 'businessId' in entry) {
                   return (
-                    <View key={entry.id} style={styles.listEntryWrapper}>
+                    <View key={entry.id} style={styles.listEntryRow}>
+                      <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
+                        {entryIndex + 1}
+                      </Text>
+                      <View style={styles.listEntryWrapper}>
                       <TouchableOpacity
                         style={[
                           styles.brandCard,
@@ -2132,33 +2164,18 @@ export default function HomeScreen() {
                           )}
                         </View>
                       </TouchableOpacity>
-                      {activeItemOptionsMenu === entry.id && !isEditMode && (
-                        <>
-                          <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
-                            <View style={styles.dropdownOverlay} />
-                          </TouchableWithoutFeedback>
-                          <View style={[styles.listEntryOptionsDropdownFixed, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                            <TouchableOpacity
-                              style={styles.listOptionItem}
-                              onPress={() => {
-                                setActiveItemOptionsMenu(null);
-                                handleDeleteEntry(entry.id);
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <Trash2 size={16} color={colors.danger} strokeWidth={2} />
-                              <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
-                            </TouchableOpacity>
-                          </View>
-                        </>
-                      )}
+                      </View>
                     </View>
                   );
                 } else if (entry.type === 'value' && 'valueId' in entry && 'mode' in entry) {
                   const isMaxPain = entry.mode === 'maxPain';
                   const borderColor = isMaxPain ? colors.danger : colors.success;
                   return (
-                    <View key={entry.id} style={styles.listEntryWrapper}>
+                    <View key={entry.id} style={styles.listEntryRow}>
+                      <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
+                        {entryIndex + 1}
+                      </Text>
+                      <View style={styles.listEntryWrapper}>
                       <TouchableOpacity
                         style={[styles.valueRow, { backgroundColor: colors.backgroundSecondary }]}
                         onPress={() => !isEditMode && router.push(`/value/${entry.valueId}`)}
@@ -2210,38 +2227,17 @@ export default function HomeScreen() {
                           )}
                         </View>
                       </TouchableOpacity>
-                      {activeItemOptionsMenu === entry.id && !isEditMode && (
-                        <>
-                          <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
-                            <View style={styles.dropdownOverlay} />
-                          </TouchableWithoutFeedback>
-                          <View style={[styles.listEntryOptionsDropdownFixed, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                            <TouchableOpacity
-                              style={styles.listOptionItem}
-                              onPress={() => {
-                                setActiveItemOptionsMenu(null);
-                                handleDeleteEntry(entry.id);
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <Trash2 size={16} color={colors.danger} strokeWidth={2} />
-                              <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
-                            </TouchableOpacity>
-                          </View>
-                        </>
-                      )}
+                      </View>
                     </View>
                   );
                 } else {
                   // Default render for link and text entries
                   return (
-                    <View
-                      key={entry.id}
-                      style={[
-                        styles.listEntryWrapper,
-                        activeItemOptionsMenu === entry.id && !isEditMode && { zIndex: 1000 }
-                      ]}
-                    >
+                    <View key={entry.id} style={styles.listEntryRow}>
+                      <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
+                        {entryIndex + 1}
+                      </Text>
+                      <View style={styles.listEntryWrapper}>
                       <View style={[styles.listEntryCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
                         <TouchableOpacity
                           style={styles.listEntryClickable}
@@ -2305,26 +2301,7 @@ export default function HomeScreen() {
                           </View>
                         )}
                       </View>
-                      {activeItemOptionsMenu === entry.id && !isEditMode && (
-                        <>
-                          <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
-                            <View style={styles.dropdownOverlay} />
-                          </TouchableWithoutFeedback>
-                          <View style={[styles.listEntryOptionsDropdownFixed, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                            <TouchableOpacity
-                              style={styles.listOptionItem}
-                              onPress={() => {
-                                setActiveItemOptionsMenu(null);
-                                handleDeleteEntry(entry.id);
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <Trash2 size={16} color={colors.danger} strokeWidth={2} />
-                              <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
-                            </TouchableOpacity>
-                          </View>
-                        </>
-                      )}
+                      </View>
                     </View>
                   );
                 }
@@ -2418,119 +2395,69 @@ export default function HomeScreen() {
                   activeOpacity={0.7}
                   disabled={isLibraryRearrangeMode}
                 >
-                  <View style={styles.listCardContent}>
-                    <View style={styles.listCardHeader}>
-                      <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
-                        <List size={20} color={colors.white} strokeWidth={2} />
-                      </View>
-                      <View style={styles.listCardInfo}>
-                        <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
-                          {list.name}
-                        </Text>
-                        <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
-                          {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
-                        </Text>
-                        {list.description && (
-                          <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                            {list.description}
-                          </Text>
-                        )}
-                      </View>
-                      {!isLibraryRearrangeMode && (
-                        <TouchableOpacity
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            setActiveCardOptionsMenu(activeCardOptionsMenu === list.id ? null : list.id);
-                          }}
-                          activeOpacity={0.7}
-                          style={styles.listCardOptionsButton}
-                        >
-                          <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                        </TouchableOpacity>
-                      )}
-                      {isLibraryRearrangeMode && (
-                        <View style={styles.listCardRearrangeButtons}>
-                          <TouchableOpacity
-                            onPress={() => handleMoveListUp(index)}
-                            disabled={index === 0}
-                            style={styles.rearrangeButton}
-                            activeOpacity={0.7}
-                          >
-                            <ChevronUp
-                              size={20}
-                              color={index === 0 ? colors.textSecondary : colors.text}
-                              strokeWidth={2}
-                            />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => handleMoveListDown(index)}
-                            disabled={index === userLists.length - 1}
-                            style={styles.rearrangeButton}
-                            activeOpacity={0.7}
-                          >
-                            <ChevronDown
-                              size={20}
-                              color={index === userLists.length - 1 ? colors.textSecondary : colors.text}
-                              strokeWidth={2}
-                            />
-                          </TouchableOpacity>
+                  <View style={styles.listCardContentRow}>
+                    <View style={styles.listCardContent}>
+                      <View style={styles.listCardHeader}>
+                        <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
+                          <List size={20} color={colors.white} strokeWidth={2} />
                         </View>
-                      )}
+                        <View style={styles.listCardInfo}>
+                          <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                            {list.name}
+                          </Text>
+                          <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                            {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
+                          </Text>
+                          {list.description && (
+                            <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                              {list.description}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
                     </View>
+                    {!isLibraryRearrangeMode && (
+                      <TouchableOpacity
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          setActiveCardOptionsMenu(activeCardOptionsMenu === list.id ? null : list.id);
+                        }}
+                        activeOpacity={0.7}
+                        style={styles.listCardOptionsButton}
+                      >
+                        <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                      </TouchableOpacity>
+                    )}
+                    {isLibraryRearrangeMode && (
+                      <View style={styles.listCardRearrangeButtons}>
+                        <TouchableOpacity
+                          onPress={() => handleMoveListUp(index)}
+                          disabled={index === 0}
+                          style={styles.rearrangeButton}
+                          activeOpacity={0.7}
+                        >
+                          <ChevronUp
+                            size={20}
+                            color={index === 0 ? colors.textSecondary : colors.text}
+                            strokeWidth={2}
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleMoveListDown(index)}
+                          disabled={index === userLists.length - 1}
+                          style={styles.rearrangeButton}
+                          activeOpacity={0.7}
+                        >
+                          <ChevronDown
+                            size={20}
+                            color={index === userLists.length - 1 ? colors.textSecondary : colors.text}
+                            strokeWidth={2}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
                 </TouchableOpacity>
-                {activeCardOptionsMenu === list.id && !isLibraryRearrangeMode && (
-                  <>
-                    <TouchableWithoutFeedback onPress={() => setActiveCardOptionsMenu(null)}>
-                      <View style={styles.dropdownOverlay} />
-                    </TouchableWithoutFeedback>
-                    <View style={[styles.listCardOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                      <TouchableOpacity
-                        style={styles.listOptionItem}
-                        onPress={() => handleOpenCardRenameModal(list.id, list.name, list.description || '')}
-                        activeOpacity={0.7}
-                      >
-                        <Edit size={18} color={colors.text} strokeWidth={2} />
-                        <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
-                      </TouchableOpacity>
-                      <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                      <TouchableOpacity
-                        style={styles.listOptionItem}
-                        onPress={() => {
-                          setActiveCardOptionsMenu(null);
-                          setIsLibraryRearrangeMode(true);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                        <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
-                      </TouchableOpacity>
-                      <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                      <TouchableOpacity
-                        style={styles.listOptionItem}
-                        onPress={() => {
-                          setActiveCardOptionsMenu(null);
-                          setDescriptionText(list.description || '');
-                          setSelectedList(list);
-                          setShowDescriptionModal(true);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Edit size={18} color={colors.text} strokeWidth={2} />
-                        <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
-                      </TouchableOpacity>
-                      <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                      <TouchableOpacity
-                        style={styles.listOptionItem}
-                        onPress={() => handleCardDeleteList(list.id)}
-                        activeOpacity={0.7}
-                      >
-                        <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-                        <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </>
-                )}
               </View>
             ))
           )}
@@ -2664,21 +2591,107 @@ export default function HomeScreen() {
       </ScrollView>
 
       {/* Invisible overlay to close dropdown when clicking outside */}
-      {activeItemOptionsMenu !== null && (
-        <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
-          <View style={styles.dropdownOverlay} />
-        </TouchableWithoutFeedback>
-      )}
-      {activeCardOptionsMenu !== null && (
+      {/* Library Card Options Modal */}
+      <Modal
+        visible={activeCardOptionsMenu !== null && !isLibraryRearrangeMode}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setActiveCardOptionsMenu(null)}
+      >
         <TouchableWithoutFeedback onPress={() => setActiveCardOptionsMenu(null)}>
-          <View style={styles.dropdownOverlay} />
+          <View style={styles.dropdownModalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  const list = userLists.find(l => l.id === activeCardOptionsMenu);
+                  if (list) {
+                    handleOpenCardRenameModal(list.id, list.name, list.description || '');
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Edit size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+              </TouchableOpacity>
+              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  setActiveCardOptionsMenu(null);
+                  setIsLibraryRearrangeMode(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
+              </TouchableOpacity>
+              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  const list = userLists.find(l => l.id === activeCardOptionsMenu);
+                  if (list) {
+                    setActiveCardOptionsMenu(null);
+                    setDescriptionText(list.description || '');
+                    setSelectedList(list);
+                    setShowDescriptionModal(true);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Edit size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+              </TouchableOpacity>
+              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  if (activeCardOptionsMenu) {
+                    handleCardDeleteList(activeCardOptionsMenu);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+            </TouchableWithoutFeedback>
+          </View>
         </TouchableWithoutFeedback>
-      )}
-      {showEditDropdown && (
-        <TouchableWithoutFeedback onPress={() => setShowEditDropdown(false)}>
-          <View style={styles.dropdownOverlay} />
+      </Modal>
+
+      {/* List Item Options Modal */}
+      <Modal
+        visible={activeItemOptionsMenu !== null && !isEditMode}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setActiveItemOptionsMenu(null)}
+      >
+        <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
+          <View style={styles.dropdownModalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  if (activeItemOptionsMenu) {
+                    setActiveItemOptionsMenu(null);
+                    handleDeleteEntry(activeItemOptionsMenu);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Trash2 size={16} color={colors.danger} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+            </TouchableWithoutFeedback>
+          </View>
         </TouchableWithoutFeedback>
-      )}
+      </Modal>
 
       {/* Create List Modal */}
       <Modal
@@ -2962,7 +2975,7 @@ export default function HomeScreen() {
           >
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
-                Add Value: {quickAddItem?.name}
+                Add to Library
               </Text>
               <TouchableOpacity
                 onPress={() => {
@@ -2976,7 +2989,7 @@ export default function HomeScreen() {
 
             <View style={styles.modalContent}>
               <Text style={[styles.modalLabel, { color: colors.text }]}>
-                Choose how to add this value:
+                Choose how to add {quickAddItem?.name}:
               </Text>
 
               <TouchableOpacity
@@ -3179,7 +3192,7 @@ export default function HomeScreen() {
 
             <ScrollView style={styles.modalContent}>
               <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
-                Select at least 3 values to create a list of the top 20 most aligned brands.
+                Select at least 5 values to create a list of the top 20 most aligned brands.
               </Text>
 
               {/* Custom Name and Description Fields */}
@@ -3212,13 +3225,13 @@ export default function HomeScreen() {
               </View>
 
               <Text style={[styles.selectedCountText, { color: colors.primary }]}>
-                {selectedValuesForList.length} selected {selectedValuesForList.length >= 3 ? '✓' : `(${3 - selectedValuesForList.length} more needed)`}
+                {selectedValuesForList.length} selected {selectedValuesForList.length >= 5 ? '✓' : `(${5 - selectedValuesForList.length} more needed)`}
               </Text>
 
               {/* Group values by category */}
               <View style={styles.valuesGrid}>
                 {(['ideology', 'social_issue', 'person', 'religion', 'nation'] as const).map(category => {
-                  const categoryValues = values.filter(v => v.category === category);
+                  const categoryValues = AVAILABLE_VALUES[category] || [];
                   if (categoryValues.length === 0) return null;
 
                   const categoryLabels = {
@@ -3290,12 +3303,12 @@ export default function HomeScreen() {
                 style={[
                   styles.modalButton,
                   {
-                    backgroundColor: selectedValuesForList.length >= 3 ? colors.primary : colors.neutralLight,
+                    backgroundColor: selectedValuesForList.length >= 5 ? colors.primary : colors.neutralLight,
                     marginTop: 24,
                   }
                 ]}
                 onPress={handleCreateListFromValues}
-                disabled={selectedValuesForList.length < 3}
+                disabled={selectedValuesForList.length < 5}
                 activeOpacity={0.7}
               >
                 <Text style={[styles.modalButtonText, { color: colors.white }]}>
@@ -4105,12 +4118,13 @@ const styles = StyleSheet.create({
     height: 64,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.08)',
+    overflow: 'visible',
   },
   brandCardInner: {
     flexDirection: 'row',
     alignItems: 'center',
     height: '100%',
-    overflow: 'hidden',
+    overflow: 'visible',
     borderRadius: 12,
   },
   brandLogoContainer: {
@@ -4119,6 +4133,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+    overflow: 'hidden',
   },
   brandLogo: {
     width: '100%',
@@ -4483,13 +4500,19 @@ const styles = StyleSheet.create({
   listCard: {
     borderRadius: 16,
     borderWidth: 1,
-    overflow: 'hidden',
+    overflow: 'visible',
     flexDirection: 'row',
   },
   listCardClickable: {
     flex: 1,
   },
+  listCardContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
   listCardContent: {
+    flex: 1,
     padding: 16,
   },
   listCardReorderButtons: {
@@ -4594,6 +4617,24 @@ const styles = StyleSheet.create({
     padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  listCardOptionsButtonAbsolute: {
+    position: 'absolute' as const,
+    top: 12,
+    right: 12,
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  listCardRearrangeButtonsAbsolute: {
+    position: 'absolute' as const,
+    top: 12,
+    right: 12,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    gap: 4,
+    zIndex: 10,
   },
   listCardOptionsDropdown: {
     position: 'absolute',
@@ -4991,7 +5032,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'transparent',
-    zIndex: 9999,
+    zIndex: 998,
   },
   listEntryOptionsDropdownFixed: {
     position: 'absolute',
@@ -5016,6 +5057,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
+    overflow: 'visible',
   },
   valueNameBox: {
     flex: 1,
@@ -5044,16 +5086,31 @@ const styles = StyleSheet.create({
   },
   listEntriesContainer: {
     gap: 10,
+    overflow: 'visible',
+  },
+  listEntryRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  listEntryNumber: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    paddingTop: 20,
+    minWidth: 24,
+    textAlign: 'right',
   },
   listEntryWrapper: {
     position: 'relative' as const,
     overflow: 'visible',
+    flex: 1,
   },
   listEntryCard: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
     borderWidth: 1,
+    overflow: 'visible',
   },
   listEntryContent: {
     gap: 4,
@@ -5133,20 +5190,22 @@ const styles = StyleSheet.create({
   rearrangeButton: {
     padding: 4,
   },
-  listCardOptionsDropdown: {
-    position: 'absolute',
-    top: 60,
-    right: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+  dropdownModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dropdownModalContent: {
+    borderRadius: 12,
     borderWidth: 1,
+    paddingVertical: 4,
+    minWidth: 200,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    zIndex: 1000,
-    minWidth: 160,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 999,
   },
   // List detail edit section styles
   listDetailEditSection: {

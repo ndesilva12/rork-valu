@@ -107,7 +107,7 @@ export default function ValuesScreen() {
   const handleResetValues = () => {
     Alert.alert(
       'Reset All Values',
-      'Are you sure you want to reset all your values? This action cannot be undone.',
+      'Are you sure you want to reset all your values? You will be redirected to select at least 5 new values.',
       [
         {
           text: 'Cancel',
@@ -117,9 +117,10 @@ export default function ValuesScreen() {
           text: 'Reset',
           style: 'destructive',
           onPress: async () => {
-            // Remove all causes
+            // Remove all causes and redirect to onboarding
             const allCauseIds = (profile.causes || []).map(c => c.id);
             await removeCauses(allCauseIds);
+            router.replace('/onboarding');
           },
         },
       ],
