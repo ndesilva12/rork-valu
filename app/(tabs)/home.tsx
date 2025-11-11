@@ -1432,6 +1432,19 @@ export default function HomeScreen() {
     const list = selectedList as UserList;
     return (
       <View style={styles.section}>
+        <View style={styles.listDetailActionsContainer}>
+          <TouchableOpacity
+            style={[styles.listDetailEditButton, { backgroundColor: isEditMode ? colors.primary : colors.backgroundSecondary, borderColor: colors.border }]}
+            onPress={toggleEditMode}
+            activeOpacity={0.7}
+          >
+            <Edit size={16} color={isEditMode ? colors.white : colors.text} strokeWidth={2} />
+            <Text style={[styles.listDetailEditButtonText, { color: isEditMode ? colors.white : colors.text }]}>
+              {isEditMode ? 'Done' : 'Edit'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.listDetailHeader}>
           <View style={styles.listDetailHeaderRow}>
             <TouchableOpacity
@@ -1448,13 +1461,15 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <View style={styles.listDetailTitleContainer}>
               <Text style={[styles.listDetailTitle, { color: colors.text }]}>{list.name}</Text>
-              <TouchableOpacity
-                style={styles.listOptionsButton}
-                onPress={() => setShowListOptionsMenu(!showListOptionsMenu)}
-                activeOpacity={0.7}
-              >
-                <MoreVertical size={24} color={colors.textSecondary} strokeWidth={2} />
-              </TouchableOpacity>
+              {!isEditMode && (
+                <TouchableOpacity
+                  style={styles.listOptionsButton}
+                  onPress={() => setShowListOptionsMenu(!showListOptionsMenu)}
+                  activeOpacity={0.7}
+                >
+                  <MoreVertical size={24} color={colors.textSecondary} strokeWidth={2} />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
           {list.description && (
@@ -1494,43 +1509,100 @@ export default function HomeScreen() {
             </View>
           ) : (
             <View style={styles.listEntriesContainer}>
-              {list.entries.map((entry) => {
-                const isClickable = entry.type === 'brand' || entry.type === 'value' || entry.type === 'link';
+              {list.entries.map((entry, entryIndex) => {
+                const isClickable = !isEditMode && (entry.type === 'brand' || entry.type === 'value' || entry.type === 'link');
                 const EntryWrapper = isClickable ? TouchableOpacity : View;
 
                 return (
-                  <EntryWrapper
-                    key={entry.id}
-                    style={[styles.listEntryCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                    onPress={isClickable ? () => handleEntryClick(entry) : undefined}
-                    activeOpacity={isClickable ? 0.7 : 1}
-                  >
-                    <View style={styles.listEntryContent}>
-                      <Text style={[styles.listEntryType, { color: colors.textSecondary }]}>
-                        {entry.type.charAt(0).toUpperCase() + entry.type.slice(1)}
-                      </Text>
-                      <Text style={[styles.listEntryName, { color: colors.text }]}>
-                        {'brandName' in entry ? entry.brandName :
-                         'businessName' in entry ? entry.businessName :
-                         'valueName' in entry ? entry.valueName :
-                         'title' in entry ? entry.title :
-                         'content' in entry ? entry.content : 'Text'}
-                      </Text>
-                      {entry.type === 'value' && 'mode' in entry && (
-                        <Text style={[styles.listEntryMode, { color: entry.mode === 'maxPain' ? colors.danger : colors.success }]}>
-                          {entry.mode === 'maxPain' ? 'Max Pain' : 'Max Benefit'}
+                  <View key={entry.id} style={[styles.listEntryCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                    <EntryWrapper
+                      style={styles.listEntryClickable}
+                      onPress={isClickable ? () => handleEntryClick(entry) : undefined}
+                      activeOpacity={isClickable ? 0.7 : 1}
+                    >
+                      <View style={styles.listEntryContent}>
+                        <Text style={[styles.listEntryType, { color: colors.textSecondary }]}>
+                          {entry.type.charAt(0).toUpperCase() + entry.type.slice(1)}
                         </Text>
-                      )}
-                      {entry.type === 'link' && 'url' in entry && (
-                        <View style={styles.linkUrlContainer}>
-                          <ExternalLink size={14} color={colors.textSecondary} strokeWidth={2} />
-                          <Text style={[styles.linkUrl, { color: colors.textSecondary }]} numberOfLines={1}>
-                            {entry.url}
+                        <Text style={[styles.listEntryName, { color: colors.text }]}>
+                          {'brandName' in entry ? entry.brandName :
+                           'businessName' in entry ? entry.businessName :
+                           'valueName' in entry ? entry.valueName :
+                           'title' in entry ? entry.title :
+                           'content' in entry ? entry.content : 'Text'}
+                        </Text>
+                        {entry.type === 'value' && 'mode' in entry && (
+                          <Text style={[styles.listEntryMode, { color: entry.mode === 'maxPain' ? colors.danger : colors.success }]}>
+                            {entry.mode === 'maxPain' ? 'Max Pain' : 'Max Benefit'}
                           </Text>
-                        </View>
-                      )}
-                    </View>
-                  </EntryWrapper>
+                        )}
+                        {entry.type === 'link' && 'url' in entry && (
+                          <View style={styles.linkUrlContainer}>
+                            <ExternalLink size={14} color={colors.textSecondary} strokeWidth={2} />
+                            <Text style={[styles.linkUrl, { color: colors.textSecondary }]} numberOfLines={1}>
+                              {entry.url}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </EntryWrapper>
+
+                    {!isEditMode && (
+                      <View style={styles.listEntryOptionsContainer}>
+                        <TouchableOpacity
+                          style={styles.listEntryOptionsButton}
+                          onPress={() => setActiveItemOptionsMenu(activeItemOptionsMenu === entry.id ? null : entry.id)}
+                          activeOpacity={0.7}
+                        >
+                          <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                        </TouchableOpacity>
+                        {activeItemOptionsMenu === entry.id && (
+                          <View style={[styles.listEntryOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                            <TouchableOpacity
+                              style={styles.listOptionItem}
+                              onPress={() => {
+                                setActiveItemOptionsMenu(null);
+                                handleDeleteEntry(entry.id);
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <Trash2 size={16} color={colors.danger} strokeWidth={2} />
+                              <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </View>
+                    )}
+
+                    {isEditMode && (
+                      <View style={styles.listEntryReorderButtons}>
+                        <TouchableOpacity
+                          onPress={() => handleMoveEntryUp(entryIndex)}
+                          disabled={entryIndex === 0}
+                          style={styles.reorderButton}
+                          activeOpacity={0.7}
+                        >
+                          <ChevronUp
+                            size={16}
+                            color={entryIndex === 0 ? colors.textSecondary : colors.text}
+                            strokeWidth={2}
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleMoveEntryDown(entryIndex)}
+                          disabled={entryIndex === list.entries.length - 1}
+                          style={styles.reorderButton}
+                          activeOpacity={0.7}
+                        >
+                          <ChevronDown
+                            size={16}
+                            color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
+                            strokeWidth={2}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
                 );
               })}
             </View>
@@ -3390,6 +3462,62 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
+  listDetailActionsContainer: {
+    position: 'absolute' as const,
+    top: 16,
+    right: 16,
+    zIndex: 100,
+  },
+  listDetailEditButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  listDetailEditButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  listEntryClickable: {
+    flex: 1,
+    padding: 12,
+  },
+  listEntryOptionsContainer: {
+    position: 'relative' as const,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  listEntryOptionsButton: {
+    padding: 4,
+  },
+  listEntryOptionsDropdown: {
+    position: 'absolute',
+    top: 28,
+    right: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 4,
+    minWidth: 120,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 10,
+    zIndex: 9999,
+  },
+  listEntryReorderButtons: {
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    gap: 4,
+  },
   listDetailContent: {
     flex: 1,
   },
@@ -3397,9 +3525,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   listEntryCard: {
+    flexDirection: 'row',
     borderRadius: 12,
     borderWidth: 1,
-    padding: 12,
+    overflow: 'hidden',
   },
   listEntryContent: {
     gap: 4,
