@@ -1667,7 +1667,10 @@ export default function HomeScreen() {
     }
 
     try {
-      await updateListMetadata(cardRenameListId, cardRenameListName.trim(), cardRenameListDescription.trim());
+      await updateListMetadata(cardRenameListId, {
+        name: cardRenameListName.trim(),
+        description: cardRenameListDescription.trim()
+      });
       await loadUserLists();
       setShowCardRenameModal(false);
       setCardRenameListId(null);

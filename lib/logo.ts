@@ -4,7 +4,7 @@
  */
 
 // Stand app logo fallback
-const STAND_LOGO_FALLBACK = 'https://upright-money.vercel.app/icon-512.png';
+const STAND_LOGO_FALLBACK = 'https://upright.money/icon-512.png';
 
 // Logo.dev API key (use publishable key for client-side requests)
 const LOGO_DEV_API_KEY = process.env.EXPO_PUBLIC_LOGO_DEV_API_KEY || 'pk_NmXtbgd3TRWfEXgPZ_qtzw';

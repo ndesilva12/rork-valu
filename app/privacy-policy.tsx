@@ -60,7 +60,7 @@ export default function PrivacyPolicyScreen() {
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Privacy Policy</Text>
 
         <Text style={[styles.bodyText, { color: colors.text }]}>
-          Upright Corp ("we," "us," or "Upright") operates the Upright App (the "App"), a values-based shopping and discovery platform available at upright-money.vercel.app and via mobile applications.
+          Upright Corp ("we," "us," or "Upright") operates the Upright App (the "App"), a values-based shopping and discovery platform available at upright.money and via mobile applications.
         </Text>
 
         <Text style={[styles.bodyText, { color: colors.text }]}>
