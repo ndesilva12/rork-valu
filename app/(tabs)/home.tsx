@@ -132,6 +132,8 @@ export default function HomeScreen() {
   const [descriptionText, setDescriptionText] = useState('');
   const [showValuesSelectionModal, setShowValuesSelectionModal] = useState(false);
   const [selectedValuesForList, setSelectedValuesForList] = useState<string[]>([]);
+  const [valuesListName, setValuesListName] = useState('');
+  const [valuesListDescription, setValuesListDescription] = useState('');
 
   // Quick-add state
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
@@ -1225,15 +1227,24 @@ export default function HomeScreen() {
         return;
       }
 
-      // Get value names for list name
-      const selectedValueNames = selectedValuesForList
-        .map(id => values.find(v => v.id === id)?.name)
-        .filter(Boolean)
-        .slice(0, 3)
-        .join(', ');
+      // Use custom name/description if provided, otherwise generate them
+      let listName = valuesListName.trim();
+      let listDescription = valuesListDescription.trim();
 
-      const listName = `Aligned with ${selectedValueNames}${selectedValuesForList.length > 3 ? ' +' + (selectedValuesForList.length - 3) : ''}`;
-      const listDescription = `Auto-generated list based on ${selectedValuesForList.length} selected values`;
+      if (!listName) {
+        // Get value names for auto-generated list name
+        const selectedValueNames = selectedValuesForList
+          .map(id => values.find(v => v.id === id)?.name)
+          .filter(Boolean)
+          .slice(0, 3)
+          .join(', ');
+
+        listName = `Aligned with ${selectedValueNames}${selectedValuesForList.length > 3 ? ' +' + (selectedValuesForList.length - 3) : ''}`;
+      }
+
+      if (!listDescription) {
+        listDescription = `Auto-generated list based on ${selectedValuesForList.length} selected values`;
+      }
 
       // Create the list
       const listId = await createList(clerkUser.id, listName, listDescription);
@@ -1255,6 +1266,8 @@ export default function HomeScreen() {
       // Close modal and reset state
       setShowValuesSelectionModal(false);
       setSelectedValuesForList([]);
+      setValuesListName('');
+      setValuesListDescription('');
 
       Alert.alert('Success', `Created list with ${topBrands.length} aligned brands!`);
     } catch (error) {
@@ -3001,6 +3014,8 @@ export default function HomeScreen() {
         onRequestClose={() => {
           setShowValuesSelectionModal(false);
           setSelectedValuesForList([]);
+          setValuesListName('');
+          setValuesListDescription('');
         }}
       >
         <View style={styles.modalOverlay}>
@@ -3008,6 +3023,8 @@ export default function HomeScreen() {
             onPress={() => {
               setShowValuesSelectionModal(false);
               setSelectedValuesForList([]);
+              setValuesListName('');
+              setValuesListDescription('');
             }}
           >
             <View style={StyleSheet.absoluteFill} />
@@ -3024,6 +3041,8 @@ export default function HomeScreen() {
                 onPress={() => {
                   setShowValuesSelectionModal(false);
                   setSelectedValuesForList([]);
+                  setValuesListName('');
+                  setValuesListDescription('');
                 }}
               >
                 <X size={24} color={colors.text} strokeWidth={2} />
@@ -3035,45 +3054,95 @@ export default function HomeScreen() {
                 Select at least 3 values to create a list of the top 20 most aligned brands.
               </Text>
 
+              {/* Custom Name and Description Fields */}
+              <View style={styles.inputSection}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>
+                  List Name (optional)
+                </Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                  placeholder="Leave blank for auto-generated name"
+                  placeholderTextColor={colors.textSecondary}
+                  value={valuesListName}
+                  onChangeText={setValuesListName}
+                />
+              </View>
+
+              <View style={styles.inputSection}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>
+                  Description (optional)
+                </Text>
+                <TextInput
+                  style={[styles.input, styles.textArea, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                  placeholder="Leave blank for auto-generated description"
+                  placeholderTextColor={colors.textSecondary}
+                  value={valuesListDescription}
+                  onChangeText={setValuesListDescription}
+                  multiline
+                  numberOfLines={2}
+                />
+              </View>
+
               <Text style={[styles.selectedCountText, { color: colors.primary }]}>
                 {selectedValuesForList.length} selected {selectedValuesForList.length >= 3 ? '✓' : `(${3 - selectedValuesForList.length} more needed)`}
               </Text>
 
+              {/* Group values by category */}
               <View style={styles.valuesGrid}>
-                <View style={styles.valuesButtonsContainer}>
-                  {values.map((value) => {
-                    const isSelected = selectedValuesForList.includes(value.id);
-                    return (
-                      <TouchableOpacity
-                        key={value.id}
-                        style={[
-                          styles.valueChip,
-                          {
-                            backgroundColor: isSelected ? colors.primary : colors.backgroundSecondary,
-                            borderColor: isSelected ? colors.primary : colors.border,
-                          }
-                        ]}
-                        onPress={() => {
-                          if (isSelected) {
-                            setSelectedValuesForList(prev => prev.filter(id => id !== value.id));
-                          } else {
-                            setSelectedValuesForList(prev => [...prev, value.id]);
-                          }
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Text
-                          style={[
-                            styles.valueChipText,
-                            { color: isSelected ? colors.white : colors.text }
-                          ]}
-                        >
-                          {value.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
+                {(['ideology', 'social_issue', 'person', 'religion', 'nation'] as const).map(category => {
+                  const categoryValues = values.filter(v => v.category === category);
+                  if (categoryValues.length === 0) return null;
+
+                  const categoryLabels = {
+                    ideology: 'Ideology',
+                    social_issue: 'Social Issues',
+                    person: 'People',
+                    religion: 'Religion',
+                    nation: 'Nations & States'
+                  };
+
+                  return (
+                    <View key={category} style={styles.valueCategory}>
+                      <Text style={[styles.valueCategoryTitle, { color: colors.text }]}>
+                        {categoryLabels[category]}
+                      </Text>
+                      <View style={styles.valuesButtonsContainer}>
+                        {categoryValues.map((value) => {
+                          const isSelected = selectedValuesForList.includes(value.id);
+                          return (
+                            <TouchableOpacity
+                              key={value.id}
+                              style={[
+                                styles.valueChip,
+                                {
+                                  backgroundColor: isSelected ? colors.primary : colors.backgroundSecondary,
+                                  borderColor: isSelected ? colors.primary : colors.border,
+                                }
+                              ]}
+                              onPress={() => {
+                                if (isSelected) {
+                                  setSelectedValuesForList(prev => prev.filter(id => id !== value.id));
+                                } else {
+                                  setSelectedValuesForList(prev => [...prev, value.id]);
+                                }
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <Text
+                                style={[
+                                  styles.valueChipText,
+                                  { color: isSelected ? colors.white : colors.text }
+                                ]}
+                              >
+                                {value.name}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  );
+                })}
               </View>
 
               <TouchableOpacity
@@ -4462,8 +4531,34 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
   },
+  inputSection: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 15,
+  },
+  textArea: {
+    minHeight: 60,
+    textAlignVertical: 'top',
+  },
   valuesGrid: {
     gap: 20,
+  },
+  valueCategory: {
+    marginBottom: 24,
+  },
+  valueCategoryTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 12,
   },
   valuesCategorySection: {
     marginBottom: 8,
