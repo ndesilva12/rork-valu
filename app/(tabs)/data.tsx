@@ -22,7 +22,7 @@ import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firesto
 import { db } from '@/firebase';
 import { PieChart, BarChart } from 'react-native-chart-kit';
 
-type CollapsibleSection = 'customers' | 'transactions' | 'discounts' | 'donations' | 'customerMetrics';
+type CollapsibleSection = 'customers' | 'transactions' | 'discounts' | 'customerMetrics';
 
 export default function DataScreen() {
   const { profile, isDarkMode, clerkUser } = useUser();
@@ -31,7 +31,6 @@ export default function DataScreen() {
   const [expandedSection, setExpandedSection] = useState<CollapsibleSection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [businessMetrics, setBusinessMetrics] = useState({
-    totalDonated: 0,
     totalDiscountGiven: 0,
     transactionCount: 0,
     totalRevenue: 0,
@@ -192,10 +191,6 @@ export default function DataScreen() {
   const avgDiscountPerTransaction =
     businessMetrics.transactionCount > 0
       ? businessMetrics.totalDiscountGiven / businessMetrics.transactionCount
-      : 0;
-  const avgDonationPerTransaction =
-    businessMetrics.transactionCount > 0
-      ? businessMetrics.totalDonated / businessMetrics.transactionCount
       : 0;
 
   if (isLoading) {
@@ -385,7 +380,7 @@ export default function DataScreen() {
                             {formatDate(txn.createdAt)}
                           </Text>
                           <Text style={[styles.dataRowDetail, { color: colors.textSecondary }]}>
-                            Discount: {formatCurrency(txn.discountAmount || 0)} | Donation: {formatCurrency(txn.donationAmount || 0)}
+                            Discount: {formatCurrency(txn.discountAmount || 0)}
                           </Text>
                         </View>
                       </View>
@@ -459,78 +454,6 @@ export default function DataScreen() {
                     ? ((businessMetrics.totalDiscountGiven / businessMetrics.totalRevenue) * 100).toFixed(1)
                     : '0'}
                   %
-                </Text>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* Donation Metrics Section */}
-        <View style={[styles.section, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-          <TouchableOpacity
-            style={styles.sectionHeader}
-            onPress={() => toggleSection('donations')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.sectionHeaderLeft}>
-              <Heart size={24} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Donations</Text>
-            </View>
-            <View style={styles.sectionHeaderRight}>
-              <Text style={[styles.sectionMetric, { color: colors.primary }]}>
-                {formatCurrency(businessMetrics.totalDonated)}
-              </Text>
-              {expandedSection === 'donations' ? (
-                <ChevronDown size={24} color={colors.text} strokeWidth={2} />
-              ) : (
-                <ChevronRight size={24} color={colors.text} strokeWidth={2} />
-              )}
-            </View>
-          </TouchableOpacity>
-
-          {expandedSection === 'donations' && (
-            <View style={[styles.sectionContent, { borderTopColor: colors.border }]}>
-              <View style={[styles.summaryRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
-                  Total Donated
-                </Text>
-                <Text style={[styles.summaryValue, { color: colors.text }]}>
-                  {formatCurrency(businessMetrics.totalDonated)}
-                </Text>
-              </View>
-              <View style={[styles.summaryRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
-                  Average per Transaction
-                </Text>
-                <Text style={[styles.summaryValue, { color: colors.text }]}>
-                  {formatCurrency(avgDonationPerTransaction)}
-                </Text>
-              </View>
-              <View style={[styles.summaryRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
-                  Current Donation %
-                </Text>
-                <Text style={[styles.summaryValue, { color: colors.text }]}>
-                  {profile.businessInfo?.donationPercent || 0}%
-                </Text>
-              </View>
-              <View style={[styles.summaryRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
-                  Donation Rate
-                </Text>
-                <Text style={[styles.summaryValue, { color: colors.text }]}>
-                  {businessMetrics.totalRevenue > 0
-                    ? ((businessMetrics.totalDonated / businessMetrics.totalRevenue) * 100).toFixed(1)
-                    : '0'}
-                  %
-                </Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
-                  Tax Benefit (Est.)
-                </Text>
-                <Text style={[styles.summaryValue, { color: colors.text }]}>
-                  {formatCurrency(businessMetrics.totalDonated * 0.21)}
                 </Text>
               </View>
             </View>
