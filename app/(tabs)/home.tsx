@@ -141,6 +141,12 @@ export default function HomeScreen() {
   // Fetch brands and values from Firebase via DataContext
   const { brands, values, valuesMatrix, isLoading, error } = useData();
 
+  // Helper function to get brand website from brands array
+  const getBrandWebsite = (brandId: string): string | undefined => {
+    const brand = brands?.find(b => b.id === brandId);
+    return brand?.website;
+  };
+
   // Request location permission and get user's location
   const requestLocation = async () => {
     try {
@@ -654,7 +660,7 @@ export default function HomeScreen() {
             style={[styles.quickAddButton, { backgroundColor: colors.background }]}
             onPress={(e) => {
               e.stopPropagation();
-              handleQuickAdd('brand', product.id, product.name, product.website);
+              handleQuickAdd('brand', product.id, product.name, product.website, getLogoUrl(product.website || ''));
             }}
             activeOpacity={0.7}
           >
@@ -1519,10 +1525,32 @@ export default function HomeScreen() {
 
           <View style={styles.listDetailActionsContainer}>
             <TouchableOpacity
-              onPress={() => setShowEditDropdown(!showEditDropdown)}
+              onPress={() => {
+                toggleEditMode();
+                setShowEditDropdown(false);
+              }}
+              activeOpacity={0.7}
+              style={{ marginRight: 12 }}
+            >
+              <Text style={[styles.listDetailEditTextButton, { color: colors.primary }]}>
+                {isEditMode ? 'Done' : 'Edit'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.createListButtonSmall, { backgroundColor: colors.primary }]}
+              onPress={() => {
+                Alert.alert('Add Items', 'Use the + button on brand/business cards to add items to this list');
+              }}
               activeOpacity={0.7}
             >
-              <Text style={[styles.listDetailEditTextButton, { color: colors.primary }]}>Edit</Text>
+              <Plus size={24} color={colors.white} strokeWidth={2.5} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setShowEditDropdown(!showEditDropdown)}
+              activeOpacity={0.7}
+              style={{ marginLeft: 8 }}
+            >
+              <MoreVertical size={24} color={colors.primary} strokeWidth={2} />
             </TouchableOpacity>
           </View>
         </View>
@@ -1607,7 +1635,7 @@ export default function HomeScreen() {
                         <View style={styles.brandCardInner}>
                           <View style={styles.brandLogoContainer}>
                             <Image
-                              source={{ uri: entry.logoUrl || getLogoUrl(entry.website || '') }}
+                              source={{ uri: entry.logoUrl || getLogoUrl(entry.website || (entry.type === 'brand' && 'brandId' in entry ? getBrandWebsite(entry.brandId) : '') || '') }}
                               style={styles.brandLogo}
                               contentFit="cover"
                               transition={200}
@@ -1693,7 +1721,7 @@ export default function HomeScreen() {
                         <View style={styles.brandCardInner}>
                           <View style={styles.brandLogoContainer}>
                             <Image
-                              source={{ uri: entry.logoUrl || getLogoUrl(entry.website || '') }}
+                              source={{ uri: entry.logoUrl || getLogoUrl(entry.website || (entry.type === 'brand' && 'brandId' in entry ? getBrandWebsite(entry.brandId) : '') || '') }}
                               style={styles.brandLogo}
                               contentFit="cover"
                               transition={200}
@@ -2144,25 +2172,6 @@ export default function HomeScreen() {
         {mainView === 'myLibrary' && renderMyLibraryView()}
         {mainView === 'local' && renderLocalView()}
 
-        {(
-          <TouchableOpacity
-            style={[
-              styles.searchPrompt,
-              {
-                backgroundColor: isDarkMode ? colors.backgroundSecondary : colors.background,
-                borderColor: isDarkMode ? colors.border : colors.primary,
-              },
-            ]}
-            onPress={() => router.push('/(tabs)/search')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.searchPromptContent}>
-              <Text style={[styles.searchPromptTitle, { color: isDarkMode ? colors.white : colors.primary }]}>Looking for something specific?</Text>
-              <Text style={[styles.searchPromptSubtitle, { color: isDarkMode ? colors.white : colors.textSecondary }]}>Search our database of products</Text>
-            </View>
-            <ChevronRight size={24} color={isDarkMode ? colors.white : colors.primary} strokeWidth={2} />
-          </TouchableOpacity>
-        )}
       </ScrollView>
 
       {/* Create List Modal */}
@@ -2693,9 +2702,10 @@ export default function HomeScreen() {
   );
 }
 
-// Detect mobile screen size for responsive map modal
+// Detect mobile screen size for responsive styling
 const { width: screenWidth } = Dimensions.get('window');
 const isMobileScreen = screenWidth < 768; // Mobile if width < 768px
+const mobileScale = isMobileScreen ? 0.85 : 1; // Scale down elements on mobile by 15%
 
 const styles = StyleSheet.create({
   container: {
@@ -2759,20 +2769,20 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 22 * mobileScale,
     fontWeight: '700' as const,
   },
   sectionSubtitle: {
-    fontSize: 14,
-    marginBottom: 20,
-    lineHeight: 20,
+    fontSize: 14 * mobileScale,
+    marginBottom: 20 * mobileScale,
+    lineHeight: 20 * mobileScale,
   },
   emptyText: {
-    fontSize: 15,
+    fontSize: 15 * mobileScale,
     textAlign: 'center' as const,
-    paddingVertical: 32,
-    paddingHorizontal: 24,
-    lineHeight: 22,
+    paddingVertical: 32 * mobileScale,
+    paddingHorizontal: 24 * mobileScale,
+    lineHeight: 22 * mobileScale,
   },
   productsContainer: {
     gap: 12,
@@ -2801,19 +2811,19 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   productName: {
-    fontSize: 15,
+    fontSize: 15 * mobileScale,
     fontWeight: '700' as const,
   },
   scorebadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 4,
+    paddingHorizontal: 8 * mobileScale,
+    paddingVertical: 4 * mobileScale,
+    borderRadius: 6 * mobileScale,
+    gap: 4 * mobileScale,
   },
   scoreText: {
-    fontSize: 13,
+    fontSize: 13 * mobileScale,
     fontWeight: '700' as const,
   },
   valueTagsContainer: {
@@ -3740,31 +3750,35 @@ const styles = StyleSheet.create({
   listDetailHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center', // Changed from flex-start to center for vertical alignment
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
     marginBottom: 16,
+    position: 'relative' as const, // Added for absolute positioning of title
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    zIndex: 1, // Ensure back button stays on top
   },
   backButtonText: {
-    fontSize: 18,
+    fontSize: 18 * mobileScale,
     fontWeight: '700' as const,
   },
   listDetailTitle: {
-    fontSize: 28,
+    fontSize: 28 * mobileScale,
     fontWeight: '700' as const,
     textAlign: 'center' as const,
   },
   listDetailTitleCentered: {
-    flex: 1,
+    position: 'absolute' as const, // Absolutely positioned to center in page
+    left: 0,
+    right: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    pointerEvents: 'none' as const, // Allow clicks to pass through to buttons
   },
   listOptionsButton: {
     padding: 4,
@@ -3806,7 +3820,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   listDetailActionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     position: 'relative' as const,
+    zIndex: 2, // Ensure buttons stay on top
   },
   listDetailEditButton: {
     flexDirection: 'row',

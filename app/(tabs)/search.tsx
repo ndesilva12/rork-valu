@@ -358,7 +358,10 @@ export default function SearchScreen() {
     } else {
       router.push({
         pathname: '/brand/[id]',
-        params: { id: product.id },
+        params: {
+          id: product.id,
+          name: product.brand || product.name, // Pass brand name as fallback for brand lookup
+        },
       });
     }
   };
@@ -752,11 +755,14 @@ export default function SearchScreen() {
           />
           {query.length > 0 && (
             <TouchableOpacity
-              onPress={() => setQuery('')}
+              onPress={() => {
+                setQuery('');
+                setResults([]);
+              }}
               style={styles.clearButton}
               activeOpacity={0.7}
             >
-              <X size={20} color={colors.textSecondary} strokeWidth={2} />
+              <X size={Platform.OS === 'web' ? 20 : 24} color={colors.textSecondary} strokeWidth={2.5} />
             </TouchableOpacity>
           )}
         </View>
@@ -1148,11 +1154,12 @@ const styles = StyleSheet.create({
     outlineWidth: 0,
   },
   clearButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: Platform.OS === 'web' ? 32 : 44, // Larger touch target on mobile
+    height: Platform.OS === 'web' ? 32 : 44,
+    borderRadius: Platform.OS === 'web' ? 16 : 22,
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: 8, // Ensure spacing from input
   },
 
   // Explore Section
