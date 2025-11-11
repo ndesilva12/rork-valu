@@ -1480,47 +1480,49 @@ export default function HomeScreen() {
               <Edit size={16} color={colors.text} strokeWidth={2} />
               <Text style={[styles.listDetailEditButtonText, { color: colors.text }]}>Edit</Text>
             </TouchableOpacity>
-            {showEditDropdown && (
-              <View style={[styles.listOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                <TouchableOpacity
-                  style={styles.listOptionItem}
-                  onPress={() => {
-                    setShowEditDropdown(false);
-                    handleOpenRenameModal();
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Edit size={18} color={colors.text} strokeWidth={2} />
-                  <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
-                </TouchableOpacity>
-                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                <TouchableOpacity
-                  style={styles.listOptionItem}
-                  onPress={() => {
-                    setShowEditDropdown(false);
-                    toggleEditMode();
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                  <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
-                </TouchableOpacity>
-                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                <TouchableOpacity
-                  style={styles.listOptionItem}
-                  onPress={() => {
-                    setShowEditDropdown(false);
-                    handleDeleteCurrentList();
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-                  <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            )}
           </View>
         </View>
+
+        {/* Edit dropdown rendered outside header to avoid z-index issues */}
+        {showEditDropdown && (
+          <View style={[styles.listEditDropdownOverlay, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+            <TouchableOpacity
+              style={styles.listOptionItem}
+              onPress={() => {
+                setShowEditDropdown(false);
+                handleOpenRenameModal();
+              }}
+              activeOpacity={0.7}
+            >
+              <Edit size={18} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+            </TouchableOpacity>
+            <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+            <TouchableOpacity
+              style={styles.listOptionItem}
+              onPress={() => {
+                setShowEditDropdown(false);
+                toggleEditMode();
+              }}
+              activeOpacity={0.7}
+            >
+              <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
+            </TouchableOpacity>
+            <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+            <TouchableOpacity
+              style={styles.listOptionItem}
+              onPress={() => {
+                setShowEditDropdown(false);
+                handleDeleteCurrentList();
+              }}
+              activeOpacity={0.7}
+            >
+              <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+              <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <ScrollView style={styles.listDetailContent}>
           {list.entries.length === 0 ? (
@@ -1532,100 +1534,337 @@ export default function HomeScreen() {
           ) : (
             <View style={styles.listEntriesContainer}>
               {list.entries.map((entry, entryIndex) => {
-                const isClickable = !isEditMode && (entry.type === 'brand' || entry.type === 'value' || entry.type === 'link');
-                const EntryWrapper = isClickable ? TouchableOpacity : View;
-
-                return (
-                  <View key={entry.id} style={[styles.listEntryCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                    <EntryWrapper
-                      style={styles.listEntryClickable}
-                      onPress={isClickable ? () => handleEntryClick(entry) : undefined}
-                      activeOpacity={isClickable ? 0.7 : 1}
-                    >
-                      <View style={styles.listEntryContent}>
-                        <Text style={[styles.listEntryType, { color: colors.textSecondary }]}>
-                          {entry.type.charAt(0).toUpperCase() + entry.type.slice(1)}
-                        </Text>
-                        <Text style={[styles.listEntryName, { color: colors.text }]}>
-                          {'brandName' in entry ? entry.brandName :
-                           'businessName' in entry ? entry.businessName :
-                           'valueName' in entry ? entry.valueName :
-                           'title' in entry ? entry.title :
-                           'content' in entry ? entry.content : 'Text'}
-                        </Text>
-                        {entry.type === 'value' && 'mode' in entry && (
-                          <Text style={[styles.listEntryMode, { color: entry.mode === 'maxPain' ? colors.danger : colors.success }]}>
-                            {entry.mode === 'maxPain' ? 'Max Pain' : 'Max Benefit'}
-                          </Text>
-                        )}
-                        {entry.type === 'link' && 'url' in entry && (
-                          <View style={styles.linkUrlContainer}>
-                            <ExternalLink size={14} color={colors.textSecondary} strokeWidth={2} />
-                            <Text style={[styles.linkUrl, { color: colors.textSecondary }]} numberOfLines={1}>
-                              {entry.url}
+                // Render based on entry type
+                if (entry.type === 'brand' && 'brandId' in entry) {
+                  return (
+                    <View key={entry.id} style={styles.listEntryWrapper}>
+                      <TouchableOpacity
+                        style={[
+                          styles.brandCard,
+                          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                        ]}
+                        onPress={() => !isEditMode && router.push(`/brand/${entry.brandId}`)}
+                        activeOpacity={0.7}
+                        disabled={isEditMode}
+                      >
+                        <View style={styles.brandCardInner}>
+                          <View style={styles.brandLogoContainer}>
+                            <Image
+                              source={{ uri: getLogoUrl('') }}
+                              style={styles.brandLogo}
+                              contentFit="cover"
+                              transition={200}
+                              cachePolicy="memory-disk"
+                            />
+                          </View>
+                          <View style={styles.brandCardContent}>
+                            <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
+                              {entry.brandName}
+                            </Text>
+                            <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                              Brand
                             </Text>
                           </View>
-                        )}
-                      </View>
-                    </EntryWrapper>
-
-                    {!isEditMode && (
-                      <View style={styles.listEntryOptionsContainer}>
-                        <TouchableOpacity
-                          style={styles.listEntryOptionsButton}
-                          onPress={() => setActiveItemOptionsMenu(activeItemOptionsMenu === entry.id ? null : entry.id)}
-                          activeOpacity={0.7}
-                        >
-                          <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
-                        </TouchableOpacity>
-                        {activeItemOptionsMenu === entry.id && (
-                          <View style={[styles.listEntryOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                          {!isEditMode && (
                             <TouchableOpacity
-                              style={styles.listOptionItem}
-                              onPress={() => {
-                                setActiveItemOptionsMenu(null);
-                                handleDeleteEntry(entry.id);
-                              }}
+                              style={styles.listEntryOptionsButton}
+                              onPress={() => setActiveItemOptionsMenu(activeItemOptionsMenu === entry.id ? null : entry.id)}
                               activeOpacity={0.7}
                             >
-                              <Trash2 size={16} color={colors.danger} strokeWidth={2} />
-                              <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+                              <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                            </TouchableOpacity>
+                          )}
+                          {isEditMode && (
+                            <View style={styles.listEntryReorderButtons}>
+                              <TouchableOpacity
+                                onPress={() => handleMoveEntryUp(entryIndex)}
+                                disabled={entryIndex === 0}
+                                style={styles.reorderButton}
+                                activeOpacity={0.7}
+                              >
+                                <ChevronUp
+                                  size={16}
+                                  color={entryIndex === 0 ? colors.textSecondary : colors.text}
+                                  strokeWidth={2}
+                                />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                onPress={() => handleMoveEntryDown(entryIndex)}
+                                disabled={entryIndex === list.entries.length - 1}
+                                style={styles.reorderButton}
+                                activeOpacity={0.7}
+                              >
+                                <ChevronDown
+                                  size={16}
+                                  color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
+                                  strokeWidth={2}
+                                />
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                      {activeItemOptionsMenu === entry.id && !isEditMode && (
+                        <View style={[styles.listEntryOptionsDropdownFixed, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                          <TouchableOpacity
+                            style={styles.listOptionItem}
+                            onPress={() => {
+                              setActiveItemOptionsMenu(null);
+                              handleDeleteEntry(entry.id);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Trash2 size={16} color={colors.danger} strokeWidth={2} />
+                            <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  );
+                } else if (entry.type === 'business' && 'businessId' in entry) {
+                  return (
+                    <View key={entry.id} style={styles.listEntryWrapper}>
+                      <TouchableOpacity
+                        style={[
+                          styles.brandCard,
+                          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                        ]}
+                        onPress={() => !isEditMode && handleBusinessPress(entry.businessId)}
+                        activeOpacity={0.7}
+                        disabled={isEditMode}
+                      >
+                        <View style={styles.brandCardInner}>
+                          <View style={styles.brandLogoContainer}>
+                            <Image
+                              source={{ uri: getLogoUrl('') }}
+                              style={styles.brandLogo}
+                              contentFit="cover"
+                              transition={200}
+                              cachePolicy="memory-disk"
+                            />
+                          </View>
+                          <View style={styles.brandCardContent}>
+                            <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
+                              {entry.businessName}
+                            </Text>
+                            <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                              Business
+                            </Text>
+                          </View>
+                          {!isEditMode && (
+                            <TouchableOpacity
+                              style={styles.listEntryOptionsButton}
+                              onPress={() => setActiveItemOptionsMenu(activeItemOptionsMenu === entry.id ? null : entry.id)}
+                              activeOpacity={0.7}
+                            >
+                              <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                            </TouchableOpacity>
+                          )}
+                          {isEditMode && (
+                            <View style={styles.listEntryReorderButtons}>
+                              <TouchableOpacity
+                                onPress={() => handleMoveEntryUp(entryIndex)}
+                                disabled={entryIndex === 0}
+                                style={styles.reorderButton}
+                                activeOpacity={0.7}
+                              >
+                                <ChevronUp
+                                  size={16}
+                                  color={entryIndex === 0 ? colors.textSecondary : colors.text}
+                                  strokeWidth={2}
+                                />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                onPress={() => handleMoveEntryDown(entryIndex)}
+                                disabled={entryIndex === list.entries.length - 1}
+                                style={styles.reorderButton}
+                                activeOpacity={0.7}
+                              >
+                                <ChevronDown
+                                  size={16}
+                                  color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
+                                  strokeWidth={2}
+                                  />
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                      {activeItemOptionsMenu === entry.id && !isEditMode && (
+                        <View style={[styles.listEntryOptionsDropdownFixed, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                          <TouchableOpacity
+                            style={styles.listOptionItem}
+                            onPress={() => {
+                              setActiveItemOptionsMenu(null);
+                              handleDeleteEntry(entry.id);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Trash2 size={16} color={colors.danger} strokeWidth={2} />
+                            <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  );
+                } else if (entry.type === 'value' && 'valueId' in entry && 'mode' in entry) {
+                  const isMaxPain = entry.mode === 'maxPain';
+                  const borderColor = isMaxPain ? colors.danger : colors.success;
+                  return (
+                    <View key={entry.id} style={styles.listEntryWrapper}>
+                      <TouchableOpacity
+                        style={[styles.valueRow, { backgroundColor: colors.backgroundSecondary }]}
+                        onPress={() => !isEditMode && router.push(`/value/${entry.valueId}`)}
+                        activeOpacity={0.7}
+                        disabled={isEditMode}
+                      >
+                        <View style={[styles.valueNameBox, { borderColor }]}>
+                          <Text style={[styles.valueNameText, { color: borderColor }]} numberOfLines={1}>
+                            {entry.valueName}
+                          </Text>
+                        </View>
+                        <View style={styles.valueRowActions}>
+                          {!isEditMode && (
+                            <TouchableOpacity
+                              style={styles.listEntryOptionsButton}
+                              onPress={() => setActiveItemOptionsMenu(activeItemOptionsMenu === entry.id ? null : entry.id)}
+                              activeOpacity={0.7}
+                            >
+                              <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                            </TouchableOpacity>
+                          )}
+                          {isEditMode && (
+                            <View style={styles.listEntryReorderButtons}>
+                              <TouchableOpacity
+                                onPress={() => handleMoveEntryUp(entryIndex)}
+                                disabled={entryIndex === 0}
+                                style={styles.reorderButton}
+                                activeOpacity={0.7}
+                              >
+                                <ChevronUp
+                                  size={16}
+                                  color={entryIndex === 0 ? colors.textSecondary : colors.text}
+                                  strokeWidth={2}
+                                />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                onPress={() => handleMoveEntryDown(entryIndex)}
+                                disabled={entryIndex === list.entries.length - 1}
+                                style={styles.reorderButton}
+                                activeOpacity={0.7}
+                              >
+                                <ChevronDown
+                                  size={16}
+                                  color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
+                                  strokeWidth={2}
+                                />
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                      {activeItemOptionsMenu === entry.id && !isEditMode && (
+                        <View style={[styles.listEntryOptionsDropdownFixed, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                          <TouchableOpacity
+                            style={styles.listOptionItem}
+                            onPress={() => {
+                              setActiveItemOptionsMenu(null);
+                              handleDeleteEntry(entry.id);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Trash2 size={16} color={colors.danger} strokeWidth={2} />
+                            <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  );
+                } else {
+                  // Default render for link and text entries
+                  return (
+                    <View key={entry.id} style={styles.listEntryWrapper}>
+                      <View style={[styles.listEntryCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                        <TouchableOpacity
+                          style={styles.listEntryClickable}
+                          onPress={() => !isEditMode && handleEntryClick(entry)}
+                          activeOpacity={0.7}
+                          disabled={isEditMode}
+                        >
+                          <View style={styles.listEntryContent}>
+                            <Text style={[styles.listEntryType, { color: colors.textSecondary }]}>
+                              {entry.type.charAt(0).toUpperCase() + entry.type.slice(1)}
+                            </Text>
+                            <Text style={[styles.listEntryName, { color: colors.text }]}>
+                              {'title' in entry ? entry.title :
+                               'content' in entry ? entry.content : 'Entry'}
+                            </Text>
+                            {entry.type === 'link' && 'url' in entry && (
+                              <View style={styles.linkUrlContainer}>
+                                <ExternalLink size={14} color={colors.textSecondary} strokeWidth={2} />
+                                <Text style={[styles.linkUrl, { color: colors.textSecondary }]} numberOfLines={1}>
+                                  {entry.url}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        </TouchableOpacity>
+                        {!isEditMode && (
+                          <TouchableOpacity
+                            style={styles.listEntryOptionsButton}
+                            onPress={() => setActiveItemOptionsMenu(activeItemOptionsMenu === entry.id ? null : entry.id)}
+                            activeOpacity={0.7}
+                          >
+                            <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                          </TouchableOpacity>
+                        )}
+                        {isEditMode && (
+                          <View style={styles.listEntryReorderButtons}>
+                            <TouchableOpacity
+                              onPress={() => handleMoveEntryUp(entryIndex)}
+                              disabled={entryIndex === 0}
+                              style={styles.reorderButton}
+                              activeOpacity={0.7}
+                            >
+                              <ChevronUp
+                                size={16}
+                                color={entryIndex === 0 ? colors.textSecondary : colors.text}
+                                strokeWidth={2}
+                              />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => handleMoveEntryDown(entryIndex)}
+                              disabled={entryIndex === list.entries.length - 1}
+                              style={styles.reorderButton}
+                              activeOpacity={0.7}
+                            >
+                              <ChevronDown
+                                size={16}
+                                color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
+                                strokeWidth={2}
+                              />
                             </TouchableOpacity>
                           </View>
                         )}
                       </View>
-                    )}
-
-                    {isEditMode && (
-                      <View style={styles.listEntryReorderButtons}>
-                        <TouchableOpacity
-                          onPress={() => handleMoveEntryUp(entryIndex)}
-                          disabled={entryIndex === 0}
-                          style={styles.reorderButton}
-                          activeOpacity={0.7}
-                        >
-                          <ChevronUp
-                            size={16}
-                            color={entryIndex === 0 ? colors.textSecondary : colors.text}
-                            strokeWidth={2}
-                          />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => handleMoveEntryDown(entryIndex)}
-                          disabled={entryIndex === list.entries.length - 1}
-                          style={styles.reorderButton}
-                          activeOpacity={0.7}
-                        >
-                          <ChevronDown
-                            size={16}
-                            color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
-                            strokeWidth={2}
-                          />
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </View>
-                );
+                      {activeItemOptionsMenu === entry.id && !isEditMode && (
+                        <View style={[styles.listEntryOptionsDropdownFixed, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                          <TouchableOpacity
+                            style={styles.listOptionItem}
+                            onPress={() => {
+                              setActiveItemOptionsMenu(null);
+                              handleDeleteEntry(entry.id);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Trash2 size={16} color={colors.danger} strokeWidth={2} />
+                            <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  );
+                }
               })}
             </View>
           )}
@@ -2494,12 +2733,14 @@ const styles = StyleSheet.create({
   mainViewRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginHorizontal: 16,
     marginBottom: 8,
     marginTop: 10,
   },
   mainViewSelector: {
     flexDirection: 'row',
+    flex: 1,
     borderRadius: 10,
     padding: 3,
     borderWidth: 1,
@@ -3402,6 +3643,21 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
   },
+  listEditDropdownOverlay: {
+    position: 'absolute',
+    top: 88,
+    right: 16,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 4,
+    minWidth: 160,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 999,
+    zIndex: 999999,
+  },
   listDetailEditButtonText: {
     fontSize: 13,
     fontWeight: '600' as const,
@@ -3416,7 +3672,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   listEntryOptionsButton: {
-    padding: 4,
+    padding: 8,
   },
   listEntryOptionsDropdown: {
     position: 'absolute',
@@ -3433,6 +3689,46 @@ const styles = StyleSheet.create({
     elevation: 999,
     zIndex: 999999,
   },
+  listEntryOptionsDropdownFixed: {
+    position: 'absolute',
+    top: 40,
+    right: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 4,
+    minWidth: 120,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 999,
+    zIndex: 999999,
+  },
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  valueNameBox: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderWidth: 2,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  valueNameText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  valueRowActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   listEntryReorderButtons: {
     justifyContent: 'center',
     paddingHorizontal: 8,
@@ -3444,11 +3740,13 @@ const styles = StyleSheet.create({
   listEntriesContainer: {
     gap: 10,
   },
+  listEntryWrapper: {
+    position: 'relative' as const,
+  },
   listEntryCard: {
     flexDirection: 'row',
     borderRadius: 12,
     borderWidth: 1,
-    overflow: 'hidden',
   },
   listEntryContent: {
     gap: 4,
