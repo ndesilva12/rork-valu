@@ -27,24 +27,15 @@ export default function ValueCodeSettings() {
     acceptsValueCode: true,
     valueCodeDiscount: 10,
     customerDiscountPercent: 5,
-    donationPercent: 2.5,
     customDiscount: '',
   };
 
   const [acceptsDiscounts, setAcceptsDiscounts] = useState(
     businessInfo.acceptsStandDiscounts ?? businessInfo.acceptsValueCodes ?? false
   );
-  const [makeDonations, setMakeDonations] = useState(
-    businessInfo.makesDonations ?? false
-  );
   const [discountType, setDiscountType] = useState<'preset' | 'custom'>('preset');
-  const [donationType, setDonationType] = useState<'preset' | 'custom'>('preset');
   const [customerDiscount, setCustomerDiscount] = useState(businessInfo.customerDiscountPercent || 5);
-  const [donationDiscount, setDonationDiscount] = useState(businessInfo.donationPercent || 2.5);
   const [customDiscountText, setCustomDiscountText] = useState(businessInfo.customDiscount || '');
-  const [customDonationText, setCustomDonationText] = useState(businessInfo.customDonation || '');
-
-  const businessDonationAmount = businessInfo.totalDonated || 0;
 
   const handleToggleDiscounts = async (value: boolean) => {
     setAcceptsDiscounts(value);
@@ -61,34 +52,11 @@ export default function ValueCodeSettings() {
     }
   };
 
-  const handleToggleDonations = async (value: boolean) => {
-    setMakeDonations(value);
-    await setBusinessInfo({
-      makesDonations: value,
-    });
-
-    if (value) {
-      Alert.alert(
-        'Donations Enabled',
-        'You can now contribute donations through Stand transactions!',
-        [{ text: 'Great!' }]
-      );
-    }
-  };
-
   const handleChangeCustomerDiscount = async (newCustomer: number) => {
     const clampedCustomer = Math.max(0, Math.min(50, newCustomer));
     setCustomerDiscount(clampedCustomer);
     await setBusinessInfo({
       customerDiscountPercent: clampedCustomer,
-    });
-  };
-
-  const handleChangeDonationDiscount = async (newDonation: number) => {
-    const clampedDonation = Math.max(0, Math.min(50, newDonation));
-    setDonationDiscount(clampedDonation);
-    await setBusinessInfo({
-      donationPercent: clampedDonation,
     });
   };
 
@@ -247,161 +215,6 @@ export default function ValueCodeSettings() {
                 >
                   <Text style={[styles.saveCustomButtonText, { color: colors.white }]}>
                     Submit Custom Discount
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </>
-        )}
-        </View>
-      </View>
-
-      {/* DONATIONS SECTION */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Donations</Text>
-
-        <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
-          {/* Toggle */}
-          <View style={styles.settingRow}>
-            <Text style={[styles.settingLabel, { color: colors.text }]}>Make Donations</Text>
-            <Switch
-              value={makeDonations}
-              onValueChange={handleToggleDonations}
-              trackColor={{ false: '#D1D5DB', true: '#000000' }}
-              thumbColor='#FFFFFF'
-              ios_backgroundColor='#E5E7EB'
-            />
-          </View>
-
-          {/* What You Get box - Only visible when donations are NOT accepted */}
-          {!makeDonations && (
-            <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
-              <Text style={[styles.infoTitle, { color: colors.text }]}>
-                What You Get For Donations
-              </Text>
-              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                <Text style={styles.underlinedText}>When you contribute donations, you get immediate tax deductible write offs that your CUSTOMERS get to choose the destination for.</Text> Your customers will be more incentivized to do business with you because they have the final say where the donations go. Your donation goes to our 501(c)(3) - and then directed to the various charities and organizations chosen by the customer but the tax benefit is YOURS, not ours.
-              </Text>
-            </View>
-          )}
-
-        {makeDonations && (
-          <>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-            {/* Total Donated Counter */}
-            <View style={styles.donationAmountContainer}>
-              <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Total Donated Through Stand</Text>
-              <Text style={[styles.donationAmount, { color: colors.primary }]}>
-                ${businessDonationAmount.toFixed(2)}
-              </Text>
-            </View>
-
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-            {/* Donation Type Selection */}
-            <View style={styles.discountTypeSection}>
-              <Text style={[styles.subsectionTitle, { color: colors.text }]}>Set Your Donation</Text>
-              <View style={styles.discountTypeButtons}>
-                <TouchableOpacity
-                  style={[
-                    styles.typeButton,
-                    { borderColor: colors.border, backgroundColor: colors.background },
-                    donationType === 'preset' && { borderColor: colors.primary }
-                  ]}
-                  onPress={() => setDonationType('preset')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[
-                    styles.typeButtonText,
-                    { color: donationType === 'preset' ? colors.primary : colors.text }
-                  ]}>
-                    Preset Donation
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.typeButton,
-                    { borderColor: colors.border, backgroundColor: colors.background },
-                    donationType === 'custom' && { borderColor: colors.primary }
-                  ]}
-                  onPress={() => setDonationType('custom')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[
-                    styles.typeButtonText,
-                    { color: donationType === 'custom' ? colors.primary : colors.text }
-                  ]}>
-                    Custom Donation
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {donationType === 'preset' ? (
-              <>
-                {/* Donation percentage counter with buttons on left/right */}
-                <View style={styles.singleCounterRow}>
-                  <TouchableOpacity
-                    style={[styles.sideButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                    onPress={() => handleChangeDonationDiscount(donationDiscount - 0.5)}
-                    activeOpacity={0.7}
-                  >
-                    <Minus size={24} color={colors.text} strokeWidth={2} />
-                  </TouchableOpacity>
-
-                  <View style={[styles.centerCounter, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                    <Text style={[styles.smallCounterLabel, { color: colors.textSecondary }]}>Donation %</Text>
-                    <Text style={[styles.largeCounterValue, { color: colors.primary }]}>
-                      {donationDiscount.toFixed(1)}%
-                    </Text>
-                  </View>
-
-                  <TouchableOpacity
-                    style={[styles.sideButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                    onPress={() => handleChangeDonationDiscount(donationDiscount + 0.5)}
-                    activeOpacity={0.7}
-                  >
-                    <Plus size={24} color={colors.text} strokeWidth={2} />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Upright Fee text */}
-                <View style={styles.standFeeTextContainer}>
-                  <Text style={[styles.standFeeText, { color: colors.textSecondary }]}>
-                    Upright Fee: 2.5% Fixed
-                  </Text>
-                </View>
-              </>
-            ) : (
-              /* Custom Donation Input */
-              <View style={styles.customDiscountSection}>
-                <Text style={[styles.customDiscountLabel, { color: colors.textSecondary }]}>
-                  Describe your custom donation structure
-                </Text>
-                <TextInput
-                  style={[
-                    styles.customDiscountInput,
-                    { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }
-                  ]}
-                  placeholder="e.g., $1 per transaction to local charities..."
-                  placeholderTextColor={colors.textSecondary}
-                  value={customDonationText}
-                  onChangeText={setCustomDonationText}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                />
-                <Text style={[styles.customDiscountNote, { color: colors.textSecondary }]}>
-                  Note: We will reach out to you to confirm and approve your custom donation.
-                </Text>
-                <TouchableOpacity
-                  style={[styles.saveCustomButton, { backgroundColor: colors.primary }]}
-                  onPress={handleSaveCustomDiscount}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.saveCustomButtonText, { color: colors.white }]}>
-                    Submit Custom Donation
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -592,24 +405,5 @@ const styles = StyleSheet.create({
   },
   underlinedText: {
     textDecorationLine: 'underline' as const,
-  },
-  donationAmountContainer: {
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
-  },
-  donationLabel: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    textAlign: 'center' as const,
-  },
-  donationAmount: {
-    fontSize: 42,
-    fontWeight: '700' as const,
   },
 });
