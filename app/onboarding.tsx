@@ -101,7 +101,7 @@ export default function OnboardingScreen() {
 
   const handleContinue = async () => {
     console.log('[Onboarding] Continue pressed with', selectedValues.length, 'values');
-    if (selectedValues.length > 0) {
+    if (selectedValues.length >= 3) {
       const causes: Cause[] = selectedValues.map(v => ({
         id: v.id,
         name: v.name,
@@ -113,9 +113,9 @@ export default function OnboardingScreen() {
       console.log('[Onboarding] Causes to save:', JSON.stringify(causes.map(c => c.name), null, 2));
       await addCauses(causes);
       console.log('[Onboarding] addCauses completed');
-      
+
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       console.log('[Onboarding] Redirecting to home');
       router.replace('/(tabs)/home');
     }
@@ -152,7 +152,7 @@ export default function OnboardingScreen() {
           </View>
           <Text style={[styles.title, { color: colors.text }]}>Identify Your Values</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Select a positive or negative view of any items you feel strongly about.
+            Select a positive or negative view of at least 3 items you feel strongly about.
           </Text>
           <View style={[styles.instructionBox, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
             <Text style={[styles.instructionText, { color: colors.textSecondary }]}>
@@ -255,12 +255,12 @@ export default function OnboardingScreen() {
       <View style={[styles.footer, { paddingBottom: 32 + insets.bottom, backgroundColor: colors.backgroundSecondary, borderTopColor: colors.border }, Platform.OS === 'web' && styles.footerWeb]}>
         <View style={[styles.footerContent, Platform.OS === 'web' && styles.footerContentWeb]}>
           <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
-            {selectedValues.length} {selectedValues.length === 1 ? 'value' : 'values'} selected
+            {selectedValues.length} {selectedValues.length === 1 ? 'value' : 'values'} selected{selectedValues.length < 3 ? ` (minimum 3 required)` : ''}
           </Text>
           <TouchableOpacity
-            style={[styles.continueButton, { backgroundColor: colors.primary }, selectedValues.length === 0 && { backgroundColor: colors.neutral, opacity: 0.5 }]}
+            style={[styles.continueButton, { backgroundColor: colors.primary }, selectedValues.length < 3 && { backgroundColor: colors.neutral, opacity: 0.5 }]}
             onPress={handleContinue}
-            disabled={selectedValues.length === 0}
+            disabled={selectedValues.length < 3}
             activeOpacity={0.8}
           >
             <Text style={[styles.continueButtonText, { color: colors.white }]}>Continue</Text>

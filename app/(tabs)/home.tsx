@@ -2508,11 +2508,25 @@ export default function HomeScreen() {
                       <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
                       <TouchableOpacity
                         style={styles.listOptionItem}
+                        onPress={() => {
+                          setActiveCardOptionsMenu(null);
+                          setDescriptionText(list.description || '');
+                          setSelectedList(list);
+                          setShowDescriptionModal(true);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Edit size={18} color={colors.text} strokeWidth={2} />
+                        <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+                      </TouchableOpacity>
+                      <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                      <TouchableOpacity
+                        style={styles.listOptionItem}
                         onPress={() => handleCardDeleteList(list.id)}
                         activeOpacity={0.7}
                       >
                         <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-                        <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+                        <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
                       </TouchableOpacity>
                     </View>
                   </>
@@ -4577,7 +4591,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   listCardOptionsButton: {
-    padding: 8,
+    padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
