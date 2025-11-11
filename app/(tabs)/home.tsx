@@ -131,7 +131,7 @@ export default function HomeScreen() {
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
   const [descriptionText, setDescriptionText] = useState('');
   const [showValuesSelectionModal, setShowValuesSelectionModal] = useState(false);
-  const [selectedValuesForList, setSelectedValuesForList] = useState<string[]>([]);
+  const [selectedValuesForList, setSelectedValuesForList] = useState<Array<{ id: string; type: 'support' | 'avoid' }>>([]);
   const [valuesListName, setValuesListName] = useState('');
   const [valuesListDescription, setValuesListDescription] = useState('');
 
@@ -1181,21 +1181,22 @@ export default function HomeScreen() {
         const alignedPositions: number[] = [];
 
         // Check each selected value
-        selectedValuesForList.forEach((valueId) => {
-          const causeData = valuesMatrix[valueId];
+        selectedValuesForList.forEach((selectedValue) => {
+          const causeData = valuesMatrix[selectedValue.id];
           if (!causeData) {
             alignedPositions.push(11);
             return;
           }
 
-          // Find position in support list (1-10, or 11 if not found)
-          const supportIndex = causeData.support?.indexOf(brandName);
-          const supportPosition = supportIndex !== undefined && supportIndex >= 0
-            ? supportIndex + 1
+          // Check the appropriate list based on selection type
+          const listToCheck = selectedValue.type === 'support' ? causeData.support : causeData.avoid;
+          const positionIndex = listToCheck?.indexOf(brandName);
+          const position = positionIndex !== undefined && positionIndex >= 0
+            ? positionIndex + 1
             : 11;
 
-          if (supportPosition <= 10) {
-            alignedPositions.push(supportPosition);
+          if (position <= 10) {
+            alignedPositions.push(position);
             totalSupportScore += 100;
           } else {
             alignedPositions.push(11);
@@ -1234,7 +1235,7 @@ export default function HomeScreen() {
       if (!listName) {
         // Get value names for auto-generated list name
         const selectedValueNames = selectedValuesForList
-          .map(id => values.find(v => v.id === id)?.name)
+          .map(sv => values.find(v => v.id === sv.id)?.name)
           .filter(Boolean)
           .slice(0, 3)
           .join(', ');
@@ -1243,7 +1244,9 @@ export default function HomeScreen() {
       }
 
       if (!listDescription) {
-        listDescription = `Auto-generated list based on ${selectedValuesForList.length} selected values`;
+        const supportCount = selectedValuesForList.filter(sv => sv.type === 'support').length;
+        const avoidCount = selectedValuesForList.filter(sv => sv.type === 'avoid').length;
+        listDescription = `Auto-generated list based on ${supportCount} supported and ${avoidCount} avoided values`;
       }
 
       // Create the list
@@ -2335,6 +2338,11 @@ export default function HomeScreen() {
                         <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
                           {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
                         </Text>
+                        {list.description && (
+                          <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                            {list.description}
+                          </Text>
+                        )}
                       </View>
                       {!isLibraryRearrangeMode && (
                         <TouchableOpacity
@@ -2377,11 +2385,6 @@ export default function HomeScreen() {
                         </View>
                       )}
                     </View>
-                    {list.description && (
-                      <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                        {list.description}
-                      </Text>
-                    )}
                   </View>
                 </TouchableOpacity>
                 {activeCardOptionsMenu === list.id && !isLibraryRearrangeMode && (
@@ -3127,22 +3130,35 @@ export default function HomeScreen() {
                       </Text>
                       <View style={styles.valuesButtonsContainer}>
                         {categoryValues.map((value) => {
-                          const isSelected = selectedValuesForList.includes(value.id);
+                          const selectedValue = selectedValuesForList.find(sv => sv.id === value.id);
+                          const selectionState = selectedValue ? selectedValue.type : null;
+
                           return (
                             <TouchableOpacity
                               key={value.id}
                               style={[
                                 styles.valueChip,
                                 {
-                                  backgroundColor: isSelected ? colors.primary : colors.backgroundSecondary,
-                                  borderColor: isSelected ? colors.primary : colors.border,
+                                  backgroundColor: selectionState === 'support' ? colors.success || colors.primary :
+                                                 selectionState === 'avoid' ? colors.danger :
+                                                 colors.backgroundSecondary,
+                                  borderColor: selectionState === 'support' ? colors.success || colors.primary :
+                                             selectionState === 'avoid' ? colors.danger :
+                                             colors.border,
                                 }
                               ]}
                               onPress={() => {
-                                if (isSelected) {
-                                  setSelectedValuesForList(prev => prev.filter(id => id !== value.id));
+                                if (selectionState === null) {
+                                  // Not selected -> Support
+                                  setSelectedValuesForList(prev => [...prev, { id: value.id, type: 'support' }]);
+                                } else if (selectionState === 'support') {
+                                  // Support -> Avoid
+                                  setSelectedValuesForList(prev =>
+                                    prev.map(sv => sv.id === value.id ? { ...sv, type: 'avoid' } : sv)
+                                  );
                                 } else {
-                                  setSelectedValuesForList(prev => [...prev, value.id]);
+                                  // Avoid -> Not selected
+                                  setSelectedValuesForList(prev => prev.filter(sv => sv.id !== value.id));
                                 }
                               }}
                               activeOpacity={0.7}
@@ -3150,10 +3166,10 @@ export default function HomeScreen() {
                               <Text
                                 style={[
                                   styles.valueChipText,
-                                  { color: isSelected ? colors.white : colors.text }
+                                  { color: selectionState ? colors.white : colors.text }
                                 ]}
                               >
-                                {value.name}
+                                {selectionState === 'support' ? '✓ ' : selectionState === 'avoid' ? '✗ ' : ''}{value.name}
                               </Text>
                             </TouchableOpacity>
                           );
@@ -4403,8 +4419,8 @@ const styles = StyleSheet.create({
   },
   listCardDescription: {
     fontSize: 14,
-    lineHeight: 20,
     marginTop: 8,
+    lineHeight: 20,
   },
   createListButton: {
     flexDirection: 'row',
