@@ -2598,11 +2598,13 @@ export default function HomeScreen() {
         transparent={true}
         onRequestClose={() => setActiveCardOptionsMenu(null)}
       >
-        <TouchableWithoutFeedback onPress={() => setActiveCardOptionsMenu(null)}>
-          <View style={styles.dropdownModalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                <TouchableOpacity
+        <Pressable
+          style={styles.dropdownModalOverlay}
+          onPress={() => setActiveCardOptionsMenu(null)}
+        >
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <TouchableOpacity
                 style={styles.listOptionItem}
                 onPress={() => {
                   const list = userLists.find(l => l.id === activeCardOptionsMenu);
@@ -2648,6 +2650,7 @@ export default function HomeScreen() {
               <TouchableOpacity
                 style={styles.listOptionItem}
                 onPress={() => {
+                  console.log('[Home] Delete list pressed, ID:', activeCardOptionsMenu);
                   if (activeCardOptionsMenu) {
                     handleCardDeleteList(activeCardOptionsMenu);
                   }
@@ -2658,9 +2661,8 @@ export default function HomeScreen() {
                 <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
               </TouchableOpacity>
             </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* List Item Options Modal */}
@@ -2670,15 +2672,17 @@ export default function HomeScreen() {
         transparent={true}
         onRequestClose={() => setActiveItemOptionsMenu(null)}
       >
-        <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
-          <View style={styles.dropdownModalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                <TouchableOpacity
+        <Pressable
+          style={styles.dropdownModalOverlay}
+          onPress={() => setActiveItemOptionsMenu(null)}
+        >
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <TouchableOpacity
                 style={styles.listOptionItem}
                 onPress={() => {
+                  console.log('[Home] Delete entry pressed, ID:', activeItemOptionsMenu);
                   if (activeItemOptionsMenu) {
-                    setActiveItemOptionsMenu(null);
                     handleDeleteEntry(activeItemOptionsMenu);
                   }
                 }}
@@ -2688,9 +2692,8 @@ export default function HomeScreen() {
                 <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
               </TouchableOpacity>
             </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* Create List Modal */}
