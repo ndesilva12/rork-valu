@@ -64,6 +64,8 @@ import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusin
 import BusinessMapView from '@/components/BusinessMapView';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
 import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList, updateListMetadata } from '@/services/firebase/listService';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/firebase';
 
 type MainView = 'forYou' | 'myLibrary' | 'local';
 type ForYouSubsection = 'aligned' | 'unaligned' | 'news';
@@ -119,6 +121,9 @@ export default function HomeScreen() {
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [renameListName, setRenameListName] = useState('');
   const [renameListDescription, setRenameListDescription] = useState('');
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [activeOptionsMenu, setActiveOptionsMenu] = useState<string | null>(null);
+  const [activeItemOptionsMenu, setActiveItemOptionsMenu] = useState<string | null>(null);
 
   // Quick-add state
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
@@ -1098,6 +1103,15 @@ export default function HomeScreen() {
     setLibraryView('overview');
     setSelectedList(null);
     setShowListOptionsMenu(false);
+    setIsEditMode(false);
+    setActiveOptionsMenu(null);
+    setActiveItemOptionsMenu(null);
+  };
+
+  const toggleEditMode = () => {
+    setIsEditMode(!isEditMode);
+    setActiveOptionsMenu(null);
+    setActiveItemOptionsMenu(null);
   };
 
   const handleMoveListUp = (index: number) => {
@@ -1120,7 +1134,94 @@ export default function HomeScreen() {
     }
   };
 
+  const handleMoveEntryUp = async (entryIndex: number) => {
+    if (selectedList && selectedList !== 'browse' && entryIndex > 0) {
+      const list = selectedList as UserList;
+      const newEntries = [...list.entries];
+      const temp = newEntries[entryIndex];
+      newEntries[entryIndex] = newEntries[entryIndex - 1];
+      newEntries[entryIndex - 1] = temp;
+
+      // Update in Firebase
+      try {
+        const listRef = doc(db, 'userLists', list.id);
+        await updateDoc(listRef, { entries: newEntries });
+
+        // Update local state
+        const updatedList = { ...list, entries: newEntries };
+        setSelectedList(updatedList);
+        await loadUserLists();
+      } catch (error) {
+        console.error('[Home] Error moving entry:', error);
+        Alert.alert('Error', 'Could not reorder entry. Please try again.');
+      }
+    }
+  };
+
+  const handleMoveEntryDown = async (entryIndex: number) => {
+    if (selectedList && selectedList !== 'browse') {
+      const list = selectedList as UserList;
+      if (entryIndex < list.entries.length - 1) {
+        const newEntries = [...list.entries];
+        const temp = newEntries[entryIndex];
+        newEntries[entryIndex] = newEntries[entryIndex + 1];
+        newEntries[entryIndex + 1] = temp;
+
+        // Update in Firebase
+        try {
+          const listRef = doc(db, 'userLists', list.id);
+          await updateDoc(listRef, { entries: newEntries });
+
+          // Update local state
+          const updatedList = { ...list, entries: newEntries };
+          setSelectedList(updatedList);
+          await loadUserLists();
+        } catch (error) {
+          console.error('[Home] Error moving entry:', error);
+          Alert.alert('Error', 'Could not reorder entry. Please try again.');
+        }
+      }
+    }
+  };
+
+  const handleDeleteEntry = async (entryId: string) => {
+    if (selectedList && selectedList !== 'browse') {
+      const list = selectedList as UserList;
+      Alert.alert(
+        'Remove Item',
+        'Are you sure you want to remove this item from the list?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Remove',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await removeEntryFromList(list.id, entryId);
+                await loadUserLists();
+
+                // Update selected list
+                const updatedLists = await getUserLists(clerkUser?.id || '');
+                const updatedList = updatedLists.find(l => l.id === list.id);
+                if (updatedList) {
+                  setSelectedList(updatedList);
+                }
+
+                Alert.alert('Success', 'Item removed from list');
+              } catch (error) {
+                console.error('[Home] Error removing entry:', error);
+                Alert.alert('Error', 'Could not remove item. Please try again.');
+              }
+            },
+          },
+        ]
+      );
+    }
+  };
+
   const handleEntryClick = (entry: ListEntry) => {
+    if (isEditMode) return; // Don't navigate when in edit mode
+
     if (entry.type === 'brand' && 'brandId' in entry) {
       router.push(`/brand/${entry.brandId}`);
     } else if (entry.type === 'value' && 'valueId' in entry) {
@@ -1460,13 +1561,25 @@ export default function HomeScreen() {
 
     return (
       <View style={styles.section}>
-        <TouchableOpacity
-          style={[styles.createListButtonSmall, { backgroundColor: colors.primary }]}
-          onPress={() => setShowCreateListModal(true)}
-          activeOpacity={0.7}
-        >
-          <Plus size={20} color={colors.white} strokeWidth={2.5} />
-        </TouchableOpacity>
+        <View style={styles.libraryActions}>
+          <TouchableOpacity
+            style={[styles.createListButtonSmall, { backgroundColor: colors.primary }]}
+            onPress={() => setShowCreateListModal(true)}
+            activeOpacity={0.7}
+          >
+            <Plus size={20} color={colors.white} strokeWidth={2.5} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.editButton, { backgroundColor: isEditMode ? colors.primary : colors.backgroundSecondary, borderColor: colors.border }]}
+            onPress={toggleEditMode}
+            activeOpacity={0.7}
+          >
+            <Edit size={18} color={isEditMode ? colors.white : colors.text} strokeWidth={2} />
+            <Text style={[styles.editButtonText, { color: isEditMode ? colors.white : colors.text }]}>
+              {isEditMode ? 'Done' : 'Edit'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.listsContainer}>
           {/* Browse List - Always at top */}
@@ -1507,8 +1620,9 @@ export default function HomeScreen() {
               <View key={list.id} style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
                 <TouchableOpacity
                   style={styles.listCardClickable}
-                  onPress={() => handleOpenList(list)}
+                  onPress={() => !isEditMode && handleOpenList(list)}
                   activeOpacity={0.7}
+                  disabled={isEditMode}
                 >
                   <View style={styles.listCardContent}>
                     <View style={styles.listCardHeader}>
@@ -1523,7 +1637,7 @@ export default function HomeScreen() {
                           {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
                         </Text>
                       </View>
-                      <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                      {!isEditMode && <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />}
                     </View>
                     {list.description && (
                       <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
@@ -1532,32 +1646,78 @@ export default function HomeScreen() {
                     )}
                   </View>
                 </TouchableOpacity>
-                <View style={styles.listCardReorderButtons}>
-                  <TouchableOpacity
-                    onPress={() => handleMoveListUp(index)}
-                    disabled={index === 0}
-                    style={styles.reorderButton}
-                    activeOpacity={0.7}
-                  >
-                    <ChevronUp
-                      size={18}
-                      color={index === 0 ? colors.textSecondary : colors.text}
-                      strokeWidth={2}
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleMoveListDown(index)}
-                    disabled={index === userLists.length - 1}
-                    style={styles.reorderButton}
-                    activeOpacity={0.7}
-                  >
-                    <ChevronDown
-                      size={18}
-                      color={index === userLists.length - 1 ? colors.textSecondary : colors.text}
-                      strokeWidth={2}
-                    />
-                  </TouchableOpacity>
-                </View>
+
+                {!isEditMode && (
+                  <View style={styles.listCardOptionsContainer}>
+                    <TouchableOpacity
+                      style={styles.listCardOptionsButton}
+                      onPress={() => setActiveOptionsMenu(activeOptionsMenu === list.id ? null : list.id)}
+                      activeOpacity={0.7}
+                    >
+                      <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                    </TouchableOpacity>
+                    {activeOptionsMenu === list.id && (
+                      <View style={[styles.listCardOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                        <TouchableOpacity
+                          style={styles.listOptionItem}
+                          onPress={() => {
+                            setRenameListName(list.name);
+                            setRenameListDescription(list.description || '');
+                            setActiveOptionsMenu(null);
+                            setShowRenameModal(true);
+                            // Set the selected list for renaming
+                            setSelectedList(list);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Edit size={18} color={colors.text} strokeWidth={2} />
+                          <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+                        </TouchableOpacity>
+                        <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                        <TouchableOpacity
+                          style={styles.listOptionItem}
+                          onPress={() => {
+                            setActiveOptionsMenu(null);
+                            handleDeleteList(list.id);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                          <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                {isEditMode && (
+                  <View style={styles.listCardReorderButtons}>
+                    <TouchableOpacity
+                      onPress={() => handleMoveListUp(index)}
+                      disabled={index === 0}
+                      style={styles.reorderButton}
+                      activeOpacity={0.7}
+                    >
+                      <ChevronUp
+                        size={18}
+                        color={index === 0 ? colors.textSecondary : colors.text}
+                        strokeWidth={2}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleMoveListDown(index)}
+                      disabled={index === userLists.length - 1}
+                      style={styles.reorderButton}
+                      activeOpacity={0.7}
+                    >
+                      <ChevronDown
+                        size={18}
+                        color={index === userLists.length - 1 ? colors.textSecondary : colors.text}
+                        strokeWidth={2}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             ))
           )}
@@ -2957,14 +3117,66 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
   },
+  libraryActions: {
+    flexDirection: 'row',
+    gap: 12,
+    position: 'absolute' as const,
+    bottom: 24,
+    right: 24,
+    zIndex: 100,
+  },
   createListButtonSmall: {
     width: 48,
     height: 48,
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'flex-end',
-    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 24,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  editButtonText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  listCardOptionsContainer: {
+    position: 'relative' as const,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  listCardOptionsButton: {
+    padding: 4,
+  },
+  listCardOptionsDropdown: {
+    position: 'absolute',
+    top: 32,
+    right: 8,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 4,
+    minWidth: 150,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 10,
+    zIndex: 9999,
   },
   createListModalContainer: {
     width: '100%',
@@ -3156,8 +3368,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 4,
-    zIndex: 1000,
+    elevation: 10,
+    zIndex: 9999,
   },
   listOptionItem: {
     flexDirection: 'row',
