@@ -122,13 +122,17 @@ export default function HomeScreen() {
   const [renameListName, setRenameListName] = useState('');
   const [renameListDescription, setRenameListDescription] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isLibraryEditMode, setIsLibraryEditMode] = useState(false);
   const [activeOptionsMenu, setActiveOptionsMenu] = useState<string | null>(null);
   const [activeItemOptionsMenu, setActiveItemOptionsMenu] = useState<string | null>(null);
   const [showEditDropdown, setShowEditDropdown] = useState(false);
+  const [showListCreationTypeModal, setShowListCreationTypeModal] = useState(false);
+  const [showDescriptionModal, setShowDescriptionModal] = useState(false);
+  const [descriptionText, setDescriptionText] = useState('');
 
   // Quick-add state
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
-  const [quickAddItem, setQuickAddItem] = useState<{type: 'brand' | 'business' | 'value', id: string, name: string} | null>(null);
+  const [quickAddItem, setQuickAddItem] = useState<{type: 'brand' | 'business' | 'value', id: string, name: string, website?: string, logoUrl?: string} | null>(null);
   const [selectedValueMode, setSelectedValueMode] = useState<ValueListMode | null>(null);
   const [showValueModeModal, setShowValueModeModal] = useState(false);
 
@@ -650,7 +654,7 @@ export default function HomeScreen() {
             style={[styles.quickAddButton, { backgroundColor: colors.background }]}
             onPress={(e) => {
               e.stopPropagation();
-              handleQuickAdd('brand', product.id, product.name);
+              handleQuickAdd('brand', product.id, product.name, product.website);
             }}
             activeOpacity={0.7}
           >
@@ -719,7 +723,7 @@ export default function HomeScreen() {
             style={[styles.quickAddButton, { backgroundColor: colors.background }]}
             onPress={(e) => {
               e.stopPropagation();
-              handleQuickAdd('business', business.id, business.businessInfo.name);
+              handleQuickAdd('business', business.id, business.businessInfo.name, business.businessInfo.website, business.businessInfo.logoUrl);
             }}
             activeOpacity={0.7}
           >
@@ -771,19 +775,27 @@ export default function HomeScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-
-        {mainView === 'myLibrary' && libraryView === 'overview' && (
-          <View style={styles.libraryActions}>
-            <TouchableOpacity
-              style={[styles.createListButtonSmall, { backgroundColor: colors.primary }]}
-              onPress={() => setShowCreateListModal(true)}
-              activeOpacity={0.7}
-            >
-              <Plus size={20} color={colors.white} strokeWidth={2.5} />
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
+
+      {mainView === 'myLibrary' && libraryView === 'overview' && (
+        <View style={styles.libraryActions}>
+          <TouchableOpacity
+            onPress={() => setIsLibraryEditMode(!isLibraryEditMode)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.libraryEditButtonText, { color: colors.primary }]}>
+              {isLibraryEditMode ? 'Done' : 'Edit'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.createListButtonSmall, { backgroundColor: colors.primary }]}
+            onPress={() => setShowListCreationTypeModal(true)}
+            activeOpacity={0.7}
+          >
+            <Plus size={20} color={colors.white} strokeWidth={2.5} />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* For You Subsection Selector */}
       {mainView === 'forYou' && (
@@ -1099,6 +1111,32 @@ export default function HomeScreen() {
     }
   };
 
+  const handleUpdateDescription = async () => {
+    if (selectedList && selectedList !== 'browse') {
+      const list = selectedList as UserList;
+      try {
+        await updateListMetadata(list.id, {
+          description: descriptionText.trim(),
+        });
+        setShowDescriptionModal(false);
+        setDescriptionText('');
+        await loadUserLists();
+
+        // Update selectedList with new data
+        const updatedLists = await getUserLists(clerkUser?.id || '');
+        const updatedList = updatedLists.find(l => l.id === list.id);
+        if (updatedList) {
+          setSelectedList(updatedList);
+        }
+
+        Alert.alert('Success', 'Description updated successfully!');
+      } catch (error) {
+        console.error('[Home] Error updating description:', error);
+        Alert.alert('Error', 'Could not update description. Please try again.');
+      }
+    }
+  };
+
   const handleDeleteCurrentList = () => {
     if (selectedList && selectedList !== 'browse') {
       const list = selectedList as UserList;
@@ -1254,7 +1292,7 @@ export default function HomeScreen() {
   };
 
   // Quick-add handler functions
-  const handleQuickAdd = async (type: 'brand' | 'business' | 'value', id: string, name: string) => {
+  const handleQuickAdd = async (type: 'brand' | 'business' | 'value', id: string, name: string, website?: string, logoUrl?: string) => {
     // Load lists if not already loaded
     if (userLists.length === 0 && clerkUser?.id) {
       try {
@@ -1267,11 +1305,11 @@ export default function HomeScreen() {
 
     // For values, show mode selection first
     if (type === 'value') {
-      setQuickAddItem({ type, id, name });
+      setQuickAddItem({ type, id, name, website, logoUrl });
       setShowValueModeModal(true);
     } else {
       // For brands and businesses, go straight to list selection
-      setQuickAddItem({ type, id, name });
+      setQuickAddItem({ type, id, name, website, logoUrl });
       setShowQuickAddModal(true);
     }
   };
@@ -1293,12 +1331,16 @@ export default function HomeScreen() {
           type: 'brand',
           brandId: quickAddItem.id,
           brandName: quickAddItem.name,
+          website: quickAddItem.website,
+          logoUrl: quickAddItem.logoUrl,
         };
       } else if (quickAddItem.type === 'business') {
         entry = {
           type: 'business',
           businessId: quickAddItem.id,
           businessName: quickAddItem.name,
+          website: quickAddItem.website,
+          logoUrl: quickAddItem.logoUrl,
         };
       } else if (quickAddItem.type === 'value') {
         if (!selectedValueMode) {
@@ -1350,12 +1392,16 @@ export default function HomeScreen() {
           type: 'brand',
           brandId: quickAddItem.id,
           brandName: quickAddItem.name,
+          website: quickAddItem.website,
+          logoUrl: quickAddItem.logoUrl,
         };
       } else if (quickAddItem.type === 'business') {
         entry = {
           type: 'business',
           businessId: quickAddItem.id,
           businessName: quickAddItem.name,
+          website: quickAddItem.website,
+          logoUrl: quickAddItem.logoUrl,
         };
       } else if (quickAddItem.type === 'value') {
         if (!selectedValueMode) {
@@ -1473,12 +1519,10 @@ export default function HomeScreen() {
 
           <View style={styles.listDetailActionsContainer}>
             <TouchableOpacity
-              style={[styles.listDetailEditButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
               onPress={() => setShowEditDropdown(!showEditDropdown)}
               activeOpacity={0.7}
             >
-              <Edit size={16} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.listDetailEditButtonText, { color: colors.text }]}>Edit</Text>
+              <Text style={[styles.listDetailEditTextButton, { color: colors.primary }]}>Edit</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1496,6 +1540,19 @@ export default function HomeScreen() {
             >
               <Edit size={18} color={colors.text} strokeWidth={2} />
               <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+            </TouchableOpacity>
+            <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+            <TouchableOpacity
+              style={styles.listOptionItem}
+              onPress={() => {
+                setShowEditDropdown(false);
+                setDescriptionText(list.description || '');
+                setShowDescriptionModal(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <Edit size={18} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
             </TouchableOpacity>
             <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
             <TouchableOpacity
@@ -1550,7 +1607,7 @@ export default function HomeScreen() {
                         <View style={styles.brandCardInner}>
                           <View style={styles.brandLogoContainer}>
                             <Image
-                              source={{ uri: getLogoUrl('') }}
+                              source={{ uri: entry.logoUrl || getLogoUrl(entry.website || '') }}
                               style={styles.brandLogo}
                               contentFit="cover"
                               transition={200}
@@ -1636,7 +1693,7 @@ export default function HomeScreen() {
                         <View style={styles.brandCardInner}>
                           <View style={styles.brandLogoContainer}>
                             <Image
-                              source={{ uri: getLogoUrl('') }}
+                              source={{ uri: entry.logoUrl || getLogoUrl(entry.website || '') }}
                               style={styles.brandLogo}
                               contentFit="cover"
                               transition={200}
@@ -2249,6 +2306,115 @@ export default function HomeScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.modalButtonText, { color: colors.white }]}>Save Changes</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </View>
+      </Modal>
+
+      {/* Description Modal */}
+      <Modal
+        visible={showDescriptionModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowDescriptionModal(false);
+          setDescriptionText('');
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              setShowDescriptionModal(false);
+              setDescriptionText('');
+            }}
+          >
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Pressable
+            style={[styles.createListModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Edit Description</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowDescriptionModal(false);
+                  setDescriptionText('');
+                }}
+              >
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalContent}>
+              <Text style={[styles.modalLabel, { color: colors.text }]}>Description</Text>
+              <TextInput
+                style={[styles.modalTextArea, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                placeholder="Enter list description"
+                placeholderTextColor={colors.textSecondary}
+                value={descriptionText}
+                onChangeText={setDescriptionText}
+                multiline
+                numberOfLines={3}
+                autoFocus
+              />
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                onPress={handleUpdateDescription}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.white }]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </View>
+      </Modal>
+
+      {/* List Creation Type Selection Modal */}
+      <Modal
+        visible={showListCreationTypeModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowListCreationTypeModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={() => setShowListCreationTypeModal(false)}>
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Pressable
+            style={[styles.quickAddModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Create List</Text>
+              <TouchableOpacity onPress={() => setShowListCreationTypeModal(false)}>
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalContent}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  setShowListCreationTypeModal(false);
+                  setShowCreateListModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.white }]}>Create Manually</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.backgroundSecondary, marginTop: 12 }]}
+                onPress={() => {
+                  setShowListCreationTypeModal(false);
+                  Alert.alert('Coming Soon', 'Create from values will be available soon!');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.text }]}>Create from Values</Text>
               </TouchableOpacity>
             </View>
           </Pressable>
@@ -2922,7 +3088,6 @@ const styles = StyleSheet.create({
   },
   brandCard: {
     borderRadius: 12,
-    overflow: 'hidden',
     height: 64,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.08)',
@@ -2931,6 +3096,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: '100%',
+    overflow: 'hidden',
+    borderRadius: 12,
   },
   brandLogoContainer: {
     width: 64,
@@ -3362,8 +3529,15 @@ const styles = StyleSheet.create({
   },
   libraryActions: {
     flexDirection: 'row',
-    gap: 8,
-    marginLeft: 12,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  libraryEditButtonText: {
+    fontSize: 16,
+    fontWeight: '500' as const,
   },
   createListButtonSmall: {
     width: 48,
@@ -3642,6 +3816,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
+  },
+  listDetailEditTextButton: {
+    fontSize: 16,
+    fontWeight: '500' as const,
   },
   listEditDropdownOverlay: {
     position: 'absolute',

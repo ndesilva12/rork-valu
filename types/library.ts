@@ -15,6 +15,8 @@ export interface BrandListEntry extends BaseListEntry {
   brandId: string;
   brandName: string;
   brandCategory?: string;
+  website?: string;
+  logoUrl?: string;
 }
 
 export interface BusinessListEntry extends BaseListEntry {
@@ -22,6 +24,8 @@ export interface BusinessListEntry extends BaseListEntry {
   businessId: string;
   businessName: string;
   businessCategory?: string;
+  website?: string;
+  logoUrl?: string;
 }
 
 export interface ValueListEntry extends BaseListEntry {
