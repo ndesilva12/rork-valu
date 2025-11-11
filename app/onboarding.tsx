@@ -101,7 +101,7 @@ export default function OnboardingScreen() {
 
   const handleContinue = async () => {
     console.log('[Onboarding] Continue pressed with', selectedValues.length, 'values');
-    if (selectedValues.length >= 3) {
+    if (selectedValues.length >= 5) {
       const causes: Cause[] = selectedValues.map(v => ({
         id: v.id,
         name: v.name,
@@ -152,7 +152,7 @@ export default function OnboardingScreen() {
           </View>
           <Text style={[styles.title, { color: colors.text }]}>Identify Your Values</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Select a positive or negative view of at least 3 items you feel strongly about.
+            Select a positive or negative view of at least 5 items you feel strongly about.
           </Text>
           <View style={[styles.instructionBox, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
             <Text style={[styles.instructionText, { color: colors.textSecondary }]}>
@@ -255,12 +255,12 @@ export default function OnboardingScreen() {
       <View style={[styles.footer, { paddingBottom: 32 + insets.bottom, backgroundColor: colors.backgroundSecondary, borderTopColor: colors.border }, Platform.OS === 'web' && styles.footerWeb]}>
         <View style={[styles.footerContent, Platform.OS === 'web' && styles.footerContentWeb]}>
           <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
-            {selectedValues.length} {selectedValues.length === 1 ? 'value' : 'values'} selected{selectedValues.length < 3 ? ` (minimum 3 required)` : ''}
+            {selectedValues.length} {selectedValues.length === 1 ? 'value' : 'values'} selected{selectedValues.length < 5 ? ` (minimum 5 required)` : ''}
           </Text>
           <TouchableOpacity
-            style={[styles.continueButton, { backgroundColor: colors.primary }, selectedValues.length < 3 && { backgroundColor: colors.neutral, opacity: 0.5 }]}
+            style={[styles.continueButton, { backgroundColor: colors.primary }, selectedValues.length < 5 && { backgroundColor: colors.neutral, opacity: 0.5 }]}
             onPress={handleContinue}
-            disabled={selectedValues.length < 3}
+            disabled={selectedValues.length < 5}
             activeOpacity={0.8}
           >
             <Text style={[styles.continueButtonText, { color: colors.white }]}>Continue</Text>

@@ -58,7 +58,7 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
 import { trpc } from '@/lib/trpc';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
-// import { AVAILABLE_VALUES } from '@/mocks/causes'; // Removed - using values from DataContext instead
+import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
 import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
@@ -1166,8 +1166,8 @@ export default function HomeScreen() {
   };
 
   const handleCreateListFromValues = async () => {
-    if (selectedValuesForList.length < 3) {
-      Alert.alert('Error', 'Please select at least 3 values');
+    if (selectedValuesForList.length < 5) {
+      Alert.alert('Error', 'Please select at least 5 values');
       return;
     }
 
@@ -1745,12 +1745,50 @@ export default function HomeScreen() {
           logoUrl: itemData.logoUrl,
         };
       } else if (addItemType === 'value' && itemData.valueId && itemData.mode) {
-        entry = {
-          type: 'value',
-          valueId: itemData.valueId,
-          valueName: itemData.name,
-          mode: itemData.mode,
-        };
+        // Add the top brands for this value instead of the value card
+        const causeData = valuesMatrix[itemData.valueId];
+        if (!causeData) {
+          Alert.alert('Error', 'Value data not found');
+          return;
+        }
+
+        const brandList = itemData.mode === 'maxBenefit' ? causeData.support : causeData.avoid;
+        if (!brandList || brandList.length === 0) {
+          Alert.alert('Error', 'No brands found for this value');
+          return;
+        }
+
+        // Add top 10 brands (or all if less than 10)
+        const brandsToAdd = brandList.slice(0, 10);
+        let addedCount = 0;
+
+        for (const brandName of brandsToAdd) {
+          const brand = brands?.find(b => b.name === brandName);
+          if (brand) {
+            const brandEntry: Omit<ListEntry, 'id' | 'createdAt'> = {
+              type: 'brand',
+              brandId: brand.id,
+              brandName: brand.name,
+              website: brand.website,
+            };
+            await addEntryToList(list.id, brandEntry);
+            addedCount++;
+          }
+        }
+
+        // Reload the list
+        const updatedLists = await getUserLists(clerkUser?.id || '');
+        setUserLists(updatedLists);
+        const updatedList = updatedLists.find(l => l.id === list.id);
+        if (updatedList) {
+          setSelectedList(updatedList);
+        }
+
+        setShowAddItemModal(false);
+        setAddItemType(null);
+        setAddItemSearchQuery('');
+        Alert.alert('Success', `Added ${addedCount} brands from ${itemData.name} to list!`);
+        return;
       } else if (addItemType === 'link') {
         if (!linkUrl.trim()) {
           Alert.alert('Error', 'Please enter a URL');
@@ -2436,47 +2474,47 @@ export default function HomeScreen() {
                           </Text>
                         )}
                       </View>
-                      {!isLibraryRearrangeMode && (
-                        <TouchableOpacity
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            setActiveCardOptionsMenu(activeCardOptionsMenu === list.id ? null : list.id);
-                          }}
-                          activeOpacity={0.7}
-                          style={styles.listCardOptionsButton}
-                        >
-                          <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                        </TouchableOpacity>
-                      )}
-                      {isLibraryRearrangeMode && (
-                        <View style={styles.listCardRearrangeButtons}>
-                          <TouchableOpacity
-                            onPress={() => handleMoveListUp(index)}
-                            disabled={index === 0}
-                            style={styles.rearrangeButton}
-                            activeOpacity={0.7}
-                          >
-                            <ChevronUp
-                              size={20}
-                              color={index === 0 ? colors.textSecondary : colors.text}
-                              strokeWidth={2}
-                            />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => handleMoveListDown(index)}
-                            disabled={index === userLists.length - 1}
-                            style={styles.rearrangeButton}
-                            activeOpacity={0.7}
-                          >
-                            <ChevronDown
-                              size={20}
-                              color={index === userLists.length - 1 ? colors.textSecondary : colors.text}
-                              strokeWidth={2}
-                            />
-                          </TouchableOpacity>
-                        </View>
-                      )}
                     </View>
+                    {!isLibraryRearrangeMode && (
+                      <TouchableOpacity
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          setActiveCardOptionsMenu(activeCardOptionsMenu === list.id ? null : list.id);
+                        }}
+                        activeOpacity={0.7}
+                        style={styles.listCardOptionsButtonAbsolute}
+                      >
+                        <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                      </TouchableOpacity>
+                    )}
+                    {isLibraryRearrangeMode && (
+                      <View style={styles.listCardRearrangeButtonsAbsolute}>
+                        <TouchableOpacity
+                          onPress={() => handleMoveListUp(index)}
+                          disabled={index === 0}
+                          style={styles.rearrangeButton}
+                          activeOpacity={0.7}
+                        >
+                          <ChevronUp
+                            size={20}
+                            color={index === 0 ? colors.textSecondary : colors.text}
+                            strokeWidth={2}
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleMoveListDown(index)}
+                          disabled={index === userLists.length - 1}
+                          style={styles.rearrangeButton}
+                          activeOpacity={0.7}
+                        >
+                          <ChevronDown
+                            size={20}
+                            color={index === userLists.length - 1 ? colors.textSecondary : colors.text}
+                            strokeWidth={2}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
                 </TouchableOpacity>
                 {activeCardOptionsMenu === list.id && !isLibraryRearrangeMode && (
@@ -3179,7 +3217,7 @@ export default function HomeScreen() {
 
             <ScrollView style={styles.modalContent}>
               <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
-                Select at least 3 values to create a list of the top 20 most aligned brands.
+                Select at least 5 values to create a list of the top 20 most aligned brands.
               </Text>
 
               {/* Custom Name and Description Fields */}
@@ -3212,13 +3250,13 @@ export default function HomeScreen() {
               </View>
 
               <Text style={[styles.selectedCountText, { color: colors.primary }]}>
-                {selectedValuesForList.length} selected {selectedValuesForList.length >= 3 ? '✓' : `(${3 - selectedValuesForList.length} more needed)`}
+                {selectedValuesForList.length} selected {selectedValuesForList.length >= 5 ? '✓' : `(${5 - selectedValuesForList.length} more needed)`}
               </Text>
 
               {/* Group values by category */}
               <View style={styles.valuesGrid}>
                 {(['ideology', 'social_issue', 'person', 'religion', 'nation'] as const).map(category => {
-                  const categoryValues = values.filter(v => v.category === category);
+                  const categoryValues = AVAILABLE_VALUES[category] || [];
                   if (categoryValues.length === 0) return null;
 
                   const categoryLabels = {
@@ -3290,12 +3328,12 @@ export default function HomeScreen() {
                 style={[
                   styles.modalButton,
                   {
-                    backgroundColor: selectedValuesForList.length >= 3 ? colors.primary : colors.neutralLight,
+                    backgroundColor: selectedValuesForList.length >= 5 ? colors.primary : colors.neutralLight,
                     marginTop: 24,
                   }
                 ]}
                 onPress={handleCreateListFromValues}
-                disabled={selectedValuesForList.length < 3}
+                disabled={selectedValuesForList.length < 5}
                 activeOpacity={0.7}
               >
                 <Text style={[styles.modalButtonText, { color: colors.white }]}>
@@ -4594,6 +4632,24 @@ const styles = StyleSheet.create({
     padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  listCardOptionsButtonAbsolute: {
+    position: 'absolute' as const,
+    top: 12,
+    right: 12,
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  listCardRearrangeButtonsAbsolute: {
+    position: 'absolute' as const,
+    top: 12,
+    right: 12,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    gap: 4,
+    zIndex: 10,
   },
   listCardOptionsDropdown: {
     position: 'absolute',

@@ -1,6 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert } from 'react-native';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { Cause, UserProfile, Charity, AccountType, BusinessInfo, UserDetails } from '@/types';
 import { saveUserProfile, getUserProfile, createUser, updateUserMetadata, aggregateUserTransactions, aggregateBusinessTransactions } from '@/services/firebase/userService';
@@ -295,6 +296,16 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
     let newCauses: Cause[];
     if (newType === 'remove') {
+      // Check if removing would result in less than 5 values
+      if (profile.causes.length <= 5) {
+        // Use Alert if available (React Native)
+        if (typeof Alert !== 'undefined') {
+          Alert.alert('Minimum Values Required', 'You must have at least 5 values selected at all times.');
+        } else {
+          console.warn('[UserContext] Cannot remove value: Minimum 5 values required');
+        }
+        return;
+      }
       // Remove the cause entirely
       newCauses = profile.causes.filter(c => c.id !== cause.id);
     } else {
