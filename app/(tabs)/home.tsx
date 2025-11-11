@@ -124,6 +124,7 @@ export default function HomeScreen() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [activeOptionsMenu, setActiveOptionsMenu] = useState<string | null>(null);
   const [activeItemOptionsMenu, setActiveItemOptionsMenu] = useState<string | null>(null);
+  const [showEditDropdown, setShowEditDropdown] = useState(false);
 
   // Quick-add state
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
@@ -770,6 +771,18 @@ export default function HomeScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {mainView === 'myLibrary' && libraryView === 'overview' && (
+          <View style={styles.libraryActions}>
+            <TouchableOpacity
+              style={[styles.createListButtonSmall, { backgroundColor: colors.primary }]}
+              onPress={() => setShowCreateListModal(true)}
+              activeOpacity={0.7}
+            >
+              <Plus size={20} color={colors.white} strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* For You Subsection Selector */}
@@ -1106,12 +1119,14 @@ export default function HomeScreen() {
     setIsEditMode(false);
     setActiveOptionsMenu(null);
     setActiveItemOptionsMenu(null);
+    setShowEditDropdown(false);
   };
 
   const toggleEditMode = () => {
     setIsEditMode(!isEditMode);
     setActiveOptionsMenu(null);
     setActiveItemOptionsMenu(null);
+    setShowEditDropdown(false);
   };
 
   const handleMoveListUp = (index: number) => {
@@ -1430,74 +1445,81 @@ export default function HomeScreen() {
 
     // User list detail
     const list = selectedList as UserList;
+
     return (
       <View style={styles.section}>
-        <View style={styles.listDetailActionsContainer}>
+        <View style={styles.listDetailHeader}>
           <TouchableOpacity
-            style={[styles.listDetailEditButton, { backgroundColor: isEditMode ? colors.primary : colors.backgroundSecondary, borderColor: colors.border }]}
-            onPress={toggleEditMode}
+            style={styles.backButton}
+            onPress={handleBackToLibrary}
             activeOpacity={0.7}
           >
-            <Edit size={16} color={isEditMode ? colors.white : colors.text} strokeWidth={2} />
-            <Text style={[styles.listDetailEditButtonText, { color: isEditMode ? colors.white : colors.text }]}>
-              {isEditMode ? 'Done' : 'Edit'}
-            </Text>
+            <ArrowLeft
+              size={28}
+              color={colors.primary}
+              strokeWidth={2.5}
+            />
+            <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
           </TouchableOpacity>
-        </View>
 
-        <View style={styles.listDetailHeader}>
-          <View style={styles.listDetailHeaderRow}>
+          <View style={styles.listDetailTitleCentered}>
+            <Text style={[styles.listDetailTitle, { color: colors.text }]}>{list.name}</Text>
+            {list.description && (
+              <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
+                {list.description}
+              </Text>
+            )}
+          </View>
+
+          <View style={styles.listDetailActionsContainer}>
             <TouchableOpacity
-              style={styles.backButton}
-              onPress={handleBackToLibrary}
+              style={[styles.listDetailEditButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+              onPress={() => setShowEditDropdown(!showEditDropdown)}
               activeOpacity={0.7}
             >
-              <ArrowLeft
-                size={28}
-                color={colors.primary}
-                strokeWidth={2.5}
-              />
-              <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
+              <Edit size={16} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.listDetailEditButtonText, { color: colors.text }]}>Edit</Text>
             </TouchableOpacity>
-            <View style={styles.listDetailTitleContainer}>
-              <Text style={[styles.listDetailTitle, { color: colors.text }]}>{list.name}</Text>
-              {!isEditMode && (
+            {showEditDropdown && (
+              <View style={[styles.listOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
                 <TouchableOpacity
-                  style={styles.listOptionsButton}
-                  onPress={() => setShowListOptionsMenu(!showListOptionsMenu)}
+                  style={styles.listOptionItem}
+                  onPress={() => {
+                    setShowEditDropdown(false);
+                    handleOpenRenameModal();
+                  }}
                   activeOpacity={0.7}
                 >
-                  <MoreVertical size={24} color={colors.textSecondary} strokeWidth={2} />
+                  <Edit size={18} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
                 </TouchableOpacity>
-              )}
-            </View>
+                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
+                    setShowEditDropdown(false);
+                    toggleEditMode();
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
+                </TouchableOpacity>
+                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
+                    setShowEditDropdown(false);
+                    handleDeleteCurrentList();
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
-          {list.description && (
-            <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
-              {list.description}
-            </Text>
-          )}
-          {showListOptionsMenu && (
-            <View style={[styles.listOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={handleOpenRenameModal}
-                activeOpacity={0.7}
-              >
-                <Edit size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
-              </TouchableOpacity>
-              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={handleDeleteCurrentList}
-                activeOpacity={0.7}
-              >
-                <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
-              </TouchableOpacity>
-            </View>
-          )}
         </View>
 
         <ScrollView style={styles.listDetailContent}>
@@ -1633,26 +1655,6 @@ export default function HomeScreen() {
 
     return (
       <View style={styles.section}>
-        <View style={styles.libraryActions}>
-          <TouchableOpacity
-            style={[styles.createListButtonSmall, { backgroundColor: colors.primary }]}
-            onPress={() => setShowCreateListModal(true)}
-            activeOpacity={0.7}
-          >
-            <Plus size={20} color={colors.white} strokeWidth={2.5} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.editButton, { backgroundColor: isEditMode ? colors.primary : colors.backgroundSecondary, borderColor: colors.border }]}
-            onPress={toggleEditMode}
-            activeOpacity={0.7}
-          >
-            <Edit size={18} color={isEditMode ? colors.white : colors.text} strokeWidth={2} />
-            <Text style={[styles.editButtonText, { color: isEditMode ? colors.white : colors.text }]}>
-              {isEditMode ? 'Done' : 'Edit'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
         <View style={styles.listsContainer}>
           {/* Browse List - Always at top */}
           <TouchableOpacity
@@ -1689,108 +1691,34 @@ export default function HomeScreen() {
             </View>
           ) : (
             userLists.map((list, index) => (
-              <View key={list.id} style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                <TouchableOpacity
-                  style={styles.listCardClickable}
-                  onPress={() => !isEditMode && handleOpenList(list)}
-                  activeOpacity={0.7}
-                  disabled={isEditMode}
-                >
-                  <View style={styles.listCardContent}>
-                    <View style={styles.listCardHeader}>
-                      <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
-                        <List size={20} color={colors.primary} strokeWidth={2} />
-                      </View>
-                      <View style={styles.listCardInfo}>
-                        <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
-                          {list.name}
-                        </Text>
-                        <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
-                          {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
-                        </Text>
-                      </View>
-                      {!isEditMode && <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />}
+              <TouchableOpacity
+                key={list.id}
+                style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                onPress={() => handleOpenList(list)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.listCardContent}>
+                  <View style={styles.listCardHeader}>
+                    <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+                      <List size={20} color={colors.primary} strokeWidth={2} />
                     </View>
-                    {list.description && (
-                      <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                        {list.description}
+                    <View style={styles.listCardInfo}>
+                      <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                        {list.name}
                       </Text>
-                    )}
+                      <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                        {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
+                      </Text>
+                    </View>
+                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
                   </View>
-                </TouchableOpacity>
-
-                {!isEditMode && (
-                  <View style={styles.listCardOptionsContainer}>
-                    <TouchableOpacity
-                      style={styles.listCardOptionsButton}
-                      onPress={() => setActiveOptionsMenu(activeOptionsMenu === list.id ? null : list.id)}
-                      activeOpacity={0.7}
-                    >
-                      <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                    </TouchableOpacity>
-                    {activeOptionsMenu === list.id && (
-                      <View style={[styles.listCardOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                        <TouchableOpacity
-                          style={styles.listOptionItem}
-                          onPress={() => {
-                            setRenameListName(list.name);
-                            setRenameListDescription(list.description || '');
-                            setActiveOptionsMenu(null);
-                            setShowRenameModal(true);
-                            // Set the selected list for renaming
-                            setSelectedList(list);
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Edit size={18} color={colors.text} strokeWidth={2} />
-                          <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
-                        </TouchableOpacity>
-                        <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                        <TouchableOpacity
-                          style={styles.listOptionItem}
-                          onPress={() => {
-                            setActiveOptionsMenu(null);
-                            handleDeleteList(list.id);
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-                          <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </View>
-                )}
-
-                {isEditMode && (
-                  <View style={styles.listCardReorderButtons}>
-                    <TouchableOpacity
-                      onPress={() => handleMoveListUp(index)}
-                      disabled={index === 0}
-                      style={styles.reorderButton}
-                      activeOpacity={0.7}
-                    >
-                      <ChevronUp
-                        size={18}
-                        color={index === 0 ? colors.textSecondary : colors.text}
-                        strokeWidth={2}
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleMoveListDown(index)}
-                      disabled={index === userLists.length - 1}
-                      style={styles.reorderButton}
-                      activeOpacity={0.7}
-                    >
-                      <ChevronDown
-                        size={18}
-                        color={index === userLists.length - 1 ? colors.textSecondary : colors.text}
-                        strokeWidth={2}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
+                  {list.description && (
+                    <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                      {list.description}
+                    </Text>
+                  )}
+                </View>
+              </TouchableOpacity>
             ))
           )}
         </View>
@@ -2564,6 +2492,8 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   mainViewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginHorizontal: 16,
     marginBottom: 8,
     marginTop: 10,
@@ -3191,11 +3121,8 @@ const styles = StyleSheet.create({
   },
   libraryActions: {
     flexDirection: 'row',
-    gap: 12,
-    position: 'absolute' as const,
-    bottom: 24,
-    right: 24,
-    zIndex: 100,
+    gap: 8,
+    marginLeft: 12,
   },
   createListButtonSmall: {
     width: 48,
@@ -3245,10 +3172,10 @@ const styles = StyleSheet.create({
     minWidth: 150,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 10,
-    zIndex: 9999,
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 999,
+    zIndex: 999999,
   },
   createListModalContainer: {
     width: '100%',
@@ -3396,16 +3323,13 @@ const styles = StyleSheet.create({
   },
   // List detail view styles
   listDetailHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
     marginBottom: 16,
-  },
-  listDetailHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
   },
   backButton: {
     flexDirection: 'row',
@@ -3419,18 +3343,20 @@ const styles = StyleSheet.create({
   listDetailTitle: {
     fontSize: 28,
     fontWeight: '700' as const,
+    textAlign: 'center' as const,
   },
-  listDetailTitleContainer: {
-    flexDirection: 'row',
+  listDetailTitleCentered: {
+    flex: 1,
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
   },
   listOptionsButton: {
     padding: 4,
   },
   listOptionsDropdown: {
     position: 'absolute',
-    top: 50,
+    top: 42,
     right: 0,
     borderWidth: 1,
     borderRadius: 12,
@@ -3438,10 +3364,10 @@ const styles = StyleSheet.create({
     minWidth: 160,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 10,
-    zIndex: 9999,
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 999,
+    zIndex: 999999,
   },
   listOptionItem: {
     flexDirection: 'row',
@@ -3461,12 +3387,11 @@ const styles = StyleSheet.create({
   listDetailDescription: {
     fontSize: 15,
     lineHeight: 22,
+    textAlign: 'center' as const,
+    marginTop: 4,
   },
   listDetailActionsContainer: {
-    position: 'absolute' as const,
-    top: 16,
-    right: 16,
-    zIndex: 100,
+    position: 'relative' as const,
   },
   listDetailEditButton: {
     flexDirection: 'row',
@@ -3476,11 +3401,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
   },
   listDetailEditButtonText: {
     fontSize: 13,
@@ -3508,10 +3428,10 @@ const styles = StyleSheet.create({
     minWidth: 120,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 10,
-    zIndex: 9999,
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 999,
+    zIndex: 999999,
   },
   listEntryReorderButtons: {
     justifyContent: 'center',
