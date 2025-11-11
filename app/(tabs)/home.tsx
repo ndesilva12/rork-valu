@@ -58,6 +58,7 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
 import { trpc } from '@/lib/trpc';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
+import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
 import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
@@ -137,6 +138,22 @@ export default function HomeScreen() {
   const [quickAddItem, setQuickAddItem] = useState<{type: 'brand' | 'business' | 'value', id: string, name: string, website?: string, logoUrl?: string} | null>(null);
   const [selectedValueMode, setSelectedValueMode] = useState<ValueListMode | null>(null);
   const [showValueModeModal, setShowValueModeModal] = useState(false);
+
+  // Add Item Modal state
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [addItemType, setAddItemType] = useState<'brand' | 'business' | 'value' | 'link' | 'text' | null>(null);
+  const [addItemSearchQuery, setAddItemSearchQuery] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkTitle, setLinkTitle] = useState('');
+  const [textContent, setTextContent] = useState('');
+
+  // Library rearrange and card options state
+  const [isLibraryRearrangeMode, setIsLibraryRearrangeMode] = useState(false);
+  const [activeCardOptionsMenu, setActiveCardOptionsMenu] = useState<string | null>(null);
+  const [showCardRenameModal, setShowCardRenameModal] = useState(false);
+  const [cardRenameListId, setCardRenameListId] = useState<string | null>(null);
+  const [cardRenameListName, setCardRenameListName] = useState('');
+  const [cardRenameListDescription, setCardRenameListDescription] = useState('');
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -788,14 +805,6 @@ export default function HomeScreen() {
       {mainView === 'myLibrary' && libraryView === 'overview' && (
         <View style={styles.libraryActions}>
           <TouchableOpacity
-            onPress={() => setIsLibraryEditMode(!isLibraryEditMode)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.libraryEditButtonText, { color: colors.primary }]}>
-              {isLibraryEditMode ? 'Done' : 'Edit'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
             style={[styles.createListButtonSmall, { backgroundColor: colors.primary }]}
             onPress={() => setShowListCreationTypeModal(true)}
             activeOpacity={0.7}
@@ -1426,7 +1435,15 @@ export default function HomeScreen() {
   const handleValueModeSelected = (mode: ValueListMode) => {
     setSelectedValueMode(mode);
     setShowValueModeModal(false);
-    setShowQuickAddModal(true);
+
+    // If coming from Add Item modal, add directly to the current list
+    if (selectedList && selectedList !== 'browse' && quickAddItem) {
+      const list = selectedList as UserList;
+      handleAddItemSubmit({ valueId: quickAddItem.id, name: quickAddItem.name, mode });
+    } else {
+      // Otherwise, show the quick add modal to select a list
+      setShowQuickAddModal(true);
+    }
   };
 
   const handleAddToList = async (listId: string) => {
@@ -1544,6 +1561,156 @@ export default function HomeScreen() {
     }
   };
 
+  // Library card handlers
+  const handleOpenCardRenameModal = (listId: string, listName: string, listDescription: string) => {
+    setCardRenameListId(listId);
+    setCardRenameListName(listName);
+    setCardRenameListDescription(listDescription);
+    setShowCardRenameModal(true);
+    setActiveCardOptionsMenu(null);
+  };
+
+  const handleCardRenameSubmit = async () => {
+    if (!cardRenameListId || !cardRenameListName.trim()) {
+      Alert.alert('Error', 'Please enter a list name');
+      return;
+    }
+
+    try {
+      await updateListMetadata(cardRenameListId, cardRenameListName.trim(), cardRenameListDescription.trim());
+      await loadUserLists();
+      setShowCardRenameModal(false);
+      setCardRenameListId(null);
+      setCardRenameListName('');
+      setCardRenameListDescription('');
+      Alert.alert('Success', 'List updated successfully');
+    } catch (error) {
+      console.error('[Home] Error updating list:', error);
+      Alert.alert('Error', 'Could not update list. Please try again.');
+    }
+  };
+
+  const handleCardDeleteList = (listId: string) => {
+    setActiveCardOptionsMenu(null);
+    Alert.alert(
+      'Delete List',
+      'Are you sure you want to delete this list? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteList(listId);
+              await loadUserLists();
+              Alert.alert('Success', 'List deleted successfully');
+            } catch (error) {
+              console.error('[Home] Error deleting list:', error);
+              Alert.alert('Error', 'Could not delete list. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Add item modal handlers
+  const handleOpenAddItemModal = () => {
+    if (selectedList && selectedList !== 'browse') {
+      setShowAddItemModal(true);
+      setAddItemType(null);
+      setAddItemSearchQuery('');
+      setLinkUrl('');
+      setLinkTitle('');
+      setTextContent('');
+    }
+  };
+
+  const handleAddItemTypeSelected = (type: 'brand' | 'business' | 'value' | 'link' | 'text') => {
+    setAddItemType(type);
+    setAddItemSearchQuery('');
+  };
+
+  const handleAddItemSubmit = async (itemData: any) => {
+    if (!selectedList || selectedList === 'browse') return;
+
+    const list = selectedList as UserList;
+
+    try {
+      let entry: any;
+
+      if (addItemType === 'brand' && itemData.brandId) {
+        entry = {
+          type: 'brand',
+          brandId: itemData.brandId,
+          brandName: itemData.name,
+          website: itemData.website,
+          logoUrl: itemData.logoUrl,
+        };
+      } else if (addItemType === 'business' && itemData.businessId) {
+        entry = {
+          type: 'business',
+          businessId: itemData.businessId,
+          businessName: itemData.name,
+          website: itemData.website,
+          logoUrl: itemData.logoUrl,
+        };
+      } else if (addItemType === 'value' && itemData.valueId && itemData.mode) {
+        entry = {
+          type: 'value',
+          valueId: itemData.valueId,
+          valueName: itemData.name,
+          mode: itemData.mode,
+        };
+      } else if (addItemType === 'link') {
+        if (!linkUrl.trim()) {
+          Alert.alert('Error', 'Please enter a URL');
+          return;
+        }
+        entry = {
+          type: 'link',
+          url: linkUrl.trim(),
+          title: linkTitle.trim() || linkUrl.trim(),
+        };
+      } else if (addItemType === 'text') {
+        if (!textContent.trim()) {
+          Alert.alert('Error', 'Please enter text content');
+          return;
+        }
+        entry = {
+          type: 'text',
+          content: textContent.trim(),
+        };
+      } else {
+        return;
+      }
+
+      await addEntryToList(list.id, entry);
+      await loadUserLists();
+
+      // Update selected list
+      const updatedLists = await getUserLists(clerkUser?.id || '');
+      const updatedList = updatedLists.find(l => l.id === list.id);
+      if (updatedList) {
+        setSelectedList(updatedList);
+      }
+
+      // Reset modal state
+      setShowAddItemModal(false);
+      setAddItemType(null);
+      setAddItemSearchQuery('');
+      setLinkUrl('');
+      setLinkTitle('');
+      setTextContent('');
+
+      Alert.alert('Success', 'Item added to list');
+    } catch (error) {
+      console.error('[Home] Error adding item to list:', error);
+      Alert.alert('Error', 'Could not add item. Please try again.');
+    }
+  };
+
   const renderListDetailView = () => {
     if (!selectedList) return null;
 
@@ -1629,39 +1796,30 @@ export default function HomeScreen() {
 
           <View style={styles.listDetailActionsContainer}>
             <TouchableOpacity
-              onPress={() => {
-                toggleEditMode();
-                setShowEditDropdown(false);
-              }}
-              activeOpacity={0.7}
-              style={{ marginRight: 12 }}
-            >
-              <Text style={[styles.listDetailEditTextButton, { color: colors.primary }]}>
-                {isEditMode ? 'Done' : 'Edit'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
               style={[styles.createListButtonSmall, { backgroundColor: colors.primary }]}
-              onPress={() => {
-                Alert.alert('Add Items', 'Use the + button on brand/business cards to add items to this list');
-              }}
+              onPress={handleOpenAddItemModal}
               activeOpacity={0.7}
             >
               <Plus size={24} color={colors.white} strokeWidth={2.5} />
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setShowEditDropdown(!showEditDropdown)}
-              activeOpacity={0.7}
-              style={{ marginLeft: 8 }}
-            >
-              <MoreVertical size={24} color={colors.primary} strokeWidth={2} />
-            </TouchableOpacity>
           </View>
         </View>
 
-        {/* Edit dropdown rendered outside header to avoid z-index issues */}
+        {/* Edit button below title with dropdown */}
+        <View style={styles.listDetailEditSection}>
+          <TouchableOpacity
+            onPress={() => setShowEditDropdown(!showEditDropdown)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.listDetailEditTextCentered, { color: colors.primary }]}>
+              Edit
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Edit dropdown rendered below edit button */}
         {showEditDropdown && (
-          <View style={[styles.listEditDropdownOverlay, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+          <View style={[styles.listEditDropdownCentered, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
             <TouchableOpacity
               style={styles.listOptionItem}
               onPress={() => {
@@ -2083,6 +2241,19 @@ export default function HomeScreen() {
 
     return (
       <View style={styles.section}>
+        {/* My Library Title and Done button (when in rearrange mode) */}
+        <View style={styles.libraryHeader}>
+          <Text style={[styles.libraryTitle, { color: colors.text }]}>My Library</Text>
+          {isLibraryRearrangeMode && (
+            <TouchableOpacity
+              onPress={() => setIsLibraryRearrangeMode(false)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.libraryDoneButton, { color: colors.primary }]}>Done</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         <View style={styles.listsContainer}>
           {/* Browse List - Always at top */}
           <TouchableOpacity
@@ -2119,34 +2290,111 @@ export default function HomeScreen() {
             </View>
           ) : (
             userLists.map((list, index) => (
-              <TouchableOpacity
-                key={list.id}
-                style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                onPress={() => handleOpenList(list)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.listCardContent}>
-                  <View style={styles.listCardHeader}>
-                    <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
-                      <List size={20} color={colors.primary} strokeWidth={2} />
+              <View key={list.id} style={styles.listCardWrapper}>
+                <TouchableOpacity
+                  style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                  onPress={() => !isLibraryRearrangeMode && handleOpenList(list)}
+                  activeOpacity={0.7}
+                  disabled={isLibraryRearrangeMode}
+                >
+                  <View style={styles.listCardContent}>
+                    <View style={styles.listCardHeader}>
+                      <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+                        <List size={20} color={colors.primary} strokeWidth={2} />
+                      </View>
+                      <View style={styles.listCardInfo}>
+                        <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                          {list.name}
+                        </Text>
+                        <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                          {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
+                        </Text>
+                      </View>
+                      {!isLibraryRearrangeMode && (
+                        <>
+                          <TouchableOpacity
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setActiveCardOptionsMenu(activeCardOptionsMenu === list.id ? null : list.id);
+                            }}
+                            activeOpacity={0.7}
+                            style={{ padding: 8 }}
+                          >
+                            <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                          </TouchableOpacity>
+                          <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                        </>
+                      )}
+                      {isLibraryRearrangeMode && (
+                        <View style={styles.listCardRearrangeButtons}>
+                          <TouchableOpacity
+                            onPress={() => handleMoveListUp(index)}
+                            disabled={index === 0}
+                            style={styles.rearrangeButton}
+                            activeOpacity={0.7}
+                          >
+                            <ChevronUp
+                              size={20}
+                              color={index === 0 ? colors.textSecondary : colors.text}
+                              strokeWidth={2}
+                            />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => handleMoveListDown(index)}
+                            disabled={index === userLists.length - 1}
+                            style={styles.rearrangeButton}
+                            activeOpacity={0.7}
+                          >
+                            <ChevronDown
+                              size={20}
+                              color={index === userLists.length - 1 ? colors.textSecondary : colors.text}
+                              strokeWidth={2}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      )}
                     </View>
-                    <View style={styles.listCardInfo}>
-                      <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
-                        {list.name}
+                    {list.description && (
+                      <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                        {list.description}
                       </Text>
-                      <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
-                        {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
-                      </Text>
-                    </View>
-                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                    )}
                   </View>
-                  {list.description && (
-                    <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                      {list.description}
-                    </Text>
-                  )}
-                </View>
-              </TouchableOpacity>
+                </TouchableOpacity>
+                {activeCardOptionsMenu === list.id && !isLibraryRearrangeMode && (
+                  <View style={[styles.listCardOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => handleOpenCardRenameModal(list.id, list.name, list.description || '')}
+                      activeOpacity={0.7}
+                    >
+                      <Edit size={18} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+                    </TouchableOpacity>
+                    <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveCardOptionsMenu(null);
+                        setIsLibraryRearrangeMode(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
+                    </TouchableOpacity>
+                    <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => handleCardDeleteList(list.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
             ))
           )}
         </View>
@@ -2281,6 +2529,16 @@ export default function HomeScreen() {
       {/* Invisible overlay to close dropdown when clicking outside */}
       {activeItemOptionsMenu !== null && (
         <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
+          <View style={styles.dropdownOverlay} />
+        </TouchableWithoutFeedback>
+      )}
+      {activeCardOptionsMenu !== null && (
+        <TouchableWithoutFeedback onPress={() => setActiveCardOptionsMenu(null)}>
+          <View style={styles.dropdownOverlay} />
+        </TouchableWithoutFeedback>
+      )}
+      {showEditDropdown && (
+        <TouchableWithoutFeedback onPress={() => setShowEditDropdown(false)}>
           <View style={styles.dropdownOverlay} />
         </TouchableWithoutFeedback>
       )}
@@ -2920,6 +3178,330 @@ export default function HomeScreen() {
           </View>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* Card Rename Modal - For renaming lists from library overview */}
+      <Modal
+        visible={showCardRenameModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowCardRenameModal(false);
+          setCardRenameListId(null);
+          setCardRenameListName('');
+          setCardRenameListDescription('');
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              setShowCardRenameModal(false);
+              setCardRenameListId(null);
+              setCardRenameListName('');
+              setCardRenameListDescription('');
+            }}
+          >
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Pressable
+            style={[styles.createListModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Edit List</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowCardRenameModal(false);
+                  setCardRenameListId(null);
+                  setCardRenameListName('');
+                  setCardRenameListDescription('');
+                }}
+              >
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalContent}>
+              <Text style={[styles.modalLabel, { color: colors.text }]}>List Name *</Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                placeholder="Enter list name"
+                placeholderTextColor={colors.textSecondary}
+                value={cardRenameListName}
+                onChangeText={setCardRenameListName}
+                autoFocus
+              />
+
+              <Text style={[styles.modalLabel, { color: colors.text }]}>Description (Optional)</Text>
+              <TextInput
+                style={[styles.modalTextArea, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                placeholder="Enter list description"
+                placeholderTextColor={colors.textSecondary}
+                value={cardRenameListDescription}
+                onChangeText={setCardRenameListDescription}
+                multiline
+                numberOfLines={3}
+              />
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                onPress={handleCardRenameSubmit}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.white }]}>Save Changes</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </View>
+      </Modal>
+
+      {/* Add Item Selection Modal - Shows 5 type options */}
+      <Modal
+        visible={showAddItemModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowAddItemModal(false);
+          setAddItemType(null);
+          setAddItemSearchQuery('');
+          setLinkUrl('');
+          setLinkTitle('');
+          setTextContent('');
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              setShowAddItemModal(false);
+              setAddItemType(null);
+              setAddItemSearchQuery('');
+              setLinkUrl('');
+              setLinkTitle('');
+              setTextContent('');
+            }}
+          >
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Pressable
+            style={[styles.createListModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {!addItemType ? 'Add Item' : `Add ${addItemType.charAt(0).toUpperCase() + addItemType.slice(1)}`}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  if (addItemType) {
+                    setAddItemType(null);
+                    setAddItemSearchQuery('');
+                    setLinkUrl('');
+                    setLinkTitle('');
+                    setTextContent('');
+                  } else {
+                    setShowAddItemModal(false);
+                  }
+                }}
+              >
+                {addItemType ? <ArrowLeft size={24} color={colors.text} strokeWidth={2} /> : <X size={24} color={colors.text} strokeWidth={2} />}
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent}>
+              {!addItemType ? (
+                // Show 5 type selection buttons
+                <>
+                  <TouchableOpacity
+                    style={[styles.addItemTypeButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                    onPress={() => handleAddItemTypeSelected('brand')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.addItemTypeText, { color: colors.text }]}>Brand</Text>
+                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.addItemTypeButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                    onPress={() => handleAddItemTypeSelected('business')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.addItemTypeText, { color: colors.text }]}>Business</Text>
+                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.addItemTypeButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                    onPress={() => handleAddItemTypeSelected('value')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.addItemTypeText, { color: colors.text }]}>Value</Text>
+                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.addItemTypeButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                    onPress={() => handleAddItemTypeSelected('link')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.addItemTypeText, { color: colors.text }]}>Link</Text>
+                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.addItemTypeButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                    onPress={() => handleAddItemTypeSelected('text')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.addItemTypeText, { color: colors.text }]}>Text</Text>
+                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                  </TouchableOpacity>
+                </>
+              ) : addItemType === 'brand' ? (
+                // Brand search interface
+                <>
+                  <TextInput
+                    style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                    placeholder="Search brands..."
+                    placeholderTextColor={colors.textSecondary}
+                    value={addItemSearchQuery}
+                    onChangeText={setAddItemSearchQuery}
+                    autoFocus
+                  />
+                  <View style={styles.searchResultsContainer}>
+                    {brands?.filter(b => b.name.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(brand => (
+                      <TouchableOpacity
+                        key={brand.id}
+                        style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                        onPress={() => handleAddItemSubmit({ brandId: brand.id, name: brand.name, website: brand.website, logoUrl: getLogoUrl(brand.website || '') })}
+                        activeOpacity={0.7}
+                      >
+                        <Image
+                          source={{ uri: getLogoUrl(brand.website || '') }}
+                          style={styles.searchResultLogo}
+                          contentFit="cover"
+                        />
+                        <Text style={[styles.searchResultText, { color: colors.text }]}>{brand.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </>
+              ) : addItemType === 'business' ? (
+                // Business search interface
+                <>
+                  <TextInput
+                    style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                    placeholder="Search businesses..."
+                    placeholderTextColor={colors.textSecondary}
+                    value={addItemSearchQuery}
+                    onChangeText={setAddItemSearchQuery}
+                    autoFocus
+                  />
+                  <View style={styles.searchResultsContainer}>
+                    {userBusinesses?.filter(b => b.businessInfo.name.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(business => (
+                      <TouchableOpacity
+                        key={business.id}
+                        style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                        onPress={() => handleAddItemSubmit({ businessId: business.id, name: business.businessInfo.name, website: business.businessInfo.website, logoUrl: business.businessInfo.logoUrl })}
+                        activeOpacity={0.7}
+                      >
+                        <Image
+                          source={{ uri: business.businessInfo.logoUrl || getLogoUrl(business.businessInfo.website || '') }}
+                          style={styles.searchResultLogo}
+                          contentFit="cover"
+                        />
+                        <Text style={[styles.searchResultText, { color: colors.text }]}>{business.businessInfo.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </>
+              ) : addItemType === 'value' ? (
+                // Value search interface (with mode selection)
+                <>
+                  <TextInput
+                    style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                    placeholder="Search values..."
+                    placeholderTextColor={colors.textSecondary}
+                    value={addItemSearchQuery}
+                    onChangeText={setAddItemSearchQuery}
+                    autoFocus
+                  />
+                  <View style={styles.searchResultsContainer}>
+                    {values?.filter(v => v.name.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(value => (
+                      <View key={value.id}>
+                        <TouchableOpacity
+                          style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                          onPress={() => {
+                            // Show mode selection
+                            setQuickAddItem({ type: 'value', id: value.id, name: value.name });
+                            setShowAddItemModal(false);
+                            setShowValueModeModal(true);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.searchResultText, { color: colors.text }]}>{value.name}</Text>
+                          <Text style={[styles.searchResultSubtext, { color: colors.textSecondary }]}>Select mode</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              ) : addItemType === 'link' ? (
+                // Link input interface
+                <>
+                  <Text style={[styles.modalLabel, { color: colors.text }]}>URL *</Text>
+                  <TextInput
+                    style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                    placeholder="https://example.com"
+                    placeholderTextColor={colors.textSecondary}
+                    value={linkUrl}
+                    onChangeText={setLinkUrl}
+                    autoFocus
+                  />
+
+                  <Text style={[styles.modalLabel, { color: colors.text }]}>Title (Optional)</Text>
+                  <TextInput
+                    style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                    placeholder="Link title"
+                    placeholderTextColor={colors.textSecondary}
+                    value={linkTitle}
+                    onChangeText={setLinkTitle}
+                  />
+
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                    onPress={() => handleAddItemSubmit({})}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.modalButtonText, { color: colors.white }]}>Add Link</Text>
+                  </TouchableOpacity>
+                </>
+              ) : addItemType === 'text' ? (
+                // Text input interface
+                <>
+                  <Text style={[styles.modalLabel, { color: colors.text }]}>Text Content *</Text>
+                  <TextInput
+                    style={[styles.modalTextArea, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                    placeholder="Enter text note..."
+                    placeholderTextColor={colors.textSecondary}
+                    value={textContent}
+                    onChangeText={setTextContent}
+                    multiline
+                    numberOfLines={5}
+                    autoFocus
+                  />
+
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                    onPress={() => handleAddItemSubmit({})}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.modalButtonText, { color: colors.white }]}>Add Text</Text>
+                  </TouchableOpacity>
+                </>
+              ) : null}
+            </ScrollView>
+          </Pressable>
+        </View>
       </Modal>
     </View>
   );
@@ -4267,5 +4849,116 @@ const styles = StyleSheet.create({
   browseCategoryCount: {
     fontSize: 14,
     fontWeight: '600' as const,
+  },
+  // Library header styles
+  libraryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    position: 'relative',
+  },
+  libraryTitle: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    textAlign: 'center',
+  },
+  libraryDoneButton: {
+    position: 'absolute',
+    right: 20,
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  // List card wrapper and rearrange styles
+  listCardWrapper: {
+    position: 'relative',
+  },
+  listCardRearrangeButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  rearrangeButton: {
+    padding: 4,
+  },
+  listCardOptionsDropdown: {
+    position: 'absolute',
+    top: 60,
+    right: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    zIndex: 1000,
+    minWidth: 160,
+  },
+  // List detail edit section styles
+  listDetailEditSection: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  listDetailEditTextCentered: {
+    fontSize: 16,
+    fontWeight: '400' as const,
+  },
+  listEditDropdownCentered: {
+    alignSelf: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    zIndex: 1000,
+    minWidth: 180,
+    marginBottom: 12,
+  },
+  // Add item modal styles
+  addItemTypeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  addItemTypeText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  searchResultsContainer: {
+    marginTop: 12,
+    gap: 8,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 12,
+  },
+  searchResultLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 4,
+  },
+  searchResultText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    flex: 1,
+  },
+  searchResultSubtext: {
+    fontSize: 12,
+    fontWeight: '400' as const,
   },
 });
