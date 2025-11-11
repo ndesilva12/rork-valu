@@ -34,7 +34,6 @@ export default function AdminTransactions() {
   const [totalStats, setTotalStats] = useState({
     totalRevenue: 0,
     totalDiscounts: 0,
-    totalDonations: 0,
     standFees: 0,
   });
 
@@ -42,7 +41,6 @@ export default function AdminTransactions() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [editedPurchaseAmount, setEditedPurchaseAmount] = useState('');
-  const [editedDonationAmount, setEditedDonationAmount] = useState('');
   const [editedDiscountAmount, setEditedDiscountAmount] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
@@ -88,7 +86,6 @@ export default function AdminTransactions() {
       const txns: any[] = [];
       let totalRevenue = 0;
       let totalDiscounts = 0;
-      let totalDonations = 0;
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -96,7 +93,6 @@ export default function AdminTransactions() {
 
         totalRevenue += data.purchaseAmount || 0;
         totalDiscounts += data.discountAmount || 0;
-        totalDonations += data.donationAmount || 0;
       });
 
       const standFees = totalRevenue * 0.025; // 2.5% of purchase amounts (not discounts)
@@ -106,7 +102,6 @@ export default function AdminTransactions() {
       setTotalStats({
         totalRevenue,
         totalDiscounts,
-        totalDonations,
         standFees,
       });
     } catch (error) {
@@ -119,7 +114,6 @@ export default function AdminTransactions() {
   const openEditModal = (transaction: any) => {
     setSelectedTransaction(transaction);
     setEditedPurchaseAmount(transaction.purchaseAmount?.toString() || '0');
-    setEditedDonationAmount(transaction.donationAmount?.toString() || '0');
     setEditedDiscountAmount(transaction.discountAmount?.toString() || '0');
     setEditNotes('');
     setEditModalVisible(true);
@@ -132,15 +126,14 @@ export default function AdminTransactions() {
     }
 
     const newPurchaseAmount = parseFloat(editedPurchaseAmount);
-    const newDonationAmount = parseFloat(editedDonationAmount);
     const newDiscountAmount = parseFloat(editedDiscountAmount);
 
-    if (isNaN(newPurchaseAmount) || isNaN(newDonationAmount) || isNaN(newDiscountAmount)) {
+    if (isNaN(newPurchaseAmount) || isNaN(newDiscountAmount)) {
       Alert.alert('Error', 'Please enter valid amounts');
       return;
     }
 
-    if (newPurchaseAmount < 0 || newDonationAmount < 0 || newDiscountAmount < 0) {
+    if (newPurchaseAmount < 0 || newDiscountAmount < 0) {
       Alert.alert('Error', 'Amounts cannot be negative');
       return;
     }
@@ -157,12 +150,10 @@ export default function AdminTransactions() {
         reason: editNotes,
         originalValues: {
           purchaseAmount: selectedTransaction.purchaseAmount,
-          donationAmount: selectedTransaction.donationAmount,
           discountAmount: selectedTransaction.discountAmount,
         },
         newValues: {
           purchaseAmount: newPurchaseAmount,
-          donationAmount: newDonationAmount,
           discountAmount: newDiscountAmount,
         },
       };
@@ -170,7 +161,6 @@ export default function AdminTransactions() {
       // Update transaction with new values and add to edit history
       await updateDoc(transactionRef, {
         purchaseAmount: newPurchaseAmount,
-        donationAmount: newDonationAmount,
         discountAmount: newDiscountAmount,
         editHistory: arrayUnion(editHistory),
         lastEditedAt: serverTimestamp(),
@@ -231,10 +221,6 @@ export default function AdminTransactions() {
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Total Discounts</Text>
             <Text style={styles.statValue}>{formatCurrency(totalStats.totalDiscounts)}</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Total Donations</Text>
-            <Text style={styles.statValue}>{formatCurrency(totalStats.totalDonations)}</Text>
           </View>
           <View style={[styles.statCard, styles.standFeeCard]}>
             <Text style={styles.statLabel}>Upright Fees (2.5%)</Text>
@@ -299,13 +285,6 @@ export default function AdminTransactions() {
                 </View>
 
                 <View style={styles.transactionRow}>
-                  <Text style={styles.label}>Donation ({txn.donationPercent}%):</Text>
-                  <Text style={[styles.value, styles.donationValue]}>
-                    {formatCurrency(txn.donationAmount)}
-                  </Text>
-                </View>
-
-                <View style={styles.transactionRow}>
                   <Text style={styles.label}>Upright Fee (2.5% of purchase):</Text>
                   <Text style={[styles.value, styles.feeValue]}>
                     {formatCurrency(txn.purchaseAmount * 0.025)}
@@ -357,17 +336,6 @@ export default function AdminTransactions() {
                 placeholder="0.00"
                 value={editedPurchaseAmount}
                 onChangeText={setEditedPurchaseAmount}
-                keyboardType="decimal-pad"
-              />
-            </View>
-
-            <View style={styles.modalSection}>
-              <Text style={styles.modalLabel}>Donation Amount ($):</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="0.00"
-                value={editedDonationAmount}
-                onChangeText={setEditedDonationAmount}
                 keyboardType="decimal-pad"
               />
             </View>

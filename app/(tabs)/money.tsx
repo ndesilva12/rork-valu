@@ -29,7 +29,6 @@ export default function DiscountScreen() {
   // Business financial state
   const [businessFinancials, setBusinessFinancials] = useState({
     totalRevenue: 0,
-    totalDonations: 0,
     standFees: 0,
     totalOwed: 0,
     isLoading: true,
@@ -49,20 +48,17 @@ export default function DiscountScreen() {
 
       const querySnapshot = await getDocs(q);
       let totalRevenue = 0;
-      let totalDonations = 0;
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
         totalRevenue += data.purchaseAmount || 0;
-        totalDonations += data.donationAmount || 0;
       });
 
-      const standFees = (totalRevenue + totalDonations) * 0.025; // 2.5% of purchase amounts + donations
-      const totalOwed = standFees + totalDonations;
+      const standFees = totalRevenue * 0.025; // 2.5% of purchase amounts
+      const totalOwed = standFees;
 
       setBusinessFinancials({
         totalRevenue,
-        totalDonations,
         standFees,
         totalOwed,
         isLoading: false,
@@ -115,7 +111,6 @@ export default function DiscountScreen() {
             <BusinessPayment
               amountOwed={businessFinancials.totalOwed}
               standFees={businessFinancials.standFees}
-              donationsOwed={businessFinancials.totalDonations}
               businessId={clerkUser?.id || ''}
               businessName={profile.businessInfo?.name || 'Your Business'}
               colors={colors}
