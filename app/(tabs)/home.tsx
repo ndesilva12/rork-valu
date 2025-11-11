@@ -5080,7 +5080,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'transparent',
-    zIndex: 9999,
+    zIndex: 998,
   },
   listEntryOptionsDropdownFixed: {
     position: 'absolute',
@@ -5234,21 +5234,6 @@ const styles = StyleSheet.create({
   },
   rearrangeButton: {
     padding: 4,
-  },
-  listCardOptionsDropdown: {
-    position: 'absolute',
-    top: 60,
-    right: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    zIndex: 1000,
-    minWidth: 160,
   },
   // List detail edit section styles
   listDetailEditSection: {
