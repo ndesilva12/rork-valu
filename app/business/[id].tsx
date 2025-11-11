@@ -320,7 +320,6 @@ export default function BusinessDetailScreen() {
         <View style={styles.content}>
           {/* Header with logo, business info, and score */}
           <View style={styles.header}>
-            {/* Logo on the left */}
             <Image
               source={{ uri: logoSource }}
               style={styles.headerLogo}

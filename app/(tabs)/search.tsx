@@ -30,7 +30,7 @@ import { Product } from '@/types';
 import { lookupBarcode, findBrandInDatabase, getBrandProduct } from '@/mocks/barcode-products';
 import { getLogoUrl } from '@/lib/logo';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
-import { getBusinessesAcceptingDiscounts, BusinessUser } from '@/services/firebase/businessService';
+import { getBusinessesAcceptingDiscounts, getAllUserBusinesses, BusinessUser } from '@/services/firebase/businessService';
 
 interface Comment {
   id: string;
@@ -66,7 +66,7 @@ export default function SearchScreen() {
   useEffect(() => {
     const fetchBusinesses = async () => {
       try {
-        const businesses = await getBusinessesAcceptingDiscounts();
+        const businesses = await getAllUserBusinesses();
         setFirebaseBusinesses(businesses);
       } catch (error) {
         console.error('Error fetching businesses:', error);
@@ -321,7 +321,11 @@ export default function SearchScreen() {
             website: business.businessInfo.website,
             location: business.businessInfo.location,
             valueAlignments: [],
-            keyReasons: [`Accepts Upright Discounts at ${business.businessInfo.name}`],
+            keyReasons: [
+              business.businessInfo.acceptsStandDiscounts
+                ? `Accepts Upright Discounts at ${business.businessInfo.name}`
+                : `Local business: ${business.businessInfo.name}`
+            ],
             moneyFlow: { company: business.businessInfo.name, shareholders: [], overallAlignment: 0 },
             relatedValues: [],
             isFirebaseBusiness: true, // Flag to identify Firebase businesses
@@ -354,7 +358,10 @@ export default function SearchScreen() {
     } else {
       router.push({
         pathname: '/brand/[id]',
-        params: { id: product.id },
+        params: {
+          id: product.id,
+          name: product.brand || product.name, // Pass brand name as fallback for brand lookup
+        },
       });
     }
   };
@@ -748,11 +755,14 @@ export default function SearchScreen() {
           />
           {query.length > 0 && (
             <TouchableOpacity
-              onPress={() => setQuery('')}
+              onPress={() => {
+                setQuery('');
+                setResults([]);
+              }}
               style={styles.clearButton}
               activeOpacity={0.7}
             >
-              <X size={20} color={colors.textSecondary} strokeWidth={2} />
+              <X size={Platform.OS === 'web' ? 20 : 24} color={colors.textSecondary} strokeWidth={2.5} />
             </TouchableOpacity>
           )}
         </View>
@@ -1144,11 +1154,12 @@ const styles = StyleSheet.create({
     outlineWidth: 0,
   },
   clearButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: Platform.OS === 'web' ? 32 : 44, // Larger touch target on mobile
+    height: Platform.OS === 'web' ? 32 : 44,
+    borderRadius: Platform.OS === 'web' ? 16 : 22,
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: 8, // Ensure spacing from input
   },
 
   // Explore Section

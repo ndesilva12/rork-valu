@@ -81,14 +81,7 @@ export default function DiscountScreen() {
     }
   }, [isBusiness]);
 
-  const handleSelectCharities = () => {
-    router.push('/select-charities');
-  };
-
-  const selectedOrganizationsCount = profile.selectedCharities?.length || 0;
-  const donationAmount = profile.donationAmount || 0;
   const totalSavings = profile.totalSavings || 0;
-  const businessDonationAmount = profile.businessInfo?.totalDonated || 0;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -152,55 +145,13 @@ export default function DiscountScreen() {
               <View style={styles.impactDashboardSection}>
                 <View style={styles.qrDivider} />
 
-                {/* Two Counters Side by Side */}
-                <View style={styles.countersRow}>
-                  <View style={styles.counterItem}>
-                    <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Savings</Text>
-                    <Text style={[styles.donationAmount, { color: colors.primary }]}>
-                      ${totalSavings.toFixed(2)}
-                    </Text>
-                  </View>
-                  <View style={styles.counterDivider} />
-                  <View style={styles.counterItem}>
-                    <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Donated</Text>
-                    <Text style={[styles.donationAmount, { color: colors.primary }]}>
-                      ${donationAmount.toFixed(2)}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.charitiesInfoContainer}>
-                  <Text style={[styles.charitiesInfoText, { color: colors.textSecondary }]}>
-                    {selectedOrganizationsCount === 0
-                      ? 'No organizations selected yet'
-                      : selectedOrganizationsCount === 1
-                      ? '1 organization selected'
-                      : `${selectedOrganizationsCount} organizations selected`}
+                {/* Savings Counter */}
+                <View style={styles.donationAmountContainer}>
+                  <Text style={[styles.donationLabel, { color: colors.textSecondary }]}>Total Savings</Text>
+                  <Text style={[styles.donationAmount, { color: colors.primary }]}>
+                    ${totalSavings.toFixed(2)}
                   </Text>
                 </View>
-
-                <TouchableOpacity
-                  style={[styles.selectCharitiesButton, { backgroundColor: colors.primary }]}
-                  onPress={handleSelectCharities}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.selectCharitiesButtonText, { color: colors.white }]}>
-                    {selectedOrganizationsCount === 0 ? 'Select Organizations' : 'Manage Organizations'}
-                  </Text>
-                </TouchableOpacity>
-
-                {selectedOrganizationsCount > 0 && profile.selectedCharities && (
-                  <View style={styles.selectedCharitiesList}>
-                    {profile.selectedCharities.map((charity) => (
-                      <View key={charity.id} style={[styles.charityItem, { backgroundColor: colors.background }]}>
-                        <Text style={[styles.charityName, { color: colors.text }]}>{charity.name}</Text>
-                        <Text style={[styles.charityCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                          {charity.category}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
               </View>
             </View>
 
