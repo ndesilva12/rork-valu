@@ -73,7 +73,6 @@ interface BusinessData {
   acceptsValueCode?: boolean;
   valueCodeDiscount?: number;
   customerDiscountPercent?: number;
-  donationPercent?: number;
   customDiscount?: string;
   socialMedia?: SocialMedia;
   affiliates?: Affiliate[];
@@ -116,7 +115,6 @@ export default function BusinessesManagement() {
   const [formAcceptsValueCode, setFormAcceptsValueCode] = useState(false);
   const [formValueCodeDiscount, setFormValueCodeDiscount] = useState('');
   const [formCustomerDiscountPercent, setFormCustomerDiscountPercent] = useState('');
-  const [formDonationPercent, setFormDonationPercent] = useState('');
   const [formCustomDiscount, setFormCustomDiscount] = useState('');
 
   // Form state - Social Media
@@ -166,7 +164,6 @@ export default function BusinessesManagement() {
             acceptsValueCode: biz.acceptsValueCode || false,
             valueCodeDiscount: biz.valueCodeDiscount || 0,
             customerDiscountPercent: biz.customerDiscountPercent || 0,
-            donationPercent: biz.donationPercent || 0,
             customDiscount: biz.customDiscount || '',
             socialMedia: biz.socialMedia || {},
             affiliates: biz.affiliates || [],
@@ -219,7 +216,6 @@ export default function BusinessesManagement() {
     setFormAcceptsValueCode(business.acceptsValueCode || false);
     setFormValueCodeDiscount(business.valueCodeDiscount?.toString() || '');
     setFormCustomerDiscountPercent(business.customerDiscountPercent?.toString() || '');
-    setFormDonationPercent(business.donationPercent?.toString() || '');
     setFormCustomDiscount(business.customDiscount || '');
 
     // Social media
@@ -319,7 +315,6 @@ export default function BusinessesManagement() {
         acceptsValueCode: formAcceptsValueCode,
         valueCodeDiscount: parseFloat(formValueCodeDiscount) || 0,
         customerDiscountPercent: parseFloat(formCustomerDiscountPercent) || 0,
-        donationPercent: parseFloat(formDonationPercent) || 0,
         customDiscount: formCustomDiscount,
         socialMedia: socialMedia,
         affiliates: parseMoneyFlowSection(formAffiliates),
@@ -605,15 +600,6 @@ export default function BusinessesManagement() {
                 keyboardType="numeric"
               />
 
-              <Text style={styles.label}>Donation Percent (%)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="5"
-                value={formDonationPercent}
-                onChangeText={setFormDonationPercent}
-                keyboardType="numeric"
-              />
-
               <Text style={styles.label}>Custom Discount Text</Text>
               <TextInput
                 style={styles.input}
@@ -747,13 +733,13 @@ export default function BusinessesManagement() {
                 {'\n'}• Core: userId,email,businessName,category,description,website,logoUrl,coverImageUrl
                 {'\n'}• Locations: locations (format: address|lat|lng|primary;address2|lat2|lng2|)
                 {'\n'}• Gallery: galleryImage1Url,galleryImage1Caption,galleryImage2Url,galleryImage2Caption,galleryImage3Url,galleryImage3Caption
-                {'\n'}• Discounts: acceptsStandDiscounts,acceptsQRCode,acceptsValueCode,valueCodeDiscount,customerDiscountPercent,donationPercent,customDiscount
+                {'\n'}• Discounts: acceptsStandDiscounts,acceptsQRCode,acceptsValueCode,valueCodeDiscount,customerDiscountPercent,customDiscount
                 {'\n'}• Social: facebook,instagram,twitter,linkedin,yelp,youtube
                 {'\n'}• Money Flow: affiliates,partnerships,ownership,ownershipSources
                 {'\n\n'}
                 <Text style={styles.boldText}>Format Details:</Text>
                 {'\n'}• Boolean fields: true/false (acceptsStandDiscounts, acceptsQRCode, acceptsValueCode)
-                {'\n'}• Numbers: valueCodeDiscount, customerDiscountPercent, donationPercent (e.g., 10 for 10%)
+                {'\n'}• Numbers: valueCodeDiscount, customerDiscountPercent (e.g., 10 for 10%)
                 {'\n'}• Locations: Use semicolons (;) to separate multiple locations, pipe (|) for address|lat|lng|primary
                 {'\n'}• Money Flow: Use semicolons (;) to separate entries, pipe (|) for name|relationship
                 {'\n\n'}
