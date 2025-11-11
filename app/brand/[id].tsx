@@ -524,18 +524,27 @@ export default function BrandDetailScreen() {
             <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.visitButton, { backgroundColor: colors.primary }]}
-            onPress={handleShopPress}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.visitButtonText, { color: colors.white }]}>Visit</Text>
-          </TouchableOpacity>
+          <View style={styles.heroButtons}>
+            <TouchableOpacity
+              style={[styles.addToListButton, { backgroundColor: colors.background }]}
+              onPress={handleQuickAdd}
+              activeOpacity={0.7}
+            >
+              <Plus size={20} color={colors.primary} strokeWidth={2.5} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.visitButton, { backgroundColor: colors.primary }]}
+              onPress={handleShopPress}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.visitButtonText, { color: colors.white }]}>Visit</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.content}>
-          {/* Logo with centered add button underneath */}
-          <View style={styles.headerLogoSection}>
+          {/* Header with logo, brand info, and score */}
+          <View style={styles.header}>
             <Image
               source={{ uri: getLogoUrl(brand.website || '') }}
               style={styles.headerLogo}
@@ -544,17 +553,7 @@ export default function BrandDetailScreen() {
               cachePolicy="memory-disk"
               placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
             />
-            <TouchableOpacity
-              style={[styles.addToListButtonBelow, { backgroundColor: colors.background, borderColor: colors.border }]}
-              onPress={handleQuickAdd}
-              activeOpacity={0.7}
-            >
-              <Plus size={18} color={colors.primary} strokeWidth={2.5} />
-            </TouchableOpacity>
-          </View>
 
-          {/* Header with brand info and score */}
-          <View style={styles.header}>
             <View style={styles.titleContainer}>
               <Text style={[styles.brandName, { color: colors.text }]}>{brand?.name}</Text>
               <Text style={[styles.category, { color: colors.primary }]}>{brand.category}</Text>
@@ -1034,25 +1033,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     gap: 12,
   },
-  headerLogoSection: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
   headerLogo: {
     width: 64,
     height: 64,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  addToListButtonBelow: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    marginTop: 8,
   },
   titleContainer: {
     flex: 1,
@@ -1399,18 +1385,24 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   // Quick-add styles
-  badgeAndButtonContainer: {
+  heroButtons: {
+    position: 'absolute' as const,
+    right: 16,
+    bottom: 16,
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 8,
   },
-  addToListButtonHeader: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  addToListButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   modalOverlay: {
     flex: 1,
