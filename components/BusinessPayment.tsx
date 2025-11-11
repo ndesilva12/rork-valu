@@ -3,7 +3,6 @@
  *
  * Allows businesses to pay Stand for:
  * - Upright fees (2.5% of purchase amounts)
- * - Committed donations
  *
  * Cross-platform: Uses Stripe Payment Element on web, Payment Sheet on mobile
  */
@@ -38,7 +37,6 @@ if (Platform.OS === 'web') {
 type Props = {
   amountOwed: number;
   standFees: number;
-  donationsOwed: number;
   businessId: string;
   businessName: string;
   colors: any;
@@ -131,7 +129,6 @@ const WebPaymentForm = Platform.OS === 'web'
 export default function BusinessPayment({
   amountOwed,
   standFees,
-  donationsOwed,
   businessId,
   businessName,
   colors,
@@ -157,7 +154,7 @@ export default function BusinessPayment({
         amount: amountOwed,
         businessId,
         businessName,
-        description: `Upright fees (2.5%: $${standFees.toFixed(2)}) + Donations ($${donationsOwed.toFixed(2)})`,
+        description: `Upright fees (2.5%: $${standFees.toFixed(2)})`,
       });
 
       const { clientSecret: secret } = result.data as { clientSecret: string };
@@ -230,7 +227,7 @@ export default function BusinessPayment({
           <DollarSign size={48} color={colors.success} strokeWidth={2} />
           <Text style={[styles.noDueTitle, { color: colors.text }]}>All Paid Up!</Text>
           <Text style={[styles.noDueText, { color: colors.textSecondary }]}>
-            You don't owe any fees or donations at this time.
+            You don't owe any fees at this time.
           </Text>
         </View>
       </View>
@@ -248,18 +245,10 @@ export default function BusinessPayment({
       <View style={styles.breakdown}>
         <View style={styles.breakdownRow}>
           <Text style={[styles.breakdownLabel, { color: colors.textSecondary }]}>
-            Upright Fees (2.5% of sales + donations):
+            Upright Fees (2.5% of sales):
           </Text>
           <Text style={[styles.breakdownValue, { color: colors.text }]}>
             ${standFees.toFixed(2)}
-          </Text>
-        </View>
-        <View style={styles.breakdownRow}>
-          <Text style={[styles.breakdownLabel, { color: colors.textSecondary }]}>
-            Donations Committed:
-          </Text>
-          <Text style={[styles.breakdownValue, { color: colors.text }]}>
-            ${donationsOwed.toFixed(2)}
           </Text>
         </View>
         <View style={[styles.totalRow, { borderTopColor: colors.border }]}>
