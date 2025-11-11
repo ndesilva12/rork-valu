@@ -58,7 +58,7 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
 import { trpc } from '@/lib/trpc';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
-import { AVAILABLE_VALUES } from '@/mocks/causes';
+// import { AVAILABLE_VALUES } from '@/mocks/causes'; // Removed - using values from DataContext instead
 import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
 import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
@@ -1225,9 +1225,8 @@ export default function HomeScreen() {
       }
 
       // Get value names for list name
-      const allValues = Object.values(AVAILABLE_VALUES).flat();
       const selectedValueNames = selectedValuesForList
-        .map(id => allValues.find(v => v.id === id)?.name)
+        .map(id => values.find(v => v.id === id)?.name)
         .filter(Boolean)
         .slice(0, 3)
         .join(', ');
@@ -3044,47 +3043,40 @@ export default function HomeScreen() {
               </Text>
 
               <View style={styles.valuesGrid}>
-                {Object.entries(AVAILABLE_VALUES).map(([category, categoryValues]) => (
-                  <View key={category} style={styles.valuesCategorySection}>
-                    <Text style={[styles.valuesCategoryTitle, { color: colors.text }]}>
-                      {category.charAt(0).toUpperCase() + category.slice(1).replace(/([A-Z])/g, ' $1')}
-                    </Text>
-                    <View style={styles.valuesButtonsContainer}>
-                      {categoryValues.map((value) => {
-                        const isSelected = selectedValuesForList.includes(value.id);
-                        return (
-                          <TouchableOpacity
-                            key={value.id}
-                            style={[
-                              styles.valueChip,
-                              {
-                                backgroundColor: isSelected ? colors.primary : colors.backgroundSecondary,
-                                borderColor: isSelected ? colors.primary : colors.border,
-                              }
-                            ]}
-                            onPress={() => {
-                              if (isSelected) {
-                                setSelectedValuesForList(prev => prev.filter(id => id !== value.id));
-                              } else {
-                                setSelectedValuesForList(prev => [...prev, value.id]);
-                              }
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text
-                              style={[
-                                styles.valueChipText,
-                                { color: isSelected ? colors.white : colors.text }
-                              ]}
-                            >
-                              {value.name}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </View>
-                ))}
+                <View style={styles.valuesButtonsContainer}>
+                  {values.map((value) => {
+                    const isSelected = selectedValuesForList.includes(value.id);
+                    return (
+                      <TouchableOpacity
+                        key={value.id}
+                        style={[
+                          styles.valueChip,
+                          {
+                            backgroundColor: isSelected ? colors.primary : colors.backgroundSecondary,
+                            borderColor: isSelected ? colors.primary : colors.border,
+                          }
+                        ]}
+                        onPress={() => {
+                          if (isSelected) {
+                            setSelectedValuesForList(prev => prev.filter(id => id !== value.id));
+                          } else {
+                            setSelectedValuesForList(prev => [...prev, value.id]);
+                          }
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.valueChipText,
+                            { color: isSelected ? colors.white : colors.text }
+                          ]}
+                        >
+                          {value.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
 
               <TouchableOpacity
