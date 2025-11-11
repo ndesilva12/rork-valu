@@ -2283,7 +2283,13 @@ export default function HomeScreen() {
             </View>
           ) : (
             userLists.map((list, index) => (
-              <View key={list.id} style={styles.listCardWrapper}>
+              <View
+                key={list.id}
+                style={[
+                  styles.listCardWrapper,
+                  activeCardOptionsMenu === list.id && !isLibraryRearrangeMode && { zIndex: 1000 }
+                ]}
+              >
                 <TouchableOpacity
                   style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
                   onPress={() => !isLibraryRearrangeMode && handleOpenList(list)}
@@ -2304,19 +2310,16 @@ export default function HomeScreen() {
                         </Text>
                       </View>
                       {!isLibraryRearrangeMode && (
-                        <>
-                          <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-                          <TouchableOpacity
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              setActiveCardOptionsMenu(activeCardOptionsMenu === list.id ? null : list.id);
-                            }}
-                            activeOpacity={0.7}
-                            style={{ padding: 8 }}
-                          >
-                            <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                          </TouchableOpacity>
-                        </>
+                        <TouchableOpacity
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            setActiveCardOptionsMenu(activeCardOptionsMenu === list.id ? null : list.id);
+                          }}
+                          activeOpacity={0.7}
+                          style={styles.listCardOptionsButton}
+                        >
+                          <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                        </TouchableOpacity>
                       )}
                       {isLibraryRearrangeMode && (
                         <View style={styles.listCardRearrangeButtons}>
@@ -4377,7 +4380,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   listCardOptionsButton: {
-    padding: 4,
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   listCardOptionsDropdown: {
     position: 'absolute',
