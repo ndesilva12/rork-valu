@@ -30,9 +30,7 @@ type BusinessAccount = {
   email: string;
   totalRevenue: number;
   totalDiscountGiven: number;
-  totalDonations: number;
   standFeesOwed: number; // 2.5% of purchase amounts
-  donationsOwed: number; // Full donation amount
   totalOwed: number;
   transactionCount: number;
   lastTransaction?: any;
@@ -53,7 +51,6 @@ export default function AdminFinancials() {
 
   const [totalStats, setTotalStats] = useState({
     totalFeesOwed: 0,
-    totalDonationsOwed: 0,
     totalOwed: 0,
     businessCount: 0,
   });
@@ -108,7 +105,6 @@ export default function AdminFinancials() {
         if (businessMap.has(merchantId)) {
           const biz = businessMap.get(merchantId)!;
           biz.totalDiscountGiven += data.discountAmount || 0;
-          biz.totalDonations += data.donationAmount || 0;
           biz.transactionCount += 1;
         } else {
           businessMap.set(merchantId, {
@@ -117,9 +113,7 @@ export default function AdminFinancials() {
             email: '', // Will fetch from user profile
             totalRevenue: 0,
             totalDiscountGiven: data.discountAmount || 0,
-            totalDonations: data.donationAmount || 0,
             standFeesOwed: 0,
-            donationsOwed: 0,
             totalOwed: 0,
             transactionCount: 1,
             lastTransaction: data.createdAt,
@@ -129,7 +123,6 @@ export default function AdminFinancials() {
 
       // Calculate fees and totals
       let totalFeesOwed = 0;
-      let totalDonationsOwed = 0;
       let totalRevenue = 0;
 
       // First pass: calculate total revenue per business
@@ -146,18 +139,15 @@ export default function AdminFinancials() {
       const businessAccounts = Array.from(businessMap.values()).map((biz) => {
         const revenue = revenueMap.get(biz.id) || 0;
         const standFees = revenue * 0.025; // 2.5% of purchase amounts (not discounts)
-        const donations = biz.totalDonations;
-        const totalOwed = standFees + donations;
+        const totalOwed = standFees;
 
         totalFeesOwed += standFees;
-        totalDonationsOwed += donations;
         totalRevenue += revenue;
 
         return {
           ...biz,
           totalRevenue: revenue,
           standFeesOwed: standFees,
-          donationsOwed: donations,
           totalOwed: totalOwed,
         };
       });
@@ -169,8 +159,7 @@ export default function AdminFinancials() {
       setFilteredBusinesses(businessAccounts);
       setTotalStats({
         totalFeesOwed,
-        totalDonationsOwed,
-        totalOwed: totalFeesOwed + totalDonationsOwed,
+        totalOwed: totalFeesOwed,
         businessCount: businessAccounts.length,
       });
     } catch (error) {
@@ -212,7 +201,6 @@ export default function AdminFinancials() {
         businessName: selectedBusiness.name,
         amount: amount,
         standFees: selectedBusiness.standFeesOwed,
-        donations: selectedBusiness.donationsOwed,
         notes: paymentNotes,
         recordedBy: user?.primaryEmailAddress?.emailAddress,
         status: 'completed',
@@ -274,10 +262,6 @@ export default function AdminFinancials() {
             <Text style={styles.statLabel}>Upright Fees Owed</Text>
             <Text style={styles.statValue}>{formatCurrency(totalStats.totalFeesOwed)}</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Donations Owed</Text>
-            <Text style={styles.statValue}>{formatCurrency(totalStats.totalDonationsOwed)}</Text>
-          </View>
           <View style={[styles.statCard, styles.totalCard]}>
             <Text style={styles.statLabel}>Total Owed</Text>
             <Text style={[styles.statValue, styles.totalValue]}>
@@ -337,13 +321,6 @@ export default function AdminFinancials() {
                     <Text style={styles.detailLabel}>Upright Fees (2.5% of revenue):</Text>
                     <Text style={[styles.detailValue, styles.feeValue]}>
                       {formatCurrency(biz.standFeesOwed)}
-                    </Text>
-                  </View>
-
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Donations:</Text>
-                    <Text style={[styles.detailValue, styles.donationValue]}>
-                      {formatCurrency(biz.donationsOwed)}
                     </Text>
                   </View>
 
