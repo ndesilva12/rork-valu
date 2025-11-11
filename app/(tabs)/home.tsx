@@ -129,6 +129,8 @@ export default function HomeScreen() {
   const [showListCreationTypeModal, setShowListCreationTypeModal] = useState(false);
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
   const [descriptionText, setDescriptionText] = useState('');
+  const [showValuesSelectionModal, setShowValuesSelectionModal] = useState(false);
+  const [selectedValuesForList, setSelectedValuesForList] = useState<string[]>([]);
 
   // Quick-add state
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
@@ -1151,6 +1153,107 @@ export default function HomeScreen() {
     }
   };
 
+  const handleCreateListFromValues = async () => {
+    if (selectedValuesForList.length < 3) {
+      Alert.alert('Error', 'Please select at least 3 values');
+      return;
+    }
+
+    if (!clerkUser?.id || !brands || !valuesMatrix) return;
+
+    try {
+      // Calculate alignment scores for all brands based on selected values
+      const scored = brands.map((brand) => {
+        const brandName = brand.name;
+        let totalSupportScore = 0;
+        const alignedPositions: number[] = [];
+
+        // Check each selected value
+        selectedValuesForList.forEach((valueId) => {
+          const causeData = valuesMatrix[valueId];
+          if (!causeData) {
+            alignedPositions.push(11);
+            return;
+          }
+
+          // Find position in support list (1-10, or 11 if not found)
+          const supportIndex = causeData.support?.indexOf(brandName);
+          const supportPosition = supportIndex !== undefined && supportIndex >= 0
+            ? supportIndex + 1
+            : 11;
+
+          if (supportPosition <= 10) {
+            alignedPositions.push(supportPosition);
+            totalSupportScore += 100;
+          } else {
+            alignedPositions.push(11);
+          }
+        });
+
+        // Calculate alignment strength based on average position
+        let alignmentStrength = 50;
+        if (totalSupportScore > 0) {
+          const avgPosition = alignedPositions.reduce((sum, pos) => sum + pos, 0) / alignedPositions.length;
+          alignmentStrength = Math.round(100 - ((avgPosition - 1) / 10) * 50);
+        }
+
+        return {
+          brand,
+          totalSupportScore,
+          alignmentStrength,
+        };
+      });
+
+      // Get top 20 most aligned brands
+      const topBrands = scored
+        .filter((s) => s.totalSupportScore > 0)
+        .sort((a, b) => b.alignmentStrength - a.alignmentStrength)
+        .slice(0, 20);
+
+      if (topBrands.length === 0) {
+        Alert.alert('Error', 'No brands found that align with the selected values');
+        return;
+      }
+
+      // Get value names for list name
+      const allValues = Object.values(AVAILABLE_VALUES).flat();
+      const selectedValueNames = selectedValuesForList
+        .map(id => allValues.find(v => v.id === id)?.name)
+        .filter(Boolean)
+        .slice(0, 3)
+        .join(', ');
+
+      const listName = `Aligned with ${selectedValueNames}${selectedValuesForList.length > 3 ? ' +' + (selectedValuesForList.length - 3) : ''}`;
+      const listDescription = `Auto-generated list based on ${selectedValuesForList.length} selected values`;
+
+      // Create the list
+      const listId = await createList(clerkUser.id, listName, listDescription);
+
+      // Add brands to the list
+      for (const item of topBrands) {
+        const entry: Omit<ListEntry, 'id' | 'createdAt'> = {
+          type: 'brand',
+          brandId: item.brand.id,
+          brandName: item.brand.name,
+          website: item.brand.website,
+        };
+        await addEntryToList(listId, entry);
+      }
+
+      // Reload lists
+      await loadUserLists();
+
+      // Close modal and reset state
+      setShowValuesSelectionModal(false);
+      setSelectedValuesForList([]);
+
+      Alert.alert('Success', `Created list with ${topBrands.length} aligned brands!`);
+    } catch (error) {
+      console.error('[Home] Error creating list from values:', error);
+      Alert.alert('Error', 'Could not create list. Please try again.');
+    }
+  };
+
   const handleOpenList = (list: UserList | 'browse') => {
     setSelectedList(list);
     setLibraryView('detail');
@@ -1449,19 +1552,20 @@ export default function HomeScreen() {
       return (
         <View style={styles.section}>
           <View style={styles.listDetailHeader}>
-            <View style={styles.listDetailHeaderRow}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={handleBackToLibrary}
-                activeOpacity={0.7}
-              >
-                <ArrowLeft
-                  size={28}
-                  color={colors.primary}
-                  strokeWidth={2.5}
-                />
-                <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
-              </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={handleBackToLibrary}
+              activeOpacity={0.7}
+            >
+              <ArrowLeft
+                size={28}
+                color={colors.primary}
+                strokeWidth={2.5}
+              />
+              <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
+            </TouchableOpacity>
+
+            <View style={styles.listDetailTitleCentered}>
               <Text style={[styles.listDetailTitle, { color: colors.text }]}>Browse</Text>
             </View>
           </View>
@@ -2174,6 +2278,13 @@ export default function HomeScreen() {
 
       </ScrollView>
 
+      {/* Invisible overlay to close dropdown when clicking outside */}
+      {activeItemOptionsMenu !== null && (
+        <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
+          <View style={styles.dropdownOverlay} />
+        </TouchableWithoutFeedback>
+      )}
+
       {/* Create List Modal */}
       <Modal
         visible={showCreateListModal}
@@ -2419,7 +2530,8 @@ export default function HomeScreen() {
                 style={[styles.modalButton, { backgroundColor: colors.backgroundSecondary, marginTop: 12 }]}
                 onPress={() => {
                   setShowListCreationTypeModal(false);
-                  Alert.alert('Coming Soon', 'Create from values will be available soon!');
+                  setShowValuesSelectionModal(true);
+                  setSelectedValuesForList([]);
                 }}
                 activeOpacity={0.7}
               >
@@ -2620,6 +2732,117 @@ export default function HomeScreen() {
               >
                 <Text style={[styles.modalButtonText, { color: colors.white }]}>
                   Create List & Add Item
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </Pressable>
+        </View>
+      </Modal>
+
+      {/* Values Selection Modal */}
+      <Modal
+        visible={showValuesSelectionModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowValuesSelectionModal(false);
+          setSelectedValuesForList([]);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              setShowValuesSelectionModal(false);
+              setSelectedValuesForList([]);
+            }}
+          >
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Pressable
+            style={[styles.createListModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Select Values
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowValuesSelectionModal(false);
+                  setSelectedValuesForList([]);
+                }}
+              >
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent}>
+              <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
+                Select at least 3 values to create a list of the top 20 most aligned brands.
+              </Text>
+
+              <Text style={[styles.selectedCountText, { color: colors.primary }]}>
+                {selectedValuesForList.length} selected {selectedValuesForList.length >= 3 ? '✓' : `(${3 - selectedValuesForList.length} more needed)`}
+              </Text>
+
+              <View style={styles.valuesGrid}>
+                {Object.entries(AVAILABLE_VALUES).map(([category, categoryValues]) => (
+                  <View key={category} style={styles.valuesCategorySection}>
+                    <Text style={[styles.valuesCategoryTitle, { color: colors.text }]}>
+                      {category.charAt(0).toUpperCase() + category.slice(1).replace(/([A-Z])/g, ' $1')}
+                    </Text>
+                    <View style={styles.valuesButtonsContainer}>
+                      {categoryValues.map((value) => {
+                        const isSelected = selectedValuesForList.includes(value.id);
+                        return (
+                          <TouchableOpacity
+                            key={value.id}
+                            style={[
+                              styles.valueChip,
+                              {
+                                backgroundColor: isSelected ? colors.primary : colors.backgroundSecondary,
+                                borderColor: isSelected ? colors.primary : colors.border,
+                              }
+                            ]}
+                            onPress={() => {
+                              if (isSelected) {
+                                setSelectedValuesForList(prev => prev.filter(id => id !== value.id));
+                              } else {
+                                setSelectedValuesForList(prev => [...prev, value.id]);
+                              }
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Text
+                              style={[
+                                styles.valueChipText,
+                                { color: isSelected ? colors.white : colors.text }
+                              ]}
+                            >
+                              {value.name}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  {
+                    backgroundColor: selectedValuesForList.length >= 3 ? colors.primary : colors.neutralLight,
+                    marginTop: 24,
+                  }
+                ]}
+                onPress={handleCreateListFromValues}
+                disabled={selectedValuesForList.length < 3}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.white }]}>
+                  Create List
                 </Text>
               </TouchableOpacity>
             </ScrollView>
@@ -3653,6 +3876,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 24,
   },
+  modalDescription: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  selectedCountText: {
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  valuesGrid: {
+    gap: 20,
+  },
+  valuesCategorySection: {
+    marginBottom: 8,
+  },
+  valuesCategoryTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  valuesButtonsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  valueChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1.5,
+  },
+  valueChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
   modalButtonText: {
     fontSize: 16,
     fontWeight: '600' as const,
@@ -3884,6 +4145,15 @@ const styles = StyleSheet.create({
     elevation: 999,
     zIndex: 999999,
   },
+  dropdownOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+    zIndex: 9999,
+  },
   listEntryOptionsDropdownFixed: {
     position: 'absolute',
     top: 40,
@@ -3895,6 +4165,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
+    zIndex: 99999,
     shadowRadius: 12,
     elevation: 999,
     zIndex: 999999,

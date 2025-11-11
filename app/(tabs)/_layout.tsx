@@ -141,13 +141,6 @@ export default function TabLayout() {
               }}
             />
             <Tabs.Screen
-              name="money"
-              options={{
-                title: "Money",
-                tabBarIcon: renderTabIconWithLabel(DollarSign, "Money", colors.primary),
-              }}
-            />
-            <Tabs.Screen
               name="profile"
               options={{
                 title: "Profile",

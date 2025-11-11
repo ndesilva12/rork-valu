@@ -534,9 +534,8 @@ export default function BrandDetailScreen() {
         </View>
 
         <View style={styles.content}>
-          {/* Header with logo, brand info, and score */}
-          <View style={styles.header}>
-            {/* Logo on the left */}
+          {/* Logo with centered add button underneath */}
+          <View style={styles.headerLogoSection}>
             <Image
               source={{ uri: getLogoUrl(brand.website || '') }}
               style={styles.headerLogo}
@@ -545,7 +544,17 @@ export default function BrandDetailScreen() {
               cachePolicy="memory-disk"
               placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
             />
+            <TouchableOpacity
+              style={[styles.addToListButtonBelow, { backgroundColor: colors.background, borderColor: colors.border }]}
+              onPress={handleQuickAdd}
+              activeOpacity={0.7}
+            >
+              <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
 
+          {/* Header with brand info and score */}
+          <View style={styles.header}>
             <View style={styles.titleContainer}>
               <Text style={[styles.brandName, { color: colors.text }]}>{brand?.name}</Text>
               <Text style={[styles.category, { color: colors.primary }]}>{brand.category}</Text>
@@ -556,20 +565,11 @@ export default function BrandDetailScreen() {
                 </View>
               )}
             </View>
-            <View style={styles.badgeAndButtonContainer}>
-              <TouchableOpacity
-                style={[styles.addToListButtonHeader, { backgroundColor: colors.background, borderColor: colors.border }]}
-                onPress={handleQuickAdd}
-                activeOpacity={0.7}
-              >
-                <Plus size={18} color={colors.primary} strokeWidth={2.5} />
-              </TouchableOpacity>
-              <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.backgroundSecondary }]}>
-                <AlignmentIcon size={24} color={alignmentColor} strokeWidth={2.5} />
-                <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
-                  {alignmentData.alignmentStrength}
-                </Text>
-              </View>
+            <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.backgroundSecondary }]}>
+              <AlignmentIcon size={24} color={alignmentColor} strokeWidth={2.5} />
+              <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
+                {alignmentData.alignmentStrength}
+              </Text>
             </View>
           </View>
 
@@ -1034,12 +1034,25 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     gap: 12,
   },
+  headerLogoSection: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   headerLogo: {
     width: 64,
     height: 64,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  addToListButtonBelow: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    marginTop: 8,
   },
   titleContainer: {
     flex: 1,
