@@ -2385,37 +2385,42 @@ export default function HomeScreen() {
                   </View>
                 </TouchableOpacity>
                 {activeCardOptionsMenu === list.id && !isLibraryRearrangeMode && (
-                  <View style={[styles.listCardOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                    <TouchableOpacity
-                      style={styles.listOptionItem}
-                      onPress={() => handleOpenCardRenameModal(list.id, list.name, list.description || '')}
-                      activeOpacity={0.7}
-                    >
-                      <Edit size={18} color={colors.text} strokeWidth={2} />
-                      <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
-                    </TouchableOpacity>
-                    <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                    <TouchableOpacity
-                      style={styles.listOptionItem}
-                      onPress={() => {
-                        setActiveCardOptionsMenu(null);
-                        setIsLibraryRearrangeMode(true);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                      <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
-                    </TouchableOpacity>
-                    <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                    <TouchableOpacity
-                      style={styles.listOptionItem}
-                      onPress={() => handleCardDeleteList(list.id)}
-                      activeOpacity={0.7}
-                    >
-                      <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-                      <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <>
+                    <TouchableWithoutFeedback onPress={() => setActiveCardOptionsMenu(null)}>
+                      <View style={styles.dropdownOverlay} />
+                    </TouchableWithoutFeedback>
+                    <View style={[styles.listCardOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                      <TouchableOpacity
+                        style={styles.listOptionItem}
+                        onPress={() => handleOpenCardRenameModal(list.id, list.name, list.description || '')}
+                        activeOpacity={0.7}
+                      >
+                        <Edit size={18} color={colors.text} strokeWidth={2} />
+                        <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+                      </TouchableOpacity>
+                      <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                      <TouchableOpacity
+                        style={styles.listOptionItem}
+                        onPress={() => {
+                          setActiveCardOptionsMenu(null);
+                          setIsLibraryRearrangeMode(true);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                        <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
+                      </TouchableOpacity>
+                      <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                      <TouchableOpacity
+                        style={styles.listOptionItem}
+                        onPress={() => handleCardDeleteList(list.id)}
+                        activeOpacity={0.7}
+                      >
+                        <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                        <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
                 )}
               </View>
             ))
@@ -4351,6 +4356,7 @@ const styles = StyleSheet.create({
   listsContainer: {
     gap: 12,
     marginTop: 12,
+    overflow: 'visible',
   },
   listCard: {
     borderRadius: 16,
@@ -4994,6 +5000,7 @@ const styles = StyleSheet.create({
   // List card wrapper and rearrange styles
   listCardWrapper: {
     position: 'relative',
+    overflow: 'visible',
   },
   listCardRearrangeButtons: {
     flexDirection: 'row',
