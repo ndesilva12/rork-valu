@@ -5080,6 +5080,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
+    overflow: 'visible',
   },
   valueNameBox: {
     flex: 1,
@@ -5108,6 +5109,7 @@ const styles = StyleSheet.create({
   },
   listEntriesContainer: {
     gap: 10,
+    overflow: 'visible',
   },
   listEntryRow: {
     flexDirection: 'row',
@@ -5131,6 +5133,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 12,
     borderWidth: 1,
+    overflow: 'visible',
   },
   listEntryContent: {
     gap: 4,
