@@ -3736,7 +3736,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 8,
   },
   webContent: {
     maxWidth: 768,
@@ -3771,7 +3771,7 @@ const styles = StyleSheet.create({
   },
 
   section: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
