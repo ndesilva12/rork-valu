@@ -1772,7 +1772,7 @@ export default function HomeScreen() {
     return (
       <View style={styles.section}>
         <View style={styles.listDetailHeader}>
-          <View style={styles.listDetailTitleAndOptions}>
+          <View style={styles.listDetailTitleRow}>
             <View style={styles.listDetailTitleContainer}>
               <Text style={[styles.listDetailTitle, { color: colors.text }]}>{list.name}</Text>
               {list.description && (
@@ -1782,23 +1782,13 @@ export default function HomeScreen() {
               )}
             </View>
 
-            <View style={styles.listDetailHeaderActions}>
-              <TouchableOpacity
-                style={styles.listOptionsButton}
-                onPress={() => setShowEditDropdown(!showEditDropdown)}
-                activeOpacity={0.7}
-              >
-                <MoreVertical size={24} color={colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.createListButtonSmall, { backgroundColor: colors.primary }]}
-                onPress={handleOpenAddItemModal}
-                activeOpacity={0.7}
-              >
-                <Plus size={24} color={colors.white} strokeWidth={2.5} />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.listOptionsButton}
+              onPress={() => setShowEditDropdown(!showEditDropdown)}
+              activeOpacity={0.7}
+            >
+              <MoreVertical size={24} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity
@@ -2128,7 +2118,13 @@ export default function HomeScreen() {
                 } else {
                   // Default render for link and text entries
                   return (
-                    <View key={entry.id} style={styles.listEntryWrapper}>
+                    <View
+                      key={entry.id}
+                      style={[
+                        styles.listEntryWrapper,
+                        activeItemOptionsMenu === entry.id && !isEditMode && { zIndex: 1000 }
+                      ]}
+                    >
                       <View style={[styles.listEntryCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
                         <TouchableOpacity
                           style={styles.listEntryClickable}
@@ -4337,8 +4333,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingTop: 0,
+    paddingBottom: 8,
     gap: 12,
   },
   libraryEditButtonText: {
@@ -4588,7 +4584,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     gap: 8,
   },
-  listDetailTitleAndOptions: {
+  listDetailTitleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -4596,11 +4592,6 @@ const styles = StyleSheet.create({
   },
   listDetailTitleContainer: {
     flex: 1,
-  },
-  listDetailHeaderActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
   },
   backButton: {
     flexDirection: 'row',

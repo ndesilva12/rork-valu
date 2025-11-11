@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, MapPin, Navigation, Percent, X, Plus, List, ChevronRight } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, MapPin, Navigation, Percent, X } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -10,10 +10,6 @@ import {
   Platform,
   PanResponder,
   Modal,
-  TextInput,
-  Pressable,
-  TouchableWithoutFeedback,
-  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -26,8 +22,6 @@ import { db } from '@/firebase';
 import { BusinessInfo, Cause } from '@/types';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateAlignmentScore } from '@/services/firebase/businessService';
-import { UserList, ListEntry } from '@/types/library';
-import { getUserLists, createList, addEntryToList } from '@/services/firebase/listService';
 
 interface BusinessUser {
   id: string;
@@ -40,7 +34,7 @@ interface BusinessUser {
 export default function BusinessDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { profile, isDarkMode, clerkUser } = useUser();
+  const { profile, isDarkMode } = useUser();
   const { values } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
   const scrollViewRef = useRef<ScrollView>(null);
@@ -48,12 +42,6 @@ export default function BusinessDetailScreen() {
   const [business, setBusiness] = useState<BusinessUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedGalleryImage, setSelectedGalleryImage] = useState<{ imageUrl: string; caption: string } | null>(null);
-
-  // Quick-add state
-  const [userLists, setUserLists] = useState<UserList[]>([]);
-  const [showQuickAddModal, setShowQuickAddModal] = useState(false);
-  const [newListName, setNewListName] = useState('');
-  const [newListDescription, setNewListDescription] = useState('');
 
   useEffect(() => {
     const fetchBusiness = async () => {
@@ -198,73 +186,6 @@ export default function BusinessDetailScreen() {
     }
   };
 
-  // Quick-add handlers
-  const handleQuickAdd = async () => {
-    if (!clerkUser?.id) {
-      Alert.alert('Error', 'You must be logged in to add to lists');
-      return;
-    }
-
-    try {
-      const lists = await getUserLists(clerkUser.id);
-      setUserLists(lists);
-      setShowQuickAddModal(true);
-    } catch (error) {
-      console.error('[BusinessDetail] Error loading lists:', error);
-      Alert.alert('Error', 'Could not load your lists. Please try again.');
-    }
-  };
-
-  const handleAddToList = async (listId: string) => {
-    if (!business) return;
-
-    try {
-      const entry: Omit<ListEntry, 'id' | 'createdAt'> = {
-        type: 'business',
-        businessId: business.id,
-        businessName: business.businessInfo.name,
-        logoUrl: business.businessInfo.logoUrl,
-      };
-
-      await addEntryToList(listId, entry);
-      setShowQuickAddModal(false);
-      Alert.alert('Success', `Added ${business.businessInfo.name} to list!`);
-    } catch (error) {
-      console.error('[BusinessDetail] Error adding to list:', error);
-      Alert.alert('Error', 'Could not add to list. Please try again.');
-    }
-  };
-
-  const handleCreateAndAddToList = async () => {
-    if (!newListName.trim()) {
-      Alert.alert('Error', 'Please enter a list name');
-      return;
-    }
-
-    if (!clerkUser?.id || !business) return;
-
-    try {
-      const listId = await createList(clerkUser.id, newListName.trim(), newListDescription.trim());
-
-      const entry: Omit<ListEntry, 'id' | 'createdAt'> = {
-        type: 'business',
-        businessId: business.id,
-        businessName: business.businessInfo.name,
-        logoUrl: business.businessInfo.logoUrl,
-      };
-
-      await addEntryToList(listId, entry);
-
-      setNewListName('');
-      setNewListDescription('');
-      setShowQuickAddModal(false);
-      Alert.alert('Success', `Created list and added ${business.businessInfo.name}!`);
-    } catch (error) {
-      console.error('[BusinessDetail] Error creating list:', error);
-      Alert.alert('Error', 'Could not create list. Please try again.');
-    }
-  };
-
   // Calculate alignment data
   let alignmentData = {
     isAligned: false,
@@ -385,24 +306,15 @@ export default function BusinessDetailScreen() {
             <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
           </TouchableOpacity>
 
-          <View style={styles.heroButtons}>
+          {business.businessInfo.website && (
             <TouchableOpacity
-              style={[styles.addToListButton, { backgroundColor: colors.background }]}
-              onPress={handleQuickAdd}
+              style={[styles.visitButton, { backgroundColor: colors.primary }]}
+              onPress={handleShopPress}
               activeOpacity={0.7}
             >
-              <Plus size={20} color={colors.primary} strokeWidth={2.5} />
+              <Text style={[styles.visitButtonText, { color: colors.white }]}>Visit</Text>
             </TouchableOpacity>
-            {business.businessInfo.website && (
-              <TouchableOpacity
-                style={[styles.visitButton, { backgroundColor: colors.primary }]}
-                onPress={handleShopPress}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.visitButtonText, { color: colors.white }]}>Visit</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          )}
         </View>
 
         <View style={styles.content}>
@@ -710,124 +622,6 @@ export default function BusinessDetailScreen() {
           </View>
         </View>
       </ScrollView>
-
-      {/* Quick Add Modal */}
-      <Modal
-        visible={showQuickAddModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => {
-          setShowQuickAddModal(false);
-          setNewListName('');
-          setNewListDescription('');
-        }}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableWithoutFeedback
-            onPress={() => {
-              setShowQuickAddModal(false);
-              setNewListName('');
-              setNewListDescription('');
-            }}
-          >
-            <View style={StyleSheet.absoluteFill} />
-          </TouchableWithoutFeedback>
-          <Pressable
-            style={[styles.quickAddModalContainer, { backgroundColor: colors.background }]}
-            onPress={() => {}}
-          >
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                Add to List
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowQuickAddModal(false);
-                  setNewListName('');
-                  setNewListDescription('');
-                }}
-              >
-                <X size={24} color={colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalContent}>
-              <Text style={[styles.quickAddItemName, { color: colors.primary }]}>
-                {business?.businessInfo.name}
-              </Text>
-
-              <Text style={[styles.modalLabel, { color: colors.text, marginTop: 16 }]}>
-                Select a list:
-              </Text>
-
-              {userLists.length === 0 ? (
-                <Text style={[styles.emptyListText, { color: colors.textSecondary }]}>
-                  You don't have any lists yet. Create one below!
-                </Text>
-              ) : (
-                <View style={styles.quickAddListsContainer}>
-                  {userLists.map((list) => (
-                    <TouchableOpacity
-                      key={list.id}
-                      style={[styles.quickAddListItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                      onPress={() => handleAddToList(list.id)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
-                        <List size={18} color={colors.primary} strokeWidth={2} />
-                      </View>
-                      <View style={styles.quickAddListInfo}>
-                        <Text style={[styles.quickAddListName, { color: colors.text }]} numberOfLines={1}>
-                          {list.name}
-                        </Text>
-                        <Text style={[styles.quickAddListCount, { color: colors.textSecondary }]}>
-                          {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
-                        </Text>
-                      </View>
-                      <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-
-              <View style={styles.dividerContainer}>
-                <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                <Text style={[styles.dividerText, { color: colors.textSecondary }]}>OR</Text>
-                <View style={[styles.divider, { backgroundColor: colors.border }]} />
-              </View>
-
-              <Text style={[styles.modalLabel, { color: colors.text }]}>Create new list:</Text>
-              <TextInput
-                style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
-                placeholder="List name"
-                placeholderTextColor={colors.textSecondary}
-                value={newListName}
-                onChangeText={setNewListName}
-              />
-
-              <TextInput
-                style={[styles.modalTextArea, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
-                placeholder="Description (optional)"
-                placeholderTextColor={colors.textSecondary}
-                value={newListDescription}
-                onChangeText={setNewListDescription}
-                multiline
-                numberOfLines={2}
-              />
-
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: colors.primary }]}
-                onPress={handleCreateAndAddToList}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.modalButtonText, { color: colors.white }]}>
-                  Create List & Add Item
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </Pressable>
-        </View>
-      </Modal>
 
       {/* Gallery Image Modal */}
       <Modal
@@ -1252,138 +1046,5 @@ const styles = StyleSheet.create({
   modalCaptionText: {
     fontSize: 14,
     lineHeight: 20,
-  },
-  // Quick-add button styles
-  heroButtons: {
-    position: 'absolute' as const,
-    right: 16,
-    bottom: 16,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  addToListButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  // Quick-add modal styles
-  quickAddModalContainer: {
-    width: '100%',
-    maxWidth: 500,
-    maxHeight: '85%',
-    borderRadius: 20,
-    overflow: 'hidden',
-    alignSelf: 'center',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-  },
-  modalContent: {
-    padding: 20,
-  },
-  modalLabel: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    marginBottom: 8,
-  },
-  quickAddItemName: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    textAlign: 'center' as const,
-    marginTop: 8,
-  },
-  quickAddListsContainer: {
-    gap: 8,
-    marginTop: 8,
-  },
-  quickAddListItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 12,
-  },
-  listIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickAddListInfo: {
-    flex: 1,
-  },
-  quickAddListName: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    marginBottom: 2,
-  },
-  quickAddListCount: {
-    fontSize: 12,
-  },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
-    gap: 12,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-  },
-  emptyListText: {
-    fontSize: 14,
-    textAlign: 'center' as const,
-    paddingVertical: 16,
-    lineHeight: 20,
-  },
-  modalInput: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    marginBottom: 12,
-  },
-  modalTextArea: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    height: 80,
-    textAlignVertical: 'top' as const,
-    marginBottom: 16,
-  },
-  modalButton: {
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  modalButtonText: {
-    fontSize: 16,
-    fontWeight: '600' as const,
   },
 });
