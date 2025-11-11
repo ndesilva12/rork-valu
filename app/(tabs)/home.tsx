@@ -1758,14 +1758,8 @@ export default function HomeScreen() {
               return (
                 <View key={category.id} style={styles.browseCategory}>
                   <View style={styles.browseCategoryHeader}>
-                    <View style={[styles.browseCategoryIcon, { backgroundColor: colors.primaryLight + '20' }]}>
-                      <category.Icon size={20} color={colors.primary} strokeWidth={2} />
-                    </View>
                     <Text style={[styles.browseCategoryTitle, { color: colors.text }]}>
                       {category.name}
-                    </Text>
-                    <Text style={[styles.browseCategoryCount, { color: colors.textSecondary }]}>
-                      {categoryBrands.length}
                     </Text>
                   </View>
                   <View style={styles.brandsContainer}>
@@ -1782,28 +1776,13 @@ export default function HomeScreen() {
     // User list detail
     const list = selectedList as UserList;
 
+    // Check if this list was generated from values
+    const isValuesGeneratedList = list.metadata?.generatedFrom === 'values';
+
     return (
       <View style={styles.section}>
         <View style={styles.listDetailHeader}>
-          <View style={styles.listDetailTitleRow}>
-            <View style={styles.listDetailTitleContainer}>
-              <Text style={[styles.listDetailTitle, { color: colors.text }]}>{list.name}</Text>
-              {list.description && (
-                <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
-                  {list.description}
-                </Text>
-              )}
-            </View>
-
-            <TouchableOpacity
-              style={styles.listOptionsButton}
-              onPress={() => setShowEditDropdown(!showEditDropdown)}
-              activeOpacity={0.7}
-            >
-              <MoreVertical size={24} color={colors.text} strokeWidth={2} />
-            </TouchableOpacity>
-          </View>
-
+          {/* Back button above title */}
           <TouchableOpacity
             style={styles.backButton}
             onPress={handleBackToLibrary}
@@ -1816,6 +1795,41 @@ export default function HomeScreen() {
             />
             <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
           </TouchableOpacity>
+
+          {/* Title row with 3-dot menu and optional Add button */}
+          <View style={styles.listDetailTitleRow}>
+            <View style={styles.listDetailTitleContainer}>
+              <Text style={[styles.listDetailTitle, { color: colors.text }]}>{list.name}</Text>
+              <TouchableOpacity
+                style={styles.listOptionsButton}
+                onPress={() => setShowEditDropdown(!showEditDropdown)}
+                activeOpacity={0.7}
+              >
+                <MoreVertical size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Add button - hidden for values-generated lists */}
+            {!isValuesGeneratedList && (
+              <TouchableOpacity
+                style={[styles.addItemButton, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  setSelectedList(list);
+                  setShowAddItemModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Plus size={20} color={colors.white} strokeWidth={2.5} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Description below title */}
+          {list.description && (
+            <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
+              {list.description}
+            </Text>
+          )}
         </View>
 
         {/* Three dot options dropdown */}
@@ -2311,8 +2325,8 @@ export default function HomeScreen() {
                 >
                   <View style={styles.listCardContent}>
                     <View style={styles.listCardHeader}>
-                      <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
-                        <List size={20} color={colors.primary} strokeWidth={2} />
+                      <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
+                        <List size={20} color={colors.white} strokeWidth={2} />
                       </View>
                       <View style={styles.listCardInfo}>
                         <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
@@ -4692,6 +4706,9 @@ const styles = StyleSheet.create({
   },
   listDetailTitleContainer: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   backButton: {
     flexDirection: 'row',
@@ -4705,9 +4722,37 @@ const styles = StyleSheet.create({
   listDetailTitle: {
     fontSize: 28 * mobileScale,
     fontWeight: '700' as const,
+    flex: 1,
   },
   listOptionsButton: {
     padding: 4,
+  },
+  listEditDropdown: {
+    position: 'absolute',
+    top: 88,
+    right: 16,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 4,
+    minWidth: 160,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 10,
+    zIndex: 9999,
+  },
+  addItemButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   listOptionsDropdown: {
     position: 'absolute',
@@ -4792,7 +4837,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   listEntryOptionsButton: {
-    padding: 8,
+    padding: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   listEntryOptionsDropdown: {
     position: 'absolute',
@@ -4875,6 +4922,7 @@ const styles = StyleSheet.create({
   },
   listEntryCard: {
     flexDirection: 'row',
+    alignItems: 'center',
     borderRadius: 12,
     borderWidth: 1,
   },
@@ -4911,22 +4959,14 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   browseCategoryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
-  },
-  browseCategoryIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 12,
   },
   browseCategoryTitle: {
     fontSize: 18,
     fontWeight: '700' as const,
-    flex: 1,
+    textAlign: 'center' as const,
   },
   browseCategoryCount: {
     fontSize: 14,
