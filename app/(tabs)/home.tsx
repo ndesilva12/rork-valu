@@ -1282,6 +1282,8 @@ export default function HomeScreen() {
   const handleOpenList = (list: UserList | 'browse') => {
     setSelectedList(list);
     setLibraryView('detail');
+    // Scroll to top when opening a list
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
   };
 
   const handleBackToLibrary = () => {
@@ -2012,22 +2014,21 @@ export default function HomeScreen() {
                 // Render based on entry type
                 if (entry.type === 'brand' && 'brandId' in entry) {
                   return (
-                    <View key={entry.id} style={styles.listEntryWrapper}>
-                      <View style={[styles.listEntryNumberBadge, { backgroundColor: colors.primary }]}>
-                        <Text style={[styles.listEntryNumberText, { color: colors.white }]}>
-                          {entryIndex + 1}
-                        </Text>
-                      </View>
-                      <TouchableOpacity
-                        style={[
-                          styles.brandCard,
-                          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
-                        ]}
-                        onPress={() => !isEditMode && router.push(`/brand/${entry.brandId}`)}
-                        activeOpacity={0.7}
-                        disabled={isEditMode}
-                      >
-                        <View style={styles.brandCardInner}>
+                    <View key={entry.id} style={styles.listEntryRow}>
+                      <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
+                        {entryIndex + 1}
+                      </Text>
+                      <View style={styles.listEntryWrapper}>
+                        <TouchableOpacity
+                          style={[
+                            styles.brandCard,
+                            { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                          ]}
+                          onPress={() => !isEditMode && router.push(`/brand/${entry.brandId}`)}
+                          activeOpacity={0.7}
+                          disabled={isEditMode}
+                        >
+                          <View style={styles.brandCardInner}>
                           <View style={styles.brandLogoContainer}>
                             <Image
                               source={{ uri: entry.logoUrl || getLogoUrl(entry.website || (entry.type === 'brand' && 'brandId' in entry ? getBrandWebsite(entry.brandId) : '') || '') }}
@@ -2104,11 +2105,16 @@ export default function HomeScreen() {
                           </View>
                         </>
                       )}
+                      </View>
                     </View>
                   );
                 } else if (entry.type === 'business' && 'businessId' in entry) {
                   return (
-                    <View key={entry.id} style={styles.listEntryWrapper}>
+                    <View key={entry.id} style={styles.listEntryRow}>
+                      <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
+                        {entryIndex + 1}
+                      </Text>
+                      <View style={styles.listEntryWrapper}>
                       <TouchableOpacity
                         style={[
                           styles.brandCard,
@@ -2195,13 +2201,18 @@ export default function HomeScreen() {
                           </View>
                         </>
                       )}
+                      </View>
                     </View>
                   );
                 } else if (entry.type === 'value' && 'valueId' in entry && 'mode' in entry) {
                   const isMaxPain = entry.mode === 'maxPain';
                   const borderColor = isMaxPain ? colors.danger : colors.success;
                   return (
-                    <View key={entry.id} style={styles.listEntryWrapper}>
+                    <View key={entry.id} style={styles.listEntryRow}>
+                      <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
+                        {entryIndex + 1}
+                      </Text>
+                      <View style={styles.listEntryWrapper}>
                       <TouchableOpacity
                         style={[styles.valueRow, { backgroundColor: colors.backgroundSecondary }]}
                         onPress={() => !isEditMode && router.push(`/value/${entry.valueId}`)}
@@ -2273,18 +2284,22 @@ export default function HomeScreen() {
                           </View>
                         </>
                       )}
+                      </View>
                     </View>
                   );
                 } else {
                   // Default render for link and text entries
                   return (
-                    <View
-                      key={entry.id}
-                      style={[
-                        styles.listEntryWrapper,
-                        activeItemOptionsMenu === entry.id && !isEditMode && { zIndex: 1000 }
-                      ]}
-                    >
+                    <View key={entry.id} style={styles.listEntryRow}>
+                      <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
+                        {entryIndex + 1}
+                      </Text>
+                      <View
+                        style={[
+                          styles.listEntryWrapper,
+                          activeItemOptionsMenu === entry.id && !isEditMode && { zIndex: 1000 }
+                        ]}
+                      >
                       <View style={[styles.listEntryCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
                         <TouchableOpacity
                           style={styles.listEntryClickable}
@@ -2368,6 +2383,7 @@ export default function HomeScreen() {
                           </View>
                         </>
                       )}
+                      </View>
                     </View>
                   );
                 }
@@ -2461,23 +2477,25 @@ export default function HomeScreen() {
                   activeOpacity={0.7}
                   disabled={isLibraryRearrangeMode}
                 >
-                  <View style={styles.listCardContent}>
-                    <View style={styles.listCardHeader}>
-                      <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
-                        <List size={20} color={colors.white} strokeWidth={2} />
-                      </View>
-                      <View style={styles.listCardInfo}>
-                        <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
-                          {list.name}
-                        </Text>
-                        <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
-                          {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
-                        </Text>
-                        {list.description && (
-                          <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                            {list.description}
+                  <View style={styles.listCardContentRow}>
+                    <View style={styles.listCardContent}>
+                      <View style={styles.listCardHeader}>
+                        <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
+                          <List size={20} color={colors.white} strokeWidth={2} />
+                        </View>
+                        <View style={styles.listCardInfo}>
+                          <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                            {list.name}
                           </Text>
-                        )}
+                          <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                            {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
+                          </Text>
+                          {list.description && (
+                            <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                              {list.description}
+                            </Text>
+                          )}
+                        </View>
                       </View>
                     </View>
                     {!isLibraryRearrangeMode && (
@@ -2487,13 +2505,13 @@ export default function HomeScreen() {
                           setActiveCardOptionsMenu(activeCardOptionsMenu === list.id ? null : list.id);
                         }}
                         activeOpacity={0.7}
-                        style={styles.listCardOptionsButtonAbsolute}
+                        style={styles.listCardOptionsButton}
                       >
                         <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
                       </TouchableOpacity>
                     )}
                     {isLibraryRearrangeMode && (
-                      <View style={styles.listCardRearrangeButtonsAbsolute}>
+                      <View style={styles.listCardRearrangeButtons}>
                         <TouchableOpacity
                           onPress={() => handleMoveListUp(index)}
                           disabled={index === 0}
@@ -4148,12 +4166,13 @@ const styles = StyleSheet.create({
     height: 64,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.08)',
+    overflow: 'visible',
   },
   brandCardInner: {
     flexDirection: 'row',
     alignItems: 'center',
     height: '100%',
-    overflow: 'hidden',
+    overflow: 'visible',
     borderRadius: 12,
   },
   brandLogoContainer: {
@@ -4526,16 +4545,20 @@ const styles = StyleSheet.create({
   listCard: {
     borderRadius: 16,
     borderWidth: 1,
-    overflow: 'hidden',
+    overflow: 'visible',
     flexDirection: 'row',
   },
   listCardClickable: {
     flex: 1,
   },
+  listCardContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
   listCardContent: {
-    position: 'relative' as const,
+    flex: 1,
     padding: 16,
-    paddingRight: 56, // Space for the three-dot button
   },
   listCardReorderButtons: {
     justifyContent: 'center',
@@ -5108,26 +5131,22 @@ const styles = StyleSheet.create({
   listEntriesContainer: {
     gap: 10,
   },
+  listEntryRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  listEntryNumber: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    paddingTop: 20,
+    minWidth: 24,
+    textAlign: 'right',
+  },
   listEntryWrapper: {
     position: 'relative' as const,
     overflow: 'visible',
-  },
-  listEntryNumberBadge: {
-    position: 'absolute' as const,
-    top: -8,
-    left: -8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  listEntryNumberText: {
-    fontSize: 11,
-    fontWeight: '700' as const,
+    flex: 1,
   },
   listEntryCard: {
     flexDirection: 'row',
