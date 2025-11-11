@@ -2089,24 +2089,19 @@ export default function HomeScreen() {
                         </View>
                       </TouchableOpacity>
                       {activeItemOptionsMenu === entry.id && !isEditMode && (
-                        <>
-                          <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
-                            <View style={styles.dropdownOverlay} />
-                          </TouchableWithoutFeedback>
-                          <View style={[styles.listEntryOptionsDropdownFixed, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                            <TouchableOpacity
-                              style={styles.listOptionItem}
-                              onPress={() => {
-                                setActiveItemOptionsMenu(null);
-                                handleDeleteEntry(entry.id);
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <Trash2 size={16} color={colors.danger} strokeWidth={2} />
-                              <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
-                            </TouchableOpacity>
-                          </View>
-                        </>
+                        <View style={[styles.listEntryOptionsDropdownFixed, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                          <TouchableOpacity
+                            style={styles.listOptionItem}
+                            onPress={() => {
+                              setActiveItemOptionsMenu(null);
+                              handleDeleteEntry(entry.id);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Trash2 size={16} color={colors.danger} strokeWidth={2} />
+                            <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+                          </TouchableOpacity>
+                        </View>
                       )}
                       </View>
                     </View>
@@ -2185,24 +2180,19 @@ export default function HomeScreen() {
                         </View>
                       </TouchableOpacity>
                       {activeItemOptionsMenu === entry.id && !isEditMode && (
-                        <>
-                          <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
-                            <View style={styles.dropdownOverlay} />
-                          </TouchableWithoutFeedback>
-                          <View style={[styles.listEntryOptionsDropdownFixed, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                            <TouchableOpacity
-                              style={styles.listOptionItem}
-                              onPress={() => {
-                                setActiveItemOptionsMenu(null);
-                                handleDeleteEntry(entry.id);
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <Trash2 size={16} color={colors.danger} strokeWidth={2} />
-                              <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
-                            </TouchableOpacity>
-                          </View>
-                        </>
+                        <View style={[styles.listEntryOptionsDropdownFixed, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                          <TouchableOpacity
+                            style={styles.listOptionItem}
+                            onPress={() => {
+                              setActiveItemOptionsMenu(null);
+                              handleDeleteEntry(entry.id);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Trash2 size={16} color={colors.danger} strokeWidth={2} />
+                            <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+                          </TouchableOpacity>
+                        </View>
                       )}
                       </View>
                     </View>
@@ -2268,24 +2258,19 @@ export default function HomeScreen() {
                         </View>
                       </TouchableOpacity>
                       {activeItemOptionsMenu === entry.id && !isEditMode && (
-                        <>
-                          <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
-                            <View style={styles.dropdownOverlay} />
-                          </TouchableWithoutFeedback>
-                          <View style={[styles.listEntryOptionsDropdownFixed, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                            <TouchableOpacity
-                              style={styles.listOptionItem}
-                              onPress={() => {
-                                setActiveItemOptionsMenu(null);
-                                handleDeleteEntry(entry.id);
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <Trash2 size={16} color={colors.danger} strokeWidth={2} />
-                              <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
-                            </TouchableOpacity>
-                          </View>
-                        </>
+                        <View style={[styles.listEntryOptionsDropdownFixed, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                          <TouchableOpacity
+                            style={styles.listOptionItem}
+                            onPress={() => {
+                              setActiveItemOptionsMenu(null);
+                              handleDeleteEntry(entry.id);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Trash2 size={16} color={colors.danger} strokeWidth={2} />
+                            <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+                          </TouchableOpacity>
+                        </View>
                       )}
                       </View>
                     </View>
@@ -2367,24 +2352,19 @@ export default function HomeScreen() {
                         )}
                       </View>
                       {activeItemOptionsMenu === entry.id && !isEditMode && (
-                        <>
-                          <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
-                            <View style={styles.dropdownOverlay} />
-                          </TouchableWithoutFeedback>
-                          <View style={[styles.listEntryOptionsDropdownFixed, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                            <TouchableOpacity
-                              style={styles.listOptionItem}
-                              onPress={() => {
-                                setActiveItemOptionsMenu(null);
-                                handleDeleteEntry(entry.id);
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <Trash2 size={16} color={colors.danger} strokeWidth={2} />
-                              <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
-                            </TouchableOpacity>
-                          </View>
-                        </>
+                        <View style={[styles.listEntryOptionsDropdownFixed, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                          <TouchableOpacity
+                            style={styles.listOptionItem}
+                            onPress={() => {
+                              setActiveItemOptionsMenu(null);
+                              handleDeleteEntry(entry.id);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Trash2 size={16} color={colors.danger} strokeWidth={2} />
+                            <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+                          </TouchableOpacity>
+                        </View>
                       )}
                       </View>
                     </View>
@@ -2544,56 +2524,51 @@ export default function HomeScreen() {
                   </View>
                 </TouchableOpacity>
                 {activeCardOptionsMenu === list.id && !isLibraryRearrangeMode && (
-                  <>
-                    <TouchableWithoutFeedback onPress={() => setActiveCardOptionsMenu(null)}>
-                      <View style={styles.dropdownOverlay} />
-                    </TouchableWithoutFeedback>
-                    <View style={[styles.listCardOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                      <TouchableOpacity
-                        style={styles.listOptionItem}
-                        onPress={() => handleOpenCardRenameModal(list.id, list.name, list.description || '')}
-                        activeOpacity={0.7}
-                      >
-                        <Edit size={18} color={colors.text} strokeWidth={2} />
-                        <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
-                      </TouchableOpacity>
-                      <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                      <TouchableOpacity
-                        style={styles.listOptionItem}
-                        onPress={() => {
-                          setActiveCardOptionsMenu(null);
-                          setIsLibraryRearrangeMode(true);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                        <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
-                      </TouchableOpacity>
-                      <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                      <TouchableOpacity
-                        style={styles.listOptionItem}
-                        onPress={() => {
-                          setActiveCardOptionsMenu(null);
-                          setDescriptionText(list.description || '');
-                          setSelectedList(list);
-                          setShowDescriptionModal(true);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Edit size={18} color={colors.text} strokeWidth={2} />
-                        <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
-                      </TouchableOpacity>
-                      <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                      <TouchableOpacity
-                        style={styles.listOptionItem}
-                        onPress={() => handleCardDeleteList(list.id)}
-                        activeOpacity={0.7}
-                      >
-                        <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-                        <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </>
+                  <View style={[styles.listCardOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => handleOpenCardRenameModal(list.id, list.name, list.description || '')}
+                      activeOpacity={0.7}
+                    >
+                      <Edit size={18} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+                    </TouchableOpacity>
+                    <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveCardOptionsMenu(null);
+                        setIsLibraryRearrangeMode(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
+                    </TouchableOpacity>
+                    <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveCardOptionsMenu(null);
+                        setDescriptionText(list.description || '');
+                        setSelectedList(list);
+                        setShowDescriptionModal(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Edit size={18} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+                    </TouchableOpacity>
+                    <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => handleCardDeleteList(list.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
               </View>
             ))
