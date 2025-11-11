@@ -2013,6 +2013,11 @@ export default function HomeScreen() {
                 if (entry.type === 'brand' && 'brandId' in entry) {
                   return (
                     <View key={entry.id} style={styles.listEntryWrapper}>
+                      <View style={[styles.listEntryNumberBadge, { backgroundColor: colors.primary }]}>
+                        <Text style={[styles.listEntryNumberText, { color: colors.white }]}>
+                          {entryIndex + 1}
+                        </Text>
+                      </View>
                       <TouchableOpacity
                         style={[
                           styles.brandCard,
@@ -3000,7 +3005,7 @@ export default function HomeScreen() {
           >
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
-                Add Value: {quickAddItem?.name}
+                Add to Library
               </Text>
               <TouchableOpacity
                 onPress={() => {
@@ -3014,7 +3019,7 @@ export default function HomeScreen() {
 
             <View style={styles.modalContent}>
               <Text style={[styles.modalLabel, { color: colors.text }]}>
-                Choose how to add this value:
+                Choose how to add {quickAddItem?.name}:
               </Text>
 
               <TouchableOpacity
@@ -4528,7 +4533,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listCardContent: {
+    position: 'relative' as const,
     padding: 16,
+    paddingRight: 56, // Space for the three-dot button
   },
   listCardReorderButtons: {
     justifyContent: 'center',
@@ -5104,6 +5111,23 @@ const styles = StyleSheet.create({
   listEntryWrapper: {
     position: 'relative' as const,
     overflow: 'visible',
+  },
+  listEntryNumberBadge: {
+    position: 'absolute' as const,
+    top: -8,
+    left: -8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  listEntryNumberText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
   },
   listEntryCard: {
     flexDirection: 'row',
