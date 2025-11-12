@@ -100,6 +100,7 @@ export default function HomeScreen() {
   const colors = isDarkMode ? darkColors : lightColors;
   const [mainView, setMainView] = useState<MainView>('forYou');
   const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
+  const [showForYouDropdown, setShowForYouDropdown] = useState(false);
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
@@ -817,65 +818,66 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* For You Subsection Selector */}
+      {/* For You Subsection Dropdown */}
       {mainView === 'forYou' && (
-        <View style={styles.subsectionRow}>
+        <View style={styles.subsectionDropdownContainer}>
           <TouchableOpacity
-            style={[
-              styles.subsectionButton,
-              forYouSubsection === 'aligned' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }
-            ]}
-            onPress={() => setForYouSubsection('aligned')}
+            style={styles.subsectionDropdownButton}
+            onPress={() => setShowForYouDropdown(!showForYouDropdown)}
             activeOpacity={0.7}
           >
-            <Text
-              style={[
-                styles.subsectionText,
-                { color: forYouSubsection === 'aligned' ? colors.text : colors.textSecondary },
-                forYouSubsection === 'aligned' && styles.subsectionTextActive,
-              ]}
-            >
-              Aligned
+            <Text style={[styles.subsectionDropdownText, { color: colors.text }]}>
+              {forYouSubsection === 'aligned' ? 'Aligned' : forYouSubsection === 'unaligned' ? 'Unaligned' : 'News'}
             </Text>
+            <View style={[styles.subsectionUnderline, { backgroundColor: colors.primary }]} />
+            <ChevronDown
+              size={16}
+              color={colors.text}
+              strokeWidth={2}
+              style={styles.subsectionDropdownIcon}
+            />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.subsectionButton,
-              forYouSubsection === 'unaligned' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }
-            ]}
-            onPress={() => setForYouSubsection('unaligned')}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                styles.subsectionText,
-                { color: forYouSubsection === 'unaligned' ? colors.text : colors.textSecondary },
-                forYouSubsection === 'unaligned' && styles.subsectionTextActive,
-              ]}
-            >
-              Unaligned
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.subsectionButton,
-              forYouSubsection === 'news' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }
-            ]}
-            onPress={() => setForYouSubsection('news')}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                styles.subsectionText,
-                { color: forYouSubsection === 'news' ? colors.text : colors.textSecondary },
-                forYouSubsection === 'news' && styles.subsectionTextActive,
-              ]}
-            >
-              News
-            </Text>
-          </TouchableOpacity>
+          {showForYouDropdown && (
+            <View style={[styles.subsectionDropdownMenu, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              {forYouSubsection !== 'aligned' && (
+                <TouchableOpacity
+                  style={styles.subsectionDropdownItem}
+                  onPress={() => {
+                    setForYouSubsection('aligned');
+                    setShowForYouDropdown(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>Aligned</Text>
+                </TouchableOpacity>
+              )}
+              {forYouSubsection !== 'unaligned' && (
+                <TouchableOpacity
+                  style={styles.subsectionDropdownItem}
+                  onPress={() => {
+                    setForYouSubsection('unaligned');
+                    setShowForYouDropdown(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>Unaligned</Text>
+                </TouchableOpacity>
+              )}
+              {forYouSubsection !== 'news' && (
+                <TouchableOpacity
+                  style={styles.subsectionDropdownItem}
+                  onPress={() => {
+                    setForYouSubsection('news');
+                    setShowForYouDropdown(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>News</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </View>
       )}
 
@@ -924,7 +926,14 @@ export default function HomeScreen() {
       return (
         <View style={styles.section}>
           <View style={styles.brandsContainer}>
-            {allSupportFull.slice(0, alignedLoadCount).map((product) => renderBrandCard(product, 'support'))}
+            {allSupportFull.slice(0, alignedLoadCount).map((product, index) => (
+              <View key={product.id} style={styles.forYouItemRow}>
+                <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                  {index + 1}
+                </Text>
+                {renderBrandCard(product, 'support')}
+              </View>
+            ))}
             {alignedLoadCount < allSupportFull.length && (
               <TouchableOpacity
                 style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
@@ -946,7 +955,14 @@ export default function HomeScreen() {
       return (
         <View style={styles.section}>
           <View style={styles.brandsContainer}>
-            {allAvoidFull.slice(0, unalignedLoadCount).map((product) => renderBrandCard(product, 'avoid'))}
+            {allAvoidFull.slice(0, unalignedLoadCount).map((product, index) => (
+              <View key={product.id} style={styles.forYouItemRow}>
+                <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                  {index + 1}
+                </Text>
+                {renderBrandCard(product, 'avoid')}
+              </View>
+            ))}
             {unalignedLoadCount < allAvoidFull.length && (
               <TouchableOpacity
                 style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
@@ -3953,30 +3969,63 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600' as const,
   },
-  subsectionRow: {
-    flexDirection: 'row',
+  subsectionDropdownContainer: {
     marginHorizontal: 16,
     marginBottom: 12,
     marginTop: 4,
-    justifyContent: 'space-evenly',
+    position: 'relative' as const,
+    zIndex: 100,
   },
-  subsectionButton: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+  subsectionDropdownButton: {
+    position: 'relative' as const,
+    alignSelf: 'flex-start',
   },
-  subsectionButtonActive: {
-    borderBottomWidth: 2,
+  subsectionDropdownText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    paddingBottom: 2,
   },
-  subsectionText: {
+  subsectionUnderline: {
+    height: 2,
+    width: '100%',
+    marginTop: 4,
+  },
+  subsectionDropdownIcon: {
+    position: 'absolute' as const,
+    right: -20,
+    top: 2,
+  },
+  subsectionDropdownMenu: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  subsectionDropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  subsectionDropdownItemText: {
     fontSize: 14,
     fontWeight: '500' as const,
   },
-  subsectionTextActive: {
-    fontWeight: '600' as const,
+  forYouItemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 8,
+  },
+  forYouItemNumber: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    paddingTop: 20,
+    minWidth: 24,
+    textAlign: 'right',
   },
   loadMoreButton: {
     paddingVertical: 14,
