@@ -295,7 +295,7 @@ export default function SignUpScreen() {
           >
             <View style={styles.logoContainer}>
               <Image
-                source={require('@/assets/images/upright dark A1A.png')}
+                source={require('@/assets/images/uprightlogobig2.png')}
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -340,7 +340,7 @@ export default function SignUpScreen() {
         >
           <View style={styles.logoContainer}>
             <Image
-              source={require('@/assets/images/upright dark invert1.png')}
+              source={require('@/assets/images/uprightlogobig2.png')}
               style={styles.logo}
               resizeMode="contain"
             />

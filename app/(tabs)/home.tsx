@@ -5955,8 +5955,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   explainerTextLarge: {
-    fontSize: 24,
-    lineHeight: 36,
+    fontSize: 32,
+    lineHeight: 44,
     marginBottom: 32,
     textAlign: 'center',
     fontWeight: '500' as const,
