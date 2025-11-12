@@ -145,6 +145,18 @@ export default function AdminDashboard() {
             </Text>
           </TouchableOpacity>
 
+          {/* Custom Fields */}
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => router.push('/admin/custom-fields')}
+          >
+            <Text style={styles.cardIcon}>🔧</Text>
+            <Text style={styles.cardTitle}>Custom Fields</Text>
+            <Text style={styles.cardDescription}>
+              Create and manage custom fields for users, businesses, brands, and transactions
+            </Text>
+          </TouchableOpacity>
+
           {/* Database Stats */}
           <View style={[styles.card, styles.statsCard]}>
             <Text style={styles.cardIcon}>📈</Text>
