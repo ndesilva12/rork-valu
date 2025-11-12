@@ -102,7 +102,7 @@ export default function HomeScreen() {
   const [mainView, setMainView] = useState<MainView>('forYou');
   const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
   const [userPersonalList, setUserPersonalList] = useState<UserList | null>(null);
-  const [activeExplainerStep, setActiveExplainerStep] = useState<0 | 1 | 2 | 3>(0); // 0 = none, 1 = Your Results, 2 = Add to Your List, 3 = Create More Lists
+  const [activeExplainerStep, setActiveExplainerStep] = useState<0 | 1 | 2 | 3 | 4>(0); // 0 = none, 1-4 = explainer steps
   const [userListHadItems, setUserListHadItems] = useState(false);
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
@@ -357,6 +357,32 @@ export default function HomeScreen() {
       Alert.alert('Error', 'Could not load your lists. Please try again.');
     } finally {
       setIsLoadingLists(false);
+    }
+  };
+
+  // Reload personal list (used in For You view)
+  const reloadPersonalList = async () => {
+    if (!clerkUser?.id) return;
+
+    try {
+      const lists = await getUserLists(clerkUser.id);
+
+      // Get user's full name to find their personal list
+      const fullNameFromFirebase = profile?.userDetails?.name;
+      const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
+      const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
+        ? `${clerkUser.firstName} ${clerkUser.lastName}`
+        : '';
+      const firstName = clerkUser?.firstName;
+      const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || 'My List';
+
+      const personalList = lists.find(list => list.name === userName);
+      if (personalList) {
+        setUserPersonalList(personalList);
+        console.log('[Home] ✅ Personal list reloaded');
+      }
+    } catch (error) {
+      console.error('[Home] Error reloading personal list:', error);
     }
   };
 
@@ -1563,6 +1589,7 @@ export default function HomeScreen() {
               try {
                 await removeEntryFromList(list.id, entryId);
                 await loadUserLists();
+                await reloadPersonalList(); // Also reload personal list for For You view
 
                 // Update selected list
                 const updatedLists = await getUserLists(clerkUser?.id || '');
@@ -1994,6 +2021,7 @@ export default function HomeScreen() {
 
       await addEntryToList(list.id, entry);
       await loadUserLists();
+      await reloadPersonalList(); // Also reload personal list for For You view
 
       // Update selected list
       const updatedLists = await getUserLists(clerkUser?.id || '');
@@ -4016,43 +4044,40 @@ export default function HomeScreen() {
         animationType="fade"
         transparent={true}
         onRequestClose={async () => {
-          setActiveExplainerStep(2); // Move to next explainer
+          setActiveExplainerStep(2);
         }}
       >
         <View style={styles.explainerOverlay}>
-          <TouchableWithoutFeedback
-            onPress={async () => {
-              setActiveExplainerStep(2); // Move to next explainer
-            }}
-          >
+          <TouchableWithoutFeedback onPress={async () => setActiveExplainerStep(2)}>
             <View style={StyleSheet.absoluteFill} />
           </TouchableWithoutFeedback>
 
-          {/* Centered Explainer Bubble */}
           <View style={[styles.explainerBubbleCentered, { backgroundColor: colors.primary }]}>
             <TouchableOpacity
               style={styles.explainerBubbleCloseButton}
-              onPress={async () => {
-                setActiveExplainerStep(2); // Move to next explainer
-              }}
+              onPress={async () => setActiveExplainerStep(2)}
               activeOpacity={0.7}
             >
               <X size={24} color={colors.white} strokeWidth={2.5} />
             </TouchableOpacity>
 
-            {/* Large Number */}
+            {/* Progress Indicator */}
+            <View style={styles.explainerProgress}>
+              <Text style={[styles.explainerProgressNumber, styles.explainerProgressActive, { color: colors.white }]}>1</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>2</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>3</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>4</Text>
+            </View>
+
             <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>1</Text>
 
-            {/* Text Content */}
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
               We provide brands that align or don't, based on your selections. Research where your money goes.
             </Text>
 
             <TouchableOpacity
               style={[styles.explainerBubbleButton, { backgroundColor: colors.white }]}
-              onPress={async () => {
-                setActiveExplainerStep(2); // Move to next explainer
-              }}
+              onPress={async () => setActiveExplainerStep(2)}
               activeOpacity={0.8}
             >
               <Text style={[styles.explainerBubbleButtonText, { color: colors.primary, fontSize: 20 }]}>Next</Text>
@@ -4067,43 +4092,40 @@ export default function HomeScreen() {
         animationType="fade"
         transparent={true}
         onRequestClose={async () => {
-          setActiveExplainerStep(3); // Move to next explainer
+          setActiveExplainerStep(3);
         }}
       >
         <View style={styles.explainerOverlay}>
-          <TouchableWithoutFeedback
-            onPress={async () => {
-              setActiveExplainerStep(3); // Move to next explainer
-            }}
-          >
+          <TouchableWithoutFeedback onPress={async () => setActiveExplainerStep(3)}>
             <View style={StyleSheet.absoluteFill} />
           </TouchableWithoutFeedback>
 
-          {/* Centered Explainer Bubble */}
           <View style={[styles.explainerBubbleCentered, { backgroundColor: colors.primary }]}>
             <TouchableOpacity
               style={styles.explainerBubbleCloseButton}
-              onPress={async () => {
-                setActiveExplainerStep(3); // Move to next explainer
-              }}
+              onPress={async () => setActiveExplainerStep(3)}
               activeOpacity={0.7}
             >
               <X size={24} color={colors.white} strokeWidth={2.5} />
             </TouchableOpacity>
 
-            {/* Large Number */}
+            {/* Progress Indicator */}
+            <View style={styles.explainerProgress}>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>1</Text>
+              <Text style={[styles.explainerProgressNumber, styles.explainerProgressActive, { color: colors.white }]}>2</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>3</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>4</Text>
+            </View>
+
             <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>2</Text>
 
-            {/* Text Content */}
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
               Add companies to your personal collection and build your identity. Global brands or local businesses.
             </Text>
 
             <TouchableOpacity
               style={[styles.explainerBubbleButton, { backgroundColor: colors.white }]}
-              onPress={async () => {
-                setActiveExplainerStep(3); // Move to next explainer
-              }}
+              onPress={async () => setActiveExplainerStep(3)}
               activeOpacity={0.8}
             >
               <Text style={[styles.explainerBubbleButtonText, { color: colors.primary, fontSize: 20 }]}>Next</Text>
@@ -4115,6 +4137,54 @@ export default function HomeScreen() {
       {/* Third Explainer */}
       <Modal
         visible={activeExplainerStep === 3}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={async () => {
+          setActiveExplainerStep(4);
+        }}
+      >
+        <View style={styles.explainerOverlay}>
+          <TouchableWithoutFeedback onPress={async () => setActiveExplainerStep(4)}>
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+
+          <View style={[styles.explainerBubbleCentered, { backgroundColor: colors.primary }]}>
+            <TouchableOpacity
+              style={styles.explainerBubbleCloseButton}
+              onPress={async () => setActiveExplainerStep(4)}
+              activeOpacity={0.7}
+            >
+              <X size={24} color={colors.white} strokeWidth={2.5} />
+            </TouchableOpacity>
+
+            {/* Progress Indicator */}
+            <View style={styles.explainerProgress}>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>1</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>2</Text>
+              <Text style={[styles.explainerProgressNumber, styles.explainerProgressActive, { color: colors.white }]}>3</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>4</Text>
+            </View>
+
+            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>3</Text>
+
+            <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
+              Create lists from ANY value inputs. Great for gift ideas to friends & family.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.explainerBubbleButton, { backgroundColor: colors.white }]}
+              onPress={async () => setActiveExplainerStep(4)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.explainerBubbleButtonText, { color: colors.primary, fontSize: 20 }]}>Next</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Fourth Explainer */}
+      <Modal
+        visible={activeExplainerStep === 4}
         animationType="fade"
         transparent={true}
         onRequestClose={async () => {
@@ -4136,7 +4206,6 @@ export default function HomeScreen() {
             <View style={StyleSheet.absoluteFill} />
           </TouchableWithoutFeedback>
 
-          {/* Centered Explainer Bubble */}
           <View style={[styles.explainerBubbleCentered, { backgroundColor: colors.primary }]}>
             <TouchableOpacity
               style={styles.explainerBubbleCloseButton}
@@ -4151,12 +4220,18 @@ export default function HomeScreen() {
               <X size={24} color={colors.white} strokeWidth={2.5} />
             </TouchableOpacity>
 
-            {/* Large Number */}
-            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>3</Text>
+            {/* Progress Indicator */}
+            <View style={styles.explainerProgress}>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>1</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>2</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>3</Text>
+              <Text style={[styles.explainerProgressNumber, styles.explainerProgressActive, { color: colors.white }]}>4</Text>
+            </View>
 
-            {/* Text Content */}
+            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>4</Text>
+
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
-              Create lists from ANY value inputs. Great for gift ideas to friends & family.
+              Use your code for discounts at participating companies.
             </Text>
 
             <TouchableOpacity
@@ -5860,5 +5935,20 @@ const styles = StyleSheet.create({
   explainerBubbleButtonText: {
     fontSize: 18,
     fontWeight: '700' as const,
+  },
+  explainerProgress: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  explainerProgressNumber: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+  },
+  explainerProgressActive: {
+    fontSize: 32,
+    fontWeight: '900' as const,
   },
 });
