@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, ThumbsUp, MapPin, Plus } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, ThumbsUp, MapPin, Plus, X, ChevronRight, List } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   TextInput,
   Modal,
   Alert,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -827,38 +828,56 @@ export default function BrandDetailScreen() {
         onRequestClose={() => setShowAddToListModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Add to List</Text>
-            <ScrollView style={styles.listsScrollView}>
+          <TouchableWithoutFeedback onPress={() => setShowAddToListModal(false)}>
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <View style={[styles.quickAddModalContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Add to List</Text>
+              <TouchableOpacity onPress={() => setShowAddToListModal(false)}>
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent}>
+              <Text style={[styles.quickAddItemName, { color: colors.primary }]}>
+                {brand?.name}
+              </Text>
+
+              <Text style={[styles.modalLabel, { color: colors.text, marginTop: 16 }]}>
+                Select a list:
+              </Text>
+
               {userLists.length === 0 ? (
-                <Text style={[styles.noListsText, { color: colors.textSecondary }]}>
-                  No lists yet. Create one on the Playbook tab!
+                <Text style={[styles.emptyListText, { color: colors.textSecondary }]}>
+                  You don't have any lists yet. Create one on the Playbook tab!
                 </Text>
               ) : (
-                userLists.map((list) => (
-                  <TouchableOpacity
-                    key={list.id}
-                    style={[styles.listOption, { borderBottomColor: colors.border }]}
-                    onPress={() => handleAddToList(list.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.listOptionText, { color: colors.text }]}>{list.name}</Text>
-                    {list.description && (
-                      <Text style={[styles.listOptionDescription, { color: colors.textSecondary }]}>
-                        {list.description}
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                ))
+                <View style={styles.quickAddListsContainer}>
+                  {userLists.map((list) => (
+                    <TouchableOpacity
+                      key={list.id}
+                      style={[styles.quickAddListItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                      onPress={() => handleAddToList(list.id)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.listIconContainer, { backgroundColor: colors.primary + '20' }]}>
+                        <List size={18} color={colors.primary} strokeWidth={2} />
+                      </View>
+                      <View style={styles.quickAddListInfo}>
+                        <Text style={[styles.quickAddListName, { color: colors.text }]} numberOfLines={1}>
+                          {list.name}
+                        </Text>
+                        <Text style={[styles.quickAddListCount, { color: colors.textSecondary }]}>
+                          {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
+                        </Text>
+                      </View>
+                      <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
               )}
             </ScrollView>
-            <TouchableOpacity
-              style={[styles.modalCloseButton, { backgroundColor: colors.backgroundSecondary }]}
-              onPress={() => setShowAddToListModal(false)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.modalCloseButtonText, { color: colors.text }]}>Cancel</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -1301,47 +1320,79 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  modalContainer: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: '70%',
+  quickAddModalContainer: {
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '85%',
+    borderRadius: 20,
+    overflow: 'hidden',
+    alignSelf: 'center',
+    marginHorizontal: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: '700' as const,
-    marginBottom: 16,
   },
-  listsScrollView: {
-    maxHeight: 400,
+  modalContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
-  noListsText: {
-    fontSize: 15,
+  quickAddItemName: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    textAlign: 'center' as const,
+    marginTop: 8,
+  },
+  modalLabel: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 12,
+  },
+  emptyListText: {
+    fontSize: 14,
     textAlign: 'center' as const,
     padding: 20,
   },
-  listOption: {
-    paddingVertical: 16,
-    borderBottomWidth: 1,
+  quickAddListsContainer: {
+    gap: 8,
+    marginTop: 8,
   },
-  listOptionText: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-  },
-  listOptionDescription: {
-    fontSize: 14,
-    marginTop: 4,
-  },
-  modalCloseButton: {
-    paddingVertical: 14,
-    borderRadius: 10,
+  quickAddListItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 12,
   },
-  modalCloseButtonText: {
-    fontSize: 16,
+  listIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickAddListInfo: {
+    flex: 1,
+  },
+  quickAddListName: {
+    fontSize: 15,
     fontWeight: '600' as const,
+    marginBottom: 2,
+  },
+  quickAddListCount: {
+    fontSize: 13,
+    color: '#666',
   },
 });

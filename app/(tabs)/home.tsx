@@ -100,7 +100,6 @@ export default function HomeScreen() {
   const colors = isDarkMode ? darkColors : lightColors;
   const [mainView, setMainView] = useState<MainView>('forYou');
   const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
-  const [showForYouDropdown, setShowForYouDropdown] = useState(false);
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
@@ -818,80 +817,58 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* For You Subsection Dropdown */}
+      {/* For You Subsection Tabs */}
       {mainView === 'forYou' && (
-        <View style={styles.subsectionDropdownContainer}>
+        <View style={styles.subsectionTabsContainer}>
           <TouchableOpacity
-            style={styles.subsectionDropdownButton}
-            onPress={() => setShowForYouDropdown(!showForYouDropdown)}
+            style={styles.subsectionTab}
+            onPress={() => setForYouSubsection('aligned')}
             activeOpacity={0.7}
           >
-            <Text style={[styles.subsectionDropdownText, { color: colors.text }]}>
-              {forYouSubsection === 'aligned' ? 'Aligned' : forYouSubsection === 'unaligned' ? 'Unaligned' : 'News'}
+            <Text style={[
+              styles.subsectionTabText,
+              { color: forYouSubsection === 'aligned' ? colors.text : colors.textSecondary }
+            ]}>
+              Aligned
             </Text>
-            <View style={[styles.subsectionUnderline, { backgroundColor: colors.primary }]} />
-            <ChevronDown
-              size={18}
-              color={colors.text}
-              strokeWidth={2}
-              style={styles.subsectionDropdownIcon}
-            />
+            {forYouSubsection === 'aligned' && (
+              <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.subsectionTab}
+            onPress={() => setForYouSubsection('unaligned')}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.subsectionTabText,
+              { color: forYouSubsection === 'unaligned' ? colors.text : colors.textSecondary }
+            ]}>
+              Unaligned
+            </Text>
+            {forYouSubsection === 'unaligned' && (
+              <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.subsectionTab}
+            onPress={() => setForYouSubsection('news')}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.subsectionTabText,
+              { color: forYouSubsection === 'news' ? colors.text : colors.textSecondary }
+            ]}>
+              News
+            </Text>
+            {forYouSubsection === 'news' && (
+              <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
+            )}
           </TouchableOpacity>
         </View>
       )}
-
-      {/* For You Dropdown Modal */}
-      <Modal
-        visible={showForYouDropdown}
-        animationType="none"
-        transparent={true}
-        onRequestClose={() => setShowForYouDropdown(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setShowForYouDropdown(false)}>
-          <View style={styles.subsectionDropdownOverlay}>
-            <TouchableWithoutFeedback onPress={() => {}}>
-              <View style={[styles.subsectionDropdownMenuModal, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                {forYouSubsection !== 'aligned' && (
-                  <TouchableOpacity
-                    style={styles.subsectionDropdownItem}
-                    onPress={() => {
-                      setForYouSubsection('aligned');
-                      setShowForYouDropdown(false);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>Aligned</Text>
-                  </TouchableOpacity>
-                )}
-                {forYouSubsection !== 'unaligned' && (
-                  <TouchableOpacity
-                    style={styles.subsectionDropdownItem}
-                    onPress={() => {
-                      setForYouSubsection('unaligned');
-                      setShowForYouDropdown(false);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>Unaligned</Text>
-                  </TouchableOpacity>
-                )}
-                {forYouSubsection !== 'news' && (
-                  <TouchableOpacity
-                    style={styles.subsectionDropdownItem}
-                    onPress={() => {
-                      setForYouSubsection('news');
-                      setShowForYouDropdown(false);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>News</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
 
       {/* Distance Filter Row - Shows when Local view is selected */}
       {mainView === 'local' && (
@@ -1193,6 +1170,7 @@ export default function HomeScreen() {
     if (selectedList && selectedList !== 'browse') {
       const list = selectedList as UserList;
       setShowListOptionsMenu(false);
+      setShowEditDropdown(false);
       handleDeleteList(list.id);
     }
   };
@@ -1408,6 +1386,7 @@ export default function HomeScreen() {
   const handleDeleteEntry = async (entryId: string) => {
     if (selectedList && selectedList !== 'browse') {
       const list = selectedList as UserList;
+      setActiveItemOptionsMenu(null); // Close modal first
       Alert.alert(
         'Remove Item',
         'Are you sure you want to remove this item from the list?',
@@ -3983,66 +3962,31 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600' as const,
   },
-  subsectionDropdownContainer: {
+  subsectionTabsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginHorizontal: 16,
     marginBottom: 12,
     marginTop: 4,
-    position: 'relative' as const,
-    zIndex: 100,
+    gap: 20,
   },
-  subsectionDropdownButton: {
-    position: 'relative' as const,
-    alignSelf: 'center',
+  subsectionTab: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 4,
   },
-  subsectionDropdownText: {
+  subsectionTabText: {
     fontSize: 16,
     fontWeight: '600' as const,
-    paddingBottom: 2,
+    paddingBottom: 4,
   },
-  subsectionUnderline: {
+  subsectionTabUnderline: {
     height: 2,
-    width: '100%',
-    marginTop: 4,
-  },
-  subsectionDropdownIcon: {
-    position: 'absolute' as const,
-    right: -24,
-    top: 1,
-  },
-  subsectionDropdownOverlay: {
-    flex: 1,
-    paddingTop: Platform.OS === 'web' ? 200 : 180,
-    alignItems: 'center',
-  },
-  subsectionDropdownMenuModal: {
-    minWidth: 140,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  subsectionDropdownMenu: {
-    marginTop: 8,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  subsectionDropdownItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-  },
-  subsectionDropdownItemText: {
-    fontSize: 15,
-    fontWeight: '500' as const,
+    width: '130%',
+    marginTop: 2,
+    borderRadius: 1,
   },
   forYouItemRow: {
     flexDirection: 'row',
