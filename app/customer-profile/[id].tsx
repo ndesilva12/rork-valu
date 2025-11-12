@@ -132,11 +132,19 @@ export default function CustomerProfileScreen() {
     return timestamp.toDate().toLocaleDateString();
   };
 
-  // Get customer name from transactions if not in profile
-  const customerName = customerProfile?.name ||
-    (transactions.length > 0 ? transactions[0].customerName : 'Unknown');
+  // Get customer name from profile with proper field names
+  const customerName = customerProfile?.fullName ||
+    customerProfile?.name ||
+    (customerProfile?.firstName && customerProfile?.lastName
+      ? `${customerProfile.firstName} ${customerProfile.lastName}`
+      : '') ||
+    customerProfile?.firstName ||
+    (transactions.length > 0 ? transactions[0].customerName : '') ||
+    'Unknown';
+
   const customerEmail = customerProfile?.email ||
-    (transactions.length > 0 ? transactions[0].customerEmail : 'No email');
+    (transactions.length > 0 ? transactions[0].customerEmail : '') ||
+    'No email';
 
   if (isLoading) {
     return (

@@ -131,10 +131,21 @@ export async function updateUserMetadata(
     if (metadata.email !== undefined) updateData.email = metadata.email;
     if (metadata.firstName !== undefined) updateData.firstName = metadata.firstName;
     if (metadata.lastName !== undefined) updateData.lastName = metadata.lastName;
-    if (metadata.fullName !== undefined) updateData.fullName = metadata.fullName;
+    if (metadata.fullName !== undefined) {
+      updateData.fullName = metadata.fullName;
+      // Also store as 'name' for backward compatibility
+      updateData.name = metadata.fullName;
+    }
     if (metadata.imageUrl !== undefined) updateData.imageUrl = metadata.imageUrl;
     if (metadata.location !== undefined) {
       updateData.location = removeUndefinedFields(metadata.location);
+    }
+
+    // If we have firstName and lastName but no fullName was provided, create name from them
+    if (metadata.fullName === undefined && metadata.firstName && metadata.lastName) {
+      const fullName = `${metadata.firstName} ${metadata.lastName}`;
+      updateData.fullName = fullName;
+      updateData.name = fullName;
     }
 
     await setDoc(userRef, updateData, { merge: true });
