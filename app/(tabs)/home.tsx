@@ -172,6 +172,18 @@ export default function HomeScreen() {
     return brand?.website;
   };
 
+  // Helper function to get brand name from brands array
+  const getBrandName = (brandId: string): string => {
+    const brand = brands?.find(b => b.id === brandId);
+    return brand?.name || 'Unknown Brand';
+  };
+
+  // Helper function to get business name from businesses array
+  const getBusinessName = (businessId: string): string => {
+    const business = userBusinesses?.find(b => b.id === businessId);
+    return business?.businessInfo?.name || 'Unknown Business';
+  };
+
   // Request location permission and get user's location
   const requestLocation = async () => {
     try {
@@ -1173,7 +1185,7 @@ export default function HomeScreen() {
                       </View>
                       <View style={styles.brandCardContent}>
                         <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
-                          {entry.brandName}
+                          {entry.brandName || getBrandName(entry.brandId)}
                         </Text>
                         <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
                           {entry.brandCategory || 'Brand'}
@@ -1207,7 +1219,7 @@ export default function HomeScreen() {
                       </View>
                       <View style={styles.brandCardContent}>
                         <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
-                          {entry.businessName || (entry as any).name}
+                          {entry.businessName || (entry as any).name || getBusinessName(entry.businessId)}
                         </Text>
                         <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
                           {entry.businessCategory || (entry as any).category || 'Local Business'}
@@ -1626,36 +1638,54 @@ export default function HomeScreen() {
     if (selectedList && selectedList !== 'browse') {
       const list = selectedList as UserList;
       setActiveItemOptionsMenu(null); // Close modal first
-      Alert.alert(
-        'Remove Item',
-        'Are you sure you want to remove this item from the list?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Remove',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                await removeEntryFromList(list.id, entryId);
-                await loadUserLists();
-                await reloadPersonalList(); // Also reload personal list for For You view
 
-                // Update selected list
-                const updatedLists = await getUserLists(clerkUser?.id || '');
-                const updatedList = updatedLists.find(l => l.id === list.id);
-                if (updatedList) {
-                  setSelectedList(updatedList);
-                }
+      // Use native confirm/alert for web, Alert.alert for mobile
+      const performDelete = async () => {
+        try {
+          await removeEntryFromList(list.id, entryId);
+          await loadUserLists();
+          await reloadPersonalList(); // Also reload personal list for For You view
 
-                Alert.alert('Success', 'Item removed from list');
-              } catch (error) {
-                console.error('[Home] Error removing entry:', error);
-                Alert.alert('Error', 'Could not remove item. Please try again.');
-              }
+          // Update selected list
+          const updatedLists = await getUserLists(clerkUser?.id || '');
+          const updatedList = updatedLists.find(l => l.id === list.id);
+          if (updatedList) {
+            setSelectedList(updatedList);
+          }
+
+          if (Platform.OS === 'web') {
+            window.alert('Item removed from list');
+          } else {
+            Alert.alert('Success', 'Item removed from list');
+          }
+        } catch (error) {
+          console.error('[Home] Error removing entry:', error);
+          if (Platform.OS === 'web') {
+            window.alert('Could not remove item. Please try again.');
+          } else {
+            Alert.alert('Error', 'Could not remove item. Please try again.');
+          }
+        }
+      };
+
+      if (Platform.OS === 'web') {
+        if (window.confirm('Are you sure you want to remove this item from the list?')) {
+          await performDelete();
+        }
+      } else {
+        Alert.alert(
+          'Remove Item',
+          'Are you sure you want to remove this item from the list?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Remove',
+              style: 'destructive',
+              onPress: performDelete,
             },
-          },
-        ]
-      );
+          ]
+        );
+      }
     }
   };
 
@@ -1936,27 +1966,45 @@ export default function HomeScreen() {
 
   const handleCardDeleteList = (listId: string) => {
     setActiveCardOptionsMenu(null);
-    Alert.alert(
-      'Delete List',
-      'Are you sure you want to delete this list? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteList(listId);
-              await loadUserLists();
-              Alert.alert('Success', 'List deleted successfully');
-            } catch (error) {
-              console.error('[Home] Error deleting list:', error);
-              Alert.alert('Error', 'Could not delete list. Please try again.');
-            }
+
+    // Use native confirm/alert for web, Alert.alert for mobile
+    const performDelete = async () => {
+      try {
+        await deleteList(listId);
+        await loadUserLists();
+        if (Platform.OS === 'web') {
+          window.alert('List deleted successfully');
+        } else {
+          Alert.alert('Success', 'List deleted successfully');
+        }
+      } catch (error) {
+        console.error('[Home] Error deleting list:', error);
+        if (Platform.OS === 'web') {
+          window.alert('Could not delete list. Please try again.');
+        } else {
+          Alert.alert('Error', 'Could not delete list. Please try again.');
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to delete this list? This action cannot be undone.')) {
+        performDelete();
+      }
+    } else {
+      Alert.alert(
+        'Delete List',
+        'Are you sure you want to delete this list? This action cannot be undone.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: performDelete,
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   // Add item modal handlers
@@ -2315,7 +2363,7 @@ export default function HomeScreen() {
                           </View>
                           <View style={styles.brandCardContent}>
                             <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
-                              {entry.brandName}
+                              {entry.brandName || getBrandName(entry.brandId)}
                             </Text>
                             <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
                               Brand
@@ -2391,7 +2439,7 @@ export default function HomeScreen() {
                           </View>
                           <View style={styles.brandCardContent}>
                             <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
-                              {entry.businessName}
+                              {entry.businessName || getBusinessName(entry.businessId)}
                             </Text>
                             <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
                               Business
