@@ -1148,28 +1148,77 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
           <View style={styles.brandsContainer}>
-            {userPersonalList.entries.map((entry, index) => (
-              <View key={entry.id || index} style={styles.forYouItemRow}>
-                {entry.type === 'brand' && entry.logoUrl && (
-                  <Image
-                    source={{ uri: entry.logoUrl }}
-                    style={styles.forYouBrandImage}
-                    contentFit="cover"
-                    transition={200}
-                    cachePolicy="memory-disk"
-                    placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
-                  />
-                )}
-                <View style={styles.forYouItemContent}>
-                  <Text style={[styles.forYouBrandName, { color: colors.text }]}>{entry.name}</Text>
-                  {entry.website && (
-                    <Text style={[styles.forYouBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {entry.website}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            ))}
+            {userPersonalList.entries.map((entry, index) => {
+              // Render brand entries
+              if (entry.type === 'brand' && 'brandId' in entry) {
+                return (
+                  <TouchableOpacity
+                    key={entry.id || index}
+                    style={[
+                      styles.brandCard,
+                      { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                    ]}
+                    onPress={() => router.push(`/brand/${entry.brandId}`)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.brandCardInner}>
+                      <View style={styles.brandLogoContainer}>
+                        <Image
+                          source={{ uri: entry.logoUrl || getLogoUrl(entry.website || getBrandWebsite(entry.brandId) || '') }}
+                          style={styles.brandLogo}
+                          contentFit="cover"
+                          transition={200}
+                          cachePolicy="memory-disk"
+                        />
+                      </View>
+                      <View style={styles.brandCardContent}>
+                        <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
+                          {entry.brandName}
+                        </Text>
+                        <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {entry.brandCategory || 'Brand'}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }
+              // Render business entries
+              else if (entry.type === 'business' && 'businessId' in entry) {
+                return (
+                  <TouchableOpacity
+                    key={entry.id || index}
+                    style={[
+                      styles.brandCard,
+                      { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                    ]}
+                    onPress={() => handleBusinessPress(entry.businessId)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.brandCardInner}>
+                      <View style={styles.brandLogoContainer}>
+                        <Image
+                          source={{ uri: entry.logoUrl || getLogoUrl(entry.website || '') }}
+                          style={styles.brandLogo}
+                          contentFit="cover"
+                          transition={200}
+                          cachePolicy="memory-disk"
+                        />
+                      </View>
+                      <View style={styles.brandCardContent}>
+                        <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
+                          {entry.businessName || (entry as any).name}
+                        </Text>
+                        <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {entry.businessCategory || (entry as any).category || 'Local Business'}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }
+              return null;
+            })}
           </View>
         </View>
       );
@@ -2920,66 +2969,64 @@ export default function HomeScreen() {
       >
         <TouchableWithoutFeedback onPress={() => setActiveCardOptionsMenu(null)}>
           <View style={styles.dropdownModalOverlay}>
-            <TouchableWithoutFeedback onPress={() => {}}>
-              <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                <TouchableOpacity
-                  style={styles.listOptionItem}
-                  onPress={() => {
-                    const list = userLists.find(l => l.id === activeCardOptionsMenu);
-                    if (list) {
-                      handleOpenCardRenameModal(list.id, list.name, list.description || '');
-                    }
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Edit size={18} color={colors.text} strokeWidth={2} />
-                  <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
-                </TouchableOpacity>
-                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                <TouchableOpacity
-                  style={styles.listOptionItem}
-                  onPress={() => {
+            <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  const list = userLists.find(l => l.id === activeCardOptionsMenu);
+                  if (list) {
+                    handleOpenCardRenameModal(list.id, list.name, list.description || '');
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Edit size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+              </TouchableOpacity>
+              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  setActiveCardOptionsMenu(null);
+                  setIsLibraryRearrangeMode(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
+              </TouchableOpacity>
+              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  const list = userLists.find(l => l.id === activeCardOptionsMenu);
+                  if (list) {
                     setActiveCardOptionsMenu(null);
-                    setIsLibraryRearrangeMode(true);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                  <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
-                </TouchableOpacity>
-                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                <TouchableOpacity
-                  style={styles.listOptionItem}
-                  onPress={() => {
-                    const list = userLists.find(l => l.id === activeCardOptionsMenu);
-                    if (list) {
-                      setActiveCardOptionsMenu(null);
-                      setDescriptionText(list.description || '');
-                      setSelectedList(list);
-                      setShowDescriptionModal(true);
-                    }
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Edit size={18} color={colors.text} strokeWidth={2} />
-                  <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
-                </TouchableOpacity>
-                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                <TouchableOpacity
-                  style={styles.listOptionItem}
-                  onPress={() => {
-                    console.log('[Home] Delete list pressed, ID:', activeCardOptionsMenu);
-                    if (activeCardOptionsMenu) {
-                      handleCardDeleteList(activeCardOptionsMenu);
-                    }
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-                  <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
+                    setDescriptionText(list.description || '');
+                    setSelectedList(list);
+                    setShowDescriptionModal(true);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Edit size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+              </TouchableOpacity>
+              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  console.log('[Home] Delete list pressed, ID:', activeCardOptionsMenu);
+                  if (activeCardOptionsMenu) {
+                    handleCardDeleteList(activeCardOptionsMenu);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
@@ -2993,23 +3040,21 @@ export default function HomeScreen() {
       >
         <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
           <View style={styles.dropdownModalOverlay}>
-            <TouchableWithoutFeedback onPress={() => {}}>
-              <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                <TouchableOpacity
-                  style={styles.listOptionItem}
-                  onPress={() => {
-                    console.log('[Home] Delete entry pressed, ID:', activeItemOptionsMenu);
-                    if (activeItemOptionsMenu) {
-                      handleDeleteEntry(activeItemOptionsMenu);
-                    }
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Trash2 size={16} color={colors.danger} strokeWidth={2} />
-                  <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
+            <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  console.log('[Home] Delete entry pressed, ID:', activeItemOptionsMenu);
+                  if (activeItemOptionsMenu) {
+                    handleDeleteEntry(activeItemOptionsMenu);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Trash2 size={16} color={colors.danger} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
@@ -4069,10 +4114,8 @@ export default function HomeScreen() {
               <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>4</Text>
             </View>
 
-            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>1</Text>
-
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
-              We provide brands that align or don't, based on your selections. Research where your money goes.
+              We generate brands that align or don't align based on your selections.
             </Text>
 
             <TouchableOpacity
@@ -4117,10 +4160,8 @@ export default function HomeScreen() {
               <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>4</Text>
             </View>
 
-            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>2</Text>
-
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
-              Add companies to your personal collection and build your identity. Global brands or local businesses.
+              Add brands or local businesses to your personal collection and build your identity.
             </Text>
 
             <TouchableOpacity
@@ -4165,10 +4206,8 @@ export default function HomeScreen() {
               <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>4</Text>
             </View>
 
-            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>3</Text>
-
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
-              Create lists from ANY value inputs. Great for gift ideas to friends & family.
+              Create lists from ANY value inputs. Great for generating gift ideas for friends & family.
             </Text>
 
             <TouchableOpacity
@@ -4228,10 +4267,8 @@ export default function HomeScreen() {
               <Text style={[styles.explainerProgressNumber, styles.explainerProgressActive, { color: colors.white }]}>4</Text>
             </View>
 
-            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>4</Text>
-
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
-              Use your code for discounts at participating companies.
+              Use your code for discounts at participating businesses.
             </Text>
 
             <TouchableOpacity
@@ -5885,7 +5922,7 @@ const styles = StyleSheet.create({
   explainerBubbleCentered: {
     borderRadius: 24,
     padding: 40,
-    paddingTop: 60,
+    paddingTop: 80,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
@@ -5914,8 +5951,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   explainerTextLarge: {
-    fontSize: 24,
-    lineHeight: 36,
+    fontSize: 32,
+    lineHeight: 44,
     marginBottom: 32,
     textAlign: 'center',
     fontWeight: '500' as const,
@@ -5938,8 +5975,8 @@ const styles = StyleSheet.create({
   },
   explainerProgress: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 16,
+    gap: 24,
+    marginBottom: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -5948,7 +5985,7 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   explainerProgressActive: {
-    fontSize: 32,
+    fontSize: 120,
     fontWeight: '900' as const,
   },
 });

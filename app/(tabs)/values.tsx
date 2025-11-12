@@ -19,6 +19,7 @@ import { useState } from 'react';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
+import { useData } from '@/contexts/DataContext';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { CauseCategory, Cause } from '@/types';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
@@ -47,6 +48,7 @@ const CATEGORY_LABELS: Record<CauseCategory, string> = {
 export default function ValuesScreen() {
   const router = useRouter();
   const { profile, isDarkMode, removeCauses, toggleCauseType, clerkUser } = useUser();
+  const { brands, valuesMatrix } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
   const [expandedCategories, setExpandedCategories] = useState<Set<CauseCategory>>(new Set());
   const [editingValueId, setEditingValueId] = useState<string | null>(null);
@@ -188,18 +190,41 @@ export default function ValuesScreen() {
     if (!selectedValue || !selectedMode) return;
 
     try {
-      const entry: Omit<ListEntry, 'id' | 'createdAt'> = {
-        type: 'value',
-        valueId: selectedValue.id,
-        valueName: selectedValue.name,
-        mode: selectedMode,
-      };
+      // Add the top brands for this value instead of the value card
+      const causeData = valuesMatrix[selectedValue.id];
+      if (!causeData) {
+        Alert.alert('Error', 'Value data not found');
+        return;
+      }
 
-      await addEntryToList(listId, entry);
+      const brandList = selectedMode === 'maxBenefit' ? causeData.support : causeData.avoid;
+      if (!brandList || brandList.length === 0) {
+        Alert.alert('Error', 'No brands found for this value');
+        return;
+      }
+
+      // Add top 10 brands (or all if less than 10)
+      const brandsToAdd = brandList.slice(0, 10);
+      let addedCount = 0;
+
+      for (const brandName of brandsToAdd) {
+        const brand = brands?.find(b => b.name === brandName);
+        if (brand) {
+          const brandEntry: Omit<ListEntry, 'id' | 'createdAt'> = {
+            type: 'brand',
+            brandId: brand.id,
+            brandName: brand.name,
+            website: brand.website,
+          };
+          await addEntryToList(listId, brandEntry);
+          addedCount++;
+        }
+      }
+
       setShowListSelectionModal(false);
       setSelectedValue(null);
       setSelectedMode(null);
-      Alert.alert('Success', `Added ${selectedValue.name} to list!`);
+      Alert.alert('Success', `Added ${addedCount} brands from ${selectedValue.name} to list!`);
     } catch (error) {
       console.error('[Values] Error adding to list:', error);
       Alert.alert('Error', 'Could not add to list. Please try again.');
@@ -217,21 +242,43 @@ export default function ValuesScreen() {
     try {
       const listId = await createList(clerkUser.id, newListName.trim(), newListDescription.trim());
 
-      const entry: Omit<ListEntry, 'id' | 'createdAt'> = {
-        type: 'value',
-        valueId: selectedValue.id,
-        valueName: selectedValue.name,
-        mode: selectedMode,
-      };
+      // Add the top brands for this value instead of the value card
+      const causeData = valuesMatrix[selectedValue.id];
+      if (!causeData) {
+        Alert.alert('Error', 'Value data not found');
+        return;
+      }
 
-      await addEntryToList(listId, entry);
+      const brandList = selectedMode === 'maxBenefit' ? causeData.support : causeData.avoid;
+      if (!brandList || brandList.length === 0) {
+        Alert.alert('Error', 'No brands found for this value');
+        return;
+      }
+
+      // Add top 10 brands (or all if less than 10)
+      const brandsToAdd = brandList.slice(0, 10);
+      let addedCount = 0;
+
+      for (const brandName of brandsToAdd) {
+        const brand = brands?.find(b => b.name === brandName);
+        if (brand) {
+          const brandEntry: Omit<ListEntry, 'id' | 'createdAt'> = {
+            type: 'brand',
+            brandId: brand.id,
+            brandName: brand.name,
+            website: brand.website,
+          };
+          await addEntryToList(listId, brandEntry);
+          addedCount++;
+        }
+      }
 
       setNewListName('');
       setNewListDescription('');
       setShowListSelectionModal(false);
       setSelectedValue(null);
       setSelectedMode(null);
-      Alert.alert('Success', `Created list and added ${selectedValue.name}!`);
+      Alert.alert('Success', `Created list and added ${addedCount} brands from ${selectedValue.name}!`);
     } catch (error) {
       console.error('[Values] Error creating list:', error);
       Alert.alert('Error', 'Could not create list. Please try again.');
