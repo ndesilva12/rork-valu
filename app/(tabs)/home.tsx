@@ -30,8 +30,26 @@ import {
   ExternalLink,
   ChevronUp,
   ChevronDown,
+  GripVertical,
 } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   View,
   Text,
@@ -182,6 +200,54 @@ export default function HomeScreen() {
   const getBusinessName = (businessId: string): string => {
     const business = userBusinesses?.find(b => b.id === businessId);
     return business?.businessInfo?.name || 'Unknown Business';
+  };
+
+  // Drag-and-drop sensors for list reordering
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Drag only after moving 8px (prevents accidental drags)
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end event for list reordering
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id || !selectedList || selectedList === 'browse') {
+      return;
+    }
+
+    const list = selectedList as UserList;
+    const oldIndex = list.entries.findIndex((entry) => entry.id === active.id);
+    const newIndex = list.entries.findIndex((entry) => entry.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Reorder locally first for immediate feedback
+    const newEntries = arrayMove(list.entries, oldIndex, newIndex);
+    setSelectedList({ ...list, entries: newEntries });
+
+    // Save to Firebase
+    try {
+      await reorderListEntries(list.id, newEntries);
+      // Reload lists to sync
+      await loadUserLists();
+      await reloadPersonalList();
+    } catch (error) {
+      console.error('[Home] Error reordering entries:', error);
+      // Revert on error
+      setSelectedList(list);
+      if (Platform.OS === 'web') {
+        window.alert('Could not reorder items. Please try again.');
+      } else {
+        Alert.alert('Error', 'Could not reorder items. Please try again.');
+      }
+    }
   };
 
   // Request location permission and get user's location
@@ -2351,12 +2417,42 @@ export default function HomeScreen() {
               </Text>
             </View>
           ) : (
-            <View style={styles.listEntriesContainer}>
-              {list.entries.map((entry, entryIndex) => {
-                // Render based on entry type
-                if (entry.type === 'brand' && 'brandId' in entry) {
-                  return (
-                    <View key={entry.id} style={styles.listEntryRow}>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={list.entries.map((e) => e.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <View style={styles.listEntriesContainer}>
+                  {list.entries.map((entry, entryIndex) => {
+                    // Sortable Item Component
+                    const SortableEntry = () => {
+                      const {
+                        attributes,
+                        listeners,
+                        setNodeRef,
+                        transform,
+                        transition,
+                        isDragging,
+                      } = useSortable({ id: entry.id, disabled: !isEditMode });
+
+                      const style = {
+                        transform: CSS.Transform.toString(transform),
+                        transition,
+                        opacity: isDragging ? 0.5 : 1,
+                      };
+
+                      // Render based on entry type
+                      if (entry.type === 'brand' && 'brandId' in entry) {
+                        return (
+                          <View
+                            key={entry.id}
+                            ref={setNodeRef as any}
+                            style={[styles.listEntryRow, style as any]}
+                          >
                       <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
                         {entryIndex + 1}
                       </Text>
@@ -2398,31 +2494,12 @@ export default function HomeScreen() {
                             </TouchableOpacity>
                           )}
                           {isEditMode && (
-                            <View style={styles.listEntryReorderButtons}>
-                              <TouchableOpacity
-                                onPress={() => handleMoveEntryUp(entryIndex)}
-                                disabled={entryIndex === 0}
-                                style={styles.reorderButton}
-                                activeOpacity={0.7}
-                              >
-                                <ChevronUp
-                                  size={16}
-                                  color={entryIndex === 0 ? colors.textSecondary : colors.text}
-                                  strokeWidth={2}
-                                />
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                onPress={() => handleMoveEntryDown(entryIndex)}
-                                disabled={entryIndex === list.entries.length - 1}
-                                style={styles.reorderButton}
-                                activeOpacity={0.7}
-                              >
-                                <ChevronDown
-                                  size={16}
-                                  color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
-                                  strokeWidth={2}
-                                />
-                              </TouchableOpacity>
+                            <View
+                              {...attributes}
+                              {...listeners}
+                              style={styles.dragHandle}
+                            >
+                              <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
                             </View>
                           )}
                         </View>
@@ -2432,7 +2509,11 @@ export default function HomeScreen() {
                   );
                 } else if (entry.type === 'business' && 'businessId' in entry) {
                   return (
-                    <View key={entry.id} style={styles.listEntryRow}>
+                    <View
+                      key={entry.id}
+                      ref={setNodeRef as any}
+                      style={[styles.listEntryRow, style as any]}
+                    >
                       <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
                         {entryIndex + 1}
                       </Text>
@@ -2474,31 +2555,12 @@ export default function HomeScreen() {
                             </TouchableOpacity>
                           )}
                           {isEditMode && (
-                            <View style={styles.listEntryReorderButtons}>
-                              <TouchableOpacity
-                                onPress={() => handleMoveEntryUp(entryIndex)}
-                                disabled={entryIndex === 0}
-                                style={styles.reorderButton}
-                                activeOpacity={0.7}
-                              >
-                                <ChevronUp
-                                  size={16}
-                                  color={entryIndex === 0 ? colors.textSecondary : colors.text}
-                                  strokeWidth={2}
-                                />
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                onPress={() => handleMoveEntryDown(entryIndex)}
-                                disabled={entryIndex === list.entries.length - 1}
-                                style={styles.reorderButton}
-                                activeOpacity={0.7}
-                              >
-                                <ChevronDown
-                                  size={16}
-                                  color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
-                                  strokeWidth={2}
-                                  />
-                              </TouchableOpacity>
+                            <View
+                              {...attributes}
+                              {...listeners}
+                              style={styles.dragHandle}
+                            >
+                              <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
                             </View>
                           )}
                         </View>
@@ -2510,7 +2572,11 @@ export default function HomeScreen() {
                   const isMaxPain = entry.mode === 'maxPain';
                   const borderColor = isMaxPain ? colors.danger : colors.success;
                   return (
-                    <View key={entry.id} style={styles.listEntryRow}>
+                    <View
+                      key={entry.id}
+                      ref={setNodeRef as any}
+                      style={[styles.listEntryRow, style as any]}
+                    >
                       <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
                         {entryIndex + 1}
                       </Text>
@@ -2537,31 +2603,12 @@ export default function HomeScreen() {
                             </TouchableOpacity>
                           )}
                           {isEditMode && (
-                            <View style={styles.listEntryReorderButtons}>
-                              <TouchableOpacity
-                                onPress={() => handleMoveEntryUp(entryIndex)}
-                                disabled={entryIndex === 0}
-                                style={styles.reorderButton}
-                                activeOpacity={0.7}
-                              >
-                                <ChevronUp
-                                  size={16}
-                                  color={entryIndex === 0 ? colors.textSecondary : colors.text}
-                                  strokeWidth={2}
-                                />
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                onPress={() => handleMoveEntryDown(entryIndex)}
-                                disabled={entryIndex === list.entries.length - 1}
-                                style={styles.reorderButton}
-                                activeOpacity={0.7}
-                              >
-                                <ChevronDown
-                                  size={16}
-                                  color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
-                                  strokeWidth={2}
-                                />
-                              </TouchableOpacity>
+                            <View
+                              {...attributes}
+                              {...listeners}
+                              style={styles.dragHandle}
+                            >
+                              <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
                             </View>
                           )}
                         </View>
@@ -2572,7 +2619,11 @@ export default function HomeScreen() {
                 } else {
                   // Default render for link and text entries
                   return (
-                    <View key={entry.id} style={styles.listEntryRow}>
+                    <View
+                      key={entry.id}
+                      ref={setNodeRef as any}
+                      style={[styles.listEntryRow, style as any]}
+                    >
                       <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
                         {entryIndex + 1}
                       </Text>
@@ -2612,31 +2663,12 @@ export default function HomeScreen() {
                           </TouchableOpacity>
                         )}
                         {isEditMode && (
-                          <View style={styles.listEntryReorderButtons}>
-                            <TouchableOpacity
-                              onPress={() => handleMoveEntryUp(entryIndex)}
-                              disabled={entryIndex === 0}
-                              style={styles.reorderButton}
-                              activeOpacity={0.7}
-                            >
-                              <ChevronUp
-                                size={16}
-                                color={entryIndex === 0 ? colors.textSecondary : colors.text}
-                                strokeWidth={2}
-                              />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              onPress={() => handleMoveEntryDown(entryIndex)}
-                              disabled={entryIndex === list.entries.length - 1}
-                              style={styles.reorderButton}
-                              activeOpacity={0.7}
-                            >
-                              <ChevronDown
-                                size={16}
-                                color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
-                                strokeWidth={2}
-                              />
-                            </TouchableOpacity>
+                          <View
+                            {...attributes}
+                            {...listeners}
+                            style={styles.dragHandle}
+                          >
+                            <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
                           </View>
                         )}
                       </View>
@@ -2644,8 +2676,16 @@ export default function HomeScreen() {
                     </View>
                   );
                 }
-              })}
-            </View>
+
+                return null;
+              };
+
+                    // Return the sortable entry component
+                    return <SortableEntry key={entry.id} />;
+                  })}
+                </View>
+              </SortableContext>
+            </DndContext>
           )}
         </ScrollView>
       </View>
@@ -5801,6 +5841,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 6,
     gap: 3,
+  },
+  dragHandle: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    cursor: 'grab' as any,
   },
   listDetailContent: {
     flex: 1,
