@@ -54,6 +54,7 @@ export interface UserList {
   userId: string;
   name: string;
   description?: string;
+  creatorName?: string;
   entries: ListEntry[];
   createdAt: Date;
   updatedAt: Date;

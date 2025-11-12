@@ -44,6 +44,7 @@ export const getUserLists = async (userId: string): Promise<UserList[]> => {
         userId: data.userId,
         name: data.name,
         description: data.description,
+        creatorName: data.creatorName,
         entries: data.entries || [],
         createdAt: timestampToDate(data.createdAt),
         updatedAt: timestampToDate(data.updatedAt),
@@ -77,6 +78,7 @@ export const getList = async (listId: string): Promise<UserList | null> => {
       userId: data.userId,
       name: data.name,
       description: data.description,
+      creatorName: data.creatorName,
       entries: data.entries || [],
       createdAt: timestampToDate(data.createdAt),
       updatedAt: timestampToDate(data.updatedAt),
@@ -92,7 +94,8 @@ export const getList = async (listId: string): Promise<UserList | null> => {
 export const createList = async (
   userId: string,
   name: string,
-  description?: string
+  description?: string,
+  creatorName?: string
 ): Promise<string> => {
   try {
     const listsRef = collection(db, LISTS_COLLECTION);
@@ -100,6 +103,7 @@ export const createList = async (
       userId,
       name,
       description: description || '',
+      creatorName: creatorName || '',
       entries: [],
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),

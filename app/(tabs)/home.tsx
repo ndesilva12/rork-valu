@@ -31,6 +31,7 @@ import {
   ChevronUp,
   ChevronDown,
   GripVertical,
+  Share2,
 } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import {
@@ -65,6 +66,7 @@ import {
   TextInput,
   Pressable,
   TouchableWithoutFeedback,
+  Share,
 } from 'react-native';
 import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
@@ -317,7 +319,7 @@ export default function HomeScreen() {
         if (!personalList && userName !== 'My List') {
           console.log('[Home] Personal list not found, creating it...');
           try {
-            const newListId = await createList(clerkUser.id, userName, 'Your personal collection.');
+            const newListId = await createList(clerkUser.id, userName, 'Your personal collection.', userName);
             // Reload lists to get the newly created one
             const updatedLists = await getUserLists(clerkUser.id);
             personalList = updatedLists.find(list => list.id === newListId);
@@ -1377,7 +1379,12 @@ export default function HomeScreen() {
 
     try {
       console.log('[Home] Creating list...');
-      await createList(clerkUser.id, newListName.trim(), newListDescription.trim());
+      const fullNameFromClerk = clerkUser.fullName ||
+        (clerkUser.firstName && clerkUser.lastName
+          ? `${clerkUser.firstName} ${clerkUser.lastName}`
+          : '');
+      const creatorName = profile?.fullName || fullNameFromClerk || clerkUser.firstName || '';
+      await createList(clerkUser.id, newListName.trim(), newListDescription.trim(), creatorName);
       setNewListName('');
       setNewListDescription('');
       setShowCreateListModal(false);
@@ -1412,6 +1419,27 @@ export default function HomeScreen() {
         },
       ]
     );
+  };
+
+  const handleShareList = async (list: UserList) => {
+    try {
+      const shareMessage = `Check out my list "${list.name}" on Upright Money!\n\n` +
+        (list.creatorName ? `Created by: ${list.creatorName}\n` : '') +
+        (list.description ? `${list.description}\n\n` : '') +
+        `${list.entries.length} ${list.entries.length === 1 ? 'item' : 'items'}`;
+
+      await Share.share({
+        message: shareMessage,
+        title: list.name,
+      });
+    } catch (error) {
+      console.error('[Home] Error sharing list:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Could not share list. Please try again.');
+      } else {
+        Alert.alert('Error', 'Could not share list. Please try again.');
+      }
+    }
   };
 
   const handleOpenRenameModal = () => {
@@ -1577,7 +1605,12 @@ export default function HomeScreen() {
       }
 
       // Create the list
-      const listId = await createList(clerkUser.id, listName, listDescription);
+      const fullNameFromClerk = clerkUser.fullName ||
+        (clerkUser.firstName && clerkUser.lastName
+          ? `${clerkUser.firstName} ${clerkUser.lastName}`
+          : '');
+      const creatorName = profile?.fullName || fullNameFromClerk || clerkUser.firstName || '';
+      const listId = await createList(clerkUser.id, listName, listDescription, creatorName);
 
       // Add brands to the list
       for (const item of topBrands) {
@@ -1916,7 +1949,12 @@ export default function HomeScreen() {
     if (!clerkUser?.id || !quickAddItem) return;
 
     try {
-      const listId = await createList(clerkUser.id, newListName.trim(), newListDescription.trim());
+      const fullNameFromClerk = clerkUser.fullName ||
+        (clerkUser.firstName && clerkUser.lastName
+          ? `${clerkUser.firstName} ${clerkUser.lastName}`
+          : '');
+      const creatorName = profile?.fullName || fullNameFromClerk || clerkUser.firstName || '';
+      const listId = await createList(clerkUser.id, newListName.trim(), newListDescription.trim(), creatorName);
 
       // Add the item to the new list
       let entry: Omit<ListEntry, 'id' | 'createdAt'>;
@@ -2327,6 +2365,13 @@ export default function HomeScreen() {
             )}
           </View>
 
+          {/* Created by text */}
+          {list.creatorName && (
+            <Text style={[styles.listCreatedBy, { color: colors.textSecondary }]}>
+              created by {list.creatorName}
+            </Text>
+          )}
+
           {/* Description below title */}
           {list.description && (
             <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
@@ -2375,6 +2420,18 @@ export default function HomeScreen() {
               >
                 <ChevronUp size={18} color={colors.text} strokeWidth={2} />
                 <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
+              </TouchableOpacity>
+              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  setShowEditDropdown(false);
+                  handleShareList(list);
+                }}
+                activeOpacity={0.7}
+              >
+                <Share2 size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
               </TouchableOpacity>
               {!isUserNameList && (
                 <>
@@ -2860,6 +2917,11 @@ export default function HomeScreen() {
                           <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
                             {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
                           </Text>
+                          {list.creatorName && (
+                            <Text style={[styles.listCardCreatedBy, { color: colors.textSecondary }]} numberOfLines={1}>
+                              created by {list.creatorName}
+                            </Text>
+                          )}
                           {list.description && (
                             <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
                               {list.description}
@@ -2869,16 +2931,60 @@ export default function HomeScreen() {
                       </View>
                     </View>
                     {!isLibraryRearrangeMode && (
-                      <TouchableOpacity
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          setActiveCardOptionsMenu(activeCardOptionsMenu === list.id ? null : list.id);
-                        }}
-                        activeOpacity={0.7}
-                        style={styles.listCardOptionsButton}
-                      >
-                        <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                      </TouchableOpacity>
+                      <View style={{ position: 'relative' as const }}>
+                        <TouchableOpacity
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            setActiveCardOptionsMenu(activeCardOptionsMenu === list.id ? null : list.id);
+                          }}
+                          activeOpacity={0.7}
+                          style={styles.listCardOptionsButton}
+                        >
+                          <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                        </TouchableOpacity>
+                        {activeCardOptionsMenu === list.id && (
+                          <View style={[styles.listCardOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                            <TouchableOpacity
+                              style={styles.listOptionItem}
+                              onPress={() => {
+                                setActiveCardOptionsMenu(null);
+                                setCardRenameListId(list.id);
+                                setCardRenameListName(list.name);
+                                setCardRenameListDescription(list.description || '');
+                                setShowCardRenameModal(true);
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <Edit size={18} color={colors.text} strokeWidth={2} />
+                              <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+                            </TouchableOpacity>
+                            <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                            <TouchableOpacity
+                              style={styles.listOptionItem}
+                              onPress={() => {
+                                setActiveCardOptionsMenu(null);
+                                handleShareList(list);
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <Share2 size={18} color={colors.text} strokeWidth={2} />
+                              <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
+                            </TouchableOpacity>
+                            <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                            <TouchableOpacity
+                              style={styles.listOptionItem}
+                              onPress={() => {
+                                setActiveCardOptionsMenu(null);
+                                handleDeleteList(list.id);
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                              <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </View>
                     )}
                     {isLibraryRearrangeMode && (
                       <View style={styles.listCardRearrangeButtons}>
@@ -5295,6 +5401,11 @@ const styles = StyleSheet.create({
   listCardCount: {
     fontSize: 12,
   },
+  listCardCreatedBy: {
+    fontSize: 11,
+    marginTop: 4,
+    fontStyle: 'italic' as const,
+  },
   listCardDescription: {
     fontSize: 12,
     marginTop: 6,
@@ -5366,6 +5477,21 @@ const styles = StyleSheet.create({
     padding: 10,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  listCardOptionsDropdown: {
+    position: 'absolute' as const,
+    top: 40,
+    right: 0,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    borderWidth: 1,
+    minWidth: 150,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 1001,
   },
   listCardOptionsButtonAbsolute: {
     position: 'absolute' as const,
@@ -5713,6 +5839,12 @@ const styles = StyleSheet.create({
   listOptionDivider: {
     height: 1,
     marginVertical: 4,
+  },
+  listCreatedBy: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 6,
+    fontStyle: 'italic' as const,
   },
   listDetailDescription: {
     fontSize: 14,
