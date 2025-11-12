@@ -1075,12 +1075,28 @@ export default function HomeScreen() {
       }
 
       if (!userPersonalList.entries || userPersonalList.entries.length === 0) {
-        // Show simple empty state
+        // Show empty state with add button
         return (
           <View style={styles.section}>
+            {/* Add button header */}
+            <View style={[styles.userListHeaderRow, { marginBottom: 16 }]}>
+              <Text style={[styles.userListSubheading, { color: colors.textSecondary }]}>
+                {userPersonalList.description || 'Your personal collection.'}
+              </Text>
+              <TouchableOpacity
+                style={[styles.addItemButton, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  setSelectedList(userPersonalList);
+                  setShowAddItemModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Plus size={20} color={colors.white} strokeWidth={2.5} />
+              </TouchableOpacity>
+            </View>
             <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
               <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-                Your personal list is empty. Add items by tapping the + button on brand or business pages!
+                Your personal list is empty. Tap the + button above to add brands or businesses!
               </Text>
             </View>
           </View>
@@ -3994,7 +4010,7 @@ export default function HomeScreen() {
       </Modal>
 
       {/* Explainer Overlay Modals */}
-      {/* First Explainer: Your Results */}
+      {/* First Explainer */}
       <Modal
         visible={activeExplainerStep === 1}
         animationType="fade"
@@ -4012,8 +4028,8 @@ export default function HomeScreen() {
             <View style={StyleSheet.absoluteFill} />
           </TouchableWithoutFeedback>
 
-          {/* Explainer Bubble - pinned near aligned brands section */}
-          <View style={[styles.explainerBubble, { backgroundColor: colors.primary, top: Platform.OS === 'web' ? 180 : 240, left: 16, right: 16 }]}>
+          {/* Centered Explainer Bubble */}
+          <View style={[styles.explainerBubbleCentered, { backgroundColor: colors.primary }]}>
             <TouchableOpacity
               style={styles.explainerBubbleCloseButton}
               onPress={async () => {
@@ -4021,18 +4037,15 @@ export default function HomeScreen() {
               }}
               activeOpacity={0.7}
             >
-              <X size={20} color={colors.white} strokeWidth={2.5} />
+              <X size={24} color={colors.white} strokeWidth={2.5} />
             </TouchableOpacity>
 
-            <View style={styles.explainerBubbleHeader}>
-              <View style={[styles.explainerBubbleIconContainer, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
-                <TrendingUp size={32} color={colors.white} strokeWidth={2.5} />
-              </View>
-              <Text style={[styles.explainerBubbleTitle, { color: colors.white, fontSize: 26 }]}>Your Results</Text>
-            </View>
+            {/* Large Number */}
+            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>1</Text>
 
-            <Text style={[styles.explainerBubbleText, { color: 'rgba(255, 255, 255, 0.95)', fontSize: 18, lineHeight: 26 }]}>
-              The brands that are most aligned and unaligned with your value inputs.
+            {/* Text Content */}
+            <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
+              We provide brands that align or don't, based on your selections. Research where your money goes.
             </Text>
 
             <TouchableOpacity
@@ -4042,29 +4055,13 @@ export default function HomeScreen() {
               }}
               activeOpacity={0.8}
             >
-              <Text style={[styles.explainerBubbleButtonText, { color: colors.primary, fontSize: 18 }]}>Next</Text>
+              <Text style={[styles.explainerBubbleButtonText, { color: colors.primary, fontSize: 20 }]}>Next</Text>
             </TouchableOpacity>
-
-            {/* Arrow pointing down */}
-            <View style={[styles.explainerArrowContainer, { bottom: -24, left: 32 }]}>
-              <View style={[styles.explainerArrowLine, { backgroundColor: colors.primary, width: 4, height: 24 }]} />
-              <View style={[styles.explainerArrowHead, {
-                borderLeftWidth: 10,
-                borderRightWidth: 10,
-                borderTopWidth: 15,
-                borderLeftColor: 'transparent',
-                borderRightColor: 'transparent',
-                borderTopColor: colors.primary,
-                position: 'absolute',
-                bottom: -15,
-                left: -8,
-              }]} />
-            </View>
           </View>
         </View>
       </Modal>
 
-      {/* Second Explainer: Add to Your List */}
+      {/* Second Explainer */}
       <Modal
         visible={activeExplainerStep === 2}
         animationType="fade"
@@ -4082,8 +4079,8 @@ export default function HomeScreen() {
             <View style={StyleSheet.absoluteFill} />
           </TouchableWithoutFeedback>
 
-          {/* Explainer Bubble - pinned near first aligned brand's add button */}
-          <View style={[styles.explainerBubble, { backgroundColor: colors.primary, top: Platform.OS === 'web' ? 320 : 380, left: 16, right: 16 }]}>
+          {/* Centered Explainer Bubble */}
+          <View style={[styles.explainerBubbleCentered, { backgroundColor: colors.primary }]}>
             <TouchableOpacity
               style={styles.explainerBubbleCloseButton}
               onPress={async () => {
@@ -4091,18 +4088,15 @@ export default function HomeScreen() {
               }}
               activeOpacity={0.7}
             >
-              <X size={20} color={colors.white} strokeWidth={2.5} />
+              <X size={24} color={colors.white} strokeWidth={2.5} />
             </TouchableOpacity>
 
-            <View style={styles.explainerBubbleHeader}>
-              <View style={[styles.explainerBubbleIconContainer, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
-                <Plus size={32} color={colors.white} strokeWidth={2.5} />
-              </View>
-              <Text style={[styles.explainerBubbleTitle, { color: colors.white, fontSize: 26 }]}>Add to Your List</Text>
-            </View>
+            {/* Large Number */}
+            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>2</Text>
 
-            <Text style={[styles.explainerBubbleText, { color: 'rgba(255, 255, 255, 0.95)', fontSize: 18, lineHeight: 26 }]}>
-              Add content to your personal collection. These are the companies you most identify with.
+            {/* Text Content */}
+            <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
+              Add companies to your personal collection and build your identity. Global brands or local businesses.
             </Text>
 
             <TouchableOpacity
@@ -4112,29 +4106,13 @@ export default function HomeScreen() {
               }}
               activeOpacity={0.8}
             >
-              <Text style={[styles.explainerBubbleButtonText, { color: colors.primary, fontSize: 18 }]}>Next</Text>
+              <Text style={[styles.explainerBubbleButtonText, { color: colors.primary, fontSize: 20 }]}>Next</Text>
             </TouchableOpacity>
-
-            {/* Arrow pointing to right (where add button would be) */}
-            <View style={[styles.explainerArrowContainer, { top: 80, right: -24 }]}>
-              <View style={[styles.explainerArrowLine, { backgroundColor: colors.primary, width: 24, height: 4 }]} />
-              <View style={[styles.explainerArrowHead, {
-                borderTopWidth: 10,
-                borderBottomWidth: 10,
-                borderLeftWidth: 15,
-                borderTopColor: 'transparent',
-                borderBottomColor: 'transparent',
-                borderLeftColor: colors.primary,
-                position: 'absolute',
-                right: -15,
-                top: -8,
-              }]} />
-            </View>
           </View>
         </View>
       </Modal>
 
-      {/* Third Explainer: Create More Lists */}
+      {/* Third Explainer */}
       <Modal
         visible={activeExplainerStep === 3}
         animationType="fade"
@@ -4158,8 +4136,8 @@ export default function HomeScreen() {
             <View style={StyleSheet.absoluteFill} />
           </TouchableWithoutFeedback>
 
-          {/* Explainer Bubble - pinned near My Library tab */}
-          <View style={[styles.explainerBubble, { backgroundColor: colors.primary, bottom: 90, left: 16, right: 16 }]}>
+          {/* Centered Explainer Bubble */}
+          <View style={[styles.explainerBubbleCentered, { backgroundColor: colors.primary }]}>
             <TouchableOpacity
               style={styles.explainerBubbleCloseButton}
               onPress={async () => {
@@ -4170,18 +4148,15 @@ export default function HomeScreen() {
               }}
               activeOpacity={0.7}
             >
-              <X size={20} color={colors.white} strokeWidth={2.5} />
+              <X size={24} color={colors.white} strokeWidth={2.5} />
             </TouchableOpacity>
 
-            <View style={styles.explainerBubbleHeader}>
-              <View style={[styles.explainerBubbleIconContainer, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
-                <List size={32} color={colors.white} strokeWidth={2.5} />
-              </View>
-              <Text style={[styles.explainerBubbleTitle, { color: colors.white, fontSize: 26 }]}>Create More Lists</Text>
-            </View>
+            {/* Large Number */}
+            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>3</Text>
 
-            <Text style={[styles.explainerBubbleText, { color: 'rgba(255, 255, 255, 0.95)', fontSize: 18, lineHeight: 26 }]}>
-              Create lists from ANY value inputs. Great for generating gift ideas for family or friends.
+            {/* Text Content */}
+            <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
+              Create lists from ANY value inputs. Great for gift ideas to friends & family.
             </Text>
 
             <TouchableOpacity
@@ -4194,24 +4169,8 @@ export default function HomeScreen() {
               }}
               activeOpacity={0.8}
             >
-              <Text style={[styles.explainerBubbleButtonText, { color: colors.primary, fontSize: 18 }]}>Got it!</Text>
+              <Text style={[styles.explainerBubbleButtonText, { color: colors.primary, fontSize: 20 }]}>Got it!</Text>
             </TouchableOpacity>
-
-            {/* Arrow pointing down to Library tab */}
-            <View style={[styles.explainerArrowContainer, { bottom: -24, left: '50%', marginLeft: -10 }]}>
-              <View style={[styles.explainerArrowLine, { backgroundColor: colors.primary, width: 4, height: 24 }]} />
-              <View style={[styles.explainerArrowHead, {
-                borderLeftWidth: 10,
-                borderRightWidth: 10,
-                borderTopWidth: 15,
-                borderLeftColor: 'transparent',
-                borderRightColor: 'transparent',
-                borderTopColor: colors.primary,
-                position: 'absolute',
-                bottom: -15,
-                left: -8,
-              }]} />
-            </View>
           </View>
         </View>
       </Modal>
@@ -5844,79 +5803,62 @@ const styles = StyleSheet.create({
   // Explainer overlay styles
   explainerOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  explainerBubble: {
-    position: 'absolute',
-    borderRadius: 20,
-    padding: 24,
+  explainerBubbleCentered: {
+    borderRadius: 24,
+    padding: 40,
+    paddingTop: 60,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 12,
-    maxWidth: 400,
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 15,
+    width: '85%',
+    maxWidth: 500,
+    alignItems: 'center',
   },
   explainerBubbleCloseButton: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    top: 16,
+    right: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
   },
-  explainerBubbleHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    gap: 12,
-  },
-  explainerBubbleIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  explainerBubbleTitle: {
-    fontSize: 22,
-    fontWeight: '700' as const,
-    flex: 1,
-  },
-  explainerBubbleText: {
-    fontSize: 16,
-    lineHeight: 24,
+  explainerNumber: {
+    fontSize: 120,
+    fontWeight: '900' as const,
     marginBottom: 20,
+    textAlign: 'center',
+  },
+  explainerTextLarge: {
+    fontSize: 24,
+    lineHeight: 36,
+    marginBottom: 32,
+    textAlign: 'center',
+    fontWeight: '500' as const,
   },
   explainerBubbleButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    borderRadius: 14,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+    minWidth: 140,
   },
   explainerBubbleButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700' as const,
-  },
-  explainerArrowContainer: {
-    position: 'absolute',
-  },
-  explainerArrowLine: {
-    borderRadius: 2,
-  },
-  explainerArrowHead: {
-    width: 0,
-    height: 0,
   },
 });
