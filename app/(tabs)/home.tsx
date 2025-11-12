@@ -102,7 +102,7 @@ export default function HomeScreen() {
   const [mainView, setMainView] = useState<MainView>('forYou');
   const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
   const [userPersonalList, setUserPersonalList] = useState<UserList | null>(null);
-  const [showUserListExplainers, setShowUserListExplainers] = useState(true);
+  const [activeExplainerStep, setActiveExplainerStep] = useState<0 | 1 | 2>(0); // 0 = none, 1 = add button explainer, 2 = library explainer
   const [userListHadItems, setUserListHadItems] = useState(false);
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
@@ -239,7 +239,7 @@ export default function HomeScreen() {
         if (!personalList && userName !== 'My List') {
           console.log('[Home] Personal list not found, creating it...');
           try {
-            const newListId = await createList(clerkUser.id, userName, 'Your personal curated list');
+            const newListId = await createList(clerkUser.id, userName, 'Your personal collection.');
             // Reload lists to get the newly created one
             const updatedLists = await getUserLists(clerkUser.id);
             personalList = updatedLists.find(list => list.id === newListId);
@@ -278,7 +278,7 @@ export default function HomeScreen() {
           const shouldShowExplainers = (!hasEntries && !explainerWasDismissed) ||
                                        (!hasEntries && listHadItems && explainerWasDismissed);
 
-          setShowUserListExplainers(shouldShowExplainers);
+          setActiveExplainerStep(shouldShowExplainers ? 1 : 0); // Start with first explainer if should show
           setUserListHadItems(listHadItems);
 
           // If personal list has entries, default to it. Otherwise, default to aligned.
@@ -1075,65 +1075,7 @@ export default function HomeScreen() {
       }
 
       if (!userPersonalList.entries || userPersonalList.entries.length === 0) {
-        if (showUserListExplainers) {
-          return (
-            <View style={styles.section}>
-              <View style={styles.explainersContainer}>
-                {/* Explainer 1: Add Button */}
-                <View style={[styles.explainerCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                  <TouchableOpacity
-                    style={styles.explainerCloseButton}
-                    onPress={async () => {
-                      setShowUserListExplainers(false);
-                      if (clerkUser?.id) {
-                        await AsyncStorage.setItem(`userListExplainerDismissed_${clerkUser.id}`, 'true');
-                      }
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <X size={20} color={colors.textSecondary} strokeWidth={2} />
-                  </TouchableOpacity>
-                  <View style={styles.explainerHeader}>
-                    <View style={[styles.explainerIconContainer, { backgroundColor: colors.primary + '20' }]}>
-                      <Plus size={24} color={colors.primary} strokeWidth={2} />
-                    </View>
-                    <Text style={[styles.explainerTitle, { color: colors.text }]}>Add to Your List</Text>
-                  </View>
-                  <Text style={[styles.explainerText, { color: colors.textSecondary }]}>
-                    Tap the <Text style={{ fontWeight: '600', color: colors.primary }}>+ button</Text> when viewing brands or businesses to add them to your personal list. Build your own curated collection of values-aligned companies!
-                  </Text>
-                </View>
-
-                {/* Explainer 2: My Library Tab */}
-                <View style={[styles.explainerCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                  <TouchableOpacity
-                    style={styles.explainerCloseButton}
-                    onPress={async () => {
-                      setShowUserListExplainers(false);
-                      if (clerkUser?.id) {
-                        await AsyncStorage.setItem(`userListExplainerDismissed_${clerkUser.id}`, 'true');
-                      }
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <X size={20} color={colors.textSecondary} strokeWidth={2} />
-                  </TouchableOpacity>
-                  <View style={styles.explainerHeader}>
-                    <View style={[styles.explainerIconContainer, { backgroundColor: colors.primary + '20' }]}>
-                      <List size={24} color={colors.primary} strokeWidth={2} />
-                    </View>
-                    <Text style={[styles.explainerTitle, { color: colors.text }]}>Create More Lists</Text>
-                  </View>
-                  <Text style={[styles.explainerText, { color: colors.textSecondary }]}>
-                    Head to the <Text style={{ fontWeight: '600', color: colors.primary }}>My Library</Text> tab to create additional custom lists. Perfect for organizing gifting ideas for friends and family, or tracking companies by specific values. For example, create a "Gift Ideas for Mom" list with brands she would love!
-                  </Text>
-                </View>
-              </View>
-            </View>
-          );
-        }
-
-        // Show simple empty state if explainers are dismissed
+        // Show simple empty state
         return (
           <View style={styles.section}>
             <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
@@ -1147,6 +1089,22 @@ export default function HomeScreen() {
 
       return (
         <View style={styles.section}>
+          {/* Add button header */}
+          <View style={[styles.userListHeaderRow, { marginBottom: 16 }]}>
+            <Text style={[styles.userListSubheading, { color: colors.textSecondary }]}>
+              {userPersonalList.description || 'Your personal collection.'}
+            </Text>
+            <TouchableOpacity
+              style={[styles.addItemButton, { backgroundColor: colors.primary }]}
+              onPress={() => {
+                setSelectedList(userPersonalList);
+                setShowAddItemModal(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <Plus size={20} color={colors.white} strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
           <View style={styles.brandsContainer}>
             {userPersonalList.entries.map((entry, index) => (
               <View key={entry.id || index} style={styles.forYouItemRow}>
@@ -4034,6 +3992,160 @@ export default function HomeScreen() {
           </Pressable>
         </View>
       </Modal>
+
+      {/* Explainer Overlay Modals */}
+      {/* First Explainer: Add Button */}
+      <Modal
+        visible={activeExplainerStep === 1}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={async () => {
+          setActiveExplainerStep(2); // Move to next explainer
+        }}
+      >
+        <View style={styles.explainerOverlay}>
+          <TouchableWithoutFeedback
+            onPress={async () => {
+              setActiveExplainerStep(2); // Move to next explainer
+            }}
+          >
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+
+          {/* Explainer Bubble - positioned to point to add button area */}
+          <View style={[styles.explainerBubble, { backgroundColor: colors.primary, top: '25%', right: 20, left: 20 }]}>
+            <TouchableOpacity
+              style={styles.explainerBubbleCloseButton}
+              onPress={async () => {
+                setActiveExplainerStep(2); // Move to next explainer
+              }}
+              activeOpacity={0.7}
+            >
+              <X size={20} color={colors.white} strokeWidth={2.5} />
+            </TouchableOpacity>
+
+            <View style={styles.explainerBubbleHeader}>
+              <View style={[styles.explainerBubbleIconContainer, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
+                <Plus size={28} color={colors.white} strokeWidth={2.5} />
+              </View>
+              <Text style={[styles.explainerBubbleTitle, { color: colors.white }]}>Add to Your List</Text>
+            </View>
+
+            <Text style={[styles.explainerBubbleText, { color: 'rgba(255, 255, 255, 0.95)' }]}>
+              Tap the <Text style={{ fontWeight: '700' }}>+ button</Text> when viewing brands or businesses to add them to your personal list. Build your own curated collection of values-aligned companies!
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.explainerBubbleButton, { backgroundColor: colors.white }]}
+              onPress={async () => {
+                setActiveExplainerStep(2); // Move to next explainer
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.explainerBubbleButtonText, { color: colors.primary }]}>Next</Text>
+            </TouchableOpacity>
+
+            {/* Artistic Arrow pointing down-right */}
+            <View style={[styles.explainerArrowContainer, { top: -20, right: 60 }]}>
+              <View style={[styles.explainerArrowLine, { backgroundColor: colors.primary, transform: [{ rotate: '-45deg' }], width: 40, height: 4 }]} />
+              <View style={[styles.explainerArrowHead, {
+                borderLeftWidth: 10,
+                borderRightWidth: 10,
+                borderBottomWidth: 15,
+                borderLeftColor: 'transparent',
+                borderRightColor: 'transparent',
+                borderBottomColor: colors.primary,
+                transform: [{ rotate: '45deg' }],
+                position: 'absolute',
+                top: -8,
+                right: -6,
+              }]} />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Second Explainer: My Library Tab */}
+      <Modal
+        visible={activeExplainerStep === 2}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={async () => {
+          setActiveExplainerStep(0);
+          if (clerkUser?.id) {
+            await AsyncStorage.setItem(`userListExplainerDismissed_${clerkUser.id}`, 'true');
+          }
+        }}
+      >
+        <View style={styles.explainerOverlay}>
+          <TouchableWithoutFeedback
+            onPress={async () => {
+              setActiveExplainerStep(0);
+              if (clerkUser?.id) {
+                await AsyncStorage.setItem(`userListExplainerDismissed_${clerkUser.id}`, 'true');
+              }
+            }}
+          >
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+
+          {/* Explainer Bubble - positioned to point to My Library tab */}
+          <View style={[styles.explainerBubble, { backgroundColor: colors.primary, bottom: 100, right: 20, left: 20 }]}>
+            <TouchableOpacity
+              style={styles.explainerBubbleCloseButton}
+              onPress={async () => {
+                setActiveExplainerStep(0);
+                if (clerkUser?.id) {
+                  await AsyncStorage.setItem(`userListExplainerDismissed_${clerkUser.id}`, 'true');
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <X size={20} color={colors.white} strokeWidth={2.5} />
+            </TouchableOpacity>
+
+            <View style={styles.explainerBubbleHeader}>
+              <View style={[styles.explainerBubbleIconContainer, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
+                <List size={28} color={colors.white} strokeWidth={2.5} />
+              </View>
+              <Text style={[styles.explainerBubbleTitle, { color: colors.white }]}>Create More Lists</Text>
+            </View>
+
+            <Text style={[styles.explainerBubbleText, { color: 'rgba(255, 255, 255, 0.95)' }]}>
+              Head to the <Text style={{ fontWeight: '700' }}>My Library</Text> tab below to create additional custom lists. Perfect for organizing gifting ideas for friends and family! For example, create a "Gift Ideas for Mom" list with brands she would love.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.explainerBubbleButton, { backgroundColor: colors.white }]}
+              onPress={async () => {
+                setActiveExplainerStep(0);
+                if (clerkUser?.id) {
+                  await AsyncStorage.setItem(`userListExplainerDismissed_${clerkUser.id}`, 'true');
+                }
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.explainerBubbleButtonText, { color: colors.primary }]}>Got it!</Text>
+            </TouchableOpacity>
+
+            {/* Artistic Arrow pointing down */}
+            <View style={[styles.explainerArrowContainer, { bottom: -30, left: '50%', marginLeft: -10 }]}>
+              <View style={[styles.explainerArrowLine, { backgroundColor: colors.primary, width: 4, height: 30 }]} />
+              <View style={[styles.explainerArrowHead, {
+                borderLeftWidth: 10,
+                borderRightWidth: 10,
+                borderTopWidth: 15,
+                borderLeftColor: 'transparent',
+                borderRightColor: 'transparent',
+                borderTopColor: colors.primary,
+                position: 'absolute',
+                bottom: -15,
+                left: -8,
+              }]} />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -5300,6 +5412,18 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  userListHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  userListSubheading: {
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+    marginRight: 12,
+  },
   listOptionsDropdown: {
     position: 'absolute',
     top: 42,
@@ -5647,5 +5771,83 @@ const styles = StyleSheet.create({
   searchResultSubtext: {
     fontSize: 12,
     fontWeight: '400' as const,
+  },
+  // Explainer overlay styles
+  explainerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  explainerBubble: {
+    position: 'absolute',
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 12,
+    maxWidth: 400,
+  },
+  explainerBubbleCloseButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  explainerBubbleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  explainerBubbleIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  explainerBubbleTitle: {
+    fontSize: 22,
+    fontWeight: '700' as const,
+    flex: 1,
+  },
+  explainerBubbleText: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 20,
+  },
+  explainerBubbleButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  explainerBubbleButtonText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  explainerArrowContainer: {
+    position: 'absolute',
+  },
+  explainerArrowLine: {
+    borderRadius: 2,
+  },
+  explainerArrowHead: {
+    width: 0,
+    height: 0,
   },
 });

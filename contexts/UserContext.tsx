@@ -263,7 +263,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
           const userName = fullNameFromClerk || firstNameLastName || firstName || 'My List';
 
           console.log(`[UserContext] Creating personal list: "${userName}"`);
-          await createList(clerkUser.id, userName, 'Your personal curated list');
+          await createList(clerkUser.id, userName, 'Your personal collection.');
           console.log('[UserContext] ✅ Personal list created successfully');
         } catch (listError) {
           console.error('[UserContext] ❌ Failed to create personal list:', listError);
