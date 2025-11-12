@@ -83,7 +83,7 @@ import { calculateDistance, formatDistance } from '@/lib/distance';
 import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 import BusinessMapView from '@/components/BusinessMapView';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
-import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList, updateListMetadata } from '@/services/firebase/listService';
+import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList, updateListMetadata, reorderListEntries } from '@/services/firebase/listService';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 
