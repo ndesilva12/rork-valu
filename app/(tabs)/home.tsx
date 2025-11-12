@@ -2719,55 +2719,34 @@ export default function HomeScreen() {
                 <>
                   {/* 1. User Name List - Always first */}
                   {userNameList && (
-                    <View
+                    <TouchableOpacity
                       key={userNameList.id}
-                      style={[
-                        styles.listCardWrapper,
-                        activeCardOptionsMenu === userNameList.id && !isLibraryRearrangeMode && { zIndex: 1000 }
-                      ]}
+                      style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                      onPress={() => handleOpenList(userNameList)}
+                      activeOpacity={0.7}
                     >
-                      <TouchableOpacity
-                        style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                        onPress={() => !isLibraryRearrangeMode && handleOpenList(userNameList)}
-                        activeOpacity={0.7}
-                        disabled={isLibraryRearrangeMode}
-                      >
-                        <View style={styles.listCardContentRow}>
-                          <View style={styles.listCardContent}>
-                            <View style={styles.listCardHeader}>
-                              <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
-                                <List size={20} color={colors.white} strokeWidth={2} />
-                              </View>
-                              <View style={styles.listCardInfo}>
-                                <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
-                                  {userNameList.name}
-                                </Text>
-                                <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
-                                  {userNameList.entries.length} {userNameList.entries.length === 1 ? 'item' : 'items'}
-                                </Text>
-                                {userNameList.description && (
-                                  <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                                    {userNameList.description}
-                                  </Text>
-                                )}
-                              </View>
-                            </View>
+                      <View style={styles.listCardContent}>
+                        <View style={styles.listCardHeader}>
+                          <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
+                            <List size={20} color={colors.white} strokeWidth={2} />
                           </View>
-                          {!isLibraryRearrangeMode && (
-                            <TouchableOpacity
-                              onPress={(e) => {
-                                e.stopPropagation();
-                                setActiveCardOptionsMenu(activeCardOptionsMenu === userNameList.id ? null : userNameList.id);
-                              }}
-                              activeOpacity={0.7}
-                              style={styles.listCardOptionsButton}
-                            >
-                              <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                            </TouchableOpacity>
-                          )}
+                          <View style={styles.listCardInfo}>
+                            <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                              {userNameList.name}
+                            </Text>
+                            <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                              {userNameList.entries.length} {userNameList.entries.length === 1 ? 'item' : 'items'}
+                            </Text>
+                            {userNameList.description && (
+                              <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                                {userNameList.description}
+                              </Text>
+                            )}
+                          </View>
+                          <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
                         </View>
-                      </TouchableOpacity>
-                    </View>
+                      </View>
+                    </TouchableOpacity>
                   )}
 
                   {/* 2. Browse List - Always second */}
@@ -2778,15 +2757,15 @@ export default function HomeScreen() {
                   >
                     <View style={styles.listCardContent}>
                       <View style={styles.listCardHeader}>
-                        <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
-                          <FolderOpen size={20} color={colors.primary} strokeWidth={2} />
+                        <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
+                          <FolderOpen size={20} color={colors.white} strokeWidth={2} />
                         </View>
                         <View style={styles.listCardInfo}>
                           <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
                             Browse
                           </Text>
-                          <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
-                            All categories • {allSupport.length} aligned brands
+                          <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                            Browse your aligned brands by categories based on your current value selections.
                           </Text>
                         </View>
                         <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
