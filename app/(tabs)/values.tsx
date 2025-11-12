@@ -15,12 +15,11 @@ import {
   TextInput,
 } from 'react-native';
 import { ChevronRight, ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Plus, Edit3, X, List } from 'lucide-react-native';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
-import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { CauseCategory, Cause } from '@/types';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
 import { getUserLists, addEntryToList, createList } from '@/services/firebase/listService';
@@ -48,7 +47,7 @@ const CATEGORY_LABELS: Record<CauseCategory, string> = {
 export default function ValuesScreen() {
   const router = useRouter();
   const { profile, isDarkMode, removeCauses, toggleCauseType, clerkUser } = useUser();
-  const { brands, valuesMatrix } = useData();
+  const { brands, valuesMatrix, values: firebaseValues } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
   const [expandedCategories, setExpandedCategories] = useState<Set<CauseCategory>>(new Set());
   const [editingValueId, setEditingValueId] = useState<string | null>(null);
@@ -63,6 +62,32 @@ export default function ValuesScreen() {
   const [newListName, setNewListName] = useState('');
   const [newListDescription, setNewListDescription] = useState('');
 
+  // Transform Firebase values into the format expected by the UI
+  const availableValues = useMemo(() => {
+    const valuesByCategory: Record<CauseCategory, any[]> = {
+      social_issue: [],
+      religion: [],
+      ideology: [],
+      corporation: [],
+      nation: [],
+      organization: [],
+      person: [],
+    };
+
+    firebaseValues.forEach(value => {
+      const category = (value.category || 'social_issue') as CauseCategory;
+      if (valuesByCategory[category]) {
+        valuesByCategory[category].push({
+          id: value.id,
+          name: value.name,
+          category: category,
+        });
+      }
+    });
+
+    return valuesByCategory;
+  }, [firebaseValues]);
+
   const supportCauses = (profile.causes || [])
     .filter(c => c.type === 'support')
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -74,7 +99,7 @@ export default function ValuesScreen() {
   const selectedValueIds = new Set((profile.causes || []).map(c => c.id));
 
   // Get unselected values by category
-  const unselectedValuesByCategory: Record<CauseCategory, typeof AVAILABLE_VALUES[keyof typeof AVAILABLE_VALUES]> = {
+  const unselectedValuesByCategory: Record<CauseCategory, any[]> = {
     social_issue: [],
     religion: [],
     ideology: [],
@@ -84,9 +109,9 @@ export default function ValuesScreen() {
     person: [],
   };
 
-  // Populate unselected values
+  // Populate unselected values from Firebase
   (['ideology', 'person', 'social_issue', 'religion', 'nation', 'organization'] as CauseCategory[]).forEach(category => {
-    const values = AVAILABLE_VALUES[category] || [];
+    const values = availableValues[category] || [];
     unselectedValuesByCategory[category] = values.filter(v => !selectedValueIds.has(v.id));
   });
 

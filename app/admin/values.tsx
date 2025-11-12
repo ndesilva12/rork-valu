@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 
 interface ValueData {
@@ -125,6 +125,48 @@ export default function ValuesManagement() {
     setEditingValue(null);
   };
 
+  // Helper function to ensure a brand exists in the brands collection
+  const ensureBrandExists = async (brandName: string) => {
+    try {
+      // Create a slug-like ID from the brand name
+      const brandId = brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+      // Check if brand already exists
+      const brandRef = doc(db, 'brands', brandId);
+      const brandDoc = await getDoc(brandRef);
+
+      if (!brandDoc.exists()) {
+        // Create a minimal brand document
+        await setDoc(brandRef, {
+          id: brandId,
+          name: brandName,
+          category: 'Uncategorized',
+          description: 'Auto-created from value alignment. Please update with full details.',
+          alignmentScore: 0,
+          keyReasons: [],
+          relatedValues: [],
+          valueAlignments: [],
+          affiliates: [],
+          partnerships: [],
+          ownership: [],
+          moneyFlow: {
+            company: brandName,
+            shareholders: [],
+            overallAlignment: 0,
+          },
+        });
+        console.log(`✅ Created brand: ${brandName} (${brandId})`);
+        return brandId;
+      } else {
+        console.log(`✓ Brand already exists: ${brandName} (${brandId})`);
+        return brandId;
+      }
+    } catch (error) {
+      console.error(`Error ensuring brand exists for ${brandName}:`, error);
+      throw error;
+    }
+  };
+
   const handleSave = async () => {
     if (!formId.trim() || !formName.trim()) {
       Alert.alert('Error', 'ID and Name are required');
@@ -143,6 +185,18 @@ export default function ValuesManagement() {
         .map(brand => brand.trim())
         .filter(brand => brand.length > 0);
 
+      // Ensure all brands exist in the brands collection
+      console.log('🔄 Ensuring all brands exist...');
+      const allBrands = [...aligned, ...unaligned];
+      let createdCount = 0;
+
+      for (const brandName of allBrands) {
+        const brandId = await ensureBrandExists(brandName);
+        if (brandId) {
+          createdCount++;
+        }
+      }
+
       const valueData: any = {
         id: formId.trim(),
         name: formName.trim(),
@@ -157,9 +211,13 @@ export default function ValuesManagement() {
       const valueRef = doc(db, 'values', valueData.id);
       await setDoc(valueRef, valueData);
 
+      const brandMessage = allBrands.length > 0
+        ? `\n\nChecked ${allBrands.length} brands. Any new brands have been created with minimal details - please update them via the Brands admin panel.`
+        : '';
+
       Alert.alert(
         'Success',
-        `Value "${valueData.name}" ${editingValue ? 'updated' : 'created'} successfully`
+        `Value "${valueData.name}" ${editingValue ? 'updated' : 'created'} successfully!${brandMessage}`
       );
 
       closeModal();
@@ -204,6 +262,12 @@ export default function ValuesManagement() {
           const aligned = valueData.aligned ? valueData.aligned.split(';').map((b: string) => b.trim()).filter((b: string) => b) : [];
           const unaligned = valueData.unaligned ? valueData.unaligned.split(';').map((b: string) => b.trim()).filter((b: string) => b) : [];
 
+          // Ensure all brands exist in the brands collection
+          const allBrands = [...aligned, ...unaligned];
+          for (const brandName of allBrands) {
+            await ensureBrandExists(brandName);
+          }
+
           const valueRef = doc(db, 'values', valueData.id);
           await setDoc(valueRef, {
             name: valueData.name,
@@ -221,7 +285,7 @@ export default function ValuesManagement() {
 
       Alert.alert(
         'Bulk Create Complete',
-        `Successfully created ${successCount} values. ${errorCount} errors.`
+        `Successfully created ${successCount} values. ${errorCount} errors.\n\nAll brands have been checked and created if needed.`
       );
 
       setShowBulkModal(false);
