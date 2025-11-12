@@ -69,6 +69,7 @@ import {
   Share,
 } from 'react-native';
 import { Image } from 'expo-image';
+import * as Clipboard from 'expo-clipboard';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -1023,7 +1024,7 @@ export default function HomeScreen() {
               styles.subsectionTabText,
               { color: forYouSubsection === 'userList' ? colors.text : colors.textSecondary }
             ]}>
-              {profile?.userDetails?.name || (clerkUser?.unsafeMetadata?.fullName as string) || (clerkUser?.firstName && clerkUser?.lastName ? `${clerkUser.firstName} ${clerkUser.lastName}` : clerkUser?.firstName) || 'My List'}
+              My List
             </Text>
             {forYouSubsection === 'userList' && (
               <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
@@ -1184,22 +1185,88 @@ export default function HomeScreen() {
         // Show empty state with add button
         return (
           <View style={styles.section}>
-            {/* Add button header */}
-            <View style={[styles.userListHeaderRow, { marginBottom: 16 }]}>
-              <Text style={[styles.userListSubheading, { color: colors.textSecondary }]}>
-                {userPersonalList.description || 'Your personal collection.'}
-              </Text>
-              <TouchableOpacity
-                style={[styles.addItemButton, { backgroundColor: colors.primary }]}
-                onPress={() => {
-                  setSelectedList(userPersonalList);
-                  setShowAddItemModal(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <Plus size={20} color={colors.white} strokeWidth={2.5} />
-              </TouchableOpacity>
+            <View style={styles.listDetailHeader}>
+              {/* Title row with 3-dot menu and Add button */}
+              <View style={styles.listDetailTitleRow}>
+                <View style={styles.listDetailTitleContainer}>
+                  <Text style={[styles.listDetailTitle, { color: colors.text }]}>{userPersonalList.name}</Text>
+                  <TouchableOpacity
+                    style={styles.listOptionsButton}
+                    onPress={() => setShowEditDropdown(!showEditDropdown)}
+                    activeOpacity={0.7}
+                  >
+                    <MoreVertical size={24} color={colors.text} strokeWidth={2} />
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.addItemButton, { backgroundColor: colors.primary }]}
+                  onPress={() => {
+                    setSelectedList(userPersonalList);
+                    setShowAddItemModal(true);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Plus size={20} color={colors.white} strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Created by text */}
+              {userPersonalList.creatorName && (
+                <Text style={[styles.listCreatedBy, { color: colors.textSecondary }]}>
+                  created by {userPersonalList.creatorName}
+                </Text>
+              )}
+
+              {/* Description below title */}
+              {userPersonalList.description && (
+                <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
+                  {userPersonalList.description}
+                </Text>
+              )}
             </View>
+
+            {/* Three dot options dropdown for For You view */}
+            {showEditDropdown && (() => {
+              const fullNameFromFirebase = profile?.userDetails?.name;
+              const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
+              const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
+                ? `${clerkUser.firstName} ${clerkUser.lastName}`
+                : '';
+              const firstName = clerkUser?.firstName;
+              const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || '';
+              const isUserNameList = userPersonalList.name === userName;
+
+              return (
+                <View style={[styles.listEditDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                  <TouchableOpacity
+                    style={styles.listOptionItem}
+                    onPress={() => {
+                      setShowEditDropdown(false);
+                      setDescriptionText(userPersonalList.description || '');
+                      setShowDescriptionModal(true);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Edit size={18} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+                  </TouchableOpacity>
+                  <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                  <TouchableOpacity
+                    style={styles.listOptionItem}
+                    onPress={() => {
+                      setShowEditDropdown(false);
+                      handleShareList(userPersonalList);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Share2 size={18} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })()}
+
             <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
               <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
                 Your personal list is empty. Tap the + button above to add brands or businesses!
@@ -1211,22 +1278,87 @@ export default function HomeScreen() {
 
       return (
         <View style={styles.section}>
-          {/* Add button header */}
-          <View style={[styles.userListHeaderRow, { marginBottom: 16 }]}>
-            <Text style={[styles.userListSubheading, { color: colors.textSecondary }]}>
-              {userPersonalList.description || 'Your personal collection.'}
-            </Text>
-            <TouchableOpacity
-              style={[styles.addItemButton, { backgroundColor: colors.primary }]}
-              onPress={() => {
-                setSelectedList(userPersonalList);
-                setShowAddItemModal(true);
-              }}
-              activeOpacity={0.7}
-            >
-              <Plus size={20} color={colors.white} strokeWidth={2.5} />
-            </TouchableOpacity>
+          <View style={styles.listDetailHeader}>
+            {/* Title row with 3-dot menu and Add button */}
+            <View style={styles.listDetailTitleRow}>
+              <View style={styles.listDetailTitleContainer}>
+                <Text style={[styles.listDetailTitle, { color: colors.text }]}>{userPersonalList.name}</Text>
+                <TouchableOpacity
+                  style={styles.listOptionsButton}
+                  onPress={() => setShowEditDropdown(!showEditDropdown)}
+                  activeOpacity={0.7}
+                >
+                  <MoreVertical size={24} color={colors.text} strokeWidth={2} />
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.addItemButton, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  setSelectedList(userPersonalList);
+                  setShowAddItemModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Plus size={20} color={colors.white} strokeWidth={2.5} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Created by text */}
+            {userPersonalList.creatorName && (
+              <Text style={[styles.listCreatedBy, { color: colors.textSecondary }]}>
+                created by {userPersonalList.creatorName}
+              </Text>
+            )}
+
+            {/* Description below title */}
+            {userPersonalList.description && (
+              <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
+                {userPersonalList.description}
+              </Text>
+            )}
           </View>
+
+          {/* Three dot options dropdown for For You view */}
+          {showEditDropdown && (() => {
+            const fullNameFromFirebase = profile?.userDetails?.name;
+            const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
+            const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
+              ? `${clerkUser.firstName} ${clerkUser.lastName}`
+              : '';
+            const firstName = clerkUser?.firstName;
+            const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || '';
+            const isUserNameList = userPersonalList.name === userName;
+
+            return (
+              <View style={[styles.listEditDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
+                    setShowEditDropdown(false);
+                    setDescriptionText(userPersonalList.description || '');
+                    setShowDescriptionModal(true);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Edit size={18} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+                </TouchableOpacity>
+                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
+                    setShowEditDropdown(false);
+                    handleShareList(userPersonalList);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Share2 size={18} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })()}
           <View style={styles.brandsContainer}>
             {userPersonalList.entries.map((entry, index) => {
               // Render brand entries
@@ -1422,23 +1554,78 @@ export default function HomeScreen() {
   };
 
   const handleShareList = async (list: UserList) => {
-    try {
-      const shareMessage = `Check out my list "${list.name}" on Upright Money!\n\n` +
-        (list.creatorName ? `Created by: ${list.creatorName}\n` : '') +
-        (list.description ? `${list.description}\n\n` : '') +
-        `${list.entries.length} ${list.entries.length === 1 ? 'item' : 'items'}`;
+    const shareMessage = `Check out my list "${list.name}" on Upright Money!\n\n` +
+      (list.creatorName ? `Created by: ${list.creatorName}\n` : '') +
+      (list.description ? `${list.description}\n\n` : '') +
+      `${list.entries.length} ${list.entries.length === 1 ? 'item' : 'items'}`;
 
-      await Share.share({
-        message: shareMessage,
-        title: list.name,
-      });
-    } catch (error) {
-      console.error('[Home] Error sharing list:', error);
-      if (Platform.OS === 'web') {
-        window.alert('Could not share list. Please try again.');
+    // Generate shareable link (you can customize this URL)
+    const shareLink = `https://upright.money/list/${list.id}`;
+    const shareMessageWithLink = `${shareMessage}\n\n${shareLink}`;
+
+    // Show action sheet with options
+    if (Platform.OS === 'web') {
+      // For web, show alert with options
+      const action = window.confirm('Choose an option:\n\nOK = Share\nCancel = Copy Link');
+      if (action) {
+        // Share
+        try {
+          await Share.share({
+            message: shareMessageWithLink,
+            title: list.name,
+          });
+        } catch (error) {
+          console.error('[Home] Error sharing list:', error);
+          window.alert('Could not share list. Please try again.');
+        }
       } else {
-        Alert.alert('Error', 'Could not share list. Please try again.');
+        // Copy link
+        try {
+          await Clipboard.setStringAsync(shareLink);
+          window.alert('Link copied to clipboard!');
+        } catch (error) {
+          console.error('[Home] Error copying link:', error);
+          window.alert('Could not copy link. Please try again.');
+        }
       }
+    } else {
+      // For mobile, show action sheet
+      Alert.alert(
+        'Share List',
+        'Choose how to share this list:',
+        [
+          {
+            text: 'Share',
+            onPress: async () => {
+              try {
+                await Share.share({
+                  message: shareMessageWithLink,
+                  title: list.name,
+                });
+              } catch (error) {
+                console.error('[Home] Error sharing list:', error);
+                Alert.alert('Error', 'Could not share list. Please try again.');
+              }
+            },
+          },
+          {
+            text: 'Copy Link',
+            onPress: async () => {
+              try {
+                await Clipboard.setStringAsync(shareLink);
+                Alert.alert('Success', 'Link copied to clipboard!');
+              } catch (error) {
+                console.error('[Home] Error copying link:', error);
+                Alert.alert('Error', 'Could not copy link. Please try again.');
+              }
+            },
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
     }
   };
 
@@ -2433,21 +2620,21 @@ export default function HomeScreen() {
                 <Share2 size={18} color={colors.text} strokeWidth={2} />
                 <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
               </TouchableOpacity>
+              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  setShowEditDropdown(false);
+                  setDescriptionText(list.description || '');
+                  setShowDescriptionModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Edit size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+              </TouchableOpacity>
               {!isUserNameList && (
                 <>
-                  <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                  <TouchableOpacity
-                    style={styles.listOptionItem}
-                    onPress={() => {
-                      setShowEditDropdown(false);
-                      setDescriptionText(list.description || '');
-                      setShowDescriptionModal(true);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Edit size={18} color={colors.text} strokeWidth={2} />
-                    <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
-                  </TouchableOpacity>
                   <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
                   <TouchableOpacity
                     style={styles.listOptionItem}
