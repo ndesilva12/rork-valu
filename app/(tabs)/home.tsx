@@ -69,7 +69,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 
 type MainView = 'forYou' | 'myLibrary' | 'local';
-type ForYouSubsection = 'aligned' | 'unaligned' | 'news';
+type ForYouSubsection = 'userList' | 'aligned' | 'unaligned';
 type LocalDistanceOption = 1 | 5 | 10 | 50 | 100 | null;
 
 type FolderCategory = {

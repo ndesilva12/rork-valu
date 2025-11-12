@@ -15,6 +15,7 @@ export default function SignUpScreen() {
   const [emailAddress, setEmailAddress] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
+  const [fullName, setFullName] = React.useState('');
   const [pendingVerification, setPendingVerification] = React.useState(false);
   const [code, setCode] = React.useState('');
   const [error, setError] = React.useState('');
@@ -34,6 +35,7 @@ export default function SignUpScreen() {
     setEmailAddress('');
     setPassword('');
     setConfirmPassword('');
+    setFullName('');
     setCode('');
     setPendingVerification(false);
     setError('');
@@ -56,7 +58,7 @@ export default function SignUpScreen() {
       return;
     }
 
-    if (!emailAddress || !password) {
+    if (!emailAddress || !password || !fullName.trim()) {
       setError('Please fill in all fields');
       return;
     }
@@ -98,12 +100,19 @@ export default function SignUpScreen() {
         throw new Error('Clerk SignUp not initialized');
       }
       
+      const nameParts = fullName.trim().split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
       const result = await signUp.create({
         emailAddress,
         password,
+        firstName,
+        lastName,
         unsafeMetadata: {
           consentGivenAt: new Date().toISOString(),
           consentVersion: '1.0',
+          fullName: fullName.trim(),
         },
       });
 
@@ -341,6 +350,17 @@ export default function SignUpScreen() {
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Sign up to get started</Text>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          <View style={styles.inputContainer}>
+            <Text style={[styles.label, { color: colors.text }]}>Full Name</Text>
+            <TextInput
+              autoCapitalize="words"
+              value={fullName}
+              placeholder="Enter your full name"
+              placeholderTextColor={colors.textSecondary}
+              onChangeText={(name) => setFullName(name)}
+              style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
+            />
+          </View>
           <View style={styles.inputContainer}>
             <Text style={[styles.label, { color: colors.text }]}>Email</Text>
             <TextInput

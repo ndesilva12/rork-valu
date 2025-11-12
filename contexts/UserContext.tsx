@@ -5,6 +5,7 @@ import { Alert } from 'react-native';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { Cause, UserProfile, Charity, AccountType, BusinessInfo, UserDetails } from '@/types';
 import { saveUserProfile, getUserProfile, createUser, updateUserMetadata, aggregateUserTransactions, aggregateBusinessTransactions } from '@/services/firebase/userService';
+import { createList, getUserLists } from '@/services/firebase/listService';
 
 const PROFILE_KEY = '@user_profile';
 const IS_NEW_USER_KEY = '@is_new_user';
@@ -250,6 +251,17 @@ export const [UserProvider, useUser] = createContextHook(() => {
         const isNewUserKey = `${IS_NEW_USER_KEY}_${clerkUser.id}`;
         await AsyncStorage.setItem(isNewUserKey, 'false');
         setIsNewUser(false);
+
+        // Create user's personal list with their name
+        try {
+          const userName = clerkUser.fullName || clerkUser.firstName || 'My List';
+          console.log(`[UserContext] Creating personal list: "${userName}"`);
+          await createList(clerkUser.id, userName, 'Your personal curated list');
+          console.log('[UserContext] ✅ Personal list created successfully');
+        } catch (listError) {
+          console.error('[UserContext] ❌ Failed to create personal list:', listError);
+          // Don't fail onboarding if list creation fails
+        }
       }
     } catch (error) {
       console.error('[UserContext] ❌ Failed to save profile:', error);
