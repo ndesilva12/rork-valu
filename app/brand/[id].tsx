@@ -33,7 +33,7 @@ export default function BrandDetailScreen() {
   console.log('[BrandDetail] Loading brand with ID:', id, 'Name:', name);
 
   // Load brand data from DataContext (client-side, no Edge Function issues)
-  const { getBrandById, getBrandByName, valuesMatrix, isLoading: dataLoading, refresh } = useData();
+  const { getBrandById, getBrandByName, brands: allBrands, valuesMatrix, isLoading: dataLoading, refresh } = useData();
 
   // Force refresh data when component mounts to get latest from Firebase
   useEffect(() => {
@@ -44,9 +44,33 @@ export default function BrandDetailScreen() {
 
   // Try to find brand by ID first, then by name if provided
   let brand = id ? getBrandById(id as string) : undefined;
+
+  // If not found by ID, try various name matching strategies
   if (!brand && name) {
     console.log('[BrandDetail] Brand not found by ID, trying by name:', name);
     brand = getBrandByName(name as string);
+  }
+
+  // If still not found, try to match by slug conversion
+  if (!brand && id && allBrands) {
+    console.log('[BrandDetail] Brand not found by name, trying slug matching');
+    // Convert ID slug to potential brand names and try to match
+    const slugToBrandName = (slug: string) => {
+      return slug
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    };
+    const potentialName = slugToBrandName(id as string);
+    brand = allBrands.find((b) =>
+      b.name.toLowerCase() === potentialName.toLowerCase() ||
+      b.name.toLowerCase().includes(potentialName.toLowerCase()) ||
+      potentialName.toLowerCase().includes(b.name.toLowerCase())
+    );
+
+    if (brand) {
+      console.log('[BrandDetail] ✅ Found brand by slug matching:', brand.name);
+    }
   }
 
   const isLoading = dataLoading;

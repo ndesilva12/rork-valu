@@ -3018,62 +3018,96 @@ export default function HomeScreen() {
         <TouchableWithoutFeedback onPress={() => setActiveCardOptionsMenu(null)}>
           <View style={styles.dropdownModalOverlay}>
             <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  const list = userLists.find(l => l.id === activeCardOptionsMenu);
-                  if (list) {
-                    handleOpenCardRenameModal(list.id, list.name, list.description || '');
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Edit size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
-              </TouchableOpacity>
-              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  setActiveCardOptionsMenu(null);
-                  setIsLibraryRearrangeMode(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
-              </TouchableOpacity>
-              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  const list = userLists.find(l => l.id === activeCardOptionsMenu);
-                  if (list) {
-                    setActiveCardOptionsMenu(null);
-                    setDescriptionText(list.description || '');
-                    setSelectedList(list);
-                    setShowDescriptionModal(true);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Edit size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
-              </TouchableOpacity>
-              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  console.log('[Home] Delete list pressed, ID:', activeCardOptionsMenu);
-                  if (activeCardOptionsMenu) {
-                    handleCardDeleteList(activeCardOptionsMenu);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
-              </TouchableOpacity>
+              {(() => {
+                // Check if this is the User Name list (personal list)
+                const activeList = userLists.find(l => l.id === activeCardOptionsMenu);
+                if (!activeList) return null;
+
+                // Get user's name to identify personal list
+                const fullNameFromFirebase = profile?.userDetails?.name;
+                const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
+                const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
+                  ? `${clerkUser.firstName} ${clerkUser.lastName}`
+                  : '';
+                const firstName = clerkUser?.firstName;
+                const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || '';
+                const isPersonalList = activeList.name === userName;
+
+                // For personal list, only show Description option
+                if (isPersonalList) {
+                  return (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveCardOptionsMenu(null);
+                        setDescriptionText(activeList.description || '');
+                        setSelectedList(activeList);
+                        setShowDescriptionModal(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Edit size={18} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+                    </TouchableOpacity>
+                  );
+                }
+
+                // For other lists, show all options
+                return (
+                  <>
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        handleOpenCardRenameModal(activeList.id, activeList.name, activeList.description || '');
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Edit size={18} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+                    </TouchableOpacity>
+                    <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveCardOptionsMenu(null);
+                        setIsLibraryRearrangeMode(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
+                    </TouchableOpacity>
+                    <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveCardOptionsMenu(null);
+                        setDescriptionText(activeList.description || '');
+                        setSelectedList(activeList);
+                        setShowDescriptionModal(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Edit size={18} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+                    </TouchableOpacity>
+                    <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        console.log('[Home] Delete list pressed, ID:', activeCardOptionsMenu);
+                        if (activeCardOptionsMenu) {
+                          handleCardDeleteList(activeCardOptionsMenu);
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+                    </TouchableOpacity>
+                  </>
+                );
+              })()}
             </View>
           </View>
         </TouchableWithoutFeedback>
