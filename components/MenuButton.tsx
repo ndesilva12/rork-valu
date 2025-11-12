@@ -1,5 +1,5 @@
 import { useRouter, useSegments } from 'expo-router';
-import { Menu, RefreshCw, LogOut, Settings, Search as SearchIcon, User } from 'lucide-react-native';
+import { Menu, RefreshCw, LogOut, Settings, Search as SearchIcon, User, HelpCircle } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   View,
@@ -16,7 +16,11 @@ import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useClerk } from '@clerk/clerk-expo';
 
-export default function MenuButton() {
+interface MenuButtonProps {
+  onShowExplainers?: () => void;
+}
+
+export default function MenuButton({ onShowExplainers }: MenuButtonProps = {}) {
   const router = useRouter();
   const segments = useSegments();
   const { isDarkMode, toggleDarkMode, clerkUser, resetProfile, profile } = useUser();
@@ -87,6 +91,13 @@ export default function MenuButton() {
   const handleNavigateToSettings = () => {
     setIsMenuVisible(false);
     router.push('/settings');
+  };
+
+  const handleShowExplainers = () => {
+    setIsMenuVisible(false);
+    if (onShowExplainers) {
+      onShowExplainers();
+    }
   };
 
   return (
@@ -161,6 +172,20 @@ export default function MenuButton() {
                   <Text style={[styles.menuItemTitle, { color: colors.text }]}>Settings</Text>
                 </View>
               </TouchableOpacity>
+
+              {/* How It Works menu item */}
+              {onShowExplainers && (
+                <TouchableOpacity
+                  style={[styles.menuItem, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
+                  onPress={handleShowExplainers}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <HelpCircle size={26} color={colors.primary} strokeWidth={2} />
+                    <Text style={[styles.menuItemTitle, { color: colors.text }]}>How It Works</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
 
               {/* Search menu item - only for business accounts */}
               {isBusiness && (
