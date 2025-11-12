@@ -22,6 +22,7 @@ import { useUser } from '@/contexts/UserContext';
 import { useState, useEffect } from 'react';
 import { doc, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase';
+import { getUserLists } from '@/services/firebase/listService';
 
 export default function CustomerProfileScreen() {
   const { id: customerId } = useLocalSearchParams<{ id: string }>();
@@ -32,6 +33,7 @@ export default function CustomerProfileScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [customerProfile, setCustomerProfile] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [customerBrandsBusinesses, setCustomerBrandsBusinesses] = useState<{ type: 'brand' | 'business'; name: string; id: string }[]>([]);
   const [stats, setStats] = useState({
     totalSpent: 0,
     totalSaved: 0,
@@ -55,6 +57,37 @@ export default function CustomerProfileScreen() {
 
       if (userSnapshot.exists()) {
         setCustomerProfile(userSnapshot.data());
+      }
+
+      // Load customer's personal list (brands & businesses)
+      try {
+        const lists = await getUserLists(customerId as string);
+        const customerName = userSnapshot.data()?.name || '';
+        const personalList = lists.find(list => list.name === customerName);
+
+        if (personalList && personalList.entries) {
+          const brandsAndBusinesses: { type: 'brand' | 'business'; name: string; id: string }[] = [];
+
+          personalList.entries.forEach((entry: any) => {
+            if (entry.type === 'brand' && entry.brandName && entry.brandId) {
+              brandsAndBusinesses.push({
+                type: 'brand',
+                name: entry.brandName,
+                id: entry.brandId,
+              });
+            } else if (entry.type === 'business' && entry.businessId) {
+              brandsAndBusinesses.push({
+                type: 'business',
+                name: entry.businessName || entry.name || 'Unknown Business',
+                id: entry.businessId,
+              });
+            }
+          });
+
+          setCustomerBrandsBusinesses(brandsAndBusinesses);
+        }
+      } catch (error) {
+        console.error('[CustomerProfile] Error loading customer lists:', error);
       }
 
       // Load transactions for this customer with this business
@@ -281,6 +314,44 @@ export default function CustomerProfileScreen() {
                   </Text>
                 )}
               </View>
+            </View>
+          </View>
+        )}
+
+        {/* Customer Brands & Businesses */}
+        {customerBrandsBusinesses.length > 0 && (
+          <View style={[styles.section, { backgroundColor: colors.backgroundSecondary }]}>
+            <View style={styles.sectionHeader}>
+              <Heart size={20} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Brands & Businesses
+              </Text>
+            </View>
+            <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
+              Brands and businesses in this customer's personal collection
+            </Text>
+            <View style={styles.brandsBusinessesContainer}>
+              {customerBrandsBusinesses.map((item, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.brandBusinessChip,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: item.type === 'brand' ? colors.primary : colors.success,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.brandBusinessName, { color: colors.text }]}>
+                    {item.name}
+                  </Text>
+                  <View style={[styles.typeBadge, { backgroundColor: item.type === 'brand' ? colors.primaryLight + '20' : colors.success + '20' }]}>
+                    <Text style={[styles.typeBadgeText, { color: item.type === 'brand' ? colors.primary : colors.success }]}>
+                      {item.type === 'brand' ? 'Brand' : 'Business'}
+                    </Text>
+                  </View>
+                </View>
+              ))}
             </View>
           </View>
         )}
@@ -545,5 +616,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center' as const,
     paddingVertical: 20,
+  },
+  brandsBusinessesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  brandBusinessChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+  },
+  brandBusinessName: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  typeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  typeBadgeText: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase',
   },
 });

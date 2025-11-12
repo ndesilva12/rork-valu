@@ -18,6 +18,7 @@ import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { aggregateBusinessTransactions } from '@/services/firebase/userService';
+import { getUserLists } from '@/services/firebase/listService';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { PieChart, BarChart } from 'react-native-chart-kit';
@@ -38,6 +39,7 @@ export default function DataScreen() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [customers, setCustomers] = useState<Map<string, any>>(new Map());
   const [customerValues, setCustomerValues] = useState<Map<string, number>>(new Map());
+  const [customerBrandsBusinesses, setCustomerBrandsBusinesses] = useState<Map<string, { type: 'brand' | 'business'; name: string; count: number }>>(new Map());
 
   // Load business data - refreshes when screen comes into focus
   const loadBusinessData = useCallback(async () => {
@@ -143,13 +145,60 @@ export default function DataScreen() {
         }
       }
 
+      // Fetch customer lists to get their brands & businesses
+      const brandsBusinessesMap = new Map<string, { type: 'brand' | 'business'; name: string; count: number }>();
+
+      for (const customerId of uniqueCustomerIds) {
+        try {
+          const lists = await getUserLists(customerId);
+
+          // Find the customer's personal list (User Name list)
+          // The personal list has the same name as the user
+          const customer = customerMap.get(customerId);
+          const customerName = customer?.name || '';
+
+          const personalList = lists.find(list => list.name === customerName);
+
+          if (personalList && personalList.entries) {
+            console.log(`[DataScreen] ✅ Found ${personalList.entries.length} entries in ${customerName}'s personal list`);
+
+            // Aggregate brands and businesses
+            personalList.entries.forEach((entry: any) => {
+              let itemName = '';
+              let itemType: 'brand' | 'business' = 'brand';
+
+              if (entry.type === 'brand' && entry.brandName) {
+                itemName = entry.brandName;
+                itemType = 'brand';
+              } else if (entry.type === 'business' && (entry.businessName || entry.name)) {
+                itemName = entry.businessName || entry.name;
+                itemType = 'business';
+              }
+
+              if (itemName) {
+                const existing = brandsBusinessesMap.get(itemName);
+                if (existing) {
+                  existing.count += 1;
+                } else {
+                  brandsBusinessesMap.set(itemName, { type: itemType, name: itemName, count: 1 });
+                }
+              }
+            });
+          }
+        } catch (error) {
+          console.error(`[DataScreen] ❌ Error fetching lists for customer ${customerId}:`, error);
+        }
+      }
+
       setCustomerValues(valuesMap);
+      setCustomerBrandsBusinesses(brandsBusinessesMap);
       setCustomers(customerMap);
 
       console.log('[DataScreen] 📊 Customer metrics:', {
         totalValues: valuesMap.size,
         totalCategories: categoriesMap.size,
         topValue: Array.from(valuesMap.entries()).sort((a, b) => b[1] - a[1])[0],
+        totalBrandsBusinesses: brandsBusinessesMap.size,
       });
       console.log('[DataScreen] ✅ Business data loaded:', {
         transactions: txns.length,
@@ -242,6 +291,258 @@ export default function DataScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Customer Metrics Section */}
+        <View style={[styles.section, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('customerMetrics')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <BarChart3 size={24} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Customer Metrics</Text>
+            </View>
+            <View style={styles.sectionHeaderRight}>
+              <Text style={[styles.sectionMetric, { color: colors.primary }]}>
+                {customerValues.size} values
+              </Text>
+              {expandedSection === 'customerMetrics' ? (
+                <ChevronDown size={24} color={colors.text} strokeWidth={2} />
+              ) : (
+                <ChevronRight size={24} color={colors.text} strokeWidth={2} />
+              )}
+            </View>
+          </TouchableOpacity>
+
+          {expandedSection === 'customerMetrics' && (
+            <View style={[styles.sectionContent, { borderTopColor: colors.border }]}>
+              {customerValues.size === 0 ? (
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                  No customer data yet. Complete a transaction to see insights!
+                </Text>
+              ) : (
+                <>
+                  {/* Key Metrics Cards */}
+                  <View style={styles.metricsCardsContainer}>
+                    <View style={[styles.metricCard, { backgroundColor: colors.background }]}>
+                      <Users size={20} color={colors.primary} strokeWidth={2} />
+                      <Text style={[styles.metricCardValue, { color: colors.text }]}>
+                        {customers.size}
+                      </Text>
+                      <Text style={[styles.metricCardLabel, { color: colors.textSecondary }]}>
+                        Unique Customers
+                      </Text>
+                    </View>
+
+                    <View style={[styles.metricCard, { backgroundColor: colors.background }]}>
+                      <TrendingUp size={20} color={colors.primary} strokeWidth={2} />
+                      <Text style={[styles.metricCardValue, { color: colors.text }]}>
+                        {customerValues.size}
+                      </Text>
+                      <Text style={[styles.metricCardLabel, { color: colors.textSecondary }]}>
+                        Unique Values
+                      </Text>
+                    </View>
+
+                    <View style={[styles.metricCard, { backgroundColor: colors.background }]}>
+                      <DollarSign size={20} color={colors.primary} strokeWidth={2} />
+                      <Text style={[styles.metricCardValue, { color: colors.text }]}>
+                        ${(businessMetrics.totalRevenue / customers.size || 0).toFixed(0)}
+                      </Text>
+                      <Text style={[styles.metricCardLabel, { color: colors.textSecondary }]}>
+                        Avg Customer Value
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Top Values Pie Chart */}
+                  {customerValues.size > 0 && (
+                    <View style={styles.chartContainer}>
+                      <Text style={[styles.chartTitle, { color: colors.text }]}>
+                        Top Customer Values
+                      </Text>
+                      <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>
+                        Distribution of causes your customers care about
+                      </Text>
+                      <PieChart
+                        data={Array.from(customerValues.entries())
+                          .sort((a, b) => b[1] - a[1])
+                          .slice(0, 8)
+                          .map(([name, count], index) => ({
+                            name: name.length > 20 ? name.substring(0, 17) + '...' : name,
+                            population: count,
+                            color: [
+                              '#FF6384',
+                              '#36A2EB',
+                              '#FFCE56',
+                              '#4BC0C0',
+                              '#9966FF',
+                              '#FF9F40',
+                              '#FF6384',
+                              '#C9CBCF',
+                            ][index],
+                            legendFontColor: isDarkMode ? '#F9FAFB' : '#111827',
+                            legendFontSize: 12,
+                          }))}
+                        width={Dimensions.get('window').width - 64}
+                        height={220}
+                        chartConfig={{
+                          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                          labelColor: (opacity = 1) => (isDarkMode ? `rgba(249, 250, 251, ${opacity})` : `rgba(17, 24, 39, ${opacity})`),
+                        }}
+                        accessor="population"
+                        backgroundColor="transparent"
+                        paddingLeft="15"
+                        absolute
+                      />
+                    </View>
+                  )}
+
+                  {/* Detailed Values List */}
+                  <View style={styles.valuesListContainer}>
+                    <Text style={[styles.chartTitle, { color: colors.text }]}>
+                      All Customer Values
+                    </Text>
+                    <Text style={[styles.chartSubtitle, { color: colors.textSecondary, marginBottom: 12 }]}>
+                      Complete breakdown of what matters to your customers
+                    </Text>
+
+                    {Array.from(customerValues.entries())
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([causeName, count], index) => {
+                        const percentage = ((count / customers.size) * 100).toFixed(1);
+                        const rank = index + 1;
+                        return (
+                          <View
+                            key={causeName}
+                            style={[styles.valueRow, { borderBottomColor: colors.border }]}
+                          >
+                            <View style={styles.valueRowWithRank}>
+                              <View style={[styles.rankBadge, { backgroundColor: rank <= 3 ? colors.primary : colors.backgroundSecondary }]}>
+                                <Text style={[styles.rankText, { color: rank <= 3 ? colors.white : colors.text }]}>
+                                  #{rank}
+                                </Text>
+                              </View>
+                              <View style={styles.valueRowLeft}>
+                                <Text style={[styles.valueName, { color: colors.text }]}>
+                                  {causeName}
+                                </Text>
+                                <View style={styles.valueBar}>
+                                  <View
+                                    style={[
+                                      styles.valueBarFill,
+                                      {
+                                        backgroundColor: colors.primary,
+                                        width: `${percentage}%`
+                                      }
+                                    ]}
+                                  />
+                                </View>
+                              </View>
+                            </View>
+                            <View style={styles.valueRowRight}>
+                              <Text style={[styles.valuePercentage, { color: colors.primary }]}>
+                                {percentage}%
+                              </Text>
+                              <Text style={[styles.valueCount, { color: colors.textSecondary }]}>
+                                {count} {count === 1 ? 'customer' : 'customers'}
+                              </Text>
+                            </View>
+                          </View>
+                        );
+                      })}
+                  </View>
+
+                  {/* All Customer Brands & Businesses */}
+                  {customerBrandsBusinesses.size > 0 && (
+                    <View style={styles.valuesListContainer}>
+                      <Text style={[styles.chartTitle, { color: colors.text }]}>
+                        All Customer Brands & Businesses
+                      </Text>
+                      <Text style={[styles.chartSubtitle, { color: colors.textSecondary, marginBottom: 12 }]}>
+                        Brands and businesses your customers have in their personal collections
+                      </Text>
+
+                      {Array.from(customerBrandsBusinesses.entries())
+                        .sort((a, b) => b[1].count - a[1].count)
+                        .map(([key, item], index) => {
+                          const percentage = ((item.count / customers.size) * 100).toFixed(1);
+                          const rank = index + 1;
+                          return (
+                            <View
+                              key={key}
+                              style={[styles.valueRow, { borderBottomColor: colors.border }]}
+                            >
+                              <View style={styles.valueRowWithRank}>
+                                <View style={[styles.rankBadge, { backgroundColor: rank <= 3 ? colors.primary : colors.backgroundSecondary }]}>
+                                  <Text style={[styles.rankText, { color: rank <= 3 ? colors.white : colors.text }]}>
+                                    #{rank}
+                                  </Text>
+                                </View>
+                                <View style={styles.valueRowLeft}>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                    <Text style={[styles.valueName, { color: colors.text }]}>
+                                      {item.name}
+                                    </Text>
+                                    <View style={[styles.typeBadge, { backgroundColor: item.type === 'brand' ? colors.primaryLight + '20' : colors.success + '20' }]}>
+                                      <Text style={[styles.typeBadgeText, { color: item.type === 'brand' ? colors.primary : colors.success }]}>
+                                        {item.type === 'brand' ? 'Brand' : 'Business'}
+                                      </Text>
+                                    </View>
+                                  </View>
+                                  <View style={styles.valueBar}>
+                                    <View
+                                      style={[
+                                        styles.valueBarFill,
+                                        {
+                                          backgroundColor: colors.primary,
+                                          width: `${percentage}%`
+                                        }
+                                      ]}
+                                    />
+                                  </View>
+                                </View>
+                              </View>
+                              <View style={styles.valueRowRight}>
+                                <Text style={[styles.valuePercentage, { color: colors.primary }]}>
+                                  {percentage}%
+                                </Text>
+                                <Text style={[styles.valueCount, { color: colors.textSecondary }]}>
+                                  {item.count} {item.count === 1 ? 'customer' : 'customers'}
+                                </Text>
+                              </View>
+                            </View>
+                          );
+                        })}
+                    </View>
+                  )}
+
+                  {/* Insights */}
+                  <View style={[styles.insightsContainer, { backgroundColor: colors.background }]}>
+                    <Text style={[styles.chartTitle, { color: colors.text, marginBottom: 12 }]}>
+                      💡 Key Insights
+                    </Text>
+                    {Array.from(customerValues.entries())
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 3)
+                      .map(([name, count], index) => {
+                        const percentage = ((count / customers.size) * 100).toFixed(0);
+                        return (
+                          <View key={name} style={styles.insightRow}>
+                            <Text style={[styles.insightBullet, { color: colors.primary }]}>•</Text>
+                            <Text style={[styles.insightText, { color: colors.text }]}>
+                              <Text style={{ fontWeight: '700' }}>{percentage}%</Text> of your customers care about{' '}
+                              <Text style={{ fontWeight: '700' }}>{name}</Text>
+                            </Text>
+                          </View>
+                        );
+                      })}
+                  </View>
+                </>
+              )}
+            </View>
+          )}
+        </View>
         {/* Customers Section */}
         <View style={[styles.section, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
           <TouchableOpacity
@@ -460,194 +761,6 @@ export default function DataScreen() {
           )}
         </View>
 
-        {/* Customer Metrics Section */}
-        <View style={[styles.section, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-          <TouchableOpacity
-            style={styles.sectionHeader}
-            onPress={() => toggleSection('customerMetrics')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.sectionHeaderLeft}>
-              <BarChart3 size={24} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Customer Metrics</Text>
-            </View>
-            <View style={styles.sectionHeaderRight}>
-              <Text style={[styles.sectionMetric, { color: colors.primary }]}>
-                {customerValues.size} values
-              </Text>
-              {expandedSection === 'customerMetrics' ? (
-                <ChevronDown size={24} color={colors.text} strokeWidth={2} />
-              ) : (
-                <ChevronRight size={24} color={colors.text} strokeWidth={2} />
-              )}
-            </View>
-          </TouchableOpacity>
-
-          {expandedSection === 'customerMetrics' && (
-            <View style={[styles.sectionContent, { borderTopColor: colors.border }]}>
-              {customerValues.size === 0 ? (
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                  No customer data yet. Complete a transaction to see insights!
-                </Text>
-              ) : (
-                <>
-                  {/* Key Metrics Cards */}
-                  <View style={styles.metricsCardsContainer}>
-                    <View style={[styles.metricCard, { backgroundColor: colors.background }]}>
-                      <Users size={20} color={colors.primary} strokeWidth={2} />
-                      <Text style={[styles.metricCardValue, { color: colors.text }]}>
-                        {customers.size}
-                      </Text>
-                      <Text style={[styles.metricCardLabel, { color: colors.textSecondary }]}>
-                        Unique Customers
-                      </Text>
-                    </View>
-
-                    <View style={[styles.metricCard, { backgroundColor: colors.background }]}>
-                      <TrendingUp size={20} color={colors.primary} strokeWidth={2} />
-                      <Text style={[styles.metricCardValue, { color: colors.text }]}>
-                        {customerValues.size}
-                      </Text>
-                      <Text style={[styles.metricCardLabel, { color: colors.textSecondary }]}>
-                        Unique Values
-                      </Text>
-                    </View>
-
-                    <View style={[styles.metricCard, { backgroundColor: colors.background }]}>
-                      <DollarSign size={20} color={colors.primary} strokeWidth={2} />
-                      <Text style={[styles.metricCardValue, { color: colors.text }]}>
-                        ${(businessMetrics.totalRevenue / customers.size || 0).toFixed(0)}
-                      </Text>
-                      <Text style={[styles.metricCardLabel, { color: colors.textSecondary }]}>
-                        Avg Customer Value
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Top Values Pie Chart */}
-                  {customerValues.size > 0 && (
-                    <View style={styles.chartContainer}>
-                      <Text style={[styles.chartTitle, { color: colors.text }]}>
-                        Top Customer Values
-                      </Text>
-                      <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>
-                        Distribution of causes your customers care about
-                      </Text>
-                      <PieChart
-                        data={Array.from(customerValues.entries())
-                          .sort((a, b) => b[1] - a[1])
-                          .slice(0, 8)
-                          .map(([name, count], index) => ({
-                            name: name.length > 20 ? name.substring(0, 17) + '...' : name,
-                            population: count,
-                            color: [
-                              '#FF6384',
-                              '#36A2EB',
-                              '#FFCE56',
-                              '#4BC0C0',
-                              '#9966FF',
-                              '#FF9F40',
-                              '#FF6384',
-                              '#C9CBCF',
-                            ][index],
-                            legendFontColor: isDarkMode ? '#F9FAFB' : '#111827',
-                            legendFontSize: 12,
-                          }))}
-                        width={Dimensions.get('window').width - 64}
-                        height={220}
-                        chartConfig={{
-                          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                          labelColor: (opacity = 1) => (isDarkMode ? `rgba(249, 250, 251, ${opacity})` : `rgba(17, 24, 39, ${opacity})`),
-                        }}
-                        accessor="population"
-                        backgroundColor="transparent"
-                        paddingLeft="15"
-                        absolute
-                      />
-                    </View>
-                  )}
-
-                  {/* Detailed Values List */}
-                  <View style={styles.valuesListContainer}>
-                    <Text style={[styles.chartTitle, { color: colors.text }]}>
-                      All Customer Values
-                    </Text>
-                    <Text style={[styles.chartSubtitle, { color: colors.textSecondary, marginBottom: 12 }]}>
-                      Complete breakdown of what matters to your customers
-                    </Text>
-
-                    {Array.from(customerValues.entries())
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([causeName, count], index) => {
-                        const percentage = ((count / customers.size) * 100).toFixed(1);
-                        const rank = index + 1;
-                        return (
-                          <View
-                            key={causeName}
-                            style={[styles.valueRow, { borderBottomColor: colors.border }]}
-                          >
-                            <View style={styles.valueRowWithRank}>
-                              <View style={[styles.rankBadge, { backgroundColor: rank <= 3 ? colors.primary : colors.backgroundSecondary }]}>
-                                <Text style={[styles.rankText, { color: rank <= 3 ? colors.white : colors.text }]}>
-                                  #{rank}
-                                </Text>
-                              </View>
-                              <View style={styles.valueRowLeft}>
-                                <Text style={[styles.valueName, { color: colors.text }]}>
-                                  {causeName}
-                                </Text>
-                                <View style={styles.valueBar}>
-                                  <View
-                                    style={[
-                                      styles.valueBarFill,
-                                      {
-                                        backgroundColor: colors.primary,
-                                        width: `${percentage}%`
-                                      }
-                                    ]}
-                                  />
-                                </View>
-                              </View>
-                            </View>
-                            <View style={styles.valueRowRight}>
-                              <Text style={[styles.valuePercentage, { color: colors.primary }]}>
-                                {percentage}%
-                              </Text>
-                              <Text style={[styles.valueCount, { color: colors.textSecondary }]}>
-                                {count} {count === 1 ? 'customer' : 'customers'}
-                              </Text>
-                            </View>
-                          </View>
-                        );
-                      })}
-                  </View>
-
-                  {/* Insights */}
-                  <View style={[styles.insightsContainer, { backgroundColor: colors.background }]}>
-                    <Text style={[styles.chartTitle, { color: colors.text, marginBottom: 12 }]}>
-                      💡 Key Insights
-                    </Text>
-                    {Array.from(customerValues.entries())
-                      .sort((a, b) => b[1] - a[1])
-                      .slice(0, 3)
-                      .map(([name, count], index) => {
-                        const percentage = ((count / customers.size) * 100).toFixed(0);
-                        return (
-                          <View key={name} style={styles.insightRow}>
-                            <Text style={[styles.insightBullet, { color: colors.primary }]}>•</Text>
-                            <Text style={[styles.insightText, { color: colors.text }]}>
-                              <Text style={{ fontWeight: '700' }}>{percentage}%</Text> of your customers care about{' '}
-                              <Text style={{ fontWeight: '700' }}>{name}</Text>
-                            </Text>
-                          </View>
-                        );
-                      })}
-                  </View>
-                </>
-              )}
-            </View>
-          )}
-        </View>
       </ScrollView>
     </View>
   );
@@ -909,5 +1022,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     flex: 1,
+  },
+  typeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  typeBadgeText: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase',
   },
 });
