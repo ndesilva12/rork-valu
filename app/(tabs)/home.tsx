@@ -58,6 +58,7 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
 import { trpc } from '@/lib/trpc';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
@@ -101,6 +102,8 @@ export default function HomeScreen() {
   const [mainView, setMainView] = useState<MainView>('forYou');
   const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
   const [userPersonalList, setUserPersonalList] = useState<UserList | null>(null);
+  const [showUserListExplainers, setShowUserListExplainers] = useState(true);
+  const [userListHadItems, setUserListHadItems] = useState(false);
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
@@ -216,13 +219,43 @@ export default function HomeScreen() {
 
       try {
         const lists = await getUserLists(clerkUser.id);
-        const userName = clerkUser.fullName || clerkUser.firstName || '';
+        const userName = clerkUser?.fullName || clerkUser?.firstName || '';
         const personalList = lists.find(list => list.name === userName);
 
         if (personalList) {
           setUserPersonalList(personalList);
+
+          const hasEntries = personalList.entries && personalList.entries.length > 0;
+
+          // Load explainer state from AsyncStorage
+          const explainerKey = `userListExplainerDismissed_${clerkUser.id}`;
+          const hadItemsKey = `userListHadItems_${clerkUser.id}`;
+
+          const [explainerDismissed, hadItemsStr] = await Promise.all([
+            AsyncStorage.getItem(explainerKey),
+            AsyncStorage.getItem(hadItemsKey)
+          ]);
+
+          const explainerWasDismissed = explainerDismissed === 'true';
+          const listHadItems = hadItemsStr === 'true';
+
+          // Update if list currently has items
+          if (hasEntries && !listHadItems) {
+            setUserListHadItems(true);
+            await AsyncStorage.setItem(hadItemsKey, 'true');
+          }
+
+          // Show explainers if:
+          // 1. Never dismissed AND list is empty, OR
+          // 2. List had items before, is now empty, AND user previously dismissed explainers
+          const shouldShowExplainers = (!hasEntries && !explainerWasDismissed) ||
+                                       (!hasEntries && listHadItems && explainerWasDismissed);
+
+          setShowUserListExplainers(shouldShowExplainers);
+          setUserListHadItems(listHadItems);
+
           // If personal list has entries, default to it. Otherwise, default to aligned.
-          if (personalList.entries && personalList.entries.length > 0) {
+          if (hasEntries) {
             setForYouSubsection('userList');
           }
         }
@@ -855,7 +888,7 @@ export default function HomeScreen() {
               styles.subsectionTabText,
               { color: forYouSubsection === 'userList' ? colors.text : colors.textSecondary }
             ]}>
-              {clerkUser?.firstName || 'My List'}
+              {clerkUser?.fullName || clerkUser?.firstName || 'My List'}
             </Text>
             {forYouSubsection === 'userList' && (
               <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
@@ -1013,6 +1046,65 @@ export default function HomeScreen() {
       }
 
       if (!userPersonalList.entries || userPersonalList.entries.length === 0) {
+        if (showUserListExplainers) {
+          return (
+            <View style={styles.section}>
+              <View style={styles.explainersContainer}>
+                {/* Explainer 1: Add Button */}
+                <View style={[styles.explainerCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                  <TouchableOpacity
+                    style={styles.explainerCloseButton}
+                    onPress={async () => {
+                      setShowUserListExplainers(false);
+                      if (clerkUser?.id) {
+                        await AsyncStorage.setItem(`userListExplainerDismissed_${clerkUser.id}`, 'true');
+                      }
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <X size={20} color={colors.textSecondary} strokeWidth={2} />
+                  </TouchableOpacity>
+                  <View style={styles.explainerHeader}>
+                    <View style={[styles.explainerIconContainer, { backgroundColor: colors.primary + '20' }]}>
+                      <Plus size={24} color={colors.primary} strokeWidth={2} />
+                    </View>
+                    <Text style={[styles.explainerTitle, { color: colors.text }]}>Add to Your List</Text>
+                  </View>
+                  <Text style={[styles.explainerText, { color: colors.textSecondary }]}>
+                    Tap the <Text style={{ fontWeight: '600', color: colors.primary }}>+ button</Text> when viewing brands or businesses to add them to your personal list. Build your own curated collection of values-aligned companies!
+                  </Text>
+                </View>
+
+                {/* Explainer 2: My Library Tab */}
+                <View style={[styles.explainerCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                  <TouchableOpacity
+                    style={styles.explainerCloseButton}
+                    onPress={async () => {
+                      setShowUserListExplainers(false);
+                      if (clerkUser?.id) {
+                        await AsyncStorage.setItem(`userListExplainerDismissed_${clerkUser.id}`, 'true');
+                      }
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <X size={20} color={colors.textSecondary} strokeWidth={2} />
+                  </TouchableOpacity>
+                  <View style={styles.explainerHeader}>
+                    <View style={[styles.explainerIconContainer, { backgroundColor: colors.primary + '20' }]}>
+                      <List size={24} color={colors.primary} strokeWidth={2} />
+                    </View>
+                    <Text style={[styles.explainerTitle, { color: colors.text }]}>Create More Lists</Text>
+                  </View>
+                  <Text style={[styles.explainerText, { color: colors.textSecondary }]}>
+                    Head to the <Text style={{ fontWeight: '600', color: colors.primary }}>My Library</Text> tab to create additional custom lists. Perfect for organizing gifting ideas for friends and family, or tracking companies by specific values. For example, create a "Gift Ideas for Mom" list with brands she would love!
+                  </Text>
+                </View>
+              </View>
+            </View>
+          );
+        }
+
+        // Show simple empty state if explainers are dismissed
         return (
           <View style={styles.section}>
             <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
@@ -2427,53 +2519,129 @@ export default function HomeScreen() {
         )}
 
         <View style={styles.listsContainer}>
-          {/* Browse List - Always at top */}
-          <TouchableOpacity
-            style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-            onPress={() => handleOpenList('browse')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.listCardContent}>
-              <View style={styles.listCardHeader}>
-                <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
-                  <FolderOpen size={20} color={colors.primary} strokeWidth={2} />
-                </View>
-                <View style={styles.listCardInfo}>
-                  <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
-                    Browse
-                  </Text>
-                  <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
-                    All categories • {allSupport.length} aligned brands
-                  </Text>
-                </View>
-                <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-              </View>
-            </View>
-          </TouchableOpacity>
-
           {/* User Lists */}
           {userLists.length === 0 ? (
-            <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
-              <List size={48} color={colors.textSecondary} strokeWidth={1.5} />
-              <Text style={[styles.placeholderTitle, { color: colors.text }]}>No Custom Lists Yet</Text>
-              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-                Create custom lists to organize brands, businesses, values, links, and notes.
-              </Text>
-            </View>
+            <>
+              {/* Browse List - Second position when no user lists */}
+              <TouchableOpacity
+                style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                onPress={() => handleOpenList('browse')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.listCardContent}>
+                  <View style={styles.listCardHeader}>
+                    <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+                      <FolderOpen size={20} color={colors.primary} strokeWidth={2} />
+                    </View>
+                    <View style={styles.listCardInfo}>
+                      <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                        Browse
+                      </Text>
+                      <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                        All categories • {allSupport.length} aligned brands
+                      </Text>
+                    </View>
+                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                  </View>
+                </View>
+              </TouchableOpacity>
+
+              <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+                <List size={48} color={colors.textSecondary} strokeWidth={1.5} />
+                <Text style={[styles.placeholderTitle, { color: colors.text }]}>No Custom Lists Yet</Text>
+                <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+                  Create custom lists to organize brands, businesses, values, links, and notes.
+                </Text>
+              </View>
+            </>
           ) : (
             (() => {
-              // Sort lists to pin User Name list at the top
+              // Separate User Name list from other lists
               const userName = clerkUser?.fullName || clerkUser?.firstName || '';
-              const sortedLists = [...userLists].sort((a, b) => {
-                const aIsUserList = a.name === userName;
-                const bIsUserList = b.name === userName;
+              const userNameList = userLists.find(list => list.name === userName);
+              const otherLists = userLists.filter(list => list.name !== userName);
 
-                if (aIsUserList && !bIsUserList) return -1;
-                if (!aIsUserList && bIsUserList) return 1;
-                return 0; // Keep original order for other lists
-              });
+              return (
+                <>
+                  {/* 1. User Name List - Always first */}
+                  {userNameList && (
+                    <View
+                      key={userNameList.id}
+                      style={[
+                        styles.listCardWrapper,
+                        activeCardOptionsMenu === userNameList.id && !isLibraryRearrangeMode && { zIndex: 1000 }
+                      ]}
+                    >
+                      <TouchableOpacity
+                        style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                        onPress={() => !isLibraryRearrangeMode && handleOpenList(userNameList)}
+                        activeOpacity={0.7}
+                        disabled={isLibraryRearrangeMode}
+                      >
+                        <View style={styles.listCardContentRow}>
+                          <View style={styles.listCardContent}>
+                            <View style={styles.listCardHeader}>
+                              <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
+                                <List size={20} color={colors.white} strokeWidth={2} />
+                              </View>
+                              <View style={styles.listCardInfo}>
+                                <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                                  {userNameList.name}
+                                </Text>
+                                <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                                  {userNameList.entries.length} {userNameList.entries.length === 1 ? 'item' : 'items'}
+                                </Text>
+                                {userNameList.description && (
+                                  <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                                    {userNameList.description}
+                                  </Text>
+                                )}
+                              </View>
+                            </View>
+                          </View>
+                          {!isLibraryRearrangeMode && (
+                            <TouchableOpacity
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                setActiveCardOptionsMenu(activeCardOptionsMenu === userNameList.id ? null : userNameList.id);
+                              }}
+                              activeOpacity={0.7}
+                              style={styles.listCardOptionsButton}
+                            >
+                              <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                  )}
 
-              return sortedLists.map((list, index) => (
+                  {/* 2. Browse List - Always second */}
+                  <TouchableOpacity
+                    style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                    onPress={() => handleOpenList('browse')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.listCardContent}>
+                      <View style={styles.listCardHeader}>
+                        <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+                          <FolderOpen size={20} color={colors.primary} strokeWidth={2} />
+                        </View>
+                        <View style={styles.listCardInfo}>
+                          <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                            Browse
+                          </Text>
+                          <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                            All categories • {allSupport.length} aligned brands
+                          </Text>
+                        </View>
+                        <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* 3. All other user lists */}
+                  {otherLists.map((list, index) => (
               <View
                 key={list.id}
                 style={[
@@ -2536,13 +2704,13 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => handleMoveListDown(index)}
-                          disabled={index === sortedLists.length - 1}
+                          disabled={index === otherLists.length - 1}
                           style={styles.rearrangeButton}
                           activeOpacity={0.7}
                         >
                           <ChevronDown
                             size={20}
-                            color={index === sortedLists.length - 1 ? colors.textSecondary : colors.text}
+                            color={index === otherLists.length - 1 ? colors.textSecondary : colors.text}
                             strokeWidth={2}
                           />
                         </TouchableOpacity>
@@ -2551,7 +2719,9 @@ export default function HomeScreen() {
                   </View>
                 </TouchableOpacity>
               </View>
-            ));
+            ))}
+                </>
+              );
             })()
           )}
         </View>
@@ -4114,6 +4284,47 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: 'center' as const,
     lineHeight: 22,
+  },
+  explainersContainer: {
+    marginTop: 16,
+    gap: 16,
+  },
+  explainerCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 20,
+    marginHorizontal: 16,
+    position: 'relative' as const,
+  },
+  explainerCloseButton: {
+    position: 'absolute' as const,
+    top: 12,
+    right: 12,
+    padding: 8,
+    zIndex: 10,
+  },
+  explainerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
+  },
+  explainerIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  explainerTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    flex: 1,
+  },
+  explainerText: {
+    fontSize: 15,
+    lineHeight: 22,
+    paddingLeft: 60,
   },
   distanceFilterRow: {
     flexDirection: 'row',
