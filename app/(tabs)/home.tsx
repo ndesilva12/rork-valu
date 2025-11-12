@@ -172,6 +172,18 @@ export default function HomeScreen() {
     return brand?.website;
   };
 
+  // Helper function to get brand name from brands array
+  const getBrandName = (brandId: string): string => {
+    const brand = brands?.find(b => b.id === brandId);
+    return brand?.name || 'Unknown Brand';
+  };
+
+  // Helper function to get business name from businesses array
+  const getBusinessName = (businessId: string): string => {
+    const business = userBusinesses?.find(b => b.id === businessId);
+    return business?.businessInfo?.name || 'Unknown Business';
+  };
+
   // Request location permission and get user's location
   const requestLocation = async () => {
     try {
@@ -1173,7 +1185,7 @@ export default function HomeScreen() {
                       </View>
                       <View style={styles.brandCardContent}>
                         <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
-                          {entry.brandName}
+                          {entry.brandName || getBrandName(entry.brandId)}
                         </Text>
                         <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
                           {entry.brandCategory || 'Brand'}
@@ -1207,7 +1219,7 @@ export default function HomeScreen() {
                       </View>
                       <View style={styles.brandCardContent}>
                         <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
-                          {entry.businessName || (entry as any).name}
+                          {entry.businessName || (entry as any).name || getBusinessName(entry.businessId)}
                         </Text>
                         <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
                           {entry.businessCategory || (entry as any).category || 'Local Business'}
@@ -1626,36 +1638,54 @@ export default function HomeScreen() {
     if (selectedList && selectedList !== 'browse') {
       const list = selectedList as UserList;
       setActiveItemOptionsMenu(null); // Close modal first
-      Alert.alert(
-        'Remove Item',
-        'Are you sure you want to remove this item from the list?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Remove',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                await removeEntryFromList(list.id, entryId);
-                await loadUserLists();
-                await reloadPersonalList(); // Also reload personal list for For You view
 
-                // Update selected list
-                const updatedLists = await getUserLists(clerkUser?.id || '');
-                const updatedList = updatedLists.find(l => l.id === list.id);
-                if (updatedList) {
-                  setSelectedList(updatedList);
-                }
+      // Use native confirm/alert for web, Alert.alert for mobile
+      const performDelete = async () => {
+        try {
+          await removeEntryFromList(list.id, entryId);
+          await loadUserLists();
+          await reloadPersonalList(); // Also reload personal list for For You view
 
-                Alert.alert('Success', 'Item removed from list');
-              } catch (error) {
-                console.error('[Home] Error removing entry:', error);
-                Alert.alert('Error', 'Could not remove item. Please try again.');
-              }
+          // Update selected list
+          const updatedLists = await getUserLists(clerkUser?.id || '');
+          const updatedList = updatedLists.find(l => l.id === list.id);
+          if (updatedList) {
+            setSelectedList(updatedList);
+          }
+
+          if (Platform.OS === 'web') {
+            window.alert('Item removed from list');
+          } else {
+            Alert.alert('Success', 'Item removed from list');
+          }
+        } catch (error) {
+          console.error('[Home] Error removing entry:', error);
+          if (Platform.OS === 'web') {
+            window.alert('Could not remove item. Please try again.');
+          } else {
+            Alert.alert('Error', 'Could not remove item. Please try again.');
+          }
+        }
+      };
+
+      if (Platform.OS === 'web') {
+        if (window.confirm('Are you sure you want to remove this item from the list?')) {
+          await performDelete();
+        }
+      } else {
+        Alert.alert(
+          'Remove Item',
+          'Are you sure you want to remove this item from the list?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Remove',
+              style: 'destructive',
+              onPress: performDelete,
             },
-          },
-        ]
-      );
+          ]
+        );
+      }
     }
   };
 
@@ -1777,12 +1807,12 @@ export default function HomeScreen() {
         setShowQuickAddModal(false);
         setQuickAddItem(null);
         setSelectedValueMode(null);
-        Alert.alert('Success', `Added ${addedCount} brands from ${quickAddItem.name} to list!`);
 
-        // Reload lists if in library view
-        if (mainView === 'myLibrary') {
-          await loadUserLists();
-        }
+        // Always reload lists and personal list to keep For You and Library in sync
+        await loadUserLists();
+        await reloadPersonalList();
+
+        Alert.alert('Success', `Added ${addedCount} brands from ${quickAddItem.name} to list!`);
         return;
       } else {
         return;
@@ -1792,15 +1822,22 @@ export default function HomeScreen() {
       setShowQuickAddModal(false);
       setQuickAddItem(null);
       setSelectedValueMode(null);
-      Alert.alert('Success', `Added ${quickAddItem.name} to list!`);
 
-      // Reload lists if in library view
-      if (mainView === 'myLibrary') {
-        await loadUserLists();
-      }
-    } catch (error) {
+      // Always reload lists and personal list to keep For You and Library in sync
+      await loadUserLists();
+      await reloadPersonalList();
+
+      Alert.alert('Success', `Added ${quickAddItem.name} to list!`);
+    } catch (error: any) {
       console.error('[Home] Error adding to list:', error);
-      Alert.alert('Error', 'Could not add item to list. Please try again.');
+      const errorMessage = error?.message === 'This item is already in the list'
+        ? 'This item is already in the list'
+        : 'Could not add item to list. Please try again.';
+      if (Platform.OS === 'web') {
+        window.alert(errorMessage);
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
     }
   };
 
@@ -1871,7 +1908,9 @@ export default function HomeScreen() {
           }
         }
 
+        // Always reload lists and personal list to keep For You and Library in sync
         await loadUserLists();
+        await reloadPersonalList();
 
         setShowQuickAddModal(false);
         setQuickAddItem(null);
@@ -1893,12 +1932,22 @@ export default function HomeScreen() {
       setShowQuickAddModal(false);
       setQuickAddItem(null);
       setSelectedValueMode(null);
+
+      // Always reload lists and personal list to keep For You and Library in sync
       await loadUserLists();
+      await reloadPersonalList();
 
       Alert.alert('Success', `Created list and added ${quickAddItem.name}!`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Home] Error creating list and adding item:', error);
-      Alert.alert('Error', 'Could not create list. Please try again.');
+      const errorMessage = error?.message === 'This item is already in the list'
+        ? 'This item is already in the list'
+        : 'Could not create list. Please try again.';
+      if (Platform.OS === 'web') {
+        window.alert(errorMessage);
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
     }
   };
 
@@ -1936,27 +1985,45 @@ export default function HomeScreen() {
 
   const handleCardDeleteList = (listId: string) => {
     setActiveCardOptionsMenu(null);
-    Alert.alert(
-      'Delete List',
-      'Are you sure you want to delete this list? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteList(listId);
-              await loadUserLists();
-              Alert.alert('Success', 'List deleted successfully');
-            } catch (error) {
-              console.error('[Home] Error deleting list:', error);
-              Alert.alert('Error', 'Could not delete list. Please try again.');
-            }
+
+    // Use native confirm/alert for web, Alert.alert for mobile
+    const performDelete = async () => {
+      try {
+        await deleteList(listId);
+        await loadUserLists();
+        if (Platform.OS === 'web') {
+          window.alert('List deleted successfully');
+        } else {
+          Alert.alert('Success', 'List deleted successfully');
+        }
+      } catch (error) {
+        console.error('[Home] Error deleting list:', error);
+        if (Platform.OS === 'web') {
+          window.alert('Could not delete list. Please try again.');
+        } else {
+          Alert.alert('Error', 'Could not delete list. Please try again.');
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to delete this list? This action cannot be undone.')) {
+        performDelete();
+      }
+    } else {
+      Alert.alert(
+        'Delete List',
+        'Are you sure you want to delete this list? This action cannot be undone.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: performDelete,
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   // Add item modal handlers
@@ -2315,7 +2382,7 @@ export default function HomeScreen() {
                           </View>
                           <View style={styles.brandCardContent}>
                             <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
-                              {entry.brandName}
+                              {entry.brandName || getBrandName(entry.brandId)}
                             </Text>
                             <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
                               Brand
@@ -2391,7 +2458,7 @@ export default function HomeScreen() {
                           </View>
                           <View style={styles.brandCardContent}>
                             <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
-                              {entry.businessName}
+                              {entry.businessName || getBusinessName(entry.businessId)}
                             </Text>
                             <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
                               Business
@@ -2671,55 +2738,34 @@ export default function HomeScreen() {
                 <>
                   {/* 1. User Name List - Always first */}
                   {userNameList && (
-                    <View
+                    <TouchableOpacity
                       key={userNameList.id}
-                      style={[
-                        styles.listCardWrapper,
-                        activeCardOptionsMenu === userNameList.id && !isLibraryRearrangeMode && { zIndex: 1000 }
-                      ]}
+                      style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                      onPress={() => handleOpenList(userNameList)}
+                      activeOpacity={0.7}
                     >
-                      <TouchableOpacity
-                        style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                        onPress={() => !isLibraryRearrangeMode && handleOpenList(userNameList)}
-                        activeOpacity={0.7}
-                        disabled={isLibraryRearrangeMode}
-                      >
-                        <View style={styles.listCardContentRow}>
-                          <View style={styles.listCardContent}>
-                            <View style={styles.listCardHeader}>
-                              <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
-                                <List size={20} color={colors.white} strokeWidth={2} />
-                              </View>
-                              <View style={styles.listCardInfo}>
-                                <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
-                                  {userNameList.name}
-                                </Text>
-                                <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
-                                  {userNameList.entries.length} {userNameList.entries.length === 1 ? 'item' : 'items'}
-                                </Text>
-                                {userNameList.description && (
-                                  <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                                    {userNameList.description}
-                                  </Text>
-                                )}
-                              </View>
-                            </View>
+                      <View style={styles.listCardContent}>
+                        <View style={styles.listCardHeader}>
+                          <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
+                            <List size={20} color={colors.white} strokeWidth={2} />
                           </View>
-                          {!isLibraryRearrangeMode && (
-                            <TouchableOpacity
-                              onPress={(e) => {
-                                e.stopPropagation();
-                                setActiveCardOptionsMenu(activeCardOptionsMenu === userNameList.id ? null : userNameList.id);
-                              }}
-                              activeOpacity={0.7}
-                              style={styles.listCardOptionsButton}
-                            >
-                              <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                            </TouchableOpacity>
-                          )}
+                          <View style={styles.listCardInfo}>
+                            <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                              {userNameList.name}
+                            </Text>
+                            <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                              {userNameList.entries.length} {userNameList.entries.length === 1 ? 'item' : 'items'}
+                            </Text>
+                            {userNameList.description && (
+                              <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                                {userNameList.description}
+                              </Text>
+                            )}
+                          </View>
+                          <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
                         </View>
-                      </TouchableOpacity>
-                    </View>
+                      </View>
+                    </TouchableOpacity>
                   )}
 
                   {/* 2. Browse List - Always second */}
@@ -2730,15 +2776,15 @@ export default function HomeScreen() {
                   >
                     <View style={styles.listCardContent}>
                       <View style={styles.listCardHeader}>
-                        <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
-                          <FolderOpen size={20} color={colors.primary} strokeWidth={2} />
+                        <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
+                          <FolderOpen size={20} color={colors.white} strokeWidth={2} />
                         </View>
                         <View style={styles.listCardInfo}>
                           <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
                             Browse
                           </Text>
-                          <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
-                            All categories • {allSupport.length} aligned brands
+                          <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                            Browse your aligned brands based on your current value selections.
                           </Text>
                         </View>
                         <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
@@ -2970,62 +3016,96 @@ export default function HomeScreen() {
         <TouchableWithoutFeedback onPress={() => setActiveCardOptionsMenu(null)}>
           <View style={styles.dropdownModalOverlay}>
             <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  const list = userLists.find(l => l.id === activeCardOptionsMenu);
-                  if (list) {
-                    handleOpenCardRenameModal(list.id, list.name, list.description || '');
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Edit size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
-              </TouchableOpacity>
-              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  setActiveCardOptionsMenu(null);
-                  setIsLibraryRearrangeMode(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
-              </TouchableOpacity>
-              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  const list = userLists.find(l => l.id === activeCardOptionsMenu);
-                  if (list) {
-                    setActiveCardOptionsMenu(null);
-                    setDescriptionText(list.description || '');
-                    setSelectedList(list);
-                    setShowDescriptionModal(true);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Edit size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
-              </TouchableOpacity>
-              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  console.log('[Home] Delete list pressed, ID:', activeCardOptionsMenu);
-                  if (activeCardOptionsMenu) {
-                    handleCardDeleteList(activeCardOptionsMenu);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
-              </TouchableOpacity>
+              {(() => {
+                // Check if this is the User Name list (personal list)
+                const activeList = userLists.find(l => l.id === activeCardOptionsMenu);
+                if (!activeList) return null;
+
+                // Get user's name to identify personal list
+                const fullNameFromFirebase = profile?.userDetails?.name;
+                const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
+                const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
+                  ? `${clerkUser.firstName} ${clerkUser.lastName}`
+                  : '';
+                const firstName = clerkUser?.firstName;
+                const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || '';
+                const isPersonalList = activeList.name === userName;
+
+                // For personal list, only show Description option
+                if (isPersonalList) {
+                  return (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveCardOptionsMenu(null);
+                        setDescriptionText(activeList.description || '');
+                        setSelectedList(activeList);
+                        setShowDescriptionModal(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Edit size={18} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+                    </TouchableOpacity>
+                  );
+                }
+
+                // For other lists, show all options
+                return (
+                  <>
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        handleOpenCardRenameModal(activeList.id, activeList.name, activeList.description || '');
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Edit size={18} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+                    </TouchableOpacity>
+                    <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveCardOptionsMenu(null);
+                        setIsLibraryRearrangeMode(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
+                    </TouchableOpacity>
+                    <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveCardOptionsMenu(null);
+                        setDescriptionText(activeList.description || '');
+                        setSelectedList(activeList);
+                        setShowDescriptionModal(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Edit size={18} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+                    </TouchableOpacity>
+                    <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        console.log('[Home] Delete list pressed, ID:', activeCardOptionsMenu);
+                        if (activeCardOptionsMenu) {
+                          handleCardDeleteList(activeCardOptionsMenu);
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+                    </TouchableOpacity>
+                  </>
+                );
+              })()}
             </View>
           </View>
         </TouchableWithoutFeedback>

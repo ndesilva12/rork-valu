@@ -18,6 +18,8 @@ import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
 import { BusinessLocation, GalleryImage } from '@/types';
+import { getUserLists } from '@/services/firebase/listService';
+import { UserList, BrandListEntry, BusinessListEntry } from '@/types/library';
 
 const BUSINESS_CATEGORIES = [
   'Retail',
@@ -92,6 +94,8 @@ export default function BusinessProfileEditor() {
   const [affiliates, setAffiliates] = useState(businessInfo.affiliates || []);
   const [partnerships, setPartnerships] = useState(businessInfo.partnerships || []);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [userLists, setUserLists] = useState<UserList[]>([]);
+  const [loadingLists, setLoadingLists] = useState(false);
 
   const handleLocationSelect = (index: number, locationName: string, lat: number, lon: number) => {
     const newLocations = [...locations];
@@ -159,6 +163,49 @@ export default function BusinessProfileEditor() {
     setAffiliates(businessInfo.affiliates || []);
     setPartnerships(businessInfo.partnerships || []);
   }, [businessInfo]);
+
+  // Fetch user lists to show brands & businesses
+  useEffect(() => {
+    const loadUserLists = async () => {
+      if (!clerkUser?.id) return;
+
+      try {
+        setLoadingLists(true);
+        const lists = await getUserLists(clerkUser.id);
+        setUserLists(lists);
+      } catch (error) {
+        console.error('Error loading user lists:', error);
+      } finally {
+        setLoadingLists(false);
+      }
+    };
+
+    loadUserLists();
+  }, [clerkUser?.id]);
+
+  // Helper to extract all brands and businesses from user lists
+  const extractBrandsAndBusinesses = () => {
+    const brands: { name: string; listName: string }[] = [];
+    const businesses: { name: string; listName: string }[] = [];
+
+    userLists.forEach(list => {
+      list.entries.forEach(entry => {
+        if (entry.type === 'brand' && 'brandId' in entry && 'brandName' in entry) {
+          brands.push({
+            name: (entry as BrandListEntry).brandName,
+            listName: list.name
+          });
+        } else if (entry.type === 'business' && 'businessId' in entry && 'businessName' in entry) {
+          businesses.push({
+            name: (entry as BusinessListEntry).businessName,
+            listName: list.name
+          });
+        }
+      });
+    });
+
+    return { brands, businesses };
+  };
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -1053,6 +1100,56 @@ export default function BusinessProfileEditor() {
               <Text style={[styles.noDataText, { color: colors.textSecondary }]}>No partnerships</Text>
             )}
           </View>
+
+          {/* User's Brands & Businesses Section */}
+          <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.success }]}>
+            <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.subsectionTitle, { color: colors.text }]}>USER'S BRANDS & BUSINESSES</Text>
+            </View>
+
+            {loadingLists ? (
+              <ActivityIndicator size="small" color={colors.primary} style={{ padding: 16 }} />
+            ) : (() => {
+              const { brands, businesses } = extractBrandsAndBusinesses();
+              const hasData = brands.length > 0 || businesses.length > 0;
+
+              if (!hasData) {
+                return <Text style={[styles.noDataText, { color: colors.textSecondary }]}>No brands or businesses in lists</Text>;
+              }
+
+              return (
+                <>
+                  {brands.length > 0 && (
+                    <View style={[styles.listSection, { borderBottomColor: colors.border }]}>
+                      <Text style={[styles.listSectionTitle, { color: colors.primary }]}>Brands ({brands.length})</Text>
+                      {brands.map((brand, index) => (
+                        <View key={`brand-${index}`} style={[styles.moneyFlowItem, { borderBottomColor: colors.border }]}>
+                          <View style={styles.moneyFlowItemRow}>
+                            <Text style={[styles.moneyFlowName, { color: colors.text }]}>{brand.name}</Text>
+                            <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>{brand.listName}</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {businesses.length > 0 && (
+                    <View style={styles.listSection}>
+                      <Text style={[styles.listSectionTitle, { color: colors.primary }]}>Businesses ({businesses.length})</Text>
+                      {businesses.map((business, index) => (
+                        <View key={`business-${index}`} style={[styles.moneyFlowItem, { borderBottomColor: colors.border }]}>
+                          <View style={styles.moneyFlowItemRow}>
+                            <Text style={[styles.moneyFlowName, { color: colors.text }]}>{business.name}</Text>
+                            <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>{business.listName}</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </>
+              );
+            })()}
+          </View>
         </View>
 
         {/* Edit Actions */}
@@ -1419,6 +1516,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     fontStyle: 'italic' as const,
+  },
+  listSection: {
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  listSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
   },
   // Location styles
   locationItem: {

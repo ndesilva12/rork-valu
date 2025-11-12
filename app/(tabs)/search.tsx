@@ -52,6 +52,11 @@ export default function SearchScreen() {
   const colors = isDarkMode ? darkColors : lightColors;
   const { width } = useWindowDimensions();
 
+  // Helper function to normalize alignment scores to 0-100 range
+  const normalizeScore = useCallback((score: number): number => {
+    return Math.min(100, Math.max(0, Math.round(Math.abs(score))));
+  }, []);
+
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Product[]>([]);
   const [firebaseBusinesses, setFirebaseBusinesses] = useState<BusinessUser[]>([]);
@@ -235,8 +240,10 @@ export default function SearchScreen() {
   }, [commentText, selectedProductId, clerkUser, getProductInteraction]);
 
   const handleShare = useCallback(async (product: Product) => {
+    // Normalize score to 0-100 range for display
+    const normalizedScore = Math.min(100, Math.max(0, Math.round(Math.abs(product.alignmentScore))));
     const url = `https://yourapp.com/product/${product.id}`;
-    const message = `Check out ${product.name} by ${product.brand}! Alignment score: ${product.alignmentScore}`;
+    const message = `Check out ${product.name} by ${product.brand}! Alignment score: ${normalizedScore}`;
 
     try {
       if (Platform.OS === 'web') {
@@ -551,7 +558,7 @@ export default function SearchScreen() {
             <View style={[styles.scoreContainer, { backgroundColor: alignmentColor + '15' }]}>
               <AlignmentIcon size={16} color={alignmentColor} strokeWidth={2.5} />
               <Text style={[styles.scoreText, { color: alignmentColor }]}>
-                {Math.abs(item.alignmentScore)}
+                {normalizeScore(item.alignmentScore)}
               </Text>
             </View>
           </View>
@@ -587,7 +594,7 @@ export default function SearchScreen() {
         />
         <View style={[styles.exploreCardOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.4)' }]}>
           <View style={[styles.exploreCardBadge, { backgroundColor: colors.success + '15' }]}>
-            <Text style={[styles.exploreCardScore, { color: colors.success }]}>{item.alignmentScore}</Text>
+            <Text style={[styles.exploreCardScore, { color: colors.success }]}>{normalizeScore(item.alignmentScore)}</Text>
           </View>
         </View>
         <View style={styles.exploreCardInfo}>
@@ -631,7 +638,7 @@ export default function SearchScreen() {
             </View>
           </TouchableOpacity>
           <View style={[styles.postAlignmentBadge, { backgroundColor: colors.success + '15' }]}>
-            <Text style={[styles.postAlignmentScore, { color: colors.success }]}>{selectedPostProduct.alignmentScore}</Text>
+            <Text style={[styles.postAlignmentScore, { color: colors.success }]}>{normalizeScore(selectedPostProduct.alignmentScore)}</Text>
           </View>
         </View>
 
@@ -998,7 +1005,7 @@ export default function SearchScreen() {
                         <View style={[styles.alignmentScore, { backgroundColor: alignmentColor + '15' }]}>
                           <AlignmentIcon size={24} color={alignmentColor} strokeWidth={2.5} />
                           <Text style={[styles.alignmentScoreText, { color: alignmentColor }]}>
-                            {Math.abs(scannedProduct.alignmentScore)}
+                            {normalizeScore(scannedProduct.alignmentScore)}
                           </Text>
                         </View>
                         <Text style={[styles.alignmentLabel, { color: alignmentColor }]}>

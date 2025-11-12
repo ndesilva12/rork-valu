@@ -142,6 +142,31 @@ export const addEntryToList = async (
       throw new Error('List not found');
     }
 
+    // Check for duplicates based on entry type
+    const isDuplicate = list.entries.some((existingEntry) => {
+      // For brands, check brandId
+      if (entry.type === 'brand' && existingEntry.type === 'brand' && 'brandId' in entry && 'brandId' in existingEntry) {
+        return entry.brandId === existingEntry.brandId;
+      }
+      // For businesses, check businessId
+      if (entry.type === 'business' && existingEntry.type === 'business' && 'businessId' in entry && 'businessId' in existingEntry) {
+        return entry.businessId === existingEntry.businessId;
+      }
+      // For values, check valueId and mode
+      if (entry.type === 'value' && existingEntry.type === 'value' && 'valueId' in entry && 'valueId' in existingEntry && 'mode' in entry && 'mode' in existingEntry) {
+        return entry.valueId === existingEntry.valueId && entry.mode === existingEntry.mode;
+      }
+      // For links, check url
+      if (entry.type === 'link' && existingEntry.type === 'link' && 'url' in entry && 'url' in existingEntry) {
+        return entry.url === existingEntry.url;
+      }
+      return false;
+    });
+
+    if (isDuplicate) {
+      throw new Error('This item is already in the list');
+    }
+
     const newEntry: ListEntry = {
       ...entry,
       id: `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
