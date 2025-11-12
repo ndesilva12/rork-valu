@@ -209,7 +209,9 @@ export default function HomeScreen() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // Drag only after moving 8px (prevents accidental drags)
+        // Add delay for touch devices to prevent scroll conflicts
+        delay: Platform.OS === 'web' ? 0 : 250,
+        tolerance: Platform.OS === 'web' ? 5 : 10,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -1598,8 +1600,10 @@ export default function HomeScreen() {
             text: 'Share',
             onPress: async () => {
               try {
+                // On iOS/Android, use url parameter for clickable link
                 await Share.share({
-                  message: shareMessageWithLink,
+                  message: shareMessage,
+                  url: shareLink,
                   title: list.name,
                 });
               } catch (error) {
