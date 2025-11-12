@@ -20,11 +20,8 @@ import {
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
-import productsData from '../../mocks/products-data.json';
-import { generateProducts } from '../../mocks/generate-products';
 import { useRef, useState } from 'react';
 import { getLogoUrl } from '@/lib/logo';
-import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
 import { getUserLists, addEntryToList, createList } from '@/services/firebase/listService';
 
@@ -45,7 +42,7 @@ export default function ValueDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { profile, isDarkMode } = useUser();
-  const { brands, valuesMatrix } = useData();
+  const { brands, valuesMatrix, values: firebaseValues } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
   const scrollViewRef = useRef<ScrollView>(null);
   const { width } = useWindowDimensions();
@@ -78,22 +75,18 @@ export default function ValueDetailScreen() {
   let userCause = profile.causes.find(c => c.id === id);
   let isSelected = !!userCause;
 
-  // If not found in user's causes, check AVAILABLE_VALUES
+  // If not found in user's causes, check Firebase values
   if (!userCause) {
-    // Search through all categories in AVAILABLE_VALUES
-    for (const category of Object.values(AVAILABLE_VALUES)) {
-      const found = category.find(v => v.id === id);
-      if (found) {
-        // Convert to the format expected by the rest of the component
-        userCause = {
-          id: found.id,
-          name: found.name,
-          category: found.category,
-          description: found.description,
-          type: undefined, // Not selected, so no type
-        };
-        break;
-      }
+    const firebaseValue = firebaseValues.find(v => v.id === id);
+    if (firebaseValue) {
+      // Convert to the format expected by the rest of the component
+      userCause = {
+        id: firebaseValue.id,
+        name: firebaseValue.name,
+        category: firebaseValue.category as any,
+        description: undefined,
+        type: undefined, // Not selected, so no type
+      };
     }
   }
 
@@ -118,24 +111,26 @@ export default function ValueDetailScreen() {
     return `https://${domain}.com`;
   };
 
-  const getDriversFromProducts = () => {
-    const valueData = (productsData as Record<string, { support: string[]; oppose: string[] }>)[id];
-    
+  const getDriversFromFirebase = () => {
+    // Get value data from Firebase valuesMatrix
+    const valueData = valuesMatrix[id];
+
     if (!valueData) {
       return { supports: [], opposes: [] };
     }
 
-    const allProducts = generateProducts();
+    const supports = (valueData.support || []).map((brandName, index) => {
+      // Try to find the brand in the brands collection
+      const brand = brands?.find(b => b.name === brandName);
+      const brandId = brand?.id || brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const websiteUrl = brand?.website || getWebsiteUrl(brandName);
+      const category = brand?.category || 'Brand';
 
-    const supports = valueData.support.map((brandName, index) => {
-      const product = allProducts.find(p => p.name === brandName);
-      const productId = (product?.id && product.id.trim()) ? product.id : '';
-      const websiteUrl = product?.website || getWebsiteUrl(brandName);
       return {
-        id: productId || `${id}-support-${brandName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-${index}`,
+        id: brandId,
         name: brandName,
         type: 'brand' as 'brand' | 'product' | 'behavior',
-        description: product?.brand || brandName,
+        description: category,
         reason: `Directly supports ${userCause.name}`,
         position: index + 1,
         imageUrl: getLogoUrl(websiteUrl),
@@ -143,15 +138,18 @@ export default function ValueDetailScreen() {
       };
     });
 
-    const opposes = valueData.oppose.map((brandName, index) => {
-      const product = allProducts.find(p => p.name === brandName);
-      const productId = (product?.id && product.id.trim()) ? product.id : '';
-      const websiteUrl = product?.website || getWebsiteUrl(brandName);
+    const opposes = (valueData.oppose || []).map((brandName, index) => {
+      // Try to find the brand in the brands collection
+      const brand = brands?.find(b => b.name === brandName);
+      const brandId = brand?.id || brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const websiteUrl = brand?.website || getWebsiteUrl(brandName);
+      const category = brand?.category || 'Brand';
+
       return {
-        id: productId || `${id}-oppose-${brandName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-${index}`,
+        id: brandId,
         name: brandName,
         type: 'brand' as 'brand' | 'product' | 'behavior',
-        description: product?.brand || brandName,
+        description: category,
         reason: `Opposes ${userCause.name}`,
         position: index + 1,
         imageUrl: getLogoUrl(websiteUrl),
@@ -165,7 +163,7 @@ export default function ValueDetailScreen() {
     };
   };
 
-  const drivers = getDriversFromProducts();
+  const drivers = getDriversFromFirebase();
 
   const handleShopPress = async (url: string) => {
     try {

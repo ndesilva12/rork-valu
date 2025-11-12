@@ -42,13 +42,21 @@ export default function CustomerDiscount() {
     const expiry = now + (QR_CODE_EXPIRY_MINUTES * 60 * 1000);
     const transactionId = `txn_${now}_${Math.random().toString(36).substring(7)}`;
 
+    // Get customer name from multiple sources (in order of preference)
+    const customerName = profile.displayName ||
+                        profile.businessInfo?.name ||
+                        clerkUser.fullName ||
+                        (clerkUser.firstName && clerkUser.lastName ? `${clerkUser.firstName} ${clerkUser.lastName}` : '') ||
+                        clerkUser.firstName ||
+                        'Customer';
+
     // Generate URL that will be scanned by merchant's camera
     const baseUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://upright.money';
     const verifyUrl = `${baseUrl}/merchant/verify?` +
       `userId=${clerkUser.id}&` +
       `code=${transactionId}&` +
       `exp=${expiry}&` +
-      `name=${encodeURIComponent(clerkUser.fullName || 'User')}&` +
+      `name=${encodeURIComponent(customerName)}&` +
       `email=${encodeURIComponent(clerkUser.primaryEmailAddress?.emailAddress || '')}`;
 
     setQrData(verifyUrl);

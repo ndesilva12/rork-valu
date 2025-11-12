@@ -11,6 +11,7 @@ import { Brand } from '@/types';
 export interface ValueData {
   id: string;
   name: string;
+  category?: string;
   support: string[];
   oppose: string[];
 }
@@ -145,6 +146,7 @@ export async function getValuesFromFirebase(): Promise<ValueData[]> {
       return {
         id: doc.id,
         name: data.name || doc.id,
+        category: data.category,
         support: data.aligned || [],
         oppose: data.unaligned || [],
       };

@@ -151,11 +151,11 @@ export default function MerchantVerify() {
       // Get merchant business info
       const merchantName = profile.businessInfo?.name || 'Unknown Business';
       const merchantDiscount = profile.businessInfo?.customerDiscountPercent || 0;
-      const merchantDonation = profile.businessInfo?.donationPercent || 0;
+      const uprightFeePercent = 2.5;
 
       console.log('[MerchantVerify] Recording transaction with:', {
         merchantDiscount,
-        merchantDonation,
+        uprightFeePercent,
         purchaseAmount: parseFloat(purchaseAmount),
         businessInfo: profile.businessInfo
       });
@@ -169,9 +169,9 @@ export default function MerchantVerify() {
         merchantName: merchantName,
         purchaseAmount: parseFloat(purchaseAmount),
         discountPercent: merchantDiscount,
-        donationPercent: merchantDonation,
+        uprightFeePercent: uprightFeePercent,
         discountAmount: (parseFloat(purchaseAmount) * merchantDiscount) / 100,
-        donationAmount: (parseFloat(purchaseAmount) * merchantDonation) / 100,
+        uprightFeeAmount: (parseFloat(purchaseAmount) * uprightFeePercent) / 100,
         status: 'completed',
         createdAt: serverTimestamp(),
         verifiedAt: serverTimestamp(),
@@ -218,11 +218,6 @@ export default function MerchantVerify() {
           <Text style={[styles.discountText, { color: colors.text }]}>
             {profile.businessInfo?.customerDiscountPercent || 10}% Customer Discount
           </Text>
-          {(profile.businessInfo?.donationPercent || 0) > 0 && (
-            <Text style={[styles.donationText, { color: colors.textSecondary }]}>
-              + {profile.businessInfo?.donationPercent}% Donation
-            </Text>
-          )}
         </View>
 
         {/* Purchase Amount Input */}
@@ -265,11 +260,11 @@ export default function MerchantVerify() {
                   Customer Saves: ${((parseFloat(purchaseAmount) * (profile.businessInfo?.customerDiscountPercent || 0)) / 100).toFixed(2)}
                 </Text>
 
-                <Text style={[styles.donationLabel, { color: colors.text }]}>
-                  Donation Committed:
+                <Text style={[styles.feeLabel, { color: colors.text }]}>
+                  Upright Fee: 2.5%
                 </Text>
-                <Text style={[styles.donationValue, { color: colors.primary }]}>
-                  ${((parseFloat(purchaseAmount) * (profile.businessInfo?.donationPercent || 0)) / 100).toFixed(2)}
+                <Text style={[styles.feeValue, { color: colors.primary }]}>
+                  ${((parseFloat(purchaseAmount) * 2.5) / 100).toFixed(2)}
                 </Text>
               </View>
             </>
@@ -355,9 +350,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
-  donationText: {
-    fontSize: 16,
-  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -404,12 +396,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 8,
   },
-  donationLabel: {
+  feeLabel: {
     fontSize: 16,
     fontWeight: '700',
     marginTop: 8,
   },
-  donationValue: {
+  feeValue: {
     fontSize: 24,
     fontWeight: 'bold',
   },
