@@ -459,18 +459,35 @@ export default function BrandDetailScreen() {
         <View style={styles.content}>
           {/* Header with logo, brand info, and score */}
           <View style={styles.header}>
-            <Image
-              source={{ uri: getLogoUrl(brand.website || '') }}
-              style={styles.headerLogo}
-              contentFit="cover"
-              transition={200}
-              cachePolicy="memory-disk"
-              placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
-            />
+            <View style={styles.logoAndButtonContainer}>
+              <Image
+                source={{ uri: getLogoUrl(brand.website || '') }}
+                style={styles.headerLogo}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+                placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
+              />
+              <TouchableOpacity
+                style={[styles.addToListButton, { backgroundColor: colors.primary }]}
+                onPress={() => router.push(`/(tabs)/home?showQuickAdd=true&brandId=${brand.id}`)}
+                activeOpacity={0.7}
+              >
+                <Plus size={18} color={colors.white} strokeWidth={2.5} />
+              </TouchableOpacity>
+            </View>
 
             <View style={styles.titleContainer}>
               <Text style={[styles.brandName, { color: colors.text }]}>{brand?.name}</Text>
               <Text style={[styles.category, { color: colors.primary }]}>{brand.category}</Text>
+              {brand.headquarters && (
+                <Text style={[styles.headquarters, { color: colors.textSecondary }]}>{brand.headquarters}</Text>
+              )}
+              {brand.description && (
+                <Text style={[styles.brandDescription, { color: colors.textSecondary }]}>
+                  {brand.description}
+                </Text>
+              )}
               {brand.location && (
                 <View style={styles.locationRow}>
                   <MapPin size={14} color={colors.textSecondary} strokeWidth={2} />
@@ -479,18 +496,12 @@ export default function BrandDetailScreen() {
               )}
             </View>
             <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.backgroundSecondary }]}>
-              <AlignmentIcon size={24} color={alignmentColor} strokeWidth={2.5} />
+              <AlignmentIcon size={20} color={alignmentColor} strokeWidth={2.5} />
               <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
                 {alignmentData.alignmentStrength}
               </Text>
             </View>
           </View>
-
-          {brand.description && (
-            <Text style={[styles.brandDescription, { color: colors.textSecondary }]}>
-              {brand.description}
-            </Text>
-          )}
 
           <View style={styles.socialLinksContainer}>
             <TouchableOpacity
@@ -795,85 +806,102 @@ const styles = StyleSheet.create({
   },
   heroImageContainer: {
     width: '100%',
-    height: 150,
+    height: 130,
     position: 'relative' as const,
   },
   heroImage: {
     width: '100%',
-    height: 150,
+    height: 130,
   },
   visitButton: {
     position: 'absolute' as const,
-    right: 16,
-    bottom: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 10,
+    right: 14,
+    bottom: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 6,
+    elevation: 3,
   },
   visitButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700' as const,
   },
   content: {
-    padding: 20,
+    padding: 16,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 24,
-    gap: 12,
+    marginBottom: 16,
+    gap: 10,
+  },
+  logoAndButtonContainer: {
+    alignItems: 'center',
+    gap: 8,
   },
   headerLogo: {
-    width: 64,
-    height: 64,
-    borderRadius: 12,
+    width: 56,
+    height: 56,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: 'rgba(0, 0, 0, 0.1)',
   },
+  addToListButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   titleContainer: {
     flex: 1,
-    marginRight: 16,
+    marginRight: 12,
   },
 
   brandName: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700' as const,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   category: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600' as const,
+    marginBottom: 3,
+  },
+  headquarters: {
+    fontSize: 12,
+    fontWeight: '400' as const,
+    marginBottom: 6,
+  },
+  brandDescription: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 6,
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 6,
+    marginTop: 5,
   },
   locationText: {
-    fontSize: 13,
+    fontSize: 12,
   },
   socialLinksContainer: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     marginBottom: 12,
-  },
-  brandDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 24,
   },
   socialButton: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 8,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
@@ -884,35 +912,35 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   socialButtonText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600' as const,
   },
   scoreCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 3,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   scoreNumber: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700' as const,
-    marginTop: 4,
+    marginTop: 3,
   },
   alignmentCard: {
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 24,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
   },
   alignmentLabelRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
     flexWrap: 'wrap',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   alignmentLabel: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '700' as const,
   },
   alignmentDescription: {

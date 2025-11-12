@@ -100,6 +100,7 @@ export default function HomeScreen() {
   const colors = isDarkMode ? darkColors : lightColors;
   const [mainView, setMainView] = useState<MainView>('forYou');
   const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
+  const [showForYouDropdown, setShowForYouDropdown] = useState(false);
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
@@ -817,65 +818,66 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* For You Subsection Selector */}
+      {/* For You Subsection Dropdown */}
       {mainView === 'forYou' && (
-        <View style={styles.subsectionRow}>
+        <View style={styles.subsectionDropdownContainer}>
           <TouchableOpacity
-            style={[
-              styles.subsectionButton,
-              forYouSubsection === 'aligned' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }
-            ]}
-            onPress={() => setForYouSubsection('aligned')}
+            style={styles.subsectionDropdownButton}
+            onPress={() => setShowForYouDropdown(!showForYouDropdown)}
             activeOpacity={0.7}
           >
-            <Text
-              style={[
-                styles.subsectionText,
-                { color: forYouSubsection === 'aligned' ? colors.text : colors.textSecondary },
-                forYouSubsection === 'aligned' && styles.subsectionTextActive,
-              ]}
-            >
-              Aligned
+            <Text style={[styles.subsectionDropdownText, { color: colors.text }]}>
+              {forYouSubsection === 'aligned' ? 'Aligned' : forYouSubsection === 'unaligned' ? 'Unaligned' : 'News'}
             </Text>
+            <View style={[styles.subsectionUnderline, { backgroundColor: colors.primary }]} />
+            <ChevronDown
+              size={16}
+              color={colors.text}
+              strokeWidth={2}
+              style={styles.subsectionDropdownIcon}
+            />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.subsectionButton,
-              forYouSubsection === 'unaligned' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }
-            ]}
-            onPress={() => setForYouSubsection('unaligned')}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                styles.subsectionText,
-                { color: forYouSubsection === 'unaligned' ? colors.text : colors.textSecondary },
-                forYouSubsection === 'unaligned' && styles.subsectionTextActive,
-              ]}
-            >
-              Unaligned
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.subsectionButton,
-              forYouSubsection === 'news' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }
-            ]}
-            onPress={() => setForYouSubsection('news')}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                styles.subsectionText,
-                { color: forYouSubsection === 'news' ? colors.text : colors.textSecondary },
-                forYouSubsection === 'news' && styles.subsectionTextActive,
-              ]}
-            >
-              News
-            </Text>
-          </TouchableOpacity>
+          {showForYouDropdown && (
+            <View style={[styles.subsectionDropdownMenu, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              {forYouSubsection !== 'aligned' && (
+                <TouchableOpacity
+                  style={styles.subsectionDropdownItem}
+                  onPress={() => {
+                    setForYouSubsection('aligned');
+                    setShowForYouDropdown(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>Aligned</Text>
+                </TouchableOpacity>
+              )}
+              {forYouSubsection !== 'unaligned' && (
+                <TouchableOpacity
+                  style={styles.subsectionDropdownItem}
+                  onPress={() => {
+                    setForYouSubsection('unaligned');
+                    setShowForYouDropdown(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>Unaligned</Text>
+                </TouchableOpacity>
+              )}
+              {forYouSubsection !== 'news' && (
+                <TouchableOpacity
+                  style={styles.subsectionDropdownItem}
+                  onPress={() => {
+                    setForYouSubsection('news');
+                    setShowForYouDropdown(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>News</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </View>
       )}
 
@@ -924,7 +926,16 @@ export default function HomeScreen() {
       return (
         <View style={styles.section}>
           <View style={styles.brandsContainer}>
-            {allSupportFull.slice(0, alignedLoadCount).map((product) => renderBrandCard(product, 'support'))}
+            {allSupportFull.slice(0, alignedLoadCount).map((product, index) => (
+              <View key={product.id} style={styles.forYouItemRow}>
+                <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                  {index + 1}
+                </Text>
+                <View style={styles.forYouCardWrapper}>
+                  {renderBrandCard(product, 'support')}
+                </View>
+              </View>
+            ))}
             {alignedLoadCount < allSupportFull.length && (
               <TouchableOpacity
                 style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
@@ -946,7 +957,16 @@ export default function HomeScreen() {
       return (
         <View style={styles.section}>
           <View style={styles.brandsContainer}>
-            {allAvoidFull.slice(0, unalignedLoadCount).map((product) => renderBrandCard(product, 'avoid'))}
+            {allAvoidFull.slice(0, unalignedLoadCount).map((product, index) => (
+              <View key={product.id} style={styles.forYouItemRow}>
+                <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                  {index + 1}
+                </Text>
+                <View style={styles.forYouCardWrapper}>
+                  {renderBrandCard(product, 'avoid')}
+                </View>
+              </View>
+            ))}
             {unalignedLoadCount < allAvoidFull.length && (
               <TouchableOpacity
                 style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
@@ -2598,11 +2618,13 @@ export default function HomeScreen() {
         transparent={true}
         onRequestClose={() => setActiveCardOptionsMenu(null)}
       >
-        <TouchableWithoutFeedback onPress={() => setActiveCardOptionsMenu(null)}>
-          <View style={styles.dropdownModalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                <TouchableOpacity
+        <Pressable
+          style={styles.dropdownModalOverlay}
+          onPress={() => setActiveCardOptionsMenu(null)}
+        >
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <TouchableOpacity
                 style={styles.listOptionItem}
                 onPress={() => {
                   const list = userLists.find(l => l.id === activeCardOptionsMenu);
@@ -2648,6 +2670,7 @@ export default function HomeScreen() {
               <TouchableOpacity
                 style={styles.listOptionItem}
                 onPress={() => {
+                  console.log('[Home] Delete list pressed, ID:', activeCardOptionsMenu);
                   if (activeCardOptionsMenu) {
                     handleCardDeleteList(activeCardOptionsMenu);
                   }
@@ -2658,9 +2681,8 @@ export default function HomeScreen() {
                 <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
               </TouchableOpacity>
             </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* List Item Options Modal */}
@@ -2670,15 +2692,17 @@ export default function HomeScreen() {
         transparent={true}
         onRequestClose={() => setActiveItemOptionsMenu(null)}
       >
-        <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
-          <View style={styles.dropdownModalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                <TouchableOpacity
+        <Pressable
+          style={styles.dropdownModalOverlay}
+          onPress={() => setActiveItemOptionsMenu(null)}
+        >
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <TouchableOpacity
                 style={styles.listOptionItem}
                 onPress={() => {
+                  console.log('[Home] Delete entry pressed, ID:', activeItemOptionsMenu);
                   if (activeItemOptionsMenu) {
-                    setActiveItemOptionsMenu(null);
                     handleDeleteEntry(activeItemOptionsMenu);
                   }
                 }}
@@ -2688,9 +2712,8 @@ export default function HomeScreen() {
                 <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
               </TouchableOpacity>
             </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* Create List Modal */}
@@ -3733,7 +3756,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 8,
   },
   webContent: {
     maxWidth: 768,
@@ -3768,105 +3791,105 @@ const styles = StyleSheet.create({
   },
 
   section: {
-    marginBottom: 40,
+    marginBottom: 24,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   showAllButton: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
   },
   sectionTitle: {
-    fontSize: 22 * mobileScale,
+    fontSize: 19 * mobileScale,
     fontWeight: '700' as const,
   },
   sectionSubtitle: {
-    fontSize: 14 * mobileScale,
-    marginBottom: 20 * mobileScale,
-    lineHeight: 20 * mobileScale,
+    fontSize: 13 * mobileScale,
+    marginBottom: 16 * mobileScale,
+    lineHeight: 18 * mobileScale,
   },
   emptyText: {
-    fontSize: 15 * mobileScale,
+    fontSize: 13 * mobileScale,
     textAlign: 'center' as const,
-    paddingVertical: 32 * mobileScale,
-    paddingHorizontal: 24 * mobileScale,
-    lineHeight: 22 * mobileScale,
+    paddingVertical: 24 * mobileScale,
+    paddingHorizontal: 20 * mobileScale,
+    lineHeight: 19 * mobileScale,
   },
   productsContainer: {
-    gap: 12,
+    gap: 10,
   },
   productCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
     flexDirection: 'row',
-    height: 100,
+    height: 80,
   },
   productImage: {
-    width: 100,
-    height: 100,
+    width: 80,
+    height: 80,
   },
   productContent: {
-    padding: 12,
+    padding: 10,
   },
   productHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   productInfo: {
     marginRight: 8,
   },
   productName: {
-    fontSize: 15 * mobileScale,
+    fontSize: 14 * mobileScale,
     fontWeight: '700' as const,
   },
   scorebadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8 * mobileScale,
-    paddingVertical: 4 * mobileScale,
-    borderRadius: 6 * mobileScale,
-    gap: 4 * mobileScale,
+    paddingHorizontal: 6 * mobileScale,
+    paddingVertical: 3 * mobileScale,
+    borderRadius: 5 * mobileScale,
+    gap: 3 * mobileScale,
   },
   scoreText: {
-    fontSize: 13 * mobileScale,
+    fontSize: 12 * mobileScale,
     fontWeight: '700' as const,
   },
   valueTagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
-    maxHeight: 32,
+    gap: 5,
+    maxHeight: 28,
     overflow: 'hidden',
   },
   valueTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    maxWidth: 110,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 5,
+    maxWidth: 100,
   },
   valueTagText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600' as const,
   },
   emptySection: {
-    padding: 24,
-    borderRadius: 12,
+    padding: 20,
+    borderRadius: 10,
     alignItems: 'center',
   },
   emptySectionText: {
-    fontSize: 14,
+    fontSize: 13,
     textAlign: 'center',
   },
   searchPrompt: {
@@ -3950,30 +3973,66 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600' as const,
   },
-  subsectionRow: {
-    flexDirection: 'row',
+  subsectionDropdownContainer: {
     marginHorizontal: 16,
     marginBottom: 12,
     marginTop: 4,
-    justifyContent: 'space-evenly',
+    position: 'relative' as const,
+    zIndex: 100,
   },
-  subsectionButton: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+  subsectionDropdownButton: {
+    position: 'relative' as const,
+    alignSelf: 'flex-start',
   },
-  subsectionButtonActive: {
-    borderBottomWidth: 2,
+  subsectionDropdownText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    paddingBottom: 2,
   },
-  subsectionText: {
+  subsectionUnderline: {
+    height: 2,
+    width: '100%',
+    marginTop: 4,
+  },
+  subsectionDropdownIcon: {
+    position: 'absolute' as const,
+    right: -20,
+    top: 2,
+  },
+  subsectionDropdownMenu: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  subsectionDropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  subsectionDropdownItemText: {
     fontSize: 14,
     fontWeight: '500' as const,
   },
-  subsectionTextActive: {
-    fontWeight: '600' as const,
+  forYouItemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  forYouItemNumber: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    paddingTop: 20,
+    minWidth: 20,
+    textAlign: 'right',
+    marginLeft: -4,
+  },
+  forYouCardWrapper: {
+    flex: 1,
   },
   loadMoreButton: {
     paddingVertical: 14,
@@ -4070,52 +4129,52 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   compactHeaderTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700' as const,
   },
   compactGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   compactCard: {
     width: '48%',
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     overflow: 'hidden',
   },
   compactImage: {
     width: '100%',
-    height: 80,
+    height: 70,
   },
   compactContent: {
-    padding: 8,
+    padding: 6,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   compactBrand: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600' as const,
   },
   compactBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
     borderRadius: 4,
-    gap: 3,
+    gap: 2,
   },
   compactScore: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700' as const,
   },
   brandsContainer: {
-    gap: 10,
+    gap: 8,
   },
   brandCard: {
-    borderRadius: 12,
-    height: 64,
+    borderRadius: 10,
+    height: 56,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.08)',
     overflow: 'visible',
@@ -4125,16 +4184,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: '100%',
     overflow: 'visible',
-    borderRadius: 12,
+    borderRadius: 10,
   },
   brandLogoContainer: {
-    width: 64,
+    width: 56,
     height: '100%',
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    borderTopLeftRadius: 12,
-    borderBottomLeftRadius: 12,
+    borderTopLeftRadius: 10,
+    borderBottomLeftRadius: 10,
     overflow: 'hidden',
   },
   brandLogo: {
@@ -4145,25 +4204,25 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     justifyContent: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   brandScoreContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   brandScore: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '700' as const,
   },
   brandName: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '700' as const,
     marginBottom: 2,
   },
   brandCategory: {
-    fontSize: 12,
+    fontSize: 11,
     opacity: 0.7,
   },
   foldersContainer: {
@@ -4493,12 +4552,12 @@ const styles = StyleSheet.create({
   },
   // Library styles
   listsContainer: {
-    gap: 12,
-    marginTop: 12,
+    gap: 10,
+    marginTop: 10,
     overflow: 'visible',
   },
   listCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
     overflow: 'visible',
     flexDirection: 'row',
@@ -4513,25 +4572,25 @@ const styles = StyleSheet.create({
   },
   listCardContent: {
     flex: 1,
-    padding: 16,
+    padding: 12,
   },
   listCardReorderButtons: {
     justifyContent: 'center',
-    paddingHorizontal: 8,
-    gap: 4,
+    paddingHorizontal: 6,
+    gap: 3,
   },
   reorderButton: {
-    padding: 4,
+    padding: 3,
   },
   listCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   listIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -4539,30 +4598,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listCardTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700' as const,
-    marginBottom: 4,
+    marginBottom: 3,
   },
   listCardCount: {
-    fontSize: 13,
+    fontSize: 12,
   },
   listCardDescription: {
-    fontSize: 14,
-    marginTop: 8,
-    lineHeight: 20,
+    fontSize: 12,
+    marginTop: 6,
+    lineHeight: 17,
   },
   createListButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    gap: 8,
-    marginBottom: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    gap: 6,
+    marginBottom: 12,
   },
   createListButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600' as const,
   },
   libraryActions: {
@@ -4571,21 +4630,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 0,
-    paddingBottom: 8,
-    gap: 12,
+    paddingBottom: 6,
+    gap: 10,
   },
   libraryEditButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500' as const,
   },
   createListButtonSmall: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
@@ -4593,69 +4652,69 @@ const styles = StyleSheet.create({
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 24,
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
     borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowRadius: 6,
+    elevation: 6,
   },
   editButtonText: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600' as const,
   },
   listCardOptionsContainer: {
     position: 'relative' as const,
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
   },
   listCardOptionsButton: {
-    padding: 12,
+    padding: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
   listCardOptionsButtonAbsolute: {
     position: 'absolute' as const,
-    top: 12,
-    right: 12,
-    padding: 8,
+    top: 10,
+    right: 10,
+    padding: 6,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
   },
   listCardRearrangeButtonsAbsolute: {
     position: 'absolute' as const,
-    top: 12,
-    right: 12,
+    top: 10,
+    right: 10,
     justifyContent: 'center',
-    paddingHorizontal: 8,
-    gap: 4,
+    paddingHorizontal: 6,
+    gap: 3,
     zIndex: 10,
   },
   listCardOptionsDropdown: {
     position: 'absolute',
-    top: 32,
-    right: 8,
+    top: 28,
+    right: 6,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 10,
     paddingVertical: 4,
-    minWidth: 150,
+    minWidth: 140,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
-    shadowRadius: 12,
+    shadowRadius: 10,
     elevation: 999,
     zIndex: 999999,
   },
   createListModalContainer: {
     width: '100%',
-    maxWidth: 500,
+    maxWidth: 480,
     maxHeight: '80%',
-    borderRadius: 20,
+    borderRadius: 16,
     overflow: 'hidden',
     alignSelf: 'center',
   },
@@ -4663,29 +4722,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '700' as const,
   },
   modalContent: {
-    padding: 20,
+    padding: 16,
   },
   modalLabel: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600' as const,
-    marginBottom: 8,
-    marginTop: 16,
+    marginBottom: 6,
+    marginTop: 12,
   },
   modalInput: {
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
   },
   modalTextArea: {
     borderWidth: 1,
@@ -4941,12 +5000,12 @@ const styles = StyleSheet.create({
   listOptionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   listOptionText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '500' as const,
   },
   listOptionDivider: {
@@ -5054,50 +5113,50 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 6,
     overflow: 'visible',
   },
   valueNameBox: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderWidth: 2,
-    borderRadius: 8,
-    marginRight: 12,
+    borderRadius: 7,
+    marginRight: 10,
   },
   valueNameText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600' as const,
   },
   valueRowActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   listEntryReorderButtons: {
     justifyContent: 'center',
-    paddingHorizontal: 8,
-    gap: 4,
+    paddingHorizontal: 6,
+    gap: 3,
   },
   listDetailContent: {
     flex: 1,
   },
   listEntriesContainer: {
-    gap: 10,
+    gap: 8,
     overflow: 'visible',
   },
   listEntryRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
+    gap: 6,
   },
   listEntryNumber: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500' as const,
-    paddingTop: 20,
-    minWidth: 24,
+    paddingTop: 16,
+    minWidth: 20,
     textAlign: 'right',
   },
   listEntryWrapper: {
@@ -5108,54 +5167,54 @@ const styles = StyleSheet.create({
   listEntryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     overflow: 'visible',
   },
   listEntryContent: {
-    gap: 4,
+    gap: 3,
   },
   listEntryType: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600' as const,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
   },
   listEntryName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600' as const,
   },
   listEntryMode: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600' as const,
-    marginTop: 4,
+    marginTop: 3,
   },
   linkUrlContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 6,
+    gap: 3,
+    marginTop: 5,
   },
   linkUrl: {
-    fontSize: 13,
+    fontSize: 12,
     flex: 1,
   },
   // Browse list styles
   browseCategory: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   browseCategoryHeader: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   browseCategoryTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700' as const,
     textAlign: 'center' as const,
   },
   browseCategoryCount: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
   },
   // Library header styles
@@ -5163,12 +5222,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     position: 'relative',
   },
   libraryTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700' as const,
   },
   libraryDoneButton: {
