@@ -2969,66 +2969,64 @@ export default function HomeScreen() {
       >
         <TouchableWithoutFeedback onPress={() => setActiveCardOptionsMenu(null)}>
           <View style={styles.dropdownModalOverlay}>
-            <TouchableWithoutFeedback onPress={() => {}}>
-              <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                <TouchableOpacity
-                  style={styles.listOptionItem}
-                  onPress={() => {
-                    const list = userLists.find(l => l.id === activeCardOptionsMenu);
-                    if (list) {
-                      handleOpenCardRenameModal(list.id, list.name, list.description || '');
-                    }
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Edit size={18} color={colors.text} strokeWidth={2} />
-                  <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
-                </TouchableOpacity>
-                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                <TouchableOpacity
-                  style={styles.listOptionItem}
-                  onPress={() => {
+            <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  const list = userLists.find(l => l.id === activeCardOptionsMenu);
+                  if (list) {
+                    handleOpenCardRenameModal(list.id, list.name, list.description || '');
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Edit size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+              </TouchableOpacity>
+              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  setActiveCardOptionsMenu(null);
+                  setIsLibraryRearrangeMode(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
+              </TouchableOpacity>
+              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  const list = userLists.find(l => l.id === activeCardOptionsMenu);
+                  if (list) {
                     setActiveCardOptionsMenu(null);
-                    setIsLibraryRearrangeMode(true);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                  <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
-                </TouchableOpacity>
-                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                <TouchableOpacity
-                  style={styles.listOptionItem}
-                  onPress={() => {
-                    const list = userLists.find(l => l.id === activeCardOptionsMenu);
-                    if (list) {
-                      setActiveCardOptionsMenu(null);
-                      setDescriptionText(list.description || '');
-                      setSelectedList(list);
-                      setShowDescriptionModal(true);
-                    }
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Edit size={18} color={colors.text} strokeWidth={2} />
-                  <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
-                </TouchableOpacity>
-                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                <TouchableOpacity
-                  style={styles.listOptionItem}
-                  onPress={() => {
-                    console.log('[Home] Delete list pressed, ID:', activeCardOptionsMenu);
-                    if (activeCardOptionsMenu) {
-                      handleCardDeleteList(activeCardOptionsMenu);
-                    }
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-                  <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
+                    setDescriptionText(list.description || '');
+                    setSelectedList(list);
+                    setShowDescriptionModal(true);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Edit size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+              </TouchableOpacity>
+              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  console.log('[Home] Delete list pressed, ID:', activeCardOptionsMenu);
+                  if (activeCardOptionsMenu) {
+                    handleCardDeleteList(activeCardOptionsMenu);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
@@ -3042,23 +3040,21 @@ export default function HomeScreen() {
       >
         <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
           <View style={styles.dropdownModalOverlay}>
-            <TouchableWithoutFeedback onPress={() => {}}>
-              <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                <TouchableOpacity
-                  style={styles.listOptionItem}
-                  onPress={() => {
-                    console.log('[Home] Delete entry pressed, ID:', activeItemOptionsMenu);
-                    if (activeItemOptionsMenu) {
-                      handleDeleteEntry(activeItemOptionsMenu);
-                    }
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Trash2 size={16} color={colors.danger} strokeWidth={2} />
-                  <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
+            <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  console.log('[Home] Delete entry pressed, ID:', activeItemOptionsMenu);
+                  if (activeItemOptionsMenu) {
+                    handleDeleteEntry(activeItemOptionsMenu);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Trash2 size={16} color={colors.danger} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
