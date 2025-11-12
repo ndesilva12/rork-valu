@@ -219,8 +219,35 @@ export default function HomeScreen() {
 
       try {
         const lists = await getUserLists(clerkUser.id);
-        const userName = (clerkUser?.unsafeMetadata?.fullName as string) || clerkUser?.firstName || '';
-        const personalList = lists.find(list => list.name === userName);
+
+        // Try multiple sources to get the user's full name (prioritize Firebase data for existing users)
+        const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
+        const fullNameFromFirebase = profile?.userDetails?.name;
+        const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
+          ? `${clerkUser.firstName} ${clerkUser.lastName}`
+          : '';
+        const firstName = clerkUser?.firstName;
+
+        const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || 'My List';
+
+        console.log('[Home] Looking for personal list with name:', userName);
+        console.log('[Home] Available lists:', lists.map(l => l.name));
+
+        let personalList = lists.find(list => list.name === userName);
+
+        // If list doesn't exist, create it
+        if (!personalList && userName !== 'My List') {
+          console.log('[Home] Personal list not found, creating it...');
+          try {
+            const newListId = await createList(clerkUser.id, userName, 'Your personal curated list');
+            // Reload lists to get the newly created one
+            const updatedLists = await getUserLists(clerkUser.id);
+            personalList = updatedLists.find(list => list.id === newListId);
+            console.log('[Home] ✅ Personal list created:', newListId);
+          } catch (createError) {
+            console.error('[Home] ❌ Failed to create personal list:', createError);
+          }
+        }
 
         if (personalList) {
           setUserPersonalList(personalList);
@@ -258,6 +285,8 @@ export default function HomeScreen() {
           if (hasEntries) {
             setForYouSubsection('userList');
           }
+        } else {
+          console.log('[Home] ⚠️ Could not find or create personal list');
         }
       } catch (error) {
         console.error('[Home] Error loading personal list:', error);
@@ -265,7 +294,7 @@ export default function HomeScreen() {
     };
 
     loadPersonalList();
-  }, [clerkUser?.id, clerkUser?.unsafeMetadata?.fullName, clerkUser?.firstName]);
+  }, [clerkUser?.id, clerkUser?.unsafeMetadata?.fullName, clerkUser?.firstName, clerkUser?.lastName, profile?.userDetails?.name]);
 
   // Fetch user businesses and request location when "local" mode is selected
   // Fetch user businesses on mount
@@ -888,7 +917,7 @@ export default function HomeScreen() {
               styles.subsectionTabText,
               { color: forYouSubsection === 'userList' ? colors.text : colors.textSecondary }
             ]}>
-              {(clerkUser?.unsafeMetadata?.fullName as string) || clerkUser?.firstName || 'My List'}
+              {profile?.userDetails?.name || (clerkUser?.unsafeMetadata?.fullName as string) || (clerkUser?.firstName && clerkUser?.lastName ? `${clerkUser.firstName} ${clerkUser.lastName}` : clerkUser?.firstName) || 'My List'}
             </Text>
             {forYouSubsection === 'userList' && (
               <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
@@ -2125,7 +2154,13 @@ export default function HomeScreen() {
         {/* Three dot options dropdown */}
         {showEditDropdown && (() => {
           // Check if this is the user's personal list
-          const userName = (clerkUser?.unsafeMetadata?.fullName as string) || clerkUser?.firstName || '';
+          const fullNameFromFirebase = profile?.userDetails?.name;
+          const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
+          const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
+            ? `${clerkUser.firstName} ${clerkUser.lastName}`
+            : '';
+          const firstName = clerkUser?.firstName;
+          const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || '';
           const isUserNameList = list.name === userName;
 
           return (
@@ -2571,7 +2606,13 @@ export default function HomeScreen() {
           ) : (
             (() => {
               // Separate User Name list from other lists
-              const userName = (clerkUser?.unsafeMetadata?.fullName as string) || clerkUser?.firstName || '';
+              const fullNameFromFirebase = profile?.userDetails?.name;
+              const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
+              const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
+                ? `${clerkUser.firstName} ${clerkUser.lastName}`
+                : '';
+              const firstName = clerkUser?.firstName;
+              const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || '';
               const userNameList = userLists.find(list => list.name === userName);
               const otherLists = userLists.filter(list => list.name !== userName);
 
