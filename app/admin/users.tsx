@@ -19,6 +19,8 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { collection, getDocs, doc, updateDoc, query, where } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { getCustomFields, CustomField } from '@/services/firebase/customFieldsService';
+import { Picker } from '@react-native-picker/picker';
 
 interface SocialMedia {
   facebook?: string;
@@ -56,6 +58,9 @@ interface Charity {
 interface UserData {
   userId: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
   userDetails?: UserDetails;
   causes: Cause[];
   searchHistory: string[];
@@ -74,6 +79,13 @@ export default function UsersManagement() {
   const [bulkData, setBulkData] = useState('');
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
+
+  // Form state - Basic Info
+  const [formFirstName, setFormFirstName] = useState('');
+  const [formLastName, setFormLastName] = useState('');
+  const [formFullName, setFormFullName] = useState('');
 
   // Form state - User Details
   const [formName, setFormName] = useState('');
@@ -102,7 +114,17 @@ export default function UsersManagement() {
 
   useEffect(() => {
     loadUsers();
+    loadCustomFields();
   }, []);
+
+  const loadCustomFields = async () => {
+    try {
+      const fields = await getCustomFields('users');
+      setCustomFields(fields);
+    } catch (error) {
+      console.error('Error loading custom fields:', error);
+    }
+  };
 
   const loadUsers = async () => {
     try {
@@ -116,6 +138,9 @@ export default function UsersManagement() {
         return {
           userId: doc.id,
           email: data.email || 'No email',
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          fullName: data.fullName || '',
           userDetails: data.userDetails || {},
           causes: data.causes || [],
           searchHistory: data.searchHistory || [],
@@ -138,6 +163,11 @@ export default function UsersManagement() {
 
   const openEditModal = (user: UserData) => {
     setEditingUser(user);
+
+    // Basic info
+    setFormFirstName(user.firstName || '');
+    setFormLastName(user.lastName || '');
+    setFormFullName(user.fullName || '');
 
     // User details
     const details = user.userDetails || {};
@@ -179,6 +209,13 @@ export default function UsersManagement() {
     // Consent
     setFormConsentGivenAt(user.consentGivenAt || '');
     setFormConsentVersion(user.consentVersion || '');
+
+    // Load custom field values from user data
+    const customValues: Record<string, any> = {};
+    customFields.forEach((field) => {
+      customValues[field.fieldName] = (user as any)[field.fieldName] || field.defaultValue || '';
+    });
+    setCustomFieldValues(customValues);
 
     setShowModal(true);
   };
@@ -252,7 +289,10 @@ export default function UsersManagement() {
         .map((line) => line.trim())
         .filter((line) => line);
 
-      const updatedData = {
+      const updatedData: Record<string, any> = {
+        firstName: formFirstName,
+        lastName: formLastName,
+        fullName: formFullName,
         userDetails: userDetails,
         causes: parseCauses(formCauses),
         searchHistory: searchHistory,
@@ -262,6 +302,24 @@ export default function UsersManagement() {
         consentGivenAt: formConsentGivenAt,
         consentVersion: formConsentVersion,
       };
+
+      // Add custom field values
+      customFields.forEach((field) => {
+        const value = customFieldValues[field.fieldName];
+        if (value !== undefined && value !== '') {
+          // Convert value based on field type
+          switch (field.fieldType) {
+            case 'number':
+              updatedData[field.fieldName] = parseFloat(value) || 0;
+              break;
+            case 'boolean':
+              updatedData[field.fieldName] = value === 'true' || value === true;
+              break;
+            default:
+              updatedData[field.fieldName] = value;
+          }
+        }
+      });
 
       const userRef = doc(db, 'users', editingUser.userId);
 
@@ -339,8 +397,15 @@ export default function UsersManagement() {
               <View key={user.userId} style={styles.userCard}>
                 <View style={styles.userHeader}>
                   <View style={styles.userInfo}>
-                    <Text style={styles.userName}>{user.userDetails?.name || 'Unnamed User'}</Text>
+                    <Text style={styles.userName}>
+                      {user.fullName || user.userDetails?.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unnamed User'}
+                    </Text>
                     <Text style={styles.userEmail}>{user.email}</Text>
+                    {(user.firstName || user.lastName) && (
+                      <Text style={styles.userDetail}>
+                        👤 {user.firstName} {user.lastName}
+                      </Text>
+                    )}
                     {user.userDetails?.location && (
                       <Text style={styles.userLocation}>📍 {user.userDetails.location}</Text>
                     )}
@@ -384,13 +449,40 @@ export default function UsersManagement() {
                 <Text style={styles.detailValue}>{editingUser?.userId}</Text>
               </View>
 
-              {/* USER DETAILS */}
-              <Text style={styles.sectionTitle}>👤 User Details</Text>
+              {/* BASIC INFO */}
+              <Text style={styles.sectionTitle}>👤 Basic Information</Text>
 
-              <Text style={styles.label}>Name</Text>
+              <Text style={styles.label}>First Name</Text>
               <TextInput
                 style={styles.input}
-                placeholder="User's name"
+                placeholder="User's first name"
+                value={formFirstName}
+                onChangeText={setFormFirstName}
+              />
+
+              <Text style={styles.label}>Last Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="User's last name"
+                value={formLastName}
+                onChangeText={setFormLastName}
+              />
+
+              <Text style={styles.label}>Full Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="User's full name"
+                value={formFullName}
+                onChangeText={setFormFullName}
+              />
+
+              {/* USER DETAILS */}
+              <Text style={styles.sectionTitle}>📋 User Details (Profile)</Text>
+
+              <Text style={styles.label}>Name (userDetails.name)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="User's profile name"
                 value={formName}
                 onChangeText={setFormName}
               />
@@ -570,6 +662,78 @@ export default function UsersManagement() {
                 value={formConsentVersion}
                 onChangeText={setFormConsentVersion}
               />
+
+              {/* CUSTOM FIELDS */}
+              {customFields.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>🔧 Custom Fields</Text>
+                  <Text style={styles.helpText}>
+                    These are custom fields you've created for user documents.
+                  </Text>
+                  {customFields.map((field) => (
+                    <View key={field.id}>
+                      <Text style={styles.label}>
+                        {field.fieldLabel} {field.required && '*'}
+                      </Text>
+                      {field.description && (
+                        <Text style={styles.helpText}>{field.description}</Text>
+                      )}
+                      {field.fieldType === 'boolean' ? (
+                        <View style={styles.pickerWrapper}>
+                          <Picker
+                            selectedValue={customFieldValues[field.fieldName]?.toString() || 'false'}
+                            onValueChange={(value) =>
+                              setCustomFieldValues({
+                                ...customFieldValues,
+                                [field.fieldName]: value === 'true',
+                              })
+                            }
+                            style={styles.picker}
+                          >
+                            <Picker.Item label="False" value="false" />
+                            <Picker.Item label="True" value="true" />
+                          </Picker>
+                        </View>
+                      ) : field.fieldType === 'textarea' ? (
+                        <TextInput
+                          style={[styles.input, styles.textArea]}
+                          placeholder={field.defaultValue || `Enter ${field.fieldLabel}`}
+                          value={customFieldValues[field.fieldName]?.toString() || ''}
+                          onChangeText={(value) =>
+                            setCustomFieldValues({
+                              ...customFieldValues,
+                              [field.fieldName]: value,
+                            })
+                          }
+                          multiline
+                          numberOfLines={4}
+                        />
+                      ) : (
+                        <TextInput
+                          style={styles.input}
+                          placeholder={field.defaultValue || `Enter ${field.fieldLabel}`}
+                          value={customFieldValues[field.fieldName]?.toString() || ''}
+                          onChangeText={(value) =>
+                            setCustomFieldValues({
+                              ...customFieldValues,
+                              [field.fieldName]: value,
+                            })
+                          }
+                          keyboardType={
+                            field.fieldType === 'number'
+                              ? 'numeric'
+                              : field.fieldType === 'phone'
+                              ? 'phone-pad'
+                              : field.fieldType === 'email'
+                              ? 'email-address'
+                              : 'default'
+                          }
+                        />
+                      )}
+                    </View>
+                  ))}
+                </>
+              )}
 
               <View style={styles.modalActions}>
                 <TouchableOpacity style={styles.cancelButton} onPress={closeModal}>
@@ -768,6 +932,11 @@ const styles = StyleSheet.create({
     color: '#888',
     marginBottom: 4,
   },
+  userDetail: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2,
+  },
   userLocation: {
     fontSize: 12,
     color: '#666',
@@ -860,6 +1029,15 @@ const styles = StyleSheet.create({
     height: 100,
     paddingTop: 12,
     textAlignVertical: 'top',
+  },
+  pickerWrapper: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  picker: {
+    height: 50,
   },
   modalActions: {
     flexDirection: 'row',

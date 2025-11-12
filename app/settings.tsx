@@ -15,16 +15,17 @@ import {
   Linking,
 } from 'react-native';
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Lock, Download, Shield, FileText, ExternalLink } from 'lucide-react-native';
+import { ChevronLeft, Lock, Download, Shield, FileText, ExternalLink, Trash2 } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser as useUserContext } from '@/contexts/UserContext';
-import { useUser } from '@clerk/clerk-expo';
+import { useUser, useAuth } from '@clerk/clerk-expo';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { isDarkMode, profile, setBusinessInfo } = useUserContext();
   const colors = isDarkMode ? darkColors : lightColors;
   const { user } = useUser();
+  const { signOut } = useAuth();
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -122,6 +123,39 @@ export default function SettingsScreen() {
 
   const handleOpenPrivacyPolicy = () => {
     router.push('/privacy-policy');
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Delete the user account
+              await user?.delete();
+
+              // Sign out
+              await signOut();
+
+              // Navigate to sign-in
+              router.replace('/(auth)/sign-in');
+            } catch (error) {
+              console.error('[Settings] Delete account error:', error);
+              Alert.alert(
+                'Error',
+                'Failed to delete account. Please try again or contact support.',
+                [{ text: 'OK' }]
+              );
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -281,6 +315,21 @@ export default function SettingsScreen() {
               <View style={styles.actionLeft}>
                 <Download size={22} color={colors.primary} strokeWidth={2} />
                 <Text style={[styles.actionText, { color: colors.text }]}>Download My Data</Text>
+              </View>
+              <ExternalLink size={18} color={colors.textSecondary} strokeWidth={2} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            {/* Delete Account Button */}
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={handleDeleteAccount}
+              activeOpacity={0.7}
+            >
+              <View style={styles.actionLeft}>
+                <Trash2 size={22} color="#EF4444" strokeWidth={2} />
+                <Text style={[styles.actionText, { color: '#EF4444' }]}>Delete Account</Text>
               </View>
               <ExternalLink size={18} color={colors.textSecondary} strokeWidth={2} />
             </TouchableOpacity>

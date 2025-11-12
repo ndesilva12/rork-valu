@@ -58,6 +58,7 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
 import { trpc } from '@/lib/trpc';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
@@ -69,7 +70,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 
 type MainView = 'forYou' | 'myLibrary' | 'local';
-type ForYouSubsection = 'aligned' | 'unaligned' | 'news';
+type ForYouSubsection = 'userList' | 'aligned' | 'unaligned';
 type LocalDistanceOption = 1 | 5 | 10 | 50 | 100 | null;
 
 type FolderCategory = {
@@ -100,7 +101,9 @@ export default function HomeScreen() {
   const colors = isDarkMode ? darkColors : lightColors;
   const [mainView, setMainView] = useState<MainView>('forYou');
   const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
-  const [showForYouDropdown, setShowForYouDropdown] = useState(false);
+  const [userPersonalList, setUserPersonalList] = useState<UserList | null>(null);
+  const [activeExplainerStep, setActiveExplainerStep] = useState<0 | 1 | 2 | 3 | 4>(0); // 0 = none, 1-4 = explainer steps
+  const [userListHadItems, setUserListHadItems] = useState(false);
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
@@ -209,6 +212,90 @@ export default function HomeScreen() {
     }
   };
 
+  // Load user's personal list on mount and set default view
+  useEffect(() => {
+    const loadPersonalList = async () => {
+      if (!clerkUser?.id) return;
+
+      try {
+        const lists = await getUserLists(clerkUser.id);
+
+        // Try multiple sources to get the user's full name (prioritize Firebase data for existing users)
+        const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
+        const fullNameFromFirebase = profile?.userDetails?.name;
+        const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
+          ? `${clerkUser.firstName} ${clerkUser.lastName}`
+          : '';
+        const firstName = clerkUser?.firstName;
+
+        const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || 'My List';
+
+        console.log('[Home] Looking for personal list with name:', userName);
+        console.log('[Home] Available lists:', lists.map(l => l.name));
+
+        let personalList = lists.find(list => list.name === userName);
+
+        // If list doesn't exist, create it
+        if (!personalList && userName !== 'My List') {
+          console.log('[Home] Personal list not found, creating it...');
+          try {
+            const newListId = await createList(clerkUser.id, userName, 'Your personal collection.');
+            // Reload lists to get the newly created one
+            const updatedLists = await getUserLists(clerkUser.id);
+            personalList = updatedLists.find(list => list.id === newListId);
+            console.log('[Home] ✅ Personal list created:', newListId);
+          } catch (createError) {
+            console.error('[Home] ❌ Failed to create personal list:', createError);
+          }
+        }
+
+        if (personalList) {
+          setUserPersonalList(personalList);
+
+          const hasEntries = personalList.entries && personalList.entries.length > 0;
+
+          // Load explainer state from AsyncStorage
+          const explainerKey = `userListExplainerDismissed_${clerkUser.id}`;
+          const hadItemsKey = `userListHadItems_${clerkUser.id}`;
+
+          const [explainerDismissed, hadItemsStr] = await Promise.all([
+            AsyncStorage.getItem(explainerKey),
+            AsyncStorage.getItem(hadItemsKey)
+          ]);
+
+          const explainerWasDismissed = explainerDismissed === 'true';
+          const listHadItems = hadItemsStr === 'true';
+
+          // Update if list currently has items
+          if (hasEntries && !listHadItems) {
+            setUserListHadItems(true);
+            await AsyncStorage.setItem(hadItemsKey, 'true');
+          }
+
+          // Show explainers if:
+          // 1. Never dismissed AND list is empty, OR
+          // 2. List had items before, is now empty, AND user previously dismissed explainers
+          const shouldShowExplainers = (!hasEntries && !explainerWasDismissed) ||
+                                       (!hasEntries && listHadItems && explainerWasDismissed);
+
+          setActiveExplainerStep(shouldShowExplainers ? 1 : 0); // Start with first explainer if should show
+          setUserListHadItems(listHadItems);
+
+          // If personal list has entries, default to it. Otherwise, default to aligned.
+          if (hasEntries) {
+            setForYouSubsection('userList');
+          }
+        } else {
+          console.log('[Home] ⚠️ Could not find or create personal list');
+        }
+      } catch (error) {
+        console.error('[Home] Error loading personal list:', error);
+      }
+    };
+
+    loadPersonalList();
+  }, [clerkUser?.id, clerkUser?.unsafeMetadata?.fullName, clerkUser?.firstName, clerkUser?.lastName, profile?.userDetails?.name]);
+
   // Fetch user businesses and request location when "local" mode is selected
   // Fetch user businesses on mount
   useEffect(() => {
@@ -270,6 +357,32 @@ export default function HomeScreen() {
       Alert.alert('Error', 'Could not load your lists. Please try again.');
     } finally {
       setIsLoadingLists(false);
+    }
+  };
+
+  // Reload personal list (used in For You view)
+  const reloadPersonalList = async () => {
+    if (!clerkUser?.id) return;
+
+    try {
+      const lists = await getUserLists(clerkUser.id);
+
+      // Get user's full name to find their personal list
+      const fullNameFromFirebase = profile?.userDetails?.name;
+      const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
+      const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
+        ? `${clerkUser.firstName} ${clerkUser.lastName}`
+        : '';
+      const firstName = clerkUser?.firstName;
+      const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || 'My List';
+
+      const personalList = lists.find(list => list.name === userName);
+      if (personalList) {
+        setUserPersonalList(personalList);
+        console.log('[Home] ✅ Personal list reloaded');
+      }
+    } catch (error) {
+      console.error('[Home] Error reloading personal list:', error);
     }
   };
 
@@ -818,66 +931,56 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* For You Subsection Dropdown */}
+      {/* For You Subsection Tabs */}
       {mainView === 'forYou' && (
-        <View style={styles.subsectionDropdownContainer}>
+        <View style={styles.subsectionTabsContainer}>
           <TouchableOpacity
-            style={styles.subsectionDropdownButton}
-            onPress={() => setShowForYouDropdown(!showForYouDropdown)}
+            style={styles.subsectionTab}
+            onPress={() => setForYouSubsection('userList')}
             activeOpacity={0.7}
           >
-            <Text style={[styles.subsectionDropdownText, { color: colors.text }]}>
-              {forYouSubsection === 'aligned' ? 'Aligned' : forYouSubsection === 'unaligned' ? 'Unaligned' : 'News'}
+            <Text style={[
+              styles.subsectionTabText,
+              { color: forYouSubsection === 'userList' ? colors.text : colors.textSecondary }
+            ]}>
+              {profile?.userDetails?.name || (clerkUser?.unsafeMetadata?.fullName as string) || (clerkUser?.firstName && clerkUser?.lastName ? `${clerkUser.firstName} ${clerkUser.lastName}` : clerkUser?.firstName) || 'My List'}
             </Text>
-            <View style={[styles.subsectionUnderline, { backgroundColor: colors.primary }]} />
-            <ChevronDown
-              size={16}
-              color={colors.text}
-              strokeWidth={2}
-              style={styles.subsectionDropdownIcon}
-            />
+            {forYouSubsection === 'userList' && (
+              <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
+            )}
           </TouchableOpacity>
 
-          {showForYouDropdown && (
-            <View style={[styles.subsectionDropdownMenu, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              {forYouSubsection !== 'aligned' && (
-                <TouchableOpacity
-                  style={styles.subsectionDropdownItem}
-                  onPress={() => {
-                    setForYouSubsection('aligned');
-                    setShowForYouDropdown(false);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>Aligned</Text>
-                </TouchableOpacity>
-              )}
-              {forYouSubsection !== 'unaligned' && (
-                <TouchableOpacity
-                  style={styles.subsectionDropdownItem}
-                  onPress={() => {
-                    setForYouSubsection('unaligned');
-                    setShowForYouDropdown(false);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>Unaligned</Text>
-                </TouchableOpacity>
-              )}
-              {forYouSubsection !== 'news' && (
-                <TouchableOpacity
-                  style={styles.subsectionDropdownItem}
-                  onPress={() => {
-                    setForYouSubsection('news');
-                    setShowForYouDropdown(false);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>News</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
+          <TouchableOpacity
+            style={styles.subsectionTab}
+            onPress={() => setForYouSubsection('aligned')}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.subsectionTabText,
+              { color: forYouSubsection === 'aligned' ? colors.text : colors.textSecondary }
+            ]}>
+              Aligned
+            </Text>
+            {forYouSubsection === 'aligned' && (
+              <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.subsectionTab}
+            onPress={() => setForYouSubsection('unaligned')}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.subsectionTabText,
+              { color: forYouSubsection === 'unaligned' ? colors.text : colors.textSecondary }
+            ]}>
+              Unaligned
+            </Text>
+            {forYouSubsection === 'unaligned' && (
+              <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
+            )}
+          </TouchableOpacity>
         </View>
       )}
 
@@ -983,14 +1086,90 @@ export default function HomeScreen() {
       );
     }
 
-    // News subsection
-    if (forYouSubsection === 'news') {
+    // User List subsection
+    if (forYouSubsection === 'userList') {
+      if (!userPersonalList) {
+        return (
+          <View style={styles.section}>
+            <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+                Your personal list is being created. Check back soon!
+              </Text>
+            </View>
+          </View>
+        );
+      }
+
+      if (!userPersonalList.entries || userPersonalList.entries.length === 0) {
+        // Show empty state with add button
+        return (
+          <View style={styles.section}>
+            {/* Add button header */}
+            <View style={[styles.userListHeaderRow, { marginBottom: 16 }]}>
+              <Text style={[styles.userListSubheading, { color: colors.textSecondary }]}>
+                {userPersonalList.description || 'Your personal collection.'}
+              </Text>
+              <TouchableOpacity
+                style={[styles.addItemButton, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  setSelectedList(userPersonalList);
+                  setShowAddItemModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Plus size={20} color={colors.white} strokeWidth={2.5} />
+              </TouchableOpacity>
+            </View>
+            <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+                Your personal list is empty. Tap the + button above to add brands or businesses!
+              </Text>
+            </View>
+          </View>
+        );
+      }
+
       return (
         <View style={styles.section}>
-          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
-            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-              News feed coming soon! This will show X posts about aligned and unaligned brands.
+          {/* Add button header */}
+          <View style={[styles.userListHeaderRow, { marginBottom: 16 }]}>
+            <Text style={[styles.userListSubheading, { color: colors.textSecondary }]}>
+              {userPersonalList.description || 'Your personal collection.'}
             </Text>
+            <TouchableOpacity
+              style={[styles.addItemButton, { backgroundColor: colors.primary }]}
+              onPress={() => {
+                setSelectedList(userPersonalList);
+                setShowAddItemModal(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <Plus size={20} color={colors.white} strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.brandsContainer}>
+            {userPersonalList.entries.map((entry, index) => (
+              <View key={entry.id || index} style={styles.forYouItemRow}>
+                {entry.type === 'brand' && entry.logoUrl && (
+                  <Image
+                    source={{ uri: entry.logoUrl }}
+                    style={styles.forYouBrandImage}
+                    contentFit="cover"
+                    transition={200}
+                    cachePolicy="memory-disk"
+                    placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
+                  />
+                )}
+                <View style={styles.forYouItemContent}>
+                  <Text style={[styles.forYouBrandName, { color: colors.text }]}>{entry.name}</Text>
+                  {entry.website && (
+                    <Text style={[styles.forYouBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {entry.website}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            ))}
           </View>
         </View>
       );
@@ -1181,6 +1360,7 @@ export default function HomeScreen() {
     if (selectedList && selectedList !== 'browse') {
       const list = selectedList as UserList;
       setShowListOptionsMenu(false);
+      setShowEditDropdown(false);
       handleDeleteList(list.id);
     }
   };
@@ -1396,6 +1576,7 @@ export default function HomeScreen() {
   const handleDeleteEntry = async (entryId: string) => {
     if (selectedList && selectedList !== 'browse') {
       const list = selectedList as UserList;
+      setActiveItemOptionsMenu(null); // Close modal first
       Alert.alert(
         'Remove Item',
         'Are you sure you want to remove this item from the list?',
@@ -1408,6 +1589,7 @@ export default function HomeScreen() {
               try {
                 await removeEntryFromList(list.id, entryId);
                 await loadUserLists();
+                await reloadPersonalList(); // Also reload personal list for For You view
 
                 // Update selected list
                 const updatedLists = await getUserLists(clerkUser?.id || '');
@@ -1839,6 +2021,7 @@ export default function HomeScreen() {
 
       await addEntryToList(list.id, entry);
       await loadUserLists();
+      await reloadPersonalList(); // Also reload personal list for For You view
 
       // Update selected list
       const updatedLists = await getUserLists(clerkUser?.id || '');
@@ -1971,58 +2154,78 @@ export default function HomeScreen() {
         </View>
 
         {/* Three dot options dropdown */}
-        {showEditDropdown && (
-          <View style={[styles.listEditDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-            <TouchableOpacity
-              style={styles.listOptionItem}
-              onPress={() => {
-                setShowEditDropdown(false);
-                handleOpenRenameModal();
-              }}
-              activeOpacity={0.7}
-            >
-              <Edit size={18} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
-            </TouchableOpacity>
-            <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity
-              style={styles.listOptionItem}
-              onPress={() => {
-                setShowEditDropdown(false);
-                toggleEditMode();
-              }}
-              activeOpacity={0.7}
-            >
-              <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
-            </TouchableOpacity>
-            <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity
-              style={styles.listOptionItem}
-              onPress={() => {
-                setShowEditDropdown(false);
-                setDescriptionText(list.description || '');
-                setShowDescriptionModal(true);
-              }}
-              activeOpacity={0.7}
-            >
-              <Edit size={18} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
-            </TouchableOpacity>
-            <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity
-              style={styles.listOptionItem}
-              onPress={() => {
-                setShowEditDropdown(false);
-                handleDeleteCurrentList();
-              }}
-              activeOpacity={0.7}
-            >
-              <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-              <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        {showEditDropdown && (() => {
+          // Check if this is the user's personal list
+          const fullNameFromFirebase = profile?.userDetails?.name;
+          const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
+          const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
+            ? `${clerkUser.firstName} ${clerkUser.lastName}`
+            : '';
+          const firstName = clerkUser?.firstName;
+          const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || '';
+          const isUserNameList = list.name === userName;
+
+          return (
+            <View style={[styles.listEditDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              {!isUserNameList && (
+                <>
+                  <TouchableOpacity
+                    style={styles.listOptionItem}
+                    onPress={() => {
+                      setShowEditDropdown(false);
+                      handleOpenRenameModal();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Edit size={18} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+                  </TouchableOpacity>
+                  <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                </>
+              )}
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  setShowEditDropdown(false);
+                  toggleEditMode();
+                }}
+                activeOpacity={0.7}
+              >
+                <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
+              </TouchableOpacity>
+              {!isUserNameList && (
+                <>
+                  <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                  <TouchableOpacity
+                    style={styles.listOptionItem}
+                    onPress={() => {
+                      setShowEditDropdown(false);
+                      setDescriptionText(list.description || '');
+                      setShowDescriptionModal(true);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Edit size={18} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+                  </TouchableOpacity>
+                  <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                  <TouchableOpacity
+                    style={styles.listOptionItem}
+                    onPress={() => {
+                      setShowEditDropdown(false);
+                      handleDeleteCurrentList();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                    <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          );
+        })()}
 
         <ScrollView style={styles.listDetailContent}>
           {list.entries.length === 0 ? (
@@ -2367,41 +2570,135 @@ export default function HomeScreen() {
         )}
 
         <View style={styles.listsContainer}>
-          {/* Browse List - Always at top */}
-          <TouchableOpacity
-            style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-            onPress={() => handleOpenList('browse')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.listCardContent}>
-              <View style={styles.listCardHeader}>
-                <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
-                  <FolderOpen size={20} color={colors.primary} strokeWidth={2} />
-                </View>
-                <View style={styles.listCardInfo}>
-                  <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
-                    Browse
-                  </Text>
-                  <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
-                    All categories • {allSupport.length} aligned brands
-                  </Text>
-                </View>
-                <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-              </View>
-            </View>
-          </TouchableOpacity>
-
           {/* User Lists */}
           {userLists.length === 0 ? (
-            <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
-              <List size={48} color={colors.textSecondary} strokeWidth={1.5} />
-              <Text style={[styles.placeholderTitle, { color: colors.text }]}>No Custom Lists Yet</Text>
-              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-                Create custom lists to organize brands, businesses, values, links, and notes.
-              </Text>
-            </View>
+            <>
+              {/* Browse List - Second position when no user lists */}
+              <TouchableOpacity
+                style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                onPress={() => handleOpenList('browse')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.listCardContent}>
+                  <View style={styles.listCardHeader}>
+                    <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+                      <FolderOpen size={20} color={colors.primary} strokeWidth={2} />
+                    </View>
+                    <View style={styles.listCardInfo}>
+                      <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                        Browse
+                      </Text>
+                      <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                        All categories • {allSupport.length} aligned brands
+                      </Text>
+                    </View>
+                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                  </View>
+                </View>
+              </TouchableOpacity>
+
+              <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+                <List size={48} color={colors.textSecondary} strokeWidth={1.5} />
+                <Text style={[styles.placeholderTitle, { color: colors.text }]}>No Custom Lists Yet</Text>
+                <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+                  Create custom lists to organize brands, businesses, values, links, and notes.
+                </Text>
+              </View>
+            </>
           ) : (
-            userLists.map((list, index) => (
+            (() => {
+              // Separate User Name list from other lists
+              const fullNameFromFirebase = profile?.userDetails?.name;
+              const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
+              const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
+                ? `${clerkUser.firstName} ${clerkUser.lastName}`
+                : '';
+              const firstName = clerkUser?.firstName;
+              const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || '';
+              const userNameList = userLists.find(list => list.name === userName);
+              const otherLists = userLists.filter(list => list.name !== userName);
+
+              return (
+                <>
+                  {/* 1. User Name List - Always first */}
+                  {userNameList && (
+                    <View
+                      key={userNameList.id}
+                      style={[
+                        styles.listCardWrapper,
+                        activeCardOptionsMenu === userNameList.id && !isLibraryRearrangeMode && { zIndex: 1000 }
+                      ]}
+                    >
+                      <TouchableOpacity
+                        style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                        onPress={() => !isLibraryRearrangeMode && handleOpenList(userNameList)}
+                        activeOpacity={0.7}
+                        disabled={isLibraryRearrangeMode}
+                      >
+                        <View style={styles.listCardContentRow}>
+                          <View style={styles.listCardContent}>
+                            <View style={styles.listCardHeader}>
+                              <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
+                                <List size={20} color={colors.white} strokeWidth={2} />
+                              </View>
+                              <View style={styles.listCardInfo}>
+                                <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                                  {userNameList.name}
+                                </Text>
+                                <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                                  {userNameList.entries.length} {userNameList.entries.length === 1 ? 'item' : 'items'}
+                                </Text>
+                                {userNameList.description && (
+                                  <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                                    {userNameList.description}
+                                  </Text>
+                                )}
+                              </View>
+                            </View>
+                          </View>
+                          {!isLibraryRearrangeMode && (
+                            <TouchableOpacity
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                setActiveCardOptionsMenu(activeCardOptionsMenu === userNameList.id ? null : userNameList.id);
+                              }}
+                              activeOpacity={0.7}
+                              style={styles.listCardOptionsButton}
+                            >
+                              <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {/* 2. Browse List - Always second */}
+                  <TouchableOpacity
+                    style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                    onPress={() => handleOpenList('browse')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.listCardContent}>
+                      <View style={styles.listCardHeader}>
+                        <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+                          <FolderOpen size={20} color={colors.primary} strokeWidth={2} />
+                        </View>
+                        <View style={styles.listCardInfo}>
+                          <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                            Browse
+                          </Text>
+                          <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
+                            All categories • {allSupport.length} aligned brands
+                          </Text>
+                        </View>
+                        <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* 3. All other user lists */}
+                  {otherLists.map((list, index) => (
               <View
                 key={list.id}
                 style={[
@@ -2464,13 +2761,13 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => handleMoveListDown(index)}
-                          disabled={index === userLists.length - 1}
+                          disabled={index === otherLists.length - 1}
                           style={styles.rearrangeButton}
                           activeOpacity={0.7}
                         >
                           <ChevronDown
                             size={20}
-                            color={index === userLists.length - 1 ? colors.textSecondary : colors.text}
+                            color={index === otherLists.length - 1 ? colors.textSecondary : colors.text}
                             strokeWidth={2}
                           />
                         </TouchableOpacity>
@@ -2479,7 +2776,10 @@ export default function HomeScreen() {
                   </View>
                 </TouchableOpacity>
               </View>
-            ))
+            ))}
+                </>
+              );
+            })()
           )}
         </View>
       </View>
@@ -2524,7 +2824,7 @@ export default function HomeScreen() {
             style={styles.headerLogo}
             resizeMode="contain"
           />
-          <MenuButton />
+          <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
         </View>
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>Loading brands...</Text>
@@ -2544,7 +2844,7 @@ export default function HomeScreen() {
             style={styles.headerLogo}
             resizeMode="contain"
           />
-          <MenuButton />
+          <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
         </View>
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>Error loading brands</Text>
@@ -2566,7 +2866,7 @@ export default function HomeScreen() {
             style={styles.headerLogo}
             resizeMode="contain"
           />
-          <MenuButton />
+          <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
         </View>
         <View style={styles.emptyContainer}>
           <View style={[styles.emptyIconContainer, { backgroundColor: colors.neutralLight }]}>
@@ -2594,7 +2894,7 @@ export default function HomeScreen() {
             style={styles.headerLogo}
             resizeMode="contain"
           />
-          <MenuButton />
+          <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
         </View>
         {renderMainViewSelector()}
       </View>
@@ -2618,71 +2918,70 @@ export default function HomeScreen() {
         transparent={true}
         onRequestClose={() => setActiveCardOptionsMenu(null)}
       >
-        <Pressable
-          style={styles.dropdownModalOverlay}
-          onPress={() => setActiveCardOptionsMenu(null)}
-        >
-          <Pressable onPress={(e) => e.stopPropagation()}>
-            <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  const list = userLists.find(l => l.id === activeCardOptionsMenu);
-                  if (list) {
-                    handleOpenCardRenameModal(list.id, list.name, list.description || '');
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Edit size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
-              </TouchableOpacity>
-              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  setActiveCardOptionsMenu(null);
-                  setIsLibraryRearrangeMode(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
-              </TouchableOpacity>
-              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  const list = userLists.find(l => l.id === activeCardOptionsMenu);
-                  if (list) {
+        <TouchableWithoutFeedback onPress={() => setActiveCardOptionsMenu(null)}>
+          <View style={styles.dropdownModalOverlay}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
+                    const list = userLists.find(l => l.id === activeCardOptionsMenu);
+                    if (list) {
+                      handleOpenCardRenameModal(list.id, list.name, list.description || '');
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Edit size={18} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+                </TouchableOpacity>
+                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
                     setActiveCardOptionsMenu(null);
-                    setDescriptionText(list.description || '');
-                    setSelectedList(list);
-                    setShowDescriptionModal(true);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Edit size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
-              </TouchableOpacity>
-              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  console.log('[Home] Delete list pressed, ID:', activeCardOptionsMenu);
-                  if (activeCardOptionsMenu) {
-                    handleCardDeleteList(activeCardOptionsMenu);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
-              </TouchableOpacity>
-            </View>
-          </Pressable>
-        </Pressable>
+                    setIsLibraryRearrangeMode(true);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
+                </TouchableOpacity>
+                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
+                    const list = userLists.find(l => l.id === activeCardOptionsMenu);
+                    if (list) {
+                      setActiveCardOptionsMenu(null);
+                      setDescriptionText(list.description || '');
+                      setSelectedList(list);
+                      setShowDescriptionModal(true);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Edit size={18} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+                </TouchableOpacity>
+                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
+                    console.log('[Home] Delete list pressed, ID:', activeCardOptionsMenu);
+                    if (activeCardOptionsMenu) {
+                      handleCardDeleteList(activeCardOptionsMenu);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
       {/* List Item Options Modal */}
@@ -2692,28 +2991,27 @@ export default function HomeScreen() {
         transparent={true}
         onRequestClose={() => setActiveItemOptionsMenu(null)}
       >
-        <Pressable
-          style={styles.dropdownModalOverlay}
-          onPress={() => setActiveItemOptionsMenu(null)}
-        >
-          <Pressable onPress={(e) => e.stopPropagation()}>
-            <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  console.log('[Home] Delete entry pressed, ID:', activeItemOptionsMenu);
-                  if (activeItemOptionsMenu) {
-                    handleDeleteEntry(activeItemOptionsMenu);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Trash2 size={16} color={colors.danger} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
-              </TouchableOpacity>
-            </View>
-          </Pressable>
-        </Pressable>
+        <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
+          <View style={styles.dropdownModalOverlay}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
+                    console.log('[Home] Delete entry pressed, ID:', activeItemOptionsMenu);
+                    if (activeItemOptionsMenu) {
+                      handleDeleteEntry(activeItemOptionsMenu);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Trash2 size={16} color={colors.danger} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
       {/* Create List Modal */}
@@ -3738,6 +4036,219 @@ export default function HomeScreen() {
           </Pressable>
         </View>
       </Modal>
+
+      {/* Explainer Overlay Modals */}
+      {/* First Explainer */}
+      <Modal
+        visible={activeExplainerStep === 1}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={async () => {
+          setActiveExplainerStep(2);
+        }}
+      >
+        <View style={styles.explainerOverlay}>
+          <TouchableWithoutFeedback onPress={async () => setActiveExplainerStep(2)}>
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+
+          <View style={[styles.explainerBubbleCentered, { backgroundColor: colors.primary }]}>
+            <TouchableOpacity
+              style={styles.explainerBubbleCloseButton}
+              onPress={async () => setActiveExplainerStep(2)}
+              activeOpacity={0.7}
+            >
+              <X size={24} color={colors.white} strokeWidth={2.5} />
+            </TouchableOpacity>
+
+            {/* Progress Indicator */}
+            <View style={styles.explainerProgress}>
+              <Text style={[styles.explainerProgressNumber, styles.explainerProgressActive, { color: colors.white }]}>1</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>2</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>3</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>4</Text>
+            </View>
+
+            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>1</Text>
+
+            <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
+              We provide brands that align or don't, based on your selections. Research where your money goes.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.explainerBubbleButton, { backgroundColor: colors.white }]}
+              onPress={async () => setActiveExplainerStep(2)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.explainerBubbleButtonText, { color: colors.primary, fontSize: 20 }]}>Next</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Second Explainer */}
+      <Modal
+        visible={activeExplainerStep === 2}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={async () => {
+          setActiveExplainerStep(3);
+        }}
+      >
+        <View style={styles.explainerOverlay}>
+          <TouchableWithoutFeedback onPress={async () => setActiveExplainerStep(3)}>
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+
+          <View style={[styles.explainerBubbleCentered, { backgroundColor: colors.primary }]}>
+            <TouchableOpacity
+              style={styles.explainerBubbleCloseButton}
+              onPress={async () => setActiveExplainerStep(3)}
+              activeOpacity={0.7}
+            >
+              <X size={24} color={colors.white} strokeWidth={2.5} />
+            </TouchableOpacity>
+
+            {/* Progress Indicator */}
+            <View style={styles.explainerProgress}>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>1</Text>
+              <Text style={[styles.explainerProgressNumber, styles.explainerProgressActive, { color: colors.white }]}>2</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>3</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>4</Text>
+            </View>
+
+            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>2</Text>
+
+            <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
+              Add companies to your personal collection and build your identity. Global brands or local businesses.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.explainerBubbleButton, { backgroundColor: colors.white }]}
+              onPress={async () => setActiveExplainerStep(3)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.explainerBubbleButtonText, { color: colors.primary, fontSize: 20 }]}>Next</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Third Explainer */}
+      <Modal
+        visible={activeExplainerStep === 3}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={async () => {
+          setActiveExplainerStep(4);
+        }}
+      >
+        <View style={styles.explainerOverlay}>
+          <TouchableWithoutFeedback onPress={async () => setActiveExplainerStep(4)}>
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+
+          <View style={[styles.explainerBubbleCentered, { backgroundColor: colors.primary }]}>
+            <TouchableOpacity
+              style={styles.explainerBubbleCloseButton}
+              onPress={async () => setActiveExplainerStep(4)}
+              activeOpacity={0.7}
+            >
+              <X size={24} color={colors.white} strokeWidth={2.5} />
+            </TouchableOpacity>
+
+            {/* Progress Indicator */}
+            <View style={styles.explainerProgress}>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>1</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>2</Text>
+              <Text style={[styles.explainerProgressNumber, styles.explainerProgressActive, { color: colors.white }]}>3</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>4</Text>
+            </View>
+
+            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>3</Text>
+
+            <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
+              Create lists from ANY value inputs. Great for gift ideas to friends & family.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.explainerBubbleButton, { backgroundColor: colors.white }]}
+              onPress={async () => setActiveExplainerStep(4)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.explainerBubbleButtonText, { color: colors.primary, fontSize: 20 }]}>Next</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Fourth Explainer */}
+      <Modal
+        visible={activeExplainerStep === 4}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={async () => {
+          setActiveExplainerStep(0);
+          if (clerkUser?.id) {
+            await AsyncStorage.setItem(`userListExplainerDismissed_${clerkUser.id}`, 'true');
+          }
+        }}
+      >
+        <View style={styles.explainerOverlay}>
+          <TouchableWithoutFeedback
+            onPress={async () => {
+              setActiveExplainerStep(0);
+              if (clerkUser?.id) {
+                await AsyncStorage.setItem(`userListExplainerDismissed_${clerkUser.id}`, 'true');
+              }
+            }}
+          >
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+
+          <View style={[styles.explainerBubbleCentered, { backgroundColor: colors.primary }]}>
+            <TouchableOpacity
+              style={styles.explainerBubbleCloseButton}
+              onPress={async () => {
+                setActiveExplainerStep(0);
+                if (clerkUser?.id) {
+                  await AsyncStorage.setItem(`userListExplainerDismissed_${clerkUser.id}`, 'true');
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <X size={24} color={colors.white} strokeWidth={2.5} />
+            </TouchableOpacity>
+
+            {/* Progress Indicator */}
+            <View style={styles.explainerProgress}>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>1</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>2</Text>
+              <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>3</Text>
+              <Text style={[styles.explainerProgressNumber, styles.explainerProgressActive, { color: colors.white }]}>4</Text>
+            </View>
+
+            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>4</Text>
+
+            <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
+              Use your code for discounts at participating companies.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.explainerBubbleButton, { backgroundColor: colors.white }]}
+              onPress={async () => {
+                setActiveExplainerStep(0);
+                if (clerkUser?.id) {
+                  await AsyncStorage.setItem(`userListExplainerDismissed_${clerkUser.id}`, 'true');
+                }
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.explainerBubbleButtonText, { color: colors.primary, fontSize: 20 }]}>Got it!</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -3973,50 +4484,31 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600' as const,
   },
-  subsectionDropdownContainer: {
+  subsectionTabsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginHorizontal: 16,
     marginBottom: 12,
     marginTop: 4,
-    position: 'relative' as const,
-    zIndex: 100,
+    gap: 20,
   },
-  subsectionDropdownButton: {
-    position: 'relative' as const,
-    alignSelf: 'flex-start',
+  subsectionTab: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 4,
   },
-  subsectionDropdownText: {
-    fontSize: 14,
+  subsectionTabText: {
+    fontSize: 16,
     fontWeight: '600' as const,
-    paddingBottom: 2,
+    paddingBottom: 4,
   },
-  subsectionUnderline: {
+  subsectionTabUnderline: {
     height: 2,
-    width: '100%',
-    marginTop: 4,
-  },
-  subsectionDropdownIcon: {
-    position: 'absolute' as const,
-    right: -20,
-    top: 2,
-  },
-  subsectionDropdownMenu: {
-    marginTop: 8,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  subsectionDropdownItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-  },
-  subsectionDropdownItemText: {
-    fontSize: 14,
-    fontWeight: '500' as const,
+    width: '130%',
+    marginTop: 2,
+    borderRadius: 1,
   },
   forYouItemRow: {
     flexDirection: 'row',
@@ -4062,6 +4554,47 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: 'center' as const,
     lineHeight: 22,
+  },
+  explainersContainer: {
+    marginTop: 16,
+    gap: 16,
+  },
+  explainerCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 20,
+    marginHorizontal: 16,
+    position: 'relative' as const,
+  },
+  explainerCloseButton: {
+    position: 'absolute' as const,
+    top: 12,
+    right: 12,
+    padding: 8,
+    zIndex: 10,
+  },
+  explainerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
+  },
+  explainerIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  explainerTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    flex: 1,
+  },
+  explainerText: {
+    fontSize: 15,
+    lineHeight: 22,
+    paddingLeft: 60,
   },
   distanceFilterRow: {
     flexDirection: 'row',
@@ -4982,6 +5515,18 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  userListHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  userListSubheading: {
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+    marginRight: 12,
+  },
   listOptionsDropdown: {
     position: 'absolute',
     top: 42,
@@ -5329,5 +5874,81 @@ const styles = StyleSheet.create({
   searchResultSubtext: {
     fontSize: 12,
     fontWeight: '400' as const,
+  },
+  // Explainer overlay styles
+  explainerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  explainerBubbleCentered: {
+    borderRadius: 24,
+    padding: 40,
+    paddingTop: 60,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 15,
+    width: '85%',
+    maxWidth: 500,
+    alignItems: 'center',
+  },
+  explainerBubbleCloseButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  explainerNumber: {
+    fontSize: 120,
+    fontWeight: '900' as const,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  explainerTextLarge: {
+    fontSize: 24,
+    lineHeight: 36,
+    marginBottom: 32,
+    textAlign: 'center',
+    fontWeight: '500' as const,
+  },
+  explainerBubbleButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+    minWidth: 140,
+  },
+  explainerBubbleButtonText: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  explainerProgress: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  explainerProgressNumber: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+  },
+  explainerProgressActive: {
+    fontSize: 32,
+    fontWeight: '900' as const,
   },
 });

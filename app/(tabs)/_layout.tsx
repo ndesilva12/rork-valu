@@ -33,10 +33,10 @@ export default function TabLayout() {
       if (isTabletOrLarger) {
         return (
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Icon size={24} color={active ? focusedColor : color} strokeWidth={2} />
+            <Icon size={22} color={active ? focusedColor : color} strokeWidth={2} />
             <Text style={{
               marginLeft: 8,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: active ? '700' : '600',
               color: active ? focusedColor : color,
             }}>
@@ -46,7 +46,7 @@ export default function TabLayout() {
         );
       }
       // mobile: icon only
-      return <Icon size={24} color={color} strokeWidth={2} />;
+      return <Icon size={22} color={color} strokeWidth={2} />;
     };
   };
 

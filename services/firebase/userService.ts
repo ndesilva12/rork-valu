@@ -246,7 +246,16 @@ export async function createUser(
     if (userData.email) userDoc.email = userData.email;
     if (userData.firstName) userDoc.firstName = userData.firstName;
     if (userData.lastName) userDoc.lastName = userData.lastName;
-    if (userData.fullName) userDoc.fullName = userData.fullName;
+    if (userData.fullName) {
+      userDoc.fullName = userData.fullName;
+      // Also save to userDetails.name for individual accounts
+      if (!userDoc.accountType || userDoc.accountType === 'individual') {
+        if (!userDoc.userDetails) {
+          userDoc.userDetails = {};
+        }
+        userDoc.userDetails.name = userData.fullName;
+      }
+    }
     if (userData.imageUrl) userDoc.imageUrl = userData.imageUrl;
 
     await setDoc(userRef, userDoc);
