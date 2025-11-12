@@ -1148,28 +1148,77 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
           <View style={styles.brandsContainer}>
-            {userPersonalList.entries.map((entry, index) => (
-              <View key={entry.id || index} style={styles.forYouItemRow}>
-                {entry.type === 'brand' && entry.logoUrl && (
-                  <Image
-                    source={{ uri: entry.logoUrl }}
-                    style={styles.forYouBrandImage}
-                    contentFit="cover"
-                    transition={200}
-                    cachePolicy="memory-disk"
-                    placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
-                  />
-                )}
-                <View style={styles.forYouItemContent}>
-                  <Text style={[styles.forYouBrandName, { color: colors.text }]}>{entry.name}</Text>
-                  {entry.website && (
-                    <Text style={[styles.forYouBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {entry.website}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            ))}
+            {userPersonalList.entries.map((entry, index) => {
+              // Render brand entries
+              if (entry.type === 'brand' && 'brandId' in entry) {
+                return (
+                  <TouchableOpacity
+                    key={entry.id || index}
+                    style={[
+                      styles.brandCard,
+                      { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                    ]}
+                    onPress={() => router.push(`/brand/${entry.brandId}`)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.brandCardInner}>
+                      <View style={styles.brandLogoContainer}>
+                        <Image
+                          source={{ uri: entry.logoUrl || getLogoUrl(entry.website || getBrandWebsite(entry.brandId) || '') }}
+                          style={styles.brandLogo}
+                          contentFit="cover"
+                          transition={200}
+                          cachePolicy="memory-disk"
+                        />
+                      </View>
+                      <View style={styles.brandCardContent}>
+                        <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
+                          {entry.brandName}
+                        </Text>
+                        <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {entry.brandCategory || 'Brand'}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }
+              // Render business entries
+              else if (entry.type === 'business' && 'businessId' in entry) {
+                return (
+                  <TouchableOpacity
+                    key={entry.id || index}
+                    style={[
+                      styles.brandCard,
+                      { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                    ]}
+                    onPress={() => handleBusinessPress(entry.businessId)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.brandCardInner}>
+                      <View style={styles.brandLogoContainer}>
+                        <Image
+                          source={{ uri: entry.logoUrl || getLogoUrl(entry.website || '') }}
+                          style={styles.brandLogo}
+                          contentFit="cover"
+                          transition={200}
+                          cachePolicy="memory-disk"
+                        />
+                      </View>
+                      <View style={styles.brandCardContent}>
+                        <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
+                          {entry.businessName}
+                        </Text>
+                        <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {entry.businessCategory || 'Business'}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }
+              return null;
+            })}
           </View>
         </View>
       );
