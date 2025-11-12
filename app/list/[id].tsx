@@ -10,6 +10,7 @@ import {
   Platform,
   Share,
   Alert,
+  Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -93,6 +94,15 @@ export default function SharedListScreen() {
     }
   };
 
+  const handleGoToHomepage = () => {
+    const homepageUrl = 'https://upright.money';
+    if (Platform.OS === 'web') {
+      window.open(homepageUrl, '_blank');
+    } else {
+      Linking.openURL(homepageUrl);
+    }
+  };
+
   const renderListEntry = (entry: ListEntry) => {
     if (entry.type === 'brand') {
       const brand = brands.find(b => b.id === entry.brandId);
@@ -107,7 +117,7 @@ export default function SharedListScreen() {
         >
           <View style={styles.entryImageContainer}>
             <Image
-              source={{ uri: getLogoUrl(brand.name, brand.website) }}
+              source={{ uri: getLogoUrl(brand.website, { size: 128 }) }}
               style={styles.entryImage}
               contentFit="contain"
             />
@@ -275,6 +285,22 @@ export default function SharedListScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* Branding Header */}
+        <TouchableOpacity
+          style={styles.brandingHeader}
+          onPress={handleGoToHomepage}
+          activeOpacity={0.8}
+        >
+          <Image
+            source={require('@/assets/images/uprightlogobig2.png')}
+            style={styles.brandingLogo}
+            contentFit="contain"
+          />
+          <Text style={[styles.brandingTagline, { color: colors.textSecondary }]}>
+            Shop by your values
+          </Text>
+        </TouchableOpacity>
+
         {list.creatorName && (
           <View style={[styles.creatorCard, { backgroundColor: colors.backgroundSecondary }]}>
             <Text style={[styles.creatorLabel, { color: colors.textSecondary }]}>Created by</Text>
@@ -327,6 +353,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
   },
+  brandingHeader: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  brandingLogo: {
+    width: 180,
+    height: 60,
+    marginBottom: 8,
+  },
+  brandingTagline: {
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: 0.3,
+  },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
@@ -364,54 +406,116 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   creatorCard: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+      },
+    }),
   },
   creatorLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
+    letterSpacing: 0.8,
+    marginBottom: 6,
+    opacity: 0.7,
   },
   creatorName: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
   },
   descriptionCard: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+      },
+    }),
   },
   description: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 24,
   },
   statsContainer: {
-    marginBottom: 16,
+    marginBottom: 20,
+    marginTop: 4,
   },
   statsText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    opacity: 0.6,
   },
   entriesContainer: {
-    gap: 8,
+    gap: 12,
   },
   entryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
+    padding: 16,
+    borderRadius: 16,
     borderWidth: 1,
-    gap: 12,
+    gap: 14,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)',
+        transition: 'transform 0.2s, box-shadow 0.2s',
+      },
+    }),
   },
   entryImageContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
+    width: 56,
+    height: 56,
+    borderRadius: 12,
     backgroundColor: '#fff',
-    padding: 8,
+    padding: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+      web: {
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+      },
+    }),
   },
   entryImage: {
     width: '100%',
@@ -421,16 +525,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   entryName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 2,
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 4,
+    lineHeight: 22,
   },
   entryType: {
     fontSize: 13,
+    fontWeight: '500',
+    opacity: 0.7,
   },
   entryText: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '500',
   },
   emptyContainer: {
     padding: 48,
