@@ -14,7 +14,7 @@ import {
   Pressable,
   TextInput,
 } from 'react-native';
-import { ChevronRight, ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Plus, Edit3, X, List } from 'lucide-react-native';
+import { ChevronRight, ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Plus, Edit3, X, List, Tag } from 'lucide-react-native';
 import { useState, useMemo } from 'react';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -24,7 +24,7 @@ import { CauseCategory, Cause } from '@/types';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
 import { getUserLists, addEntryToList, createList } from '@/services/firebase/listService';
 
-const CATEGORY_ICONS: Record<CauseCategory, any> = {
+const CATEGORY_ICONS: Record<string, any> = {
   social_issue: Heart,
   religion: Building2,
   ideology: Users,
@@ -34,7 +34,7 @@ const CATEGORY_ICONS: Record<CauseCategory, any> = {
   person: UserIcon,
 };
 
-const CATEGORY_LABELS: Record<CauseCategory, string> = {
+const CATEGORY_LABELS: Record<string, string> = {
   social_issue: 'Social Issues',
   religion: 'Religion',
   ideology: 'Ideology',
@@ -42,6 +42,16 @@ const CATEGORY_LABELS: Record<CauseCategory, string> = {
   nation: 'Places',
   organization: 'Organizations',
   person: 'People',
+};
+
+// Helper to get category icon, with fallback
+const getCategoryIcon = (category: string) => CATEGORY_ICONS[category] || Tag;
+
+// Helper to get category label, with fallback to capitalized category name
+const getCategoryLabel = (category: string) => {
+  if (CATEGORY_LABELS[category]) return CATEGORY_LABELS[category];
+  // Capitalize and format the category name (e.g., "sports" -> "Sports", "social_issue" -> "Social Issue")
+  return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 
 export default function ValuesScreen() {
@@ -63,26 +73,23 @@ export default function ValuesScreen() {
   const [newListDescription, setNewListDescription] = useState('');
 
   // Transform Firebase values into the format expected by the UI
+  // Dynamically build categories based on what's in Firebase
   const availableValues = useMemo(() => {
-    const valuesByCategory: Record<CauseCategory, any[]> = {
-      social_issue: [],
-      religion: [],
-      ideology: [],
-      corporation: [],
-      nation: [],
-      organization: [],
-      person: [],
-    };
+    const valuesByCategory: Record<string, any[]> = {};
 
     firebaseValues.forEach(value => {
-      const category = (value.category || 'social_issue') as CauseCategory;
-      if (valuesByCategory[category]) {
-        valuesByCategory[category].push({
-          id: value.id,
-          name: value.name,
-          category: category,
-        });
+      const category = value.category || 'social_issue';
+
+      // Initialize category array if it doesn't exist
+      if (!valuesByCategory[category]) {
+        valuesByCategory[category] = [];
       }
+
+      valuesByCategory[category].push({
+        id: value.id,
+        name: value.name,
+        category: category,
+      });
     });
 
     return valuesByCategory;
@@ -98,30 +105,30 @@ export default function ValuesScreen() {
   // Get all selected value IDs
   const selectedValueIds = new Set((profile.causes || []).map(c => c.id));
 
-  // Get unselected values by category
-  const unselectedValuesByCategory: Record<CauseCategory, any[]> = {
-    social_issue: [],
-    religion: [],
-    ideology: [],
-    corporation: [],
-    nation: [],
-    organization: [],
-    person: [],
-  };
+  // Get unselected values by category (dynamically based on what's in Firebase)
+  const unselectedValuesByCategory: Record<string, any[]> = {};
 
-  // Populate unselected values from Firebase
-  (['ideology', 'person', 'social_issue', 'religion', 'nation', 'organization'] as CauseCategory[]).forEach(category => {
+  // Populate unselected values from Firebase for all categories
+  Object.keys(availableValues).forEach(category => {
     const values = availableValues[category] || [];
     unselectedValuesByCategory[category] = values.filter(v => !selectedValueIds.has(v.id));
   });
 
-  const toggleCategoryExpanded = (category: CauseCategory) => {
+  // Get all categories sorted (predefined ones first, then custom ones alphabetically)
+  const predefinedCategories = ['ideology', 'person', 'social_issue', 'religion', 'nation', 'organization'];
+  const allCategories = Object.keys(unselectedValuesByCategory);
+  const sortedCategories = [
+    ...predefinedCategories.filter(cat => allCategories.includes(cat)),
+    ...allCategories.filter(cat => !predefinedCategories.includes(cat)).sort(),
+  ];
+
+  const toggleCategoryExpanded = (category: string) => {
     setExpandedCategories(prev => {
       const next = new Set(prev);
-      if (next.has(category)) {
-        next.delete(category);
+      if (next.has(category as CauseCategory)) {
+        next.delete(category as CauseCategory);
       } else {
-        next.add(category);
+        next.add(category as CauseCategory);
       }
       return next;
     });
@@ -552,12 +559,12 @@ export default function ValuesScreen() {
             Tap any value to explore brands associated with it
           </Text>
 
-          {(['ideology', 'person', 'social_issue', 'religion', 'nation', 'organization'] as CauseCategory[]).map((category) => {
+          {sortedCategories.map((category) => {
             const values = unselectedValuesByCategory[category];
             if (!values || values.length === 0) return null;
 
-            const Icon = CATEGORY_ICONS[category];
-            const isExpanded = expandedCategories.has(category);
+            const Icon = getCategoryIcon(category);
+            const isExpanded = expandedCategories.has(category as CauseCategory);
             const displayedValues = isExpanded ? values : values.slice(0, 3);
             const hasMore = values.length > 3;
 
@@ -566,7 +573,7 @@ export default function ValuesScreen() {
                 <View style={styles.categoryHeader}>
                   <Icon size={18} color={colors.textSecondary} strokeWidth={2} />
                   <Text style={[styles.categoryTitle, { color: colors.text }]}>
-                    {CATEGORY_LABELS[category]}
+                    {getCategoryLabel(category)}
                   </Text>
                 </View>
                 <View style={styles.valuesList}>
