@@ -831,55 +831,67 @@ export default function HomeScreen() {
             </Text>
             <View style={[styles.subsectionUnderline, { backgroundColor: colors.primary }]} />
             <ChevronDown
-              size={16}
+              size={18}
               color={colors.text}
               strokeWidth={2}
               style={styles.subsectionDropdownIcon}
             />
           </TouchableOpacity>
-
-          {showForYouDropdown && (
-            <View style={[styles.subsectionDropdownMenu, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              {forYouSubsection !== 'aligned' && (
-                <TouchableOpacity
-                  style={styles.subsectionDropdownItem}
-                  onPress={() => {
-                    setForYouSubsection('aligned');
-                    setShowForYouDropdown(false);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>Aligned</Text>
-                </TouchableOpacity>
-              )}
-              {forYouSubsection !== 'unaligned' && (
-                <TouchableOpacity
-                  style={styles.subsectionDropdownItem}
-                  onPress={() => {
-                    setForYouSubsection('unaligned');
-                    setShowForYouDropdown(false);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>Unaligned</Text>
-                </TouchableOpacity>
-              )}
-              {forYouSubsection !== 'news' && (
-                <TouchableOpacity
-                  style={styles.subsectionDropdownItem}
-                  onPress={() => {
-                    setForYouSubsection('news');
-                    setShowForYouDropdown(false);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>News</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
         </View>
       )}
+
+      {/* For You Dropdown Modal */}
+      <Modal
+        visible={showForYouDropdown}
+        animationType="none"
+        transparent={true}
+        onRequestClose={() => setShowForYouDropdown(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowForYouDropdown(false)}>
+          <View style={styles.subsectionDropdownOverlay}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={[styles.subsectionDropdownMenuModal, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                {forYouSubsection !== 'aligned' && (
+                  <TouchableOpacity
+                    style={styles.subsectionDropdownItem}
+                    onPress={() => {
+                      setForYouSubsection('aligned');
+                      setShowForYouDropdown(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>Aligned</Text>
+                  </TouchableOpacity>
+                )}
+                {forYouSubsection !== 'unaligned' && (
+                  <TouchableOpacity
+                    style={styles.subsectionDropdownItem}
+                    onPress={() => {
+                      setForYouSubsection('unaligned');
+                      setShowForYouDropdown(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>Unaligned</Text>
+                  </TouchableOpacity>
+                )}
+                {forYouSubsection !== 'news' && (
+                  <TouchableOpacity
+                    style={styles.subsectionDropdownItem}
+                    onPress={() => {
+                      setForYouSubsection('news');
+                      setShowForYouDropdown(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.subsectionDropdownItemText, { color: colors.text }]}>News</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
       {/* Distance Filter Row - Shows when Local view is selected */}
       {mainView === 'local' && (
@@ -2618,71 +2630,70 @@ export default function HomeScreen() {
         transparent={true}
         onRequestClose={() => setActiveCardOptionsMenu(null)}
       >
-        <Pressable
-          style={styles.dropdownModalOverlay}
-          onPress={() => setActiveCardOptionsMenu(null)}
-        >
-          <Pressable onPress={() => {}}>
-            <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  const list = userLists.find(l => l.id === activeCardOptionsMenu);
-                  if (list) {
-                    handleOpenCardRenameModal(list.id, list.name, list.description || '');
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Edit size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
-              </TouchableOpacity>
-              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  setActiveCardOptionsMenu(null);
-                  setIsLibraryRearrangeMode(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
-              </TouchableOpacity>
-              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  const list = userLists.find(l => l.id === activeCardOptionsMenu);
-                  if (list) {
+        <TouchableWithoutFeedback onPress={() => setActiveCardOptionsMenu(null)}>
+          <View style={styles.dropdownModalOverlay}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
+                    const list = userLists.find(l => l.id === activeCardOptionsMenu);
+                    if (list) {
+                      handleOpenCardRenameModal(list.id, list.name, list.description || '');
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Edit size={18} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+                </TouchableOpacity>
+                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
                     setActiveCardOptionsMenu(null);
-                    setDescriptionText(list.description || '');
-                    setSelectedList(list);
-                    setShowDescriptionModal(true);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Edit size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
-              </TouchableOpacity>
-              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  console.log('[Home] Delete list pressed, ID:', activeCardOptionsMenu);
-                  if (activeCardOptionsMenu) {
-                    handleCardDeleteList(activeCardOptionsMenu);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
-              </TouchableOpacity>
-            </View>
-          </Pressable>
-        </Pressable>
+                    setIsLibraryRearrangeMode(true);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
+                </TouchableOpacity>
+                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
+                    const list = userLists.find(l => l.id === activeCardOptionsMenu);
+                    if (list) {
+                      setActiveCardOptionsMenu(null);
+                      setDescriptionText(list.description || '');
+                      setSelectedList(list);
+                      setShowDescriptionModal(true);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Edit size={18} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+                </TouchableOpacity>
+                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
+                    console.log('[Home] Delete list pressed, ID:', activeCardOptionsMenu);
+                    if (activeCardOptionsMenu) {
+                      handleCardDeleteList(activeCardOptionsMenu);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
       {/* List Item Options Modal */}
@@ -2692,28 +2703,27 @@ export default function HomeScreen() {
         transparent={true}
         onRequestClose={() => setActiveItemOptionsMenu(null)}
       >
-        <Pressable
-          style={styles.dropdownModalOverlay}
-          onPress={() => setActiveItemOptionsMenu(null)}
-        >
-          <Pressable onPress={() => {}}>
-            <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={() => {
-                  console.log('[Home] Delete entry pressed, ID:', activeItemOptionsMenu);
-                  if (activeItemOptionsMenu) {
-                    handleDeleteEntry(activeItemOptionsMenu);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Trash2 size={16} color={colors.danger} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
-              </TouchableOpacity>
-            </View>
-          </Pressable>
-        </Pressable>
+        <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
+          <View style={styles.dropdownModalOverlay}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
+                    console.log('[Home] Delete entry pressed, ID:', activeItemOptionsMenu);
+                    if (activeItemOptionsMenu) {
+                      handleDeleteEntry(activeItemOptionsMenu);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Trash2 size={16} color={colors.danger} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
       {/* Create List Modal */}
@@ -3985,7 +3995,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   subsectionDropdownText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600' as const,
     paddingBottom: 2,
   },
@@ -3996,8 +4006,24 @@ const styles = StyleSheet.create({
   },
   subsectionDropdownIcon: {
     position: 'absolute' as const,
-    right: -20,
-    top: 2,
+    right: -24,
+    top: 1,
+  },
+  subsectionDropdownOverlay: {
+    flex: 1,
+    paddingTop: Platform.OS === 'web' ? 200 : 180,
+    alignItems: 'center',
+  },
+  subsectionDropdownMenuModal: {
+    minWidth: 140,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
   },
   subsectionDropdownMenu: {
     marginTop: 8,
@@ -4015,7 +4041,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   subsectionDropdownItemText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500' as const,
   },
   forYouItemRow: {

@@ -10,6 +10,8 @@ import {
   Linking,
   Platform,
   TextInput,
+  Modal,
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -18,6 +20,7 @@ import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { getLogoUrl } from '@/lib/logo';
+import { getUserLists, addEntryToList } from '@/services/firebase/listService';
 
 export default function BrandDetailScreen() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
@@ -135,6 +138,8 @@ export default function BrandDetailScreen() {
   const [sortBy, setSortBy] = useState<'latest' | 'popular'>('latest');
   const [reviewText, setReviewText] = useState('');
   const [userRating, setUserRating] = useState(0);
+  const [showAddToListModal, setShowAddToListModal] = useState(false);
+  const [userLists, setUserLists] = useState<any[]>([]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -189,6 +194,46 @@ export default function BrandDetailScreen() {
     setReviewText('');
     setUserRating(0);
   }, [reviewText, userRating, clerkUser]);
+
+  const loadUserLists = useCallback(async () => {
+    if (!clerkUser?.id) return;
+    try {
+      const lists = await getUserLists(clerkUser.id);
+      setUserLists(lists);
+    } catch (error) {
+      console.error('[BrandDetail] Error loading user lists:', error);
+    }
+  }, [clerkUser?.id]);
+
+  const handleAddToList = useCallback(async (listId: string) => {
+    if (!brand || !clerkUser?.id) return;
+
+    try {
+      await addEntryToList(listId, {
+        type: 'brand',
+        brandId: brand.id,
+        name: brand.name,
+        website: brand.website,
+        logoUrl: getLogoUrl(brand.website || ''),
+      });
+      setShowAddToListModal(false);
+      Alert.alert('Success', `Added ${brand.name} to your list`);
+    } catch (error) {
+      console.error('[BrandDetail] Error adding to list:', error);
+      Alert.alert('Error', 'Could not add to list. Please try again.');
+    }
+  }, [brand, clerkUser?.id]);
+
+  const handleOpenAddModal = useCallback(async () => {
+    if (userLists.length === 0) {
+      await loadUserLists();
+    }
+    setShowAddToListModal(true);
+  }, [userLists.length, loadUserLists]);
+
+  useEffect(() => {
+    loadUserLists();
+  }, [loadUserLists]);
 
   const handleShopPress = async () => {
     if (!brand) return;
@@ -459,26 +504,26 @@ export default function BrandDetailScreen() {
         <View style={styles.content}>
           {/* Header with logo, brand info, and score */}
           <View style={styles.header}>
-            <View style={styles.logoAndButtonContainer}>
-              <Image
-                source={{ uri: getLogoUrl(brand.website || '') }}
-                style={styles.headerLogo}
-                contentFit="cover"
-                transition={200}
-                cachePolicy="memory-disk"
-                placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
-              />
-              <TouchableOpacity
-                style={[styles.addToListButton, { backgroundColor: colors.primary }]}
-                onPress={() => router.push(`/(tabs)/home?showQuickAdd=true&brandId=${brand.id}`)}
-                activeOpacity={0.7}
-              >
-                <Plus size={18} color={colors.white} strokeWidth={2.5} />
-              </TouchableOpacity>
-            </View>
+            <Image
+              source={{ uri: getLogoUrl(brand.website || '') }}
+              style={styles.headerLogo}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
+              placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
+            />
 
             <View style={styles.titleContainer}>
-              <Text style={[styles.brandName, { color: colors.text }]}>{brand?.name}</Text>
+              <View style={styles.brandNameRow}>
+                <Text style={[styles.brandName, { color: colors.text }]}>{brand?.name}</Text>
+                <TouchableOpacity
+                  style={[styles.addToListButton, { backgroundColor: colors.background }]}
+                  onPress={handleOpenAddModal}
+                  activeOpacity={0.7}
+                >
+                  <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
               <Text style={[styles.category, { color: colors.primary }]}>{brand.category}</Text>
               {brand.headquarters && (
                 <Text style={[styles.headquarters, { color: colors.textSecondary }]}>{brand.headquarters}</Text>
@@ -773,6 +818,50 @@ export default function BrandDetailScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Add to List Modal */}
+      <Modal
+        visible={showAddToListModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAddToListModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Add to List</Text>
+            <ScrollView style={styles.listsScrollView}>
+              {userLists.length === 0 ? (
+                <Text style={[styles.noListsText, { color: colors.textSecondary }]}>
+                  No lists yet. Create one on the Playbook tab!
+                </Text>
+              ) : (
+                userLists.map((list) => (
+                  <TouchableOpacity
+                    key={list.id}
+                    style={[styles.listOption, { borderBottomColor: colors.border }]}
+                    onPress={() => handleAddToList(list.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.listOptionText, { color: colors.text }]}>{list.name}</Text>
+                    {list.description && (
+                      <Text style={[styles.listOptionDescription, { color: colors.textSecondary }]}>
+                        {list.description}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+            <TouchableOpacity
+              style={[styles.modalCloseButton, { backgroundColor: colors.backgroundSecondary }]}
+              onPress={() => setShowAddToListModal(false)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.modalCloseButtonText, { color: colors.text }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -840,10 +929,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 10,
   },
-  logoAndButtonContainer: {
-    alignItems: 'center',
-    gap: 8,
-  },
   headerLogo: {
     width: 56,
     height: 56,
@@ -851,22 +936,27 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(0, 0, 0, 0.1)',
   },
-  addToListButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   titleContainer: {
     flex: 1,
     marginRight: 12,
   },
-
+  brandNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
   brandName: {
     fontSize: 22,
     fontWeight: '700' as const,
-    marginBottom: 4,
+    flex: 1,
+  },
+  addToListButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   category: {
     fontSize: 13,
@@ -1206,6 +1296,52 @@ const styles = StyleSheet.create({
   },
   reviewLikes: {
     fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '70%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    marginBottom: 16,
+  },
+  listsScrollView: {
+    maxHeight: 400,
+  },
+  noListsText: {
+    fontSize: 15,
+    textAlign: 'center' as const,
+    padding: 20,
+  },
+  listOption: {
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  listOptionText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  listOptionDescription: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  modalCloseButton: {
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  modalCloseButtonText: {
+    fontSize: 16,
     fontWeight: '600' as const,
   },
 });

@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, MapPin, Navigation, Percent, X } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, MapPin, Navigation, Percent, X, Plus } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Platform,
   PanResponder,
   Modal,
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -22,6 +23,7 @@ import { db } from '@/firebase';
 import { BusinessInfo, Cause } from '@/types';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateAlignmentScore } from '@/services/firebase/businessService';
+import { getUserLists, addEntryToList } from '@/services/firebase/listService';
 
 interface BusinessUser {
   id: string;
@@ -34,7 +36,7 @@ interface BusinessUser {
 export default function BusinessDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { profile, isDarkMode } = useUser();
+  const { profile, isDarkMode, clerkUser } = useUser();
   const { values } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
   const scrollViewRef = useRef<ScrollView>(null);
@@ -42,6 +44,8 @@ export default function BusinessDetailScreen() {
   const [business, setBusiness] = useState<BusinessUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedGalleryImage, setSelectedGalleryImage] = useState<{ imageUrl: string; caption: string } | null>(null);
+  const [showAddToListModal, setShowAddToListModal] = useState(false);
+  const [userLists, setUserLists] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchBusiness = async () => {
@@ -85,6 +89,46 @@ export default function BusinessDetailScreen() {
       },
     })
   ).current;
+
+  const loadUserLists = async () => {
+    if (!clerkUser?.id) return;
+    try {
+      const lists = await getUserLists(clerkUser.id);
+      setUserLists(lists);
+    } catch (error) {
+      console.error('[BusinessDetail] Error loading user lists:', error);
+    }
+  };
+
+  const handleAddToList = async (listId: string) => {
+    if (!business || !clerkUser?.id) return;
+
+    try {
+      await addEntryToList(listId, {
+        type: 'business',
+        businessId: business.id,
+        name: business.businessInfo.name,
+        website: business.businessInfo.website || '',
+        logoUrl: getLogoUrl(business.businessInfo.website || ''),
+      });
+      setShowAddToListModal(false);
+      Alert.alert('Success', `Added ${business.businessInfo.name} to your list`);
+    } catch (error) {
+      console.error('[BusinessDetail] Error adding to list:', error);
+      Alert.alert('Error', 'Could not add to list. Please try again.');
+    }
+  };
+
+  const handleOpenAddModal = async () => {
+    if (userLists.length === 0) {
+      await loadUserLists();
+    }
+    setShowAddToListModal(true);
+  };
+
+  useEffect(() => {
+    loadUserLists();
+  }, [clerkUser?.id]);
 
   const handleShopPress = async () => {
     if (!business?.businessInfo.website) return;
@@ -330,7 +374,16 @@ export default function BusinessDetailScreen() {
             />
 
             <View style={styles.titleContainer}>
-              <Text style={[styles.brandName, { color: colors.text }]}>{business.businessInfo.name}</Text>
+              <View style={styles.brandNameRow}>
+                <Text style={[styles.brandName, { color: colors.text }]}>{business.businessInfo.name}</Text>
+                <TouchableOpacity
+                  style={[styles.addToListButton, { backgroundColor: colors.background }]}
+                  onPress={handleOpenAddModal}
+                  activeOpacity={0.7}
+                >
+                  <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
               <Text style={[styles.category, { color: colors.primary }]}>{business.businessInfo.category}</Text>
               {getPrimaryLocation() && (
                 <View style={styles.locationRow}>
@@ -668,6 +721,50 @@ export default function BusinessDetailScreen() {
           </TouchableOpacity>
         </View>
       </Modal>
+
+      {/* Add to List Modal */}
+      <Modal
+        visible={showAddToListModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAddToListModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Add to List</Text>
+            <ScrollView style={styles.listsScrollView}>
+              {userLists.length === 0 ? (
+                <Text style={[styles.noListsText, { color: colors.textSecondary }]}>
+                  No lists yet. Create one on the Playbook tab!
+                </Text>
+              ) : (
+                userLists.map((list) => (
+                  <TouchableOpacity
+                    key={list.id}
+                    style={[styles.listOption, { borderBottomColor: colors.border }]}
+                    onPress={() => handleAddToList(list.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.listOptionText, { color: colors.text }]}>{list.name}</Text>
+                    {list.description && (
+                      <Text style={[styles.listOptionDescription, { color: colors.textSecondary }]}>
+                        {list.description}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+            <TouchableOpacity
+              style={[styles.modalCloseButton, { backgroundColor: colors.backgroundSecondary }]}
+              onPress={() => setShowAddToListModal(false)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.modalCloseButtonText, { color: colors.text }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -746,10 +843,23 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 16,
   },
+  brandNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
   brandName: {
     fontSize: 28,
     fontWeight: '700' as const,
-    marginBottom: 6,
+    flex: 1,
+  },
+  addToListButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   category: {
     fontSize: 15,
@@ -1046,5 +1156,35 @@ const styles = StyleSheet.create({
   modalCaptionText: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  listsScrollView: {
+    maxHeight: 400,
+  },
+  noListsText: {
+    fontSize: 15,
+    textAlign: 'center' as const,
+    padding: 20,
+  },
+  listOption: {
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  listOptionText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  listOptionDescription: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  modalCloseButton: {
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  modalCloseButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
 });
