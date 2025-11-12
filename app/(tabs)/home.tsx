@@ -100,6 +100,7 @@ export default function HomeScreen() {
   const colors = isDarkMode ? darkColors : lightColors;
   const [mainView, setMainView] = useState<MainView>('forYou');
   const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
+  const [userPersonalList, setUserPersonalList] = useState<UserList | null>(null);
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
@@ -207,6 +208,31 @@ export default function HomeScreen() {
       Alert.alert('Error', 'Could not get your location. Please try again.');
     }
   };
+
+  // Load user's personal list on mount and set default view
+  useEffect(() => {
+    const loadPersonalList = async () => {
+      if (!clerkUser?.id) return;
+
+      try {
+        const lists = await getUserLists(clerkUser.id);
+        const userName = clerkUser.fullName || clerkUser.firstName || '';
+        const personalList = lists.find(list => list.name === userName);
+
+        if (personalList) {
+          setUserPersonalList(personalList);
+          // If personal list has entries, default to it. Otherwise, default to aligned.
+          if (personalList.entries && personalList.entries.length > 0) {
+            setForYouSubsection('userList');
+          }
+        }
+      } catch (error) {
+        console.error('[Home] Error loading personal list:', error);
+      }
+    };
+
+    loadPersonalList();
+  }, [clerkUser?.id, clerkUser?.fullName, clerkUser?.firstName]);
 
   // Fetch user businesses and request location when "local" mode is selected
   // Fetch user businesses on mount
@@ -822,6 +848,22 @@ export default function HomeScreen() {
         <View style={styles.subsectionTabsContainer}>
           <TouchableOpacity
             style={styles.subsectionTab}
+            onPress={() => setForYouSubsection('userList')}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.subsectionTabText,
+              { color: forYouSubsection === 'userList' ? colors.text : colors.textSecondary }
+            ]}>
+              {clerkUser?.firstName || 'My List'}
+            </Text>
+            {forYouSubsection === 'userList' && (
+              <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.subsectionTab}
             onPress={() => setForYouSubsection('aligned')}
             activeOpacity={0.7}
           >
@@ -848,22 +890,6 @@ export default function HomeScreen() {
               Unaligned
             </Text>
             {forYouSubsection === 'unaligned' && (
-              <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.subsectionTab}
-            onPress={() => setForYouSubsection('news')}
-            activeOpacity={0.7}
-          >
-            <Text style={[
-              styles.subsectionTabText,
-              { color: forYouSubsection === 'news' ? colors.text : colors.textSecondary }
-            ]}>
-              News
-            </Text>
-            {forYouSubsection === 'news' && (
               <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
             )}
           </TouchableOpacity>
@@ -972,14 +998,57 @@ export default function HomeScreen() {
       );
     }
 
-    // News subsection
-    if (forYouSubsection === 'news') {
+    // User List subsection
+    if (forYouSubsection === 'userList') {
+      if (!userPersonalList) {
+        return (
+          <View style={styles.section}>
+            <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+                Your personal list is being created. Check back soon!
+              </Text>
+            </View>
+          </View>
+        );
+      }
+
+      if (!userPersonalList.entries || userPersonalList.entries.length === 0) {
+        return (
+          <View style={styles.section}>
+            <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+                Your personal list is empty. Add items by tapping the + button on brand or business pages!
+              </Text>
+            </View>
+          </View>
+        );
+      }
+
       return (
         <View style={styles.section}>
-          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
-            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-              News feed coming soon! This will show X posts about aligned and unaligned brands.
-            </Text>
+          <View style={styles.brandsContainer}>
+            {userPersonalList.entries.map((entry, index) => (
+              <View key={entry.id || index} style={styles.forYouItemRow}>
+                {entry.type === 'brand' && entry.logoUrl && (
+                  <Image
+                    source={{ uri: entry.logoUrl }}
+                    style={styles.forYouBrandImage}
+                    contentFit="cover"
+                    transition={200}
+                    cachePolicy="memory-disk"
+                    placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
+                  />
+                )}
+                <View style={styles.forYouItemContent}>
+                  <Text style={[styles.forYouBrandName, { color: colors.text }]}>{entry.name}</Text>
+                  {entry.website && (
+                    <Text style={[styles.forYouBrandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {entry.website}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            ))}
           </View>
         </View>
       );
@@ -2392,7 +2461,19 @@ export default function HomeScreen() {
               </Text>
             </View>
           ) : (
-            userLists.map((list, index) => (
+            (() => {
+              // Sort lists to pin User Name list at the top
+              const userName = clerkUser?.fullName || clerkUser?.firstName || '';
+              const sortedLists = [...userLists].sort((a, b) => {
+                const aIsUserList = a.name === userName;
+                const bIsUserList = b.name === userName;
+
+                if (aIsUserList && !bIsUserList) return -1;
+                if (!aIsUserList && bIsUserList) return 1;
+                return 0; // Keep original order for other lists
+              });
+
+              return sortedLists.map((list, index) => (
               <View
                 key={list.id}
                 style={[
@@ -2455,13 +2536,13 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => handleMoveListDown(index)}
-                          disabled={index === userLists.length - 1}
+                          disabled={index === sortedLists.length - 1}
                           style={styles.rearrangeButton}
                           activeOpacity={0.7}
                         >
                           <ChevronDown
                             size={20}
-                            color={index === userLists.length - 1 ? colors.textSecondary : colors.text}
+                            color={index === sortedLists.length - 1 ? colors.textSecondary : colors.text}
                             strokeWidth={2}
                           />
                         </TouchableOpacity>
@@ -2470,7 +2551,8 @@ export default function HomeScreen() {
                   </View>
                 </TouchableOpacity>
               </View>
-            ))
+            ));
+            })()
           )}
         </View>
       </View>
