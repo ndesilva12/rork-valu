@@ -30,8 +30,28 @@ import {
   ExternalLink,
   ChevronUp,
   ChevronDown,
+  GripVertical,
+  Share2,
 } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   View,
   Text,
@@ -47,8 +67,10 @@ import {
   TextInput,
   Pressable,
   TouchableWithoutFeedback,
+  Share,
 } from 'react-native';
 import { Image } from 'expo-image';
+import * as Clipboard from 'expo-clipboard';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -65,7 +87,7 @@ import { calculateDistance, formatDistance } from '@/lib/distance';
 import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 import BusinessMapView from '@/components/BusinessMapView';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
-import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList, updateListMetadata } from '@/services/firebase/listService';
+import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList, updateListMetadata, reorderListEntries } from '@/services/firebase/listService';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 
@@ -161,6 +183,10 @@ export default function HomeScreen() {
   const [cardRenameListName, setCardRenameListName] = useState('');
   const [cardRenameListDescription, setCardRenameListDescription] = useState('');
 
+  // Share modal state
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareListData, setShareListData] = useState<UserList | null>(null);
+
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Fetch brands and values from Firebase via DataContext
@@ -182,6 +208,64 @@ export default function HomeScreen() {
   const getBusinessName = (businessId: string): string => {
     const business = userBusinesses?.find(b => b.id === businessId);
     return business?.businessInfo?.name || 'Unknown Business';
+  };
+
+  // Drag-and-drop sensors for list reordering
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        // Use distance constraint for better mobile scroll detection
+        distance: Platform.OS === 'web' ? 8 : 15,
+        // Reduce tolerance to prevent horizontal drift
+        tolerance: 3,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        // Delay helps distinguish between scroll and drag on touch devices
+        delay: 150,
+        tolerance: 3,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end event for list reordering
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id || !selectedList || selectedList === 'browse') {
+      return;
+    }
+
+    const list = selectedList as UserList;
+    const oldIndex = list.entries.findIndex((entry) => entry.id === active.id);
+    const newIndex = list.entries.findIndex((entry) => entry.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Reorder locally first for immediate feedback
+    const newEntries = arrayMove(list.entries, oldIndex, newIndex);
+    setSelectedList({ ...list, entries: newEntries });
+
+    // Save to Firebase
+    try {
+      await reorderListEntries(list.id, newEntries);
+      // Reload lists to sync
+      await loadUserLists();
+      await reloadPersonalList();
+    } catch (error) {
+      console.error('[Home] Error reordering entries:', error);
+      // Revert on error
+      setSelectedList(list);
+      if (Platform.OS === 'web') {
+        window.alert('Could not reorder items. Please try again.');
+      } else {
+        Alert.alert('Error', 'Could not reorder items. Please try again.');
+      }
+    }
   };
 
   // Request location permission and get user's location
@@ -251,7 +335,7 @@ export default function HomeScreen() {
         if (!personalList && userName !== 'My List') {
           console.log('[Home] Personal list not found, creating it...');
           try {
-            const newListId = await createList(clerkUser.id, userName, 'Your personal collection.');
+            const newListId = await createList(clerkUser.id, userName, 'Your personal collection.', userName);
             // Reload lists to get the newly created one
             const updatedLists = await getUserLists(clerkUser.id);
             personalList = updatedLists.find(list => list.id === newListId);
@@ -955,7 +1039,7 @@ export default function HomeScreen() {
               styles.subsectionTabText,
               { color: forYouSubsection === 'userList' ? colors.text : colors.textSecondary }
             ]}>
-              {profile?.userDetails?.name || (clerkUser?.unsafeMetadata?.fullName as string) || (clerkUser?.firstName && clerkUser?.lastName ? `${clerkUser.firstName} ${clerkUser.lastName}` : clerkUser?.firstName) || 'My List'}
+              My List
             </Text>
             {forYouSubsection === 'userList' && (
               <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
@@ -1116,22 +1200,88 @@ export default function HomeScreen() {
         // Show empty state with add button
         return (
           <View style={styles.section}>
-            {/* Add button header */}
-            <View style={[styles.userListHeaderRow, { marginBottom: 16 }]}>
-              <Text style={[styles.userListSubheading, { color: colors.textSecondary }]}>
-                {userPersonalList.description || 'Your personal collection.'}
-              </Text>
-              <TouchableOpacity
-                style={[styles.addItemButton, { backgroundColor: colors.primary }]}
-                onPress={() => {
-                  setSelectedList(userPersonalList);
-                  setShowAddItemModal(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <Plus size={20} color={colors.white} strokeWidth={2.5} />
-              </TouchableOpacity>
+            <View style={styles.listDetailHeader}>
+              {/* Title row with 3-dot menu and Add button */}
+              <View style={styles.listDetailTitleRow}>
+                <View style={styles.listDetailTitleContainer}>
+                  <Text style={[styles.listDetailTitle, { color: colors.text }]}>{userPersonalList.name}</Text>
+                  <TouchableOpacity
+                    style={styles.listOptionsButton}
+                    onPress={() => setShowEditDropdown(!showEditDropdown)}
+                    activeOpacity={0.7}
+                  >
+                    <MoreVertical size={24} color={colors.text} strokeWidth={2} />
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.addItemButton, { backgroundColor: colors.primary }]}
+                  onPress={() => {
+                    setSelectedList(userPersonalList);
+                    setShowAddItemModal(true);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Plus size={20} color={colors.white} strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Created by text */}
+              {userPersonalList.creatorName && (
+                <Text style={[styles.listCreatedBy, { color: colors.textSecondary }]}>
+                  created by {userPersonalList.creatorName}
+                </Text>
+              )}
+
+              {/* Description below title */}
+              {userPersonalList.description && (
+                <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
+                  {userPersonalList.description}
+                </Text>
+              )}
             </View>
+
+            {/* Three dot options dropdown for For You view */}
+            {showEditDropdown && (() => {
+              const fullNameFromFirebase = profile?.userDetails?.name;
+              const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
+              const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
+                ? `${clerkUser.firstName} ${clerkUser.lastName}`
+                : '';
+              const firstName = clerkUser?.firstName;
+              const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || '';
+              const isUserNameList = userPersonalList.name === userName;
+
+              return (
+                <View style={[styles.listEditDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                  <TouchableOpacity
+                    style={styles.listOptionItem}
+                    onPress={() => {
+                      setShowEditDropdown(false);
+                      setDescriptionText(userPersonalList.description || '');
+                      setShowDescriptionModal(true);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Edit size={18} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+                  </TouchableOpacity>
+                  <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                  <TouchableOpacity
+                    style={styles.listOptionItem}
+                    onPress={() => {
+                      setShowEditDropdown(false);
+                      handleShareList(userPersonalList);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Share2 size={18} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })()}
+
             <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
               <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
                 Your personal list is empty. Tap the + button above to add brands or businesses!
@@ -1143,22 +1293,87 @@ export default function HomeScreen() {
 
       return (
         <View style={styles.section}>
-          {/* Add button header */}
-          <View style={[styles.userListHeaderRow, { marginBottom: 16 }]}>
-            <Text style={[styles.userListSubheading, { color: colors.textSecondary }]}>
-              {userPersonalList.description || 'Your personal collection.'}
-            </Text>
-            <TouchableOpacity
-              style={[styles.addItemButton, { backgroundColor: colors.primary }]}
-              onPress={() => {
-                setSelectedList(userPersonalList);
-                setShowAddItemModal(true);
-              }}
-              activeOpacity={0.7}
-            >
-              <Plus size={20} color={colors.white} strokeWidth={2.5} />
-            </TouchableOpacity>
+          <View style={styles.listDetailHeader}>
+            {/* Title row with 3-dot menu and Add button */}
+            <View style={styles.listDetailTitleRow}>
+              <View style={styles.listDetailTitleContainer}>
+                <Text style={[styles.listDetailTitle, { color: colors.text }]}>{userPersonalList.name}</Text>
+                <TouchableOpacity
+                  style={styles.listOptionsButton}
+                  onPress={() => setShowEditDropdown(!showEditDropdown)}
+                  activeOpacity={0.7}
+                >
+                  <MoreVertical size={24} color={colors.text} strokeWidth={2} />
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.addItemButton, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  setSelectedList(userPersonalList);
+                  setShowAddItemModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Plus size={20} color={colors.white} strokeWidth={2.5} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Created by text */}
+            {userPersonalList.creatorName && (
+              <Text style={[styles.listCreatedBy, { color: colors.textSecondary }]}>
+                created by {userPersonalList.creatorName}
+              </Text>
+            )}
+
+            {/* Description below title */}
+            {userPersonalList.description && (
+              <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
+                {userPersonalList.description}
+              </Text>
+            )}
           </View>
+
+          {/* Three dot options dropdown for For You view */}
+          {showEditDropdown && (() => {
+            const fullNameFromFirebase = profile?.userDetails?.name;
+            const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
+            const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
+              ? `${clerkUser.firstName} ${clerkUser.lastName}`
+              : '';
+            const firstName = clerkUser?.firstName;
+            const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || '';
+            const isUserNameList = userPersonalList.name === userName;
+
+            return (
+              <View style={[styles.listEditDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
+                    setShowEditDropdown(false);
+                    setDescriptionText(userPersonalList.description || '');
+                    setShowDescriptionModal(true);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Edit size={18} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+                </TouchableOpacity>
+                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
+                    setShowEditDropdown(false);
+                    handleShareList(userPersonalList);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Share2 size={18} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })()}
           <View style={styles.brandsContainer}>
             {userPersonalList.entries.map((entry, index) => {
               // Render brand entries
@@ -1311,7 +1526,12 @@ export default function HomeScreen() {
 
     try {
       console.log('[Home] Creating list...');
-      await createList(clerkUser.id, newListName.trim(), newListDescription.trim());
+      const fullNameFromClerk = clerkUser.fullName ||
+        (clerkUser.firstName && clerkUser.lastName
+          ? `${clerkUser.firstName} ${clerkUser.lastName}`
+          : '');
+      const creatorName = profile?.fullName || fullNameFromClerk || clerkUser.firstName || '';
+      await createList(clerkUser.id, newListName.trim(), newListDescription.trim(), creatorName);
       setNewListName('');
       setNewListDescription('');
       setShowCreateListModal(false);
@@ -1346,6 +1566,102 @@ export default function HomeScreen() {
         },
       ]
     );
+  };
+
+  const handleShareList = async (list: UserList) => {
+    const shareMessage = `Check out my list "${list.name}" on Upright Money!\n\n` +
+      (list.creatorName ? `Created by: ${list.creatorName}\n` : '') +
+      (list.description ? `${list.description}\n\n` : '') +
+      `${list.entries.length} ${list.entries.length === 1 ? 'item' : 'items'}`;
+
+    // Generate shareable link (you can customize this URL)
+    const shareLink = `https://upright.money/list/${list.id}`;
+    const shareMessageWithLink = `${shareMessage}\n\n${shareLink}`;
+
+    // Show action sheet with options
+    if (Platform.OS === 'web') {
+      // For web, show custom modal
+      setShareListData(list);
+      setShowShareModal(true);
+    } else {
+      // For mobile, show action sheet
+      Alert.alert(
+        'Share List',
+        'Choose how to share this list:',
+        [
+          {
+            text: 'Share',
+            onPress: async () => {
+              try {
+                // On iOS/Android, use url parameter for clickable link
+                await Share.share({
+                  message: shareMessage,
+                  url: shareLink,
+                  title: list.name,
+                });
+              } catch (error) {
+                console.error('[Home] Error sharing list:', error);
+                Alert.alert('Error', 'Could not share list. Please try again.');
+              }
+            },
+          },
+          {
+            text: 'Copy Link',
+            onPress: async () => {
+              try {
+                await Clipboard.setStringAsync(shareLink);
+                Alert.alert('Success', 'Link copied to clipboard!');
+              } catch (error) {
+                console.error('[Home] Error copying link:', error);
+                Alert.alert('Error', 'Could not copy link. Please try again.');
+              }
+            },
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
+    }
+  };
+
+  const handleShareModalShare = async () => {
+    if (!shareListData) return;
+
+    const shareMessage = `Check out my list "${shareListData.name}" on Upright Money!\n\n` +
+      (shareListData.creatorName ? `Created by: ${shareListData.creatorName}\n` : '') +
+      (shareListData.description ? `${shareListData.description}\n\n` : '') +
+      `${shareListData.entries.length} ${shareListData.entries.length === 1 ? 'item' : 'items'}`;
+    const shareLink = `https://upright.money/list/${shareListData.id}`;
+    const shareMessageWithLink = `${shareMessage}\n\n${shareLink}`;
+
+    try {
+      await Share.share({
+        message: shareMessageWithLink,
+        title: shareListData.name,
+      });
+      setShowShareModal(false);
+      setShareListData(null);
+    } catch (error) {
+      console.error('[Home] Error sharing list:', error);
+      window.alert('Could not share list. Please try again.');
+    }
+  };
+
+  const handleShareModalCopyLink = async () => {
+    if (!shareListData) return;
+
+    const shareLink = `https://upright.money/list/${shareListData.id}`;
+    try {
+      await Clipboard.setStringAsync(shareLink);
+      setShowShareModal(false);
+      setShareListData(null);
+      window.alert('Link copied to clipboard!');
+    } catch (error) {
+      console.error('[Home] Error copying link:', error);
+      window.alert('Could not copy link. Please try again.');
+    }
   };
 
   const handleOpenRenameModal = () => {
@@ -1511,7 +1827,12 @@ export default function HomeScreen() {
       }
 
       // Create the list
-      const listId = await createList(clerkUser.id, listName, listDescription);
+      const fullNameFromClerk = clerkUser.fullName ||
+        (clerkUser.firstName && clerkUser.lastName
+          ? `${clerkUser.firstName} ${clerkUser.lastName}`
+          : '');
+      const creatorName = profile?.fullName || fullNameFromClerk || clerkUser.firstName || '';
+      const listId = await createList(clerkUser.id, listName, listDescription, creatorName);
 
       // Add brands to the list
       for (const item of topBrands) {
@@ -1850,7 +2171,12 @@ export default function HomeScreen() {
     if (!clerkUser?.id || !quickAddItem) return;
 
     try {
-      const listId = await createList(clerkUser.id, newListName.trim(), newListDescription.trim());
+      const fullNameFromClerk = clerkUser.fullName ||
+        (clerkUser.firstName && clerkUser.lastName
+          ? `${clerkUser.firstName} ${clerkUser.lastName}`
+          : '');
+      const creatorName = profile?.fullName || fullNameFromClerk || clerkUser.firstName || '';
+      const listId = await createList(clerkUser.id, newListName.trim(), newListDescription.trim(), creatorName);
 
       // Add the item to the new list
       let entry: Omit<ListEntry, 'id' | 'createdAt'>;
@@ -2261,6 +2587,13 @@ export default function HomeScreen() {
             )}
           </View>
 
+          {/* Created by text */}
+          {list.creatorName && (
+            <Text style={[styles.listCreatedBy, { color: colors.textSecondary }]}>
+              created by {list.creatorName}
+            </Text>
+          )}
+
           {/* Description below title */}
           {list.description && (
             <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
@@ -2310,21 +2643,33 @@ export default function HomeScreen() {
                 <ChevronUp size={18} color={colors.text} strokeWidth={2} />
                 <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
               </TouchableOpacity>
+              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  setShowEditDropdown(false);
+                  handleShareList(list);
+                }}
+                activeOpacity={0.7}
+              >
+                <Share2 size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
+              </TouchableOpacity>
+              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  setShowEditDropdown(false);
+                  setDescriptionText(list.description || '');
+                  setShowDescriptionModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Edit size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+              </TouchableOpacity>
               {!isUserNameList && (
                 <>
-                  <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                  <TouchableOpacity
-                    style={styles.listOptionItem}
-                    onPress={() => {
-                      setShowEditDropdown(false);
-                      setDescriptionText(list.description || '');
-                      setShowDescriptionModal(true);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Edit size={18} color={colors.text} strokeWidth={2} />
-                    <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
-                  </TouchableOpacity>
                   <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
                   <TouchableOpacity
                     style={styles.listOptionItem}
@@ -2351,12 +2696,42 @@ export default function HomeScreen() {
               </Text>
             </View>
           ) : (
-            <View style={styles.listEntriesContainer}>
-              {list.entries.map((entry, entryIndex) => {
-                // Render based on entry type
-                if (entry.type === 'brand' && 'brandId' in entry) {
-                  return (
-                    <View key={entry.id} style={styles.listEntryRow}>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={list.entries.map((e) => e.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <View style={styles.listEntriesContainer}>
+                  {list.entries.map((entry, entryIndex) => {
+                    // Sortable Item Component
+                    const SortableEntry = () => {
+                      const {
+                        attributes,
+                        listeners,
+                        setNodeRef,
+                        transform,
+                        transition,
+                        isDragging,
+                      } = useSortable({ id: entry.id, disabled: !isEditMode });
+
+                      const style = {
+                        transform: CSS.Transform.toString(transform),
+                        transition,
+                        opacity: isDragging ? 0.5 : 1,
+                      };
+
+                      // Render based on entry type
+                      if (entry.type === 'brand' && 'brandId' in entry) {
+                        return (
+                          <View
+                            key={entry.id}
+                            ref={setNodeRef as any}
+                            style={[styles.listEntryRow, style as any]}
+                          >
                       <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
                         {entryIndex + 1}
                       </Text>
@@ -2398,31 +2773,12 @@ export default function HomeScreen() {
                             </TouchableOpacity>
                           )}
                           {isEditMode && (
-                            <View style={styles.listEntryReorderButtons}>
-                              <TouchableOpacity
-                                onPress={() => handleMoveEntryUp(entryIndex)}
-                                disabled={entryIndex === 0}
-                                style={styles.reorderButton}
-                                activeOpacity={0.7}
-                              >
-                                <ChevronUp
-                                  size={16}
-                                  color={entryIndex === 0 ? colors.textSecondary : colors.text}
-                                  strokeWidth={2}
-                                />
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                onPress={() => handleMoveEntryDown(entryIndex)}
-                                disabled={entryIndex === list.entries.length - 1}
-                                style={styles.reorderButton}
-                                activeOpacity={0.7}
-                              >
-                                <ChevronDown
-                                  size={16}
-                                  color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
-                                  strokeWidth={2}
-                                />
-                              </TouchableOpacity>
+                            <View
+                              {...attributes}
+                              {...listeners}
+                              style={styles.dragHandle}
+                            >
+                              <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
                             </View>
                           )}
                         </View>
@@ -2432,7 +2788,11 @@ export default function HomeScreen() {
                   );
                 } else if (entry.type === 'business' && 'businessId' in entry) {
                   return (
-                    <View key={entry.id} style={styles.listEntryRow}>
+                    <View
+                      key={entry.id}
+                      ref={setNodeRef as any}
+                      style={[styles.listEntryRow, style as any]}
+                    >
                       <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
                         {entryIndex + 1}
                       </Text>
@@ -2474,31 +2834,12 @@ export default function HomeScreen() {
                             </TouchableOpacity>
                           )}
                           {isEditMode && (
-                            <View style={styles.listEntryReorderButtons}>
-                              <TouchableOpacity
-                                onPress={() => handleMoveEntryUp(entryIndex)}
-                                disabled={entryIndex === 0}
-                                style={styles.reorderButton}
-                                activeOpacity={0.7}
-                              >
-                                <ChevronUp
-                                  size={16}
-                                  color={entryIndex === 0 ? colors.textSecondary : colors.text}
-                                  strokeWidth={2}
-                                />
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                onPress={() => handleMoveEntryDown(entryIndex)}
-                                disabled={entryIndex === list.entries.length - 1}
-                                style={styles.reorderButton}
-                                activeOpacity={0.7}
-                              >
-                                <ChevronDown
-                                  size={16}
-                                  color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
-                                  strokeWidth={2}
-                                  />
-                              </TouchableOpacity>
+                            <View
+                              {...attributes}
+                              {...listeners}
+                              style={styles.dragHandle}
+                            >
+                              <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
                             </View>
                           )}
                         </View>
@@ -2510,7 +2851,11 @@ export default function HomeScreen() {
                   const isMaxPain = entry.mode === 'maxPain';
                   const borderColor = isMaxPain ? colors.danger : colors.success;
                   return (
-                    <View key={entry.id} style={styles.listEntryRow}>
+                    <View
+                      key={entry.id}
+                      ref={setNodeRef as any}
+                      style={[styles.listEntryRow, style as any]}
+                    >
                       <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
                         {entryIndex + 1}
                       </Text>
@@ -2537,31 +2882,12 @@ export default function HomeScreen() {
                             </TouchableOpacity>
                           )}
                           {isEditMode && (
-                            <View style={styles.listEntryReorderButtons}>
-                              <TouchableOpacity
-                                onPress={() => handleMoveEntryUp(entryIndex)}
-                                disabled={entryIndex === 0}
-                                style={styles.reorderButton}
-                                activeOpacity={0.7}
-                              >
-                                <ChevronUp
-                                  size={16}
-                                  color={entryIndex === 0 ? colors.textSecondary : colors.text}
-                                  strokeWidth={2}
-                                />
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                onPress={() => handleMoveEntryDown(entryIndex)}
-                                disabled={entryIndex === list.entries.length - 1}
-                                style={styles.reorderButton}
-                                activeOpacity={0.7}
-                              >
-                                <ChevronDown
-                                  size={16}
-                                  color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
-                                  strokeWidth={2}
-                                />
-                              </TouchableOpacity>
+                            <View
+                              {...attributes}
+                              {...listeners}
+                              style={styles.dragHandle}
+                            >
+                              <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
                             </View>
                           )}
                         </View>
@@ -2572,7 +2898,11 @@ export default function HomeScreen() {
                 } else {
                   // Default render for link and text entries
                   return (
-                    <View key={entry.id} style={styles.listEntryRow}>
+                    <View
+                      key={entry.id}
+                      ref={setNodeRef as any}
+                      style={[styles.listEntryRow, style as any]}
+                    >
                       <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
                         {entryIndex + 1}
                       </Text>
@@ -2612,31 +2942,12 @@ export default function HomeScreen() {
                           </TouchableOpacity>
                         )}
                         {isEditMode && (
-                          <View style={styles.listEntryReorderButtons}>
-                            <TouchableOpacity
-                              onPress={() => handleMoveEntryUp(entryIndex)}
-                              disabled={entryIndex === 0}
-                              style={styles.reorderButton}
-                              activeOpacity={0.7}
-                            >
-                              <ChevronUp
-                                size={16}
-                                color={entryIndex === 0 ? colors.textSecondary : colors.text}
-                                strokeWidth={2}
-                              />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              onPress={() => handleMoveEntryDown(entryIndex)}
-                              disabled={entryIndex === list.entries.length - 1}
-                              style={styles.reorderButton}
-                              activeOpacity={0.7}
-                            >
-                              <ChevronDown
-                                size={16}
-                                color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
-                                strokeWidth={2}
-                              />
-                            </TouchableOpacity>
+                          <View
+                            {...attributes}
+                            {...listeners}
+                            style={styles.dragHandle}
+                          >
+                            <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
                           </View>
                         )}
                       </View>
@@ -2644,8 +2955,16 @@ export default function HomeScreen() {
                     </View>
                   );
                 }
-              })}
-            </View>
+
+                return null;
+              };
+
+                    // Return the sortable entry component
+                    return <SortableEntry key={entry.id} />;
+                  })}
+                </View>
+              </SortableContext>
+            </DndContext>
           )}
         </ScrollView>
       </View>
@@ -2820,6 +3139,11 @@ export default function HomeScreen() {
                           <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
                             {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
                           </Text>
+                          {list.creatorName && (
+                            <Text style={[styles.listCardCreatedBy, { color: colors.textSecondary }]} numberOfLines={1}>
+                              created by {list.creatorName}
+                            </Text>
+                          )}
                           {list.description && (
                             <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
                               {list.description}
@@ -2829,16 +3153,60 @@ export default function HomeScreen() {
                       </View>
                     </View>
                     {!isLibraryRearrangeMode && (
-                      <TouchableOpacity
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          setActiveCardOptionsMenu(activeCardOptionsMenu === list.id ? null : list.id);
-                        }}
-                        activeOpacity={0.7}
-                        style={styles.listCardOptionsButton}
-                      >
-                        <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                      </TouchableOpacity>
+                      <View style={{ position: 'relative' as const }}>
+                        <TouchableOpacity
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            setActiveCardOptionsMenu(activeCardOptionsMenu === list.id ? null : list.id);
+                          }}
+                          activeOpacity={0.7}
+                          style={styles.listCardOptionsButton}
+                        >
+                          <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                        </TouchableOpacity>
+                        {activeCardOptionsMenu === list.id && (
+                          <View style={[styles.listCardOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                            <TouchableOpacity
+                              style={styles.listOptionItem}
+                              onPress={() => {
+                                setActiveCardOptionsMenu(null);
+                                setCardRenameListId(list.id);
+                                setCardRenameListName(list.name);
+                                setCardRenameListDescription(list.description || '');
+                                setShowCardRenameModal(true);
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <Edit size={18} color={colors.text} strokeWidth={2} />
+                              <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+                            </TouchableOpacity>
+                            <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                            <TouchableOpacity
+                              style={styles.listOptionItem}
+                              onPress={() => {
+                                setActiveCardOptionsMenu(null);
+                                handleShareList(list);
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <Share2 size={18} color={colors.text} strokeWidth={2} />
+                              <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
+                            </TouchableOpacity>
+                            <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                            <TouchableOpacity
+                              style={styles.listOptionItem}
+                              onPress={() => {
+                                setActiveCardOptionsMenu(null);
+                                handleDeleteList(list.id);
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                              <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </View>
                     )}
                     {isLibraryRearrangeMode && (
                       <View style={styles.listCardRearrangeButtons}>
@@ -4366,6 +4734,62 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Share Modal - For web share dialog */}
+      <Modal
+        visible={showShareModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => {
+          setShowShareModal(false);
+          setShareListData(null);
+        }}
+      >
+        <TouchableWithoutFeedback onPress={() => {
+          setShowShareModal(false);
+          setShareListData(null);
+        }}>
+          <View style={styles.shareModalOverlay}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={[styles.shareModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <Text style={[styles.shareModalTitle, { color: colors.text }]}>Share List</Text>
+                <Text style={[styles.shareModalSubtitle, { color: colors.textSecondary }]}>
+                  Choose how to share "{shareListData?.name}"
+                </Text>
+
+                <TouchableOpacity
+                  style={[styles.shareModalButton, styles.shareModalButtonPrimary, { backgroundColor: colors.primary }]}
+                  onPress={handleShareModalShare}
+                  activeOpacity={0.7}
+                >
+                  <Share2 size={20} color={colors.white} strokeWidth={2} />
+                  <Text style={[styles.shareModalButtonText, { color: colors.white }]}>Share</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.shareModalButton, styles.shareModalButtonSecondary, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  onPress={handleShareModalCopyLink}
+                  activeOpacity={0.7}
+                >
+                  <ExternalLink size={20} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.shareModalButtonText, { color: colors.text }]}>Copy Link</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.shareModalButton, styles.shareModalButtonCancel]}
+                  onPress={() => {
+                    setShowShareModal(false);
+                    setShareListData(null);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.shareModalButtonTextCancel, { color: colors.textSecondary }]}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 }
@@ -5255,6 +5679,11 @@ const styles = StyleSheet.create({
   listCardCount: {
     fontSize: 12,
   },
+  listCardCreatedBy: {
+    fontSize: 11,
+    marginTop: 4,
+    fontStyle: 'italic' as const,
+  },
   listCardDescription: {
     fontSize: 12,
     marginTop: 6,
@@ -5326,6 +5755,21 @@ const styles = StyleSheet.create({
     padding: 10,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  listCardOptionsDropdown: {
+    position: 'absolute' as const,
+    top: 40,
+    right: 0,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    borderWidth: 1,
+    minWidth: 150,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 1001,
   },
   listCardOptionsButtonAbsolute: {
     position: 'absolute' as const,
@@ -5674,6 +6118,12 @@ const styles = StyleSheet.create({
     height: 1,
     marginVertical: 4,
   },
+  listCreatedBy: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 6,
+    fontStyle: 'italic' as const,
+  },
   listDetailDescription: {
     fontSize: 14,
     lineHeight: 20,
@@ -5801,6 +6251,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 6,
     gap: 3,
+  },
+  dragHandle: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    cursor: 'grab' as any,
   },
   listDetailContent: {
     flex: 1,
@@ -6067,5 +6523,68 @@ const styles = StyleSheet.create({
   explainerProgressActive: {
     fontSize: 120,
     fontWeight: '900' as const,
+  },
+  // Share Modal Styles
+  shareModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  shareModalContent: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  shareModalTitle: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  shareModalSubtitle: {
+    fontSize: 14,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  shareModalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  shareModalButtonPrimary: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  shareModalButtonSecondary: {
+    borderWidth: 1,
+  },
+  shareModalButtonCancel: {
+    backgroundColor: 'transparent',
+    marginTop: 4,
+  },
+  shareModalButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  shareModalButtonTextCancel: {
+    fontSize: 16,
+    fontWeight: '500' as const,
   },
 });
