@@ -39,6 +39,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -182,6 +183,10 @@ export default function HomeScreen() {
   const [cardRenameListName, setCardRenameListName] = useState('');
   const [cardRenameListDescription, setCardRenameListDescription] = useState('');
 
+  // Share modal state
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareListData, setShareListData] = useState<UserList | null>(null);
+
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Fetch brands and values from Firebase via DataContext
@@ -209,9 +214,17 @@ export default function HomeScreen() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        // Add delay for touch devices to prevent scroll conflicts
-        delay: Platform.OS === 'web' ? 0 : 250,
-        tolerance: Platform.OS === 'web' ? 5 : 10,
+        // Use distance constraint for better mobile scroll detection
+        distance: Platform.OS === 'web' ? 8 : 15,
+        // Reduce tolerance to prevent horizontal drift
+        tolerance: 3,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        // Delay helps distinguish between scroll and drag on touch devices
+        delay: 150,
+        tolerance: 3,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -1567,29 +1580,9 @@ export default function HomeScreen() {
 
     // Show action sheet with options
     if (Platform.OS === 'web') {
-      // For web, show alert with options
-      const action = window.confirm('Choose an option:\n\nOK = Share\nCancel = Copy Link');
-      if (action) {
-        // Share
-        try {
-          await Share.share({
-            message: shareMessageWithLink,
-            title: list.name,
-          });
-        } catch (error) {
-          console.error('[Home] Error sharing list:', error);
-          window.alert('Could not share list. Please try again.');
-        }
-      } else {
-        // Copy link
-        try {
-          await Clipboard.setStringAsync(shareLink);
-          window.alert('Link copied to clipboard!');
-        } catch (error) {
-          console.error('[Home] Error copying link:', error);
-          window.alert('Could not copy link. Please try again.');
-        }
-      }
+      // For web, show custom modal
+      setShareListData(list);
+      setShowShareModal(true);
     } else {
       // For mobile, show action sheet
       Alert.alert(
@@ -1630,6 +1623,44 @@ export default function HomeScreen() {
           },
         ]
       );
+    }
+  };
+
+  const handleShareModalShare = async () => {
+    if (!shareListData) return;
+
+    const shareMessage = `Check out my list "${shareListData.name}" on Upright Money!\n\n` +
+      (shareListData.creatorName ? `Created by: ${shareListData.creatorName}\n` : '') +
+      (shareListData.description ? `${shareListData.description}\n\n` : '') +
+      `${shareListData.entries.length} ${shareListData.entries.length === 1 ? 'item' : 'items'}`;
+    const shareLink = `https://upright.money/list/${shareListData.id}`;
+    const shareMessageWithLink = `${shareMessage}\n\n${shareLink}`;
+
+    try {
+      await Share.share({
+        message: shareMessageWithLink,
+        title: shareListData.name,
+      });
+      setShowShareModal(false);
+      setShareListData(null);
+    } catch (error) {
+      console.error('[Home] Error sharing list:', error);
+      window.alert('Could not share list. Please try again.');
+    }
+  };
+
+  const handleShareModalCopyLink = async () => {
+    if (!shareListData) return;
+
+    const shareLink = `https://upright.money/list/${shareListData.id}`;
+    try {
+      await Clipboard.setStringAsync(shareLink);
+      setShowShareModal(false);
+      setShareListData(null);
+      window.alert('Link copied to clipboard!');
+    } catch (error) {
+      console.error('[Home] Error copying link:', error);
+      window.alert('Could not copy link. Please try again.');
     }
   };
 
@@ -4703,6 +4734,62 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Share Modal - For web share dialog */}
+      <Modal
+        visible={showShareModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => {
+          setShowShareModal(false);
+          setShareListData(null);
+        }}
+      >
+        <TouchableWithoutFeedback onPress={() => {
+          setShowShareModal(false);
+          setShareListData(null);
+        }}>
+          <View style={styles.shareModalOverlay}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={[styles.shareModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <Text style={[styles.shareModalTitle, { color: colors.text }]}>Share List</Text>
+                <Text style={[styles.shareModalSubtitle, { color: colors.textSecondary }]}>
+                  Choose how to share "{shareListData?.name}"
+                </Text>
+
+                <TouchableOpacity
+                  style={[styles.shareModalButton, styles.shareModalButtonPrimary, { backgroundColor: colors.primary }]}
+                  onPress={handleShareModalShare}
+                  activeOpacity={0.7}
+                >
+                  <Share2 size={20} color={colors.white} strokeWidth={2} />
+                  <Text style={[styles.shareModalButtonText, { color: colors.white }]}>Share</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.shareModalButton, styles.shareModalButtonSecondary, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  onPress={handleShareModalCopyLink}
+                  activeOpacity={0.7}
+                >
+                  <ExternalLink size={20} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.shareModalButtonText, { color: colors.text }]}>Copy Link</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.shareModalButton, styles.shareModalButtonCancel]}
+                  onPress={() => {
+                    setShowShareModal(false);
+                    setShareListData(null);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.shareModalButtonTextCancel, { color: colors.textSecondary }]}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 }
@@ -6436,5 +6523,68 @@ const styles = StyleSheet.create({
   explainerProgressActive: {
     fontSize: 120,
     fontWeight: '900' as const,
+  },
+  // Share Modal Styles
+  shareModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  shareModalContent: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  shareModalTitle: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  shareModalSubtitle: {
+    fontSize: 14,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  shareModalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  shareModalButtonPrimary: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  shareModalButtonSecondary: {
+    borderWidth: 1,
+  },
+  shareModalButtonCancel: {
+    backgroundColor: 'transparent',
+    marginTop: 4,
+  },
+  shareModalButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  shareModalButtonTextCancel: {
+    fontSize: 16,
+    fontWeight: '500' as const,
   },
 });
