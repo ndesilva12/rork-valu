@@ -165,6 +165,15 @@ export default function ValuesScreen() {
     setSelectedMode(mode);
     setShowModeSelectionModal(false);
 
+    // Preset list name and description based on value and mode
+    if (selectedValue) {
+      const painOrBenefit = mode === 'max_pain' ? 'Pain' : 'Benefit';
+      const presetName = `${selectedValue.name} Max ${painOrBenefit}`;
+      const presetDescription = `A list of brands and businesses that will inflict maximum financial ${painOrBenefit.toLowerCase()} to ${selectedValue.name}.`;
+      setNewListName(presetName);
+      setNewListDescription(presetDescription);
+    }
+
     try {
       const lists = await getUserLists(clerkUser!.id);
       setUserLists(lists);
@@ -717,32 +726,13 @@ export default function ValuesScreen() {
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
               </View>
 
-              <Text style={[styles.modalLabel, { color: colors.text }]}>Create new list:</Text>
-              <TextInput
-                style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
-                placeholder="List name"
-                placeholderTextColor={colors.textSecondary}
-                value={newListName}
-                onChangeText={setNewListName}
-              />
-
-              <TextInput
-                style={[styles.modalTextArea, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
-                placeholder="Description (optional)"
-                placeholderTextColor={colors.textSecondary}
-                value={newListDescription}
-                onChangeText={setNewListDescription}
-                multiline
-                numberOfLines={2}
-              />
-
               <TouchableOpacity
                 style={[styles.modalButton, { backgroundColor: colors.primary }]}
                 onPress={handleCreateAndAddToList}
                 activeOpacity={0.7}
               >
                 <Text style={[styles.modalButtonText, { color: colors.white }]}>
-                  Create List & Add Item
+                  Create List
                 </Text>
               </TouchableOpacity>
             </ScrollView>
