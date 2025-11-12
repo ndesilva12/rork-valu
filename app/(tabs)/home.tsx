@@ -1807,12 +1807,12 @@ export default function HomeScreen() {
         setShowQuickAddModal(false);
         setQuickAddItem(null);
         setSelectedValueMode(null);
-        Alert.alert('Success', `Added ${addedCount} brands from ${quickAddItem.name} to list!`);
 
-        // Reload lists if in library view
-        if (mainView === 'myLibrary') {
-          await loadUserLists();
-        }
+        // Always reload lists and personal list to keep For You and Library in sync
+        await loadUserLists();
+        await reloadPersonalList();
+
+        Alert.alert('Success', `Added ${addedCount} brands from ${quickAddItem.name} to list!`);
         return;
       } else {
         return;
@@ -1822,15 +1822,22 @@ export default function HomeScreen() {
       setShowQuickAddModal(false);
       setQuickAddItem(null);
       setSelectedValueMode(null);
-      Alert.alert('Success', `Added ${quickAddItem.name} to list!`);
 
-      // Reload lists if in library view
-      if (mainView === 'myLibrary') {
-        await loadUserLists();
-      }
-    } catch (error) {
+      // Always reload lists and personal list to keep For You and Library in sync
+      await loadUserLists();
+      await reloadPersonalList();
+
+      Alert.alert('Success', `Added ${quickAddItem.name} to list!`);
+    } catch (error: any) {
       console.error('[Home] Error adding to list:', error);
-      Alert.alert('Error', 'Could not add item to list. Please try again.');
+      const errorMessage = error?.message === 'This item is already in the list'
+        ? 'This item is already in the list'
+        : 'Could not add item to list. Please try again.';
+      if (Platform.OS === 'web') {
+        window.alert(errorMessage);
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
     }
   };
 
@@ -1901,7 +1908,9 @@ export default function HomeScreen() {
           }
         }
 
+        // Always reload lists and personal list to keep For You and Library in sync
         await loadUserLists();
+        await reloadPersonalList();
 
         setShowQuickAddModal(false);
         setQuickAddItem(null);
@@ -1923,12 +1932,22 @@ export default function HomeScreen() {
       setShowQuickAddModal(false);
       setQuickAddItem(null);
       setSelectedValueMode(null);
+
+      // Always reload lists and personal list to keep For You and Library in sync
       await loadUserLists();
+      await reloadPersonalList();
 
       Alert.alert('Success', `Created list and added ${quickAddItem.name}!`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Home] Error creating list and adding item:', error);
-      Alert.alert('Error', 'Could not create list. Please try again.');
+      const errorMessage = error?.message === 'This item is already in the list'
+        ? 'This item is already in the list'
+        : 'Could not create list. Please try again.';
+      if (Platform.OS === 'web') {
+        window.alert(errorMessage);
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
     }
   };
 
@@ -2765,7 +2784,7 @@ export default function HomeScreen() {
                             Browse
                           </Text>
                           <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                            Browse your aligned brands by categories based on your current value selections.
+                            Browse your aligned brands based on your current value selections.
                           </Text>
                         </View>
                         <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
