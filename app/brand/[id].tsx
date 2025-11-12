@@ -459,20 +459,34 @@ export default function BrandDetailScreen() {
         <View style={styles.content}>
           {/* Header with logo, brand info, and score */}
           <View style={styles.header}>
-            <Image
-              source={{ uri: getLogoUrl(brand.website || '') }}
-              style={styles.headerLogo}
-              contentFit="cover"
-              transition={200}
-              cachePolicy="memory-disk"
-              placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
-            />
+            <View style={styles.logoAndButtonContainer}>
+              <Image
+                source={{ uri: getLogoUrl(brand.website || '') }}
+                style={styles.headerLogo}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+                placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
+              />
+              <TouchableOpacity
+                style={[styles.addToListButton, { backgroundColor: colors.primary }]}
+                onPress={() => router.push(`/(tabs)/home?showQuickAdd=true&brandId=${brand.id}`)}
+                activeOpacity={0.7}
+              >
+                <Plus size={18} color={colors.white} strokeWidth={2.5} />
+              </TouchableOpacity>
+            </View>
 
             <View style={styles.titleContainer}>
               <Text style={[styles.brandName, { color: colors.text }]}>{brand?.name}</Text>
               <Text style={[styles.category, { color: colors.primary }]}>{brand.category}</Text>
               {brand.headquarters && (
                 <Text style={[styles.headquarters, { color: colors.textSecondary }]}>{brand.headquarters}</Text>
+              )}
+              {brand.description && (
+                <Text style={[styles.brandDescription, { color: colors.textSecondary }]}>
+                  {brand.description}
+                </Text>
               )}
               {brand.location && (
                 <View style={styles.locationRow}>
@@ -488,21 +502,6 @@ export default function BrandDetailScreen() {
               </Text>
             </View>
           </View>
-
-          {/* Add to List Button */}
-          <TouchableOpacity
-            style={[styles.addToListButton, { backgroundColor: colors.primary }]}
-            onPress={() => router.push(`/(tabs)/home?showQuickAdd=true&brandId=${brand.id}`)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.addToListButtonText, { color: colors.white }]}>Add to List</Text>
-          </TouchableOpacity>
-
-          {brand.description && (
-            <Text style={[styles.brandDescription, { color: colors.textSecondary }]}>
-              {brand.description}
-            </Text>
-          )}
 
           <View style={styles.socialLinksContainer}>
             <TouchableOpacity
@@ -841,12 +840,23 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 10,
   },
+  logoAndButtonContainer: {
+    alignItems: 'center',
+    gap: 8,
+  },
   headerLogo: {
     width: 56,
     height: 56,
     borderRadius: 10,
     borderWidth: 2,
     borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  addToListButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   titleContainer: {
     flex: 1,
@@ -866,6 +876,12 @@ const styles = StyleSheet.create({
   headquarters: {
     fontSize: 12,
     fontWeight: '400' as const,
+    marginBottom: 6,
+  },
+  brandDescription: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 6,
   },
   locationRow: {
     flexDirection: 'row',
@@ -876,26 +892,10 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 12,
   },
-  addToListButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  addToListButtonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
   socialLinksContainer: {
     flexDirection: 'row',
     gap: 8,
     marginBottom: 12,
-  },
-  brandDescription: {
-    fontSize: 13,
-    lineHeight: 18,
-    marginBottom: 16,
   },
   socialButton: {
     flex: 1,

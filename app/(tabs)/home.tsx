@@ -931,7 +931,9 @@ export default function HomeScreen() {
                 <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
                   {index + 1}
                 </Text>
-                {renderBrandCard(product, 'support')}
+                <View style={styles.forYouCardWrapper}>
+                  {renderBrandCard(product, 'support')}
+                </View>
               </View>
             ))}
             {alignedLoadCount < allSupportFull.length && (
@@ -960,7 +962,9 @@ export default function HomeScreen() {
                 <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
                   {index + 1}
                 </Text>
-                {renderBrandCard(product, 'avoid')}
+                <View style={styles.forYouCardWrapper}>
+                  {renderBrandCard(product, 'avoid')}
+                </View>
               </View>
             ))}
             {unalignedLoadCount < allAvoidFull.length && (
@@ -4017,15 +4021,18 @@ const styles = StyleSheet.create({
   forYouItemRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
-    marginBottom: 8,
+    gap: 6,
   },
   forYouItemNumber: {
     fontSize: 12,
     fontWeight: '500' as const,
     paddingTop: 20,
-    minWidth: 24,
+    minWidth: 20,
     textAlign: 'right',
+    marginLeft: -4,
+  },
+  forYouCardWrapper: {
+    flex: 1,
   },
   loadMoreButton: {
     paddingVertical: 14,
