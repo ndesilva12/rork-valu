@@ -1207,10 +1207,10 @@ export default function HomeScreen() {
                       </View>
                       <View style={styles.brandCardContent}>
                         <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
-                          {entry.businessName}
+                          {entry.businessName || (entry as any).name}
                         </Text>
                         <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                          {entry.businessCategory || 'Business'}
+                          {entry.businessCategory || (entry as any).category || 'Local Business'}
                         </Text>
                       </View>
                     </View>
@@ -4118,10 +4118,8 @@ export default function HomeScreen() {
               <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>4</Text>
             </View>
 
-            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>1</Text>
-
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
-              We provide brands that align or don't, based on your selections. Research where your money goes.
+              We generate brands that align or don't align based on your selections.
             </Text>
 
             <TouchableOpacity
@@ -4166,10 +4164,8 @@ export default function HomeScreen() {
               <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>4</Text>
             </View>
 
-            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>2</Text>
-
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
-              Add companies to your personal collection and build your identity. Global brands or local businesses.
+              Add brands or local businesses to your personal collection and build your identity.
             </Text>
 
             <TouchableOpacity
@@ -4214,10 +4210,8 @@ export default function HomeScreen() {
               <Text style={[styles.explainerProgressNumber, { color: 'rgba(255, 255, 255, 0.5)' }]}>4</Text>
             </View>
 
-            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>3</Text>
-
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
-              Create lists from ANY value inputs. Great for gift ideas to friends & family.
+              Create lists from ANY value inputs. Great for generating gift ideas for friends & family.
             </Text>
 
             <TouchableOpacity
@@ -4277,10 +4271,8 @@ export default function HomeScreen() {
               <Text style={[styles.explainerProgressNumber, styles.explainerProgressActive, { color: colors.white }]}>4</Text>
             </View>
 
-            <Text style={[styles.explainerNumber, { color: 'rgba(255, 255, 255, 0.4)' }]}>4</Text>
-
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
-              Use your code for discounts at participating companies.
+              Use your code for discounts at participating businesses.
             </Text>
 
             <TouchableOpacity
@@ -5934,7 +5926,7 @@ const styles = StyleSheet.create({
   explainerBubbleCentered: {
     borderRadius: 24,
     padding: 40,
-    paddingTop: 60,
+    paddingTop: 80,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
@@ -5987,8 +5979,8 @@ const styles = StyleSheet.create({
   },
   explainerProgress: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 16,
+    gap: 24,
+    marginBottom: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -5997,7 +5989,7 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   explainerProgressActive: {
-    fontSize: 32,
+    fontSize: 120,
     fontWeight: '900' as const,
   },
 });
