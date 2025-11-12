@@ -279,8 +279,8 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   menuLogo: {
-    width: 300,
-    height: 88,
+    width: 240,
+    height: 70,
   },
   menuContent: {
     maxHeight: '100%',

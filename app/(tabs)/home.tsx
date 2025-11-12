@@ -2622,7 +2622,7 @@ export default function HomeScreen() {
           style={styles.dropdownModalOverlay}
           onPress={() => setActiveCardOptionsMenu(null)}
         >
-          <Pressable onPress={(e) => e.stopPropagation()}>
+          <Pressable onPress={() => {}}>
             <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
               <TouchableOpacity
                 style={styles.listOptionItem}
@@ -2696,7 +2696,7 @@ export default function HomeScreen() {
           style={styles.dropdownModalOverlay}
           onPress={() => setActiveItemOptionsMenu(null)}
         >
-          <Pressable onPress={(e) => e.stopPropagation()}>
+          <Pressable onPress={() => {}}>
             <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
               <TouchableOpacity
                 style={styles.listOptionItem}
@@ -3982,10 +3982,10 @@ const styles = StyleSheet.create({
   },
   subsectionDropdownButton: {
     position: 'relative' as const,
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
   },
   subsectionDropdownText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600' as const,
     paddingBottom: 2,
   },
