@@ -61,6 +61,10 @@ export default function OnboardingScreen() {
   const [expandedCategories, setExpandedCategories] = useState<Set<CauseCategory>>(new Set());
   const insets = useSafeAreaInsets();
 
+  // Business accounts need minimum 3 values, personal accounts need 5
+  const isBusiness = profile.accountType === 'business';
+  const minValues = isBusiness ? 3 : 5;
+
   useEffect(() => {
     console.log('[Onboarding] Profile causes updated:', profile.causes.length);
     if (profile.causes.length > 0) {
@@ -101,7 +105,7 @@ export default function OnboardingScreen() {
 
   const handleContinue = async () => {
     console.log('[Onboarding] Continue pressed with', selectedValues.length, 'values');
-    if (selectedValues.length >= 5) {
+    if (selectedValues.length >= minValues) {
       const causes: Cause[] = selectedValues.map(v => ({
         id: v.id,
         name: v.name,
@@ -152,7 +156,7 @@ export default function OnboardingScreen() {
           </View>
           <Text style={[styles.title, { color: colors.text }]}>Identify Your Values</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Select a positive or negative view of at least 5 items you feel strongly about.
+            Select a positive or negative view of at least {minValues} items you feel strongly about.
           </Text>
           <View style={[styles.instructionBox, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
             <Text style={[styles.instructionText, { color: colors.textSecondary }]}>
@@ -255,12 +259,12 @@ export default function OnboardingScreen() {
       <View style={[styles.footer, { paddingBottom: 32 + insets.bottom, backgroundColor: colors.backgroundSecondary, borderTopColor: colors.border }, Platform.OS === 'web' && styles.footerWeb]}>
         <View style={[styles.footerContent, Platform.OS === 'web' && styles.footerContentWeb]}>
           <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
-            {selectedValues.length} {selectedValues.length === 1 ? 'value' : 'values'} selected{selectedValues.length < 5 ? ` (minimum 5 required)` : ''}
+            {selectedValues.length} {selectedValues.length === 1 ? 'value' : 'values'} selected{selectedValues.length < minValues ? ` (minimum ${minValues} required)` : ''}
           </Text>
           <TouchableOpacity
-            style={[styles.continueButton, { backgroundColor: colors.primary }, selectedValues.length < 5 && { backgroundColor: colors.neutral, opacity: 0.5 }]}
+            style={[styles.continueButton, { backgroundColor: colors.primary }, selectedValues.length < minValues && { backgroundColor: colors.neutral, opacity: 0.5 }]}
             onPress={handleContinue}
-            disabled={selectedValues.length < 5}
+            disabled={selectedValues.length < minValues}
             activeOpacity={0.8}
           >
             <Text style={[styles.continueButtonText, { color: colors.white }]}>Continue</Text>

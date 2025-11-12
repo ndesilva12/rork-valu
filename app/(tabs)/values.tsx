@@ -107,9 +107,12 @@ export default function ValuesScreen() {
   };
 
   const handleResetValues = () => {
+    const isBusiness = profile.accountType === 'business';
+    const minValues = isBusiness ? 3 : 5;
+
     Alert.alert(
       'Reset All Values',
-      'Are you sure you want to reset all your values? You will be redirected to select at least 5 new values.',
+      `Are you sure you want to reset all your values? You will be redirected to select at least ${minValues} new values.`,
       [
         {
           text: 'Cancel',
@@ -131,6 +134,20 @@ export default function ValuesScreen() {
   };
 
   const handleCycleValue = async (cause: Cause) => {
+    const isBusiness = profile.accountType === 'business';
+    const minValues = isBusiness ? 3 : 5;
+
+    // Prevent removing if at minimum
+    if (cause.type === 'avoid' && profile.causes.length <= minValues) {
+      Alert.alert(
+        'Minimum Values Required',
+        `${isBusiness ? 'Business accounts' : 'You'} must maintain at least ${minValues} selected values.`,
+        [{ text: 'OK' }]
+      );
+      setEditingValueId(null);
+      return;
+    }
+
     // Cycle: aligned → unaligned → unselected → aligned
     if (cause.type === 'support') {
       await toggleCauseType(cause, 'avoid');
@@ -395,6 +412,19 @@ export default function ValuesScreen() {
                           <TouchableOpacity
                             style={[styles.removeButton, { borderColor: colors.border }]}
                             onPress={() => {
+                              const isBusiness = profile.accountType === 'business';
+                              const minValues = isBusiness ? 3 : 5;
+
+                              if (profile.causes.length <= minValues) {
+                                Alert.alert(
+                                  'Minimum Values Required',
+                                  `${isBusiness ? 'Business accounts' : 'You'} must maintain at least ${minValues} selected values.`,
+                                  [{ text: 'OK' }]
+                                );
+                                setEditingValueId(null);
+                                return;
+                              }
+
                               toggleCauseType(cause, 'remove');
                               setEditingValueId(null);
                             }}
