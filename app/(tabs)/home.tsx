@@ -219,7 +219,7 @@ export default function HomeScreen() {
 
       try {
         const lists = await getUserLists(clerkUser.id);
-        const userName = clerkUser?.fullName || clerkUser?.firstName || '';
+        const userName = (clerkUser?.unsafeMetadata?.fullName as string) || clerkUser?.firstName || '';
         const personalList = lists.find(list => list.name === userName);
 
         if (personalList) {
@@ -265,7 +265,7 @@ export default function HomeScreen() {
     };
 
     loadPersonalList();
-  }, [clerkUser?.id, clerkUser?.fullName, clerkUser?.firstName]);
+  }, [clerkUser?.id, clerkUser?.unsafeMetadata?.fullName, clerkUser?.firstName]);
 
   // Fetch user businesses and request location when "local" mode is selected
   // Fetch user businesses on mount
@@ -888,7 +888,7 @@ export default function HomeScreen() {
               styles.subsectionTabText,
               { color: forYouSubsection === 'userList' ? colors.text : colors.textSecondary }
             ]}>
-              {clerkUser?.fullName || clerkUser?.firstName || 'My List'}
+              {(clerkUser?.unsafeMetadata?.fullName as string) || clerkUser?.firstName || 'My List'}
             </Text>
             {forYouSubsection === 'userList' && (
               <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
@@ -2123,58 +2123,72 @@ export default function HomeScreen() {
         </View>
 
         {/* Three dot options dropdown */}
-        {showEditDropdown && (
-          <View style={[styles.listEditDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-            <TouchableOpacity
-              style={styles.listOptionItem}
-              onPress={() => {
-                setShowEditDropdown(false);
-                handleOpenRenameModal();
-              }}
-              activeOpacity={0.7}
-            >
-              <Edit size={18} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
-            </TouchableOpacity>
-            <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity
-              style={styles.listOptionItem}
-              onPress={() => {
-                setShowEditDropdown(false);
-                toggleEditMode();
-              }}
-              activeOpacity={0.7}
-            >
-              <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
-            </TouchableOpacity>
-            <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity
-              style={styles.listOptionItem}
-              onPress={() => {
-                setShowEditDropdown(false);
-                setDescriptionText(list.description || '');
-                setShowDescriptionModal(true);
-              }}
-              activeOpacity={0.7}
-            >
-              <Edit size={18} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
-            </TouchableOpacity>
-            <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity
-              style={styles.listOptionItem}
-              onPress={() => {
-                setShowEditDropdown(false);
-                handleDeleteCurrentList();
-              }}
-              activeOpacity={0.7}
-            >
-              <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-              <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        {showEditDropdown && (() => {
+          // Check if this is the user's personal list
+          const userName = (clerkUser?.unsafeMetadata?.fullName as string) || clerkUser?.firstName || '';
+          const isUserNameList = list.name === userName;
+
+          return (
+            <View style={[styles.listEditDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              {!isUserNameList && (
+                <>
+                  <TouchableOpacity
+                    style={styles.listOptionItem}
+                    onPress={() => {
+                      setShowEditDropdown(false);
+                      handleOpenRenameModal();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Edit size={18} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
+                  </TouchableOpacity>
+                  <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                </>
+              )}
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  setShowEditDropdown(false);
+                  toggleEditMode();
+                }}
+                activeOpacity={0.7}
+              >
+                <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
+              </TouchableOpacity>
+              {!isUserNameList && (
+                <>
+                  <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                  <TouchableOpacity
+                    style={styles.listOptionItem}
+                    onPress={() => {
+                      setShowEditDropdown(false);
+                      setDescriptionText(list.description || '');
+                      setShowDescriptionModal(true);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Edit size={18} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+                  </TouchableOpacity>
+                  <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                  <TouchableOpacity
+                    style={styles.listOptionItem}
+                    onPress={() => {
+                      setShowEditDropdown(false);
+                      handleDeleteCurrentList();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Trash2 size={18} color={colors.danger} strokeWidth={2} />
+                    <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          );
+        })()}
 
         <ScrollView style={styles.listDetailContent}>
           {list.entries.length === 0 ? (
@@ -2557,7 +2571,7 @@ export default function HomeScreen() {
           ) : (
             (() => {
               // Separate User Name list from other lists
-              const userName = clerkUser?.fullName || clerkUser?.firstName || '';
+              const userName = (clerkUser?.unsafeMetadata?.fullName as string) || clerkUser?.firstName || '';
               const userNameList = userLists.find(list => list.name === userName);
               const otherLists = userLists.filter(list => list.name !== userName);
 

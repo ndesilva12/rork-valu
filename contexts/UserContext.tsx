@@ -254,7 +254,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
         // Create user's personal list with their name
         try {
-          const userName = clerkUser.fullName || clerkUser.firstName || 'My List';
+          const userName = (clerkUser.unsafeMetadata?.fullName as string) || clerkUser.firstName || 'My List';
           console.log(`[UserContext] Creating personal list: "${userName}"`);
           await createList(clerkUser.id, userName, 'Your personal curated list');
           console.log('[UserContext] ✅ Personal list created successfully');
