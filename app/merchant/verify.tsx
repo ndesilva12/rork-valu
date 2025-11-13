@@ -203,9 +203,8 @@ export default function MerchantVerify() {
       <View style={styles.content}>
         {/* Customer Info */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Customer</Text>
           <Text style={[styles.customerName, { color: colors.text }]}>
-            {customerName || 'Unknown'}
+            {customerName || customerEmail || 'Unknown'}
           </Text>
           <Text style={[styles.customerDetail, { color: colors.textSecondary }]}>
             {customerEmail || customerUserId}
@@ -216,7 +215,7 @@ export default function MerchantVerify() {
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Your Offer</Text>
           <Text style={[styles.discountText, { color: colors.text }]}>
-            {profile.businessInfo?.customerDiscountPercent || 10}% Customer Discount
+            {profile.businessInfo?.customerDiscountPercent || 10}% Discount
           </Text>
         </View>
 
@@ -257,7 +256,7 @@ export default function MerchantVerify() {
               {/* Breakdown */}
               <View style={styles.calculationBox}>
                 <Text style={[styles.calculationText, { color: colors.textSecondary }]}>
-                  Customer Saves: ${((parseFloat(purchaseAmount) * (profile.businessInfo?.customerDiscountPercent || 0)) / 100).toFixed(2)}
+                  Discount Amount: ${((parseFloat(purchaseAmount) * (profile.businessInfo?.customerDiscountPercent || 0)) / 100).toFixed(2)}
                 </Text>
 
                 <Text style={[styles.feeLabel, { color: colors.text }]}>

@@ -15,6 +15,7 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -297,29 +298,51 @@ export default function ValuesManagement() {
     }
   };
 
-  const handleDelete = (value: ValueData) => {
-    Alert.alert(
-      'Confirm Delete',
-      `Are you sure you want to delete "${value.name}"? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const valueRef = doc(db, 'values', value.id);
-              await deleteDoc(valueRef);
-              Alert.alert('Success', `Value "${value.name}" deleted successfully`);
-              loadValues();
-            } catch (error) {
-              console.error('Error deleting value:', error);
-              Alert.alert('Error', 'Failed to delete value');
-            }
+  const handleDelete = async (value: ValueData) => {
+    // Use window.confirm on web for better compatibility
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(
+        `Are you sure you want to delete "${value.name}"? This action cannot be undone.`
+      );
+
+      if (confirmed) {
+        try {
+          console.log(`Deleting value: ${value.id} (${value.name})`);
+          const valueRef = doc(db, 'values', value.id);
+          await deleteDoc(valueRef);
+          console.log(`Value deleted successfully: ${value.id}`);
+          window.alert(`Value "${value.name}" deleted successfully`);
+          await loadValues();
+        } catch (error) {
+          console.error('Error deleting value:', error);
+          window.alert('Failed to delete value');
+        }
+      }
+    } else {
+      // Use Alert.alert on native mobile
+      Alert.alert(
+        'Confirm Delete',
+        `Are you sure you want to delete "${value.name}"? This action cannot be undone.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const valueRef = doc(db, 'values', value.id);
+                await deleteDoc(valueRef);
+                Alert.alert('Success', `Value "${value.name}" deleted successfully`);
+                await loadValues();
+              } catch (error) {
+                console.error('Error deleting value:', error);
+                Alert.alert('Error', 'Failed to delete value');
+              }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const filteredValues = values.filter(

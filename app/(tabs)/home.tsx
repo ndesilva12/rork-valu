@@ -175,8 +175,8 @@ export default function HomeScreen() {
   const [linkTitle, setLinkTitle] = useState('');
   const [textContent, setTextContent] = useState('');
 
-  // Library rearrange and card options state
-  const [isLibraryRearrangeMode, setIsLibraryRearrangeMode] = useState(false);
+  // Library reorder and card options state
+  const [isLibraryReorderMode, setIsLibraryReorderMode] = useState(false);
   const [activeCardOptionsMenu, setActiveCardOptionsMenu] = useState<string | null>(null);
   const [showCardRenameModal, setShowCardRenameModal] = useState(false);
   const [cardRenameListId, setCardRenameListId] = useState<string | null>(null);
@@ -214,17 +214,7 @@ export default function HomeScreen() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        // Use distance constraint for better mobile scroll detection
-        distance: Platform.OS === 'web' ? 8 : 15,
-        // Reduce tolerance to prevent horizontal drift
-        tolerance: 3,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        // Delay helps distinguish between scroll and drag on touch devices
-        delay: 150,
-        tolerance: 3,
+        distance: 8, // Drag only after moving 8px (prevents accidental drags)
       },
     }),
     useSensor(KeyboardSensor, {
@@ -335,7 +325,7 @@ export default function HomeScreen() {
         if (!personalList && userName !== 'My List') {
           console.log('[Home] Personal list not found, creating it...');
           try {
-            const newListId = await createList(clerkUser.id, userName, 'Your personal collection.', userName);
+            const newListId = await createList(clerkUser.id, userName, 'Your personal collection of favorite businesses.', userName);
             // Reload lists to get the newly created one
             const updatedLists = await getUserLists(clerkUser.id);
             personalList = updatedLists.find(list => list.id === newListId);
@@ -429,9 +419,9 @@ export default function HomeScreen() {
     }
   }, [params.fromMap]);
 
-  // Fetch user lists when library view is activated
+  // Fetch user lists when library view is activated or when All Lists subsection is active
   useEffect(() => {
-    if (mainView === 'myLibrary' && clerkUser?.id) {
+    if ((mainView === 'myLibrary' || (mainView === 'forYou' && forYouSubsection === 'allLists')) && clerkUser?.id) {
       loadUserLists();
     }
     // Reset to overview when leaving library
@@ -439,7 +429,7 @@ export default function HomeScreen() {
       setLibraryView('overview');
       setSelectedList(null);
     }
-  }, [mainView, clerkUser?.id]);
+  }, [mainView, forYouSubsection, clerkUser?.id]);
 
   const loadUserLists = async () => {
     if (!clerkUser?.id) return;
@@ -984,7 +974,7 @@ export default function HomeScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.mainViewText, { color: mainView === 'forYou' ? colors.white : colors.textSecondary }]}>
-              For You
+              Library
             </Text>
           </TouchableOpacity>
 
@@ -994,7 +984,7 @@ export default function HomeScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.mainViewText, { color: mainView === 'myLibrary' ? colors.white : colors.textSecondary }]}>
-              My Library
+              News
             </Text>
           </TouchableOpacity>
 
@@ -1013,19 +1003,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
       </View>
-
-      {mainView === 'myLibrary' && libraryView === 'overview' && (
-        <View style={styles.libraryActions}>
-          <Text style={[styles.libraryTitle, { color: colors.text }]}>My Library</Text>
-          <TouchableOpacity
-            style={[styles.createListButtonSmall, { backgroundColor: colors.primary }]}
-            onPress={() => setShowListCreationTypeModal(true)}
-            activeOpacity={0.7}
-          >
-            <Plus size={20} color={colors.white} strokeWidth={2.5} />
-          </TouchableOpacity>
-        </View>
-      )}
 
       {/* For You Subsection Tabs */}
       {mainView === 'forYou' && (
@@ -1074,6 +1051,22 @@ export default function HomeScreen() {
               Unaligned
             </Text>
             {forYouSubsection === 'unaligned' && (
+              <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.subsectionTab}
+            onPress={() => setForYouSubsection('allLists')}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.subsectionTabText,
+              { color: forYouSubsection === 'allLists' ? colors.text : colors.textSecondary }
+            ]}>
+              All Lists
+            </Text>
+            {forYouSubsection === 'allLists' && (
               <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
             )}
           </TouchableOpacity>
@@ -1258,6 +1251,19 @@ export default function HomeScreen() {
                     style={styles.listOptionItem}
                     onPress={() => {
                       setShowEditDropdown(false);
+                      setSelectedList(userPersonalList);
+                      toggleEditMode();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
+                  </TouchableOpacity>
+                  <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                  <TouchableOpacity
+                    style={styles.listOptionItem}
+                    onPress={() => {
+                      setShowEditDropdown(false);
                       setDescriptionText(userPersonalList.description || '');
                       setShowDescriptionModal(true);
                     }}
@@ -1347,6 +1353,19 @@ export default function HomeScreen() {
 
             return (
               <View style={[styles.listEditDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
+                    setShowEditDropdown(false);
+                    setSelectedList(userPersonalList);
+                    toggleEditMode();
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
+                </TouchableOpacity>
+                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
                 <TouchableOpacity
                   style={styles.listOptionItem}
                   onPress={() => {
@@ -1449,6 +1468,11 @@ export default function HomeScreen() {
           </View>
         </View>
       );
+    }
+
+    // All Lists subsection - shows all user lists from old My Library
+    if (forYouSubsection === 'allLists') {
+      return renderMyLibraryView();
     }
 
     return null;
@@ -2641,7 +2665,7 @@ export default function HomeScreen() {
                 activeOpacity={0.7}
               >
                 <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
               </TouchableOpacity>
               <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
               <TouchableOpacity
@@ -2972,6 +2996,11 @@ export default function HomeScreen() {
   };
 
   const renderMyLibraryView = () => {
+    // If called from News view (mainView === 'myLibrary'), show blank content
+    if (mainView === 'myLibrary') {
+      return null;
+    }
+
     // If viewing a list detail, show that instead
     if (libraryView === 'detail') {
       return renderListDetailView();
@@ -2992,11 +3021,11 @@ export default function HomeScreen() {
 
     return (
       <View style={styles.section}>
-        {/* Done button when in rearrange mode */}
-        {isLibraryRearrangeMode && (
+        {/* Done button when in reorder mode */}
+        {isLibraryReorderMode && (
           <View style={styles.libraryHeader}>
             <TouchableOpacity
-              onPress={() => setIsLibraryRearrangeMode(false)}
+              onPress={() => setIsLibraryReorderMode(false)}
               activeOpacity={0.7}
             >
               <Text style={[styles.libraryDoneButton, { color: colors.primary }]}>Done</Text>
@@ -3117,14 +3146,14 @@ export default function HomeScreen() {
                 key={list.id}
                 style={[
                   styles.listCardWrapper,
-                  activeCardOptionsMenu === list.id && !isLibraryRearrangeMode && { zIndex: 1000 }
+                  activeCardOptionsMenu === list.id && !isLibraryReorderMode && { zIndex: 1000 }
                 ]}
               >
                 <TouchableOpacity
                   style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                  onPress={() => !isLibraryRearrangeMode && handleOpenList(list)}
+                  onPress={() => !isLibraryReorderMode && handleOpenList(list)}
                   activeOpacity={0.7}
-                  disabled={isLibraryRearrangeMode}
+                  disabled={isLibraryReorderMode}
                 >
                   <View style={styles.listCardContentRow}>
                     <View style={styles.listCardContent}>
@@ -3152,7 +3181,7 @@ export default function HomeScreen() {
                         </View>
                       </View>
                     </View>
-                    {!isLibraryRearrangeMode && (
+                    {!isLibraryReorderMode && (
                       <View style={{ position: 'relative' as const }}>
                         <TouchableOpacity
                           onPress={(e) => {
@@ -3208,7 +3237,7 @@ export default function HomeScreen() {
                         )}
                       </View>
                     )}
-                    {isLibraryRearrangeMode && (
+                    {isLibraryReorderMode && (
                       <View style={styles.listCardRearrangeButtons}>
                         <TouchableOpacity
                           onPress={() => handleMoveListUp(index)}
@@ -3376,7 +3405,7 @@ export default function HomeScreen() {
       {/* Invisible overlay to close dropdown when clicking outside */}
       {/* Library Card Options Modal */}
       <Modal
-        visible={activeCardOptionsMenu !== null && !isLibraryRearrangeMode}
+        visible={activeCardOptionsMenu !== null && !isLibraryReorderMode}
         animationType="fade"
         transparent={true}
         onRequestClose={() => setActiveCardOptionsMenu(null)}
@@ -3436,12 +3465,12 @@ export default function HomeScreen() {
                       style={styles.listOptionItem}
                       onPress={() => {
                         setActiveCardOptionsMenu(null);
-                        setIsLibraryRearrangeMode(true);
+                        setIsLibraryReorderMode(true);
                       }}
                       activeOpacity={0.7}
                     >
                       <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                      <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
                     </TouchableOpacity>
                     <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
                     <TouchableOpacity

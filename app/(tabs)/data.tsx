@@ -119,7 +119,13 @@ export default function DataScreen() {
               customer.causes = causes;
               // Update email and name from user document if available
               customer.email = userData.email || customer.email || '';
-              customer.name = userData.name || customer.name || 'Unknown';
+              // Use comprehensive name fallback chain
+              customer.name = userData.fullName ||
+                             userData.name ||
+                             (userData.firstName && userData.lastName ? `${userData.firstName} ${userData.lastName}` : '') ||
+                             userData.firstName ||
+                             customer.email ||
+                             'Unknown';
               customer.location = userData.location || '';
               customer.bio = userData.bio || '';
             }
@@ -581,14 +587,9 @@ export default function DataScreen() {
                     activeOpacity={0.7}
                   >
                     <View style={styles.dataRowMain}>
-                      <View style={styles.customerInfoColumn}>
-                        <Text style={[styles.dataRowTitle, { color: colors.text }]}>
-                          {customer.email || 'No email'}
-                        </Text>
-                        <Text style={[styles.customerNameSecondary, { color: colors.textSecondary }]}>
-                          {customer.name}
-                        </Text>
-                      </View>
+                      <Text style={[styles.dataRowTitle, { color: colors.text }]}>
+                        {customer.name || customer.email || 'Unknown'}
+                      </Text>
                       <Text style={[styles.dataRowValue, { color: colors.primary }]}>
                         {formatCurrency(customer.totalSpent)}
                       </Text>
@@ -663,29 +664,35 @@ export default function DataScreen() {
                       return bTime.getTime() - aTime.getTime();
                     })
                     .slice(0, 10)
-                    .map((txn) => (
-                      <View
-                        key={txn.id}
-                        style={[styles.dataRow, { borderBottomColor: colors.border }]}
-                      >
-                        <View style={styles.dataRowMain}>
-                          <Text style={[styles.dataRowTitle, { color: colors.text }]}>
-                            {txn.customerName || 'Unknown'}
-                          </Text>
-                          <Text style={[styles.dataRowValue, { color: colors.primary }]}>
-                            {formatCurrency(txn.purchaseAmount || 0)}
-                          </Text>
+                    .map((txn) => {
+                      // Look up customer from customers map to get actual name
+                      const customer = customers.get(txn.customerId);
+                      const displayName = customer?.name || txn.customerEmail || 'Unknown';
+
+                      return (
+                        <View
+                          key={txn.id}
+                          style={[styles.dataRow, { borderBottomColor: colors.border }]}
+                        >
+                          <View style={styles.dataRowMain}>
+                            <Text style={[styles.dataRowTitle, { color: colors.text }]}>
+                              {displayName}
+                            </Text>
+                            <Text style={[styles.dataRowValue, { color: colors.primary }]}>
+                              {formatCurrency(txn.purchaseAmount || 0)}
+                            </Text>
+                          </View>
+                          <View style={styles.dataRowDetails}>
+                            <Text style={[styles.dataRowDetail, { color: colors.textSecondary }]}>
+                              {formatDate(txn.createdAt)}
+                            </Text>
+                            <Text style={[styles.dataRowDetail, { color: colors.textSecondary }]}>
+                              Discount: {formatCurrency(txn.discountAmount || 0)}
+                            </Text>
+                          </View>
                         </View>
-                        <View style={styles.dataRowDetails}>
-                          <Text style={[styles.dataRowDetail, { color: colors.textSecondary }]}>
-                            {formatDate(txn.createdAt)}
-                          </Text>
-                          <Text style={[styles.dataRowDetail, { color: colors.textSecondary }]}>
-                            Discount: {formatCurrency(txn.discountAmount || 0)}
-                          </Text>
-                        </View>
-                      </View>
-                    ))}
+                      );
+                    })}
                   {transactions.length > 10 && (
                     <Text style={[styles.moreText, { color: colors.textSecondary }]}>
                       + {transactions.length - 10} more transactions
