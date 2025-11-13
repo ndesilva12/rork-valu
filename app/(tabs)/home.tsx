@@ -958,6 +958,17 @@ export default function HomeScreen() {
     }
   }, [mainView, fetchNewsArticles]);
 
+  // Set default news source to 'aligned' if user's Name List (My List) is empty
+  useEffect(() => {
+    if (userPersonalList && selectedNewsSource === 'myList') {
+      const hasEntries = userPersonalList.entries && userPersonalList.entries.length > 0;
+      if (!hasEntries) {
+        console.log('[Home] User Name List is empty, setting news source to aligned');
+        setSelectedNewsSource('aligned');
+      }
+    }
+  }, [userPersonalList, selectedNewsSource]);
+
   const handleProductPress = (product: Product) => {
     router.push({
       pathname: '/brand/[id]',
