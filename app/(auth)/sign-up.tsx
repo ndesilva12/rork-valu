@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     letterSpacing: 0.5,
-    marginTop: 8,
+    marginTop: -12,
   },
   title: {
     fontSize: 28,

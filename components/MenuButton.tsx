@@ -152,11 +152,13 @@ export default function MenuButton({ onShowExplainers }: MenuButtonProps = {}) {
                     </View>
                     <View>
                       <Text style={[styles.menuItemTitle, { color: colors.text }]}>
-                        {clerkUser.firstName ? `${clerkUser.firstName} ${clerkUser.lastName || ''}` : 'User'}
+                        {clerkUser.firstName ? `${clerkUser.firstName} ${clerkUser.lastName || ''}`.trim() : clerkUser.emailAddresses[0].emailAddress}
                       </Text>
-                      <Text style={[styles.menuItemSubtitle, { color: colors.textSecondary }]}>
-                        {clerkUser.emailAddresses[0].emailAddress}
-                      </Text>
+                      {clerkUser.firstName && (
+                        <Text style={[styles.menuItemSubtitle, { color: colors.textSecondary }]}>
+                          {clerkUser.emailAddresses[0].emailAddress}
+                        </Text>
+                      )}
                     </View>
                   </View>
                 </View>
