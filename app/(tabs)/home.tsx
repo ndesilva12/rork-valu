@@ -1644,7 +1644,7 @@ export default function HomeScreen() {
             >
               <View style={styles.newsArticleContent}>
                 <View style={styles.newsArticleHeader}>
-                  <Text style={[styles.newsBrandTag, { color: colors.primary, backgroundColor: colors.primaryLight + '20' }]}>
+                  <Text style={[styles.newsBrandTag, { color: colors.primary, borderColor: colors.primary, borderWidth: 1.5, backgroundColor: 'transparent' }]}>
                     {article.brandName}
                   </Text>
                   <Text style={[styles.newsDate, { color: colors.textSecondary }]}>
