@@ -861,11 +861,7 @@ export default function HomeScreen() {
   const fetchNewsArticles = useCallback(async () => {
     setIsLoadingNews(true);
     try {
-      // TEMPORARY: Disable news fetching until tRPC types are properly regenerated
-      console.log('[Home] News feature temporarily disabled - tRPC endpoint needs proper configuration');
-      setNewsArticles([]);
-      setIsLoadingNews(false);
-      return;
+      console.log('[Home] Attempting to fetch news articles...');
 
       // Collect brand names from My List, Aligned, and Unaligned
       const brandNames = new Set<string>();
@@ -893,29 +889,41 @@ export default function HomeScreen() {
       });
 
       const brandNamesArray = Array.from(brandNames);
+      console.log('[Home] Collected brand names for news:', brandNamesArray);
 
       if (brandNamesArray.length === 0) {
+        console.log('[Home] No brand names to fetch news for');
         setNewsArticles([]);
         return;
       }
 
       // Check if news endpoint is available
+      console.log('[Home] Checking if trpc.news exists:', !!trpc.news);
+      console.log('[Home] Checking if trpc.news.getArticles exists:', !!trpc.news?.getArticles);
+      console.log('[Home] Checking if trpc.news.getArticles.query exists:', !!trpc.news?.getArticles?.query);
+
       if (!trpc.news?.getArticles?.query) {
-        console.warn('[Home] News endpoint not available. Please restart the dev server to load new tRPC routes.');
+        console.warn('[Home] News endpoint not available - tRPC types may not be generated correctly');
         setNewsArticles([]);
         setIsLoadingNews(false);
         return;
       }
+
+      console.log('[Home] News endpoint available! Fetching articles...');
 
       // Fetch news articles using tRPC
       const result = await trpc.news.getArticles.query({
         brandNames: brandNamesArray,
       });
 
+      console.log('[Home] News fetch successful! Received', result.articles?.length || 0, 'articles');
       setNewsArticles(result.articles || []);
     } catch (error) {
       console.error('[Home] Error fetching news:', error);
-      console.error('[Home] Tip: If you see "e[i] is not a function", restart the dev server to reload tRPC routes.');
+      if (error instanceof Error) {
+        console.error('[Home] Error message:', error.message);
+        console.error('[Home] Error stack:', error.stack);
+      }
       setNewsArticles([]);
     } finally {
       setIsLoadingNews(false);
