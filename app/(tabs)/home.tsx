@@ -1661,20 +1661,22 @@ export default function HomeScreen() {
           </View>
 
           {/* News source dropdown */}
-          <TouchableOpacity
-            style={styles.newsSourceDropdown}
-            onPress={() => setShowNewsSourceModal(true)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.newsSourceText, { color: colors.primary }]}>
-              {selectedNewsSource === 'myList' ? 'My List' :
-               selectedNewsSource === 'aligned' ? 'Aligned' :
-               selectedNewsSource === 'unaligned' ? 'Unaligned' :
-               userLists.find(list => list.id === selectedNewsSource)?.name || 'Select Source'}
-            </Text>
-            <ChevronDown size={16} color={colors.primary} strokeWidth={2.5} />
-            <View style={[styles.newsSourceUnderline, { backgroundColor: colors.primary }]} />
-          </TouchableOpacity>
+          <View style={styles.newsSourceDropdownContainer}>
+            <TouchableOpacity
+              style={styles.newsSourceDropdown}
+              onPress={() => setShowNewsSourceModal(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.newsSourceText, { color: colors.text }]}>
+                {selectedNewsSource === 'myList' ? 'My List' :
+                 selectedNewsSource === 'aligned' ? 'Aligned' :
+                 selectedNewsSource === 'unaligned' ? 'Unaligned' :
+                 userLists.find(list => list.id === selectedNewsSource)?.name || 'Select Source'}
+              </Text>
+              <ChevronDown size={18} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+            <View style={[styles.newsSourceBorder, { backgroundColor: colors.primary }]} />
+          </View>
         </View>
 
         <View style={styles.newsContainer}>
@@ -7025,26 +7027,28 @@ const styles = StyleSheet.create({
   newsHeaderContainer: {
     marginBottom: 16,
   },
-  newsSourceDropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  newsSourceDropdownContainer: {
     alignSelf: 'flex-start',
     marginTop: 12,
     marginBottom: 8,
-    paddingBottom: 4,
-    gap: 6,
-    position: 'relative',
+  },
+  newsSourceDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    minWidth: 200,
+    gap: 24,
   },
   newsSourceText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '500',
+    letterSpacing: 0.3,
   },
-  newsSourceUnderline: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  newsSourceBorder: {
     height: 2,
+    marginTop: 2,
     borderRadius: 1,
   },
   newsSourceModalContainer: {
