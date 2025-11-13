@@ -2747,6 +2747,7 @@ export default function HomeScreen() {
                           onPress={() => !isEditMode && router.push(`/brand/${entry.brandId}`)}
                           activeOpacity={0.7}
                           disabled={isEditMode}
+                          pointerEvents={isEditMode ? "box-none" : "auto"}
                         >
                           <View style={styles.brandCardInner}>
                           <View style={styles.brandLogoContainer}>
@@ -2808,6 +2809,7 @@ export default function HomeScreen() {
                         onPress={() => !isEditMode && handleBusinessPress(entry.businessId)}
                         activeOpacity={0.7}
                         disabled={isEditMode}
+                        pointerEvents={isEditMode ? "box-none" : "auto"}
                       >
                         <View style={styles.brandCardInner}>
                           <View style={styles.brandLogoContainer}>
@@ -2868,6 +2870,7 @@ export default function HomeScreen() {
                         onPress={() => !isEditMode && router.push(`/value/${entry.valueId}`)}
                         activeOpacity={0.7}
                         disabled={isEditMode}
+                        pointerEvents={isEditMode ? "box-none" : "auto"}
                       >
                         <View style={[styles.valueNameBox, { borderColor }]}>
                           <Text style={[styles.valueNameText, { color: borderColor }]} numberOfLines={1}>
@@ -2916,6 +2919,7 @@ export default function HomeScreen() {
                           onPress={() => !isEditMode && handleEntryClick(entry)}
                           activeOpacity={0.7}
                           disabled={isEditMode}
+                          pointerEvents={isEditMode ? "box-none" : "auto"}
                         >
                           <View style={styles.listEntryContent}>
                             <Text style={[styles.listEntryType, { color: colors.textSecondary }]}>
