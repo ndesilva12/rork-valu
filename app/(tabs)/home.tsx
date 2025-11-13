@@ -223,9 +223,8 @@ export default function HomeScreen() {
     useSensor(TouchSensor, {
       activationConstraint: {
         // Delay helps distinguish between scroll and drag on touch devices
-        // Increased for better mobile web/PWA support
-        delay: 250,
-        tolerance: 5,
+        delay: 150,
+        tolerance: 3,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -2689,7 +2688,10 @@ export default function HomeScreen() {
           );
         })()}
 
-        <ScrollView style={styles.listDetailContent}>
+        <ScrollView
+          style={styles.listDetailContent}
+          scrollEnabled={!isEditMode}
+        >
           {list.entries.length === 0 ? (
             <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
               <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
@@ -6258,10 +6260,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
     cursor: 'grab' as any,
-    touchAction: 'none' as any,
-    WebkitTouchCallout: 'none' as any,
-    WebkitUserSelect: 'none' as any,
-    userSelect: 'none' as any,
   },
   listDetailContent: {
     flex: 1,
