@@ -214,17 +214,7 @@ export default function HomeScreen() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        // Use distance constraint for better mobile scroll detection
-        distance: Platform.OS === 'web' ? 8 : 15,
-        // Reduce tolerance to prevent horizontal drift
-        tolerance: 3,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        // Delay helps distinguish between scroll and drag on touch devices
-        delay: 150,
-        tolerance: 3,
+        distance: 8, // Drag only after moving 8px (prevents accidental drags)
       },
     }),
     useSensor(KeyboardSensor, {
@@ -429,9 +419,9 @@ export default function HomeScreen() {
     }
   }, [params.fromMap]);
 
-  // Fetch user lists when library view is activated
+  // Fetch user lists when library view is activated or when All Lists subsection is active
   useEffect(() => {
-    if (mainView === 'myLibrary' && clerkUser?.id) {
+    if ((mainView === 'myLibrary' || (mainView === 'forYou' && forYouSubsection === 'allLists')) && clerkUser?.id) {
       loadUserLists();
     }
     // Reset to overview when leaving library
@@ -439,7 +429,7 @@ export default function HomeScreen() {
       setLibraryView('overview');
       setSelectedList(null);
     }
-  }, [mainView, clerkUser?.id]);
+  }, [mainView, forYouSubsection, clerkUser?.id]);
 
   const loadUserLists = async () => {
     if (!clerkUser?.id) return;
@@ -984,7 +974,7 @@ export default function HomeScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.mainViewText, { color: mainView === 'forYou' ? colors.white : colors.textSecondary }]}>
-              For You
+              Library
             </Text>
           </TouchableOpacity>
 
@@ -994,7 +984,7 @@ export default function HomeScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.mainViewText, { color: mainView === 'myLibrary' ? colors.white : colors.textSecondary }]}>
-              My Library
+              News
             </Text>
           </TouchableOpacity>
 
@@ -1013,19 +1003,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
       </View>
-
-      {mainView === 'myLibrary' && libraryView === 'overview' && (
-        <View style={styles.libraryActions}>
-          <Text style={[styles.libraryTitle, { color: colors.text }]}>My Library</Text>
-          <TouchableOpacity
-            style={[styles.createListButtonSmall, { backgroundColor: colors.primary }]}
-            onPress={() => setShowListCreationTypeModal(true)}
-            activeOpacity={0.7}
-          >
-            <Plus size={20} color={colors.white} strokeWidth={2.5} />
-          </TouchableOpacity>
-        </View>
-      )}
 
       {/* For You Subsection Tabs */}
       {mainView === 'forYou' && (
@@ -1074,6 +1051,22 @@ export default function HomeScreen() {
               Unaligned
             </Text>
             {forYouSubsection === 'unaligned' && (
+              <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.subsectionTab}
+            onPress={() => setForYouSubsection('allLists')}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.subsectionTabText,
+              { color: forYouSubsection === 'allLists' ? colors.text : colors.textSecondary }
+            ]}>
+              All Lists
+            </Text>
+            {forYouSubsection === 'allLists' && (
               <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
             )}
           </TouchableOpacity>
@@ -1449,6 +1442,11 @@ export default function HomeScreen() {
           </View>
         </View>
       );
+    }
+
+    // All Lists subsection - shows all user lists from old My Library
+    if (forYouSubsection === 'allLists') {
+      return renderMyLibraryView();
     }
 
     return null;
@@ -2688,10 +2686,7 @@ export default function HomeScreen() {
           );
         })()}
 
-        <ScrollView
-          style={styles.listDetailContent}
-          scrollEnabled={!isEditMode}
-        >
+        <ScrollView style={styles.listDetailContent}>
           {list.entries.length === 0 ? (
             <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
               <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
@@ -2747,7 +2742,6 @@ export default function HomeScreen() {
                           onPress={() => !isEditMode && router.push(`/brand/${entry.brandId}`)}
                           activeOpacity={0.7}
                           disabled={isEditMode}
-                          pointerEvents={isEditMode ? "box-none" : "auto"}
                         >
                           <View style={styles.brandCardInner}>
                           <View style={styles.brandLogoContainer}>
@@ -2809,7 +2803,6 @@ export default function HomeScreen() {
                         onPress={() => !isEditMode && handleBusinessPress(entry.businessId)}
                         activeOpacity={0.7}
                         disabled={isEditMode}
-                        pointerEvents={isEditMode ? "box-none" : "auto"}
                       >
                         <View style={styles.brandCardInner}>
                           <View style={styles.brandLogoContainer}>
@@ -2870,7 +2863,6 @@ export default function HomeScreen() {
                         onPress={() => !isEditMode && router.push(`/value/${entry.valueId}`)}
                         activeOpacity={0.7}
                         disabled={isEditMode}
-                        pointerEvents={isEditMode ? "box-none" : "auto"}
                       >
                         <View style={[styles.valueNameBox, { borderColor }]}>
                           <Text style={[styles.valueNameText, { color: borderColor }]} numberOfLines={1}>
@@ -2919,7 +2911,6 @@ export default function HomeScreen() {
                           onPress={() => !isEditMode && handleEntryClick(entry)}
                           activeOpacity={0.7}
                           disabled={isEditMode}
-                          pointerEvents={isEditMode ? "box-none" : "auto"}
                         >
                           <View style={styles.listEntryContent}>
                             <Text style={[styles.listEntryType, { color: colors.textSecondary }]}>
@@ -2979,6 +2970,21 @@ export default function HomeScreen() {
   };
 
   const renderMyLibraryView = () => {
+    // If called from News view (mainView === 'myLibrary'), show empty placeholder
+    if (mainView === 'myLibrary') {
+      return (
+        <View style={styles.section}>
+          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            <BookOpen size={48} color={colors.textSecondary} strokeWidth={1.5} />
+            <Text style={[styles.placeholderTitle, { color: colors.text }]}>News Coming Soon</Text>
+            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+              Stay tuned for news and updates about values-aligned brands and companies.
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
     // If viewing a list detail, show that instead
     if (libraryView === 'detail') {
       return renderListDetailView();
