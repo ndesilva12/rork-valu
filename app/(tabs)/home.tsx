@@ -325,7 +325,7 @@ export default function HomeScreen() {
         if (!personalList && userName !== 'My List') {
           console.log('[Home] Personal list not found, creating it...');
           try {
-            const newListId = await createList(clerkUser.id, userName, 'Your personal collection.', userName);
+            const newListId = await createList(clerkUser.id, userName, 'Your personal collection of favorite businesses.', userName);
             // Reload lists to get the newly created one
             const updatedLists = await getUserLists(clerkUser.id);
             personalList = updatedLists.find(list => list.id === newListId);
@@ -1251,6 +1251,19 @@ export default function HomeScreen() {
                     style={styles.listOptionItem}
                     onPress={() => {
                       setShowEditDropdown(false);
+                      setSelectedList(userPersonalList);
+                      toggleEditMode();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
+                  </TouchableOpacity>
+                  <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                  <TouchableOpacity
+                    style={styles.listOptionItem}
+                    onPress={() => {
+                      setShowEditDropdown(false);
                       setDescriptionText(userPersonalList.description || '');
                       setShowDescriptionModal(true);
                     }}
@@ -1340,6 +1353,19 @@ export default function HomeScreen() {
 
             return (
               <View style={[styles.listEditDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={styles.listOptionItem}
+                  onPress={() => {
+                    setShowEditDropdown(false);
+                    setSelectedList(userPersonalList);
+                    toggleEditMode();
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
+                </TouchableOpacity>
+                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
                 <TouchableOpacity
                   style={styles.listOptionItem}
                   onPress={() => {
