@@ -175,8 +175,8 @@ export default function HomeScreen() {
   const [linkTitle, setLinkTitle] = useState('');
   const [textContent, setTextContent] = useState('');
 
-  // Library rearrange and card options state
-  const [isLibraryRearrangeMode, setIsLibraryRearrangeMode] = useState(false);
+  // Library reorder and card options state
+  const [isLibraryReorderMode, setIsLibraryReorderMode] = useState(false);
   const [activeCardOptionsMenu, setActiveCardOptionsMenu] = useState<string | null>(null);
   const [showCardRenameModal, setShowCardRenameModal] = useState(false);
   const [cardRenameListId, setCardRenameListId] = useState<string | null>(null);
@@ -223,8 +223,9 @@ export default function HomeScreen() {
     useSensor(TouchSensor, {
       activationConstraint: {
         // Delay helps distinguish between scroll and drag on touch devices
-        delay: 150,
-        tolerance: 3,
+        // Increased for better mobile web/PWA support
+        delay: 250,
+        tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -2641,7 +2642,7 @@ export default function HomeScreen() {
                 activeOpacity={0.7}
               >
                 <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
               </TouchableOpacity>
               <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
               <TouchableOpacity
@@ -2992,11 +2993,11 @@ export default function HomeScreen() {
 
     return (
       <View style={styles.section}>
-        {/* Done button when in rearrange mode */}
-        {isLibraryRearrangeMode && (
+        {/* Done button when in reorder mode */}
+        {isLibraryReorderMode && (
           <View style={styles.libraryHeader}>
             <TouchableOpacity
-              onPress={() => setIsLibraryRearrangeMode(false)}
+              onPress={() => setIsLibraryReorderMode(false)}
               activeOpacity={0.7}
             >
               <Text style={[styles.libraryDoneButton, { color: colors.primary }]}>Done</Text>
@@ -3117,14 +3118,14 @@ export default function HomeScreen() {
                 key={list.id}
                 style={[
                   styles.listCardWrapper,
-                  activeCardOptionsMenu === list.id && !isLibraryRearrangeMode && { zIndex: 1000 }
+                  activeCardOptionsMenu === list.id && !isLibraryReorderMode && { zIndex: 1000 }
                 ]}
               >
                 <TouchableOpacity
                   style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                  onPress={() => !isLibraryRearrangeMode && handleOpenList(list)}
+                  onPress={() => !isLibraryReorderMode && handleOpenList(list)}
                   activeOpacity={0.7}
-                  disabled={isLibraryRearrangeMode}
+                  disabled={isLibraryReorderMode}
                 >
                   <View style={styles.listCardContentRow}>
                     <View style={styles.listCardContent}>
@@ -3152,7 +3153,7 @@ export default function HomeScreen() {
                         </View>
                       </View>
                     </View>
-                    {!isLibraryRearrangeMode && (
+                    {!isLibraryReorderMode && (
                       <View style={{ position: 'relative' as const }}>
                         <TouchableOpacity
                           onPress={(e) => {
@@ -3208,7 +3209,7 @@ export default function HomeScreen() {
                         )}
                       </View>
                     )}
-                    {isLibraryRearrangeMode && (
+                    {isLibraryReorderMode && (
                       <View style={styles.listCardRearrangeButtons}>
                         <TouchableOpacity
                           onPress={() => handleMoveListUp(index)}
@@ -3376,7 +3377,7 @@ export default function HomeScreen() {
       {/* Invisible overlay to close dropdown when clicking outside */}
       {/* Library Card Options Modal */}
       <Modal
-        visible={activeCardOptionsMenu !== null && !isLibraryRearrangeMode}
+        visible={activeCardOptionsMenu !== null && !isLibraryReorderMode}
         animationType="fade"
         transparent={true}
         onRequestClose={() => setActiveCardOptionsMenu(null)}
@@ -3436,12 +3437,12 @@ export default function HomeScreen() {
                       style={styles.listOptionItem}
                       onPress={() => {
                         setActiveCardOptionsMenu(null);
-                        setIsLibraryRearrangeMode(true);
+                        setIsLibraryReorderMode(true);
                       }}
                       activeOpacity={0.7}
                     >
                       <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                      <Text style={[styles.listOptionText, { color: colors.text }]}>Rearrange</Text>
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
                     </TouchableOpacity>
                     <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
                     <TouchableOpacity
@@ -6257,6 +6258,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
     cursor: 'grab' as any,
+    touchAction: 'none' as any,
+    WebkitTouchCallout: 'none' as any,
+    WebkitUserSelect: 'none' as any,
+    userSelect: 'none' as any,
   },
   listDetailContent: {
     flex: 1,

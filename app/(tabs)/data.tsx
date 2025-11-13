@@ -588,7 +588,7 @@ export default function DataScreen() {
                   >
                     <View style={styles.dataRowMain}>
                       <Text style={[styles.dataRowTitle, { color: colors.text }]}>
-                        {customer.email || 'No email'}
+                        {customer.name || customer.email || 'Unknown'}
                       </Text>
                       <Text style={[styles.dataRowValue, { color: colors.primary }]}>
                         {formatCurrency(customer.totalSpent)}
