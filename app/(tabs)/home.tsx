@@ -135,6 +135,7 @@ export default function HomeScreen() {
   const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(null);
   const [userBusinesses, setUserBusinesses] = useState<BusinessUser[]>([]);
   const [showMapModal, setShowMapModal] = useState(false);
+  const [localSortDirection, setLocalSortDirection] = useState<'highToLow' | 'lowToHigh'>('highToLow');
 
   // Library state
   const [userLists, setUserLists] = useState<UserList[]>([]);
@@ -186,6 +187,17 @@ export default function HomeScreen() {
   // Share modal state
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareListData, setShareListData] = useState<UserList | null>(null);
+
+  // News feed state
+  const [newsArticles, setNewsArticles] = useState<Array<{
+    title: string;
+    link: string;
+    pubDate: string;
+    source: string;
+    brandName: string;
+    description?: string;
+  }>>([]);
+  const [isLoadingNews, setIsLoadingNews] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -431,6 +443,62 @@ export default function HomeScreen() {
     }
   }, [mainView, forYouSubsection, clerkUser?.id]);
 
+  // Fetch news articles when news view is activated
+  useEffect(() => {
+    if (mainView === 'myLibrary') {
+      fetchNewsArticles();
+    }
+  }, [mainView, userPersonalList, allSupportFull, allAvoidFull]);
+
+  const fetchNewsArticles = async () => {
+    setIsLoadingNews(true);
+    try {
+      // Collect brand names from My List, Aligned, and Unaligned
+      const brandNames = new Set<string>();
+
+      // Add brands from My List
+      if (userPersonalList?.entries) {
+        userPersonalList.entries.forEach((entry) => {
+          if (entry.type === 'brand') {
+            const brandName = getBrandName(entry.id);
+            if (brandName && brandName !== 'Unknown Brand') {
+              brandNames.add(brandName);
+            }
+          }
+        });
+      }
+
+      // Add top aligned brands (limit to 5)
+      allSupportFull?.slice(0, 5).forEach((brand) => {
+        brandNames.add(brand.name);
+      });
+
+      // Add top unaligned brands (limit to 5)
+      allAvoidFull?.slice(0, 5).forEach((brand) => {
+        brandNames.add(brand.name);
+      });
+
+      const brandNamesArray = Array.from(brandNames);
+
+      if (brandNamesArray.length === 0) {
+        setNewsArticles([]);
+        return;
+      }
+
+      // Fetch news articles using tRPC
+      const result = await trpc.news.getArticles.query({
+        brandNames: brandNamesArray,
+      });
+
+      setNewsArticles(result.articles || []);
+    } catch (error) {
+      console.error('[Home] Error fetching news:', error);
+      setNewsArticles([]);
+    } finally {
+      setIsLoadingNews(false);
+    }
+  };
+
   const loadUserLists = async () => {
     if (!clerkUser?.id) return;
 
@@ -651,6 +719,7 @@ export default function HomeScreen() {
   const localBusinessData = useMemo(() => {
     if (mainView !== 'local' || !userLocation || userBusinesses.length === 0) {
       return {
+        allBusinesses: [],
         alignedBusinesses: [],
         unalignedBusinesses: [],
       };
@@ -702,7 +771,14 @@ export default function HomeScreen() {
     // Filter by distance (all will be in range if localDistance is null)
     const businessesInRange = scoredBusinesses.filter((b) => b.isWithinRange);
 
-    // Split into aligned (≥50) and unaligned (<50)
+    // Sort all businesses by score (direction will be handled in the component)
+    const allBusinessesSorted = [...businessesInRange].sort((a, b) =>
+      localSortDirection === 'highToLow'
+        ? b.alignmentScore - a.alignmentScore
+        : a.alignmentScore - b.alignmentScore
+    );
+
+    // Also keep the old split for backward compatibility (map modal)
     const aligned = businessesInRange
       .filter((b) => b.alignmentScore >= 50)
       .sort((a, b) => b.alignmentScore - a.alignmentScore); // Highest score first
@@ -714,17 +790,18 @@ export default function HomeScreen() {
     console.log('[Home] Local business results:', {
       totalBusinesses: userBusinesses.length,
       inRange: businessesInRange.length,
+      allBusinesses: allBusinessesSorted.length,
       aligned: aligned.length,
       unaligned: unaligned.length,
-      topAligned: aligned.slice(0, 3).map(b => ({ name: b.business.businessInfo.name, score: b.alignmentScore, distance: b.distance })),
-      topUnaligned: unaligned.slice(0, 3).map(b => ({ name: b.business.businessInfo.name, score: b.alignmentScore, distance: b.distance })),
+      topBusinesses: allBusinessesSorted.slice(0, 3).map(b => ({ name: b.business.businessInfo.name, score: b.alignmentScore, distance: b.distance })),
     });
 
     return {
+      allBusinesses: allBusinessesSorted,
       alignedBusinesses: aligned,
       unalignedBusinesses: unaligned,
     };
-  }, [mainView, userLocation, userBusinesses, profile.causes, localDistance]);
+  }, [mainView, userLocation, userBusinesses, profile.causes, localDistance, localSortDirection]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
@@ -1478,57 +1555,129 @@ export default function HomeScreen() {
     return null;
   };
 
-  const renderLocalView = () => {
-    const { alignedBusinesses, unalignedBusinesses } = localBusinessData;
+  const renderNewsFeedView = () => {
+    if (isLoadingNews) {
+      return (
+        <View style={styles.section}>
+          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+              Loading news articles...
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    if (newsArticles.length === 0) {
+      return (
+        <View style={styles.section}>
+          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.placeholderTitle, { color: colors.text }]}>No News Yet</Text>
+            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+              Add brands to your lists to see relevant news articles.
+            </Text>
+          </View>
+        </View>
+      );
+    }
 
     return (
-      <>
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <View style={styles.sectionHeader}>
-              <TrendingUp size={24} color={colors.success} strokeWidth={2} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Aligned Businesses</Text>
-            </View>
-            <TouchableOpacity onPress={() => setShowAllAligned(!showAllAligned)} activeOpacity={0.7}>
-              <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllAligned ? 'Hide' : 'Show All'}</Text>
-            </TouchableOpacity>
+      <View style={styles.section}>
+        <View style={styles.sectionHeaderRow}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>News Feed</Text>
           </View>
-          <View style={styles.brandsContainer}>
-            {alignedBusinesses.length > 0 ? (
-              (showAllAligned ? alignedBusinesses : alignedBusinesses.slice(0, 5)).map((biz) => renderLocalBusinessCard(biz, 'aligned'))
-            ) : (
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                {localDistance === null
-                  ? 'No aligned businesses found'
-                  : `No aligned businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
-              </Text>
-            )}
-          </View>
+          <Text style={[styles.newsCount, { color: colors.textSecondary }]}>
+            {newsArticles.length} {newsArticles.length === 1 ? 'article' : 'articles'}
+          </Text>
         </View>
+        <View style={styles.newsContainer}>
+          {newsArticles.map((article, index) => (
+            <TouchableOpacity
+              key={`${article.link}-${index}`}
+              style={[styles.newsArticleCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+              onPress={() => {
+                if (Platform.OS === 'web') {
+                  window.open(article.link, '_blank');
+                } else {
+                  // On mobile, use Linking API
+                  const { Linking } = require('react-native');
+                  Linking.openURL(article.link);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.newsArticleContent}>
+                <View style={styles.newsArticleHeader}>
+                  <Text style={[styles.newsBrandTag, { color: colors.primary, backgroundColor: colors.primaryLight + '20' }]}>
+                    {article.brandName}
+                  </Text>
+                  <Text style={[styles.newsDate, { color: colors.textSecondary }]}>
+                    {new Date(article.pubDate).toLocaleDateString()}
+                  </Text>
+                </View>
+                <Text style={[styles.newsTitle, { color: colors.text }]} numberOfLines={3}>
+                  {article.title}
+                </Text>
+                {article.description && (
+                  <Text style={[styles.newsDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                    {article.description}
+                  </Text>
+                )}
+                <View style={styles.newsFooter}>
+                  <Text style={[styles.newsSource, { color: colors.textSecondary }]}>
+                    {article.source}
+                  </Text>
+                  <ExternalLink size={16} color={colors.primary} strokeWidth={2} />
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    );
+  };
 
-        <View style={[styles.section, { marginTop: 4, marginBottom: 14 }]}>
-          <View style={styles.sectionHeaderRow}>
-            <View style={styles.sectionHeader}>
-              <TrendingDown size={24} color={colors.danger} strokeWidth={2} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Unaligned Businesses</Text>
-            </View>
-            <TouchableOpacity onPress={() => setShowAllLeast(!showAllLeast)} activeOpacity={0.7}>
-              <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllLeast ? 'Hide' : 'Show All'}</Text>
-            </TouchableOpacity>
+  const renderLocalView = () => {
+    const { allBusinesses } = localBusinessData;
+
+    return (
+      <View style={styles.section}>
+        <View style={styles.sectionHeaderRow}>
+          <View style={styles.sectionHeader}>
+            <MapPin size={24} color={colors.primary} strokeWidth={2} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Local Businesses</Text>
           </View>
-          <View style={styles.brandsContainer}>
-            {unalignedBusinesses.length > 0 ? (
-              (showAllLeast ? unalignedBusinesses : unalignedBusinesses.slice(0, 5)).map((biz) => renderLocalBusinessCard(biz, 'unaligned'))
+          <TouchableOpacity
+            onPress={() => setLocalSortDirection(localSortDirection === 'highToLow' ? 'lowToHigh' : 'highToLow')}
+            activeOpacity={0.7}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+          >
+            {localSortDirection === 'highToLow' ? (
+              <ChevronDown size={18} color={colors.primary} strokeWidth={2} />
             ) : (
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                {localDistance === null
-                  ? 'No unaligned businesses found'
-                  : `No unaligned businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
-              </Text>
+              <ChevronUp size={18} color={colors.primary} strokeWidth={2} />
             )}
-          </View>
+            <Text style={[styles.showAllButton, { color: colors.primary }]}>
+              {localSortDirection === 'highToLow' ? 'High to Low' : 'Low to High'}
+            </Text>
+          </TouchableOpacity>
         </View>
-      </>
+        <View style={styles.brandsContainer}>
+          {allBusinesses.length > 0 ? (
+            allBusinesses.map((biz) => {
+              const isAligned = biz.alignmentScore >= 50;
+              return renderLocalBusinessCard(biz, isAligned ? 'aligned' : 'unaligned');
+            })
+          ) : (
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              {localDistance === null
+                ? 'No businesses found'
+                : `No businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
+            </Text>
+          )}
+        </View>
+      </View>
     );
   };
 
@@ -2996,9 +3145,9 @@ export default function HomeScreen() {
   };
 
   const renderMyLibraryView = () => {
-    // If called from News view (mainView === 'myLibrary'), show blank content
+    // If called from News view (mainView === 'myLibrary'), show news feed
     if (mainView === 'myLibrary') {
-      return null;
+      return renderNewsFeedView();
     }
 
     // If viewing a list detail, show that instead
@@ -6614,6 +6763,62 @@ const styles = StyleSheet.create({
   },
   shareModalButtonTextCancel: {
     fontSize: 16,
+    fontWeight: '500' as const,
+  },
+  // News feed styles
+  newsContainer: {
+    gap: 12,
+  },
+  newsCount: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+  },
+  newsArticleCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: 0,
+  },
+  newsArticleContent: {
+    padding: 14,
+  },
+  newsArticleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  newsBrandTag: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    overflow: 'hidden',
+    textTransform: 'uppercase' as const,
+  },
+  newsDate: {
+    fontSize: 11,
+    fontWeight: '500' as const,
+  },
+  newsTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    lineHeight: 22,
+    marginBottom: 6,
+  },
+  newsDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  newsFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  newsSource: {
+    fontSize: 12,
     fontWeight: '500' as const,
   },
 });
