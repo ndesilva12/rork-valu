@@ -897,24 +897,24 @@ export default function HomeScreen() {
         return;
       }
 
-      // Check if news endpoint is available
-      console.log('[Home] Checking if trpc.news exists:', !!trpc.news);
-      console.log('[Home] Checking if trpc.news.getArticles exists:', !!trpc.news?.getArticles);
-      console.log('[Home] Checking if trpc.news.getArticles.query exists:', !!trpc.news?.getArticles?.query);
+      console.log('[Home] Fetching news from REST API...');
 
-      if (!trpc.news?.getArticles?.query) {
-        console.warn('[Home] News endpoint not available - tRPC types may not be generated correctly');
-        setNewsArticles([]);
-        setIsLoadingNews(false);
-        return;
+      // Fetch news articles using REST API (bypassing tRPC issues)
+      const response = await fetch('/api/news/articles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          brandNames: brandNamesArray,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`News API returned ${response.status}: ${response.statusText}`);
       }
 
-      console.log('[Home] News endpoint available! Fetching articles...');
-
-      // Fetch news articles using tRPC
-      const result = await trpc.news.getArticles.query({
-        brandNames: brandNamesArray,
-      });
+      const result = await response.json();
 
       console.log('[Home] News fetch successful! Received', result.articles?.length || 0, 'articles');
       setNewsArticles(result.articles || []);
@@ -922,7 +922,6 @@ export default function HomeScreen() {
       console.error('[Home] Error fetching news:', error);
       if (error instanceof Error) {
         console.error('[Home] Error message:', error.message);
-        console.error('[Home] Error stack:', error.stack);
       }
       setNewsArticles([]);
     } finally {
