@@ -982,11 +982,11 @@ export default function ValuesScreen() {
               </Text>
 
               <TouchableOpacity
-                style={[styles.valueActionButton, { backgroundColor: colors.primary }]}
+                style={[styles.valueActionButton, { backgroundColor: colors.white, borderWidth: 2, borderColor: colors.border }]}
                 onPress={() => handleValueAction('view')}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.valueActionButtonText, { color: colors.white }]}>
+                <Text style={[styles.valueActionButtonText, { color: colors.text }]}>
                   View Value
                 </Text>
               </TouchableOpacity>
@@ -1004,11 +1004,11 @@ export default function ValuesScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.valueActionButton, styles.valueActionButtonOutline, { borderColor: colors.danger }]}
+                    style={[styles.valueActionButton, { backgroundColor: colors.neutral }]}
                     onPress={() => handleValueAction('deselect')}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.valueActionButtonText, { color: colors.danger }]}>
+                    <Text style={[styles.valueActionButtonText, { color: colors.white }]}>
                       Deselect
                     </Text>
                   </TouchableOpacity>
@@ -1018,7 +1018,7 @@ export default function ValuesScreen() {
               {selectedValueForAction?.currentState === 'avoid' && (
                 <>
                   <TouchableOpacity
-                    style={[styles.valueActionButton, { backgroundColor: colors.success }]}
+                    style={[styles.valueActionButton, { backgroundColor: colors.primary }]}
                     onPress={() => handleValueAction('aligned')}
                     activeOpacity={0.7}
                   >
@@ -1028,11 +1028,11 @@ export default function ValuesScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.valueActionButton, styles.valueActionButtonOutline, { borderColor: colors.danger }]}
+                    style={[styles.valueActionButton, { backgroundColor: colors.neutral }]}
                     onPress={() => handleValueAction('deselect')}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.valueActionButtonText, { color: colors.danger }]}>
+                    <Text style={[styles.valueActionButtonText, { color: colors.white }]}>
                       Deselect
                     </Text>
                   </TouchableOpacity>
@@ -1042,7 +1042,7 @@ export default function ValuesScreen() {
               {selectedValueForAction?.currentState === 'unselected' && (
                 <>
                   <TouchableOpacity
-                    style={[styles.valueActionButton, { backgroundColor: colors.success }]}
+                    style={[styles.valueActionButton, { backgroundColor: colors.primary }]}
                     onPress={() => handleValueAction('aligned')}
                     activeOpacity={0.7}
                   >
