@@ -312,7 +312,7 @@ export default function ValuesScreen() {
 
     const currentState = getValueState(valueId);
 
-    // Calculate what the new total would be
+    // Calculate what the new total would be if we deselect
     const currentTotal = profile.causes.length;
     const changesAddingValues = Array.from(localChanges.values()).filter(
       v => v !== null && !profile.causes.find(c => c.id === v.id)
@@ -322,53 +322,151 @@ export default function ValuesScreen() {
     ).length;
     const projectedTotal = currentTotal + changesAddingValues - changesRemovingValues;
 
-    if (currentState === 'unselected') {
-      // Unselected -> Support
-      setLocalChanges(prev => {
-        const next = new Map(prev);
-        next.set(valueId, {
-          id: valueId,
-          name: valueName,
-          category: valueCategory,
-          type: 'support',
-          description,
-        });
-        return next;
-      });
-      hasUnsavedChanges.current = true;
-    } else if (currentState === 'support') {
-      // Support -> Avoid
-      setLocalChanges(prev => {
-        const next = new Map(prev);
-        next.set(valueId, {
-          id: valueId,
-          name: valueName,
-          category: valueCategory,
-          type: 'avoid',
-          description,
-        });
-        return next;
-      });
-      hasUnsavedChanges.current = true;
-    } else if (currentState === 'avoid') {
-      // Avoid -> Unselected (check minimum)
-      const wouldBeTotal = projectedTotal - 1;
-      if (wouldBeTotal < minValues) {
-        Alert.alert(
-          'Minimum Values Required',
-          `${isBusiness ? 'Business accounts' : 'You'} must maintain at least ${minValues} selected values.`,
-          [{ text: 'OK' }]
-        );
-        return;
-      }
+    // Build alert buttons based on current state
+    const buttons: any[] = [];
 
-      setLocalChanges(prev => {
-        const next = new Map(prev);
-        next.set(valueId, null); // null means remove
-        return next;
+    // Always add "View Value" button first
+    buttons.push({
+      text: 'View Value',
+      onPress: () => router.push(`/value/${valueId}`),
+    });
+
+    if (currentState === 'support') {
+      // Currently aligned - show Unaligned and Deselect options
+      buttons.push({
+        text: 'Unaligned',
+        onPress: () => {
+          setLocalChanges(prev => {
+            const next = new Map(prev);
+            next.set(valueId, {
+              id: valueId,
+              name: valueName,
+              category: valueCategory,
+              type: 'avoid',
+              description,
+            });
+            return next;
+          });
+          hasUnsavedChanges.current = true;
+        },
       });
-      hasUnsavedChanges.current = true;
+
+      buttons.push({
+        text: 'Deselect',
+        style: 'destructive',
+        onPress: () => {
+          const wouldBeTotal = projectedTotal - 1;
+          if (wouldBeTotal < minValues) {
+            Alert.alert(
+              'Minimum Values Required',
+              `${isBusiness ? 'Business accounts' : 'You'} must maintain at least ${minValues} selected values.`,
+              [{ text: 'OK' }]
+            );
+            return;
+          }
+
+          setLocalChanges(prev => {
+            const next = new Map(prev);
+            next.set(valueId, null);
+            return next;
+          });
+          hasUnsavedChanges.current = true;
+        },
+      });
+    } else if (currentState === 'avoid') {
+      // Currently unaligned - show Aligned and Deselect options
+      buttons.push({
+        text: 'Aligned',
+        onPress: () => {
+          setLocalChanges(prev => {
+            const next = new Map(prev);
+            next.set(valueId, {
+              id: valueId,
+              name: valueName,
+              category: valueCategory,
+              type: 'support',
+              description,
+            });
+            return next;
+          });
+          hasUnsavedChanges.current = true;
+        },
+      });
+
+      buttons.push({
+        text: 'Deselect',
+        style: 'destructive',
+        onPress: () => {
+          const wouldBeTotal = projectedTotal - 1;
+          if (wouldBeTotal < minValues) {
+            Alert.alert(
+              'Minimum Values Required',
+              `${isBusiness ? 'Business accounts' : 'You'} must maintain at least ${minValues} selected values.`,
+              [{ text: 'OK' }]
+            );
+            return;
+          }
+
+          setLocalChanges(prev => {
+            const next = new Map(prev);
+            next.set(valueId, null);
+            return next;
+          });
+          hasUnsavedChanges.current = true;
+        },
+      });
+    } else {
+      // Currently unselected - show Aligned and Unaligned options
+      buttons.push({
+        text: 'Aligned',
+        onPress: () => {
+          setLocalChanges(prev => {
+            const next = new Map(prev);
+            next.set(valueId, {
+              id: valueId,
+              name: valueName,
+              category: valueCategory,
+              type: 'support',
+              description,
+            });
+            return next;
+          });
+          hasUnsavedChanges.current = true;
+        },
+      });
+
+      buttons.push({
+        text: 'Unaligned',
+        onPress: () => {
+          setLocalChanges(prev => {
+            const next = new Map(prev);
+            next.set(valueId, {
+              id: valueId,
+              name: valueName,
+              category: valueCategory,
+              type: 'avoid',
+              description,
+            });
+            return next;
+          });
+          hasUnsavedChanges.current = true;
+        },
+      });
     }
+
+    // Add Cancel button last
+    buttons.push({
+      text: 'Cancel',
+      style: 'cancel',
+    });
+
+    // Show alert with options
+    Alert.alert(
+      valueName,
+      currentState === 'support' ? 'Currently: Aligned' : currentState === 'avoid' ? 'Currently: Unaligned' : 'Currently: Unselected',
+      buttons,
+      { cancelable: true }
+    );
   };
 
   // Quick-add handlers
