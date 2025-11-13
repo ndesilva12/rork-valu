@@ -71,6 +71,7 @@ import {
   Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { Picker } from '@react-native-picker/picker';
 import * as Clipboard from 'expo-clipboard';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -200,6 +201,7 @@ export default function HomeScreen() {
     description?: string;
   }>>([]);
   const [isLoadingNews, setIsLoadingNews] = useState(false);
+  const [selectedNewsSource, setSelectedNewsSource] = useState<'myList' | 'aligned' | 'unaligned' | string>('myList');
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -861,32 +863,47 @@ export default function HomeScreen() {
   const fetchNewsArticles = useCallback(async () => {
     setIsLoadingNews(true);
     try {
-      console.log('[Home] Attempting to fetch news articles...');
+      console.log('[Home] Attempting to fetch news articles for source:', selectedNewsSource);
 
-      // Collect brand names from My List, Aligned, and Unaligned
+      // Collect brand names based on selected source
       const brandNames = new Set<string>();
 
-      // Add brands from My List
-      if (userPersonalList?.entries) {
-        userPersonalList.entries.forEach((entry) => {
-          if (entry.type === 'brand') {
-            const brandName = getBrandName(entry.id);
-            if (brandName && brandName !== 'Unknown Brand') {
-              brandNames.add(brandName);
+      if (selectedNewsSource === 'myList') {
+        // Add brands from My List
+        if (userPersonalList?.entries) {
+          userPersonalList.entries.forEach((entry) => {
+            if (entry.type === 'brand') {
+              const brandName = getBrandName(entry.id);
+              if (brandName && brandName !== 'Unknown Brand') {
+                brandNames.add(brandName);
+              }
             }
-          }
+          });
+        }
+      } else if (selectedNewsSource === 'aligned') {
+        // Add all aligned brands
+        allSupportFull?.forEach((brand) => {
+          brandNames.add(brand.name);
         });
+      } else if (selectedNewsSource === 'unaligned') {
+        // Add all unaligned brands
+        allAvoidFull?.forEach((brand) => {
+          brandNames.add(brand.name);
+        });
+      } else {
+        // It's a custom list ID - find it in userLists
+        const customList = userLists.find(list => list.id === selectedNewsSource);
+        if (customList?.entries) {
+          customList.entries.forEach((entry) => {
+            if (entry.type === 'brand') {
+              const brandName = getBrandName(entry.id);
+              if (brandName && brandName !== 'Unknown Brand') {
+                brandNames.add(brandName);
+              }
+            }
+          });
+        }
       }
-
-      // Add top aligned brands (limit to 5)
-      allSupportFull?.slice(0, 5).forEach((brand) => {
-        brandNames.add(brand.name);
-      });
-
-      // Add top unaligned brands (limit to 5)
-      allAvoidFull?.slice(0, 5).forEach((brand) => {
-        brandNames.add(brand.name);
-      });
 
       const brandNamesArray = Array.from(brandNames);
       console.log('[Home] Collected brand names for news:', brandNamesArray);
@@ -927,9 +944,9 @@ export default function HomeScreen() {
     } finally {
       setIsLoadingNews(false);
     }
-  }, [userPersonalList, allSupportFull, allAvoidFull]);
+  }, [selectedNewsSource, userPersonalList, allSupportFull, allAvoidFull, userLists]);
 
-  // Fetch news articles when news view is activated
+  // Fetch news articles when news view is activated or source changes
   useEffect(() => {
     if (mainView === 'myLibrary') {
       fetchNewsArticles();
@@ -1617,16 +1634,45 @@ export default function HomeScreen() {
       );
     }
 
+    // Get source display name
+    const getSourceDisplayName = (sourceId: string): string => {
+      if (sourceId === 'myList') return 'My List';
+      if (sourceId === 'aligned') return 'Aligned';
+      if (sourceId === 'unaligned') return 'Unaligned';
+      const customList = userLists.find(list => list.id === sourceId);
+      return customList?.name || 'Unknown List';
+    };
+
     return (
       <View style={styles.section}>
-        <View style={styles.sectionHeaderRow}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>News Feed</Text>
+        <View style={styles.newsHeaderContainer}>
+          <View style={styles.sectionHeaderRow}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>News</Text>
+            </View>
+            <Text style={[styles.newsCount, { color: colors.textSecondary }]}>
+              {newsArticles.length} {newsArticles.length === 1 ? 'article' : 'articles'}
+            </Text>
           </View>
-          <Text style={[styles.newsCount, { color: colors.textSecondary }]}>
-            {newsArticles.length} {newsArticles.length === 1 ? 'article' : 'articles'}
-          </Text>
+
+          {/* News source dropdown */}
+          <View style={[styles.newsSourceDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+            <Picker
+              selectedValue={selectedNewsSource}
+              onValueChange={(value) => setSelectedNewsSource(value)}
+              style={[styles.picker, { color: colors.text }]}
+              dropdownIconColor={colors.text}
+            >
+              <Picker.Item label="My List" value="myList" />
+              <Picker.Item label="Aligned" value="aligned" />
+              <Picker.Item label="Unaligned" value="unaligned" />
+              {userLists.map((list) => (
+                <Picker.Item key={list.id} label={list.name} value={list.id} />
+              ))}
+            </Picker>
+          </View>
         </View>
+
         <View style={styles.newsContainer}>
           {newsArticles.map((article, index) => (
             <TouchableOpacity
@@ -6855,5 +6901,17 @@ const styles = StyleSheet.create({
   newsSource: {
     fontSize: 12,
     fontWeight: '500' as const,
+  },
+  newsHeaderContainer: {
+    marginBottom: 16,
+  },
+  newsSourceDropdown: {
+    marginTop: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  picker: {
+    height: 50,
   },
 });
