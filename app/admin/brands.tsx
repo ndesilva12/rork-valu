@@ -60,6 +60,7 @@ export default function BrandsManagement() {
   const [bulkData, setBulkData] = useState('');
   const [editingBrand, setEditingBrand] = useState<BrandData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showEmptyOnly, setShowEmptyOnly] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const ITEMS_PER_PAGE = 20;
 
@@ -330,11 +331,36 @@ export default function BrandsManagement() {
     );
   };
 
+  // Helper to check if a brand has no data
+  const isBrandEmpty = (brand: BrandData): boolean => {
+    const hasNoMoneyFlow =
+      (!brand.affiliates || brand.affiliates.length === 0) &&
+      (!brand.partnerships || brand.partnerships.length === 0) &&
+      (!brand.ownership || brand.ownership.length === 0);
+
+    const hasNoBasicData =
+      (!brand.website || brand.website.trim() === '') &&
+      (!brand.description || brand.description.trim() === '') &&
+      (!brand.location || brand.location.trim() === '');
+
+    return hasNoMoneyFlow && hasNoBasicData;
+  };
+
   const filteredBrands = brands.filter(
-    (brand) =>
-      brand.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      brand.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      brand.category.toLowerCase().includes(searchQuery.toLowerCase())
+    (brand) => {
+      // Search filter
+      const matchesSearch =
+        brand.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        brand.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        brand.category.toLowerCase().includes(searchQuery.toLowerCase());
+
+      // Empty filter
+      if (showEmptyOnly) {
+        return matchesSearch && isBrandEmpty(brand);
+      }
+
+      return matchesSearch;
+    }
   );
 
   const paginatedBrands = filteredBrands.slice(
@@ -379,6 +405,17 @@ export default function BrandsManagement() {
             setCurrentPage(0);
           }}
         />
+        <TouchableOpacity
+          style={[styles.filterButton, showEmptyOnly && styles.filterButtonActive]}
+          onPress={() => {
+            setShowEmptyOnly(!showEmptyOnly);
+            setCurrentPage(0);
+          }}
+        >
+          <Text style={[styles.filterButtonText, showEmptyOnly && styles.filterButtonTextActive]}>
+            {showEmptyOnly ? '✓ Empty Only' : 'Show Empty'}
+          </Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.bulkButton} onPress={() => setShowBulkModal(true)}>
           <Text style={styles.bulkButtonText}>Bulk Create</Text>
         </TouchableOpacity>
@@ -390,40 +427,59 @@ export default function BrandsManagement() {
       {/* Brands List */}
       <ScrollView style={styles.scrollView}>
         <View style={styles.listContainer}>
-          {paginatedBrands.map((brand) => (
-            <View key={brand.id} style={styles.brandCard}>
-              <View style={styles.brandHeader}>
-                <View style={styles.brandInfo}>
-                  <Text style={styles.brandName}>{brand.name}</Text>
-                  <Text style={styles.brandCategory}>{brand.category}</Text>
-                  <Text style={styles.brandId}>ID: {brand.id}</Text>
+          {paginatedBrands.map((brand) => {
+            const isEmpty = isBrandEmpty(brand);
+            return (
+              <View key={brand.id} style={styles.brandCard}>
+                <View style={styles.brandHeader}>
+                  <View style={styles.brandInfo}>
+                    <View style={styles.brandNameRow}>
+                      <Text style={styles.brandName}>{brand.name}</Text>
+                      {isEmpty && (
+                        <View style={styles.emptyBadge}>
+                          <Text style={styles.emptyBadgeText}>EMPTY</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.brandCategory}>{brand.category}</Text>
+                    <Text style={styles.brandId}>ID: {brand.id}</Text>
+                  </View>
+                  <View style={styles.brandActions}>
+                    <TouchableOpacity
+                      style={styles.editButton}
+                      onPress={() => openEditModal(brand)}
+                    >
+                      <Text style={styles.editButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => handleDelete(brand)}
+                    >
+                      <Text style={styles.deleteButtonText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                <View style={styles.brandActions}>
-                  <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={() => openEditModal(brand)}
-                  >
-                    <Text style={styles.editButtonText}>Edit</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => handleDelete(brand)}
-                  >
-                    <Text style={styles.deleteButtonText}>Delete</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
 
-              {/* Money Flow Summary */}
-              <View style={styles.moneyFlowSummary}>
-                <Text style={styles.moneyFlowLabel}>Money Flow:</Text>
-                <Text style={styles.moneyFlowText}>
-                  {brand.affiliates?.length || 0} affiliates, {brand.partnerships?.length || 0}{' '}
-                  partnerships, {brand.ownership?.length || 0} ownership
-                </Text>
+                {/* Money Flow Summary */}
+                <View style={styles.moneyFlowSummary}>
+                  <Text style={styles.moneyFlowLabel}>Money Flow:</Text>
+                  <Text style={styles.moneyFlowText}>
+                    {brand.affiliates?.length || 0} affiliates, {brand.partnerships?.length || 0}{' '}
+                    partnerships, {brand.ownership?.length || 0} ownership
+                  </Text>
+                </View>
+
+                {/* Data Summary */}
+                {isEmpty && (
+                  <View style={styles.dataSummary}>
+                    <Text style={styles.dataSummaryText}>
+                      ⚠️ No data: Missing website, description, location, and money flow
+                    </Text>
+                  </View>
+                )}
               </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
         {/* Pagination */}
@@ -688,6 +744,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 14,
   },
+  filterButton: {
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#6c757d',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  filterButtonActive: {
+    backgroundColor: '#ffc107',
+    borderColor: '#ffc107',
+  },
+  filterButtonText: {
+    color: '#6c757d',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  filterButtonTextActive: {
+    color: '#000',
+  },
   bulkButton: {
     backgroundColor: '#6c757d',
     paddingHorizontal: 16,
@@ -754,11 +831,28 @@ const styles = StyleSheet.create({
   brandInfo: {
     flex: 1,
   },
+  brandNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
   brandName: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 4,
+  },
+  emptyBadge: {
+    backgroundColor: '#ffc107',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  emptyBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#000',
+    letterSpacing: 0.5,
   },
   brandCategory: {
     fontSize: 14,
@@ -807,6 +901,17 @@ const styles = StyleSheet.create({
   moneyFlowText: {
     fontSize: 13,
     color: '#666',
+  },
+  dataSummary: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  dataSummaryText: {
+    fontSize: 13,
+    color: '#dc3545',
+    fontStyle: 'italic',
   },
   pagination: {
     flexDirection: 'row',
