@@ -209,8 +209,8 @@ export default function OnboardingScreen() {
             if (!values || values.length === 0) return null;
             const Icon = CATEGORY_ICONS[category as CauseCategory];
             const isExpanded = expandedCategories.has(category);
-            const displayedValues = isExpanded ? values : values.slice(0, 3);
-            const hasMore = values.length > 3;
+            const displayedValues = isExpanded ? values : values.slice(0, 10);
+            const hasMore = values.length > 10;
             
             return (
               <View key={category} style={styles.categorySection}>
@@ -256,7 +256,7 @@ export default function OnboardingScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.showMoreText, { color: colors.primary }]}>
-                      {isExpanded ? 'Show Less' : `Show ${values.length - 3} More`}
+                      {isExpanded ? 'Show Less' : `Show ${values.length - 10} More`}
                     </Text>
                     {isExpanded ? (
                       <ChevronUp size={16} color={colors.primary} strokeWidth={2} />

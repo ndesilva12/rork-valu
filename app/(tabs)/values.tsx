@@ -14,7 +14,7 @@ import {
   Pressable,
   TextInput,
 } from 'react-native';
-import { ChevronRight, ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Plus, Edit3, X, List, Tag } from 'lucide-react-native';
+import { ChevronRight, ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Plus, List, Tag } from 'lucide-react-native';
 import { useState, useMemo } from 'react';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -92,8 +92,6 @@ export default function ValuesScreen() {
   const { brands, valuesMatrix, values: firebaseValues } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
   const [expandedCategories, setExpandedCategories] = useState<Set<CauseCategory>>(new Set());
-  const [editingValueId, setEditingValueId] = useState<string | null>(null);
-  const [addingValueId, setAddingValueId] = useState<string | null>(null);
 
   // Quick-add state
   const [showModeSelectionModal, setShowModeSelectionModal] = useState(false);
@@ -198,40 +196,38 @@ export default function ValuesScreen() {
     );
   };
 
-  const handleCycleValue = async (cause: Cause) => {
+  const handleValueTap = async (valueId: string, valueName: string, valueCategory: string, description?: string) => {
     const isBusiness = profile.accountType === 'business';
     const minValues = isBusiness ? 3 : 5;
 
-    // Prevent removing if at minimum
-    if (cause.type === 'avoid' && profile.causes.length <= minValues) {
-      Alert.alert(
-        'Minimum Values Required',
-        `${isBusiness ? 'Business accounts' : 'You'} must maintain at least ${minValues} selected values.`,
-        [{ text: 'OK' }]
-      );
-      setEditingValueId(null);
-      return;
-    }
+    // Find if value is already selected
+    const existingCause = profile.causes.find(c => c.id === valueId);
 
-    // Cycle: aligned → unaligned → unselected → aligned
-    if (cause.type === 'support') {
-      await toggleCauseType(cause, 'avoid');
-    } else if (cause.type === 'avoid') {
-      await toggleCauseType(cause, 'remove');
+    if (!existingCause) {
+      // Unselected -> Support
+      const newCause: Cause = {
+        id: valueId,
+        name: valueName,
+        category: valueCategory as CauseCategory,
+        type: 'support',
+        description,
+      };
+      await toggleCauseType(newCause, 'support');
+    } else if (existingCause.type === 'support') {
+      // Support -> Avoid
+      await toggleCauseType(existingCause, 'avoid');
+    } else if (existingCause.type === 'avoid') {
+      // Avoid -> Unselected (check minimum)
+      if (profile.causes.length <= minValues) {
+        Alert.alert(
+          'Minimum Values Required',
+          `${isBusiness ? 'Business accounts' : 'You'} must maintain at least ${minValues} selected values.`,
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+      await toggleCauseType(existingCause, 'remove');
     }
-    setEditingValueId(null);
-  };
-
-  const handleAddValue = async (value: any, type: 'support' | 'avoid') => {
-    const newCause: Cause = {
-      id: value.id,
-      name: value.name,
-      category: value.category,
-      type,
-      description: value.description,
-    };
-    await toggleCauseType(newCause, type);
-    setAddingValueId(null);
   };
 
   // Quick-add handlers
@@ -427,92 +423,26 @@ export default function ValuesScreen() {
                 </Text>
                 <View style={styles.valuesGrid}>
                   {supportCauses.map(cause => (
-                    <View key={cause.id} style={[styles.valueItemContainer, editingValueId === cause.id && styles.valueItemContainerFull]}>
-                      <View style={styles.valueChipWrapper}>
-                        <TouchableOpacity
-                          style={[
-                            styles.valueChip,
-                            { borderColor: colors.success },
-                            editingValueId === cause.id && { backgroundColor: colors.success }
-                          ]}
-                          onPress={() => {
-                            if (editingValueId !== cause.id) {
-                              router.push(`/value/${cause.id}`);
-                            }
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Text
-                            style={[
-                              styles.valueChipText,
-                              { color: colors.success },
-                              editingValueId === cause.id && { color: colors.white }
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {cause.name}
-                          </Text>
-                        </TouchableOpacity>
-                        <View style={styles.valueChipActions}>
-                          <TouchableOpacity
-                            style={styles.chipActionButton}
-                            onPress={() => handleQuickAdd(cause)}
-                            activeOpacity={0.7}
-                          >
-                            <Plus size={14} color={colors.primary} strokeWidth={2.5} />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.chipActionButton}
-                            onPress={() => setEditingValueId(editingValueId === cause.id ? null : cause.id)}
-                            activeOpacity={0.7}
-                          >
-                            {editingValueId === cause.id ? (
-                              <X size={14} color={colors.textSecondary} strokeWidth={2} />
-                            ) : (
-                              <Edit3 size={14} color={colors.textSecondary} strokeWidth={2} />
-                            )}
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                      {editingValueId === cause.id && (
-                        <View style={[styles.editActions, { backgroundColor: colors.background }]}>
-                          <TouchableOpacity
-                            style={[styles.cycleButton, { backgroundColor: colors.danger }]}
-                            onPress={() => handleCycleValue(cause)}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[styles.cycleButtonText, { color: colors.white }]}>
-                              Change to Unaligned
-                            </Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.removeButton, { borderColor: colors.border }]}
-                            onPress={() => {
-                              const isBusiness = profile.accountType === 'business';
-                              const minValues = isBusiness ? 3 : 5;
-
-                              if (profile.causes.length <= minValues) {
-                                Alert.alert(
-                                  'Minimum Values Required',
-                                  `${isBusiness ? 'Business accounts' : 'You'} must maintain at least ${minValues} selected values.`,
-                                  [{ text: 'OK' }]
-                                );
-                                setEditingValueId(null);
-                                return;
-                              }
-
-                              toggleCauseType(cause, 'remove');
-                              setEditingValueId(null);
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[styles.removeButtonText, { color: colors.textSecondary }]}>
-                              Remove
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
+                    <TouchableOpacity
+                      key={cause.id}
+                      style={[
+                        styles.valueChip,
+                        { backgroundColor: colors.success, borderColor: colors.success }
+                      ]}
+                      onPress={() => handleValueTap(cause.id, cause.name, cause.category, cause.description)}
+                      onLongPress={() => router.push(`/value/${cause.id}`)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.valueChipText,
+                          { color: colors.white }
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {cause.name}
+                      </Text>
+                    </TouchableOpacity>
                   ))}
                 </View>
               </View>
@@ -525,79 +455,26 @@ export default function ValuesScreen() {
                 </Text>
                 <View style={styles.valuesGrid}>
                   {avoidCauses.map(cause => (
-                    <View key={cause.id} style={[styles.valueItemContainer, editingValueId === cause.id && styles.valueItemContainerFull]}>
-                      <View style={styles.valueChipWrapper}>
-                        <TouchableOpacity
-                          style={[
-                            styles.valueChip,
-                            { borderColor: colors.danger },
-                            editingValueId === cause.id && { backgroundColor: colors.danger }
-                          ]}
-                          onPress={() => {
-                            if (editingValueId !== cause.id) {
-                              router.push(`/value/${cause.id}`);
-                            }
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Text
-                            style={[
-                              styles.valueChipText,
-                              { color: colors.danger },
-                              editingValueId === cause.id && { color: colors.white }
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {cause.name}
-                          </Text>
-                        </TouchableOpacity>
-                        <View style={styles.valueChipActions}>
-                          <TouchableOpacity
-                            style={styles.chipActionButton}
-                            onPress={() => handleQuickAdd(cause)}
-                            activeOpacity={0.7}
-                          >
-                            <Plus size={14} color={colors.primary} strokeWidth={2.5} />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.chipActionButton}
-                            onPress={() => setEditingValueId(editingValueId === cause.id ? null : cause.id)}
-                            activeOpacity={0.7}
-                          >
-                            {editingValueId === cause.id ? (
-                              <X size={14} color={colors.textSecondary} strokeWidth={2} />
-                            ) : (
-                              <Edit3 size={14} color={colors.textSecondary} strokeWidth={2} />
-                            )}
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                      {editingValueId === cause.id && (
-                        <View style={[styles.editActions, { backgroundColor: colors.background }]}>
-                          <TouchableOpacity
-                            style={[styles.cycleButton, { backgroundColor: colors.neutral }]}
-                            onPress={() => handleCycleValue(cause)}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[styles.cycleButtonText, { color: colors.white }]}>
-                              Remove from Values
-                            </Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.removeButton, { borderColor: colors.border }]}
-                            onPress={async () => {
-                              await toggleCauseType(cause, 'support');
-                              setEditingValueId(null);
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[styles.removeButtonText, { color: colors.success }]}>
-                              Change to Aligned
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
+                    <TouchableOpacity
+                      key={cause.id}
+                      style={[
+                        styles.valueChip,
+                        { backgroundColor: colors.danger, borderColor: colors.danger }
+                      ]}
+                      onPress={() => handleValueTap(cause.id, cause.name, cause.category, cause.description)}
+                      onLongPress={() => router.push(`/value/${cause.id}`)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.valueChipText,
+                          { color: colors.white }
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {cause.name}
+                      </Text>
+                    </TouchableOpacity>
                   ))}
                 </View>
               </View>
@@ -611,7 +488,7 @@ export default function ValuesScreen() {
             Unselected Values
           </Text>
           <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-            Tap any value to explore brands associated with it
+            Tap to select or cycle values. Long press to explore brands.
           </Text>
 
           {sortedCategories.map((category) => {
@@ -620,8 +497,8 @@ export default function ValuesScreen() {
 
             const Icon = getCategoryIcon(category);
             const isExpanded = expandedCategories.has(category as CauseCategory);
-            const displayedValues = isExpanded ? values : values.slice(0, 3);
-            const hasMore = values.length > 3;
+            const displayedValues = isExpanded ? values : values.slice(0, 10);
+            const hasMore = values.length > 10;
 
             return (
               <View key={category} style={styles.categorySection}>
@@ -633,71 +510,28 @@ export default function ValuesScreen() {
                 </View>
                 <View style={styles.valuesGrid}>
                   {displayedValues.map(value => (
-                    <View key={value.id} style={[styles.valueItemContainer, addingValueId === value.id && styles.valueItemContainerFull]}>
-                      <View style={styles.valueChipWrapper}>
-                        <TouchableOpacity
-                          style={[
-                            styles.valueChip,
-                            styles.unselectedValueChip,
-                            { borderColor: colors.neutral },
-                            addingValueId === value.id && { backgroundColor: colors.neutral }
-                          ]}
-                          onPress={() => {
-                            if (addingValueId !== value.id) {
-                              router.push(`/value/${value.id}`);
-                            }
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Text
-                            style={[
-                              styles.valueChipText,
-                              styles.unselectedValueText,
-                              { color: colors.neutral },
-                              addingValueId === value.id && { color: colors.white }
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {value.name}
-                          </Text>
-                        </TouchableOpacity>
-                        <View style={styles.valueChipActions}>
-                          <TouchableOpacity
-                            style={styles.chipActionButton}
-                            onPress={() => setAddingValueId(addingValueId === value.id ? null : value.id)}
-                            activeOpacity={0.7}
-                          >
-                            {addingValueId === value.id ? (
-                              <X size={14} color={colors.white} strokeWidth={2} />
-                            ) : (
-                              <Plus size={14} color={colors.primary} strokeWidth={2.5} />
-                            )}
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                      {addingValueId === value.id && (
-                        <View style={[styles.addActions, { backgroundColor: colors.background }]}>
-                          <TouchableOpacity
-                            style={[styles.addTypeButton, { backgroundColor: colors.success }]}
-                            onPress={() => handleAddValue(value, 'support')}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[styles.addTypeButtonText, { color: colors.white }]}>
-                              Add as Aligned
-                            </Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.addTypeButton, { backgroundColor: colors.danger }]}
-                            onPress={() => handleAddValue(value, 'avoid')}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[styles.addTypeButtonText, { color: colors.white }]}>
-                              Add as Unaligned
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
+                    <TouchableOpacity
+                      key={value.id}
+                      style={[
+                        styles.valueChip,
+                        styles.unselectedValueChip,
+                        { borderColor: colors.neutral, backgroundColor: 'transparent' }
+                      ]}
+                      onPress={() => handleValueTap(value.id, value.name, value.category)}
+                      onLongPress={() => router.push(`/value/${value.id}`)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.valueChipText,
+                          styles.unselectedValueText,
+                          { color: colors.neutral }
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {value.name}
+                      </Text>
+                    </TouchableOpacity>
                   ))}
                 </View>
                 {hasMore && (
@@ -707,7 +541,7 @@ export default function ValuesScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.showMoreText, { color: colors.textSecondary }]}>
-                      {isExpanded ? 'Show Less' : `Show ${values.length - 3} More`}
+                      {isExpanded ? 'Show Less' : `Show ${values.length - 10} More`}
                     </Text>
                     {isExpanded ? (
                       <ChevronUp size={16} color={colors.textSecondary} strokeWidth={2} />
@@ -724,8 +558,7 @@ export default function ValuesScreen() {
         <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
           <Text style={[styles.infoTitle, { color: colors.text }]}>About Your Values</Text>
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            Tap any value to see brands that align with it. Green values represent causes you support,
-            while red values represent causes you avoid, and grey values are unselected.
+            Tap values to cycle through: Aligned (green) → Unaligned (red) → Unselected (grey). Long press to see brands associated with each value.
           </Text>
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
             Your values help us recommend products and brands that match your beliefs and priorities.
