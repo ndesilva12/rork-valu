@@ -129,39 +129,53 @@ export default function ValuesManagement() {
   // Helper function to ensure a brand exists in the brands collection
   const ensureBrandExists = async (brandName: string) => {
     try {
-      // Create a slug-like ID from the brand name
+      // First, search for an existing brand with this name (case-insensitive)
+      const brandsRef = collection(db, 'brands');
+      const brandsSnapshot = await getDocs(brandsRef);
+
+      // Check if a brand with this name already exists
+      const existingBrand = brandsSnapshot.docs.find(
+        doc => doc.data().name?.toLowerCase() === brandName.toLowerCase()
+      );
+
+      if (existingBrand) {
+        console.log(`✓ Found existing brand: ${brandName} (${existingBrand.id})`);
+        return existingBrand.id;
+      }
+
+      // If no existing brand found, create a new one with slugified ID
       const brandId = brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-      // Check if brand already exists
+      // Double-check the slugified ID doesn't exist
       const brandRef = doc(db, 'brands', brandId);
       const brandDoc = await getDoc(brandRef);
 
-      if (!brandDoc.exists()) {
-        // Create a minimal brand document
-        await setDoc(brandRef, {
-          id: brandId,
-          name: brandName,
-          category: 'Uncategorized',
-          description: 'Auto-created from value alignment. Please update with full details.',
-          alignmentScore: 0,
-          keyReasons: [],
-          relatedValues: [],
-          valueAlignments: [],
-          affiliates: [],
-          partnerships: [],
-          ownership: [],
-          moneyFlow: {
-            company: brandName,
-            shareholders: [],
-            overallAlignment: 0,
-          },
-        });
-        console.log(`✅ Created brand: ${brandName} (${brandId})`);
-        return brandId;
-      } else {
-        console.log(`✓ Brand already exists: ${brandName} (${brandId})`);
+      if (brandDoc.exists()) {
+        console.log(`✓ Brand already exists with ID: ${brandName} (${brandId})`);
         return brandId;
       }
+
+      // Create a minimal brand document
+      await setDoc(brandRef, {
+        id: brandId,
+        name: brandName,
+        category: 'Uncategorized',
+        description: 'Auto-created from value alignment. Please update with full details.',
+        alignmentScore: 0,
+        keyReasons: [],
+        relatedValues: [],
+        valueAlignments: [],
+        affiliates: [],
+        partnerships: [],
+        ownership: [],
+        moneyFlow: {
+          company: brandName,
+          shareholders: [],
+          overallAlignment: 0,
+        },
+      });
+      console.log(`✅ Created new brand: ${brandName} (${brandId})`);
+      return brandId;
     } catch (error) {
       console.error(`Error ensuring brand exists for ${brandName}:`, error);
       throw error;

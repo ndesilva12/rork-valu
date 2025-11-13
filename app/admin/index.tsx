@@ -97,6 +97,18 @@ export default function AdminDashboard() {
             </Text>
           </TouchableOpacity>
 
+          {/* Cleanup Duplicates */}
+          <TouchableOpacity
+            style={[styles.card, styles.warningCard]}
+            onPress={() => router.push('/admin/cleanup-duplicates')}
+          >
+            <Text style={styles.cardIcon}>🧹</Text>
+            <Text style={styles.cardTitle}>Cleanup Duplicate Brands</Text>
+            <Text style={styles.cardDescription}>
+              Find and remove duplicate auto-created brands
+            </Text>
+          </TouchableOpacity>
+
           {/* Business Management */}
           <TouchableOpacity
             style={styles.card}
@@ -240,6 +252,11 @@ const styles = StyleSheet.create({
   },
   statsCard: {
     backgroundColor: '#f0f4f8',
+  },
+  warningCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#ff9800',
+    backgroundColor: '#fff8e1',
   },
   cardIcon: {
     fontSize: 40,
