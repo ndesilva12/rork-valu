@@ -6988,7 +6988,8 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginBottom: 12,
     position: 'relative',
-    zIndex: 1000,
+    zIndex: 10000,
+    elevation: 10000,
   },
   newsSourceDropdown: {
     flexDirection: 'row',
@@ -7021,9 +7022,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
-    elevation: 8,
+    elevation: 10001,
     maxHeight: 400,
     overflow: 'hidden',
+    zIndex: 10001,
   },
   newsSourceDropdownItem: {
     flexDirection: 'row',
