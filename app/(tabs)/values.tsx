@@ -15,7 +15,7 @@ import {
   TextInput,
 } from 'react-native';
 import { ChevronRight, ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Plus, List, Tag, X } from 'lucide-react-native';
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -23,6 +23,7 @@ import { useData } from '@/contexts/DataContext';
 import { CauseCategory, Cause } from '@/types';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
 import { getUserLists, addEntryToList, createList } from '@/services/firebase/listService';
+import { useFocusEffect } from '@react-navigation/native';
 
 const CATEGORY_ICONS: Record<string, any> = {
   social_issue: Heart,
@@ -86,12 +87,24 @@ const getCategoryLabel = (category: string) => {
   return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 
+interface LocalValueState {
+  id: string;
+  name: string;
+  category: string;
+  type: 'support' | 'avoid';
+  description?: string;
+}
+
 export default function ValuesScreen() {
   const router = useRouter();
-  const { profile, isDarkMode, removeCauses, toggleCauseType, clerkUser } = useUser();
+  const { profile, isDarkMode, removeCauses, toggleCauseType, clerkUser, addCauses } = useUser();
   const { brands, valuesMatrix, values: firebaseValues } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
   const [expandedCategories, setExpandedCategories] = useState<Set<CauseCategory>>(new Set());
+
+  // Local state to track changes before persisting
+  const [localChanges, setLocalChanges] = useState<Map<string, LocalValueState | null>>(new Map());
+  const hasUnsavedChanges = useRef(false);
 
   // Quick-add state
   const [showModeSelectionModal, setShowModeSelectionModal] = useState(false);
@@ -196,29 +209,151 @@ export default function ValuesScreen() {
     );
   };
 
-  const handleValueTap = async (valueId: string, valueName: string, valueCategory: string, description?: string) => {
+  // Get the current state of a value (local changes take priority over profile)
+  const getValueState = (valueId: string): 'unselected' | 'support' | 'avoid' => {
+    // Check local changes first
+    if (localChanges.has(valueId)) {
+      const localState = localChanges.get(valueId);
+      if (localState === null) return 'unselected';
+      return localState.type;
+    }
+
+    // Fall back to profile state
+    const profileCause = profile.causes.find(c => c.id === valueId);
+    if (!profileCause) return 'unselected';
+    return profileCause.type;
+  };
+
+  // Save all pending changes when leaving the tab
+  const savePendingChanges = async () => {
+    if (!hasUnsavedChanges.current || localChanges.size === 0) return;
+
+    try {
+      const isBusiness = profile.accountType === 'business';
+      const minValues = isBusiness ? 3 : 5;
+
+      // Build the final list of causes
+      const finalCauses: Cause[] = [];
+      const removedCauseIds: string[] = [];
+
+      // Start with existing profile causes
+      profile.causes.forEach(cause => {
+        if (localChanges.has(cause.id)) {
+          const localState = localChanges.get(cause.id);
+          if (localState !== null) {
+            // Value was modified
+            finalCauses.push({
+              id: cause.id,
+              name: cause.name,
+              category: cause.category,
+              type: localState.type,
+              description: cause.description,
+            });
+          } else {
+            // Value was removed
+            removedCauseIds.push(cause.id);
+          }
+        } else {
+          // Value unchanged
+          finalCauses.push(cause);
+        }
+      });
+
+      // Add newly selected values
+      localChanges.forEach((localState, valueId) => {
+        if (localState !== null && !profile.causes.find(c => c.id === valueId)) {
+          finalCauses.push({
+            id: localState.id,
+            name: localState.name,
+            category: localState.category as CauseCategory,
+            type: localState.type,
+            description: localState.description,
+          });
+        }
+      });
+
+      // Check minimum values requirement
+      if (finalCauses.length < minValues) {
+        console.log('[Values] Cannot save - below minimum values:', finalCauses.length, 'minimum:', minValues);
+        return;
+      }
+
+      // Remove causes that were unselected
+      if (removedCauseIds.length > 0) {
+        await removeCauses(removedCauseIds);
+      }
+
+      // Update/add all causes
+      await addCauses(finalCauses);
+
+      // Clear local changes
+      setLocalChanges(new Map());
+      hasUnsavedChanges.current = false;
+    } catch (error) {
+      console.error('[Values] Error saving changes:', error);
+    }
+  };
+
+  // Save changes when navigating away from the tab
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        // This runs when the component is about to be unfocused
+        if (hasUnsavedChanges.current) {
+          savePendingChanges();
+        }
+      };
+    }, [localChanges, profile.causes])
+  );
+
+  const handleValueTap = (valueId: string, valueName: string, valueCategory: string, description?: string) => {
     const isBusiness = profile.accountType === 'business';
     const minValues = isBusiness ? 3 : 5;
 
-    // Find if value is already selected
-    const existingCause = profile.causes.find(c => c.id === valueId);
+    const currentState = getValueState(valueId);
 
-    if (!existingCause) {
+    // Calculate what the new total would be
+    const currentTotal = profile.causes.length;
+    const changesAddingValues = Array.from(localChanges.values()).filter(
+      v => v !== null && !profile.causes.find(c => c.id === v.id)
+    ).length;
+    const changesRemovingValues = Array.from(localChanges.entries()).filter(
+      ([id, v]) => v === null && profile.causes.find(c => c.id === id)
+    ).length;
+    const projectedTotal = currentTotal + changesAddingValues - changesRemovingValues;
+
+    if (currentState === 'unselected') {
       // Unselected -> Support
-      const newCause: Cause = {
-        id: valueId,
-        name: valueName,
-        category: valueCategory as CauseCategory,
-        type: 'support',
-        description,
-      };
-      await toggleCauseType(newCause, 'support');
-    } else if (existingCause.type === 'support') {
+      setLocalChanges(prev => {
+        const next = new Map(prev);
+        next.set(valueId, {
+          id: valueId,
+          name: valueName,
+          category: valueCategory,
+          type: 'support',
+          description,
+        });
+        return next;
+      });
+      hasUnsavedChanges.current = true;
+    } else if (currentState === 'support') {
       // Support -> Avoid
-      await toggleCauseType(existingCause, 'avoid');
-    } else if (existingCause.type === 'avoid') {
+      setLocalChanges(prev => {
+        const next = new Map(prev);
+        next.set(valueId, {
+          id: valueId,
+          name: valueName,
+          category: valueCategory,
+          type: 'avoid',
+          description,
+        });
+        return next;
+      });
+      hasUnsavedChanges.current = true;
+    } else if (currentState === 'avoid') {
       // Avoid -> Unselected (check minimum)
-      if (profile.causes.length <= minValues) {
+      const wouldBeTotal = projectedTotal - 1;
+      if (wouldBeTotal < minValues) {
         Alert.alert(
           'Minimum Values Required',
           `${isBusiness ? 'Business accounts' : 'You'} must maintain at least ${minValues} selected values.`,
@@ -226,7 +361,13 @@ export default function ValuesScreen() {
         );
         return;
       }
-      await toggleCauseType(existingCause, 'remove');
+
+      setLocalChanges(prev => {
+        const next = new Map(prev);
+        next.set(valueId, null); // null means remove
+        return next;
+      });
+      hasUnsavedChanges.current = true;
     }
   };
 
@@ -422,28 +563,35 @@ export default function ValuesScreen() {
                   Aligned
                 </Text>
                 <View style={styles.valuesGrid}>
-                  {supportCauses.map(cause => (
-                    <TouchableOpacity
-                      key={cause.id}
-                      style={[
-                        styles.valueChip,
-                        { backgroundColor: colors.success, borderColor: colors.success }
-                      ]}
-                      onPress={() => handleValueTap(cause.id, cause.name, cause.category, cause.description)}
-                      onLongPress={() => router.push(`/value/${cause.id}`)}
-                      activeOpacity={0.7}
-                    >
-                      <Text
+                  {supportCauses.map(cause => {
+                    const currentState = getValueState(cause.id);
+                    return (
+                      <TouchableOpacity
+                        key={cause.id}
                         style={[
-                          styles.valueChipText,
-                          { color: colors.white }
+                          styles.valueChip,
+                          currentState === 'support' && { backgroundColor: colors.success, borderColor: colors.success },
+                          currentState === 'avoid' && { backgroundColor: colors.danger, borderColor: colors.danger },
+                          currentState === 'unselected' && { backgroundColor: 'transparent', borderColor: colors.neutral, borderWidth: 1.5 }
                         ]}
-                        numberOfLines={1}
+                        onPress={() => handleValueTap(cause.id, cause.name, cause.category, cause.description)}
+                        onLongPress={() => router.push(`/value/${cause.id}`)}
+                        activeOpacity={0.7}
                       >
-                        {cause.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Text
+                          style={[
+                            styles.valueChipText,
+                            currentState === 'support' && { color: colors.white },
+                            currentState === 'avoid' && { color: colors.white },
+                            currentState === 'unselected' && { color: colors.neutral, fontWeight: '500' as const }
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {cause.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               </View>
             )}
@@ -454,28 +602,35 @@ export default function ValuesScreen() {
                   Unaligned
                 </Text>
                 <View style={styles.valuesGrid}>
-                  {avoidCauses.map(cause => (
-                    <TouchableOpacity
-                      key={cause.id}
-                      style={[
-                        styles.valueChip,
-                        { backgroundColor: colors.danger, borderColor: colors.danger }
-                      ]}
-                      onPress={() => handleValueTap(cause.id, cause.name, cause.category, cause.description)}
-                      onLongPress={() => router.push(`/value/${cause.id}`)}
-                      activeOpacity={0.7}
-                    >
-                      <Text
+                  {avoidCauses.map(cause => {
+                    const currentState = getValueState(cause.id);
+                    return (
+                      <TouchableOpacity
+                        key={cause.id}
                         style={[
-                          styles.valueChipText,
-                          { color: colors.white }
+                          styles.valueChip,
+                          currentState === 'support' && { backgroundColor: colors.success, borderColor: colors.success },
+                          currentState === 'avoid' && { backgroundColor: colors.danger, borderColor: colors.danger },
+                          currentState === 'unselected' && { backgroundColor: 'transparent', borderColor: colors.neutral, borderWidth: 1.5 }
                         ]}
-                        numberOfLines={1}
+                        onPress={() => handleValueTap(cause.id, cause.name, cause.category, cause.description)}
+                        onLongPress={() => router.push(`/value/${cause.id}`)}
+                        activeOpacity={0.7}
                       >
-                        {cause.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Text
+                          style={[
+                            styles.valueChipText,
+                            currentState === 'support' && { color: colors.white },
+                            currentState === 'avoid' && { color: colors.white },
+                            currentState === 'unselected' && { color: colors.neutral, fontWeight: '500' as const }
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {cause.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               </View>
             )}
@@ -509,30 +664,37 @@ export default function ValuesScreen() {
                   </Text>
                 </View>
                 <View style={styles.valuesGrid}>
-                  {displayedValues.map(value => (
-                    <TouchableOpacity
-                      key={value.id}
-                      style={[
-                        styles.valueChip,
-                        styles.unselectedValueChip,
-                        { borderColor: colors.neutral, backgroundColor: 'transparent' }
-                      ]}
-                      onPress={() => handleValueTap(value.id, value.name, value.category)}
-                      onLongPress={() => router.push(`/value/${value.id}`)}
-                      activeOpacity={0.7}
-                    >
-                      <Text
+                  {displayedValues.map(value => {
+                    const currentState = getValueState(value.id);
+                    return (
+                      <TouchableOpacity
+                        key={value.id}
                         style={[
-                          styles.valueChipText,
-                          styles.unselectedValueText,
-                          { color: colors.neutral }
+                          styles.valueChip,
+                          currentState === 'unselected' && styles.unselectedValueChip,
+                          currentState === 'unselected' && { borderColor: colors.neutral, backgroundColor: 'transparent' },
+                          currentState === 'support' && { backgroundColor: colors.success, borderColor: colors.success },
+                          currentState === 'avoid' && { backgroundColor: colors.danger, borderColor: colors.danger }
                         ]}
-                        numberOfLines={1}
+                        onPress={() => handleValueTap(value.id, value.name, value.category)}
+                        onLongPress={() => router.push(`/value/${value.id}`)}
+                        activeOpacity={0.7}
                       >
-                        {value.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Text
+                          style={[
+                            styles.valueChipText,
+                            currentState === 'unselected' && styles.unselectedValueText,
+                            currentState === 'unselected' && { color: colors.neutral },
+                            currentState === 'support' && { color: colors.white },
+                            currentState === 'avoid' && { color: colors.white }
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {value.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
                 {hasMore && (
                   <TouchableOpacity
