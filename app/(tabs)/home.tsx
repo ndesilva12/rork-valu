@@ -893,6 +893,14 @@ export default function HomeScreen() {
         return;
       }
 
+      // Check if news endpoint is available
+      if (!trpc.news?.getArticles?.query) {
+        console.warn('[Home] News endpoint not available. Please restart the dev server to load new tRPC routes.');
+        setNewsArticles([]);
+        setIsLoadingNews(false);
+        return;
+      }
+
       // Fetch news articles using tRPC
       const result = await trpc.news.getArticles.query({
         brandNames: brandNamesArray,
@@ -901,6 +909,7 @@ export default function HomeScreen() {
       setNewsArticles(result.articles || []);
     } catch (error) {
       console.error('[Home] Error fetching news:', error);
+      console.error('[Home] Tip: If you see "e[i] is not a function", restart the dev server to reload tRPC routes.');
       setNewsArticles([]);
     } finally {
       setIsLoadingNews(false);
