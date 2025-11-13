@@ -861,6 +861,12 @@ export default function HomeScreen() {
   const fetchNewsArticles = useCallback(async () => {
     setIsLoadingNews(true);
     try {
+      // TEMPORARY: Disable news fetching until tRPC types are properly regenerated
+      console.log('[Home] News feature temporarily disabled - tRPC endpoint needs proper configuration');
+      setNewsArticles([]);
+      setIsLoadingNews(false);
+      return;
+
       // Collect brand names from My List, Aligned, and Unaligned
       const brandNames = new Set<string>();
 
