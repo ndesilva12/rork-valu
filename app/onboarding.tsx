@@ -192,45 +192,44 @@ export default function OnboardingScreen() {
                   {displayedValues.map(value => {
                     const state = getValueState(value.id);
                     return (
-                      <View key={value.id} style={styles.valueRow}>
-                        <TouchableOpacity
-                          style={[
-                            styles.valueCard,
-                            { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-                            state === 'support' && { backgroundColor: colors.success, borderColor: colors.success },
-                            state === 'avoid' && { backgroundColor: colors.danger, borderColor: colors.danger },
-                          ]}
-                          onPress={() => toggleValue(value.id, value.name, value.category, value.description)}
-                          activeOpacity={0.7}
-                        >
-                          <View style={styles.valueContent}>
-                            <Text
-                              style={[
-                                styles.valueName,
-                                { color: colors.text },
-                                (state === 'support' || state === 'avoid') && { color: colors.white, fontWeight: '600' as const },
-                              ]}
-                            >
-                              {value.name}
-                            </Text>
-                            {state !== 'unselected' && (
-                              <View style={styles.stateIndicator}>
-                                {state === 'support' ? (
-                                  <View style={styles.stateBadge}>
-                                    <ThumbsUp size={12} color={colors.white} strokeWidth={2} />
-                                    <Text style={[styles.stateBadgeText, { color: colors.white }]}>Support</Text>
-                                  </View>
-                                ) : (
-                                  <View style={styles.stateBadge}>
-                                    <ThumbsDown size={12} color={colors.white} strokeWidth={2} />
-                                    <Text style={[styles.stateBadgeText, { color: colors.white }]}>Oppose</Text>
-                                  </View>
-                                )}
-                              </View>
-                            )}
-                          </View>
-                        </TouchableOpacity>
-                      </View>
+                      <TouchableOpacity
+                        key={value.id}
+                        style={[
+                          styles.valueCard,
+                          { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
+                          state === 'support' && { backgroundColor: colors.success, borderColor: colors.success },
+                          state === 'avoid' && { backgroundColor: colors.danger, borderColor: colors.danger },
+                        ]}
+                        onPress={() => toggleValue(value.id, value.name, value.category, value.description)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.valueContent}>
+                          <Text
+                            style={[
+                              styles.valueName,
+                              { color: colors.text },
+                              (state === 'support' || state === 'avoid') && { color: colors.white, fontWeight: '600' as const },
+                            ]}
+                          >
+                            {value.name}
+                          </Text>
+                          {state !== 'unselected' && (
+                            <View style={styles.stateIndicator}>
+                              {state === 'support' ? (
+                                <View style={styles.stateBadge}>
+                                  <ThumbsUp size={12} color={colors.white} strokeWidth={2} />
+                                  <Text style={[styles.stateBadgeText, { color: colors.white }]}>Support</Text>
+                                </View>
+                              ) : (
+                                <View style={styles.stateBadge}>
+                                  <ThumbsDown size={12} color={colors.white} strokeWidth={2} />
+                                  <Text style={[styles.stateBadgeText, { color: colors.white }]}>Oppose</Text>
+                                </View>
+                              )}
+                            </View>
+                          )}
+                        </View>
+                      </TouchableOpacity>
                     );
                   })}
                 </View>
@@ -350,10 +349,9 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   valuesGrid: {
-    gap: 12,
-  },
-  valueRow: {
-    width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
   },
   valueCard: {
     paddingHorizontal: 16,
