@@ -1655,7 +1655,7 @@ export default function HomeScreen() {
           <View style={styles.newsSourceDropdownContainer}>
             <TouchableOpacity
               style={styles.newsSourceDropdown}
-              onPress={() => setShowNewsSourceModal(!showNewsSourceModal)}
+              onPress={() => setShowNewsSourceModal(true)}
               activeOpacity={0.7}
             >
               <Text style={[styles.newsSourceText, { color: colors.text }]}>
@@ -1667,82 +1667,6 @@ export default function HomeScreen() {
               <ChevronDown size={16} color={colors.text} strokeWidth={2} />
             </TouchableOpacity>
             <View style={[styles.newsSourceBorder, { backgroundColor: colors.primary }]} />
-
-            {/* Dropdown menu */}
-            {showNewsSourceModal && (
-              <View style={[styles.newsSourceDropdownMenu, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                <TouchableOpacity
-                  style={[
-                    styles.newsSourceDropdownItem,
-                    selectedNewsSource === 'myList' && { backgroundColor: colors.primary + '10' }
-                  ]}
-                  onPress={() => {
-                    setSelectedNewsSource('myList');
-                    setShowNewsSourceModal(false);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.newsSourceDropdownItemText, { color: colors.text }]}>My List</Text>
-                  {selectedNewsSource === 'myList' && (
-                    <Text style={[styles.newsSourceDropdownItemCheck, { color: colors.primary }]}>✓</Text>
-                  )}
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.newsSourceDropdownItem,
-                    selectedNewsSource === 'aligned' && { backgroundColor: colors.primary + '10' }
-                  ]}
-                  onPress={() => {
-                    setSelectedNewsSource('aligned');
-                    setShowNewsSourceModal(false);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.newsSourceDropdownItemText, { color: colors.text }]}>Aligned</Text>
-                  {selectedNewsSource === 'aligned' && (
-                    <Text style={[styles.newsSourceDropdownItemCheck, { color: colors.primary }]}>✓</Text>
-                  )}
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.newsSourceDropdownItem,
-                    selectedNewsSource === 'unaligned' && { backgroundColor: colors.primary + '10' }
-                  ]}
-                  onPress={() => {
-                    setSelectedNewsSource('unaligned');
-                    setShowNewsSourceModal(false);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.newsSourceDropdownItemText, { color: colors.text }]}>Unaligned</Text>
-                  {selectedNewsSource === 'unaligned' && (
-                    <Text style={[styles.newsSourceDropdownItemCheck, { color: colors.primary }]}>✓</Text>
-                  )}
-                </TouchableOpacity>
-
-                {userLists.map((list) => (
-                  <TouchableOpacity
-                    key={list.id}
-                    style={[
-                      styles.newsSourceDropdownItem,
-                      selectedNewsSource === list.id && { backgroundColor: colors.primary + '10' }
-                    ]}
-                    onPress={() => {
-                      setSelectedNewsSource(list.id);
-                      setShowNewsSourceModal(false);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.newsSourceDropdownItemText, { color: colors.text }]}>{list.name}</Text>
-                    {selectedNewsSource === list.id && (
-                      <Text style={[styles.newsSourceDropdownItemCheck, { color: colors.primary }]}>✓</Text>
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
           </View>
 
           <Text style={[styles.newsCount, { color: colors.textSecondary }]}>
@@ -5127,6 +5051,122 @@ export default function HomeScreen() {
         </TouchableWithoutFeedback>
       </Modal>
 
+      {/* News Source Selection Modal */}
+      <Modal
+        visible={showNewsSourceModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowNewsSourceModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={() => setShowNewsSourceModal(false)}>
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Pressable
+            style={[styles.newsSourceModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Select News Source
+              </Text>
+              <TouchableOpacity onPress={() => setShowNewsSourceModal(false)}>
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.newsSourceOptionsContainer}>
+              {/* My List */}
+              <TouchableOpacity
+                style={[
+                  styles.newsSourceOption,
+                  { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
+                  selectedNewsSource === 'myList' && { borderColor: colors.primary, borderWidth: 2 }
+                ]}
+                onPress={() => {
+                  setSelectedNewsSource('myList');
+                  setShowNewsSourceModal(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.newsSourceOptionText, { color: colors.text }]}>My List</Text>
+                {selectedNewsSource === 'myList' && (
+                  <View style={[styles.newsSourceCheckmark, { backgroundColor: colors.primary }]}>
+                    <Text style={[styles.newsSourceCheckmarkText, { color: colors.white }]}>✓</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {/* Aligned */}
+              <TouchableOpacity
+                style={[
+                  styles.newsSourceOption,
+                  { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
+                  selectedNewsSource === 'aligned' && { borderColor: colors.primary, borderWidth: 2 }
+                ]}
+                onPress={() => {
+                  setSelectedNewsSource('aligned');
+                  setShowNewsSourceModal(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.newsSourceOptionText, { color: colors.text }]}>Aligned</Text>
+                {selectedNewsSource === 'aligned' && (
+                  <View style={[styles.newsSourceCheckmark, { backgroundColor: colors.primary }]}>
+                    <Text style={[styles.newsSourceCheckmarkText, { color: colors.white }]}>✓</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {/* Unaligned */}
+              <TouchableOpacity
+                style={[
+                  styles.newsSourceOption,
+                  { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
+                  selectedNewsSource === 'unaligned' && { borderColor: colors.primary, borderWidth: 2 }
+                ]}
+                onPress={() => {
+                  setSelectedNewsSource('unaligned');
+                  setShowNewsSourceModal(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.newsSourceOptionText, { color: colors.text }]}>Unaligned</Text>
+                {selectedNewsSource === 'unaligned' && (
+                  <View style={[styles.newsSourceCheckmark, { backgroundColor: colors.primary }]}>
+                    <Text style={[styles.newsSourceCheckmarkText, { color: colors.white }]}>✓</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {/* Custom Lists */}
+              {userLists.map((list) => (
+                <TouchableOpacity
+                  key={list.id}
+                  style={[
+                    styles.newsSourceOption,
+                    { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
+                    selectedNewsSource === list.id && { borderColor: colors.primary, borderWidth: 2 }
+                  ]}
+                  onPress={() => {
+                    setSelectedNewsSource(list.id);
+                    setShowNewsSourceModal(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.newsSourceOptionText, { color: colors.text }]}>{list.name}</Text>
+                  {selectedNewsSource === list.id && (
+                    <View style={[styles.newsSourceCheckmark, { backgroundColor: colors.primary }]}>
+                      <Text style={[styles.newsSourceCheckmarkText, { color: colors.white }]}>✓</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </Pressable>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -6987,9 +7027,6 @@ const styles = StyleSheet.create({
   newsSourceDropdownContainer: {
     alignSelf: 'flex-start',
     marginBottom: 12,
-    position: 'relative',
-    zIndex: 10000,
-    elevation: 10000,
   },
   newsSourceDropdown: {
     flexDirection: 'row',
@@ -7010,38 +7047,43 @@ const styles = StyleSheet.create({
     marginTop: 4,
     borderRadius: 1,
   },
-  newsSourceDropdownMenu: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    marginTop: 8,
-    minWidth: 240,
-    borderRadius: 12,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 10001,
-    maxHeight: 400,
+  newsSourceModalContainer: {
+    width: '90%',
+    maxWidth: 500,
+    maxHeight: '70%',
+    borderRadius: 16,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
     overflow: 'hidden',
-    zIndex: 10001,
   },
-  newsSourceDropdownItem: {
+  newsSourceOptionsContainer: {
+    padding: 20,
+  },
+  newsSourceOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
   },
-  newsSourceDropdownItemText: {
+  newsSourceOptionText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  newsSourceDropdownItemCheck: {
-    fontSize: 16,
+  newsSourceCheckmark: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  newsSourceCheckmarkText: {
+    fontSize: 14,
     fontWeight: '700',
   },
 });
