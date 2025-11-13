@@ -68,15 +68,17 @@ import {
   Pressable,
   TouchableWithoutFeedback,
   Share,
+  Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { Picker } from '@react-native-picker/picker';
 import * as Clipboard from 'expo-clipboard';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 import { Product } from '@/types';
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
 import { trpc } from '@/lib/trpc';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
@@ -131,10 +133,12 @@ export default function HomeScreen() {
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
   const [alignedLoadCount, setAlignedLoadCount] = useState<number>(10);
   const [unalignedLoadCount, setUnalignedLoadCount] = useState<number>(10);
+  const [myListLoadCount, setMyListLoadCount] = useState<number>(10);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(null);
   const [userBusinesses, setUserBusinesses] = useState<BusinessUser[]>([]);
   const [showMapModal, setShowMapModal] = useState(false);
+  const [localSortDirection, setLocalSortDirection] = useState<'highToLow' | 'lowToHigh'>('highToLow');
 
   // Library state
   const [userLists, setUserLists] = useState<UserList[]>([]);
@@ -186,6 +190,19 @@ export default function HomeScreen() {
   // Share modal state
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareListData, setShareListData] = useState<UserList | null>(null);
+
+  // News feed state
+  const [newsArticles, setNewsArticles] = useState<Array<{
+    title: string;
+    link: string;
+    pubDate: string;
+    source: string;
+    brandName: string;
+    description?: string;
+  }>>([]);
+  const [isLoadingNews, setIsLoadingNews] = useState(false);
+  const [selectedNewsSource, setSelectedNewsSource] = useState<'myList' | 'aligned' | 'unaligned' | string>('myList');
+  const [showNewsSourceModal, setShowNewsSourceModal] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -651,6 +668,7 @@ export default function HomeScreen() {
   const localBusinessData = useMemo(() => {
     if (mainView !== 'local' || !userLocation || userBusinesses.length === 0) {
       return {
+        allBusinesses: [],
         alignedBusinesses: [],
         unalignedBusinesses: [],
       };
@@ -702,7 +720,14 @@ export default function HomeScreen() {
     // Filter by distance (all will be in range if localDistance is null)
     const businessesInRange = scoredBusinesses.filter((b) => b.isWithinRange);
 
-    // Split into aligned (≥50) and unaligned (<50)
+    // Sort all businesses by score (direction will be handled in the component)
+    const allBusinessesSorted = [...businessesInRange].sort((a, b) =>
+      localSortDirection === 'highToLow'
+        ? b.alignmentScore - a.alignmentScore
+        : a.alignmentScore - b.alignmentScore
+    );
+
+    // Also keep the old split for backward compatibility (map modal)
     const aligned = businessesInRange
       .filter((b) => b.alignmentScore >= 50)
       .sort((a, b) => b.alignmentScore - a.alignmentScore); // Highest score first
@@ -714,17 +739,18 @@ export default function HomeScreen() {
     console.log('[Home] Local business results:', {
       totalBusinesses: userBusinesses.length,
       inRange: businessesInRange.length,
+      allBusinesses: allBusinessesSorted.length,
       aligned: aligned.length,
       unaligned: unaligned.length,
-      topAligned: aligned.slice(0, 3).map(b => ({ name: b.business.businessInfo.name, score: b.alignmentScore, distance: b.distance })),
-      topUnaligned: unaligned.slice(0, 3).map(b => ({ name: b.business.businessInfo.name, score: b.alignmentScore, distance: b.distance })),
+      topBusinesses: allBusinessesSorted.slice(0, 3).map(b => ({ name: b.business.businessInfo.name, score: b.alignmentScore, distance: b.distance })),
     });
 
     return {
+      allBusinesses: allBusinessesSorted,
       alignedBusinesses: aligned,
       unalignedBusinesses: unaligned,
     };
-  }, [mainView, userLocation, userBusinesses, profile.causes, localDistance]);
+  }, [mainView, userLocation, userBusinesses, profile.causes, localDistance, localSortDirection]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
@@ -833,6 +859,104 @@ export default function HomeScreen() {
 
     return categorized;
   }, [allSupport]);
+
+  // Fetch news articles function (defined after allSupportFull and allAvoidFull are available)
+  const fetchNewsArticles = useCallback(async () => {
+    setIsLoadingNews(true);
+    try {
+      console.log('[Home] Attempting to fetch news articles for source:', selectedNewsSource);
+
+      // Collect brand names based on selected source
+      const brandNames = new Set<string>();
+
+      if (selectedNewsSource === 'myList') {
+        // Add brands from My List
+        console.log('[Home] userPersonalList:', userPersonalList);
+        console.log('[Home] userPersonalList entries:', userPersonalList?.entries);
+        if (userPersonalList?.entries) {
+          userPersonalList.entries.forEach((entry) => {
+            console.log('[Home] Processing entry:', entry);
+            if (entry.type === 'brand' && 'brandId' in entry) {
+              const brandName = entry.brandName || getBrandName(entry.brandId);
+              console.log('[Home] Found brand:', brandName);
+              if (brandName && brandName !== 'Unknown Brand') {
+                brandNames.add(brandName);
+              }
+            }
+          });
+        }
+      } else if (selectedNewsSource === 'aligned') {
+        // Add all aligned brands
+        allSupportFull?.forEach((brand) => {
+          brandNames.add(brand.name);
+        });
+      } else if (selectedNewsSource === 'unaligned') {
+        // Add all unaligned brands
+        allAvoidFull?.forEach((brand) => {
+          brandNames.add(brand.name);
+        });
+      } else {
+        // It's a custom list ID - find it in userLists
+        const customList = userLists.find(list => list.id === selectedNewsSource);
+        if (customList?.entries) {
+          customList.entries.forEach((entry) => {
+            if (entry.type === 'brand' && 'brandId' in entry) {
+              const brandName = entry.brandName || getBrandName(entry.brandId);
+              if (brandName && brandName !== 'Unknown Brand') {
+                brandNames.add(brandName);
+              }
+            }
+          });
+        }
+      }
+
+      const brandNamesArray = Array.from(brandNames);
+      console.log('[Home] Collected brand names for news:', brandNamesArray);
+
+      if (brandNamesArray.length === 0) {
+        console.log('[Home] No brand names to fetch news for');
+        setNewsArticles([]);
+        return;
+      }
+
+      console.log('[Home] Fetching news from REST API...');
+
+      // Fetch news articles using REST API (bypassing tRPC issues)
+      const response = await fetch('/api/news/articles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          brandNames: brandNamesArray,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`News API returned ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      console.log('[Home] News fetch successful! Received', result.articles?.length || 0, 'articles');
+      setNewsArticles(result.articles || []);
+    } catch (error) {
+      console.error('[Home] Error fetching news:', error);
+      if (error instanceof Error) {
+        console.error('[Home] Error message:', error.message);
+      }
+      setNewsArticles([]);
+    } finally {
+      setIsLoadingNews(false);
+    }
+  }, [selectedNewsSource, userPersonalList, allSupportFull, allAvoidFull, userLists]);
+
+  // Fetch news articles when news view is activated or source changes
+  useEffect(() => {
+    if (mainView === 'myLibrary') {
+      fetchNewsArticles();
+    }
+  }, [mainView, fetchNewsArticles]);
 
   const handleProductPress = (product: Product) => {
     router.push({
@@ -1394,7 +1518,7 @@ export default function HomeScreen() {
             );
           })()}
           <View style={styles.brandsContainer}>
-            {userPersonalList.entries.map((entry, index) => {
+            {userPersonalList.entries.slice(0, myListLoadCount).map((entry, index) => {
               // Render brand entries
               if (entry.type === 'brand' && 'brandId' in entry) {
                 return (
@@ -1465,6 +1589,17 @@ export default function HomeScreen() {
               }
               return null;
             })}
+            {myListLoadCount < userPersonalList.entries.length && (
+              <TouchableOpacity
+                style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => setMyListLoadCount(myListLoadCount + 10)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                  Load More ({userPersonalList.entries.length - myListLoadCount} remaining)
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       );
@@ -1478,57 +1613,153 @@ export default function HomeScreen() {
     return null;
   };
 
-  const renderLocalView = () => {
-    const { alignedBusinesses, unalignedBusinesses } = localBusinessData;
+  const renderNewsFeedView = () => {
+    if (isLoadingNews) {
+      return (
+        <View style={styles.section}>
+          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+              Loading news articles...
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    if (newsArticles.length === 0) {
+      return (
+        <View style={styles.section}>
+          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.placeholderTitle, { color: colors.text }]}>No News Yet</Text>
+            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+              Add brands to your lists to see relevant news articles.
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    // Get source display name
+    const getSourceDisplayName = (sourceId: string): string => {
+      if (sourceId === 'myList') return 'My List';
+      if (sourceId === 'aligned') return 'Aligned';
+      if (sourceId === 'unaligned') return 'Unaligned';
+      const customList = userLists.find(list => list.id === sourceId);
+      return customList?.name || 'Unknown List';
+    };
 
     return (
-      <>
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <View style={styles.sectionHeader}>
-              <TrendingUp size={24} color={colors.success} strokeWidth={2} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Aligned Businesses</Text>
-            </View>
-            <TouchableOpacity onPress={() => setShowAllAligned(!showAllAligned)} activeOpacity={0.7}>
-              <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllAligned ? 'Hide' : 'Show All'}</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.brandsContainer}>
-            {alignedBusinesses.length > 0 ? (
-              (showAllAligned ? alignedBusinesses : alignedBusinesses.slice(0, 5)).map((biz) => renderLocalBusinessCard(biz, 'aligned'))
-            ) : (
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                {localDistance === null
-                  ? 'No aligned businesses found'
-                  : `No aligned businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
+      <View style={styles.section}>
+        <View style={styles.newsHeaderContainer}>
+          {/* News source dropdown as title */}
+          <View style={styles.newsSourceDropdownContainer}>
+            <TouchableOpacity
+              style={styles.newsSourceDropdown}
+              onPress={() => setShowNewsSourceModal(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.newsSourceText, { color: colors.text }]}>
+                {selectedNewsSource === 'myList' ? 'My List' :
+                 selectedNewsSource === 'aligned' ? 'Aligned' :
+                 selectedNewsSource === 'unaligned' ? 'Unaligned' :
+                 userLists.find(list => list.id === selectedNewsSource)?.name || 'Select Source'}
               </Text>
-            )}
+              <ChevronDown size={16} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+            <View style={[styles.newsSourceBorder, { backgroundColor: colors.primary }]} />
           </View>
+
+          <Text style={[styles.newsCount, { color: colors.textSecondary }]}>
+            {newsArticles.length} {newsArticles.length === 1 ? 'article' : 'articles'}
+          </Text>
         </View>
 
-        <View style={[styles.section, { marginTop: 4, marginBottom: 14 }]}>
-          <View style={styles.sectionHeaderRow}>
-            <View style={styles.sectionHeader}>
-              <TrendingDown size={24} color={colors.danger} strokeWidth={2} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Unaligned Businesses</Text>
-            </View>
-            <TouchableOpacity onPress={() => setShowAllLeast(!showAllLeast)} activeOpacity={0.7}>
-              <Text style={[styles.showAllButton, { color: colors.primary }]}>{showAllLeast ? 'Hide' : 'Show All'}</Text>
+        <View style={styles.newsContainer}>
+          {newsArticles.map((article, index) => (
+            <TouchableOpacity
+              key={`${article.link}-${index}`}
+              style={[styles.newsArticleCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+              onPress={() => {
+                if (Platform.OS === 'web') {
+                  window.open(article.link, '_blank');
+                } else {
+                  // On mobile, use Linking API
+                  Linking.openURL(article.link);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.newsArticleContent}>
+                <View style={styles.newsArticleHeader}>
+                  <Text style={[styles.newsBrandTag, { color: colors.primary, borderColor: colors.primary, borderWidth: 1.5, backgroundColor: 'transparent' }]}>
+                    {article.brandName}
+                  </Text>
+                  <Text style={[styles.newsDate, { color: colors.textSecondary }]}>
+                    {new Date(article.pubDate).toLocaleDateString()}
+                  </Text>
+                </View>
+                <Text style={[styles.newsTitle, { color: colors.text }]} numberOfLines={3}>
+                  {article.title}
+                </Text>
+                {article.description && (
+                  <Text style={[styles.newsDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                    {article.description}
+                  </Text>
+                )}
+                <View style={styles.newsFooter}>
+                  <Text style={[styles.newsSource, { color: colors.textSecondary }]}>
+                    {article.source}
+                  </Text>
+                  <ExternalLink size={16} color={colors.primary} strokeWidth={2} />
+                </View>
+              </View>
             </TouchableOpacity>
-          </View>
-          <View style={styles.brandsContainer}>
-            {unalignedBusinesses.length > 0 ? (
-              (showAllLeast ? unalignedBusinesses : unalignedBusinesses.slice(0, 5)).map((biz) => renderLocalBusinessCard(biz, 'unaligned'))
-            ) : (
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                {localDistance === null
-                  ? 'No unaligned businesses found'
-                  : `No unaligned businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
-              </Text>
-            )}
-          </View>
+          ))}
         </View>
-      </>
+      </View>
+    );
+  };
+
+  const renderLocalView = () => {
+    const { allBusinesses } = localBusinessData;
+
+    return (
+      <View style={styles.section}>
+        <View style={styles.sectionHeaderRow}>
+          <View style={styles.sectionHeader}>
+            <MapPin size={24} color={colors.primary} strokeWidth={2} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Local Businesses</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => setLocalSortDirection(localSortDirection === 'highToLow' ? 'lowToHigh' : 'highToLow')}
+            activeOpacity={0.7}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+          >
+            {localSortDirection === 'highToLow' ? (
+              <ChevronDown size={18} color={colors.primary} strokeWidth={2} />
+            ) : (
+              <ChevronUp size={18} color={colors.primary} strokeWidth={2} />
+            )}
+            <Text style={[styles.showAllButton, { color: colors.primary }]}>
+              {localSortDirection === 'highToLow' ? 'High to Low' : 'Low to High'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.brandsContainer}>
+          {allBusinesses.length > 0 ? (
+            allBusinesses.map((biz) => {
+              const isAligned = biz.alignmentScore >= 50;
+              return renderLocalBusinessCard(biz, isAligned ? 'aligned' : 'unaligned');
+            })
+          ) : (
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              {localDistance === null
+                ? 'No businesses found'
+                : `No businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
+            </Text>
+          )}
+        </View>
+      </View>
     );
   };
 
@@ -2996,9 +3227,9 @@ export default function HomeScreen() {
   };
 
   const renderMyLibraryView = () => {
-    // If called from News view (mainView === 'myLibrary'), show blank content
+    // If called from News view (mainView === 'myLibrary'), show news feed
     if (mainView === 'myLibrary') {
-      return null;
+      return renderNewsFeedView();
     }
 
     // If viewing a list detail, show that instead
@@ -4819,6 +5050,123 @@ export default function HomeScreen() {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+
+      {/* News Source Selection Modal */}
+      <Modal
+        visible={showNewsSourceModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowNewsSourceModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={() => setShowNewsSourceModal(false)}>
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Pressable
+            style={[styles.newsSourceModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Select News Source
+              </Text>
+              <TouchableOpacity onPress={() => setShowNewsSourceModal(false)}>
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.newsSourceOptionsContainer}>
+              {/* My List */}
+              <TouchableOpacity
+                style={[
+                  styles.newsSourceOption,
+                  { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
+                  selectedNewsSource === 'myList' && { borderColor: colors.primary, borderWidth: 2 }
+                ]}
+                onPress={() => {
+                  setSelectedNewsSource('myList');
+                  setShowNewsSourceModal(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.newsSourceOptionText, { color: colors.text }]}>My List</Text>
+                {selectedNewsSource === 'myList' && (
+                  <View style={[styles.newsSourceCheckmark, { backgroundColor: colors.primary }]}>
+                    <Text style={[styles.newsSourceCheckmarkText, { color: colors.white }]}>✓</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {/* Aligned */}
+              <TouchableOpacity
+                style={[
+                  styles.newsSourceOption,
+                  { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
+                  selectedNewsSource === 'aligned' && { borderColor: colors.primary, borderWidth: 2 }
+                ]}
+                onPress={() => {
+                  setSelectedNewsSource('aligned');
+                  setShowNewsSourceModal(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.newsSourceOptionText, { color: colors.text }]}>Aligned</Text>
+                {selectedNewsSource === 'aligned' && (
+                  <View style={[styles.newsSourceCheckmark, { backgroundColor: colors.primary }]}>
+                    <Text style={[styles.newsSourceCheckmarkText, { color: colors.white }]}>✓</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {/* Unaligned */}
+              <TouchableOpacity
+                style={[
+                  styles.newsSourceOption,
+                  { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
+                  selectedNewsSource === 'unaligned' && { borderColor: colors.primary, borderWidth: 2 }
+                ]}
+                onPress={() => {
+                  setSelectedNewsSource('unaligned');
+                  setShowNewsSourceModal(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.newsSourceOptionText, { color: colors.text }]}>Unaligned</Text>
+                {selectedNewsSource === 'unaligned' && (
+                  <View style={[styles.newsSourceCheckmark, { backgroundColor: colors.primary }]}>
+                    <Text style={[styles.newsSourceCheckmarkText, { color: colors.white }]}>✓</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {/* Custom Lists */}
+              {userLists.map((list) => (
+                <TouchableOpacity
+                  key={list.id}
+                  style={[
+                    styles.newsSourceOption,
+                    { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
+                    selectedNewsSource === list.id && { borderColor: colors.primary, borderWidth: 2 }
+                  ]}
+                  onPress={() => {
+                    setSelectedNewsSource(list.id);
+                    setShowNewsSourceModal(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.newsSourceOptionText, { color: colors.text }]}>{list.name}</Text>
+                  {selectedNewsSource === list.id && (
+                    <View style={[styles.newsSourceCheckmark, { backgroundColor: colors.primary }]}>
+                      <Text style={[styles.newsSourceCheckmarkText, { color: colors.white }]}>✓</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </Pressable>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -6615,5 +6963,129 @@ const styles = StyleSheet.create({
   shareModalButtonTextCancel: {
     fontSize: 16,
     fontWeight: '500' as const,
+  },
+  // News feed styles
+  newsContainer: {
+    gap: 12,
+  },
+  newsCount: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    paddingTop: 16,
+  },
+  newsArticleCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: 0,
+  },
+  newsArticleContent: {
+    padding: 14,
+  },
+  newsArticleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  newsBrandTag: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    overflow: 'hidden',
+    textTransform: 'uppercase' as const,
+  },
+  newsDate: {
+    fontSize: 11,
+    fontWeight: '500' as const,
+  },
+  newsTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    lineHeight: 22,
+    marginBottom: 6,
+  },
+  newsDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  newsFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  newsSource: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+  newsHeaderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  newsSourceDropdownContainer: {
+    alignSelf: 'flex-start',
+  },
+  newsSourceDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    minWidth: 240,
+    gap: 32,
+  },
+  newsSourceText: {
+    fontSize: 30,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  newsSourceBorder: {
+    height: 2,
+    marginTop: 4,
+    borderRadius: 1,
+  },
+  newsSourceModalContainer: {
+    width: '90%',
+    maxWidth: 500,
+    maxHeight: '70%',
+    borderRadius: 16,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    overflow: 'hidden',
+  },
+  newsSourceOptionsContainer: {
+    padding: 20,
+  },
+  newsSourceOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  newsSourceOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  newsSourceCheckmark: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  newsSourceCheckmarkText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
