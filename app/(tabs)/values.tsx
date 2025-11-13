@@ -106,6 +106,16 @@ export default function ValuesScreen() {
   const [localChanges, setLocalChanges] = useState<Map<string, LocalValueState | null>>(new Map());
   const hasUnsavedChanges = useRef(false);
 
+  // Value action modal state
+  const [showValueActionModal, setShowValueActionModal] = useState(false);
+  const [selectedValueForAction, setSelectedValueForAction] = useState<{
+    id: string;
+    name: string;
+    category: string;
+    description?: string;
+    currentState: 'support' | 'avoid' | 'unselected';
+  } | null>(null);
+
   // Quick-add state
   const [showModeSelectionModal, setShowModeSelectionModal] = useState(false);
   const [showListSelectionModal, setShowListSelectionModal] = useState(false);
@@ -307,166 +317,96 @@ export default function ValuesScreen() {
   );
 
   const handleValueTap = (valueId: string, valueName: string, valueCategory: string, description?: string) => {
+    console.log('[Values] Value tapped:', valueName);
+    const currentState = getValueState(valueId);
+
+    setSelectedValueForAction({
+      id: valueId,
+      name: valueName,
+      category: valueCategory,
+      description,
+      currentState,
+    });
+    setShowValueActionModal(true);
+  };
+
+  const handleValueAction = (action: 'view' | 'aligned' | 'unaligned' | 'deselect') => {
+    if (!selectedValueForAction) return;
+
+    const { id, name, category, description } = selectedValueForAction;
     const isBusiness = profile.accountType === 'business';
     const minValues = isBusiness ? 3 : 5;
 
-    const currentState = getValueState(valueId);
-
-    // Calculate what the new total would be if we deselect
-    const currentTotal = profile.causes.length;
-    const changesAddingValues = Array.from(localChanges.values()).filter(
-      v => v !== null && !profile.causes.find(c => c.id === v.id)
-    ).length;
-    const changesRemovingValues = Array.from(localChanges.entries()).filter(
-      ([id, v]) => v === null && profile.causes.find(c => c.id === id)
-    ).length;
-    const projectedTotal = currentTotal + changesAddingValues - changesRemovingValues;
-
-    // Build alert buttons based on current state
-    const buttons: any[] = [];
-
-    // Always add "View Value" button first
-    buttons.push({
-      text: 'View Value',
-      onPress: () => router.push(`/value/${valueId}`),
-    });
-
-    if (currentState === 'support') {
-      // Currently aligned - show Unaligned and Deselect options
-      buttons.push({
-        text: 'Unaligned',
-        onPress: () => {
-          setLocalChanges(prev => {
-            const next = new Map(prev);
-            next.set(valueId, {
-              id: valueId,
-              name: valueName,
-              category: valueCategory,
-              type: 'avoid',
-              description,
-            });
-            return next;
-          });
-          hasUnsavedChanges.current = true;
-        },
-      });
-
-      buttons.push({
-        text: 'Deselect',
-        style: 'destructive',
-        onPress: () => {
-          const wouldBeTotal = projectedTotal - 1;
-          if (wouldBeTotal < minValues) {
-            Alert.alert(
-              'Minimum Values Required',
-              `${isBusiness ? 'Business accounts' : 'You'} must maintain at least ${minValues} selected values.`,
-              [{ text: 'OK' }]
-            );
-            return;
-          }
-
-          setLocalChanges(prev => {
-            const next = new Map(prev);
-            next.set(valueId, null);
-            return next;
-          });
-          hasUnsavedChanges.current = true;
-        },
-      });
-    } else if (currentState === 'avoid') {
-      // Currently unaligned - show Aligned and Deselect options
-      buttons.push({
-        text: 'Aligned',
-        onPress: () => {
-          setLocalChanges(prev => {
-            const next = new Map(prev);
-            next.set(valueId, {
-              id: valueId,
-              name: valueName,
-              category: valueCategory,
-              type: 'support',
-              description,
-            });
-            return next;
-          });
-          hasUnsavedChanges.current = true;
-        },
-      });
-
-      buttons.push({
-        text: 'Deselect',
-        style: 'destructive',
-        onPress: () => {
-          const wouldBeTotal = projectedTotal - 1;
-          if (wouldBeTotal < minValues) {
-            Alert.alert(
-              'Minimum Values Required',
-              `${isBusiness ? 'Business accounts' : 'You'} must maintain at least ${minValues} selected values.`,
-              [{ text: 'OK' }]
-            );
-            return;
-          }
-
-          setLocalChanges(prev => {
-            const next = new Map(prev);
-            next.set(valueId, null);
-            return next;
-          });
-          hasUnsavedChanges.current = true;
-        },
-      });
-    } else {
-      // Currently unselected - show Aligned and Unaligned options
-      buttons.push({
-        text: 'Aligned',
-        onPress: () => {
-          setLocalChanges(prev => {
-            const next = new Map(prev);
-            next.set(valueId, {
-              id: valueId,
-              name: valueName,
-              category: valueCategory,
-              type: 'support',
-              description,
-            });
-            return next;
-          });
-          hasUnsavedChanges.current = true;
-        },
-      });
-
-      buttons.push({
-        text: 'Unaligned',
-        onPress: () => {
-          setLocalChanges(prev => {
-            const next = new Map(prev);
-            next.set(valueId, {
-              id: valueId,
-              name: valueName,
-              category: valueCategory,
-              type: 'avoid',
-              description,
-            });
-            return next;
-          });
-          hasUnsavedChanges.current = true;
-        },
-      });
+    if (action === 'view') {
+      setShowValueActionModal(false);
+      router.push(`/value/${id}`);
+      return;
     }
 
-    // Add Cancel button last
-    buttons.push({
-      text: 'Cancel',
-      style: 'cancel',
-    });
+    if (action === 'deselect') {
+      // Calculate projected total
+      const currentTotal = profile.causes.length;
+      const changesAddingValues = Array.from(localChanges.values()).filter(
+        v => v !== null && !profile.causes.find(c => c.id === v.id)
+      ).length;
+      const changesRemovingValues = Array.from(localChanges.entries()).filter(
+        ([valueId, v]) => v === null && profile.causes.find(c => c.id === valueId)
+      ).length;
+      const projectedTotal = currentTotal + changesAddingValues - changesRemovingValues;
+      const wouldBeTotal = projectedTotal - 1;
 
-    // Show alert with options
-    Alert.alert(
-      valueName,
-      currentState === 'support' ? 'Currently: Aligned' : currentState === 'avoid' ? 'Currently: Unaligned' : 'Currently: Unselected',
-      buttons,
-      { cancelable: true }
-    );
+      if (wouldBeTotal < minValues) {
+        Alert.alert(
+          'Minimum Values Required',
+          `${isBusiness ? 'Business accounts' : 'You'} must maintain at least ${minValues} selected values.`,
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      setLocalChanges(prev => {
+        const next = new Map(prev);
+        next.set(id, null);
+        return next;
+      });
+      hasUnsavedChanges.current = true;
+      setShowValueActionModal(false);
+      return;
+    }
+
+    if (action === 'aligned') {
+      setLocalChanges(prev => {
+        const next = new Map(prev);
+        next.set(id, {
+          id,
+          name,
+          category,
+          type: 'support',
+          description,
+        });
+        return next;
+      });
+      hasUnsavedChanges.current = true;
+      setShowValueActionModal(false);
+      return;
+    }
+
+    if (action === 'unaligned') {
+      setLocalChanges(prev => {
+        const next = new Map(prev);
+        next.set(id, {
+          id,
+          name,
+          category,
+          type: 'avoid',
+          description,
+        });
+        return next;
+      });
+      hasUnsavedChanges.current = true;
+      setShowValueActionModal(false);
+      return;
+    }
   };
 
   // Quick-add handlers
@@ -1011,6 +951,121 @@ export default function ValuesScreen() {
           </Pressable>
         </View>
       </Modal>
+
+      {/* Value Action Modal */}
+      <Modal
+        visible={showValueActionModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowValueActionModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={() => setShowValueActionModal(false)}>
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Pressable
+            style={[styles.valueActionModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {selectedValueForAction?.name}
+              </Text>
+              <TouchableOpacity onPress={() => setShowValueActionModal(false)}>
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.valueActionContent}>
+              <Text style={[styles.valueActionCurrentState, { color: colors.textSecondary }]}>
+                Currently: {selectedValueForAction?.currentState === 'support' ? 'Aligned' : selectedValueForAction?.currentState === 'avoid' ? 'Unaligned' : 'Unselected'}
+              </Text>
+
+              <TouchableOpacity
+                style={[styles.valueActionButton, { backgroundColor: colors.primary }]}
+                onPress={() => handleValueAction('view')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.valueActionButtonText, { color: colors.white }]}>
+                  View Value
+                </Text>
+              </TouchableOpacity>
+
+              {selectedValueForAction?.currentState === 'support' && (
+                <>
+                  <TouchableOpacity
+                    style={[styles.valueActionButton, { backgroundColor: colors.danger }]}
+                    onPress={() => handleValueAction('unaligned')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.valueActionButtonText, { color: colors.white }]}>
+                      Unaligned
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.valueActionButton, styles.valueActionButtonOutline, { borderColor: colors.danger }]}
+                    onPress={() => handleValueAction('deselect')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.valueActionButtonText, { color: colors.danger }]}>
+                      Deselect
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {selectedValueForAction?.currentState === 'avoid' && (
+                <>
+                  <TouchableOpacity
+                    style={[styles.valueActionButton, { backgroundColor: colors.success }]}
+                    onPress={() => handleValueAction('aligned')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.valueActionButtonText, { color: colors.white }]}>
+                      Aligned
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.valueActionButton, styles.valueActionButtonOutline, { borderColor: colors.danger }]}
+                    onPress={() => handleValueAction('deselect')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.valueActionButtonText, { color: colors.danger }]}>
+                      Deselect
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {selectedValueForAction?.currentState === 'unselected' && (
+                <>
+                  <TouchableOpacity
+                    style={[styles.valueActionButton, { backgroundColor: colors.success }]}
+                    onPress={() => handleValueAction('aligned')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.valueActionButtonText, { color: colors.white }]}>
+                      Aligned
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.valueActionButton, { backgroundColor: colors.danger }]}
+                    onPress={() => handleValueAction('unaligned')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.valueActionButtonText, { color: colors.white }]}>
+                      Unaligned
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </Pressable>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1444,6 +1499,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalButtonText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  valueActionModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    marginHorizontal: 20,
+    maxWidth: 400,
+    width: '100%',
+  },
+  valueActionContent: {
+    gap: 12,
+  },
+  valueActionCurrentState: {
+    fontSize: 14,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  valueActionButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  valueActionButtonOutline: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+  },
+  valueActionButtonText: {
     fontSize: 16,
     fontWeight: '700' as const,
   },
