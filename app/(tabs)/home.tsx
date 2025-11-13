@@ -68,6 +68,7 @@ import {
   Pressable,
   TouchableWithoutFeedback,
   Share,
+  Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as Clipboard from 'expo-clipboard';
@@ -76,7 +77,7 @@ import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 import { Product } from '@/types';
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { useIsStandalone } from '@/hooks/useIsStandalone';
 import { trpc } from '@/lib/trpc';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
@@ -442,62 +443,6 @@ export default function HomeScreen() {
       setSelectedList(null);
     }
   }, [mainView, forYouSubsection, clerkUser?.id]);
-
-  // Fetch news articles when news view is activated
-  useEffect(() => {
-    if (mainView === 'myLibrary') {
-      fetchNewsArticles();
-    }
-  }, [mainView, userPersonalList, allSupportFull, allAvoidFull]);
-
-  const fetchNewsArticles = async () => {
-    setIsLoadingNews(true);
-    try {
-      // Collect brand names from My List, Aligned, and Unaligned
-      const brandNames = new Set<string>();
-
-      // Add brands from My List
-      if (userPersonalList?.entries) {
-        userPersonalList.entries.forEach((entry) => {
-          if (entry.type === 'brand') {
-            const brandName = getBrandName(entry.id);
-            if (brandName && brandName !== 'Unknown Brand') {
-              brandNames.add(brandName);
-            }
-          }
-        });
-      }
-
-      // Add top aligned brands (limit to 5)
-      allSupportFull?.slice(0, 5).forEach((brand) => {
-        brandNames.add(brand.name);
-      });
-
-      // Add top unaligned brands (limit to 5)
-      allAvoidFull?.slice(0, 5).forEach((brand) => {
-        brandNames.add(brand.name);
-      });
-
-      const brandNamesArray = Array.from(brandNames);
-
-      if (brandNamesArray.length === 0) {
-        setNewsArticles([]);
-        return;
-      }
-
-      // Fetch news articles using tRPC
-      const result = await trpc.news.getArticles.query({
-        brandNames: brandNamesArray,
-      });
-
-      setNewsArticles(result.articles || []);
-    } catch (error) {
-      console.error('[Home] Error fetching news:', error);
-      setNewsArticles([]);
-    } finally {
-      setIsLoadingNews(false);
-    }
-  };
 
   const loadUserLists = async () => {
     if (!clerkUser?.id) return;
@@ -910,6 +855,63 @@ export default function HomeScreen() {
 
     return categorized;
   }, [allSupport]);
+
+  // Fetch news articles function (defined after allSupportFull and allAvoidFull are available)
+  const fetchNewsArticles = useCallback(async () => {
+    setIsLoadingNews(true);
+    try {
+      // Collect brand names from My List, Aligned, and Unaligned
+      const brandNames = new Set<string>();
+
+      // Add brands from My List
+      if (userPersonalList?.entries) {
+        userPersonalList.entries.forEach((entry) => {
+          if (entry.type === 'brand') {
+            const brandName = getBrandName(entry.id);
+            if (brandName && brandName !== 'Unknown Brand') {
+              brandNames.add(brandName);
+            }
+          }
+        });
+      }
+
+      // Add top aligned brands (limit to 5)
+      allSupportFull?.slice(0, 5).forEach((brand) => {
+        brandNames.add(brand.name);
+      });
+
+      // Add top unaligned brands (limit to 5)
+      allAvoidFull?.slice(0, 5).forEach((brand) => {
+        brandNames.add(brand.name);
+      });
+
+      const brandNamesArray = Array.from(brandNames);
+
+      if (brandNamesArray.length === 0) {
+        setNewsArticles([]);
+        return;
+      }
+
+      // Fetch news articles using tRPC
+      const result = await trpc.news.getArticles.query({
+        brandNames: brandNamesArray,
+      });
+
+      setNewsArticles(result.articles || []);
+    } catch (error) {
+      console.error('[Home] Error fetching news:', error);
+      setNewsArticles([]);
+    } finally {
+      setIsLoadingNews(false);
+    }
+  }, [userPersonalList, allSupportFull, allAvoidFull]);
+
+  // Fetch news articles when news view is activated
+  useEffect(() => {
+    if (mainView === 'myLibrary') {
+      fetchNewsArticles();
+    }
+  }, [mainView, fetchNewsArticles]);
 
   const handleProductPress = (product: Product) => {
     router.push({
@@ -1601,7 +1603,6 @@ export default function HomeScreen() {
                   window.open(article.link, '_blank');
                 } else {
                   // On mobile, use Linking API
-                  const { Linking } = require('react-native');
                   Linking.openURL(article.link);
                 }
               }}
