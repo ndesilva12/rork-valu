@@ -53,7 +53,7 @@ module.exports = {
     web: {
       bundler: "metro",
       output: "static",
-      favicon: "./assets/images/favicon.png",
+      favicon: "./assets/images/upright2.png",
       name: "Upright",
       shortName: "Upright",
       description: "Upright - Vote With Your Money",

@@ -14,7 +14,7 @@ import {
   Pressable,
   TextInput,
 } from 'react-native';
-import { ChevronRight, ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Plus, List, Tag } from 'lucide-react-native';
+import { ChevronRight, ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Plus, List, Tag, X } from 'lucide-react-native';
 import { useState, useMemo } from 'react';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
