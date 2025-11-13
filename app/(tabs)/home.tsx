@@ -2739,16 +2739,15 @@ export default function HomeScreen() {
                         {entryIndex + 1}
                       </Text>
                       <View style={styles.listEntryWrapper}>
-                        <View style={[
-                          styles.brandCard,
-                          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
-                        ]}>
-                          <TouchableOpacity
-                            style={styles.brandCardClickable}
-                            onPress={() => !isEditMode && router.push(`/brand/${entry.brandId}`)}
-                            activeOpacity={0.7}
-                            disabled={isEditMode}
-                          >
+                        <TouchableOpacity
+                          style={[
+                            styles.brandCard,
+                            { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                          ]}
+                          onPress={() => !isEditMode && router.push(`/brand/${entry.brandId}`)}
+                          activeOpacity={0.7}
+                          disabled={isEditMode}
+                        >
                           <View style={styles.brandCardInner}>
                           <View style={styles.brandLogoContainer}>
                             <Image
@@ -2767,8 +2766,6 @@ export default function HomeScreen() {
                               Brand
                             </Text>
                           </View>
-                        </View>
-                          </TouchableOpacity>
                           {!isEditMode && (
                             <TouchableOpacity
                               style={styles.listEntryOptionsButton}
@@ -2788,6 +2785,7 @@ export default function HomeScreen() {
                             </View>
                           )}
                         </View>
+                      </TouchableOpacity>
                       </View>
                     </View>
                   );
@@ -2802,12 +2800,11 @@ export default function HomeScreen() {
                         {entryIndex + 1}
                       </Text>
                       <View style={styles.listEntryWrapper}>
-                      <View style={[
-                        styles.brandCard,
-                        { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
-                      ]}>
                       <TouchableOpacity
-                        style={styles.brandCardClickable}
+                        style={[
+                          styles.brandCard,
+                          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                        ]}
                         onPress={() => !isEditMode && handleBusinessPress(entry.businessId)}
                         activeOpacity={0.7}
                         disabled={isEditMode}
@@ -2830,8 +2827,6 @@ export default function HomeScreen() {
                               Business
                             </Text>
                           </View>
-                        </View>
-                      </TouchableOpacity>
                           {!isEditMode && (
                             <TouchableOpacity
                               style={styles.listEntryOptionsButton}
@@ -2851,6 +2846,7 @@ export default function HomeScreen() {
                             </View>
                           )}
                         </View>
+                      </TouchableOpacity>
                       </View>
                     </View>
                   );
@@ -2867,9 +2863,8 @@ export default function HomeScreen() {
                         {entryIndex + 1}
                       </Text>
                       <View style={styles.listEntryWrapper}>
-                      <View style={[styles.valueRow, { backgroundColor: colors.backgroundSecondary }]}>
                       <TouchableOpacity
-                        style={styles.valueRowClickable}
+                        style={[styles.valueRow, { backgroundColor: colors.backgroundSecondary }]}
                         onPress={() => !isEditMode && router.push(`/value/${entry.valueId}`)}
                         activeOpacity={0.7}
                         disabled={isEditMode}
@@ -2879,7 +2874,6 @@ export default function HomeScreen() {
                             {entry.valueName}
                           </Text>
                         </View>
-                      </TouchableOpacity>
                         <View style={styles.valueRowActions}>
                           {!isEditMode && (
                             <TouchableOpacity
@@ -2900,7 +2894,7 @@ export default function HomeScreen() {
                             </View>
                           )}
                         </View>
-                      </View>
+                      </TouchableOpacity>
                       </View>
                     </View>
                   );
@@ -5262,9 +5256,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0, 0, 0, 0.08)',
     overflow: 'visible',
   },
-  brandCardClickable: {
-    flex: 1,
-  },
   brandCardInner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -6241,9 +6232,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 6,
     overflow: 'visible',
-  },
-  valueRowClickable: {
-    flex: 1,
   },
   valueNameBox: {
     flex: 1,
