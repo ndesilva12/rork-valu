@@ -1651,16 +1651,7 @@ export default function HomeScreen() {
     return (
       <View style={styles.section}>
         <View style={styles.newsHeaderContainer}>
-          <View style={styles.sectionHeaderRow}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>News</Text>
-            </View>
-            <Text style={[styles.newsCount, { color: colors.textSecondary }]}>
-              {newsArticles.length} {newsArticles.length === 1 ? 'article' : 'articles'}
-            </Text>
-          </View>
-
-          {/* News source dropdown */}
+          {/* News source dropdown as title */}
           <View style={styles.newsSourceDropdownContainer}>
             <TouchableOpacity
               style={styles.newsSourceDropdown}
@@ -1673,10 +1664,14 @@ export default function HomeScreen() {
                  selectedNewsSource === 'unaligned' ? 'Unaligned' :
                  userLists.find(list => list.id === selectedNewsSource)?.name || 'Select Source'}
               </Text>
-              <ChevronDown size={18} color={colors.text} strokeWidth={2} />
+              <ChevronDown size={16} color={colors.text} strokeWidth={2} />
             </TouchableOpacity>
             <View style={[styles.newsSourceBorder, { backgroundColor: colors.primary }]} />
           </View>
+
+          <Text style={[styles.newsCount, { color: colors.textSecondary }]}>
+            {newsArticles.length} {newsArticles.length === 1 ? 'article' : 'articles'}
+          </Text>
         </View>
 
         <View style={styles.newsContainer}>
@@ -6975,6 +6970,7 @@ const styles = StyleSheet.create({
   newsCount: {
     fontSize: 13,
     fontWeight: '500' as const,
+    marginTop: 8,
   },
   newsArticleCard: {
     borderRadius: 12,
@@ -7029,26 +7025,25 @@ const styles = StyleSheet.create({
   },
   newsSourceDropdownContainer: {
     alignSelf: 'flex-start',
-    marginTop: 12,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   newsSourceDropdown: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 4,
-    minWidth: 200,
-    gap: 24,
+    minWidth: 240,
+    gap: 32,
   },
   newsSourceText: {
-    fontSize: 17,
-    fontWeight: '500',
-    letterSpacing: 0.3,
+    fontSize: 30,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   newsSourceBorder: {
     height: 2,
-    marginTop: 2,
+    marginTop: 4,
     borderRadius: 1,
   },
   newsSourceModalContainer: {
