@@ -870,10 +870,14 @@ export default function HomeScreen() {
 
       if (selectedNewsSource === 'myList') {
         // Add brands from My List
+        console.log('[Home] userPersonalList:', userPersonalList);
+        console.log('[Home] userPersonalList entries:', userPersonalList?.entries);
         if (userPersonalList?.entries) {
           userPersonalList.entries.forEach((entry) => {
-            if (entry.type === 'brand') {
-              const brandName = getBrandName(entry.id);
+            console.log('[Home] Processing entry:', entry);
+            if (entry.type === 'brand' && 'brandId' in entry) {
+              const brandName = entry.brandName || getBrandName(entry.brandId);
+              console.log('[Home] Found brand:', brandName);
               if (brandName && brandName !== 'Unknown Brand') {
                 brandNames.add(brandName);
               }
@@ -895,8 +899,8 @@ export default function HomeScreen() {
         const customList = userLists.find(list => list.id === selectedNewsSource);
         if (customList?.entries) {
           customList.entries.forEach((entry) => {
-            if (entry.type === 'brand') {
-              const brandName = getBrandName(entry.id);
+            if (entry.type === 'brand' && 'brandId' in entry) {
+              const brandName = entry.brandName || getBrandName(entry.brandId);
               if (brandName && brandName !== 'Unknown Brand') {
                 brandNames.add(brandName);
               }
