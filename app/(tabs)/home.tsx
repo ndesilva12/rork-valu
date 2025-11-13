@@ -2970,19 +2970,9 @@ export default function HomeScreen() {
   };
 
   const renderMyLibraryView = () => {
-    // If called from News view (mainView === 'myLibrary'), show empty placeholder
+    // If called from News view (mainView === 'myLibrary'), show blank content
     if (mainView === 'myLibrary') {
-      return (
-        <View style={styles.section}>
-          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
-            <BookOpen size={48} color={colors.textSecondary} strokeWidth={1.5} />
-            <Text style={[styles.placeholderTitle, { color: colors.text }]}>News Coming Soon</Text>
-            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-              Stay tuned for news and updates about values-aligned brands and companies.
-            </Text>
-          </View>
-        </View>
-      );
+      return null;
     }
 
     // If viewing a list detail, show that instead
