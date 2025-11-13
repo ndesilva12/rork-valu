@@ -6971,7 +6971,7 @@ const styles = StyleSheet.create({
   newsCount: {
     fontSize: 13,
     fontWeight: '500' as const,
-    marginTop: 8,
+    paddingTop: 16,
   },
   newsArticleCard: {
     borderRadius: 12,
@@ -7022,11 +7022,13 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,
   },
   newsHeaderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 16,
   },
   newsSourceDropdownContainer: {
     alignSelf: 'flex-start',
-    marginBottom: 12,
   },
   newsSourceDropdown: {
     flexDirection: 'row',
