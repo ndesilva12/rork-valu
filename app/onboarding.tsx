@@ -37,6 +37,38 @@ const CATEGORY_LABELS: Record<CauseCategory, string> = {
   person: 'People',
 };
 
+// Normalize category names to consolidate duplicates
+const normalizeCategory = (category: string | undefined): CauseCategory => {
+  if (!category) return 'social_issue';
+
+  const normalized = category.toLowerCase().trim();
+
+  // Map duplicate/variant category names to canonical ones
+  const categoryMap: Record<string, CauseCategory> = {
+    'people': 'person',
+    'persons': 'person',
+    'sports': 'social_issue',
+    'sport': 'social_issue',
+    'place': 'nation',
+    'places': 'nation',
+    'country': 'nation',
+    'countries': 'nation',
+    'organizations': 'organization',
+    'orgs': 'organization',
+    'company': 'corporation',
+    'companies': 'corporation',
+    'corporations': 'corporation',
+    'business': 'corporation',
+    'businesses': 'corporation',
+    'ideologies': 'ideology',
+    'religions': 'religion',
+    'social_issues': 'social_issue',
+    'social': 'social_issue',
+  };
+
+  return (categoryMap[normalized] || normalized) as CauseCategory;
+};
+
 interface SelectedValue {
   id: string;
   name: string;
@@ -177,8 +209,8 @@ export default function OnboardingScreen() {
             if (!values || values.length === 0) return null;
             const Icon = CATEGORY_ICONS[category as CauseCategory];
             const isExpanded = expandedCategories.has(category);
-            const displayedValues = isExpanded ? values : values.slice(0, 3);
-            const hasMore = values.length > 3;
+            const displayedValues = isExpanded ? values : values.slice(0, 10);
+            const hasMore = values.length > 10;
             
             return (
               <View key={category} style={styles.categorySection}>
@@ -192,45 +224,28 @@ export default function OnboardingScreen() {
                   {displayedValues.map(value => {
                     const state = getValueState(value.id);
                     return (
-                      <View key={value.id} style={styles.valueRow}>
-                        <TouchableOpacity
+                      <TouchableOpacity
+                        key={value.id}
+                        style={[
+                          styles.valueChip,
+                          { borderColor: colors.border },
+                          state === 'support' && { backgroundColor: colors.success, borderColor: colors.success },
+                          state === 'avoid' && { backgroundColor: colors.danger, borderColor: colors.danger },
+                        ]}
+                        onPress={() => toggleValue(value.id, value.name, normalizeCategory(value.category), value.description)}
+                        activeOpacity={0.7}
+                      >
+                        <Text
                           style={[
-                            styles.valueCard,
-                            { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-                            state === 'support' && { backgroundColor: colors.success, borderColor: colors.success },
-                            state === 'avoid' && { backgroundColor: colors.danger, borderColor: colors.danger },
+                            styles.valueChipText,
+                            { color: colors.text },
+                            (state === 'support' || state === 'avoid') && { color: colors.white },
                           ]}
-                          onPress={() => toggleValue(value.id, value.name, value.category, value.description)}
-                          activeOpacity={0.7}
+                          numberOfLines={1}
                         >
-                          <View style={styles.valueContent}>
-                            <Text
-                              style={[
-                                styles.valueName,
-                                { color: colors.text },
-                                (state === 'support' || state === 'avoid') && { color: colors.white, fontWeight: '600' as const },
-                              ]}
-                            >
-                              {value.name}
-                            </Text>
-                            {state !== 'unselected' && (
-                              <View style={styles.stateIndicator}>
-                                {state === 'support' ? (
-                                  <View style={styles.stateBadge}>
-                                    <ThumbsUp size={12} color={colors.white} strokeWidth={2} />
-                                    <Text style={[styles.stateBadgeText, { color: colors.white }]}>Support</Text>
-                                  </View>
-                                ) : (
-                                  <View style={styles.stateBadge}>
-                                    <ThumbsDown size={12} color={colors.white} strokeWidth={2} />
-                                    <Text style={[styles.stateBadgeText, { color: colors.white }]}>Oppose</Text>
-                                  </View>
-                                )}
-                              </View>
-                            )}
-                          </View>
-                        </TouchableOpacity>
-                      </View>
+                          {value.name}
+                        </Text>
+                      </TouchableOpacity>
                     );
                   })}
                 </View>
@@ -241,7 +256,7 @@ export default function OnboardingScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.showMoreText, { color: colors.primary }]}>
-                      {isExpanded ? 'Show Less' : `Show ${values.length - 3} More`}
+                      {isExpanded ? 'Show Less' : `Show ${values.length - 10} More`}
                     </Text>
                     {isExpanded ? (
                       <ChevronUp size={16} color={colors.primary} strokeWidth={2} />
@@ -350,7 +365,20 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   valuesGrid: {
-    gap: 12,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  valueChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 2,
+    backgroundColor: 'transparent',
+  },
+  valueChipText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   valueRow: {
     width: '100%',
