@@ -78,7 +78,9 @@ export default function ValuesScreen() {
     const valuesByCategory: Record<string, any[]> = {};
 
     firebaseValues.forEach(value => {
-      const category = value.category || 'social_issue';
+      // Normalize category: lowercase and trim whitespace to prevent duplicates
+      const rawCategory = value.category || 'social_issue';
+      const category = rawCategory.toLowerCase().trim();
 
       // Initialize category array if it doesn't exist
       if (!valuesByCategory[category]) {
@@ -114,13 +116,13 @@ export default function ValuesScreen() {
     unselectedValuesByCategory[category] = values.filter(v => !selectedValueIds.has(v.id));
   });
 
-  // Get all categories sorted (predefined ones first, then custom ones alphabetically)
-  const predefinedCategories = ['ideology', 'person', 'social_issue', 'religion', 'nation', 'organization'];
+  // Get all categories sorted alphabetically by their display label
   const allCategories = Object.keys(unselectedValuesByCategory);
-  const sortedCategories = [
-    ...predefinedCategories.filter(cat => allCategories.includes(cat)),
-    ...allCategories.filter(cat => !predefinedCategories.includes(cat)).sort(),
-  ];
+  const sortedCategories = allCategories.sort((a, b) => {
+    const labelA = getCategoryLabel(a);
+    const labelB = getCategoryLabel(b);
+    return labelA.localeCompare(labelB);
+  });
 
   const toggleCategoryExpanded = (category: string) => {
     setExpandedCategories(prev => {

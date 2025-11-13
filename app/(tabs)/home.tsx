@@ -1659,7 +1659,7 @@ export default function HomeScreen() {
               activeOpacity={0.7}
             >
               <Text style={[styles.newsSourceText, { color: colors.text }]}>
-                {selectedNewsSource === 'myList' ? 'My List' :
+                {selectedNewsSource === 'myList' ? (userPersonalList?.name || 'My List') :
                  selectedNewsSource === 'aligned' ? 'Aligned' :
                  selectedNewsSource === 'unaligned' ? 'Unaligned' :
                  userLists.find(list => list.id === selectedNewsSource)?.name || 'Select Source'}
