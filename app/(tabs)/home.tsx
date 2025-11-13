@@ -132,6 +132,7 @@ export default function HomeScreen() {
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
   const [alignedLoadCount, setAlignedLoadCount] = useState<number>(10);
   const [unalignedLoadCount, setUnalignedLoadCount] = useState<number>(10);
+  const [myListLoadCount, setMyListLoadCount] = useState<number>(10);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(null);
   const [userBusinesses, setUserBusinesses] = useState<BusinessUser[]>([]);
@@ -1473,7 +1474,7 @@ export default function HomeScreen() {
             );
           })()}
           <View style={styles.brandsContainer}>
-            {userPersonalList.entries.map((entry, index) => {
+            {userPersonalList.entries.slice(0, myListLoadCount).map((entry, index) => {
               // Render brand entries
               if (entry.type === 'brand' && 'brandId' in entry) {
                 return (
@@ -1544,6 +1545,17 @@ export default function HomeScreen() {
               }
               return null;
             })}
+            {myListLoadCount < userPersonalList.entries.length && (
+              <TouchableOpacity
+                style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => setMyListLoadCount(myListLoadCount + 10)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                  Load More ({userPersonalList.entries.length - myListLoadCount} remaining)
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       );

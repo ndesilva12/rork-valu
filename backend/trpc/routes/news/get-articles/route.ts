@@ -15,8 +15,16 @@ async function parseGoogleNewsRSS(query: string): Promise<NewsArticle[]> {
     const encodedQuery = encodeURIComponent(query);
     const rssUrl = `https://news.google.com/rss/search?q=${encodedQuery}&hl=en-US&gl=US&ceid=US:en`;
 
+    console.log(`[News] Fetching news for: ${query}`);
     const response = await fetch(rssUrl);
+
+    if (!response.ok) {
+      console.error(`[News] Failed to fetch: ${response.status} ${response.statusText}`);
+      return [];
+    }
+
     const xmlText = await response.text();
+    console.log(`[News] Received ${xmlText.length} characters of XML`);
 
     // Simple XML parsing for RSS items
     const articles: NewsArticle[] = [];
@@ -25,26 +33,28 @@ async function parseGoogleNewsRSS(query: string): Promise<NewsArticle[]> {
     for (const match of itemMatches) {
       const item = match[1];
 
-      const titleMatch = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/);
-      const linkMatch = item.match(/<link>(.*?)<\/link>/);
-      const pubDateMatch = item.match(/<pubDate>(.*?)<\/pubDate>/);
-      const sourceMatch = item.match(/<source.*?>(.*?)<\/source>/);
-      const descriptionMatch = item.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/);
+      // Try both CDATA and regular text content
+      const titleMatch = item.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/s);
+      const linkMatch = item.match(/<link>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/link>/s);
+      const pubDateMatch = item.match(/<pubDate>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/pubDate>/s);
+      const sourceMatch = item.match(/<source[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/source>/s);
+      const descriptionMatch = item.match(/<description>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/description>/s);
 
       if (titleMatch && linkMatch) {
         articles.push({
-          title: titleMatch[1],
-          link: linkMatch[1],
-          pubDate: pubDateMatch?.[1] || '',
-          source: sourceMatch?.[1] || 'Google News',
-          description: descriptionMatch?.[1],
+          title: titleMatch[1].trim(),
+          link: linkMatch[1].trim(),
+          pubDate: pubDateMatch?.[1]?.trim() || new Date().toISOString(),
+          source: sourceMatch?.[1]?.trim() || 'Google News',
+          description: descriptionMatch?.[1]?.trim(),
         });
       }
     }
 
+    console.log(`[News] Parsed ${articles.length} articles for "${query}"`);
     return articles.slice(0, 5); // Return top 5 articles per brand
   } catch (error) {
-    console.error(`Error fetching news for "${query}":`, error);
+    console.error(`[News] Error fetching news for "${query}":`, error);
     return [];
   }
 }
