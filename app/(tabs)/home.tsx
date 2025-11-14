@@ -158,6 +158,7 @@ export default function HomeScreen() {
   const [activeItemOptionsMenu, setActiveItemOptionsMenu] = useState<string | null>(null);
   const [showEditDropdown, setShowEditDropdown] = useState(false);
   const [showListCreationTypeModal, setShowListCreationTypeModal] = useState(false);
+  const [showNewListChoiceModal, setShowNewListChoiceModal] = useState(false);
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
   const [descriptionText, setDescriptionText] = useState('');
   const [showValuesSelectionModal, setShowValuesSelectionModal] = useState(false);
@@ -1247,11 +1248,50 @@ export default function HomeScreen() {
     </>
   );
 
+  // Helper function to render consistent header across all For You subsections
+  const renderSubsectionHeader = (title: string, onAddPress: () => void, showModalButton: boolean = true) => {
+    return (
+      <View style={styles.listDetailHeader}>
+        <View style={styles.listDetailTitleRow}>
+          <View style={styles.listDetailTitleContainerHorizontal}>
+            <Text style={[styles.listDetailTitle, { color: colors.text }]}>{title}</Text>
+            {showModalButton && (
+              <TouchableOpacity
+                style={styles.listOptionsButtonHorizontal}
+                onPress={() => setShowEditDropdown(!showEditDropdown)}
+                activeOpacity={0.7}
+              >
+                <MoreVertical size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View style={styles.createButtonContainer}>
+            <Text style={[styles.createText, { color: colors.textSecondary }]}>create</Text>
+
+            <TouchableOpacity
+              style={[styles.addItemButton, { backgroundColor: colors.primary }]}
+              onPress={onAddPress}
+              activeOpacity={0.7}
+            >
+              <Plus size={20} color={colors.white} strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   const renderForYouView = () => {
     // Aligned subsection
     if (forYouSubsection === 'aligned') {
       return (
         <View style={styles.section}>
+          {renderSubsectionHeader(
+            'Aligned Brands',
+            () => setShowNewListChoiceModal(true),
+            false
+          )}
           <View style={styles.brandsContainer}>
             {allSupportFull.slice(0, alignedLoadCount).map((product, index) => (
               <View key={product.id} style={styles.forYouItemRow}>
@@ -1283,6 +1323,11 @@ export default function HomeScreen() {
     if (forYouSubsection === 'unaligned') {
       return (
         <View style={styles.section}>
+          {renderSubsectionHeader(
+            'Unaligned Brands',
+            () => setShowNewListChoiceModal(true),
+            false
+          )}
           <View style={styles.brandsContainer}>
             {allAvoidFull.slice(0, unalignedLoadCount).map((product, index) => (
               <View key={product.id} style={styles.forYouItemRow}>
@@ -1328,46 +1373,14 @@ export default function HomeScreen() {
         // Show empty state with add button
         return (
           <View style={styles.section}>
-            <View style={styles.listDetailHeader}>
-              {/* Title row with 3-dot menu and Add button */}
-              <View style={styles.listDetailTitleRow}>
-                <View style={styles.listDetailTitleContainer}>
-                  <Text style={[styles.listDetailTitle, { color: colors.text }]}>{userPersonalList.name}</Text>
-                  <TouchableOpacity
-                    style={styles.listOptionsButton}
-                    onPress={() => setShowEditDropdown(!showEditDropdown)}
-                    activeOpacity={0.7}
-                  >
-                    <MoreVertical size={24} color={colors.text} strokeWidth={2} />
-                  </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.addItemButton, { backgroundColor: colors.primary }]}
-                  onPress={() => {
-                    setSelectedList(userPersonalList);
-                    setShowAddItemModal(true);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Plus size={20} color={colors.white} strokeWidth={2.5} />
-                </TouchableOpacity>
-              </View>
-
-              {/* Created by text */}
-              {userPersonalList.creatorName && (
-                <Text style={[styles.listCreatedBy, { color: colors.textSecondary }]}>
-                  created by {userPersonalList.creatorName}
-                </Text>
-              )}
-
-              {/* Description below title */}
-              {userPersonalList.description && (
-                <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
-                  {userPersonalList.description}
-                </Text>
-              )}
-            </View>
+            {renderSubsectionHeader(
+              userPersonalList.name,
+              () => {
+                setSelectedList(userPersonalList);
+                setShowAddItemModal(true);
+              },
+              true
+            )}
 
             {/* Three dot options dropdown for For You view */}
             {showEditDropdown && (() => {
@@ -1434,46 +1447,14 @@ export default function HomeScreen() {
 
       return (
         <View style={styles.section}>
-          <View style={styles.listDetailHeader}>
-            {/* Title row with 3-dot menu and Add button */}
-            <View style={styles.listDetailTitleRow}>
-              <View style={styles.listDetailTitleContainer}>
-                <Text style={[styles.listDetailTitle, { color: colors.text }]}>{userPersonalList.name}</Text>
-                <TouchableOpacity
-                  style={styles.listOptionsButton}
-                  onPress={() => setShowEditDropdown(!showEditDropdown)}
-                  activeOpacity={0.7}
-                >
-                  <MoreVertical size={24} color={colors.text} strokeWidth={2} />
-                </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity
-                style={[styles.addItemButton, { backgroundColor: colors.primary }]}
-                onPress={() => {
-                  setSelectedList(userPersonalList);
-                  setShowAddItemModal(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <Plus size={20} color={colors.white} strokeWidth={2.5} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Created by text */}
-            {userPersonalList.creatorName && (
-              <Text style={[styles.listCreatedBy, { color: colors.textSecondary }]}>
-                created by {userPersonalList.creatorName}
-              </Text>
-            )}
-
-            {/* Description below title */}
-            {userPersonalList.description && (
-              <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
-                {userPersonalList.description}
-              </Text>
-            )}
-          </View>
+          {renderSubsectionHeader(
+            userPersonalList.name,
+            () => {
+              setSelectedList(userPersonalList);
+              setShowAddItemModal(true);
+            },
+            true
+          )}
 
           {/* Three dot options dropdown for For You view */}
           {showEditDropdown && (() => {
@@ -1618,7 +1599,16 @@ export default function HomeScreen() {
 
     // All Lists subsection - shows all user lists from old My Library
     if (forYouSubsection === 'allLists') {
-      return renderMyLibraryView();
+      return (
+        <View style={styles.section}>
+          {renderSubsectionHeader(
+            'All Lists',
+            () => setShowNewListChoiceModal(true),
+            false
+          )}
+          {renderMyLibraryView()}
+        </View>
+      );
     }
 
     return null;
@@ -3424,60 +3414,16 @@ export default function HomeScreen() {
                       </View>
                     </View>
                     {!isLibraryReorderMode && (
-                      <View style={{ position: 'relative' as const }}>
-                        <TouchableOpacity
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            setActiveCardOptionsMenu(activeCardOptionsMenu === list.id ? null : list.id);
-                          }}
-                          activeOpacity={0.7}
-                          style={styles.listCardOptionsButton}
-                        >
-                          <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                        </TouchableOpacity>
-                        {activeCardOptionsMenu === list.id && (
-                          <View style={[styles.listCardOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                            <TouchableOpacity
-                              style={styles.listOptionItem}
-                              onPress={() => {
-                                setActiveCardOptionsMenu(null);
-                                setCardRenameListId(list.id);
-                                setCardRenameListName(list.name);
-                                setCardRenameListDescription(list.description || '');
-                                setShowCardRenameModal(true);
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <Edit size={18} color={colors.text} strokeWidth={2} />
-                              <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
-                            </TouchableOpacity>
-                            <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                            <TouchableOpacity
-                              style={styles.listOptionItem}
-                              onPress={() => {
-                                setActiveCardOptionsMenu(null);
-                                handleShareList(list);
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <Share2 size={18} color={colors.text} strokeWidth={2} />
-                              <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
-                            </TouchableOpacity>
-                            <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                            <TouchableOpacity
-                              style={styles.listOptionItem}
-                              onPress={() => {
-                                setActiveCardOptionsMenu(null);
-                                handleDeleteList(list.id);
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-                              <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                      </View>
+                      <TouchableOpacity
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          setActiveCardOptionsMenu(activeCardOptionsMenu === list.id ? null : list.id);
+                        }}
+                        activeOpacity={0.7}
+                        style={styles.listCardOptionsButton}
+                      >
+                        <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                      </TouchableOpacity>
                     )}
                     {isLibraryReorderMode && (
                       <View style={styles.listCardRearrangeButtons}>
@@ -3554,7 +3500,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright dark B1.png')}
+            source={require('@/assets/images/upright12dwc.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3574,7 +3520,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright dark B1.png')}
+            source={require('@/assets/images/upright12dwc.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3596,7 +3542,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright dark B1.png')}
+            source={require('@/assets/images/upright12dwc.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3624,7 +3570,7 @@ export default function HomeScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright dark B1.png')}
+            source={require('@/assets/images/upright12dwc.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -4029,6 +3975,56 @@ export default function HomeScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.modalButtonText, { color: colors.text }]}>Create from Values</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </View>
+      </Modal>
+
+      {/* New List Choice Modal - for Aligned/Unaligned/All Lists subsections */}
+      <Modal
+        visible={showNewListChoiceModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowNewListChoiceModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={() => setShowNewListChoiceModal(false)}>
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Pressable
+            style={[styles.quickAddModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Create New List</Text>
+              <TouchableOpacity onPress={() => setShowNewListChoiceModal(false)}>
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalContent}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  setShowNewListChoiceModal(false);
+                  setShowCreateListModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.white }]}>New Blank List</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.backgroundSecondary, marginTop: 12 }]}
+                onPress={() => {
+                  setShowNewListChoiceModal(false);
+                  setShowValuesSelectionModal(true);
+                  setSelectedValuesForList([]);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.text }]}>New List from Values</Text>
               </TouchableOpacity>
             </View>
           </Pressable>
@@ -6411,7 +6407,7 @@ const styles = StyleSheet.create({
   listDetailTitleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 12,
   },
   listDetailTitleContainer: {
@@ -6419,6 +6415,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  listDetailTitleContainerHorizontal: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   backButton: {
     flexDirection: 'row',
@@ -6432,15 +6434,23 @@ const styles = StyleSheet.create({
   listDetailTitle: {
     fontSize: 28 * mobileScale,
     fontWeight: '700' as const,
-    flex: 1,
   },
   listOptionsButton: {
     padding: 4,
   },
+  listOptionsButtonHorizontal: {
+    padding: 4,
+    marginLeft: 4,
+  },
+  createButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   listEditDropdown: {
     position: 'absolute',
-    top: 88,
-    right: 16,
+    top: 48,
+    left: 16,
     borderWidth: 1,
     borderRadius: 12,
     paddingVertical: 4,
@@ -6463,6 +6473,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
+  },
+  createText: {
+    fontSize: 18,
+    fontWeight: '500',
   },
   userListHeaderRow: {
     flexDirection: 'row',

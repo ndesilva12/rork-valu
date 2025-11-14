@@ -292,7 +292,7 @@ export default function SharedListScreen() {
           activeOpacity={0.8}
         >
           <Image
-            source={require('@/assets/images/uprightb1c.png')}
+            source={require('@/assets/images/upright12sdc.png')}
             style={styles.brandingLogo}
             contentFit="contain"
           />

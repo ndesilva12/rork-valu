@@ -13,7 +13,7 @@ const IS_NEW_USER_KEY = '@is_new_user';
 // Generate a random 5-digit promo code
 const generatePromoCode = (): string => {
   const digits = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
-  return `STAND${digits}`;
+  return `UP${digits}`;
 };
 
 export const [UserProvider, useUser] = createContextHook(() => {
