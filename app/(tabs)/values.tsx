@@ -47,36 +47,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   sports: 'Sports',
 };
 
-// Normalize category names to consolidate duplicates
-const normalizeCategory = (category: string | undefined): string => {
-  if (!category) return 'social_issue';
-
-  const normalized = category.toLowerCase().trim();
-
-  // Map duplicate/variant category names to canonical ones
-  const categoryMap: Record<string, string> = {
-    'people': 'person',
-    'persons': 'person',
-    'sport': 'sports',
-    'place': 'nation',
-    'places': 'nation',
-    'country': 'nation',
-    'countries': 'nation',
-    'organizations': 'organization',
-    'orgs': 'organization',
-    'company': 'corporation',
-    'companies': 'corporation',
-    'corporations': 'corporation',
-    'business': 'corporation',
-    'businesses': 'corporation',
-    'ideologies': 'ideology',
-    'religions': 'religion',
-    'social_issues': 'social_issue',
-    'social': 'social_issue',
-  };
-
-  return categoryMap[normalized] || normalized;
-};
 
 // Helper to get category icon, with fallback
 const getCategoryIcon = (category: string) => CATEGORY_ICONS[category] || Tag;
@@ -101,7 +71,7 @@ export default function ValuesScreen() {
   const { profile, isDarkMode, removeCauses, toggleCauseType, clerkUser, addCauses } = useUser();
   const { brands, valuesMatrix, values: firebaseValues } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
-  const [expandedCategories, setExpandedCategories] = useState<Set<CauseCategory>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Local state to track changes before persisting
   const [localChanges, setLocalChanges] = useState<Map<string, LocalValueState | null>>(new Map());
@@ -132,8 +102,8 @@ export default function ValuesScreen() {
     const valuesByCategory: Record<string, any[]> = {};
 
     firebaseValues.forEach(value => {
-      // Normalize category to consolidate duplicates (e.g., "people" -> "person")
-      const category = normalizeCategory(value.category);
+      // Use category directly from Firebase (no normalization)
+      const category = value.category || 'other';
 
       // Initialize category array if it doesn't exist
       if (!valuesByCategory[category]) {
@@ -180,10 +150,10 @@ export default function ValuesScreen() {
   const toggleCategoryExpanded = (category: string) => {
     setExpandedCategories(prev => {
       const next = new Set(prev);
-      if (next.has(category as CauseCategory)) {
-        next.delete(category as CauseCategory);
+      if (next.has(category)) {
+        next.delete(category);
       } else {
-        next.add(category as CauseCategory);
+        next.add(category);
       }
       return next;
     });

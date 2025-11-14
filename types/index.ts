@@ -1,19 +1,11 @@
-export type CauseCategory =
-  | 'social_issue'
-  | 'religion'
-  | 'ideology'
-  | 'corporation'
-  | 'nation'
-  | 'organization'
-  | 'person'
-  | 'sports';
+export type CauseCategory = string; // Dynamic - comes from Firebase
 
 export type AlignmentType = 'support' | 'avoid';
 
 export interface Cause {
   id: string;
   name: string;
-  category: CauseCategory;
+  category: string; // Changed to string to support any category from Firebase
   type: AlignmentType;
   description?: string;
   weight?: number; // Weight for alignment scoring (default: 1.0)
