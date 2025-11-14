@@ -3414,60 +3414,16 @@ export default function HomeScreen() {
                       </View>
                     </View>
                     {!isLibraryReorderMode && (
-                      <View style={{ position: 'relative' as const }}>
-                        <TouchableOpacity
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            setActiveCardOptionsMenu(activeCardOptionsMenu === list.id ? null : list.id);
-                          }}
-                          activeOpacity={0.7}
-                          style={styles.listCardOptionsButton}
-                        >
-                          <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                        </TouchableOpacity>
-                        {activeCardOptionsMenu === list.id && (
-                          <View style={[styles.listCardOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                            <TouchableOpacity
-                              style={styles.listOptionItem}
-                              onPress={() => {
-                                setActiveCardOptionsMenu(null);
-                                setCardRenameListId(list.id);
-                                setCardRenameListName(list.name);
-                                setCardRenameListDescription(list.description || '');
-                                setShowCardRenameModal(true);
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <Edit size={18} color={colors.text} strokeWidth={2} />
-                              <Text style={[styles.listOptionText, { color: colors.text }]}>Rename</Text>
-                            </TouchableOpacity>
-                            <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                            <TouchableOpacity
-                              style={styles.listOptionItem}
-                              onPress={() => {
-                                setActiveCardOptionsMenu(null);
-                                handleShareList(list);
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <Share2 size={18} color={colors.text} strokeWidth={2} />
-                              <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
-                            </TouchableOpacity>
-                            <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                            <TouchableOpacity
-                              style={styles.listOptionItem}
-                              onPress={() => {
-                                setActiveCardOptionsMenu(null);
-                                handleDeleteList(list.id);
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-                              <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                      </View>
+                      <TouchableOpacity
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          setActiveCardOptionsMenu(activeCardOptionsMenu === list.id ? null : list.id);
+                        }}
+                        activeOpacity={0.7}
+                        style={styles.listCardOptionsButton}
+                      >
+                        <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                      </TouchableOpacity>
                     )}
                     {isLibraryReorderMode && (
                       <View style={styles.listCardRearrangeButtons}>
@@ -6451,7 +6407,7 @@ const styles = StyleSheet.create({
   listDetailTitleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 12,
   },
   listDetailTitleContainer: {
@@ -6478,7 +6434,6 @@ const styles = StyleSheet.create({
   listDetailTitle: {
     fontSize: 28 * mobileScale,
     fontWeight: '700' as const,
-    flex: 1,
   },
   listOptionsButton: {
     padding: 4,
@@ -6520,7 +6475,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   createText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '500',
   },
   userListHeaderRow: {
