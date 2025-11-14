@@ -260,7 +260,12 @@ export default function UsersManagement() {
   };
 
   const handleSave = async () => {
-    if (!editingUser) return;
+    if (!editingUser) {
+      console.log('[Admin Users] No editing user found');
+      return;
+    }
+
+    console.log('[Admin Users] Starting save for user:', editingUser.userId);
 
     try {
       // Build social media object
@@ -321,21 +326,26 @@ export default function UsersManagement() {
         }
       });
 
+      console.log('[Admin Users] Updating user with data:', updatedData);
+
       const userRef = doc(db, 'users', editingUser.userId);
 
       // Update all user fields
       await updateDoc(userRef, updatedData);
 
+      console.log('[Admin Users] User updated successfully');
+
       Alert.alert(
         'Success',
-        `User "${formName || editingUser.email}" updated successfully`
+        `User "${formName || editingUser.email}" updated successfully`,
+        [{ text: 'OK', onPress: () => {
+          closeModal();
+          loadUsers();
+        }}]
       );
-
-      closeModal();
-      loadUsers();
     } catch (error) {
-      console.error('Error updating user:', error);
-      Alert.alert('Error', 'Failed to update user data');
+      console.error('[Admin Users] Error updating user:', error);
+      Alert.alert('Error', `Failed to update user data: ${error}`);
     }
   };
 

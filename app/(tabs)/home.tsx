@@ -3872,10 +3872,7 @@ export default function HomeScreen() {
                       style={styles.listOptionItem}
                       onPress={() => {
                         setActiveCardOptionsMenu(null);
-                        setSelectedList(activeList);
-                        setLibraryView('detail');
-                        setIsEditMode(true);
-                        scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+                        setIsLibraryReorderMode(true);
                       }}
                       activeOpacity={0.7}
                     >
@@ -3928,6 +3925,18 @@ export default function HomeScreen() {
         <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
           <View style={styles.dropdownModalOverlay}>
             <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={() => {
+                  setActiveItemOptionsMenu(null);
+                  setIsEditMode(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
+              </TouchableOpacity>
+              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
               <TouchableOpacity
                 style={styles.listOptionItem}
                 onPress={() => {
