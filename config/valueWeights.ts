@@ -38,8 +38,9 @@ export const CATEGORY_WEIGHTS: Record<CauseCategory, number> = {
   religion: 1.0,      // Religious affiliations
   person: 1.0,        // Public figures and celebrities
   nation: 1.0,        // Countries and states
-  organization: 1.0,  // Organizations (sports leagues, foundations, etc.)
+  organization: 1.0,  // Organizations (foundations, advocacy groups, etc.)
   corporation: 1.0,   // Corporations and companies
+  sports: 1.0,        // Sports leagues and teams
 };
 
 /**

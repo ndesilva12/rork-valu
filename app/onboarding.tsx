@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Heart, Shield, Users, Building2, Globe, User, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { Heart, Shield, Users, Building2, Globe, User, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Trophy } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
 import {
   View,
@@ -25,6 +25,7 @@ const CATEGORY_ICONS: Record<CauseCategory, any> = {
   nation: Globe,
   organization: Shield,
   person: User,
+  sports: Trophy,
 };
 
 const CATEGORY_LABELS: Record<CauseCategory, string> = {
@@ -35,6 +36,7 @@ const CATEGORY_LABELS: Record<CauseCategory, string> = {
   nation: 'Places',
   organization: 'Organizations',
   person: 'People',
+  sports: 'Sports',
 };
 
 // Normalize category names to consolidate duplicates
@@ -47,8 +49,7 @@ const normalizeCategory = (category: string | undefined): CauseCategory => {
   const categoryMap: Record<string, CauseCategory> = {
     'people': 'person',
     'persons': 'person',
-    'sports': 'social_issue',
-    'sport': 'social_issue',
+    'sport': 'sports',
     'place': 'nation',
     'places': 'nation',
     'country': 'nation',

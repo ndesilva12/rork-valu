@@ -1,11 +1,12 @@
-export type CauseCategory = 
+export type CauseCategory =
   | 'social_issue'
   | 'religion'
   | 'ideology'
   | 'corporation'
   | 'nation'
   | 'organization'
-  | 'person';
+  | 'person'
+  | 'sports';
 
 export type AlignmentType = 'support' | 'avoid';
 

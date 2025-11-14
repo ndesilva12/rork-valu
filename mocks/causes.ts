@@ -108,10 +108,6 @@ export const AVAILABLE_VALUES: Record<CauseCategory, ValueItem[]> = {
     { id: 'india', name: 'India', category: 'nation' },
   ],
   organization: [
-    { id: 'nba', name: 'NBA', category: 'organization' },
-    { id: 'nfl', name: 'NFL', category: 'organization' },
-    { id: 'mlb', name: 'MLB', category: 'organization' },
-    { id: 'nhl', name: 'NHL', category: 'organization' },
     { id: 'the-clinton-foundation', name: 'The Clinton Foundation', category: 'organization' },
     { id: 'aclu', name: 'ACLU', category: 'organization' },
     { id: 'hollywood', name: 'Hollywood', category: 'organization' },
@@ -119,4 +115,15 @@ export const AVAILABLE_VALUES: Record<CauseCategory, ValueItem[]> = {
     { id: 'silicon-valley', name: 'Silicon Valley', category: 'organization' },
   ],
   corporation: [],
+  sports: [
+    { id: 'nba', name: 'NBA', category: 'sports' },
+    { id: 'nfl', name: 'NFL', category: 'sports' },
+    { id: 'mlb', name: 'MLB', category: 'sports' },
+    { id: 'nhl', name: 'NHL', category: 'sports' },
+    { id: 'mls', name: 'MLS', category: 'sports' },
+    { id: 'ufc', name: 'UFC', category: 'sports' },
+    { id: 'pga', name: 'PGA', category: 'sports' },
+    { id: 'formula-1', name: 'Formula 1', category: 'sports' },
+    { id: 'nascar', name: 'NASCAR', category: 'sports' },
+  ],
 };

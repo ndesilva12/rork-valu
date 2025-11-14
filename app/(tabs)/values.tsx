@@ -14,7 +14,7 @@ import {
   Pressable,
   TextInput,
 } from 'react-native';
-import { ChevronRight, ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Plus, List, Tag, X } from 'lucide-react-native';
+import { ChevronRight, ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Plus, List, Tag, X, Trophy } from 'lucide-react-native';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -33,6 +33,7 @@ const CATEGORY_ICONS: Record<string, any> = {
   nation: Globe,
   organization: Shield,
   person: UserIcon,
+  sports: Trophy,
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -43,6 +44,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   nation: 'Places',
   organization: 'Organizations',
   person: 'People',
+  sports: 'Sports',
 };
 
 // Normalize category names to consolidate duplicates
@@ -55,8 +57,7 @@ const normalizeCategory = (category: string | undefined): string => {
   const categoryMap: Record<string, string> = {
     'people': 'person',
     'persons': 'person',
-    'sports': 'social_issue',
-    'sport': 'social_issue',
+    'sport': 'sports',
     'place': 'nation',
     'places': 'nation',
     'country': 'nation',
