@@ -2,7 +2,7 @@
  * Admin Panel - Values Management
  *
  * Full CRUD operations for values/causes collection in Firebase
- * Uses aligned1-10 and unaligned1-10 format as stored in Firebase
+ * Stores aligned and unaligned brands as arrays (no limit on quantity)
  */
 import React, { useState, useEffect } from 'react';
 import {
