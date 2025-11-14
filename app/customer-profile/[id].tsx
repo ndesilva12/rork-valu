@@ -8,7 +8,7 @@
  * - Statistics (total spent, total saved, etc.)
  */
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Heart, DollarSign, TrendingUp, Receipt } from 'lucide-react-native';
+import { ArrowLeft, Heart, DollarSign, TrendingUp, Receipt, List } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -34,6 +34,8 @@ export default function CustomerProfileScreen() {
   const [customerProfile, setCustomerProfile] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [customerBrandsBusinesses, setCustomerBrandsBusinesses] = useState<{ type: 'brand' | 'business'; name: string; id: string }[]>([]);
+  const [customerMyListEntries, setCustomerMyListEntries] = useState<any[]>([]);
+  const [myListLoadCount, setMyListLoadCount] = useState(10);
   const [stats, setStats] = useState({
     totalSpent: 0,
     totalSaved: 0,
@@ -85,6 +87,7 @@ export default function CustomerProfileScreen() {
           });
 
           setCustomerBrandsBusinesses(brandsAndBusinesses);
+          setCustomerMyListEntries(personalList.entries);
         }
       } catch (error) {
         console.error('[CustomerProfile] Error loading customer lists:', error);
@@ -360,6 +363,71 @@ export default function CustomerProfileScreen() {
                   </View>
                 </View>
               ))}
+            </View>
+          </View>
+        )}
+
+        {/* Customer's My List */}
+        {customerMyListEntries.length > 0 && (
+          <View style={[styles.section, { backgroundColor: colors.backgroundSecondary }]}>
+            <View style={styles.sectionHeader}>
+              <List size={20} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                My List
+              </Text>
+            </View>
+            <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
+              Customer's personal list of brands and businesses ({customerMyListEntries.length} total)
+            </Text>
+            <View style={styles.myListContainer}>
+              {customerMyListEntries.slice(0, myListLoadCount).map((entry, index) => (
+                <View
+                  key={entry.id || index}
+                  style={[styles.myListItem, { backgroundColor: colors.background }]}
+                >
+                  <View style={styles.myListNumber}>
+                    <Text style={[styles.myListNumberText, { color: colors.textSecondary }]}>
+                      {index + 1}
+                    </Text>
+                  </View>
+                  <View style={styles.myListItemContent}>
+                    <Text style={[styles.myListItemName, { color: colors.text }]}>
+                      {entry.type === 'brand'
+                        ? entry.brandName
+                        : (entry.businessName || entry.name || 'Unknown')}
+                    </Text>
+                    <View style={styles.myListItemMeta}>
+                      <View style={[
+                        styles.myListItemBadge,
+                        { backgroundColor: entry.type === 'brand' ? colors.primaryLight + '20' : colors.success + '20' }
+                      ]}>
+                        <Text style={[
+                          styles.myListItemBadgeText,
+                          { color: entry.type === 'brand' ? colors.primary : colors.success }
+                        ]}>
+                          {entry.type === 'brand' ? 'Brand' : 'Business'}
+                        </Text>
+                      </View>
+                      {entry.brandCategory && (
+                        <Text style={[styles.myListItemCategory, { color: colors.textSecondary }]}>
+                          {entry.brandCategory}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              ))}
+              {myListLoadCount < customerMyListEntries.length && (
+                <TouchableOpacity
+                  style={[styles.loadMoreButton, { backgroundColor: colors.background, borderColor: colors.primary }]}
+                  onPress={() => setMyListLoadCount(myListLoadCount + 10)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.loadMoreButtonText, { color: colors.primary }]}>
+                    Load More ({customerMyListEntries.length - myListLoadCount} remaining)
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         )}
@@ -653,5 +721,65 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700' as const,
     textTransform: 'uppercase',
+  },
+  myListContainer: {
+    gap: 10,
+    marginTop: 8,
+  },
+  myListItem: {
+    flexDirection: 'row',
+    padding: 12,
+    borderRadius: 8,
+    gap: 12,
+    alignItems: 'center',
+  },
+  myListNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  myListNumberText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  myListItemContent: {
+    flex: 1,
+    gap: 4,
+  },
+  myListItemName: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  myListItemMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  myListItemBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  myListItemBadgeText: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase',
+  },
+  myListItemCategory: {
+    fontSize: 12,
+  },
+  loadMoreButton: {
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  loadMoreButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
 });
