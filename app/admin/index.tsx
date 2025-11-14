@@ -8,7 +8,7 @@
  * - Users
  */
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
 import { useUser } from '@clerk/clerk-expo';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -238,6 +238,8 @@ const styles = StyleSheet.create({
   },
   cardsContainer: {
     padding: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 16,
   },
   card: {
@@ -249,6 +251,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    minWidth: 280,
+    maxWidth: 400,
+    flex: 1,
+    flexBasis: Platform.OS === 'web' ? '30%' : '100%',
   },
   statsCard: {
     backgroundColor: '#f0f4f8',
