@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,16 @@ export default function ConsentScreen() {
   const { isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const [isChecked, setIsChecked] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    // Ensure ScrollView starts at the top on mobile
+    if (scrollViewRef.current) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+      }, 100);
+    }
+  }, []);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -44,6 +54,7 @@ export default function ConsentScreen() {
         backgroundColor={colors.background}
       />
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent]}
       >

@@ -391,9 +391,19 @@ export default function UsersManagement() {
       }
 
       const userRef = doc(db, 'users', editingUser.userId);
+      console.log('[Admin Users] User ref:', userRef.path);
+      console.log('[Admin Users] Data to save:', JSON.stringify(updatedData, null, 2));
 
       // Update all user fields
-      await updateDoc(userRef, updatedData);
+      try {
+        await updateDoc(userRef, updatedData);
+        console.log('[Admin Users] ✅ updateDoc completed successfully');
+      } catch (updateError: any) {
+        console.error('[Admin Users] ❌ updateDoc failed:', updateError);
+        console.error('[Admin Users] Error code:', updateError.code);
+        console.error('[Admin Users] Error message:', updateError.message);
+        throw updateError; // Re-throw to be caught by outer try-catch
+      }
 
       console.log('[Admin Users] User updated successfully');
 
@@ -410,12 +420,18 @@ export default function UsersManagement() {
           `User "${formName || editingUser.email}" updated successfully`
         );
       }
-    } catch (error) {
-      console.error('[Admin Users] Error updating user:', error);
+    } catch (error: any) {
+      console.error('[Admin Users] ❌ Error updating user:', error);
+      console.error('[Admin Users] Error type:', typeof error);
+      console.error('[Admin Users] Error code:', error?.code);
+      console.error('[Admin Users] Error message:', error?.message);
+      console.error('[Admin Users] Full error:', JSON.stringify(error, null, 2));
+
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
       if (Platform.OS === 'web') {
-        window.alert(`Failed to update user data: ${error}`);
+        window.alert(`Failed to update user data: ${errorMessage}\n\nCheck console for details.`);
       } else {
-        Alert.alert('Error', `Failed to update user data: ${error}`);
+        Alert.alert('Error', `Failed to update user data: ${errorMessage}`);
       }
     }
   };
