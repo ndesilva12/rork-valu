@@ -38,6 +38,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   ideology: 'Ideology',
   corporation: 'Corporations',
   nation: 'Places',
+  nations: 'Places',
+  places: 'Places', // Handle all variations
   organization: 'Organizations',
   person: 'People',
   people: 'People', // Handle both "person" and "people"
