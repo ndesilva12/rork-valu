@@ -1760,21 +1760,20 @@ export default function HomeScreen() {
 
                   return <SortableEntry key={entry.id} />;
                 })}
+                {myListLoadCount < userPersonalList.entries.length && (
+                  <TouchableOpacity
+                    style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
+                    onPress={() => setMyListLoadCount(myListLoadCount + 10)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                      Load More ({userPersonalList.entries.length - myListLoadCount} remaining)
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </SortableContext>
           </DndContext>
-            {myListLoadCount < userPersonalList.entries.length && (
-              <TouchableOpacity
-                style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
-                onPress={() => setMyListLoadCount(myListLoadCount + 10)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.loadMoreText, { color: colors.primary }]}>
-                  Load More ({userPersonalList.entries.length - myListLoadCount} remaining)
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
         </View>
       );
     }
