@@ -183,6 +183,7 @@ export default function HomeScreen() {
 
   // Library reorder and card options state
   const [isLibraryReorderMode, setIsLibraryReorderMode] = useState(false);
+  const [isMyListReorderMode, setIsMyListReorderMode] = useState(false);
   const [activeCardOptionsMenu, setActiveCardOptionsMenu] = useState<string | null>(null);
   const [showCardRenameModal, setShowCardRenameModal] = useState(false);
   const [cardRenameListId, setCardRenameListId] = useState<string | null>(null);
@@ -1194,7 +1195,11 @@ export default function HomeScreen() {
 
           <TouchableOpacity
             style={styles.subsectionTab}
-            onPress={() => setForYouSubsection('allLists')}
+            onPress={() => {
+              setForYouSubsection('allLists');
+              setLibraryView('overview');
+              setSelectedList(null);
+            }}
             activeOpacity={0.7}
           >
             <Text style={[
@@ -1400,8 +1405,7 @@ export default function HomeScreen() {
                     style={styles.listOptionItem}
                     onPress={() => {
                       setShowEditDropdown(false);
-                      setSelectedList(userPersonalList);
-                      toggleEditMode();
+                      setIsMyListReorderMode(true);
                     }}
                     activeOpacity={0.7}
                   >
@@ -1448,7 +1452,19 @@ export default function HomeScreen() {
 
       return (
         <View style={styles.section}>
-          {renderSubsectionHeader(
+          {/* Done button when in reorder mode */}
+          {isMyListReorderMode && (
+            <View style={styles.libraryHeader}>
+              <TouchableOpacity
+                onPress={() => setIsMyListReorderMode(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.libraryDoneButton, { color: colors.primary }]}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {!isMyListReorderMode && renderSubsectionHeader(
             userPersonalList.name,
             () => {
               setSelectedList(userPersonalList);
@@ -1458,7 +1474,7 @@ export default function HomeScreen() {
           )}
 
           {/* Three dot options dropdown for For You view */}
-          {showEditDropdown && (() => {
+          {!isMyListReorderMode && showEditDropdown && (() => {
             const fullNameFromFirebase = profile?.userDetails?.name;
             const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
             const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
@@ -1474,8 +1490,7 @@ export default function HomeScreen() {
                   style={styles.listOptionItem}
                   onPress={() => {
                     setShowEditDropdown(false);
-                    setSelectedList(userPersonalList);
-                    toggleEditMode();
+                    setIsMyListReorderMode(true);
                   }}
                   activeOpacity={0.7}
                 >
@@ -1515,69 +1530,141 @@ export default function HomeScreen() {
               // Render brand entries
               if (entry.type === 'brand' && 'brandId' in entry) {
                 return (
-                  <TouchableOpacity
-                    key={entry.id || index}
-                    style={[
-                      styles.brandCard,
-                      { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
-                    ]}
-                    onPress={() => router.push(`/brand/${entry.brandId}`)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.brandCardInner}>
-                      <View style={styles.brandLogoContainer}>
-                        <Image
-                          source={{ uri: entry.logoUrl || getLogoUrl(entry.website || getBrandWebsite(entry.brandId) || '') }}
-                          style={styles.brandLogo}
-                          contentFit="cover"
-                          transition={200}
-                          cachePolicy="memory-disk"
-                        />
+                  <View key={entry.id || index} style={styles.myListEntryRow}>
+                    <TouchableOpacity
+                      style={[
+                        styles.brandCard,
+                        { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                      ]}
+                      onPress={() => !isMyListReorderMode && router.push(`/brand/${entry.brandId}`)}
+                      activeOpacity={0.7}
+                      disabled={isMyListReorderMode}
+                    >
+                      <View style={styles.brandCardInner}>
+                        <View style={styles.brandLogoContainer}>
+                          <Image
+                            source={{ uri: entry.logoUrl || getLogoUrl(entry.website || getBrandWebsite(entry.brandId) || '') }}
+                            style={styles.brandLogo}
+                            contentFit="cover"
+                            transition={200}
+                            cachePolicy="memory-disk"
+                          />
+                        </View>
+                        <View style={styles.brandCardContent}>
+                          <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
+                            {entry.brandName || getBrandName(entry.brandId)}
+                          </Text>
+                          <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                            {entry.brandCategory || 'Brand'}
+                          </Text>
+                        </View>
                       </View>
-                      <View style={styles.brandCardContent}>
-                        <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
-                          {entry.brandName || getBrandName(entry.brandId)}
-                        </Text>
-                        <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                          {entry.brandCategory || 'Brand'}
-                        </Text>
+                    </TouchableOpacity>
+                    {isMyListReorderMode && (
+                      <View style={styles.listCardRearrangeButtons}>
+                        <TouchableOpacity
+                          onPress={async () => {
+                            setSelectedList(userPersonalList);
+                            await handleMoveEntryUp(index);
+                          }}
+                          disabled={index === 0}
+                          style={styles.rearrangeButton}
+                          activeOpacity={0.7}
+                        >
+                          <ChevronUp
+                            size={20}
+                            color={index === 0 ? colors.textSecondary : colors.text}
+                            strokeWidth={2}
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={async () => {
+                            setSelectedList(userPersonalList);
+                            await handleMoveEntryDown(index);
+                          }}
+                          disabled={index === userPersonalList.entries.slice(0, myListLoadCount).length - 1}
+                          style={styles.rearrangeButton}
+                          activeOpacity={0.7}
+                        >
+                          <ChevronDown
+                            size={20}
+                            color={index === userPersonalList.entries.slice(0, myListLoadCount).length - 1 ? colors.textSecondary : colors.text}
+                            strokeWidth={2}
+                          />
+                        </TouchableOpacity>
                       </View>
-                    </View>
-                  </TouchableOpacity>
+                    )}
+                  </View>
                 );
               }
               // Render business entries
               else if (entry.type === 'business' && 'businessId' in entry) {
                 return (
-                  <TouchableOpacity
-                    key={entry.id || index}
-                    style={[
-                      styles.brandCard,
-                      { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
-                    ]}
-                    onPress={() => handleBusinessPress(entry.businessId)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.brandCardInner}>
-                      <View style={styles.brandLogoContainer}>
-                        <Image
-                          source={{ uri: entry.logoUrl || getLogoUrl(entry.website || '') }}
-                          style={styles.brandLogo}
-                          contentFit="cover"
-                          transition={200}
-                          cachePolicy="memory-disk"
-                        />
+                  <View key={entry.id || index} style={styles.myListEntryRow}>
+                    <TouchableOpacity
+                      style={[
+                        styles.brandCard,
+                        { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                      ]}
+                      onPress={() => !isMyListReorderMode && handleBusinessPress(entry.businessId)}
+                      activeOpacity={0.7}
+                      disabled={isMyListReorderMode}
+                    >
+                      <View style={styles.brandCardInner}>
+                        <View style={styles.brandLogoContainer}>
+                          <Image
+                            source={{ uri: entry.logoUrl || getLogoUrl(entry.website || '') }}
+                            style={styles.brandLogo}
+                            contentFit="cover"
+                            transition={200}
+                            cachePolicy="memory-disk"
+                          />
+                        </View>
+                        <View style={styles.brandCardContent}>
+                          <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
+                            {entry.businessName || (entry as any).name || getBusinessName(entry.businessId)}
+                          </Text>
+                          <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                            {entry.businessCategory || (entry as any).category || 'Local Business'}
+                          </Text>
+                        </View>
                       </View>
-                      <View style={styles.brandCardContent}>
-                        <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
-                          {entry.businessName || (entry as any).name || getBusinessName(entry.businessId)}
-                        </Text>
-                        <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                          {entry.businessCategory || (entry as any).category || 'Local Business'}
-                        </Text>
+                    </TouchableOpacity>
+                    {isMyListReorderMode && (
+                      <View style={styles.listCardRearrangeButtons}>
+                        <TouchableOpacity
+                          onPress={async () => {
+                            setSelectedList(userPersonalList);
+                            await handleMoveEntryUp(index);
+                          }}
+                          disabled={index === 0}
+                          style={styles.rearrangeButton}
+                          activeOpacity={0.7}
+                        >
+                          <ChevronUp
+                            size={20}
+                            color={index === 0 ? colors.textSecondary : colors.text}
+                            strokeWidth={2}
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={async () => {
+                            setSelectedList(userPersonalList);
+                            await handleMoveEntryDown(index);
+                          }}
+                          disabled={index === userPersonalList.entries.slice(0, myListLoadCount).length - 1}
+                          style={styles.rearrangeButton}
+                          activeOpacity={0.7}
+                        >
+                          <ChevronDown
+                            size={20}
+                            color={index === userPersonalList.entries.slice(0, myListLoadCount).length - 1 ? colors.textSecondary : colors.text}
+                            strokeWidth={2}
+                          />
+                        </TouchableOpacity>
                       </View>
-                    </View>
-                  </TouchableOpacity>
+                    )}
+                  </View>
                 );
               }
               return null;
@@ -3785,7 +3872,10 @@ export default function HomeScreen() {
                       style={styles.listOptionItem}
                       onPress={() => {
                         setActiveCardOptionsMenu(null);
-                        setIsLibraryReorderMode(true);
+                        setSelectedList(activeList);
+                        setLibraryView('detail');
+                        setIsEditMode(true);
+                        scrollViewRef.current?.scrollTo({ y: 0, animated: false });
                       }}
                       activeOpacity={0.7}
                     >
@@ -4225,10 +4315,7 @@ export default function HomeScreen() {
                 style={[styles.modalButton, { backgroundColor: colors.backgroundSecondary, marginTop: 12 }]}
                 onPress={() => {
                   setShowMyListOptionsModal(false);
-                  setSelectedList(userPersonalList);
-                  setLibraryView('detail');
-                  setIsEditMode(true);
-                  scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+                  setIsMyListReorderMode(true);
                 }}
                 activeOpacity={0.7}
               >
@@ -5640,7 +5727,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 6,
     marginTop: 4,
     gap: 20,
   },
@@ -5854,6 +5941,11 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
   },
   brandsContainer: {
+    gap: 8,
+  },
+  myListEntryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   brandCard: {
