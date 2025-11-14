@@ -258,7 +258,7 @@ export default function DataScreen() {
         <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
           <View style={[styles.header, { backgroundColor: colors.background }]}>
             <Image
-              source={require('@/assets/images/upright12dwc.png')}
+              source={require('@/assets/images/um2c.png')}
               style={styles.headerLogo}
               resizeMode="contain"
             />
@@ -284,7 +284,7 @@ export default function DataScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright12dwc.png')}
+            source={require('@/assets/images/um2c.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
