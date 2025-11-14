@@ -986,7 +986,7 @@ export default function ValuesScreen() {
                 onPress={() => handleValueAction('view')}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.valueActionButtonText, { color: colors.text }]}>
+                <Text style={[styles.valueActionButtonText, { color: colors.black }]}>
                   View Value
                 </Text>
               </TouchableOpacity>
