@@ -1600,6 +1600,11 @@ export default function HomeScreen() {
 
     // All Lists subsection - shows all user lists from old My Library
     if (forYouSubsection === 'allLists') {
+      // If viewing a list detail, don't show the "All Lists" header
+      if (libraryView === 'detail') {
+        return renderMyLibraryView();
+      }
+
       return (
         <View style={styles.section}>
           {renderSubsectionHeader(
