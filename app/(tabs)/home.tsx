@@ -2816,7 +2816,20 @@ export default function HomeScreen() {
             <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
           </TouchableOpacity>
 
+          {/* Done button when in edit/reorder mode */}
+          {isEditMode && (
+            <View style={styles.libraryHeader}>
+              <TouchableOpacity
+                onPress={() => setIsEditMode(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.libraryDoneButton, { color: colors.primary }]}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Title row with 3-dot menu and optional Add button */}
+          {!isEditMode && (
           <View style={styles.listDetailTitleRow}>
             <View style={styles.listDetailTitleContainer}>
               <Text style={[styles.listDetailTitle, { color: colors.text }]}>{list.name}</Text>
@@ -2843,16 +2856,17 @@ export default function HomeScreen() {
               </TouchableOpacity>
             )}
           </View>
+          )}
 
           {/* Created by text */}
-          {list.creatorName && (
+          {!isEditMode && list.creatorName && (
             <Text style={[styles.listCreatedBy, { color: colors.textSecondary }]}>
               created by {list.creatorName}
             </Text>
           )}
 
           {/* Description below title */}
-          {list.description && (
+          {!isEditMode && list.description && (
             <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
               {list.description}
             </Text>
@@ -2860,7 +2874,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Three dot options dropdown */}
-        {showEditDropdown && (() => {
+        {!isEditMode && showEditDropdown && (() => {
           // Check if this is the user's personal list
           const fullNameFromFirebase = profile?.userDetails?.name;
           const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
@@ -4095,7 +4109,9 @@ export default function HomeScreen() {
                 onPress={() => {
                   setShowMyListOptionsModal(false);
                   setSelectedList(userPersonalList);
-                  toggleEditMode();
+                  setLibraryView('detail');
+                  setIsEditMode(true);
+                  scrollViewRef.current?.scrollTo({ y: 0, animated: false });
                 }}
                 activeOpacity={0.7}
               >
