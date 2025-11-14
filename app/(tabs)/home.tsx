@@ -1543,7 +1543,7 @@ export default function HomeScreen() {
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
-            onDragEnd={(event) => {
+            onDragEnd={async (event) => {
               const { active, over } = event;
               if (!over || active.id === over.id) return;
 
@@ -1552,19 +1552,25 @@ export default function HomeScreen() {
 
               if (oldIndex === -1 || newIndex === -1) return;
 
-              const newEntries = [...userPersonalList.entries];
-              const [movedItem] = newEntries.splice(oldIndex, 1);
-              newEntries.splice(newIndex, 0, movedItem);
+              // Reorder locally first for immediate feedback
+              const newEntries = arrayMove(userPersonalList.entries, oldIndex, newIndex);
+              setUserPersonalList({ ...userPersonalList, entries: newEntries });
 
-              setSelectedList(userPersonalList);
-              reorderListEntries(userPersonalList.id, newEntries).catch((error) => {
+              // Save to Firebase
+              try {
+                await reorderListEntries(userPersonalList.id, newEntries);
+                // Reload to sync
+                await reloadPersonalList();
+              } catch (error) {
                 console.error('[Home] Error reordering My List entries:', error);
+                // Revert on error
+                setUserPersonalList(userPersonalList);
                 if (Platform.OS === 'web') {
                   window.alert('Could not reorder items. Please try again.');
                 } else {
                   Alert.alert('Error', 'Could not reorder items. Please try again.');
                 }
-              });
+              }
             }}
           >
             <SortableContext
@@ -7172,6 +7178,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     position: 'relative',
+    marginBottom: 12,
   },
   libraryTitle: {
     fontSize: 20,
