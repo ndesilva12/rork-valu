@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { collection, getDocs, doc, updateDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getCustomFields, CustomField } from '@/services/firebase/customFieldsService';
 import { Picker } from '@react-native-picker/picker';
@@ -436,6 +436,86 @@ export default function UsersManagement() {
     }
   };
 
+  const handleDeleteUser = async (user: UserData) => {
+    // Confirm deletion
+    const confirmMessage = `Are you sure you want to delete user "${user.userDetails?.name || user.email}"?\n\nThis will:\n- Delete all Firebase data for this user\n- Delete their lists, transactions, etc.\n\nThis action CANNOT be undone!\n\nNote: If this user still exists in Clerk, you'll need to delete them there separately.`;
+
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm(confirmMessage)
+      : await new Promise((resolve) => {
+          Alert.alert(
+            'Delete User',
+            confirmMessage,
+            [
+              { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
+              { text: 'Delete', onPress: () => resolve(true), style: 'destructive' }
+            ]
+          );
+        });
+
+    if (!confirmed) return;
+
+    try {
+      console.log('[Admin Users] Deleting user:', user.userId);
+
+      // Delete user document from Firebase
+      const userRef = doc(db, 'users', user.userId);
+      await deleteDoc(userRef);
+      console.log('[Admin Users] ✅ User document deleted from Firebase');
+
+      // Delete user's lists
+      try {
+        const listsRef = collection(db, 'userLists');
+        const listsQuery = query(listsRef, where('userId', '==', user.userId));
+        const listsSnapshot = await getDocs(listsQuery);
+
+        const deleteListPromises = listsSnapshot.docs.map(listDoc =>
+          deleteDoc(doc(db, 'userLists', listDoc.id))
+        );
+        await Promise.all(deleteListPromises);
+        console.log('[Admin Users] ✅ Deleted', listsSnapshot.docs.length, 'user lists');
+      } catch (listError) {
+        console.error('[Admin Users] Error deleting lists:', listError);
+      }
+
+      // Delete user's transactions
+      try {
+        const transactionsRef = collection(db, 'transactions');
+        const transactionsQuery = query(transactionsRef, where('userId', '==', user.userId));
+        const transactionsSnapshot = await getDocs(transactionsQuery);
+
+        const deleteTransactionPromises = transactionsSnapshot.docs.map(txDoc =>
+          deleteDoc(doc(db, 'transactions', txDoc.id))
+        );
+        await Promise.all(deleteTransactionPromises);
+        console.log('[Admin Users] ✅ Deleted', transactionsSnapshot.docs.length, 'transactions');
+      } catch (txError) {
+        console.error('[Admin Users] Error deleting transactions:', txError);
+      }
+
+      // Reload users list
+      await loadUsers();
+
+      // Show success message
+      const successMessage = `User deleted successfully!\n\nReminder: If this user still exists in Clerk, you'll need to delete them manually at:\nhttps://dashboard.clerk.com`;
+
+      if (Platform.OS === 'web') {
+        window.alert(successMessage);
+      } else {
+        Alert.alert('Success', successMessage);
+      }
+    } catch (error: any) {
+      console.error('[Admin Users] ❌ Error deleting user:', error);
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
+
+      if (Platform.OS === 'web') {
+        window.alert(`Failed to delete user: ${errorMessage}`);
+      } else {
+        Alert.alert('Error', `Failed to delete user: ${errorMessage}`);
+      }
+    }
+  };
+
   const filteredUsers = users.filter(
     (user) =>
       (user.userDetails?.name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -507,12 +587,20 @@ export default function UsersManagement() {
                       <Text style={styles.userLocation}>📍 {user.userDetails.location}</Text>
                     )}
                   </View>
-                  <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={() => openEditModal(user)}
-                  >
-                    <Text style={styles.editButtonText}>Edit All Fields</Text>
-                  </TouchableOpacity>
+                  <View style={styles.userActions}>
+                    <TouchableOpacity
+                      style={styles.editButton}
+                      onPress={() => openEditModal(user)}
+                    >
+                      <Text style={styles.editButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => handleDeleteUser(user)}
+                    >
+                      <Text style={styles.deleteButtonText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 {/* Quick Preview */}
@@ -1039,6 +1127,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
   },
+  userActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   editButton: {
     backgroundColor: '#007bff',
     paddingHorizontal: 12,
@@ -1046,6 +1138,17 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   editButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  deleteButton: {
+    backgroundColor: '#dc3545',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  deleteButtonText: {
     color: '#fff',
     fontSize: 13,
     fontWeight: '600',
