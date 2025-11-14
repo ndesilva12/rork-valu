@@ -34,6 +34,7 @@ const CATEGORY_ICONS: Record<string, any> = {
   organization: Shield,
   person: UserIcon,
   sports: Trophy,
+  lifestyle: Heart,
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -44,16 +45,45 @@ const CATEGORY_LABELS: Record<string, string> = {
   nation: 'Places',
   organization: 'Organizations',
   person: 'People',
+  people: 'People', // Handle both "person" and "people"
   sports: 'Sports',
+  lifestyle: 'Lifestyle',
 };
 
+// Normalize category names to handle case variations and synonyms
+const normalizeCategory = (category: string): string => {
+  const lower = category.toLowerCase().trim();
+
+  // Handle synonyms and variations
+  if (lower === 'person' || lower === 'people') return 'person';
+  if (lower === 'social_issue' || lower === 'social issues') return 'social_issue';
+  if (lower === 'nation' || lower === 'nations' || lower === 'places') return 'nation';
+
+  return lower;
+};
+
+// Define category display order
+const CATEGORY_ORDER = [
+  'ideology',
+  'social_issue',
+  'person',
+  'lifestyle',
+  'nation',
+  'religion',
+  'organization',
+  'sports',
+];
 
 // Helper to get category icon, with fallback
-const getCategoryIcon = (category: string) => CATEGORY_ICONS[category] || Tag;
+const getCategoryIcon = (category: string) => {
+  const normalized = normalizeCategory(category);
+  return CATEGORY_ICONS[normalized] || Tag;
+};
 
 // Helper to get category label, with fallback to capitalized category name
 const getCategoryLabel = (category: string) => {
-  if (CATEGORY_LABELS[category]) return CATEGORY_LABELS[category];
+  const normalized = normalizeCategory(category);
+  if (CATEGORY_LABELS[normalized]) return CATEGORY_LABELS[normalized];
   // Capitalize and format the category name (e.g., "sports" -> "Sports", "social_issue" -> "Social Issue")
   return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
@@ -97,23 +127,23 @@ export default function ValuesScreen() {
   const [newListDescription, setNewListDescription] = useState('');
 
   // Transform Firebase values into the format expected by the UI
-  // Dynamically build categories based on what's in Firebase
+  // Dynamically build categories based on what's in Firebase, using NORMALIZED categories
   const availableValues = useMemo(() => {
     const valuesByCategory: Record<string, any[]> = {};
 
     firebaseValues.forEach(value => {
-      // Use category directly from Firebase (no normalization)
-      const category = value.category || 'other';
+      // Normalize the category to handle case variations and synonyms
+      const normalizedCategory = normalizeCategory(value.category || 'other');
 
       // Initialize category array if it doesn't exist
-      if (!valuesByCategory[category]) {
-        valuesByCategory[category] = [];
+      if (!valuesByCategory[normalizedCategory]) {
+        valuesByCategory[normalizedCategory] = [];
       }
 
-      valuesByCategory[category].push({
+      valuesByCategory[normalizedCategory].push({
         id: value.id,
         name: value.name,
-        category: category,
+        category: normalizedCategory,
       });
     });
 
@@ -139,13 +169,11 @@ export default function ValuesScreen() {
     unselectedValuesByCategory[category] = values.filter(v => !selectedValueIds.has(v.id));
   });
 
-  // Get all categories sorted (predefined ones first, then custom ones alphabetically)
-  const predefinedCategories = ['ideology', 'person', 'social_issue', 'religion', 'nation', 'organization'];
+  // Get categories in the specified order, then add any additional categories alphabetically
   const allCategories = Object.keys(unselectedValuesByCategory);
-  const sortedCategories = [
-    ...predefinedCategories.filter(cat => allCategories.includes(cat)),
-    ...allCategories.filter(cat => !predefinedCategories.includes(cat)).sort(),
-  ];
+  const knownCategories = CATEGORY_ORDER.filter(cat => allCategories.includes(cat));
+  const unknownCategories = allCategories.filter(cat => !CATEGORY_ORDER.includes(cat)).sort();
+  const sortedCategories = [...knownCategories, ...unknownCategories];
 
   const toggleCategoryExpanded = (category: string) => {
     setExpandedCategories(prev => {

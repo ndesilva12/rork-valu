@@ -40,16 +40,45 @@ const CATEGORY_LABELS: Record<string, string> = {
   nation: 'Places',
   organization: 'Organizations',
   person: 'People',
+  people: 'People', // Handle both "person" and "people"
   sports: 'Sports',
   lifestyle: 'Lifestyle',
 };
 
+// Normalize category names to handle case variations and synonyms
+const normalizeCategory = (category: string): string => {
+  const lower = category.toLowerCase().trim();
+
+  // Handle synonyms and variations
+  if (lower === 'person' || lower === 'people') return 'person';
+  if (lower === 'social_issue' || lower === 'social issues') return 'social_issue';
+  if (lower === 'nation' || lower === 'nations' || lower === 'places') return 'nation';
+
+  return lower;
+};
+
+// Define category display order
+const CATEGORY_ORDER = [
+  'ideology',
+  'social_issue',
+  'person',
+  'lifestyle',
+  'nation',
+  'religion',
+  'organization',
+  'sports',
+];
+
 // Helper to get icon for any category
-const getCategoryIcon = (category: string) => CATEGORY_ICONS[category] || Heart;
+const getCategoryIcon = (category: string) => {
+  const normalized = normalizeCategory(category);
+  return CATEGORY_ICONS[normalized] || Heart;
+};
 
 // Helper to get label for any category (with auto-capitalize fallback)
 const getCategoryLabel = (category: string) => {
-  if (CATEGORY_LABELS[category]) return CATEGORY_LABELS[category];
+  const normalized = normalizeCategory(category);
+  if (CATEGORY_LABELS[normalized]) return CATEGORY_LABELS[normalized];
   // Auto-capitalize: "some_category" -> "Some Category"
   return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
@@ -80,18 +109,22 @@ export default function OnboardingScreen() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const insets = useSafeAreaInsets();
 
-  // Group values by category from Firebase
+  // Group values by NORMALIZED category from Firebase
   const valuesByCategory = firebaseValues.reduce((acc, value) => {
-    const category = value.category || 'other';
-    if (!acc[category]) {
-      acc[category] = [];
+    const normalizedCategory = normalizeCategory(value.category || 'other');
+    if (!acc[normalizedCategory]) {
+      acc[normalizedCategory] = [];
     }
-    acc[category].push(value);
+    acc[normalizedCategory].push(value);
     return acc;
   }, {} as Record<string, typeof firebaseValues>);
 
-  // Get sorted categories
-  const categories = Object.keys(valuesByCategory).sort();
+  // Get categories in the specified order, then add any additional categories alphabetically
+  const knownCategories = CATEGORY_ORDER.filter(cat => valuesByCategory[cat]);
+  const unknownCategories = Object.keys(valuesByCategory)
+    .filter(cat => !CATEGORY_ORDER.includes(cat))
+    .sort();
+  const categories = [...knownCategories, ...unknownCategories];
 
   // Business accounts need minimum 3 values, personal accounts need 5
   const isBusiness = profile.accountType === 'business';
