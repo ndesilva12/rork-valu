@@ -339,11 +339,21 @@ export default function HomeScreen() {
         console.log('[Home] Looking for personal list with name:', userName);
         console.log('[Home] Available lists:', lists.map(l => l.name));
 
+        // Try to find list by exact name match first
         let personalList = lists.find(list => list.name === userName);
 
-        // If list doesn't exist, create it
-        if (!personalList && userName !== 'My List') {
-          console.log('[Home] Personal list not found, creating it...');
+        // If not found by name, use the oldest list (first created) as the personal list
+        // This ensures we don't create duplicates when user names change or are fetched differently
+        if (!personalList && lists.length > 0) {
+          // Sort by creation date and take the oldest
+          const sortedByAge = [...lists].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+          personalList = sortedByAge[0];
+          console.log('[Home] Using oldest list as personal list:', personalList.name);
+        }
+
+        // Only create a new list if user has NO lists at all
+        if (!personalList) {
+          console.log('[Home] No lists found, creating personal list...');
           try {
             const newListId = await createList(clerkUser.id, userName, 'Your personal collection of favorite businesses.', userName);
             // Reload lists to get the newly created one

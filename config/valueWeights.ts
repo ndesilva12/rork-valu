@@ -32,14 +32,18 @@ export const DEFAULT_WEIGHT = 1.0;
  * - Set person to 0.5 if celebrity opinions matter less
  * - Set ideology to 1.5 if core beliefs should weigh more
  */
-export const CATEGORY_WEIGHTS: Record<CauseCategory, number> = {
+// Category weights - supports any category from Firebase with common defaults
+export const CATEGORY_WEIGHTS: Record<string, number> = {
   social_issue: 1.0,  // Social issues (abortion, gun rights, climate, etc.)
   ideology: 1.0,      // Political/philosophical ideologies
   religion: 1.0,      // Religious affiliations
   person: 1.0,        // Public figures and celebrities
   nation: 1.0,        // Countries and states
-  organization: 1.0,  // Organizations (sports leagues, foundations, etc.)
+  organization: 1.0,  // Organizations (foundations, advocacy groups, etc.)
   corporation: 1.0,   // Corporations and companies
+  sports: 1.0,        // Sports leagues and teams
+  lifestyle: 1.0,     // Lifestyle choices
+  // Any other categories from Firebase will use DEFAULT_WEIGHT (1.0)
 };
 
 /**

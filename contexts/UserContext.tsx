@@ -254,17 +254,26 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
         // Create user's personal list with their name
         try {
-          // Try multiple sources for full name
-          const fullNameFromClerk = clerkUser.unsafeMetadata?.fullName as string;
-          const firstNameLastName = clerkUser.firstName && clerkUser.lastName
-            ? `${clerkUser.firstName} ${clerkUser.lastName}`
-            : '';
-          const firstName = clerkUser.firstName;
-          const userName = fullNameFromClerk || firstNameLastName || firstName || 'My List';
+          // Check if personal list already exists before creating
+          const existingLists = await getUserLists(clerkUser.id);
+          console.log('[UserContext] Checking existing lists:', existingLists.map(l => l.name));
 
-          console.log(`[UserContext] Creating personal list: "${userName}"`);
-          await createList(clerkUser.id, userName, 'Your personal collection.');
-          console.log('[UserContext] ✅ Personal list created successfully');
+          if (existingLists.length === 0) {
+            // No lists exist yet - create the personal list
+            // Try multiple sources for full name
+            const fullNameFromClerk = clerkUser.unsafeMetadata?.fullName as string;
+            const firstNameLastName = clerkUser.firstName && clerkUser.lastName
+              ? `${clerkUser.firstName} ${clerkUser.lastName}`
+              : '';
+            const firstName = clerkUser.firstName;
+            const userName = fullNameFromClerk || firstNameLastName || firstName || 'My List';
+
+            console.log(`[UserContext] Creating personal list: "${userName}"`);
+            await createList(clerkUser.id, userName, 'Your personal collection.');
+            console.log('[UserContext] ✅ Personal list created successfully');
+          } else {
+            console.log('[UserContext] Personal list already exists, skipping creation');
+          }
         } catch (listError) {
           console.error('[UserContext] ❌ Failed to create personal list:', listError);
           // Don't fail onboarding if list creation fails

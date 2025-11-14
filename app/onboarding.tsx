@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Heart, Shield, Users, Building2, Globe, User, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { Heart, Shield, Users, Building2, Globe, User, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Trophy } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
 import {
   View,
@@ -14,10 +14,11 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
-import { AVAILABLE_VALUES } from '@/mocks/causes';
+import { useData } from '@/contexts/DataContext';
 import { Cause, CauseCategory, AlignmentType } from '@/types';
 
-const CATEGORY_ICONS: Record<CauseCategory, any> = {
+// Icon mappings for common categories (with fallbacks)
+const CATEGORY_ICONS: Record<string, any> = {
   social_issue: Heart,
   religion: Building2,
   ideology: Users,
@@ -25,49 +26,65 @@ const CATEGORY_ICONS: Record<CauseCategory, any> = {
   nation: Globe,
   organization: Shield,
   person: User,
+  sports: Trophy,
+  lifestyle: Heart,
+  // Fallback will use Heart for unknown categories
 };
 
-const CATEGORY_LABELS: Record<CauseCategory, string> = {
+// Label mappings for common categories (with dynamic fallback)
+const CATEGORY_LABELS: Record<string, string> = {
   social_issue: 'Social Issues',
   religion: 'Religion',
   ideology: 'Ideology',
   corporation: 'Corporations',
   nation: 'Places',
+  nations: 'Places',
+  places: 'Places', // Handle all variations
   organization: 'Organizations',
   person: 'People',
+  people: 'People', // Handle both "person" and "people"
+  sports: 'Sports',
+  lifestyle: 'Lifestyle',
 };
 
-// Normalize category names to consolidate duplicates
-const normalizeCategory = (category: string | undefined): CauseCategory => {
-  if (!category) return 'social_issue';
+// Normalize category names to handle case variations and synonyms
+const normalizeCategory = (category: string): string => {
+  const lower = category.toLowerCase().trim();
 
-  const normalized = category.toLowerCase().trim();
+  // Handle synonyms and variations
+  if (lower === 'person' || lower === 'people') return 'person';
+  if (lower === 'social_issue' || lower === 'social issues') return 'social_issue';
+  if (lower === 'nation' || lower === 'nations' || lower === 'places') return 'nation';
 
-  // Map duplicate/variant category names to canonical ones
-  const categoryMap: Record<string, CauseCategory> = {
-    'people': 'person',
-    'persons': 'person',
-    'sports': 'social_issue',
-    'sport': 'social_issue',
-    'place': 'nation',
-    'places': 'nation',
-    'country': 'nation',
-    'countries': 'nation',
-    'organizations': 'organization',
-    'orgs': 'organization',
-    'company': 'corporation',
-    'companies': 'corporation',
-    'corporations': 'corporation',
-    'business': 'corporation',
-    'businesses': 'corporation',
-    'ideologies': 'ideology',
-    'religions': 'religion',
-    'social_issues': 'social_issue',
-    'social': 'social_issue',
-  };
-
-  return (categoryMap[normalized] || normalized) as CauseCategory;
+  return lower;
 };
+
+// Define category display order
+const CATEGORY_ORDER = [
+  'ideology',
+  'social_issue',
+  'person',
+  'lifestyle',
+  'nation',
+  'religion',
+  'organization',
+  'sports',
+];
+
+// Helper to get icon for any category
+const getCategoryIcon = (category: string) => {
+  const normalized = normalizeCategory(category);
+  return CATEGORY_ICONS[normalized] || Heart;
+};
+
+// Helper to get label for any category (with auto-capitalize fallback)
+const getCategoryLabel = (category: string) => {
+  const normalized = normalizeCategory(category);
+  if (CATEGORY_LABELS[normalized]) return CATEGORY_LABELS[normalized];
+  // Auto-capitalize: "some_category" -> "Some Category"
+  return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+};
+
 
 interface SelectedValue {
   id: string;
@@ -80,6 +97,7 @@ interface SelectedValue {
 export default function OnboardingScreen() {
   const router = useRouter();
   const { addCauses, profile, isDarkMode, clerkUser, isLoading } = useUser();
+  const { values: firebaseValues } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
   const [selectedValues, setSelectedValues] = useState<SelectedValue[]>(() => {
     return profile.causes.map(c => ({
@@ -90,8 +108,25 @@ export default function OnboardingScreen() {
       description: c.description,
     }));
   });
-  const [expandedCategories, setExpandedCategories] = useState<Set<CauseCategory>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const insets = useSafeAreaInsets();
+
+  // Group values by NORMALIZED category from Firebase
+  const valuesByCategory = firebaseValues.reduce((acc, value) => {
+    const normalizedCategory = normalizeCategory(value.category || 'other');
+    if (!acc[normalizedCategory]) {
+      acc[normalizedCategory] = [];
+    }
+    acc[normalizedCategory].push(value);
+    return acc;
+  }, {} as Record<string, typeof firebaseValues>);
+
+  // Get categories in the specified order, then add any additional categories alphabetically
+  const knownCategories = CATEGORY_ORDER.filter(cat => valuesByCategory[cat]);
+  const unknownCategories = Object.keys(valuesByCategory)
+    .filter(cat => !CATEGORY_ORDER.includes(cat))
+    .sort();
+  const categories = [...knownCategories, ...unknownCategories];
 
   // Business accounts need minimum 3 values, personal accounts need 5
   const isBusiness = profile.accountType === 'business';
@@ -111,20 +146,20 @@ export default function OnboardingScreen() {
     }
   }, [profile.causes]);
 
-  const toggleValue = (valueId: string, name: string, category: CauseCategory, description?: string) => {
+  const toggleValue = (valueId: string, name: string, category: string, description?: string) => {
     setSelectedValues(prev => {
       const existing = prev.find(v => v.id === valueId);
-      
+
       if (!existing) {
         return [...prev, { id: valueId, name, category, type: 'support', description }];
       }
-      
+
       if (existing.type === 'support') {
-        return prev.map(v => 
+        return prev.map(v =>
           v.id === valueId ? { ...v, type: 'avoid' as AlignmentType } : v
         );
       }
-      
+
       return prev.filter(v => v.id !== valueId);
     });
   };
@@ -157,7 +192,7 @@ export default function OnboardingScreen() {
     }
   };
 
-  const toggleCategoryExpanded = (category: CauseCategory) => {
+  const toggleCategoryExpanded = (category: string) => {
     setExpandedCategories(prev => {
       const next = new Set(prev);
       if (next.has(category)) {
@@ -204,20 +239,20 @@ export default function OnboardingScreen() {
         </View>
 
         <View style={styles.causesContainer}>
-          {(['ideology', 'person', 'social_issue', 'religion', 'nation', 'organization'] as CauseCategory[]).map((category) => {
-            const values = AVAILABLE_VALUES[category];
+          {categories.map((category) => {
+            const values = valuesByCategory[category];
             if (!values || values.length === 0) return null;
-            const Icon = CATEGORY_ICONS[category as CauseCategory];
+            const Icon = getCategoryIcon(category);
             const isExpanded = expandedCategories.has(category);
             const displayedValues = isExpanded ? values : values.slice(0, 10);
             const hasMore = values.length > 10;
-            
+
             return (
               <View key={category} style={styles.categorySection}>
                 <View style={styles.categoryHeader}>
                   <Icon size={20} color={colors.textSecondary} strokeWidth={2} />
                   <Text style={[styles.categoryTitle, { color: colors.text }]}>
-                    {CATEGORY_LABELS[category as CauseCategory]}
+                    {getCategoryLabel(category)}
                   </Text>
                 </View>
                 <View style={styles.valuesGrid}>

@@ -14,7 +14,7 @@ import {
   Pressable,
   TextInput,
 } from 'react-native';
-import { ChevronRight, ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Plus, List, Tag, X } from 'lucide-react-native';
+import { ChevronRight, ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Plus, List, Tag, X, Trophy } from 'lucide-react-native';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -33,6 +33,8 @@ const CATEGORY_ICONS: Record<string, any> = {
   nation: Globe,
   organization: Shield,
   person: UserIcon,
+  sports: Trophy,
+  lifestyle: Heart,
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -41,48 +43,49 @@ const CATEGORY_LABELS: Record<string, string> = {
   ideology: 'Ideology',
   corporation: 'Corporations',
   nation: 'Places',
+  nations: 'Places',
+  places: 'Places', // Handle all variations
   organization: 'Organizations',
   person: 'People',
+  people: 'People', // Handle both "person" and "people"
+  sports: 'Sports',
+  lifestyle: 'Lifestyle',
 };
 
-// Normalize category names to consolidate duplicates
-const normalizeCategory = (category: string | undefined): string => {
-  if (!category) return 'social_issue';
+// Normalize category names to handle case variations and synonyms
+const normalizeCategory = (category: string): string => {
+  const lower = category.toLowerCase().trim();
 
-  const normalized = category.toLowerCase().trim();
+  // Handle synonyms and variations
+  if (lower === 'person' || lower === 'people') return 'person';
+  if (lower === 'social_issue' || lower === 'social issues') return 'social_issue';
+  if (lower === 'nation' || lower === 'nations' || lower === 'places') return 'nation';
 
-  // Map duplicate/variant category names to canonical ones
-  const categoryMap: Record<string, string> = {
-    'people': 'person',
-    'persons': 'person',
-    'sports': 'social_issue',
-    'sport': 'social_issue',
-    'place': 'nation',
-    'places': 'nation',
-    'country': 'nation',
-    'countries': 'nation',
-    'organizations': 'organization',
-    'orgs': 'organization',
-    'company': 'corporation',
-    'companies': 'corporation',
-    'corporations': 'corporation',
-    'business': 'corporation',
-    'businesses': 'corporation',
-    'ideologies': 'ideology',
-    'religions': 'religion',
-    'social_issues': 'social_issue',
-    'social': 'social_issue',
-  };
-
-  return categoryMap[normalized] || normalized;
+  return lower;
 };
+
+// Define category display order
+const CATEGORY_ORDER = [
+  'ideology',
+  'social_issue',
+  'person',
+  'lifestyle',
+  'nation',
+  'religion',
+  'organization',
+  'sports',
+];
 
 // Helper to get category icon, with fallback
-const getCategoryIcon = (category: string) => CATEGORY_ICONS[category] || Tag;
+const getCategoryIcon = (category: string) => {
+  const normalized = normalizeCategory(category);
+  return CATEGORY_ICONS[normalized] || Tag;
+};
 
 // Helper to get category label, with fallback to capitalized category name
 const getCategoryLabel = (category: string) => {
-  if (CATEGORY_LABELS[category]) return CATEGORY_LABELS[category];
+  const normalized = normalizeCategory(category);
+  if (CATEGORY_LABELS[normalized]) return CATEGORY_LABELS[normalized];
   // Capitalize and format the category name (e.g., "sports" -> "Sports", "social_issue" -> "Social Issue")
   return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
@@ -100,7 +103,7 @@ export default function ValuesScreen() {
   const { profile, isDarkMode, removeCauses, toggleCauseType, clerkUser, addCauses } = useUser();
   const { brands, valuesMatrix, values: firebaseValues } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
-  const [expandedCategories, setExpandedCategories] = useState<Set<CauseCategory>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Local state to track changes before persisting
   const [localChanges, setLocalChanges] = useState<Map<string, LocalValueState | null>>(new Map());
@@ -126,23 +129,23 @@ export default function ValuesScreen() {
   const [newListDescription, setNewListDescription] = useState('');
 
   // Transform Firebase values into the format expected by the UI
-  // Dynamically build categories based on what's in Firebase
+  // Dynamically build categories based on what's in Firebase, using NORMALIZED categories
   const availableValues = useMemo(() => {
     const valuesByCategory: Record<string, any[]> = {};
 
     firebaseValues.forEach(value => {
-      // Normalize category to consolidate duplicates (e.g., "people" -> "person")
-      const category = normalizeCategory(value.category);
+      // Normalize the category to handle case variations and synonyms
+      const normalizedCategory = normalizeCategory(value.category || 'other');
 
       // Initialize category array if it doesn't exist
-      if (!valuesByCategory[category]) {
-        valuesByCategory[category] = [];
+      if (!valuesByCategory[normalizedCategory]) {
+        valuesByCategory[normalizedCategory] = [];
       }
 
-      valuesByCategory[category].push({
+      valuesByCategory[normalizedCategory].push({
         id: value.id,
         name: value.name,
-        category: category,
+        category: normalizedCategory,
       });
     });
 
@@ -168,21 +171,19 @@ export default function ValuesScreen() {
     unselectedValuesByCategory[category] = values.filter(v => !selectedValueIds.has(v.id));
   });
 
-  // Get all categories sorted (predefined ones first, then custom ones alphabetically)
-  const predefinedCategories = ['ideology', 'person', 'social_issue', 'religion', 'nation', 'organization'];
+  // Get categories in the specified order, then add any additional categories alphabetically
   const allCategories = Object.keys(unselectedValuesByCategory);
-  const sortedCategories = [
-    ...predefinedCategories.filter(cat => allCategories.includes(cat)),
-    ...allCategories.filter(cat => !predefinedCategories.includes(cat)).sort(),
-  ];
+  const knownCategories = CATEGORY_ORDER.filter(cat => allCategories.includes(cat));
+  const unknownCategories = allCategories.filter(cat => !CATEGORY_ORDER.includes(cat)).sort();
+  const sortedCategories = [...knownCategories, ...unknownCategories];
 
   const toggleCategoryExpanded = (category: string) => {
     setExpandedCategories(prev => {
       const next = new Set(prev);
-      if (next.has(category as CauseCategory)) {
-        next.delete(category as CauseCategory);
+      if (next.has(category)) {
+        next.delete(category);
       } else {
-        next.add(category as CauseCategory);
+        next.add(category);
       }
       return next;
     });
