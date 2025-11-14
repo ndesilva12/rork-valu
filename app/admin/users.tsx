@@ -269,45 +269,88 @@ export default function UsersManagement() {
     console.log('[Admin Users] Starting save for user:', editingUser.userId);
 
     try {
-      // Build social media object
+      // Build social media object - only include non-empty values
       const socialMedia: SocialMedia = {};
-      if (formFacebook) socialMedia.facebook = formFacebook;
-      if (formInstagram) socialMedia.instagram = formInstagram;
-      if (formTwitter) socialMedia.twitter = formTwitter;
-      if (formLinkedin) socialMedia.linkedin = formLinkedin;
-      if (formYelp) socialMedia.yelp = formYelp;
-      if (formYoutube) socialMedia.youtube = formYoutube;
+      if (formFacebook?.trim()) socialMedia.facebook = formFacebook.trim();
+      if (formInstagram?.trim()) socialMedia.instagram = formInstagram.trim();
+      if (formTwitter?.trim()) socialMedia.twitter = formTwitter.trim();
+      if (formLinkedin?.trim()) socialMedia.linkedin = formLinkedin.trim();
+      if (formYelp?.trim()) socialMedia.yelp = formYelp.trim();
+      if (formYoutube?.trim()) socialMedia.youtube = formYoutube.trim();
 
-      // Build user details object
-      const userDetails: UserDetails = {
-        name: formName,
-        description: formDescription,
-        website: formWebsite,
-        location: formLocation,
-        latitude: parseFloat(formLatitude) || undefined,
-        longitude: parseFloat(formLongitude) || undefined,
-        socialMedia: Object.keys(socialMedia).length > 0 ? socialMedia : undefined,
-      };
+      // Build user details object - only include non-empty values
+      const userDetails: Record<string, any> = {};
+      if (formName?.trim()) userDetails.name = formName.trim();
+      if (formDescription?.trim()) userDetails.description = formDescription.trim();
+      if (formWebsite?.trim()) userDetails.website = formWebsite.trim();
+      if (formLocation?.trim()) userDetails.location = formLocation.trim();
+      if (formLatitude && !isNaN(parseFloat(formLatitude))) {
+        userDetails.latitude = parseFloat(formLatitude);
+      }
+      if (formLongitude && !isNaN(parseFloat(formLongitude))) {
+        userDetails.longitude = parseFloat(formLongitude);
+      }
+      if (Object.keys(socialMedia).length > 0) {
+        userDetails.socialMedia = socialMedia;
+      }
 
-      // Parse search history
+      // Parse search history - only include non-empty lines
       const searchHistory = formSearchHistory
         .split('\n')
         .map((line) => line.trim())
         .filter((line) => line);
 
-      const updatedData: Record<string, any> = {
-        firstName: formFirstName,
-        lastName: formLastName,
-        fullName: formFullName,
-        userDetails: userDetails,
-        causes: parseCauses(formCauses),
-        searchHistory: searchHistory,
-        promoCode: formPromoCode,
-        donationAmount: parseFloat(formDonationAmount) || 0,
-        selectedCharities: parseCharities(formSelectedCharities),
-        consentGivenAt: formConsentGivenAt,
-        consentVersion: formConsentVersion,
-      };
+      // Parse causes - only include valid ones
+      const causes = parseCauses(formCauses);
+
+      // Parse charities - only include valid ones
+      const charities = parseCharities(formSelectedCharities);
+
+      // Build update object - only include fields that have values
+      const updatedData: Record<string, any> = {};
+
+      // Basic info - always include even if empty
+      if (formFirstName !== undefined) updatedData.firstName = formFirstName.trim();
+      if (formLastName !== undefined) updatedData.lastName = formLastName.trim();
+      if (formFullName !== undefined) updatedData.fullName = formFullName.trim();
+
+      // User details - only include if has content
+      if (Object.keys(userDetails).length > 0) {
+        updatedData.userDetails = userDetails;
+      }
+
+      // Only include causes if there are valid ones
+      if (causes.length > 0) {
+        updatedData.causes = causes;
+      }
+
+      // Only include search history if there are items
+      if (searchHistory.length > 0) {
+        updatedData.searchHistory = searchHistory;
+      }
+
+      // Only include promo code if not empty
+      if (formPromoCode?.trim()) {
+        updatedData.promoCode = formPromoCode.trim();
+      }
+
+      // Only include donation amount if valid number
+      if (formDonationAmount && !isNaN(parseFloat(formDonationAmount))) {
+        updatedData.donationAmount = parseFloat(formDonationAmount);
+      }
+
+      // Only include charities if there are valid ones
+      if (charities.length > 0) {
+        updatedData.selectedCharities = charities;
+      }
+
+      // Only include consent fields if not empty
+      if (formConsentGivenAt?.trim()) {
+        updatedData.consentGivenAt = formConsentGivenAt.trim();
+      }
+      if (formConsentVersion?.trim()) {
+        updatedData.consentVersion = formConsentVersion.trim();
+      }
 
       // Add custom field values
       customFields.forEach((field) => {
@@ -316,18 +359,36 @@ export default function UsersManagement() {
           // Convert value based on field type
           switch (field.fieldType) {
             case 'number':
-              updatedData[field.fieldName] = parseFloat(value) || 0;
+              const numValue = parseFloat(value);
+              if (!isNaN(numValue)) {
+                updatedData[field.fieldName] = numValue;
+              }
               break;
             case 'boolean':
               updatedData[field.fieldName] = value === 'true' || value === true;
               break;
             default:
-              updatedData[field.fieldName] = value;
+              if (typeof value === 'string' && value.trim()) {
+                updatedData[field.fieldName] = value.trim();
+              } else if (typeof value !== 'string') {
+                updatedData[field.fieldName] = value;
+              }
           }
         }
       });
 
       console.log('[Admin Users] Updating user with data:', updatedData);
+
+      // Check if there's actually anything to update
+      if (Object.keys(updatedData).length === 0) {
+        console.log('[Admin Users] No fields to update');
+        if (Platform.OS === 'web') {
+          window.alert('No changes to save');
+        } else {
+          Alert.alert('Info', 'No changes to save');
+        }
+        return;
+      }
 
       const userRef = doc(db, 'users', editingUser.userId);
 
@@ -351,7 +412,11 @@ export default function UsersManagement() {
       }
     } catch (error) {
       console.error('[Admin Users] Error updating user:', error);
-      Alert.alert('Error', `Failed to update user data: ${error}`);
+      if (Platform.OS === 'web') {
+        window.alert(`Failed to update user data: ${error}`);
+      } else {
+        Alert.alert('Error', `Failed to update user data: ${error}`);
+      }
     }
   };
 
