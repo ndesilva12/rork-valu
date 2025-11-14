@@ -6449,8 +6449,8 @@ const styles = StyleSheet.create({
   },
   listEditDropdown: {
     position: 'absolute',
-    top: 88,
-    right: 16,
+    top: 48,
+    left: 16,
     borderWidth: 1,
     borderRadius: 12,
     paddingVertical: 4,
