@@ -14,6 +14,7 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -335,14 +336,19 @@ export default function UsersManagement() {
 
       console.log('[Admin Users] User updated successfully');
 
-      Alert.alert(
-        'Success',
-        `User "${formName || editingUser.email}" updated successfully`,
-        [{ text: 'OK', onPress: () => {
-          closeModal();
-          loadUsers();
-        }}]
-      );
+      // Close modal and reload users first
+      closeModal();
+      await loadUsers();
+
+      // Show success message
+      if (Platform.OS === 'web') {
+        window.alert(`User "${formName || editingUser.email}" updated successfully`);
+      } else {
+        Alert.alert(
+          'Success',
+          `User "${formName || editingUser.email}" updated successfully`
+        );
+      }
     } catch (error) {
       console.error('[Admin Users] Error updating user:', error);
       Alert.alert('Error', `Failed to update user data: ${error}`);
@@ -889,6 +895,7 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
   searchInput: {
+    flex: 1,
     height: 40,
     borderWidth: 1,
     borderColor: '#ccc',

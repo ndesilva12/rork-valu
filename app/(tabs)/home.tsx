@@ -1540,150 +1540,229 @@ export default function HomeScreen() {
               </View>
             );
           })()}
-          <View style={styles.brandsContainer}>
-            {userPersonalList.entries.slice(0, myListLoadCount).map((entry, index) => {
-              // Render brand entries
-              if (entry.type === 'brand' && 'brandId' in entry) {
-                return (
-                  <View key={entry.id || index} style={styles.myListEntryRow}>
-                    <TouchableOpacity
-                      style={[
-                        styles.brandCard,
-                        { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
-                      ]}
-                      onPress={() => !isMyListReorderMode && router.push(`/brand/${entry.brandId}`)}
-                      activeOpacity={0.7}
-                      disabled={isMyListReorderMode}
-                    >
-                      <View style={styles.brandCardInner}>
-                        <View style={styles.brandLogoContainer}>
-                          <Image
-                            source={{ uri: entry.logoUrl || getLogoUrl(entry.website || getBrandWebsite(entry.brandId) || '') }}
-                            style={styles.brandLogo}
-                            contentFit="cover"
-                            transition={200}
-                            cachePolicy="memory-disk"
-                          />
-                        </View>
-                        <View style={styles.brandCardContent}>
-                          <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
-                            {entry.brandName || getBrandName(entry.brandId)}
-                          </Text>
-                          <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                            {entry.brandCategory || 'Brand'}
-                          </Text>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                    {isMyListReorderMode && (
-                      <View style={styles.listCardRearrangeButtons}>
-                        <TouchableOpacity
-                          onPress={async () => {
-                            setSelectedList(userPersonalList);
-                            await handleMoveEntryUp(index);
-                          }}
-                          disabled={index === 0}
-                          style={styles.rearrangeButton}
-                          activeOpacity={0.7}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={(event) => {
+              const { active, over } = event;
+              if (!over || active.id === over.id) return;
+
+              const oldIndex = userPersonalList.entries.findIndex((e) => e.id === active.id);
+              const newIndex = userPersonalList.entries.findIndex((e) => e.id === over.id);
+
+              if (oldIndex === -1 || newIndex === -1) return;
+
+              const newEntries = [...userPersonalList.entries];
+              const [movedItem] = newEntries.splice(oldIndex, 1);
+              newEntries.splice(newIndex, 0, movedItem);
+
+              setSelectedList(userPersonalList);
+              reorderListEntries(userPersonalList.id, newEntries).catch((error) => {
+                console.error('[Home] Error reordering My List entries:', error);
+                if (Platform.OS === 'web') {
+                  window.alert('Could not reorder items. Please try again.');
+                } else {
+                  Alert.alert('Error', 'Could not reorder items. Please try again.');
+                }
+              });
+            }}
+          >
+            <SortableContext
+              items={userPersonalList.entries.slice(0, myListLoadCount).map((e) => e.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <View style={styles.brandsContainer}>
+                {userPersonalList.entries.slice(0, myListLoadCount).map((entry, index) => {
+                  const SortableEntry = () => {
+                    const {
+                      attributes,
+                      listeners,
+                      setNodeRef,
+                      transform,
+                      transition,
+                      isDragging,
+                    } = useSortable({ id: entry.id, disabled: !isMyListReorderMode || isMobileScreen });
+
+                    const style = {
+                      transform: CSS.Transform.toString(transform),
+                      transition,
+                      opacity: isDragging ? 0.5 : 1,
+                    };
+
+                    // Render brand entries
+                    if (entry.type === 'brand' && 'brandId' in entry) {
+                      return (
+                        <View
+                          key={entry.id}
+                          ref={setNodeRef as any}
+                          style={[styles.myListEntryRow, style as any]}
                         >
-                          <ChevronUp
-                            size={20}
-                            color={index === 0 ? colors.textSecondary : colors.text}
-                            strokeWidth={2}
-                          />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={async () => {
-                            setSelectedList(userPersonalList);
-                            await handleMoveEntryDown(index);
-                          }}
-                          disabled={index === userPersonalList.entries.slice(0, myListLoadCount).length - 1}
-                          style={styles.rearrangeButton}
-                          activeOpacity={0.7}
-                        >
-                          <ChevronDown
-                            size={20}
-                            color={index === userPersonalList.entries.slice(0, myListLoadCount).length - 1 ? colors.textSecondary : colors.text}
-                            strokeWidth={2}
-                          />
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </View>
-                );
-              }
-              // Render business entries
-              else if (entry.type === 'business' && 'businessId' in entry) {
-                return (
-                  <View key={entry.id || index} style={styles.myListEntryRow}>
-                    <TouchableOpacity
-                      style={[
-                        styles.brandCard,
-                        { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
-                      ]}
-                      onPress={() => !isMyListReorderMode && handleBusinessPress(entry.businessId)}
-                      activeOpacity={0.7}
-                      disabled={isMyListReorderMode}
-                    >
-                      <View style={styles.brandCardInner}>
-                        <View style={styles.brandLogoContainer}>
-                          <Image
-                            source={{ uri: entry.logoUrl || getLogoUrl(entry.website || '') }}
-                            style={styles.brandLogo}
-                            contentFit="cover"
-                            transition={200}
-                            cachePolicy="memory-disk"
-                          />
+                          <TouchableOpacity
+                            style={[
+                              styles.brandCard,
+                              { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                            ]}
+                            onPress={() => !isMyListReorderMode && router.push(`/brand/${entry.brandId}`)}
+                            activeOpacity={0.7}
+                            disabled={isMyListReorderMode}
+                          >
+                            <View style={styles.brandCardInner}>
+                              <View style={styles.brandLogoContainer}>
+                                <Image
+                                  source={{ uri: entry.logoUrl || getLogoUrl(entry.website || getBrandWebsite(entry.brandId) || '') }}
+                                  style={styles.brandLogo}
+                                  contentFit="cover"
+                                  transition={200}
+                                  cachePolicy="memory-disk"
+                                />
+                              </View>
+                              <View style={styles.brandCardContent}>
+                                <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
+                                  {entry.brandName || getBrandName(entry.brandId)}
+                                </Text>
+                                <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                                  {entry.brandCategory || 'Brand'}
+                                </Text>
+                              </View>
+                              {isMyListReorderMode && isMobileScreen && (
+                                <View style={styles.listCardRearrangeButtons}>
+                                  <TouchableOpacity
+                                    onPress={async () => {
+                                      setSelectedList(userPersonalList);
+                                      await handleMoveEntryUp(index);
+                                    }}
+                                    disabled={index === 0}
+                                    style={styles.rearrangeButton}
+                                    activeOpacity={0.7}
+                                  >
+                                    <ChevronUp
+                                      size={20}
+                                      color={index === 0 ? colors.textSecondary : colors.text}
+                                      strokeWidth={2}
+                                    />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    onPress={async () => {
+                                      setSelectedList(userPersonalList);
+                                      await handleMoveEntryDown(index);
+                                    }}
+                                    disabled={index === userPersonalList.entries.slice(0, myListLoadCount).length - 1}
+                                    style={styles.rearrangeButton}
+                                    activeOpacity={0.7}
+                                  >
+                                    <ChevronDown
+                                      size={20}
+                                      color={index === userPersonalList.entries.slice(0, myListLoadCount).length - 1 ? colors.textSecondary : colors.text}
+                                      strokeWidth={2}
+                                    />
+                                  </TouchableOpacity>
+                                </View>
+                              )}
+                              {isMyListReorderMode && !isMobileScreen && (
+                                <View
+                                  {...attributes}
+                                  {...listeners}
+                                  style={styles.dragHandle}
+                                >
+                                  <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                                </View>
+                              )}
+                            </View>
+                          </TouchableOpacity>
                         </View>
-                        <View style={styles.brandCardContent}>
-                          <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
-                            {entry.businessName || (entry as any).name || getBusinessName(entry.businessId)}
-                          </Text>
-                          <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                            {entry.businessCategory || (entry as any).category || 'Local Business'}
-                          </Text>
+                      );
+                    }
+                    // Render business entries
+                    else if (entry.type === 'business' && 'businessId' in entry) {
+                      return (
+                        <View
+                          key={entry.id}
+                          ref={setNodeRef as any}
+                          style={[styles.myListEntryRow, style as any]}
+                        >
+                          <TouchableOpacity
+                            style={[
+                              styles.brandCard,
+                              { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                            ]}
+                            onPress={() => !isMyListReorderMode && handleBusinessPress(entry.businessId)}
+                            activeOpacity={0.7}
+                            disabled={isMyListReorderMode}
+                          >
+                            <View style={styles.brandCardInner}>
+                              <View style={styles.brandLogoContainer}>
+                                <Image
+                                  source={{ uri: entry.logoUrl || getLogoUrl(entry.website || '') }}
+                                  style={styles.brandLogo}
+                                  contentFit="cover"
+                                  transition={200}
+                                  cachePolicy="memory-disk"
+                                />
+                              </View>
+                              <View style={styles.brandCardContent}>
+                                <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
+                                  {entry.businessName || (entry as any).name || getBusinessName(entry.businessId)}
+                                </Text>
+                                <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                                  {entry.businessCategory || (entry as any).category || 'Local Business'}
+                                </Text>
+                              </View>
+                              {isMyListReorderMode && isMobileScreen && (
+                                <View style={styles.listCardRearrangeButtons}>
+                                  <TouchableOpacity
+                                    onPress={async () => {
+                                      setSelectedList(userPersonalList);
+                                      await handleMoveEntryUp(index);
+                                    }}
+                                    disabled={index === 0}
+                                    style={styles.rearrangeButton}
+                                    activeOpacity={0.7}
+                                  >
+                                    <ChevronUp
+                                      size={20}
+                                      color={index === 0 ? colors.textSecondary : colors.text}
+                                      strokeWidth={2}
+                                    />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    onPress={async () => {
+                                      setSelectedList(userPersonalList);
+                                      await handleMoveEntryDown(index);
+                                    }}
+                                    disabled={index === userPersonalList.entries.slice(0, myListLoadCount).length - 1}
+                                    style={styles.rearrangeButton}
+                                    activeOpacity={0.7}
+                                  >
+                                    <ChevronDown
+                                      size={20}
+                                      color={index === userPersonalList.entries.slice(0, myListLoadCount).length - 1 ? colors.textSecondary : colors.text}
+                                      strokeWidth={2}
+                                    />
+                                  </TouchableOpacity>
+                                </View>
+                              )}
+                              {isMyListReorderMode && !isMobileScreen && (
+                                <View
+                                  {...attributes}
+                                  {...listeners}
+                                  style={styles.dragHandle}
+                                >
+                                  <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                                </View>
+                              )}
+                            </View>
+                          </TouchableOpacity>
                         </View>
-                      </View>
-                    </TouchableOpacity>
-                    {isMyListReorderMode && (
-                      <View style={styles.listCardRearrangeButtons}>
-                        <TouchableOpacity
-                          onPress={async () => {
-                            setSelectedList(userPersonalList);
-                            await handleMoveEntryUp(index);
-                          }}
-                          disabled={index === 0}
-                          style={styles.rearrangeButton}
-                          activeOpacity={0.7}
-                        >
-                          <ChevronUp
-                            size={20}
-                            color={index === 0 ? colors.textSecondary : colors.text}
-                            strokeWidth={2}
-                          />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={async () => {
-                            setSelectedList(userPersonalList);
-                            await handleMoveEntryDown(index);
-                          }}
-                          disabled={index === userPersonalList.entries.slice(0, myListLoadCount).length - 1}
-                          style={styles.rearrangeButton}
-                          activeOpacity={0.7}
-                        >
-                          <ChevronDown
-                            size={20}
-                            color={index === userPersonalList.entries.slice(0, myListLoadCount).length - 1 ? colors.textSecondary : colors.text}
-                            strokeWidth={2}
-                          />
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </View>
-                );
-              }
-              return null;
-            })}
+                      );
+                    }
+                    return null;
+                  };
+
+                  return <SortableEntry key={entry.id} />;
+                })}
+              </View>
+            </SortableContext>
+          </DndContext>
             {myListLoadCount < userPersonalList.entries.length && (
               <TouchableOpacity
                 style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
