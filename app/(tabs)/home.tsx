@@ -2992,7 +2992,7 @@ export default function HomeScreen() {
                         transform,
                         transition,
                         isDragging,
-                      } = useSortable({ id: entry.id, disabled: !isEditMode });
+                      } = useSortable({ id: entry.id, disabled: !isEditMode || isMobileScreen });
 
                       const style = {
                         transform: CSS.Transform.toString(transform),
@@ -3048,7 +3048,35 @@ export default function HomeScreen() {
                               <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
                             </TouchableOpacity>
                           )}
-                          {isEditMode && (
+                          {isEditMode && isMobileScreen && (
+                            <View style={styles.listCardRearrangeButtons}>
+                              <TouchableOpacity
+                                onPress={() => handleMoveEntryUp(entryIndex)}
+                                disabled={entryIndex === 0}
+                                style={styles.rearrangeButton}
+                                activeOpacity={0.7}
+                              >
+                                <ChevronUp
+                                  size={20}
+                                  color={entryIndex === 0 ? colors.textSecondary : colors.text}
+                                  strokeWidth={2}
+                                />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                onPress={() => handleMoveEntryDown(entryIndex)}
+                                disabled={entryIndex === list.entries.length - 1}
+                                style={styles.rearrangeButton}
+                                activeOpacity={0.7}
+                              >
+                                <ChevronDown
+                                  size={20}
+                                  color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
+                                  strokeWidth={2}
+                                />
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                          {isEditMode && !isMobileScreen && (
                             <View
                               {...attributes}
                               {...listeners}
@@ -3109,7 +3137,35 @@ export default function HomeScreen() {
                               <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
                             </TouchableOpacity>
                           )}
-                          {isEditMode && (
+                          {isEditMode && isMobileScreen && (
+                            <View style={styles.listCardRearrangeButtons}>
+                              <TouchableOpacity
+                                onPress={() => handleMoveEntryUp(entryIndex)}
+                                disabled={entryIndex === 0}
+                                style={styles.rearrangeButton}
+                                activeOpacity={0.7}
+                              >
+                                <ChevronUp
+                                  size={20}
+                                  color={entryIndex === 0 ? colors.textSecondary : colors.text}
+                                  strokeWidth={2}
+                                />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                onPress={() => handleMoveEntryDown(entryIndex)}
+                                disabled={entryIndex === list.entries.length - 1}
+                                style={styles.rearrangeButton}
+                                activeOpacity={0.7}
+                              >
+                                <ChevronDown
+                                  size={20}
+                                  color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
+                                  strokeWidth={2}
+                                />
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                          {isEditMode && !isMobileScreen && (
                             <View
                               {...attributes}
                               {...listeners}
@@ -3157,7 +3213,35 @@ export default function HomeScreen() {
                               <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
                             </TouchableOpacity>
                           )}
-                          {isEditMode && (
+                          {isEditMode && isMobileScreen && (
+                            <View style={styles.listCardRearrangeButtons}>
+                              <TouchableOpacity
+                                onPress={() => handleMoveEntryUp(entryIndex)}
+                                disabled={entryIndex === 0}
+                                style={styles.rearrangeButton}
+                                activeOpacity={0.7}
+                              >
+                                <ChevronUp
+                                  size={20}
+                                  color={entryIndex === 0 ? colors.textSecondary : colors.text}
+                                  strokeWidth={2}
+                                />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                onPress={() => handleMoveEntryDown(entryIndex)}
+                                disabled={entryIndex === list.entries.length - 1}
+                                style={styles.rearrangeButton}
+                                activeOpacity={0.7}
+                              >
+                                <ChevronDown
+                                  size={20}
+                                  color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
+                                  strokeWidth={2}
+                                />
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                          {isEditMode && !isMobileScreen && (
                             <View
                               {...attributes}
                               {...listeners}
@@ -3217,7 +3301,35 @@ export default function HomeScreen() {
                             <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
                           </TouchableOpacity>
                         )}
-                        {isEditMode && (
+                        {isEditMode && isMobileScreen && (
+                          <View style={styles.listCardRearrangeButtons}>
+                            <TouchableOpacity
+                              onPress={() => handleMoveEntryUp(entryIndex)}
+                              disabled={entryIndex === 0}
+                              style={styles.rearrangeButton}
+                              activeOpacity={0.7}
+                            >
+                              <ChevronUp
+                                size={20}
+                                color={entryIndex === 0 ? colors.textSecondary : colors.text}
+                                strokeWidth={2}
+                              />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => handleMoveEntryDown(entryIndex)}
+                              disabled={entryIndex === list.entries.length - 1}
+                              style={styles.rearrangeButton}
+                              activeOpacity={0.7}
+                            >
+                              <ChevronDown
+                                size={20}
+                                color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
+                                strokeWidth={2}
+                              />
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                        {isEditMode && !isMobileScreen && (
                           <View
                             {...attributes}
                             {...listeners}
