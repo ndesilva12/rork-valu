@@ -5963,6 +5963,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.08)',
     overflow: 'visible',
+    width: '100%',
   },
   brandCardInner: {
     flexDirection: 'row',
@@ -6346,6 +6347,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: 'visible',
     flexDirection: 'row',
+    width: '100%',
   },
   listCardClickable: {
     flex: 1,
