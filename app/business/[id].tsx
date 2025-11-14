@@ -488,23 +488,9 @@ export default function BusinessDetailScreen() {
               </View>
               <View style={[styles.discountCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
                 <View style={styles.discountRow}>
-                  <Text style={[styles.discountLabel, { color: colors.textSecondary }]}>Acceptance Method:</Text>
-                  <Text style={[styles.discountValue, { color: colors.primary }]}>
-                    {(business.businessInfo.acceptsQRCode ?? true) && (business.businessInfo.acceptsValueCode ?? true)
-                      ? 'QR Code / Value Code'
-                      : (business.businessInfo.acceptsQRCode ?? true) ? 'QR Code' : 'Value Code'}
-                  </Text>
-                </View>
-                <View style={styles.discountRow}>
                   <Text style={[styles.discountLabel, { color: colors.textSecondary }]}>Discount %:</Text>
                   <Text style={[styles.discountValue, { color: colors.primary }]}>
                     {(business.businessInfo.customerDiscountPercent || 0).toFixed(1)}%
-                  </Text>
-                </View>
-                <View style={styles.discountRow}>
-                  <Text style={[styles.discountLabel, { color: colors.textSecondary }]}>Donation %:</Text>
-                  <Text style={[styles.discountValue, { color: colors.primary }]}>
-                    {(business.businessInfo.donationPercent || 0).toFixed(1)}%
                   </Text>
                 </View>
               </View>

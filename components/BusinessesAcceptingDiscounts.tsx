@@ -205,9 +205,8 @@ export default function BusinessesAcceptingDiscounts() {
   const renderBusinessCard = ({ item }: { item: BusinessUser }) => {
     const { businessInfo, distance } = item;
 
-    // Determine acceptance method
-    const acceptsQR = businessInfo.acceptsQRCode ?? true;
-    const acceptsValue = businessInfo.acceptsValueCode ?? true;
+    // Get discount percentage
+    const discountPercent = businessInfo.customerDiscountPercent || 0;
 
     return (
       <TouchableOpacity
@@ -235,12 +234,9 @@ export default function BusinessesAcceptingDiscounts() {
           </View>
 
           <View style={styles.acceptanceInfo}>
-            {acceptsQR && (
-              <Text style={[styles.acceptanceText, { color: colors.primary }]}>QR Code</Text>
-            )}
-            {acceptsValue && (
-              <Text style={[styles.acceptanceText, { color: colors.primary }]}>Promo Code</Text>
-            )}
+            <Text style={[styles.discountPercentText, { color: colors.primary }]}>
+              {discountPercent.toFixed(1)}% off
+            </Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -522,6 +518,10 @@ const styles = StyleSheet.create({
   acceptanceText: {
     fontSize: 12,
     fontWeight: '600' as const,
+  },
+  discountPercentText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
   },
   emptyContainer: {
     padding: 40,
