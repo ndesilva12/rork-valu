@@ -88,7 +88,7 @@ export default function DiscountScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright dark B1.png')}
+            source={require('@/assets/images/upright12dwc.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
