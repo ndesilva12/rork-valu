@@ -33,6 +33,8 @@ export default function BusinessesAcceptingDiscounts() {
   const [distanceFilter, setDistanceFilter] = useState<LocalDistanceOption>(100);
   const [showDistanceMenu, setShowDistanceMenu] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
+  const [showAllBusinesses, setShowAllBusinesses] = useState(false);
+  const INITIAL_DISPLAY_COUNT = 10;
 
   // Request GPS location permission and get current location
   useEffect(() => {
@@ -259,7 +261,7 @@ export default function BusinessesAcceptingDiscounts() {
 
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Businesses Accepting Stand Discounts</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Businesses Accepting Upright Discounts</Text>
 
       {/* Search Bar with Location Icon */}
       <View style={[styles.searchContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
@@ -306,13 +308,27 @@ export default function BusinessesAcceptingDiscounts() {
 
       {/* Business List */}
       {filteredBusinesses.length > 0 ? (
-        <FlatList
-          data={filteredBusinesses}
-          renderItem={renderBusinessCard}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-          scrollEnabled={false} // Parent handles scrolling
-        />
+        <>
+          <FlatList
+            data={showAllBusinesses ? filteredBusinesses : filteredBusinesses.slice(0, INITIAL_DISPLAY_COUNT)}
+            renderItem={renderBusinessCard}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContainer}
+            scrollEnabled={false} // Parent handles scrolling
+          />
+          {!showAllBusinesses && filteredBusinesses.length > INITIAL_DISPLAY_COUNT && (
+            <TouchableOpacity
+              style={[styles.seeMoreButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+              onPress={() => setShowAllBusinesses(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.seeMoreText, { color: colors.primary }]}>
+                See More ({filteredBusinesses.length - INITIAL_DISPLAY_COUNT} more)
+              </Text>
+              <ChevronDown size={20} color={colors.primary} strokeWidth={2} />
+            </TouchableOpacity>
+          )}
+        </>
       ) : (
         <View style={[styles.emptyContainer, { backgroundColor: colors.backgroundSecondary }]}>
           <AlertCircle size={48} color={colors.textSecondary} strokeWidth={1.5} />
@@ -642,5 +658,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     textAlign: 'center',
+  },
+  seeMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 12,
+  },
+  seeMoreText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
   },
 });

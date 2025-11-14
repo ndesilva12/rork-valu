@@ -46,7 +46,7 @@ export default function ValueCodeSettings() {
     if (value) {
       Alert.alert(
         'Discounts Enabled',
-        'Customers can now use Stand to receive discounts at your business!',
+        'Customers can now use Upright to receive discounts at your business!',
         [{ text: 'Great!' }]
       );
     }
