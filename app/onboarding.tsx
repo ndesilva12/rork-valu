@@ -181,7 +181,7 @@ export default function OnboardingScreen() {
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <Image
-              source={require('@/assets/images/upright12sdc.png')}
+              source={require('@/assets/images/um3c.png')}
               style={styles.logo}
               resizeMode="contain"
             />

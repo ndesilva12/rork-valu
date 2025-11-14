@@ -305,13 +305,13 @@ export default function BusinessesAcceptingDiscounts() {
       {/* Business List */}
       {filteredBusinesses.length > 0 ? (
         <>
-          <FlatList
-            data={showAllBusinesses ? filteredBusinesses : filteredBusinesses.slice(0, INITIAL_DISPLAY_COUNT)}
-            renderItem={renderBusinessCard}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContainer}
-            scrollEnabled={false} // Parent handles scrolling
-          />
+          <View style={styles.listContainer}>
+            {(showAllBusinesses ? filteredBusinesses : filteredBusinesses.slice(0, INITIAL_DISPLAY_COUNT)).map((item) => (
+              <View key={item.id}>
+                {renderBusinessCard({ item })}
+              </View>
+            ))}
+          </View>
           {!showAllBusinesses && filteredBusinesses.length > INITIAL_DISPLAY_COUNT && (
             <TouchableOpacity
               style={[styles.seeMoreButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}

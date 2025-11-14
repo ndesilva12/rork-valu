@@ -174,6 +174,7 @@ export default function HomeScreen() {
 
   // Add Item Modal state
   const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [showMyListOptionsModal, setShowMyListOptionsModal] = useState(false);
   const [addItemType, setAddItemType] = useState<'brand' | 'business' | 'value' | 'link' | 'text' | null>(null);
   const [addItemSearchQuery, setAddItemSearchQuery] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
@@ -1267,8 +1268,6 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.createButtonContainer}>
-            <Text style={[styles.createText, { color: colors.textSecondary }]}>create</Text>
-
             <TouchableOpacity
               style={[styles.addItemButton, { backgroundColor: colors.primary }]}
               onPress={onAddPress}
@@ -1276,6 +1275,8 @@ export default function HomeScreen() {
             >
               <Plus size={20} color={colors.white} strokeWidth={2.5} />
             </TouchableOpacity>
+
+            <Text style={[styles.createText, { color: colors.textSecondary }]}>create</Text>
           </View>
         </View>
       </View>
@@ -1377,9 +1378,9 @@ export default function HomeScreen() {
               userPersonalList.name,
               () => {
                 setSelectedList(userPersonalList);
-                setShowAddItemModal(true);
+                setShowMyListOptionsModal(true);
               },
-              true
+              false
             )}
 
             {/* Three dot options dropdown for For You view */}
@@ -1451,9 +1452,9 @@ export default function HomeScreen() {
             userPersonalList.name,
             () => {
               setSelectedList(userPersonalList);
-              setShowAddItemModal(true);
+              setShowMyListOptionsModal(true);
             },
-            true
+            false
           )}
 
           {/* Three dot options dropdown for For You view */}
@@ -1726,10 +1727,10 @@ export default function HomeScreen() {
 
     return (
       <View style={styles.section}>
-        <View style={styles.sectionHeaderRow}>
+        <View style={[styles.sectionHeaderRow, styles.localSectionHeaderRow]}>
           <View style={styles.sectionHeader}>
             <MapPin size={24} color={colors.primary} strokeWidth={2} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Local Businesses</Text>
+            <Text style={[styles.localBusinessesTitle, { color: colors.text }]}>Local Businesses</Text>
           </View>
           <TouchableOpacity
             onPress={() => setLocalSortDirection(localSortDirection === 'highToLow' ? 'lowToHigh' : 'highToLow')}
@@ -2815,7 +2816,20 @@ export default function HomeScreen() {
             <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
           </TouchableOpacity>
 
+          {/* Done button when in edit/reorder mode */}
+          {isEditMode && (
+            <View style={styles.libraryHeader}>
+              <TouchableOpacity
+                onPress={() => setIsEditMode(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.libraryDoneButton, { color: colors.primary }]}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Title row with 3-dot menu and optional Add button */}
+          {!isEditMode && (
           <View style={styles.listDetailTitleRow}>
             <View style={styles.listDetailTitleContainer}>
               <Text style={[styles.listDetailTitle, { color: colors.text }]}>{list.name}</Text>
@@ -2842,16 +2856,17 @@ export default function HomeScreen() {
               </TouchableOpacity>
             )}
           </View>
+          )}
 
           {/* Created by text */}
-          {list.creatorName && (
+          {!isEditMode && list.creatorName && (
             <Text style={[styles.listCreatedBy, { color: colors.textSecondary }]}>
               created by {list.creatorName}
             </Text>
           )}
 
           {/* Description below title */}
-          {list.description && (
+          {!isEditMode && list.description && (
             <Text style={[styles.listDetailDescription, { color: colors.textSecondary }]}>
               {list.description}
             </Text>
@@ -2859,7 +2874,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Three dot options dropdown */}
-        {showEditDropdown && (() => {
+        {!isEditMode && showEditDropdown && (() => {
           // Check if this is the user's personal list
           const fullNameFromFirebase = profile?.userDetails?.name;
           const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
@@ -3500,7 +3515,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright12dwc.png')}
+            source={require('@/assets/images/um2c.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3520,7 +3535,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright12dwc.png')}
+            source={require('@/assets/images/um2c.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3542,7 +3557,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright12dwc.png')}
+            source={require('@/assets/images/um2c.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3570,7 +3585,7 @@ export default function HomeScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright12dwc.png')}
+            source={require('@/assets/images/um2c.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -4012,7 +4027,7 @@ export default function HomeScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.modalButtonText, { color: colors.white }]}>New Blank List</Text>
+                <Text style={[styles.modalButtonText, { color: colors.white }]}>Blank List</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -4024,7 +4039,94 @@ export default function HomeScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.modalButtonText, { color: colors.text }]}>New List from Values</Text>
+                <Text style={[styles.modalButtonText, { color: colors.text }]}>List from Values</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </View>
+      </Modal>
+
+      {/* My List Options Modal - for My List view */}
+      <Modal
+        visible={showMyListOptionsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowMyListOptionsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={() => setShowMyListOptionsModal(false)}>
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Pressable
+            style={[styles.quickAddModalContainer, { backgroundColor: colors.background }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Options</Text>
+              <TouchableOpacity onPress={() => setShowMyListOptionsModal(false)}>
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalContent}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  setShowMyListOptionsModal(false);
+                  setShowCreateListModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.white }]}>Blank List</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.backgroundSecondary, marginTop: 12 }]}
+                onPress={() => {
+                  setShowMyListOptionsModal(false);
+                  setShowValuesSelectionModal(true);
+                  setSelectedValuesForList([]);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.text }]}>List from Values</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.backgroundSecondary, marginTop: 12 }]}
+                onPress={() => {
+                  setShowMyListOptionsModal(false);
+                  setSelectedList(userPersonalList);
+                  setShowAddItemModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.text }]}>Add to this List</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.backgroundSecondary, marginTop: 12 }]}
+                onPress={() => {
+                  setShowMyListOptionsModal(false);
+                  setSelectedList(userPersonalList);
+                  setLibraryView('detail');
+                  setIsEditMode(true);
+                  scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.text }]}>Reorder</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.backgroundSecondary, marginTop: 12 }]}
+                onPress={() => {
+                  setShowMyListOptionsModal(false);
+                  handleShareList(userPersonalList);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.text }]}>Share</Text>
               </TouchableOpacity>
             </View>
           </Pressable>
@@ -5248,6 +5350,13 @@ const styles = StyleSheet.create({
     fontSize: 19 * mobileScale,
     fontWeight: '700' as const,
   },
+  localBusinessesTitle: {
+    fontSize: 24 * mobileScale,
+    fontWeight: '700' as const,
+  },
+  localSectionHeaderRow: {
+    marginBottom: 16,
+  },
   sectionSubtitle: {
     fontSize: 13 * mobileScale,
     marginBottom: 16 * mobileScale,
@@ -6443,9 +6552,9 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   createButtonContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
-    gap: 12,
+    gap: 4,
   },
   listEditDropdown: {
     position: 'absolute',
@@ -6475,7 +6584,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   createText: {
-    fontSize: 18,
+    fontSize: 12,
     fontWeight: '500',
   },
   userListHeaderRow: {
