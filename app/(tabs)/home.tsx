@@ -1253,11 +1253,11 @@ export default function HomeScreen() {
     return (
       <View style={styles.listDetailHeader}>
         <View style={styles.listDetailTitleRow}>
-          <View style={styles.listDetailTitleContainer}>
+          <View style={styles.listDetailTitleContainerHorizontal}>
             <Text style={[styles.listDetailTitle, { color: colors.text }]}>{title}</Text>
             {showModalButton && (
               <TouchableOpacity
-                style={styles.listOptionsButton}
+                style={styles.listOptionsButtonHorizontal}
                 onPress={() => setShowEditDropdown(!showEditDropdown)}
                 activeOpacity={0.7}
               >
@@ -1266,15 +1266,17 @@ export default function HomeScreen() {
             )}
           </View>
 
-          <Text style={[styles.createText, { color: colors.textSecondary }]}>create</Text>
+          <View style={styles.createButtonContainer}>
+            <Text style={[styles.createText, { color: colors.textSecondary }]}>create</Text>
 
-          <TouchableOpacity
-            style={[styles.addItemButton, { backgroundColor: colors.primary }]}
-            onPress={onAddPress}
-            activeOpacity={0.7}
-          >
-            <Plus size={20} color={colors.white} strokeWidth={2.5} />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.addItemButton, { backgroundColor: colors.primary }]}
+              onPress={onAddPress}
+              activeOpacity={0.7}
+            >
+              <Plus size={20} color={colors.white} strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
@@ -6458,6 +6460,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
+  listDetailTitleContainerHorizontal: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -6474,6 +6482,15 @@ const styles = StyleSheet.create({
   },
   listOptionsButton: {
     padding: 4,
+  },
+  listOptionsButtonHorizontal: {
+    padding: 4,
+    marginLeft: 4,
+  },
+  createButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   listEditDropdown: {
     position: 'absolute',
@@ -6503,9 +6520,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   createText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
-    marginRight: 12,
   },
   userListHeaderRow: {
     flexDirection: 'row',
