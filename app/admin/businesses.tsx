@@ -15,10 +15,11 @@ import {
   Modal,
   ActivityIndicator,
   Switch,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { collection, getDocs, doc, updateDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db } from '../../firebase';
 
 interface Affiliate {
@@ -343,6 +344,84 @@ export default function BusinessesManagement() {
     }
   };
 
+  const handleDeleteBusiness = async (business: BusinessData) => {
+    // Confirm deletion
+    const confirmMessage = `Are you sure you want to delete business "${business.businessName}"?\n\nThis will:\n- Delete the business account from Firebase\n- Delete all business data, transactions, etc.\n\nThis action CANNOT be undone!`;
+
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm(confirmMessage)
+      : await new Promise((resolve) => {
+          Alert.alert(
+            'Delete Business',
+            confirmMessage,
+            [
+              { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
+              { text: 'Delete', onPress: () => resolve(true), style: 'destructive' }
+            ]
+          );
+        });
+
+    if (!confirmed) return;
+
+    try {
+      console.log('[Admin Businesses] Deleting business:', business.userId);
+
+      // Delete the user document (which includes the business account)
+      const userRef = doc(db, 'users', business.userId);
+      await deleteDoc(userRef);
+      console.log('[Admin Businesses] ✅ Business account deleted from Firebase');
+
+      // Delete business's lists
+      try {
+        const listsRef = collection(db, 'userLists');
+        const listsQuery = query(listsRef, where('userId', '==', business.userId));
+        const listsSnapshot = await getDocs(listsQuery);
+
+        const deleteListPromises = listsSnapshot.docs.map(listDoc =>
+          deleteDoc(doc(db, 'userLists', listDoc.id))
+        );
+        await Promise.all(deleteListPromises);
+        console.log('[Admin Businesses] ✅ Deleted', listsSnapshot.docs.length, 'business lists');
+      } catch (listError) {
+        console.error('[Admin Businesses] Error deleting lists:', listError);
+      }
+
+      // Delete business's transactions
+      try {
+        const transactionsRef = collection(db, 'transactions');
+        const transactionsQuery = query(transactionsRef, where('userId', '==', business.userId));
+        const transactionsSnapshot = await getDocs(transactionsQuery);
+
+        const deleteTransactionPromises = transactionsSnapshot.docs.map(txDoc =>
+          deleteDoc(doc(db, 'transactions', txDoc.id))
+        );
+        await Promise.all(deleteTransactionPromises);
+        console.log('[Admin Businesses] ✅ Deleted', transactionsSnapshot.docs.length, 'transactions');
+      } catch (txError) {
+        console.error('[Admin Businesses] Error deleting transactions:', txError);
+      }
+
+      // Reload businesses list
+      await loadBusinesses();
+
+      // Show success message
+      if (Platform.OS === 'web') {
+        window.alert('Business deleted successfully!');
+      } else {
+        Alert.alert('Success', 'Business deleted successfully!');
+      }
+    } catch (error: any) {
+      console.error('[Admin Businesses] ❌ Error deleting business:', error);
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
+
+      if (Platform.OS === 'web') {
+        window.alert(`Failed to delete business: ${errorMessage}`);
+      } else {
+        Alert.alert('Error', `Failed to delete business: ${errorMessage}`);
+      }
+    }
+  };
+
   const filteredBusinesses = businesses.filter(
     (business) =>
       business.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -405,12 +484,20 @@ export default function BusinessesManagement() {
                     <Text style={styles.businessCategory}>{business.category}</Text>
                     <Text style={styles.businessEmail}>{business.email}</Text>
                   </View>
-                  <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={() => openEditModal(business)}
-                  >
-                    <Text style={styles.editButtonText}>Edit All Fields</Text>
-                  </TouchableOpacity>
+                  <View style={styles.businessActions}>
+                    <TouchableOpacity
+                      style={styles.editButton}
+                      onPress={() => openEditModal(business)}
+                    >
+                      <Text style={styles.editButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => handleDeleteBusiness(business)}
+                    >
+                      <Text style={styles.deleteButtonText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 {/* Quick Preview */}
@@ -915,6 +1002,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#888',
   },
+  businessActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   editButton: {
     backgroundColor: '#007bff',
     paddingHorizontal: 12,
@@ -922,6 +1013,17 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   editButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  deleteButton: {
+    backgroundColor: '#dc3545',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  deleteButtonText: {
     color: '#fff',
     fontSize: 13,
     fontWeight: '600',
