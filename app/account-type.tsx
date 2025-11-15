@@ -51,7 +51,7 @@ export default function AccountTypeScreen() {
         {/* Logo */}
         <View style={styles.logoContainer}>
           <Image
-            source={{ uri: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/ohh0oqrvnuowj1apebwt9' }}
+            source={require('@/assets/images/upright100s.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -153,8 +153,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   logo: {
-    width: 160,
-    height: 48,
+    width: 180,
+    height: 180,
+    tintColor: undefined,
   },
   header: {
     marginBottom: 32,
