@@ -412,29 +412,31 @@ export default function HomeScreen() {
     loadPersonalList();
   }, [clerkUser?.id, clerkUser?.unsafeMetadata?.fullName, clerkUser?.firstName, clerkUser?.lastName, profile?.userDetails?.name]);
 
-  // Fetch user businesses and request location when "local" mode is selected
-  // Fetch user businesses on mount
-  useEffect(() => {
-    const fetchUserBusinesses = async () => {
-      try {
-        console.log('[Home] Fetching user businesses');
-        const businesses = await getAllUserBusinesses();
-        console.log('[Home] Fetched user businesses:', businesses.length);
-        setUserBusinesses(businesses);
-      } catch (error) {
-        console.error('[Home] Error fetching user businesses:', error);
-      }
-    };
-
-    fetchUserBusinesses();
+  // Function to fetch user businesses
+  const fetchUserBusinesses = useCallback(async () => {
+    try {
+      console.log('[Home] Fetching user businesses');
+      const businesses = await getAllUserBusinesses();
+      console.log('[Home] Fetched user businesses:', businesses.length);
+      setUserBusinesses(businesses);
+    } catch (error) {
+      console.error('[Home] Error fetching user businesses:', error);
+    }
   }, []);
 
-  // Request location when local view is activated
+  // Fetch user businesses on mount
+  useEffect(() => {
+    fetchUserBusinesses();
+  }, [fetchUserBusinesses]);
+
+  // Request location and refetch businesses when local view is activated
   useEffect(() => {
     if (mainView === 'local') {
       requestLocation();
+      // Refetch businesses to get latest data (including updated logos)
+      fetchUserBusinesses();
     }
-  }, [mainView]);
+  }, [mainView, fetchUserBusinesses]);
 
   // Reopen map if returning from business detail page
   useEffect(() => {
