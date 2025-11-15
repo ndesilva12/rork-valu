@@ -153,19 +153,10 @@ export default function MerchantVerify() {
       const merchantDiscount = profile.businessInfo?.customerDiscountPercent || 0;
       const uprightFeePercent = 2.5;
 
-      // Calculate amounts
-      const original = parseFloat(purchaseAmount);
-      const discountAmount = (original * merchantDiscount) / 100;
-      const amountAfterDiscount = original - discountAmount;
-      const uprightFeeAmount = (amountAfterDiscount * uprightFeePercent) / 100;
-
       console.log('[MerchantVerify] Recording transaction with:', {
         merchantDiscount,
         uprightFeePercent,
-        purchaseAmount: original,
-        discountAmount,
-        amountAfterDiscount,
-        uprightFeeAmount,
+        purchaseAmount: parseFloat(purchaseAmount),
         businessInfo: profile.businessInfo
       });
 
@@ -176,12 +167,11 @@ export default function MerchantVerify() {
         customerEmail: customerEmail,
         merchantId: clerkUser.id,
         merchantName: merchantName,
-        purchaseAmount: original,
+        purchaseAmount: parseFloat(purchaseAmount),
         discountPercent: merchantDiscount,
         uprightFeePercent: uprightFeePercent,
-        discountAmount: discountAmount,
-        uprightFeeAmount: uprightFeeAmount,
-        amountAfterDiscount: amountAfterDiscount,
+        discountAmount: (parseFloat(purchaseAmount) * merchantDiscount) / 100,
+        uprightFeeAmount: (parseFloat(purchaseAmount) * uprightFeePercent) / 100,
         status: 'completed',
         createdAt: serverTimestamp(),
         verifiedAt: serverTimestamp(),
@@ -245,48 +235,39 @@ export default function MerchantVerify() {
             />
           </View>
 
-          {purchaseAmount && parseFloat(purchaseAmount) > 0 && (() => {
-            const original = parseFloat(purchaseAmount);
-            const discountPercent = profile.businessInfo?.customerDiscountPercent || 0;
-            const discountAmount = (original * discountPercent) / 100;
-            const amountAfterDiscount = original - discountAmount;
-            const uprightFeeAmount = (amountAfterDiscount * 2.5) / 100;
-            const finalAmount = amountAfterDiscount;
+          {purchaseAmount && parseFloat(purchaseAmount) > 0 && (
+            <>
+              {/* Divider */}
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-            return (
-              <>
-                {/* Divider */}
-                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              {/* Final Amount - Prominent Display */}
+              <View style={[styles.finalAmountContainer, { backgroundColor: colors.backgroundSecondary }]}>
+                <Text style={[styles.finalAmountLabel, { color: colors.text }]}>
+                  Final Purchase Amount:
+                </Text>
+                <Text style={[styles.finalAmountValue, { color: colors.primary }]}>
+                  ${(parseFloat(purchaseAmount) - (parseFloat(purchaseAmount) * (profile.businessInfo?.customerDiscountPercent || 0)) / 100).toFixed(2)}
+                </Text>
+              </View>
 
-                {/* Final Amount - Prominent Display */}
-                <View style={[styles.finalAmountContainer, { backgroundColor: colors.backgroundSecondary }]}>
-                  <Text style={[styles.finalAmountLabel, { color: colors.text }]}>
-                    Final Purchase Amount:
-                  </Text>
-                  <Text style={[styles.finalAmountValue, { color: colors.primary }]}>
-                    ${finalAmount.toFixed(2)}
-                  </Text>
-                </View>
+              {/* Divider */}
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-                {/* Divider */}
-                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              {/* Breakdown */}
+              <View style={styles.calculationBox}>
+                <Text style={[styles.calculationText, { color: colors.textSecondary }]}>
+                  Discount Amount: ${((parseFloat(purchaseAmount) * (profile.businessInfo?.customerDiscountPercent || 0)) / 100).toFixed(2)}
+                </Text>
 
-                {/* Breakdown */}
-                <View style={styles.calculationBox}>
-                  <Text style={[styles.calculationText, { color: colors.textSecondary }]}>
-                    Discount Amount: ${discountAmount.toFixed(2)}
-                  </Text>
-
-                  <Text style={[styles.feeLabel, { color: colors.text }]}>
-                    Upright Fee: 2.5%
-                  </Text>
-                  <Text style={[styles.feeValue, { color: colors.primary }]}>
-                    ${uprightFeeAmount.toFixed(2)}
-                  </Text>
-                </View>
-              </>
-            );
-          })()}
+                <Text style={[styles.feeLabel, { color: colors.text }]}>
+                  Upright Fee: 2.5%
+                </Text>
+                <Text style={[styles.feeValue, { color: colors.primary }]}>
+                  ${((parseFloat(purchaseAmount) * 2.5) / 100).toFixed(2)}
+                </Text>
+              </View>
+            </>
+          )}
         </View>
 
         {/* Confirm Button */}
