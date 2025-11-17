@@ -192,4 +192,6 @@ export interface UserProfile {
   codeSharing?: boolean; // Whether user allows code sharing with merchants (default: true if consented)
   businessMembership?: BusinessMembership; // For team members linked to a business
   isPublicProfile?: boolean; // Whether user's profile and library are publicly viewable (default: false)
+  alignedListPublic?: boolean; // Whether the Aligned system list is publicly viewable (default: false)
+  unalignedListPublic?: boolean; // Whether the Unaligned system list is publicly viewable (default: false)
 }

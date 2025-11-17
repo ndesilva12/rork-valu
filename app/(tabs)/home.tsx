@@ -131,7 +131,6 @@ export default function HomeScreen() {
   const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
   const [userPersonalList, setUserPersonalList] = useState<UserList | null>(null);
   const [activeExplainerStep, setActiveExplainerStep] = useState<0 | 1 | 2 | 3 | 4>(0); // 0 = none, 1-4 = explainer steps
-  const [userListHadItems, setUserListHadItems] = useState(false);
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [showAllAligned, setShowAllAligned] = useState<boolean>(false);
   const [showAllLeast, setShowAllLeast] = useState<boolean>(false);
@@ -158,6 +157,9 @@ export default function HomeScreen() {
   const [renameListName, setRenameListName] = useState('');
   const [renameListDescription, setRenameListDescription] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
+  const [alignedListPublic, setAlignedListPublic] = useState(false);
+  const [unalignedListPublic, setUnalignedListPublic] = useState(false);
+  const [activeListOptionsId, setActiveListOptionsId] = useState<string | null>(null); // Track which list's options menu is open
   const [isLibraryEditMode, setIsLibraryEditMode] = useState(false);
   const [activeOptionsMenu, setActiveOptionsMenu] = useState<string | null>(null);
   const [activeItemOptionsMenu, setActiveItemOptionsMenu] = useState<string | null>(null);
@@ -376,31 +378,23 @@ export default function HomeScreen() {
           const hasEntries = personalList.entries && personalList.entries.length > 0;
 
           // Load explainer state from AsyncStorage
-          const explainerKey = `userListExplainerDismissed_${clerkUser.id}`;
-          const hadItemsKey = `userListHadItems_${clerkUser.id}`;
+          // Only show explainer once after onboarding (when user first signs in)
+          const explainerShownKey = `libraryExplainerShown_${clerkUser.id}`;
+          const explainerShown = await AsyncStorage.getItem(explainerShownKey);
+          const hasSeenExplainer = explainerShown === 'true';
 
-          const [explainerDismissed, hadItemsStr] = await Promise.all([
-            AsyncStorage.getItem(explainerKey),
-            AsyncStorage.getItem(hadItemsKey)
-          ]);
+          // Show explainer only if:
+          // 1. User has never seen it before (first time after onboarding)
+          // 2. List is empty
+          const shouldShowExplainers = !hasSeenExplainer && !hasEntries;
 
-          const explainerWasDismissed = explainerDismissed === 'true';
-          const listHadItems = hadItemsStr === 'true';
-
-          // Update if list currently has items
-          if (hasEntries && !listHadItems) {
-            setUserListHadItems(true);
-            await AsyncStorage.setItem(hadItemsKey, 'true');
+          if (shouldShowExplainers) {
+            setActiveExplainerStep(1); // Start with first explainer
+            // Mark as shown so it won't appear again
+            await AsyncStorage.setItem(explainerShownKey, 'true');
+          } else {
+            setActiveExplainerStep(0);
           }
-
-          // Show explainers if:
-          // 1. Never dismissed AND list is empty, OR
-          // 2. List had items before, is now empty, AND user previously dismissed explainers
-          const shouldShowExplainers = (!hasEntries && !explainerWasDismissed) ||
-                                       (!hasEntries && listHadItems && explainerWasDismissed);
-
-          setActiveExplainerStep(shouldShowExplainers ? 1 : 0); // Start with first explainer if should show
-          setUserListHadItems(listHadItems);
 
           // If personal list has entries, default to it. Otherwise, default to aligned.
           if (hasEntries) {
@@ -455,6 +449,14 @@ export default function HomeScreen() {
       }
     }
   }, [params.fromMap]);
+
+  // Load system list privacy settings from profile
+  useEffect(() => {
+    if (profile) {
+      setAlignedListPublic(profile.alignedListPublic || false);
+      setUnalignedListPublic(profile.unalignedListPublic || false);
+    }
+  }, [profile]);
 
   // Fetch user lists when library view is activated
   useEffect(() => {
@@ -1158,6 +1160,43 @@ export default function HomeScreen() {
   const localDistanceOptions: LocalDistanceOption[] = [100, 50, 10, 5, 1];
 
   // Helper function to toggle list expansion
+  // Toggle privacy for a list (system or custom)
+  const toggleListPrivacy = async (listId: string) => {
+    try {
+      if (!clerkUser?.id) return;
+
+      // Handle system lists (Aligned, Unaligned)
+      if (listId === 'aligned') {
+        const newValue = !alignedListPublic;
+        setAlignedListPublic(newValue);
+        // Save to Firestore user profile
+        const userRef = doc(db, 'users', clerkUser.id);
+        await updateDoc(userRef, { alignedListPublic: newValue });
+        return;
+      }
+
+      if (listId === 'unaligned') {
+        const newValue = !unalignedListPublic;
+        setUnalignedListPublic(newValue);
+        // Save to Firestore user profile
+        const userRef = doc(db, 'users', clerkUser.id);
+        await updateDoc(userRef, { unalignedListPublic: newValue });
+        return;
+      }
+
+      // Handle custom lists (including endorsement)
+      const list = userLists.find(l => l.id === listId);
+      if (list) {
+        const newValue = !list.isPublic;
+        await updateListMetadata(listId, { isPublic: newValue });
+        // Reload lists to reflect change
+        await loadUserLists();
+      }
+    } catch (error) {
+      console.error('Error toggling list privacy:', error);
+    }
+  };
+
   const toggleListExpansion = (listId: string) => {
     if (expandedListId === listId) {
       // Collapse if already expanded
@@ -1181,63 +1220,109 @@ export default function HomeScreen() {
     isPublic?: boolean
   ) => {
     const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
+    const isOptionsOpen = activeListOptionsId === listId;
 
     return (
-      <TouchableOpacity
-        style={[
-          styles.collapsibleListHeader,
-          { backgroundColor: isExpanded ? colors.backgroundSecondary : colors.background, borderColor: colors.border },
-          isPinned && styles.pinnedListHeader,
-        ]}
-        onPress={() => toggleListExpansion(listId)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.collapsibleListHeaderContent}>
-          <View style={styles.collapsibleListInfo}>
-            <View style={styles.collapsibleListTitleRow}>
-              <ChevronIcon size={20} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.collapsibleListTitle, { color: colors.text }]}>
-                {title}
-              </Text>
-              {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" />}
-            </View>
-            <View style={styles.collapsibleListMeta}>
-              <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
-                {itemCount} {itemCount === 1 ? 'item' : 'items'}
-              </Text>
-              {isPublic !== undefined && (
-                <View style={styles.privacyIndicator}>
-                  {isPublic ? (
-                    <><Globe size={12} color={colors.primary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.primary }]}>Public</Text></>
-                  ) : (
-                    <><Lock size={12} color={colors.textSecondary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.textSecondary }]}>Private</Text></>
-                  )}
-                </View>
+      <View>
+        <View
+          style={[
+            styles.collapsibleListHeader,
+            isPinned && styles.pinnedListHeader,
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.collapsibleListHeaderContent}
+            onPress={() => toggleListExpansion(listId)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.collapsibleListInfo}>
+              <View style={styles.collapsibleListTitleRow}>
+                <ChevronIcon size={20} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.collapsibleListTitle, { color: colors.text }]}>
+                  {title}
+                </Text>
+                {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" />}
+              </View>
+              <View style={styles.collapsibleListMeta}>
+                <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
+                  {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                </Text>
+                {isPublic !== undefined && (
+                  <View style={styles.privacyIndicator}>
+                    {isPublic ? (
+                      <><Globe size={12} color={colors.primary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.primary }]}>Public</Text></>
+                    ) : (
+                      <><Lock size={12} color={colors.textSecondary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.textSecondary }]}>Private</Text></>
+                    )}
+                  </View>
+                )}
+              </View>
+              {attribution && (
+                <Text style={[styles.collapsibleListAttribution, { color: colors.textSecondary }]}>
+                  {attribution}
+                </Text>
+              )}
+              {description && isExpanded && (
+                <Text style={[styles.collapsibleListDescription, { color: colors.text }]} numberOfLines={2}>
+                  {description}
+                </Text>
               )}
             </View>
-            {attribution && (
-              <Text style={[styles.collapsibleListAttribution, { color: colors.textSecondary }]}>
-                {attribution}
-              </Text>
-            )}
-            {description && isExpanded && (
-              <Text style={[styles.collapsibleListDescription, { color: colors.text }]} numberOfLines={2}>
-                {description}
-              </Text>
-            )}
-          </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.listHeaderOptionsButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              setActiveListOptionsId(isOptionsOpen ? null : listId);
+            }}
+            activeOpacity={0.7}
+          >
+            <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+        {isOptionsOpen && (
+          <View style={[styles.listOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+            <TouchableOpacity
+              style={styles.listOptionItem}
+              onPress={() => {
+                toggleListPrivacy(listId);
+                setActiveListOptionsId(null);
+              }}
+              activeOpacity={0.7}
+            >
+              {isPublic ? (
+                <><Lock size={16} color={colors.text} strokeWidth={2} /><Text style={[styles.listOptionText, { color: colors.text }]}>Make Private</Text></>
+              ) : (
+                <><Globe size={16} color={colors.text} strokeWidth={2} /><Text style={[styles.listOptionText, { color: colors.text }]}>Make Public</Text></>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     );
   };
 
   // Render a single list entry (handles all entry types)
   const renderListEntry = (entry: ListEntry) => {
+    if (!entry) return null;
+
     switch (entry.type) {
       case 'brand':
         if ('brandId' in entry) {
           const brand = allSupportFull.find(b => b.id === entry.brandId) ||
                        allAvoidFull.find(b => b.id === entry.brandId);
+          if (!brand) {
+            // Brand not found - show placeholder
+            return (
+              <View style={[styles.brandCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <View style={styles.brandCardContent}>
+                  <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={1}>
+                    {entry.brandName || 'Brand not found'}
+                  </Text>
+                </View>
+              </View>
+            );
+          }
           return renderBrandCard(brand, 'support');
         }
         break;
@@ -1583,9 +1668,6 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Collapsible Library Directory - Replaces subsection tabs */}
-      {mainView === 'forYou' && renderLibraryDirectory()}
-
       {/* Distance Filter Row - Shows when Local view is selected */}
       {mainView === 'local' && (
         <View style={styles.distanceFilterRow}>
@@ -1660,552 +1742,9 @@ export default function HomeScreen() {
   };
 
   const renderForYouView = () => {
-    // Content is now rendered inline with headers in renderLibraryDirectory
-    return null;
-
-    // Old logic - keeping for reference but not executed
-    // Aligned list - Show when expanded
-    if (expandedListId === 'aligned') {
-      return (
-        <View style={styles.section}>
-          {renderSubsectionHeader(
-            'Aligned Brands',
-            () => setShowNewListChoiceModal(true),
-            false
-          )}
-          <View style={styles.brandsContainer}>
-            {allSupportFull.slice(0, alignedLoadCount).map((product, index) => (
-              <View key={product.id} style={styles.forYouItemRow}>
-                <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
-                  {index + 1}
-                </Text>
-                <View style={styles.forYouCardWrapper}>
-                  {renderBrandCard(product, 'support')}
-                </View>
-              </View>
-            ))}
-            {alignedLoadCount < allSupportFull.length && (
-              <TouchableOpacity
-                style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
-                onPress={() => setAlignedLoadCount(alignedLoadCount + 10)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.loadMoreText, { color: colors.primary }]}>
-                  Load More ({allSupportFull.length - alignedLoadCount} remaining)
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      );
-    }
-
-    // Unaligned list - Show when expanded
-    if (expandedListId === 'unaligned') {
-      return (
-        <View style={styles.section}>
-          {renderSubsectionHeader(
-            'Unaligned Brands',
-            () => setShowNewListChoiceModal(true),
-            false
-          )}
-          <View style={styles.brandsContainer}>
-            {allAvoidFull.slice(0, unalignedLoadCount).map((product, index) => (
-              <View key={product.id} style={styles.forYouItemRow}>
-                <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
-                  {index + 1}
-                </Text>
-                <View style={styles.forYouCardWrapper}>
-                  {renderBrandCard(product, 'avoid')}
-                </View>
-              </View>
-            ))}
-            {unalignedLoadCount < allAvoidFull.length && (
-              <TouchableOpacity
-                style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
-                onPress={() => setUnalignedLoadCount(unalignedLoadCount + 10)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.loadMoreText, { color: colors.primary }]}>
-                  Load More ({allAvoidFull.length - unalignedLoadCount} remaining)
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      );
-    }
-
-    // Endorsement list - Show when expanded
-    if (expandedListId === 'endorsement') {
-      if (!userPersonalList) {
-        return (
-          <View style={styles.section}>
-            <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
-              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-                Your personal list is being created. Check back soon!
-              </Text>
-            </View>
-          </View>
-        );
-      }
-
-      if (!userPersonalList.entries || userPersonalList.entries.length === 0) {
-        // Show empty state with add button
-        return (
-          <View style={styles.section}>
-            {renderSubsectionHeader(
-              userPersonalList.name,
-              () => {
-                setSelectedList(userPersonalList);
-                setShowMyListOptionsModal(true);
-              },
-              false
-            )}
-
-            {/* Three dot options dropdown for For You view */}
-            {showEditDropdown && (() => {
-              const fullNameFromFirebase = profile?.userDetails?.name;
-              const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
-              const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
-                ? `${clerkUser.firstName} ${clerkUser.lastName}`
-                : '';
-              const firstName = clerkUser?.firstName;
-              const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || '';
-              const isUserNameList = userPersonalList.name === userName;
-
-              return (
-                <View style={[styles.listEditDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                  <TouchableOpacity
-                    style={styles.listOptionItem}
-                    onPress={() => {
-                      setShowEditDropdown(false);
-                      setIsMyListReorderMode(true);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                    <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
-                  </TouchableOpacity>
-                  <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                  <TouchableOpacity
-                    style={styles.listOptionItem}
-                    onPress={() => {
-                      setShowEditDropdown(false);
-                      setDescriptionText(userPersonalList.description || '');
-                      setShowDescriptionModal(true);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Edit size={18} color={colors.text} strokeWidth={2} />
-                    <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
-                  </TouchableOpacity>
-                  <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                  <TouchableOpacity
-                    style={styles.listOptionItem}
-                    onPress={() => {
-                      setShowEditDropdown(false);
-                      handleShareList(userPersonalList);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Share2 size={18} color={colors.text} strokeWidth={2} />
-                    <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
-                  </TouchableOpacity>
-                </View>
-              );
-            })()}
-
-            <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
-              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-                Your personal list is empty. Tap the + button above to add brands or businesses!
-              </Text>
-            </View>
-          </View>
-        );
-      }
-
-      return (
-        <View style={styles.section}>
-          {/* Done button when in reorder mode */}
-          {isMyListReorderMode && (
-            <View style={styles.libraryHeader}>
-              <TouchableOpacity
-                onPress={() => setIsMyListReorderMode(false)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.libraryDoneButton, { color: colors.primary }]}>Done</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {!isMyListReorderMode && renderSubsectionHeader(
-            userPersonalList.name,
-            () => {
-              setSelectedList(userPersonalList);
-              setShowMyListOptionsModal(true);
-            },
-            false
-          )}
-
-          {/* Three dot options dropdown for For You view */}
-          {!isMyListReorderMode && showEditDropdown && (() => {
-            const fullNameFromFirebase = profile?.userDetails?.name;
-            const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
-            const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
-              ? `${clerkUser.firstName} ${clerkUser.lastName}`
-              : '';
-            const firstName = clerkUser?.firstName;
-            const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || '';
-            const isUserNameList = userPersonalList.name === userName;
-
-            return (
-              <View style={[styles.listEditDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                <TouchableOpacity
-                  style={styles.listOptionItem}
-                  onPress={() => {
-                    setShowEditDropdown(false);
-                    setIsMyListReorderMode(true);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                  <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
-                </TouchableOpacity>
-                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                <TouchableOpacity
-                  style={styles.listOptionItem}
-                  onPress={() => {
-                    setShowEditDropdown(false);
-                    setDescriptionText(userPersonalList.description || '');
-                    setShowDescriptionModal(true);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Edit size={18} color={colors.text} strokeWidth={2} />
-                  <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
-                </TouchableOpacity>
-                <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                <TouchableOpacity
-                  style={styles.listOptionItem}
-                  onPress={() => {
-                    setShowEditDropdown(false);
-                    handleShareList(userPersonalList);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Share2 size={18} color={colors.text} strokeWidth={2} />
-                  <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
-                </TouchableOpacity>
-              </View>
-            );
-          })()}
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={async (event) => {
-              const { active, over } = event;
-              if (!over || active.id === over.id) return;
-
-              const oldIndex = userPersonalList.entries.findIndex((e) => e.id === active.id);
-              const newIndex = userPersonalList.entries.findIndex((e) => e.id === over.id);
-
-              if (oldIndex === -1 || newIndex === -1) return;
-
-              // Reorder locally first for immediate feedback
-              const newEntries = arrayMove(userPersonalList.entries, oldIndex, newIndex);
-              setUserPersonalList({ ...userPersonalList, entries: newEntries });
-
-              // Save to Firebase
-              try {
-                await reorderListEntries(userPersonalList.id, newEntries);
-                // Reload to sync
-                await reloadPersonalList();
-              } catch (error) {
-                console.error('[Home] Error reordering My List entries:', error);
-                // Revert on error
-                setUserPersonalList(userPersonalList);
-                if (Platform.OS === 'web') {
-                  window.alert('Could not reorder items. Please try again.');
-                } else {
-                  Alert.alert('Error', 'Could not reorder items. Please try again.');
-                }
-              }
-            }}
-          >
-            <SortableContext
-              items={userPersonalList.entries.slice(0, myListLoadCount).map((e) => e.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <View style={styles.brandsContainer}>
-                {userPersonalList.entries.slice(0, myListLoadCount).map((entry, index) => {
-                  const SortableEntry = () => {
-                    const {
-                      attributes,
-                      listeners,
-                      setNodeRef,
-                      transform,
-                      transition,
-                      isDragging,
-                    } = useSortable({ id: entry.id, disabled: !isMyListReorderMode || isMobileScreen });
-
-                    const style = {
-                      transform: CSS.Transform.toString(transform),
-                      transition,
-                      opacity: isDragging ? 0.5 : 1,
-                    };
-
-                    // Render brand entries
-                    if (entry.type === 'brand' && 'brandId' in entry) {
-                      return (
-                        <View
-                          key={entry.id}
-                          ref={setNodeRef as any}
-                          style={[styles.myListEntryRow, style as any]}
-                        >
-                          <TouchableOpacity
-                            style={[
-                              styles.brandCard,
-                              { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
-                            ]}
-                            onPress={() => !isMyListReorderMode && router.push(`/brand/${entry.brandId}`)}
-                            activeOpacity={0.7}
-                            disabled={isMyListReorderMode}
-                          >
-                            <View style={styles.brandCardInner}>
-                              <View style={styles.brandLogoContainer}>
-                                <Image
-                                  source={{ uri: entry.logoUrl || getLogoUrl(entry.website || getBrandWebsite(entry.brandId) || '') }}
-                                  style={styles.brandLogo}
-                                  contentFit="cover"
-                                  transition={200}
-                                  cachePolicy="memory-disk"
-                                />
-                              </View>
-                              <View style={styles.brandCardContent}>
-                                <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
-                                  {entry.brandName || getBrandName(entry.brandId)}
-                                </Text>
-                                <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                                  {entry.brandCategory || 'Brand'}
-                                </Text>
-                              </View>
-                              {isMyListReorderMode && isMobileScreen && (
-                                <View style={styles.listCardRearrangeButtons}>
-                                  <TouchableOpacity
-                                    onPress={async () => {
-                                      setSelectedList(userPersonalList);
-                                      await handleMoveEntryUp(index);
-                                    }}
-                                    disabled={index === 0}
-                                    style={styles.rearrangeButton}
-                                    activeOpacity={0.7}
-                                  >
-                                    <ChevronUp
-                                      size={20}
-                                      color={index === 0 ? colors.textSecondary : colors.text}
-                                      strokeWidth={2}
-                                    />
-                                  </TouchableOpacity>
-                                  <TouchableOpacity
-                                    onPress={async () => {
-                                      setSelectedList(userPersonalList);
-                                      await handleMoveEntryDown(index);
-                                    }}
-                                    disabled={index === userPersonalList.entries.slice(0, myListLoadCount).length - 1}
-                                    style={styles.rearrangeButton}
-                                    activeOpacity={0.7}
-                                  >
-                                    <ChevronDown
-                                      size={20}
-                                      color={index === userPersonalList.entries.slice(0, myListLoadCount).length - 1 ? colors.textSecondary : colors.text}
-                                      strokeWidth={2}
-                                    />
-                                  </TouchableOpacity>
-                                </View>
-                              )}
-                              {isMyListReorderMode && !isMobileScreen && (
-                                <View
-                                  {...attributes}
-                                  {...listeners}
-                                  style={styles.dragHandle}
-                                >
-                                  <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                                </View>
-                              )}
-                            </View>
-                          </TouchableOpacity>
-                        </View>
-                      );
-                    }
-                    // Render business entries
-                    else if (entry.type === 'business' && 'businessId' in entry) {
-                      return (
-                        <View
-                          key={entry.id}
-                          ref={setNodeRef as any}
-                          style={[styles.myListEntryRow, style as any]}
-                        >
-                          <TouchableOpacity
-                            style={[
-                              styles.brandCard,
-                              { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
-                            ]}
-                            onPress={() => !isMyListReorderMode && handleBusinessPress(entry.businessId)}
-                            activeOpacity={0.7}
-                            disabled={isMyListReorderMode}
-                          >
-                            <View style={styles.brandCardInner}>
-                              <View style={styles.brandLogoContainer}>
-                                <Image
-                                  source={{ uri: entry.logoUrl || getLogoUrl(entry.website || '') }}
-                                  style={styles.brandLogo}
-                                  contentFit="cover"
-                                  transition={200}
-                                  cachePolicy="memory-disk"
-                                />
-                              </View>
-                              <View style={styles.brandCardContent}>
-                                <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
-                                  {entry.businessName || (entry as any).name || getBusinessName(entry.businessId)}
-                                </Text>
-                                <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                                  {entry.businessCategory || (entry as any).category || 'Local Business'}
-                                </Text>
-                              </View>
-                              {isMyListReorderMode && isMobileScreen && (
-                                <View style={styles.listCardRearrangeButtons}>
-                                  <TouchableOpacity
-                                    onPress={async () => {
-                                      setSelectedList(userPersonalList);
-                                      await handleMoveEntryUp(index);
-                                    }}
-                                    disabled={index === 0}
-                                    style={styles.rearrangeButton}
-                                    activeOpacity={0.7}
-                                  >
-                                    <ChevronUp
-                                      size={20}
-                                      color={index === 0 ? colors.textSecondary : colors.text}
-                                      strokeWidth={2}
-                                    />
-                                  </TouchableOpacity>
-                                  <TouchableOpacity
-                                    onPress={async () => {
-                                      setSelectedList(userPersonalList);
-                                      await handleMoveEntryDown(index);
-                                    }}
-                                    disabled={index === userPersonalList.entries.slice(0, myListLoadCount).length - 1}
-                                    style={styles.rearrangeButton}
-                                    activeOpacity={0.7}
-                                  >
-                                    <ChevronDown
-                                      size={20}
-                                      color={index === userPersonalList.entries.slice(0, myListLoadCount).length - 1 ? colors.textSecondary : colors.text}
-                                      strokeWidth={2}
-                                    />
-                                  </TouchableOpacity>
-                                </View>
-                              )}
-                              {isMyListReorderMode && !isMobileScreen && (
-                                <View
-                                  {...attributes}
-                                  {...listeners}
-                                  style={styles.dragHandle}
-                                >
-                                  <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                                </View>
-                              )}
-                            </View>
-                          </TouchableOpacity>
-                        </View>
-                      );
-                    }
-                    return null;
-                  };
-
-                  return <SortableEntry key={entry.id} />;
-                })}
-                {myListLoadCount < userPersonalList.entries.length && (
-                  <TouchableOpacity
-                    style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
-                    onPress={() => setMyListLoadCount(myListLoadCount + 10)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.loadMoreText, { color: colors.primary }]}>
-                      Load More ({userPersonalList.entries.length - myListLoadCount} remaining)
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </SortableContext>
-          </DndContext>
-        </View>
-      );
-    }
-
-    // Custom lists - Show when a custom list is expanded
-    const customList = userLists.find(list => list.id === expandedListId);
-    if (customList && !customList.isEndorsed) {
-      // Render custom list content
-      return (
-        <View style={styles.section}>
-          {renderSubsectionHeader(
-            customList.name,
-            () => {
-              setSelectedList(customList);
-              setShowListOptionsMenu(true);
-            },
-            false
-          )}
-          {/* Custom list content rendering will be added here */}
-          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
-            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-              {customList.entries.length} {customList.entries.length === 1 ? 'item' : 'items'} in this list
-            </Text>
-          </View>
-        </View>
-      );
-    }
-
-    return null;
+    // Render the library directory in the scrollable area
+    return renderLibraryDirectory();
   };
-
-  const renderNewsFeedView = () => {
-    if (isLoadingNews) {
-      return (
-        <View style={styles.section}>
-          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
-            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-              Loading news articles...
-            </Text>
-          </View>
-        </View>
-      );
-    }
-
-    if (newsArticles.length === 0) {
-      return (
-        <View style={styles.section}>
-          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
-            <Text style={[styles.placeholderTitle, { color: colors.text }]}>No News Yet</Text>
-            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-              Add brands to your lists to see relevant news articles.
-            </Text>
-          </View>
-        </View>
-      );
-    }
-
-    // Get source display name
-    const getSourceDisplayName = (sourceId: string): string => {
-      if (sourceId === 'myList') return 'Endorsements';
-      if (sourceId === 'aligned') return 'Aligned';
-      if (sourceId === 'unaligned') return 'Unaligned';
-      const customList = userLists.find(list => list.id === sourceId);
-      return customList?.name || 'Unknown List';
-    };
-
     return (
       <View style={styles.section}>
         <View style={styles.newsHeaderContainer}>
@@ -7976,23 +7515,44 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   collapsibleListHeader: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     marginHorizontal: 16,
-    marginVertical: 6,
+    marginVertical: 3,
   },
   listContentContainer: {
     marginHorizontal: 16,
     marginBottom: 8,
   },
   pinnedListHeader: {
-    borderWidth: 2,
+    // No special styling for pinned headers
   },
   collapsibleListHeaderContent: {
+    flex: 1,
+  },
+  listHeaderOptionsButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  listOptionsDropdown: {
+    marginHorizontal: 16,
+    marginTop: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  listOptionItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 12,
+    padding: 12,
+  },
+  listOptionText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   collapsibleListInfo: {
     flex: 1,

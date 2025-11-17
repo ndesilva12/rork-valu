@@ -46,6 +46,8 @@ function cleanUserProfile(profile: UserProfile): Partial<UserProfile> {
     ...(profile.consentGivenAt !== undefined && { consentGivenAt: profile.consentGivenAt }),
     ...(profile.consentVersion !== undefined && { consentVersion: profile.consentVersion }),
     ...(profile.isPublicProfile !== undefined && { isPublicProfile: profile.isPublicProfile }),
+    ...(profile.alignedListPublic !== undefined && { alignedListPublic: profile.alignedListPublic }),
+    ...(profile.unalignedListPublic !== undefined && { unalignedListPublic: profile.unalignedListPublic }),
   });
 
   console.log('[Firebase cleanUserProfile] Cleaned profile:', JSON.stringify(cleaned, null, 2));
