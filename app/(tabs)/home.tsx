@@ -147,6 +147,7 @@ export default function HomeScreen() {
   // Library state
   const [userLists, setUserLists] = useState<UserList[]>([]);
   const [expandedListId, setExpandedListId] = useState<string | null>(null); // 'endorsement', 'aligned', 'unaligned', or custom list ID
+  const [selectedListId, setSelectedListId] = useState<string | null>(null); // Track which list is highlighted/selected
   const [hasSetDefaultExpansion, setHasSetDefaultExpansion] = useState(false); // Track if we've set default expansion
   const [showCreateListModal, setShowCreateListModal] = useState(false);
   const [libraryView, setLibraryView] = useState<'overview' | 'detail'>('overview');
@@ -529,18 +530,28 @@ export default function HomeScreen() {
     }
   };
 
-  // Set default expanded list when library loads (only once)
+  // Set default expanded/selected list when library loads (only once)
   useEffect(() => {
-    if (mainView === 'forYou' && !hasSetDefaultExpansion && userPersonalList) {
-      // Check if endorsement list has 3+ items
-      if (userPersonalList.entries.length >= 3) {
-        setExpandedListId('endorsement');
-      } else {
-        setExpandedListId('aligned');
+    const handleDefaultLibraryState = async () => {
+      if (mainView === 'forYou' && !hasSetDefaultExpansion && userPersonalList && clerkUser?.id) {
+        const firstTimeKey = `firstTimeLibraryVisit_${clerkUser.id}`;
+        const isFirstTime = await AsyncStorage.getItem(firstTimeKey);
+
+        if (isFirstTime === null) {
+          // First time: expand aligned list
+          setExpandedListId('aligned');
+          setSelectedListId('aligned');
+          await AsyncStorage.setItem(firstTimeKey, 'false'); // Mark as visited
+        } else {
+          // Not first time: select (highlight) endorsed list but keep collapsed
+          setExpandedListId(null);
+          setSelectedListId('endorsement');
+        }
+        setHasSetDefaultExpansion(true);
       }
-      setHasSetDefaultExpansion(true);
-    }
-  }, [mainView, userPersonalList, hasSetDefaultExpansion]);
+    };
+    handleDefaultLibraryState();
+  }, [mainView, userPersonalList, hasSetDefaultExpansion, clerkUser?.id]);
 
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands, brandDistances } = useMemo(() => {
     // Combine brands from CSV and user businesses
@@ -1205,8 +1216,11 @@ export default function HomeScreen() {
   };
 
   const toggleListExpansion = (listId: string) => {
+    // Always update selected list when clicked
+    setSelectedListId(listId);
+
     if (expandedListId === listId) {
-      // Collapse if already expanded
+      // Collapse if already expanded, but keep it selected
       setExpandedListId(null);
     } else {
       // Expand the clicked list
@@ -1230,6 +1244,7 @@ export default function HomeScreen() {
   ) => {
     const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
     const isOptionsOpen = activeListOptionsId === listId;
+    const isSelected = selectedListId === listId;
 
     return (
       <View>
@@ -1238,6 +1253,7 @@ export default function HomeScreen() {
             styles.collapsibleListHeader,
             isPinned && styles.pinnedListHeader,
             isExpanded && { backgroundColor: colors.backgroundSecondary, borderWidth: 2, borderColor: colors.primary, borderRadius: 12 },
+            !isExpanded && isSelected && { borderWidth: 2, borderColor: colors.primary, borderRadius: 12 },
           ]}
         >
           {/* Profile Image */}
