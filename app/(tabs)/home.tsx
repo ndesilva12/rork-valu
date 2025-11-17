@@ -1,3 +1,4 @@
+import React from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
 import {
@@ -1206,6 +1207,157 @@ export default function HomeScreen() {
     );
   };
 
+  // Render content for Aligned list
+  const renderAlignedContent = () => {
+    return (
+      <View style={styles.listContentContainer}>
+        <View style={styles.brandsContainer}>
+          {allSupportFull.slice(0, alignedLoadCount).map((product, index) => (
+            <View key={product.id} style={styles.forYouItemRow}>
+              <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                {index + 1}
+              </Text>
+              <View style={styles.forYouCardWrapper}>
+                {renderBrandCard(product, 'support')}
+              </View>
+            </View>
+          ))}
+          {alignedLoadCount < allSupportFull.length && (
+            <TouchableOpacity
+              style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
+              onPress={() => setAlignedLoadCount(alignedLoadCount + 10)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                Load More ({allSupportFull.length - alignedLoadCount} remaining)
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
+
+  // Render content for Unaligned list
+  const renderUnalignedContent = () => {
+    return (
+      <View style={styles.listContentContainer}>
+        <View style={styles.brandsContainer}>
+          {allAvoidFull.slice(0, unalignedLoadCount).map((product, index) => (
+            <View key={product.id} style={styles.forYouItemRow}>
+              <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                {index + 1}
+              </Text>
+              <View style={styles.forYouCardWrapper}>
+                {renderBrandCard(product, 'avoid')}
+              </View>
+            </View>
+          ))}
+          {unalignedLoadCount < allAvoidFull.length && (
+            <TouchableOpacity
+              style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
+              onPress={() => setUnalignedLoadCount(unalignedLoadCount + 10)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                Load More ({allAvoidFull.length - unalignedLoadCount} remaining)
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
+
+  // Render content for Endorsement list
+  const renderEndorsementContent = () => {
+    if (!userPersonalList) return null;
+
+    if (!userPersonalList.entries || userPersonalList.entries.length === 0) {
+      return (
+        <View style={styles.listContentContainer}>
+          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+              Your endorsement list is empty. Start adding items!
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    // Render endorsement list items (similar to current userList rendering)
+    return (
+      <View style={styles.listContentContainer}>
+        <View style={styles.brandsContainer}>
+          {userPersonalList.entries.slice(0, myListLoadCount).map((entry, index) => (
+            <View key={entry.id} style={styles.forYouItemRow}>
+              <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                {index + 1}
+              </Text>
+              <View style={styles.forYouCardWrapper}>
+                {/* Render based on entry type */}
+                {entry.type === 'brand' && 'brandId' in entry && (
+                  renderBrandCard(
+                    allSupportFull.find(b => b.id === entry.brandId) || allAvoidFull.find(b => b.id === entry.brandId),
+                    'support'
+                  )
+                )}
+              </View>
+            </View>
+          ))}
+          {myListLoadCount < userPersonalList.entries.length && (
+            <TouchableOpacity
+              style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
+              onPress={() => setMyListLoadCount(myListLoadCount + 10)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                Load More ({userPersonalList.entries.length - myListLoadCount} remaining)
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
+
+  // Render content for custom lists
+  const renderCustomListContent = (list: UserList) => {
+    if (!list.entries || list.entries.length === 0) {
+      return (
+        <View style={styles.listContentContainer}>
+          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+              This list is empty
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.listContentContainer}>
+        <View style={styles.brandsContainer}>
+          {list.entries.map((entry, index) => (
+            <View key={entry.id} style={styles.forYouItemRow}>
+              <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                {index + 1}
+              </Text>
+              <View style={styles.forYouCardWrapper}>
+                {entry.type === 'brand' && 'brandId' in entry && (
+                  renderBrandCard(
+                    allSupportFull.find(b => b.id === entry.brandId) || allAvoidFull.find(b => b.id === entry.brandId),
+                    'support'
+                  )
+                )}
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
   // Render the unified collapsible library directory
   const renderLibraryDirectory = () => {
     // Get custom lists (non-endorsed)
@@ -1214,13 +1366,18 @@ export default function HomeScreen() {
     return (
       <View style={styles.libraryDirectory}>
         {/* 1. Endorsement List - Always first, pinned */}
-        {userPersonalList && renderCollapsibleListHeader(
-          'endorsement',
-          userPersonalList.name,
-          userPersonalList.entries?.length || 0,
-          expandedListId === 'endorsement',
-          true,
-          true
+        {userPersonalList && (
+          <>
+            {renderCollapsibleListHeader(
+              'endorsement',
+              userPersonalList.name,
+              userPersonalList.entries?.length || 0,
+              expandedListId === 'endorsement',
+              true,
+              true
+            )}
+            {expandedListId === 'endorsement' && renderEndorsementContent()}
+          </>
         )}
 
         {/* 2. Aligned List */}
@@ -1232,6 +1389,7 @@ export default function HomeScreen() {
           false,
           false
         )}
+        {expandedListId === 'aligned' && renderAlignedContent()}
 
         {/* 3. Unaligned List */}
         {renderCollapsibleListHeader(
@@ -1242,15 +1400,21 @@ export default function HomeScreen() {
           false,
           false
         )}
+        {expandedListId === 'unaligned' && renderUnalignedContent()}
 
         {/* 4. Custom Lists - After unaligned */}
-        {customLists.map(list => renderCollapsibleListHeader(
-          list.id,
-          list.name,
-          list.entries.length,
-          expandedListId === list.id,
-          false,
-          false
+        {customLists.map(list => (
+          <React.Fragment key={list.id}>
+            {renderCollapsibleListHeader(
+              list.id,
+              list.name,
+              list.entries.length,
+              expandedListId === list.id,
+              false,
+              false
+            )}
+            {expandedListId === list.id && renderCustomListContent(list)}
+          </React.Fragment>
         ))}
       </View>
     );
@@ -1374,6 +1538,10 @@ export default function HomeScreen() {
   };
 
   const renderForYouView = () => {
+    // Content is now rendered inline with headers in renderLibraryDirectory
+    return null;
+
+    // Old logic - keeping for reference but not executed
     // Aligned list - Show when expanded
     if (expandedListId === 'aligned') {
       return (
@@ -3991,7 +4159,16 @@ export default function HomeScreen() {
             style={styles.headerLogo}
             resizeMode="contain"
           />
-          <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={[styles.headerCreateButton, { backgroundColor: colors.primary }]}
+              onPress={() => setShowNewListChoiceModal(true)}
+              activeOpacity={0.7}
+            >
+              <Plus size={20} color={colors.white} strokeWidth={2.5} />
+            </TouchableOpacity>
+            <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
+          </View>
         </View>
         {renderMainViewSelector()}
       </View>
@@ -5750,6 +5927,18 @@ const styles = StyleSheet.create({
     height: 47,
     marginTop: 8,
     alignSelf: 'flex-start',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerCreateButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitleRow: {
     flex: 1,
@@ -7670,6 +7859,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginHorizontal: 16,
     marginVertical: 6,
+  },
+  listContentContainer: {
+    marginHorizontal: 16,
+    marginBottom: 8,
   },
   pinnedListHeader: {
     borderWidth: 2,
