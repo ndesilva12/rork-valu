@@ -1476,8 +1476,9 @@ export default function HomeScreen() {
       case 'business':
         if ('businessId' in entry) {
           // Find business to get alignment score
-          const businessData = allLocalBusinesses.find(b => b.business.id === entry.businessId);
-          const alignmentScore = businessData?.alignmentScore || 0;
+          const businessData = userBusinesses.find(b => b.id === entry.businessId);
+          const rawScore = businessData ? calculateAlignmentScore(profile.causes, businessData.causes || []) : 0;
+          const alignmentScore = Math.round(50 + (rawScore * 0.8)); // Map to 10-90 range
           const isAligned = alignmentScore >= 50;
           const titleColor = isAligned ? colors.primaryLight : colors.danger;
 
@@ -3448,8 +3449,9 @@ export default function HomeScreen() {
                   );
                 } else if (entry.type === 'business' && 'businessId' in entry) {
                   // Get business score and alignment
-                  const businessData = allLocalBusinesses.find(b => b.business.id === entry.businessId);
-                  const alignmentScore = businessData?.alignmentScore || 0;
+                  const businessData = userBusinesses.find(b => b.id === entry.businessId);
+                  const rawScore = businessData ? calculateAlignmentScore(profile.causes, businessData.causes || []) : 0;
+                  const alignmentScore = Math.round(50 + (rawScore * 0.8)); // Map to 10-90 range
                   const isAligned = alignmentScore >= 50;
                   const titleColor = isAligned ? colors.primaryLight : colors.danger;
 
