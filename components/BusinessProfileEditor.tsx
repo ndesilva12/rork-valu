@@ -1025,6 +1025,67 @@ export default function BusinessProfileEditor() {
           </View>
         </View>
 
+        {/* Brands & Businesses Section */}
+        <View style={styles.brandsBusinessesSection}>
+          <View style={styles.brandsBusinessesHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Brands & Businesses</Text>
+          </View>
+
+          <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.success }]}>
+            {loadingLists ? (
+              <ActivityIndicator size="small" color={colors.primary} style={{ padding: 16 }} />
+            ) : (() => {
+              const { brands, businesses } = extractBrandsAndBusinesses();
+              const hasData = brands.length > 0 || businesses.length > 0;
+
+              if (!hasData) {
+                return <Text style={[styles.noDataText, { color: colors.textSecondary }]}>No brands or businesses in lists</Text>;
+              }
+
+              // Helper function to get display name for list
+              const getListDisplayName = (listName: string) => {
+                // If list name is "My List" or matches the user's name, show business name
+                if (listName === 'My List' || listName === clerkUser?.fullName || listName === clerkUser?.firstName) {
+                  return businessInfo.name;
+                }
+                return listName;
+              };
+
+              return (
+                <>
+                  {brands.length > 0 && (
+                    <View style={[styles.listSection, { borderBottomColor: colors.border }]}>
+                      <Text style={[styles.listSectionTitle, { color: colors.primary }]}>Brands ({brands.length})</Text>
+                      {brands.map((brand, index) => (
+                        <View key={`brand-${index}`} style={[styles.moneyFlowItem, { borderBottomColor: colors.border }]}>
+                          <View style={styles.moneyFlowItemRow}>
+                            <Text style={[styles.moneyFlowName, { color: colors.text }]}>{brand.name}</Text>
+                            <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>{getListDisplayName(brand.listName)}</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {businesses.length > 0 && (
+                    <View style={styles.listSection}>
+                      <Text style={[styles.listSectionTitle, { color: colors.primary }]}>Businesses ({businesses.length})</Text>
+                      {businesses.map((business, index) => (
+                        <View key={`business-${index}`} style={[styles.moneyFlowItem, { borderBottomColor: colors.border }]}>
+                          <View style={styles.moneyFlowItemRow}>
+                            <Text style={[styles.moneyFlowName, { color: colors.text }]}>{business.name}</Text>
+                            <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>{getListDisplayName(business.listName)}</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </>
+              );
+            })()}
+          </View>
+        </View>
+
         {/* Money Flow Section - Admin Only */}
         <View style={styles.moneyFlowSection}>
           <View style={styles.moneyFlowHeader}>
@@ -1100,56 +1161,6 @@ export default function BusinessProfileEditor() {
             ) : (
               <Text style={[styles.noDataText, { color: colors.textSecondary }]}>No partnerships</Text>
             )}
-          </View>
-
-          {/* User's Brands & Businesses Section */}
-          <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.success }]}>
-            <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.subsectionTitle, { color: colors.text }]}>USER'S BRANDS & BUSINESSES</Text>
-            </View>
-
-            {loadingLists ? (
-              <ActivityIndicator size="small" color={colors.primary} style={{ padding: 16 }} />
-            ) : (() => {
-              const { brands, businesses } = extractBrandsAndBusinesses();
-              const hasData = brands.length > 0 || businesses.length > 0;
-
-              if (!hasData) {
-                return <Text style={[styles.noDataText, { color: colors.textSecondary }]}>No brands or businesses in lists</Text>;
-              }
-
-              return (
-                <>
-                  {brands.length > 0 && (
-                    <View style={[styles.listSection, { borderBottomColor: colors.border }]}>
-                      <Text style={[styles.listSectionTitle, { color: colors.primary }]}>Brands ({brands.length})</Text>
-                      {brands.map((brand, index) => (
-                        <View key={`brand-${index}`} style={[styles.moneyFlowItem, { borderBottomColor: colors.border }]}>
-                          <View style={styles.moneyFlowItemRow}>
-                            <Text style={[styles.moneyFlowName, { color: colors.text }]}>{brand.name}</Text>
-                            <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>{brand.listName}</Text>
-                          </View>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-
-                  {businesses.length > 0 && (
-                    <View style={styles.listSection}>
-                      <Text style={[styles.listSectionTitle, { color: colors.primary }]}>Businesses ({businesses.length})</Text>
-                      {businesses.map((business, index) => (
-                        <View key={`business-${index}`} style={[styles.moneyFlowItem, { borderBottomColor: colors.border }]}>
-                          <View style={styles.moneyFlowItemRow}>
-                            <Text style={[styles.moneyFlowName, { color: colors.text }]}>{business.name}</Text>
-                            <Text style={[styles.moneyFlowRelationship, { color: colors.textSecondary }]}>{business.listName}</Text>
-                          </View>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </>
-              );
-            })()}
           </View>
         </View>
 
@@ -1433,6 +1444,13 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   // Money Flow Section Styles
+  brandsBusinessesSection: {
+    marginTop: 24,
+    gap: 16,
+  },
+  brandsBusinessesHeader: {
+    marginBottom: 8,
+  },
   moneyFlowSection: {
     marginTop: 24,
     gap: 16,
