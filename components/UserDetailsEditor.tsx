@@ -154,11 +154,35 @@ export default function UserDetailsEditor() {
     setEditing(false);
   };
 
+  const [activeTab, setActiveTab] = useState<'profile' | 'following' | 'discover'>('profile');
+
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>User Details</Text>
-        {!editing && (
+        <View style={styles.tabsContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'profile' && styles.activeTab]}
+            onPress={() => setActiveTab('profile')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.tabText, { color: activeTab === 'profile' ? colors.primary : colors.textSecondary }]}>Profile</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'following' && styles.activeTab]}
+            onPress={() => setActiveTab('following')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.tabText, { color: activeTab === 'following' ? colors.primary : colors.textSecondary }]}>Following</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'discover' && styles.activeTab]}
+            onPress={() => setActiveTab('discover')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.tabText, { color: activeTab === 'discover' ? colors.primary : colors.textSecondary }]}>Discover</Text>
+          </TouchableOpacity>
+        </View>
+        {activeTab === 'profile' && !editing && (
           <TouchableOpacity
             onPress={() => setEditing(true)}
             activeOpacity={0.7}
@@ -167,6 +191,9 @@ export default function UserDetailsEditor() {
           </TouchableOpacity>
         )}
       </View>
+
+      {activeTab === 'profile' && (
+        <>
 
       <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
         {/* Compact Header with Icon */}
@@ -284,11 +311,11 @@ export default function UserDetailsEditor() {
               />
             ) : userDetails.website ? (
               <TouchableOpacity
-                style={[styles.linkButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                style={[styles.websiteButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
                 onPress={() => Linking.openURL(userDetails.website.startsWith('http') ? userDetails.website : `https://${userDetails.website}`)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.linkButtonText, { color: colors.white }]} numberOfLines={1}>
+                <Text style={[styles.websiteButtonText, { color: colors.white }]} numberOfLines={1}>
                   {userDetails.website}
                 </Text>
                 <ExternalLink size={14} color={colors.white} strokeWidth={2} />
@@ -473,6 +500,32 @@ export default function UserDetailsEditor() {
           </View>
         )}
       </View>
+      </>
+      )}
+
+      {activeTab === 'following' && (
+        <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
+          <View style={styles.emptyStateContainer}>
+            <User size={48} color={colors.textSecondary} strokeWidth={1.5} />
+            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Following Yet</Text>
+            <Text style={[styles.emptyStateDescription, { color: colors.textSecondary }]}>
+              People you follow will appear here
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {activeTab === 'discover' && (
+        <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
+          <View style={styles.emptyStateContainer}>
+            <User size={48} color={colors.textSecondary} strokeWidth={1.5} />
+            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>Discover People</Text>
+            <Text style={[styles.emptyStateDescription, { color: colors.textSecondary }]}>
+              Connect your contacts or social accounts to discover people you know
+            </Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -486,6 +539,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    gap: 24,
+  },
+  tab: {
+    paddingBottom: 4,
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabText: {
+    fontSize: 18,
+    fontWeight: '600' as const,
   },
   sectionTitle: {
     fontSize: 20,
@@ -620,6 +688,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
     flex: 1,
+  },
+  websiteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+    maxWidth: '60%',
+  },
+  websiteButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  emptyStateContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    gap: 12,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+  },
+  emptyStateDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+    maxWidth: 280,
   },
   socialButton: {
     paddingHorizontal: 12,
