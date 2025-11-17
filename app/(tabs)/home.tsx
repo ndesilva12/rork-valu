@@ -455,9 +455,9 @@ export default function HomeScreen() {
     }
   }, [params.fromMap]);
 
-  // Fetch user lists when library view is activated or when All Lists subsection is active
+  // Fetch user lists when library view is activated
   useEffect(() => {
-    if ((mainView === 'myLibrary' || (mainView === 'forYou' && forYouSubsection === 'allLists')) && clerkUser?.id) {
+    if ((mainView === 'myLibrary' || mainView === 'forYou') && clerkUser?.id) {
       loadUserLists();
     }
     // Reset to overview when leaving library
@@ -465,7 +465,7 @@ export default function HomeScreen() {
       setLibraryView('overview');
       setSelectedList(null);
     }
-  }, [mainView, forYouSubsection, clerkUser?.id]);
+  }, [mainView, clerkUser?.id]);
 
   const loadUserLists = async () => {
     if (!clerkUser?.id) return;
