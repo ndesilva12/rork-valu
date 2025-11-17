@@ -203,6 +203,10 @@ export default function HomeScreen() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareListData, setShareListData] = useState<UserList | null>(null);
 
+  // Card three-dot menu state
+  const [activeCardMenuId, setActiveCardMenuId] = useState<string | null>(null);
+  const [cardMenuData, setCardMenuData] = useState<{ type: 'brand' | 'business', id: string, name: string, website?: string, logoUrl?: string, listId?: string } | null>(null);
+
   // News feed state
   const [newsArticles, setNewsArticles] = useState<Array<{
     title: string;
@@ -2621,6 +2625,64 @@ export default function HomeScreen() {
       // For brands and businesses, go straight to list selection
       setQuickAddItem({ type, id, name, website, logoUrl });
       setShowQuickAddModal(true);
+    }
+  };
+
+  // Card menu handler functions
+  const handleCardMenuOpen = (type: 'brand' | 'business', id: string, name: string, website?: string, logoUrl?: string, listId?: string) => {
+    setCardMenuData({ type, id, name, website, logoUrl, listId });
+    setActiveCardMenuId(id);
+  };
+
+  const handleCardMenuAddTo = () => {
+    if (!cardMenuData) return;
+    setActiveCardMenuId(null);
+    handleQuickAdd(cardMenuData.type, cardMenuData.id, cardMenuData.name, cardMenuData.website, cardMenuData.logoUrl);
+  };
+
+  const handleCardMenuRemove = async () => {
+    if (!cardMenuData || !cardMenuData.listId) return;
+    setActiveCardMenuId(null);
+
+    // Find the entry in the current list
+    if (selectedList && selectedList !== 'browse') {
+      const list = selectedList as UserList;
+      const entry = list.entries.find(e =>
+        (e.type === 'brand' && 'brandId' in e && e.brandId === cardMenuData.id) ||
+        (e.type === 'business' && 'businessId' in e && e.businessId === cardMenuData.id)
+      );
+      if (entry) {
+        handleDeleteEntry(entry.id);
+      }
+    }
+  };
+
+  const handleCardMenuShare = async () => {
+    if (!cardMenuData) return;
+    setActiveCardMenuId(null);
+
+    const itemType = cardMenuData.type;
+    const shareLink = `https://upright.money/${itemType}/${cardMenuData.id}`;
+    const shareMessage = `Check out ${cardMenuData.name} on Upright Money!\n\n${shareLink}`;
+
+    if (Platform.OS === 'web') {
+      // Web: Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareLink);
+        window.alert('Link copied to clipboard!');
+      } catch (err) {
+        window.alert('Could not copy link. Please copy manually:\n\n' + shareLink);
+      }
+    } else {
+      // Mobile: Use native share
+      try {
+        await Share.share({
+          message: shareMessage,
+          url: shareLink,
+        });
+      } catch (error) {
+        console.error('Error sharing:', error);
+      }
     }
   };
 
