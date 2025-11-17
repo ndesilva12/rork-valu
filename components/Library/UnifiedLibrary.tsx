@@ -23,6 +23,10 @@ import {
   Target,
   ExternalLink,
   Plus,
+  GripVertical,
+  Edit,
+  Trash2,
+  Share2,
 } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { UserList, ListEntry } from '@/types/library';
@@ -73,21 +77,41 @@ export default function UnifiedLibrary({
   const library = useLibrary();
   const { profile } = useUser();
 
+  // Local state for independent expansion in each location
+  const [localExpandedListId, setLocalExpandedListId] = useState<string | null>(null);
+  const [localSelectedListId, setLocalSelectedListId] = useState<string | null>(null);
   const [activeListOptionsId, setActiveListOptionsId] = useState<string | null>(null);
+  const [activeItemOptionsId, setActiveItemOptionsId] = useState<string | null>(null);
 
   // Mode-based permissions
-  const canInteract = mode !== 'preview';
+  const canEdit = mode === 'edit';
+  const canInteract = mode !== 'preview'; // Can add/share in view mode
+  const canBrowse = true; // All modes can expand/collapse to browse
 
   // Use props if provided, otherwise use context
   const endorsementList = propsEndorsementList !== undefined ? propsEndorsementList : library.state.endorsementList;
   const userLists = propsUserLists !== undefined ? propsUserLists : library.state.userLists;
-  const expandedListId = library.state.expandedListId;
-  const selectedListId = library.state.selectedListId;
+
+  // Use context state for edit mode, local state for preview/view modes
+  const expandedListId = mode === 'edit' ? library.state.expandedListId : localExpandedListId;
+  const selectedListId = mode === 'edit' ? library.state.selectedListId : localSelectedListId;
 
   const toggleListExpansion = (listId: string) => {
-    if (!canInteract) return;
-    library.toggleListExpansion(listId);
-    library.setSelectedList(listId);
+    if (!canBrowse) return;
+
+    if (mode === 'edit') {
+      // Home tab uses context
+      library.toggleListExpansion(listId);
+      library.setSelectedList(listId);
+    } else {
+      // Profile/User profile use local state
+      setLocalSelectedListId(listId);
+      if (localExpandedListId === listId) {
+        setLocalExpandedListId(null);
+      } else {
+        setLocalExpandedListId(listId);
+      }
+    }
   };
 
   // Filter out endorsement list from custom lists
@@ -137,11 +161,13 @@ export default function UnifiedLibrary({
               style={[styles.quickAddButton, { backgroundColor: colors.background }]}
               onPress={(e) => {
                 e.stopPropagation();
-                // TODO: Show options menu
+                // TODO: Show options menu for brand
               }}
               activeOpacity={0.7}
             >
-              <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+              <View style={{ transform: [{ rotate: '90deg' }] }}>
+                <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+              </View>
             </TouchableOpacity>
           )}
           {mode === 'view' && (
@@ -237,11 +263,13 @@ export default function UnifiedLibrary({
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
                       e.stopPropagation();
-                      // TODO: Show options menu
+                      setActiveItemOptionsId(entry.businessId);
                     }}
                     activeOpacity={0.7}
                   >
-                    <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                    <View style={{ transform: [{ rotate: '90deg' }] }}>
+                      <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                    </View>
                   </TouchableOpacity>
                 )}
                 {mode === 'view' && (
@@ -411,7 +439,6 @@ export default function UnifiedLibrary({
             style={styles.collapsibleListHeaderContent}
             onPress={() => toggleListExpansion(listId)}
             activeOpacity={0.7}
-            disabled={!canInteract}
           >
             <View style={styles.collapsibleListInfo}>
               {isExpanded ? (
@@ -468,12 +495,12 @@ export default function UnifiedLibrary({
                         {isPublic ? (
                           <>
                             <Globe size={12} color={colors.primary} strokeWidth={2} />
-                            <Text style={[styles.privacyText, { color: colors.primary }]} numberOfLines={1}>Public</Text>
+                            {Platform.OS !== 'web' && <Text style={[styles.privacyText, { color: colors.primary }]} numberOfLines={1}>Public</Text>}
                           </>
                         ) : (
                           <>
                             <Lock size={12} color={colors.textSecondary} strokeWidth={2} />
-                            <Text style={[styles.privacyText, { color: colors.textSecondary }]} numberOfLines={1}>Private</Text>
+                            {Platform.OS !== 'web' && <Text style={[styles.privacyText, { color: colors.textSecondary }]} numberOfLines={1}>Private</Text>}
                           </>
                         )}
                       </View>
@@ -485,25 +512,123 @@ export default function UnifiedLibrary({
           </TouchableOpacity>
 
           {/* Three-dot menu - only show in edit mode */}
-          {mode === 'edit' && (
+          {canEdit && (
             <TouchableOpacity
-              style={[styles.listHeaderOptionsButton, { transform: [{ rotate: '90deg' }] }]}
-              onPress={(e) => {
+              style={styles.listHeaderOptionsButton}
+              onPress={() => {
                 setActiveListOptionsId(isOptionsOpen ? null : listId);
               }}
               activeOpacity={0.7}
             >
-              <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+              <View style={{ transform: [{ rotate: '90deg' }] }}>
+                <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+              </View>
             </TouchableOpacity>
           )}
         </View>
 
         {/* Options dropdown - only in edit mode */}
-        {mode === 'edit' && isOptionsOpen && (
+        {canEdit && isOptionsOpen && (
           <View style={[styles.listOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-            <Text style={[styles.listOptionText, { color: colors.textSecondary, padding: 12 }]}>
-              Options menu (to be implemented)
-            </Text>
+            {(() => {
+              // Determine which options to show based on list type
+              const isEndorsementList = listId === 'endorsement';
+              const isSystemList = listId === 'aligned' || listId === 'unaligned';
+              const currentList = isEndorsementList ? endorsementList : userLists.find(l => l.id === listId);
+
+              const canReorder = !isSystemList;
+              const canEditMeta = !isSystemList;
+              const canRemove = !isEndorsementList && !isSystemList;
+              const canTogglePrivacy = isPublic !== undefined;
+
+              return (
+                <>
+                  {canReorder && (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveListOptionsId(null);
+                        // TODO: Enable reorder mode
+                        console.log('Reorder mode for list:', listId);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <GripVertical size={16} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {canEditMeta && currentList && (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveListOptionsId(null);
+                        // TODO: Show edit modal
+                        console.log('Edit list:', currentList.name);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Edit size={16} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Edit</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {currentList && (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveListOptionsId(null);
+                        // TODO: Show share modal
+                        console.log('Share list:', currentList.name);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Share2 size={16} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {canTogglePrivacy && (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveListOptionsId(null);
+                        // TODO: Toggle privacy
+                        console.log('Toggle privacy for:', listId, 'from', isPublic ? 'public' : 'private');
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      {isPublic ? (
+                        <>
+                          <Lock size={16} color={colors.text} strokeWidth={2} />
+                          <Text style={[styles.listOptionText, { color: colors.text }]}>Make Private</Text>
+                        </>
+                      ) : (
+                        <>
+                          <Globe size={16} color={colors.text} strokeWidth={2} />
+                          <Text style={[styles.listOptionText, { color: colors.text }]}>Make Public</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
+
+                  {canRemove && currentList && (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveListOptionsId(null);
+                        // TODO: Confirm and delete list
+                        console.log('Delete list:', currentList.name);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Trash2 size={16} color="#EF4444" strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: '#EF4444', fontWeight: '700' }]}>Remove</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              );
+            })()}
           </View>
         )}
       </View>
@@ -721,12 +846,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 8,
-    paddingHorizontal: Platform.OS === 'web' ? 4 : 8,
-    marginHorizontal: Platform.OS === 'web' ? 8 : 16,
+    paddingHorizontal: Platform.OS === 'web' ? 2 : 8,
+    marginHorizontal: Platform.OS === 'web' ? 4 : 16,
     marginVertical: 3,
   },
   listContentContainer: {
-    marginHorizontal: 16,
+    marginHorizontal: Platform.OS === 'web' ? 8 : 16,
     marginBottom: 8,
   },
   pinnedListHeader: {
