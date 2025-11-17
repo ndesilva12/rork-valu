@@ -17,7 +17,7 @@ import { Users, Copy, Trash2, Mail, CheckCircle, Clock } from 'lucide-react-nati
 import * as Clipboard from 'expo-clipboard';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
-import { createTeamInvitation, getTeamMembers, removeTeamMember } from '@/services/firebase/businessTeamService';
+import { createTeamInvitation, getTeamMembers, removeTeamMember, initializeBusinessOwner } from '@/services/firebase/businessTeamService';
 import { BusinessTeamMember } from '@/types';
 
 export default function TeamManagement() {
@@ -39,7 +39,20 @@ export default function TeamManagement() {
     setIsLoading(true);
     try {
       const members = await getTeamMembers(clerkUser.id);
-      setTeamMembers(members);
+
+      // Lazy initialization: If owner doesn't exist in team, add them (for existing businesses)
+      const ownerExists = members.some(m => m.role === 'owner' && m.id === clerkUser.id);
+      if (!ownerExists && profile.businessInfo?.name) {
+        console.log('[TeamManagement] Owner not found in team, initializing...');
+        const email = clerkUser.primaryEmailAddress?.emailAddress || '';
+        await initializeBusinessOwner(clerkUser.id, profile.businessInfo.name, email);
+
+        // Reload to include the newly added owner
+        const updatedMembers = await getTeamMembers(clerkUser.id);
+        setTeamMembers(updatedMembers);
+      } else {
+        setTeamMembers(members);
+      }
     } catch (error) {
       console.error('[TeamManagement] Error loading team members:', error);
     } finally {
