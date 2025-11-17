@@ -1206,6 +1206,56 @@ export default function HomeScreen() {
     );
   };
 
+  // Render the unified collapsible library directory
+  const renderLibraryDirectory = () => {
+    // Get custom lists (non-endorsed)
+    const customLists = userLists.filter(list => !list.isEndorsed);
+
+    return (
+      <View style={styles.libraryDirectory}>
+        {/* 1. Endorsement List - Always first, pinned */}
+        {userPersonalList && renderCollapsibleListHeader(
+          'endorsement',
+          userPersonalList.name,
+          userPersonalList.entries?.length || 0,
+          expandedListId === 'endorsement',
+          true,
+          true
+        )}
+
+        {/* 2. Aligned List */}
+        {renderCollapsibleListHeader(
+          'aligned',
+          'Aligned',
+          allSupportFull.length,
+          expandedListId === 'aligned',
+          false,
+          false
+        )}
+
+        {/* 3. Unaligned List */}
+        {renderCollapsibleListHeader(
+          'unaligned',
+          'Unaligned',
+          allAvoidFull.length,
+          expandedListId === 'unaligned',
+          false,
+          false
+        )}
+
+        {/* 4. Custom Lists - After unaligned */}
+        {customLists.map(list => renderCollapsibleListHeader(
+          list.id,
+          list.name,
+          list.entries.length,
+          expandedListId === list.id,
+          false,
+          false
+        ))}
+      </View>
+    );
+  };
+
   const renderMainViewSelector = () => (
     <>
       {/* Main View Selector - Three Views */}
@@ -1247,78 +1297,8 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* For You Subsection Tabs */}
-      {mainView === 'forYou' && (
-        <View style={styles.subsectionTabsContainer}>
-          <TouchableOpacity
-            style={styles.subsectionTab}
-            onPress={() => setForYouSubsection('userList')}
-            activeOpacity={0.7}
-          >
-            <Text style={[
-              styles.subsectionTabText,
-              { color: forYouSubsection === 'userList' ? colors.text : colors.textSecondary }
-            ]}>
-              Endorsements
-            </Text>
-            {forYouSubsection === 'userList' && (
-              <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.subsectionTab}
-            onPress={() => setForYouSubsection('aligned')}
-            activeOpacity={0.7}
-          >
-            <Text style={[
-              styles.subsectionTabText,
-              { color: forYouSubsection === 'aligned' ? colors.text : colors.textSecondary }
-            ]}>
-              Aligned
-            </Text>
-            {forYouSubsection === 'aligned' && (
-              <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.subsectionTab}
-            onPress={() => setForYouSubsection('unaligned')}
-            activeOpacity={0.7}
-          >
-            <Text style={[
-              styles.subsectionTabText,
-              { color: forYouSubsection === 'unaligned' ? colors.text : colors.textSecondary }
-            ]}>
-              Unaligned
-            </Text>
-            {forYouSubsection === 'unaligned' && (
-              <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.subsectionTab}
-            onPress={() => {
-              setForYouSubsection('allLists');
-              setLibraryView('overview');
-              setSelectedList(null);
-            }}
-            activeOpacity={0.7}
-          >
-            <Text style={[
-              styles.subsectionTabText,
-              { color: forYouSubsection === 'allLists' ? colors.text : colors.textSecondary }
-            ]}>
-              All Lists
-            </Text>
-            {forYouSubsection === 'allLists' && (
-              <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* Collapsible Library Directory - Replaces subsection tabs */}
+      {mainView === 'forYou' && renderLibraryDirectory()}
 
       {/* Distance Filter Row - Shows when Local view is selected */}
       {mainView === 'local' && (
@@ -1394,8 +1374,8 @@ export default function HomeScreen() {
   };
 
   const renderForYouView = () => {
-    // Aligned subsection
-    if (forYouSubsection === 'aligned') {
+    // Aligned list - Show when expanded
+    if (expandedListId === 'aligned') {
       return (
         <View style={styles.section}>
           {renderSubsectionHeader(
@@ -1430,8 +1410,8 @@ export default function HomeScreen() {
       );
     }
 
-    // Unaligned subsection
-    if (forYouSubsection === 'unaligned') {
+    // Unaligned list - Show when expanded
+    if (expandedListId === 'unaligned') {
       return (
         <View style={styles.section}>
           {renderSubsectionHeader(
@@ -1466,8 +1446,8 @@ export default function HomeScreen() {
       );
     }
 
-    // User List subsection
-    if (forYouSubsection === 'userList') {
+    // Endorsement list - Show when expanded
+    if (expandedListId === 'endorsement') {
       if (!userPersonalList) {
         return (
           <View style={styles.section}>
@@ -1874,21 +1854,26 @@ export default function HomeScreen() {
       );
     }
 
-    // All Lists subsection - shows all user lists from old My Library
-    if (forYouSubsection === 'allLists') {
-      // If viewing a list detail, don't show the "All Lists" header
-      if (libraryView === 'detail') {
-        return renderMyLibraryView();
-      }
-
+    // Custom lists - Show when a custom list is expanded
+    const customList = userLists.find(list => list.id === expandedListId);
+    if (customList && !customList.isEndorsed) {
+      // Render custom list content
       return (
         <View style={styles.section}>
           {renderSubsectionHeader(
-            'All Lists',
-            () => setShowNewListChoiceModal(true),
+            customList.name,
+            () => {
+              setSelectedList(customList);
+              setShowListOptionsMenu(true);
+            },
             false
           )}
-          {renderMyLibraryView()}
+          {/* Custom list content rendering will be added here */}
+          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+              {customList.entries.length} {customList.entries.length === 1 ? 'item' : 'items'} in this list
+            </Text>
+          </View>
         </View>
       );
     }
@@ -7676,6 +7661,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   // Collapsible Library Directory Styles
+  libraryDirectory: {
+    marginBottom: 8,
+  },
   collapsibleListHeader: {
     padding: 16,
     borderRadius: 12,
