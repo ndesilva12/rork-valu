@@ -22,6 +22,7 @@ import { useData } from '@/contexts/DataContext';
 import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { getLogoUrl } from '@/lib/logo';
 import { getUserLists, addEntryToList } from '@/services/firebase/listService';
+import { calculateAlignmentScore } from '@/services/firebase/businessService';
 
 export default function BrandDetailScreen() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
@@ -300,154 +301,55 @@ export default function BrandDetailScreen() {
     }
   };
 
-  // Calculate alignment data without useMemo to avoid infinite re-render
-  // Early return for loading/missing data
-  if (!brand || !valuesMatrix) {
-    var alignmentData = {
-      isAligned: false,
-      matchingValues: [],
-      avgPosition: 0,
-      totalSupportScore: 0,
-      totalAvoidScore: 0,
-      alignmentStrength: 50
-    };
-  } else {
-    // Calculate causes
-    const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
-    const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
-    const allUserCauses = [...supportedCauses, ...avoidedCauses];
+  // Calculate alignment data using the same method as home tab and business detail
+  let alignmentData = {
+    isAligned: false,
+    matchingValues: [] as string[],
+    alignmentStrength: 50
+  };
 
-    const brandName = brand?.name;
-    let totalSupportScore = 0;
-    let totalAvoidScore = 0;
+  if (brand && profile.causes && profile.causes.length > 0) {
+    // Calculate raw alignment score using the same method as list views
+    const rawScore = calculateAlignmentScore(profile.causes, brand.causes || []);
+
+    // Create sets for matching values calculation
+    const userSupportSet = new Set(profile.causes.filter(c => c.type === 'support').map(c => c.id));
+    const userAvoidSet = new Set(profile.causes.filter(c => c.type === 'avoid').map(c => c.id));
+    const brandCauses = brand.causes || [];
+    const brandSupportSet = new Set(brandCauses.filter(c => c.type === 'support').map(c => c.id));
+    const brandAvoidSet = new Set(brandCauses.filter(c => c.type === 'avoid').map(c => c.id));
+
+    // Get all unique value IDs
+    const allValueIds = new Set([...userSupportSet, ...userAvoidSet, ...brandSupportSet, ...brandAvoidSet]);
+
+    // Find matching/conflicting values for display
     const matchingValues = new Set<string>();
-
-    // Collect scores for this brand across all user's selected values
-    const alignedScores: number[] = [];
-    const unalignedScores: number[] = [];
-
-    // Check EACH user cause to find the brand's position
-    allUserCauses.forEach((causeId) => {
-      const causeData = valuesMatrix[causeId];
-      if (!causeData) {
-        // If cause data doesn't exist, treat as neutral (score 50)
-        alignedScores.push(50);
-        unalignedScores.push(50);
-        return;
-      }
-
-      // Get array lengths for dynamic scoring
-      const supportArrayLength = causeData.support?.length || 0;
-      const opposeArrayLength = causeData.oppose?.length || 0;
-
-      // Find position in support list (1-based, or notFoundPosition if not found)
-      const supportIndex = causeData.support?.indexOf(brandName);
-      const supportPosition = supportIndex !== undefined && supportIndex >= 0
-        ? supportIndex + 1 // Convert to 1-indexed
-        : supportArrayLength + 1; // Not found - one position past the end
-
-      // Find position in oppose list (1-based, or notFoundPosition if not found)
-      const opposeIndex = causeData.oppose?.indexOf(brandName);
-      const opposePosition = opposeIndex !== undefined && opposeIndex >= 0
-        ? opposeIndex + 1 // Convert to 1-indexed
-        : opposeArrayLength + 1; // Not found - one position past the end
-
-      // If user supports this cause
-      if (supportedCauses.includes(causeId)) {
-        // Good if brand is in support list, bad if in oppose list
-        if (supportIndex !== undefined && supportIndex >= 0) {
-          // Brand is in support list - calculate aligned score
-          matchingValues.add(causeId);
-          const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
-          // Formula: score = 100 - ((position - 1) / maxPosition) * 50
-          // This maps position 1 → 100, position maxPosition+1 → 50
-          const score = Math.round(100 - ((supportPosition - 1) / maxPosition) * 50);
-          alignedScores.push(score);
-          totalSupportScore += 100;
-          // For unaligned calculation, this value doesn't apply (brand is good here)
-          unalignedScores.push(50);
-        } else if (opposeIndex !== undefined && opposeIndex >= 0) {
-          // Brand is in oppose list - calculate unaligned score
-          matchingValues.add(causeId);
-          const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
-          // Formula: score = ((position - 1) / maxPosition) * 50
-          // This maps position 1 → 0, position maxPosition+1 → 50
-          const score = Math.round(((opposePosition - 1) / maxPosition) * 50);
-          unalignedScores.push(score);
-          totalAvoidScore += 100;
-          // For aligned calculation, this value doesn't apply (brand is bad here)
-          alignedScores.push(50);
-        } else {
-          // Brand doesn't appear in either list for this value
-          alignedScores.push(50);
-          unalignedScores.push(50);
-        }
-      }
-
-      // If user avoids this cause
-      if (avoidedCauses.includes(causeId)) {
-        // Good if brand is in oppose list, bad if in support list
-        if (opposeIndex !== undefined && opposeIndex >= 0) {
-          // Brand is in oppose list - calculate aligned score
-          matchingValues.add(causeId);
-          const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
-          // Formula: score = 100 - ((position - 1) / maxPosition) * 50
-          // This maps position 1 → 100, position maxPosition+1 → 50
-          const score = Math.round(100 - ((opposePosition - 1) / maxPosition) * 50);
-          alignedScores.push(score);
-          totalSupportScore += 100;
-          // For unaligned calculation, this value doesn't apply (brand is good here)
-          unalignedScores.push(50);
-        } else if (supportIndex !== undefined && supportIndex >= 0) {
-          // Brand is in support list - calculate unaligned score
-          matchingValues.add(causeId);
-          const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
-          // Formula: score = ((position - 1) / maxPosition) * 50
-          // This maps position 1 → 0, position maxPosition+1 → 50
-          const score = Math.round(((supportPosition - 1) / maxPosition) * 50);
-          unalignedScores.push(score);
-          totalAvoidScore += 100;
-          // For aligned calculation, this value doesn't apply (brand is bad here)
-          alignedScores.push(50);
-        } else {
-          // Brand doesn't appear in either list for this value
-          alignedScores.push(50);
-          unalignedScores.push(50);
-        }
+    allValueIds.forEach(valueId => {
+      const userHasPosition = userSupportSet.has(valueId) || userAvoidSet.has(valueId);
+      const brandHasPosition = brandSupportSet.has(valueId) || brandAvoidSet.has(valueId);
+      if (userHasPosition && brandHasPosition) {
+        matchingValues.add(valueId);
       }
     });
 
-    // Calculate alignment strength based on average score across ALL values
-    let alignmentStrength = 50; // Neutral default
-    let avgPosition = 0; // For display purposes only
+    // Map raw score to 10-90 range
+    // Raw scores typically range from -50 to +50, map this to 10-90
+    // Negative scores (conflicts) -> 10-49, Positive scores (matches) -> 51-90
+    let alignmentScore = 50; // Default neutral
 
-    if (totalSupportScore > totalAvoidScore && totalSupportScore > 0) {
-      // Aligned brand: average the aligned scores
-      alignmentStrength = Math.round(
-        alignedScores.reduce((sum, score) => sum + score, 0) / alignedScores.length
-      );
-      // Calculate avgPosition for display (approximation based on score)
-      // Reverse formula: position = ((100 - score) / 50) * 10 + 1
-      avgPosition = ((100 - alignmentStrength) / 50) * 10 + 1;
-    } else if (totalAvoidScore > totalSupportScore && totalAvoidScore > 0) {
-      // Unaligned brand: average the unaligned scores
-      alignmentStrength = Math.round(
-        unalignedScores.reduce((sum, score) => sum + score, 0) / unalignedScores.length
-      );
-      // Calculate avgPosition for display (approximation based on score)
-      // Reverse formula: position = (score / 50) * 10 + 1
-      avgPosition = (alignmentStrength / 50) * 10 + 1;
+    if (rawScore !== 0) {
+      // Map rawScore (-50 to +50) to alignment score (10 to 90)
+      // Formula: score = 50 + (rawScore * 0.8)
+      alignmentScore = Math.round(50 + (rawScore * 0.8));
+      alignmentScore = Math.max(10, Math.min(90, alignmentScore));
     }
 
-    const isAligned = totalSupportScore > totalAvoidScore && totalSupportScore > 0;
+    const isAligned = alignmentScore >= 50;
 
-    var alignmentData = {
+    alignmentData = {
       isAligned,
       matchingValues: Array.from(matchingValues),
-      avgPosition: Math.round(avgPosition * 10) / 10,
-      totalSupportScore,
-      totalAvoidScore,
-      alignmentStrength
+      alignmentStrength: alignmentScore
     };
   }
 

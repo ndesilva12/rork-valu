@@ -30,7 +30,7 @@ import { Product } from '@/types';
 import { lookupBarcode, findBrandInDatabase, getBrandProduct } from '@/mocks/barcode-products';
 import { getLogoUrl } from '@/lib/logo';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
-import { getBusinessesAcceptingDiscounts, getAllUserBusinesses, BusinessUser } from '@/services/firebase/businessService';
+import { getBusinessesAcceptingDiscounts, getAllUserBusinesses, BusinessUser, calculateAlignmentScore } from '@/services/firebase/businessService';
 import { getAllPublicUsers } from '@/services/firebase/userService';
 import { UserProfile } from '@/types';
 
@@ -322,27 +322,35 @@ export default function SearchScreen() {
               business.businessInfo.description?.toLowerCase().includes(searchLower)
             );
           })
-          .map(business => ({
-            id: `firebase-business-${business.id}`,
-            firebaseId: business.id, // Store original Firebase ID
-            name: business.businessInfo.name,
-            brand: business.businessInfo.name,
-            category: business.businessInfo.category,
-            description: business.businessInfo.description || '',
-            alignmentScore: 75, // Neutral score for now
-            exampleImageUrl: business.businessInfo.logoUrl,
-            website: business.businessInfo.website,
-            location: business.businessInfo.location,
-            valueAlignments: [],
-            keyReasons: [
-              business.businessInfo.acceptsStandDiscounts
-                ? `Accepts Upright Discounts at ${business.businessInfo.name}`
-                : `Local business: ${business.businessInfo.name}`
-            ],
-            moneyFlow: { company: business.businessInfo.name, shareholders: [], overallAlignment: 0 },
-            relatedValues: [],
-            isFirebaseBusiness: true, // Flag to identify Firebase businesses
-          } as Product & { firebaseId: string; isFirebaseBusiness: boolean }));
+          .map(business => {
+            // Calculate alignment score using the same method as home tab
+            const rawScore = business.causes && profile?.causes
+              ? calculateAlignmentScore(profile.causes, business.causes)
+              : 0;
+            const alignmentScore = Math.round(50 + (rawScore * 0.8)); // Map to 10-90 range
+
+            return {
+              id: `firebase-business-${business.id}`,
+              firebaseId: business.id, // Store original Firebase ID
+              name: business.businessInfo.name,
+              brand: business.businessInfo.name,
+              category: business.businessInfo.category,
+              description: business.businessInfo.description || '',
+              alignmentScore,
+              exampleImageUrl: business.businessInfo.logoUrl,
+              website: business.businessInfo.website,
+              location: business.businessInfo.location,
+              valueAlignments: [],
+              keyReasons: [
+                business.businessInfo.acceptsStandDiscounts
+                  ? `Accepts Upright Discounts at ${business.businessInfo.name}`
+                  : `Local business: ${business.businessInfo.name}`
+              ],
+              moneyFlow: { company: business.businessInfo.name, shareholders: [], overallAlignment: 0 },
+              relatedValues: [],
+              isFirebaseBusiness: true, // Flag to identify Firebase businesses
+            } as Product & { firebaseId: string; isFirebaseBusiness: boolean };
+          });
 
         // Combine product results and business results
         const combinedResults = [...(productResults || []), ...businessResults];
