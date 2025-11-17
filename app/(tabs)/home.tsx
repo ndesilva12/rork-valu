@@ -7767,8 +7767,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginHorizontal: 16,
+    paddingHorizontal: Platform.OS === 'web' ? 4 : 8, // Reduce padding on mobile browsers
+    marginHorizontal: Platform.OS === 'web' ? 8 : 16, // Reduce margin on mobile browsers
     marginVertical: 3,
   },
   listContentContainer: {
@@ -7782,13 +7782,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listProfileImageContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 8, // Reduce margin for tighter spacing
     overflow: 'hidden',
   },
   listProfileImage: {
@@ -7796,15 +7796,16 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   collapsibleListRowLayout: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: 'column', // Stack on mobile to prevent overflow
+    alignItems: 'flex-start',
     width: '100%',
+    gap: 4,
   },
   collapsibleListMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
+    flexWrap: 'wrap', // Allow wrapping on small screens
   },
   listHeaderOptionsButton: {
     padding: 4,
@@ -7833,22 +7834,25 @@ const styles = StyleSheet.create({
   collapsibleListTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     marginBottom: 4,
+    flexWrap: 'wrap', // Allow wrapping on small screens
   },
   collapsibleListTitle: {
-    fontSize: 18,
+    fontSize: 16, // Smaller for mobile browsers
     fontWeight: '700',
+    flexShrink: 1, // Allow text to shrink if needed
   },
   collapsibleListMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginLeft: 28,
+    gap: 8,
+    marginLeft: 26, // Reduce left margin slightly
     marginBottom: 4,
+    flexWrap: 'wrap', // Allow wrapping on small screens
   },
   collapsibleListCount: {
-    fontSize: 13,
+    fontSize: 12, // Smaller for mobile browsers
     fontWeight: '500',
   },
   privacyIndicator: {
@@ -7857,19 +7861,19 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   privacyText: {
-    fontSize: 11,
+    fontSize: 10, // Smaller for mobile browsers
     fontWeight: '600',
   },
   collapsibleListAttribution: {
-    fontSize: 12,
-    marginLeft: 28,
+    fontSize: 11, // Smaller for mobile browsers
+    marginLeft: 26, // Reduce margin
     marginTop: 2,
     fontStyle: 'italic',
   },
   collapsibleListDescription: {
-    fontSize: 13,
-    marginLeft: 28,
+    fontSize: 12, // Smaller for mobile browsers
+    marginLeft: 26, // Reduce margin
     marginTop: 6,
-    lineHeight: 18,
+    lineHeight: 17,
   },
 });
