@@ -10,13 +10,16 @@ import {
   Linking,
   ActivityIndicator,
   useWindowDimensions,
+  Switch,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { User, Globe, MapPin, Facebook, Instagram, Twitter, Linkedin, ExternalLink, Camera } from 'lucide-react-native';
+import { User, Globe, MapPin, Facebook, Instagram, Twitter, Linkedin, ExternalLink, Camera, Eye, EyeOff } from 'lucide-react-native';
 import { pickAndUploadImage } from '@/lib/imageUpload';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/firebase';
 
 export default function UserDetailsEditor() {
   const { isDarkMode, profile, setUserDetails, clerkUser } = useUser();
@@ -52,6 +55,7 @@ export default function UserDetailsEditor() {
   const [linkedin, setLinkedin] = useState(userDetails.socialMedia?.linkedin || '');
   const [profileImage, setProfileImage] = useState(userDetails.profileImage || '');
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [isPublicProfile, setIsPublicProfile] = useState(profile.isPublicProfile || false);
 
   const handleLocationSelect = (locationName: string, lat: number, lon: number) => {
     setLocation(locationName);
@@ -87,6 +91,11 @@ export default function UserDetailsEditor() {
   };
 
   const handleSave = async () => {
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'User not logged in. Please log in and try again.');
+      return;
+    }
+
     const updateInfo: any = {
       name: name.trim(),
       description: description.trim(),
@@ -114,6 +123,16 @@ export default function UserDetailsEditor() {
 
     await setUserDetails(updateInfo);
 
+    // Update profile privacy setting
+    try {
+      const userRef = doc(db, 'users', clerkUser.id);
+      await updateDoc(userRef, {
+        isPublicProfile,
+      });
+    } catch (error) {
+      console.error('[UserDetailsEditor] Error updating profile privacy:', error);
+    }
+
     setEditing(false);
     Alert.alert('Success', 'User details updated');
   };
@@ -131,14 +150,39 @@ export default function UserDetailsEditor() {
     setTwitter(userDetails.socialMedia?.twitter || '');
     setLinkedin(userDetails.socialMedia?.linkedin || '');
     setProfileImage(userDetails.profileImage || '');
+    setIsPublicProfile(profile.isPublicProfile || false);
     setEditing(false);
   };
+
+  const [activeTab, setActiveTab] = useState<'profile' | 'following' | 'discover'>('profile');
 
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>User Details</Text>
-        {!editing && (
+        <View style={styles.tabsContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'profile' && styles.activeTab]}
+            onPress={() => setActiveTab('profile')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.tabText, { color: activeTab === 'profile' ? colors.primary : colors.textSecondary }]}>Profile</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'following' && styles.activeTab]}
+            onPress={() => setActiveTab('following')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.tabText, { color: activeTab === 'following' ? colors.primary : colors.textSecondary }]}>Following</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'discover' && styles.activeTab]}
+            onPress={() => setActiveTab('discover')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.tabText, { color: activeTab === 'discover' ? colors.primary : colors.textSecondary }]}>Discover</Text>
+          </TouchableOpacity>
+        </View>
+        {activeTab === 'profile' && !editing && (
           <TouchableOpacity
             onPress={() => setEditing(true)}
             activeOpacity={0.7}
@@ -147,6 +191,9 @@ export default function UserDetailsEditor() {
           </TouchableOpacity>
         )}
       </View>
+
+      {activeTab === 'profile' && (
+        <>
 
       <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
         {/* Compact Header with Icon */}
@@ -264,11 +311,11 @@ export default function UserDetailsEditor() {
               />
             ) : userDetails.website ? (
               <TouchableOpacity
-                style={[styles.linkButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                style={[styles.websiteButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
                 onPress={() => Linking.openURL(userDetails.website.startsWith('http') ? userDetails.website : `https://${userDetails.website}`)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.linkButtonText, { color: colors.white }]} numberOfLines={1}>
+                <Text style={[styles.websiteButtonText, { color: colors.white }]} numberOfLines={1}>
                   {userDetails.website}
                 </Text>
                 <ExternalLink size={14} color={colors.white} strokeWidth={2} />
@@ -402,6 +449,35 @@ export default function UserDetailsEditor() {
               </View>
             </View>
           </View>
+
+          {/* Profile Privacy Toggle */}
+          <View style={styles.privacySection}>
+            <View style={styles.privacyHeader}>
+              <View style={styles.privacyIconRow}>
+                {isPublicProfile ? (
+                  <Eye size={16} color={colors.primary} strokeWidth={2} />
+                ) : (
+                  <EyeOff size={16} color={colors.textSecondary} strokeWidth={2} />
+                )}
+                <View style={styles.privacyTextContainer}>
+                  <Text style={[styles.privacyTitle, { color: colors.text }]}>Public Profile</Text>
+                  <Text style={[styles.privacyDescription, { color: colors.textSecondary }]}>
+                    {isPublicProfile
+                      ? 'Your profile and public lists are visible to others'
+                      : 'Your profile is private and only visible to you'}
+                  </Text>
+                </View>
+              </View>
+              {editing && (
+                <Switch
+                  value={isPublicProfile}
+                  onValueChange={setIsPublicProfile}
+                  trackColor={{ false: colors.border, true: colors.primaryLight }}
+                  thumbColor={isPublicProfile ? colors.primary : colors.textSecondary}
+                />
+              )}
+            </View>
+          </View>
         </View>
 
         {/* Edit Actions */}
@@ -424,6 +500,32 @@ export default function UserDetailsEditor() {
           </View>
         )}
       </View>
+      </>
+      )}
+
+      {activeTab === 'following' && (
+        <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
+          <View style={styles.emptyStateContainer}>
+            <User size={48} color={colors.textSecondary} strokeWidth={1.5} />
+            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Following Yet</Text>
+            <Text style={[styles.emptyStateDescription, { color: colors.textSecondary }]}>
+              People you follow will appear here
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {activeTab === 'discover' && (
+        <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
+          <View style={styles.emptyStateContainer}>
+            <User size={48} color={colors.textSecondary} strokeWidth={1.5} />
+            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>Discover People</Text>
+            <Text style={[styles.emptyStateDescription, { color: colors.textSecondary }]}>
+              Connect your contacts or social accounts to discover people you know
+            </Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -437,6 +539,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    gap: 24,
+  },
+  tab: {
+    paddingBottom: 4,
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabText: {
+    fontSize: 18,
+    fontWeight: '600' as const,
   },
   sectionTitle: {
     fontSize: 20,
@@ -572,6 +689,36 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     flex: 1,
   },
+  websiteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+    maxWidth: '60%',
+  },
+  websiteButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  emptyStateContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    gap: 12,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+  },
+  emptyStateDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+    maxWidth: 280,
+  },
   socialButton: {
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -585,6 +732,37 @@ const styles = StyleSheet.create({
   },
   socialMediaSection: {
     marginTop: 8,
+  },
+  // Profile Privacy Section
+  privacySection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  privacyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  privacyIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  privacyTextContainer: {
+    flex: 1,
+  },
+  privacyTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 4,
+  },
+  privacyDescription: {
+    fontSize: 12,
+    lineHeight: 16,
   },
   // Edit Actions
   editActions: {
