@@ -1,5 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Plus, List as ListIcon, Globe, Lock, MapPin, User, Eye, EyeOff, TrendingUp, TrendingDown, Minus, MoreVertical } from 'lucide-react-native';
+import LibraryView from '@/components/LibraryView';
 import {
   View,
   Text,
@@ -273,134 +274,29 @@ export default function UserProfileScreen() {
             </Text>
           )}
 
-          {/* Library Section - Matches home tab library format */}
+          {/* Library Section - Uses Shared LibraryView Component */}
           <View style={styles.librarySection}>
             <Text style={[styles.librarySectionTitle, { color: colors.text }]}>
               {isOwnProfile ? 'My Library' : `${userName}'s Library`}
             </Text>
 
-            {userLists.length === 0 ? (
-              <View style={[styles.emptyContainer, { backgroundColor: colors.backgroundSecondary }]}>
-                <ListIcon size={48} color={colors.textSecondary} strokeWidth={1.5} />
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                  {isOwnProfile ? 'No lists yet' : 'No public lists'}
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.listsContainer}>
-                {(() => {
-                  // Find THE ONE endorsement list (matching name or oldest)
-                  let endorsementList = userLists.find(list => list.name === userName);
-                  if (!endorsementList && userLists.length > 0) {
-                    const sortedByAge = [...userLists].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-                    endorsementList = sortedByAge[0];
-                  }
-                  const endorsementListId = endorsementList?.id;
-
-                  return userLists.map((list) => {
-                    const isExpanded = expandedListId === list.id;
-                    const isEndorsed = list.id === endorsementListId;
-
-                    return (
-                    <View key={list.id} style={styles.listWrapper}>
-                      {/* List Header */}
-                      <TouchableOpacity
-                        style={[styles.listHeader, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                        onPress={() => setExpandedListId(isExpanded ? null : list.id)}
-                        activeOpacity={0.7}
-                      >
-                        <View style={styles.listHeaderLeft}>
-                          <View style={[styles.listIconContainer, { backgroundColor: colors.primary + '20' }]}>
-                            <ListIcon size={20} color={colors.primary} strokeWidth={2} />
-                          </View>
-                          <View style={styles.listHeaderInfo}>
-                            <View style={styles.listTitleRow}>
-                              <Text style={[styles.listTitle, { color: colors.text }]} numberOfLines={1}>
-                                {list.name}
-                              </Text>
-                              {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" />}
-                            </View>
-                            <View style={styles.listMetaRow}>
-                              <Text style={[styles.listItemCount, { color: colors.textSecondary }]}>
-                                {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
-                              </Text>
-                              {list.isPublic ? (
-                                <View style={styles.publicIndicator}>
-                                  <Globe size={12} color={colors.primary} strokeWidth={2} />
-                                </View>
-                              ) : (
-                                <View style={styles.privateIndicator}>
-                                  <Lock size={12} color={colors.textSecondary} strokeWidth={2} />
-                                </View>
-                              )}
-                            </View>
-                            {list.description && (
-                              <Text style={[styles.listDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                                {list.description}
-                              </Text>
-                            )}
-                          </View>
-                        </View>
-
-                        {/* Three-dot menu button - Show for other users' public lists */}
-                        {!isOwnProfile && list.isPublic && (
-                          <TouchableOpacity
-                            style={styles.listMenuButton}
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              setActiveListMenuId(activeListMenuId === list.id ? null : list.id);
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                          </TouchableOpacity>
-                        )}
-                      </TouchableOpacity>
-
-                      {/* List Menu Dropdown */}
-                      {activeListMenuId === list.id && !isOwnProfile && list.isPublic && (
-                        <View style={[styles.listMenuDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                          <TouchableOpacity
-                            style={styles.listMenuOption}
-                            onPress={async () => {
-                              setActiveListMenuId(null);
-                              await handleCopyList(list.id);
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Plus size={18} color={colors.text} strokeWidth={2} />
-                            <Text style={[styles.listMenuText, { color: colors.text }]}>Add to Library</Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-
-                      {/* List Items - Expanded View - Show ALL items */}
-                      {isExpanded && list.entries.length > 0 && (
-                        <View style={[styles.listItemsContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                          {list.entries.map((entry, index) => (
-                            <View
-                              key={entry.id}
-                              style={[
-                                styles.listItem,
-                                index < list.entries.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }
-                              ]}
-                            >
-                              <Text style={[styles.listItemNumber, { color: colors.textSecondary }]}>
-                                {index + 1}
-                              </Text>
-                              <Text style={[styles.listItemText, { color: colors.text }]} numberOfLines={1}>
-                                {entry.name || entry.brandName || entry.businessName || 'Item'}
-                              </Text>
-                            </View>
-                          ))}
-                        </View>
-                      )}
-                    </View>
-                    );
-                  });
-                })()}
-              </View>
-            )}
+            <LibraryView
+              userLists={userLists}
+              userPersonalList={(() => {
+                // Find THE ONE endorsement list (matching name or oldest)
+                let endorsementList = userLists.find(list => list.name === userName);
+                if (!endorsementList && userLists.length > 0) {
+                  const sortedByAge = [...userLists].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+                  endorsementList = sortedByAge[0];
+                }
+                return endorsementList || null;
+              })()}
+              profile={userProfile || {} as any}
+              isDarkMode={isDarkMode}
+              isOwnLibrary={isOwnProfile}
+              userId={userId}
+              showSystemLists={false}
+            />
           </View>
         </View>
       </ScrollView>

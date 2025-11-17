@@ -16,6 +16,7 @@ import {
 import { Image as ExpoImage } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import EndorsedBadge from '@/components/EndorsedBadge';
+import LibraryView from '@/components/LibraryView';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
@@ -493,7 +494,7 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Library Section - Matches Home Tab Library */}
+        {/* Library Section - Uses Shared LibraryView Component */}
         <View style={styles.librarySection}>
           <Text style={[styles.librarySectionTitle, { color: colors.text }]}>My Library</Text>
 
@@ -503,101 +504,15 @@ export default function ProfileScreen() {
               <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading your lists...</Text>
             </View>
           ) : (
-            <>
-              {/* Endorsement List */}
-              {endorsementList && (
-                <TouchableOpacity
-                  style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                  onPress={() => handleListPress(endorsementList.id)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.listCardHeader}>
-                    <View style={styles.listImageContainer}>
-                      {profileImageUrl ? (
-                        <ExpoImage
-                          source={{ uri: profileImageUrl }}
-                          style={styles.listImage}
-                          contentFit="cover"
-                        />
-                      ) : (
-                        <View style={[styles.listIconPlaceholder, { backgroundColor: colors.primary }]}>
-                          <User size={20} color={colors.white} strokeWidth={2} />
-                        </View>
-                      )}
-                    </View>
-                    <View style={styles.listInfo}>
-                      <View style={styles.listTitleRow}>
-                        <Text style={[styles.listTitle, { color: colors.text }]} numberOfLines={1}>
-                          {endorsementList.name}
-                        </Text>
-                        <EndorsedBadge isDarkMode={isDarkMode} size="small" />
-                      </View>
-                      <Text style={[styles.listCount, { color: colors.textSecondary }]}>
-                        {endorsementList.entries.length} {endorsementList.entries.length === 1 ? 'item' : 'items'}
-                      </Text>
-                    </View>
-                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-                  </View>
-                </TouchableOpacity>
-              )}
-
-              {/* Custom Lists */}
-              {customLists.length > 0 ? (
-                customLists.map((list) => (
-                  <TouchableOpacity
-                    key={list.id}
-                    style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                    onPress={() => handleListPress(list.id)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.listCardHeader}>
-                      <View style={styles.listImageContainer}>
-                        {profileImageUrl ? (
-                          <ExpoImage
-                            source={{ uri: profileImageUrl }}
-                            style={styles.listImage}
-                            contentFit="cover"
-                          />
-                        ) : (
-                          <View style={[styles.listIconPlaceholder, { backgroundColor: colors.primaryLight }]}>
-                            <User size={20} color={colors.primary} strokeWidth={2} />
-                          </View>
-                        )}
-                      </View>
-                      <View style={styles.listInfo}>
-                        <Text style={[styles.listTitle, { color: colors.text }]} numberOfLines={1}>
-                          {list.name}
-                        </Text>
-                        <View style={styles.listMetaRow}>
-                          <Text style={[styles.listCount, { color: colors.textSecondary }]}>
-                            {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
-                          </Text>
-                          {list.isPublic ? (
-                            <View style={styles.publicBadge}>
-                              <Globe size={10} color={colors.primary} strokeWidth={2} />
-                              <Text style={[styles.publicBadgeText, { color: colors.primary }]}>Public</Text>
-                            </View>
-                          ) : (
-                            <View style={styles.privateBadge}>
-                              <Lock size={10} color={colors.textSecondary} strokeWidth={2} />
-                              <Text style={[styles.privateBadgeText, { color: colors.textSecondary }]}>Private</Text>
-                            </View>
-                          )}
-                        </View>
-                      </View>
-                      <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-                    </View>
-                  </TouchableOpacity>
-                ))
-              ) : (
-                <View style={[styles.emptyContainer, { backgroundColor: colors.backgroundSecondary }]}>
-                  <User size={48} color={colors.textSecondary} strokeWidth={1.5} />
-                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                    No custom lists yet. Create one from the home tab!
-                  </Text>
-                </View>
-              )}
-            </>
+            <LibraryView
+              userLists={userLists}
+              userPersonalList={endorsementList}
+              profile={profile}
+              isDarkMode={isDarkMode}
+              isOwnLibrary={true}
+              userId={clerkUser?.id}
+              showSystemLists={false}
+            />
           )}
         </View>
       </ScrollView>
