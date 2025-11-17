@@ -35,6 +35,7 @@ import {
   Share2,
   Globe,
   Lock,
+  User,
 } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import {
@@ -146,6 +147,7 @@ export default function HomeScreen() {
   // Library state
   const [userLists, setUserLists] = useState<UserList[]>([]);
   const [expandedListId, setExpandedListId] = useState<string | null>(null); // 'endorsement', 'aligned', 'unaligned', or custom list ID
+  const [hasSetDefaultExpansion, setHasSetDefaultExpansion] = useState(false); // Track if we've set default expansion
   const [showCreateListModal, setShowCreateListModal] = useState(false);
   const [libraryView, setLibraryView] = useState<'overview' | 'detail'>('overview');
   const [selectedList, setSelectedList] = useState<UserList | 'browse' | null>(null);
@@ -523,17 +525,18 @@ export default function HomeScreen() {
     }
   };
 
-  // Set default expanded list when library loads
+  // Set default expanded list when library loads (only once)
   useEffect(() => {
-    if (mainView === 'forYou' && expandedListId === null) {
+    if (mainView === 'forYou' && !hasSetDefaultExpansion && userPersonalList) {
       // Check if endorsement list has 3+ items
-      if (userPersonalList && userPersonalList.entries.length >= 3) {
+      if (userPersonalList.entries.length >= 3) {
         setExpandedListId('endorsement');
       } else {
         setExpandedListId('aligned');
       }
+      setHasSetDefaultExpansion(true);
     }
-  }, [mainView, userPersonalList, expandedListId]);
+  }, [mainView, userPersonalList, hasSetDefaultExpansion]);
 
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands, brandDistances } = useMemo(() => {
     // Combine brands from CSV and user businesses
@@ -1217,7 +1220,8 @@ export default function HomeScreen() {
     isPinned: boolean = false,
     attribution?: string,
     description?: string,
-    isPublic?: boolean
+    isPublic?: boolean,
+    creatorProfileImage?: string
   ) => {
     const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
     const isOptionsOpen = activeListOptionsId === listId;
@@ -1230,47 +1234,92 @@ export default function HomeScreen() {
             isPinned && styles.pinnedListHeader,
           ]}
         >
+          {/* Profile Image */}
+          <View style={[styles.listProfileImageContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+            {creatorProfileImage ? (
+              <Image
+                source={{ uri: creatorProfileImage }}
+                style={styles.listProfileImage}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+              />
+            ) : (
+              <User size={24} color={colors.textSecondary} strokeWidth={2} />
+            )}
+          </View>
+
           <TouchableOpacity
             style={styles.collapsibleListHeaderContent}
             onPress={() => toggleListExpansion(listId)}
             activeOpacity={0.7}
           >
             <View style={styles.collapsibleListInfo}>
-              <View style={styles.collapsibleListTitleRow}>
-                <ChevronIcon size={20} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.collapsibleListTitle, { color: colors.text }]}>
-                  {title}
-                </Text>
-                {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" />}
-              </View>
-              <View style={styles.collapsibleListMeta}>
-                <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
-                  {itemCount} {itemCount === 1 ? 'item' : 'items'}
-                </Text>
-                {isPublic !== undefined && (
-                  <View style={styles.privacyIndicator}>
-                    {isPublic ? (
-                      <><Globe size={12} color={colors.primary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.primary }]}>Public</Text></>
-                    ) : (
-                      <><Lock size={12} color={colors.textSecondary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.textSecondary }]}>Private</Text></>
+              {isExpanded ? (
+                // Expanded view - stacked layout
+                <>
+                  <View style={styles.collapsibleListTitleRow}>
+                    <ChevronIcon size={20} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.collapsibleListTitle, { color: colors.text }]}>
+                      {title}
+                    </Text>
+                    {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" />}
+                  </View>
+                  <View style={styles.collapsibleListMeta}>
+                    <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
+                      {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                    </Text>
+                    {isPublic !== undefined && (
+                      <View style={styles.privacyIndicator}>
+                        {isPublic ? (
+                          <><Globe size={12} color={colors.primary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.primary }]}>Public</Text></>
+                        ) : (
+                          <><Lock size={12} color={colors.textSecondary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.textSecondary }]}>Private</Text></>
+                        )}
+                      </View>
                     )}
                   </View>
-                )}
-              </View>
-              {attribution && (
-                <Text style={[styles.collapsibleListAttribution, { color: colors.textSecondary }]}>
-                  {attribution}
-                </Text>
-              )}
-              {description && isExpanded && (
-                <Text style={[styles.collapsibleListDescription, { color: colors.text }]} numberOfLines={2}>
-                  {description}
-                </Text>
+                  {attribution && (
+                    <Text style={[styles.collapsibleListAttribution, { color: colors.textSecondary }]}>
+                      {attribution}
+                    </Text>
+                  )}
+                  {description && (
+                    <Text style={[styles.collapsibleListDescription, { color: colors.text }]} numberOfLines={2}>
+                      {description}
+                    </Text>
+                  )}
+                </>
+              ) : (
+                // Collapsed view - horizontal layout
+                <View style={styles.collapsibleListRowLayout}>
+                  <View style={styles.collapsibleListTitleRow}>
+                    <ChevronIcon size={20} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.collapsibleListTitle, { color: colors.text }]}>
+                      {title}
+                    </Text>
+                    {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" />}
+                  </View>
+                  <View style={styles.collapsibleListMetaRow}>
+                    <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
+                      {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                    </Text>
+                    {isPublic !== undefined && (
+                      <View style={styles.privacyIndicator}>
+                        {isPublic ? (
+                          <><Globe size={12} color={colors.primary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.primary }]}>Public</Text></>
+                        ) : (
+                          <><Lock size={12} color={colors.textSecondary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.textSecondary }]}>Private</Text></>
+                        )}
+                      </View>
+                    )}
+                  </View>
+                </View>
               )}
             </View>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.listHeaderOptionsButton}
+            style={[styles.listHeaderOptionsButton, { transform: [{ rotate: '90deg' }] }]}
             onPress={(e) => {
               e.stopPropagation();
               setActiveListOptionsId(isOptionsOpen ? null : listId);
@@ -1416,36 +1465,84 @@ export default function HomeScreen() {
 
       case 'business':
         if ('businessId' in entry) {
-          // Render business entry
+          // Render business entry with full card layout
           return (
-            <View style={[styles.brandCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              <View style={styles.brandCardContent}>
-                <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={1}>
-                  {entry.businessName}
-                </Text>
-                {entry.businessCategory && (
-                  <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {entry.businessCategory}
+            <TouchableOpacity
+              style={[
+                styles.brandCard,
+                { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+              ]}
+              onPress={() => handleBusinessPress(entry.businessId)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.brandCardInner}>
+                <View style={styles.brandLogoContainer}>
+                  <Image
+                    source={{ uri: entry.logoUrl || getLogoUrl(entry.website || '') }}
+                    style={styles.brandLogo}
+                    contentFit="cover"
+                    transition={200}
+                    cachePolicy="memory-disk"
+                  />
+                </View>
+                <View style={styles.brandCardContent}>
+                  <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
+                    {entry.businessName}
                   </Text>
-                )}
+                  {entry.businessCategory && (
+                    <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {entry.businessCategory}
+                    </Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleQuickAdd('business', entry.businessId, entry.businessName, entry.website, entry.logoUrl);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+                </TouchableOpacity>
               </View>
-            </View>
+            </TouchableOpacity>
           );
         }
         break;
 
       case 'value':
         if ('valueId' in entry) {
-          // Render value entry
+          const isSupport = entry.mode !== 'maxPain';
+          const titleColor = isSupport ? colors.primaryLight : colors.danger;
+          // Render value entry with icon
           return (
-            <View style={[styles.brandCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              <View style={styles.brandCardContent}>
-                <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={1}>
-                  {entry.valueName}
-                </Text>
-                <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                  {entry.mode === 'maxPain' ? 'Avoid' : 'Support'}
-                </Text>
+            <View style={[
+              styles.brandCard,
+              { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+            ]}>
+              <View style={styles.brandCardInner}>
+                <View style={[styles.brandLogoContainer, { backgroundColor: isSupport ? colors.primaryLight + '20' : colors.danger + '20', justifyContent: 'center', alignItems: 'center' }]}>
+                  <Target size={32} color={titleColor} strokeWidth={2} />
+                </View>
+                <View style={styles.brandCardContent}>
+                  <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>
+                    {entry.valueName}
+                  </Text>
+                  <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                    {entry.mode === 'maxPain' ? 'Avoid' : 'Support'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleQuickAdd('value', entry.valueId, entry.valueName);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+                </TouchableOpacity>
               </View>
             </View>
           );
@@ -1653,7 +1750,8 @@ export default function HomeScreen() {
               true,
               `Endorsed by ${userPersonalList.creatorName || 'you'}`,
               userPersonalList.description,
-              userPersonalList.isPublic
+              userPersonalList.isPublic,
+              clerkUser?.imageUrl
             )}
             {expandedListId === 'endorsement' && renderEndorsementContent()}
           </>
@@ -1668,7 +1766,9 @@ export default function HomeScreen() {
           false,
           false,
           undefined,
-          'Brands and businesses aligned with your values'
+          'Brands and businesses aligned with your values',
+          alignedListPublic,
+          clerkUser?.imageUrl
         )}
         {expandedListId === 'aligned' && renderAlignedContent()}
 
@@ -1681,7 +1781,9 @@ export default function HomeScreen() {
           false,
           false,
           undefined,
-          'Brands and businesses not aligned with your values'
+          'Brands and businesses not aligned with your values',
+          unalignedListPublic,
+          clerkUser?.imageUrl
         )}
         {expandedListId === 'unaligned' && renderUnalignedContent()}
 
@@ -1704,7 +1806,8 @@ export default function HomeScreen() {
                 false,
                 attribution,
                 list.description,
-                list.isPublic
+                list.isPublic,
+                clerkUser?.imageUrl
               )}
               {expandedListId === list.id && renderCustomListContent(list)}
             </React.Fragment>
@@ -7677,6 +7780,31 @@ const styles = StyleSheet.create({
   },
   collapsibleListHeaderContent: {
     flex: 1,
+  },
+  listProfileImageContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  listProfileImage: {
+    width: '100%',
+    height: '100%',
+  },
+  collapsibleListRowLayout: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  collapsibleListMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   listHeaderOptionsButton: {
     padding: 4,
