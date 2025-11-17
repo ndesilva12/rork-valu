@@ -1084,11 +1084,11 @@ export default function HomeScreen() {
             style={[styles.quickAddButton, { backgroundColor: colors.background }]}
             onPress={(e) => {
               e.stopPropagation();
-              handleQuickAdd('brand', product.id, product.name, product.website, getLogoUrl(product.website || ''));
+              handleCardMenuOpen('brand', product.id, product.name, product.website, getLogoUrl(product.website || ''));
             }}
             activeOpacity={0.7}
           >
-            <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+            <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -1153,11 +1153,11 @@ export default function HomeScreen() {
             style={[styles.quickAddButton, { backgroundColor: colors.background }]}
             onPress={(e) => {
               e.stopPropagation();
-              handleQuickAdd('business', business.id, business.businessInfo.name, business.businessInfo.website, business.businessInfo.logoUrl);
+              handleCardMenuOpen('business', business.id, business.businessInfo.name, business.businessInfo.website, business.businessInfo.logoUrl);
             }}
             activeOpacity={0.7}
           >
-            <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+            <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -1524,11 +1524,12 @@ export default function HomeScreen() {
                   style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                   onPress={(e) => {
                     e.stopPropagation();
-                    handleQuickAdd('business', entry.businessId, entry.businessName, entry.website, entry.logoUrl);
+                    const listId = selectedList && selectedList !== 'browse' ? (selectedList as UserList).id : undefined;
+                    handleCardMenuOpen('business', entry.businessId, entry.businessName, entry.website, entry.logoUrl, listId);
                   }}
                   activeOpacity={0.7}
                 >
-                  <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+                  <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -3441,23 +3442,9 @@ export default function HomeScreen() {
                             </Text>
                           </View>
                           {!isEditMode && (
-                            <>
-                              <View style={styles.brandScoreContainer}>
-                                <Text style={[styles.brandScore, { color: titleColor }]}>{brandScore}</Text>
-                              </View>
-                              <TouchableOpacity
-                                style={[styles.quickAddButton, { backgroundColor: colors.background, marginRight: 4 }]}
-                                onPress={(e) => {
-                                  e.stopPropagation();
-                                  if (brand) {
-                                    handleQuickAdd('brand', entry.brandId, brand.name, brand.website, getLogoUrl(brand.website || ''));
-                                  }
-                                }}
-                                activeOpacity={0.7}
-                              >
-                                <Plus size={18} color={colors.primary} strokeWidth={2.5} />
-                              </TouchableOpacity>
-                            </>
+                            <View style={styles.brandScoreContainer}>
+                              <Text style={[styles.brandScore, { color: titleColor }]}>{brandScore}</Text>
+                            </View>
                           )}
                           {!isEditMode && (
                             <TouchableOpacity
@@ -3557,21 +3544,9 @@ export default function HomeScreen() {
                             </Text>
                           </View>
                           {!isEditMode && (
-                            <>
-                              <View style={styles.brandScoreContainer}>
-                                <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
-                              </View>
-                              <TouchableOpacity
-                                style={[styles.quickAddButton, { backgroundColor: colors.background, marginRight: 4 }]}
-                                onPress={(e) => {
-                                  e.stopPropagation();
-                                  handleQuickAdd('business', entry.businessId, entry.businessName, entry.website, entry.logoUrl);
-                                }}
-                                activeOpacity={0.7}
-                              >
-                                <Plus size={18} color={colors.primary} strokeWidth={2.5} />
-                              </TouchableOpacity>
-                            </>
+                            <View style={styles.brandScoreContainer}>
+                              <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
+                            </View>
                           )}
                           {!isEditMode && (
                             <TouchableOpacity
@@ -4307,30 +4282,145 @@ export default function HomeScreen() {
         <TouchableWithoutFeedback onPress={() => setActiveItemOptionsMenu(null)}>
           <View style={styles.dropdownModalOverlay}>
             <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              {(() => {
+                // Find the entry to get its details
+                if (!activeItemOptionsMenu || !selectedList || selectedList === 'browse') return null;
+                const list = selectedList as UserList;
+                const entry = list.entries.find(e => e.id === activeItemOptionsMenu);
+                if (!entry) return null;
+
+                return (
+                  <>
+                    {/* Add to option - only for brand/business entries */}
+                    {(entry.type === 'brand' || entry.type === 'business') && (
+                      <>
+                        <TouchableOpacity
+                          style={styles.listOptionItem}
+                          onPress={() => {
+                            if (entry.type === 'brand' && 'brandId' in entry) {
+                              setActiveItemOptionsMenu(null);
+                              handleQuickAdd('brand', entry.brandId, entry.brandName, entry.website, entry.logoUrl);
+                            } else if (entry.type === 'business' && 'businessId' in entry) {
+                              setActiveItemOptionsMenu(null);
+                              handleQuickAdd('business', entry.businessId, entry.businessName, entry.website, entry.logoUrl);
+                            }
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Plus size={18} color={colors.text} strokeWidth={2} />
+                          <Text style={[styles.listOptionText, { color: colors.text }]}>Add to</Text>
+                        </TouchableOpacity>
+                        <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                      </>
+                    )}
+
+                    {/* Reorder option */}
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveItemOptionsMenu(null);
+                        setIsEditMode(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
+                    </TouchableOpacity>
+                    <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+
+                    {/* Remove option */}
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        console.log('[Home] Delete entry pressed, ID:', activeItemOptionsMenu);
+                        if (activeItemOptionsMenu) {
+                          handleDeleteEntry(activeItemOptionsMenu);
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Trash2 size={16} color={colors.danger} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+                    </TouchableOpacity>
+
+                    {/* Share option - only for brand/business entries */}
+                    {(entry.type === 'brand' || entry.type === 'business') && (
+                      <>
+                        <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                        <TouchableOpacity
+                          style={styles.listOptionItem}
+                          onPress={async () => {
+                            setActiveItemOptionsMenu(null);
+                            const itemType = entry.type;
+                            const itemId = entry.type === 'brand' && 'brandId' in entry ? entry.brandId :
+                                          entry.type === 'business' && 'businessId' in entry ? entry.businessId : '';
+                            const itemName = entry.type === 'brand' && 'brandName' in entry ? entry.brandName :
+                                           entry.type === 'business' && 'businessName' in entry ? entry.businessName : '';
+
+                            const shareLink = `https://upright.money/${itemType}/${itemId}`;
+
+                            if (Platform.OS === 'web') {
+                              try {
+                                await navigator.clipboard.writeText(shareLink);
+                                window.alert('Link copied to clipboard!');
+                              } catch (err) {
+                                window.alert('Could not copy link. Please copy manually:\n\n' + shareLink);
+                              }
+                            } else {
+                              try {
+                                await Share.share({
+                                  message: `Check out ${itemName} on Upright Money!\n\n${shareLink}`,
+                                  url: shareLink,
+                                });
+                              } catch (error) {
+                                console.error('Error sharing:', error);
+                              }
+                            }
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Share2 size={18} color={colors.text} strokeWidth={2} />
+                          <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </>
+                );
+              })()}
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Card Three-Dot Menu Modal (for brands/businesses in support/avoid sections) */}
+      <Modal
+        visible={activeCardMenuId !== null}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setActiveCardMenuId(null)}
+      >
+        <TouchableWithoutFeedback onPress={() => setActiveCardMenuId(null)}>
+          <View style={styles.dropdownModalOverlay}>
+            <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              {/* Add to option */}
               <TouchableOpacity
                 style={styles.listOptionItem}
-                onPress={() => {
-                  setActiveItemOptionsMenu(null);
-                  setIsEditMode(true);
-                }}
+                onPress={handleCardMenuAddTo}
                 activeOpacity={0.7}
               >
-                <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
+                <Plus size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Add to</Text>
               </TouchableOpacity>
               <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+
+              {/* Share option */}
               <TouchableOpacity
                 style={styles.listOptionItem}
-                onPress={() => {
-                  console.log('[Home] Delete entry pressed, ID:', activeItemOptionsMenu);
-                  if (activeItemOptionsMenu) {
-                    handleDeleteEntry(activeItemOptionsMenu);
-                  }
-                }}
+                onPress={handleCardMenuShare}
                 activeOpacity={0.7}
               >
-                <Trash2 size={16} color={colors.danger} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.danger }]}>Remove</Text>
+                <Share2 size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
               </TouchableOpacity>
             </View>
           </View>
