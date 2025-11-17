@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
 import {
@@ -19,11 +20,15 @@ import {
   Globe,
   Lock,
   MoreVertical,
+  Target,
+  ExternalLink,
+  Plus,
 } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { UserList, ListEntry } from '@/types/library';
 import { useLibrary } from '@/contexts/LibraryContext';
 import EndorsedBadge from '@/components/EndorsedBadge';
+import { getLogoUrl } from '@/lib/logo';
 
 // ===== Types =====
 
