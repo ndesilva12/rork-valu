@@ -244,6 +244,9 @@ export async function createUser(
       searchHistory: [],
       donationAmount: 0,
       selectedCharities: [],
+      isPublicProfile: true, // Default to public profile
+      alignedListPublic: true, // Default aligned list to public
+      unalignedListPublic: true, // Default unaligned list to public
     };
 
     const profile = { ...defaultProfile, ...initialProfile };
@@ -365,6 +368,52 @@ export async function aggregateBusinessTransactions(businessId: string): Promise
     };
   } catch (error) {
     console.error('[Firebase] ❌ Error aggregating business transactions:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all public user profiles
+ * @returns Array of public user profiles with their IDs
+ */
+export async function getAllPublicUsers(): Promise<Array<{ id: string; profile: UserProfile }>> {
+  try {
+    console.log('[Firebase] Fetching all public users');
+
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('isPublicProfile', '==', true));
+
+    const querySnapshot = await getDocs(q);
+
+    const users: Array<{ id: string; profile: UserProfile }> = [];
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const profile: UserProfile = {
+        causes: data.causes || [],
+        searchHistory: data.searchHistory || [],
+        promoCode: data.promoCode,
+        donationAmount: data.donationAmount ?? 0,
+        totalSavings: data.totalSavings ?? 0,
+        selectedCharities: data.selectedCharities || [],
+        accountType: data.accountType,
+        businessInfo: data.businessInfo,
+        userDetails: data.userDetails,
+        codeSharing: data.codeSharing ?? true,
+        consentGivenAt: data.consentGivenAt,
+        consentVersion: data.consentVersion,
+        isPublicProfile: data.isPublicProfile,
+        alignedListPublic: data.alignedListPublic,
+        unalignedListPublic: data.unalignedListPublic,
+      };
+
+      users.push({ id: doc.id, profile });
+    });
+
+    console.log('[Firebase] ✅ Fetched', users.length, 'public users');
+    return users;
+  } catch (error) {
+    console.error('[Firebase] ❌ Error fetching public users:', error);
     throw error;
   }
 }

@@ -122,7 +122,7 @@ export const createList = async (
       entries: [],
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      isPublic: false,
+      isPublic: true, // Default to public
       isEndorsed,
     };
 

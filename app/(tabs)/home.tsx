@@ -1232,6 +1232,7 @@ export default function HomeScreen() {
           style={[
             styles.collapsibleListHeader,
             isPinned && styles.pinnedListHeader,
+            isExpanded && { backgroundColor: colors.backgroundSecondary, borderWidth: 2, borderColor: colors.primary, borderRadius: 12 },
           ]}
         >
           {/* Profile Image */}
@@ -1295,21 +1296,21 @@ export default function HomeScreen() {
                 <View style={styles.collapsibleListRowLayout}>
                   <View style={styles.collapsibleListTitleRow}>
                     <ChevronIcon size={20} color={colors.text} strokeWidth={2} />
-                    <Text style={[styles.collapsibleListTitle, { color: colors.text }]}>
+                    <Text style={[styles.collapsibleListTitle, { color: colors.text }]} numberOfLines={1}>
                       {title}
                     </Text>
                     {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" />}
                   </View>
                   <View style={styles.collapsibleListMetaRow}>
-                    <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
+                    <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]} numberOfLines={1}>
                       {itemCount} {itemCount === 1 ? 'item' : 'items'}
                     </Text>
                     {isPublic !== undefined && (
                       <View style={styles.privacyIndicator}>
                         {isPublic ? (
-                          <><Globe size={12} color={colors.primary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.primary }]}>Public</Text></>
+                          <><Globe size={12} color={colors.primary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.primary }]} numberOfLines={1}>Public</Text></>
                         ) : (
-                          <><Lock size={12} color={colors.textSecondary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.textSecondary }]}>Private</Text></>
+                          <><Lock size={12} color={colors.textSecondary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.textSecondary }]} numberOfLines={1}>Private</Text></>
                         )}
                       </View>
                     )}
@@ -7767,8 +7768,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginHorizontal: 16,
+    paddingHorizontal: Platform.OS === 'web' ? 4 : 8, // Reduce padding on mobile browsers
+    marginHorizontal: Platform.OS === 'web' ? 8 : 16, // Reduce margin on mobile browsers
     marginVertical: 3,
   },
   listContentContainer: {
@@ -7782,13 +7783,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listProfileImageContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 8, // Reduce margin for tighter spacing
     overflow: 'hidden',
   },
   listProfileImage: {
@@ -7796,15 +7797,16 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   collapsibleListRowLayout: {
-    flexDirection: 'row',
+    flexDirection: 'row', // Horizontal layout for collapsed lists
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
+    gap: 8,
   },
   collapsibleListMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   listHeaderOptionsButton: {
     padding: 4,
@@ -7833,22 +7835,24 @@ const styles = StyleSheet.create({
   collapsibleListTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
+    gap: 6,
+    flexShrink: 1,
   },
   collapsibleListTitle: {
-    fontSize: 18,
+    fontSize: 16, // Smaller for mobile browsers
     fontWeight: '700',
+    flexShrink: 1, // Allow text to shrink if needed
   },
   collapsibleListMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginLeft: 28,
+    gap: 8,
+    marginLeft: 26, // Reduce left margin slightly
     marginBottom: 4,
+    flexWrap: 'wrap', // Allow wrapping on small screens
   },
   collapsibleListCount: {
-    fontSize: 13,
+    fontSize: 12, // Smaller for mobile browsers
     fontWeight: '500',
   },
   privacyIndicator: {
@@ -7857,19 +7861,19 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   privacyText: {
-    fontSize: 11,
+    fontSize: 10, // Smaller for mobile browsers
     fontWeight: '600',
   },
   collapsibleListAttribution: {
-    fontSize: 12,
-    marginLeft: 28,
+    fontSize: 11, // Smaller for mobile browsers
+    marginLeft: 26, // Reduce margin
     marginTop: 2,
     fontStyle: 'italic',
   },
   collapsibleListDescription: {
-    fontSize: 13,
-    marginLeft: 28,
+    fontSize: 12, // Smaller for mobile browsers
+    marginLeft: 26, // Reduce margin
     marginTop: 6,
-    lineHeight: 18,
+    lineHeight: 17,
   },
 });
