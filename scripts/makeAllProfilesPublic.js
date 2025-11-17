@@ -1,31 +1,28 @@
 /**
  * Script to update all existing user profiles to be public
- * Run this script with: npx tsx scripts/makeAllProfilesPublic.ts
+ * Run this script with: node scripts/makeAllProfilesPublic.js
+ *
+ * Note: This uses Firebase Admin SDK for server-side operations
  */
 
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+const admin = require('firebase-admin');
 
-// Firebase configuration (should match your main config)
-const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
-};
+// Initialize Firebase Admin
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
+    projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'upright-social',
+  });
+}
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = admin.firestore();
 
 async function makeAllProfilesPublic() {
   try {
     console.log('🔄 Starting to update all user profiles to public...');
 
-    const usersRef = collection(db, 'users');
-    const querySnapshot = await getDocs(usersRef);
+    const usersRef = db.collection('users');
+    const querySnapshot = await usersRef.get();
 
     let updated = 0;
     let skipped = 0;
@@ -44,8 +41,7 @@ async function makeAllProfilesPublic() {
         }
 
         // Update to public
-        const userRef = doc(db, 'users', userId);
-        await updateDoc(userRef, {
+        await userDoc.ref.update({
           isPublicProfile: true,
           alignedListPublic: true,
           unalignedListPublic: true,
@@ -65,6 +61,8 @@ async function makeAllProfilesPublic() {
     console.log(`   Skipped (already public): ${skipped}`);
     console.log(`   Errors: ${errors}`);
     console.log('\n✅ Done!');
+
+    process.exit(0);
   } catch (error) {
     console.error('❌ Fatal error:', error);
     process.exit(1);

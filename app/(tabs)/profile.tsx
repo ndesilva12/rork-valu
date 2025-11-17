@@ -6,18 +6,195 @@ import {
   Platform,
   StatusBar,
   Image,
+  TouchableOpacity,
+  Switch,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+  Linking,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
+import EndorsedBadge from '@/components/EndorsedBadge';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
-import UserDetailsEditor from '@/components/UserDetailsEditor';
-import BusinessProfileEditor from '@/components/BusinessProfileEditor';
+import { useData } from '@/contexts/DataContext';
+import { useRouter } from 'expo-router';
+import { useState, useEffect, useCallback } from 'react';
+import { User, Globe, MapPin, Facebook, Instagram, Twitter, Linkedin, ExternalLink, Camera, Eye, EyeOff, ChevronDown, ChevronRight, MoreVertical, Plus, Edit, Trash2, Lock } from 'lucide-react-native';
+import { pickAndUploadImage } from '@/lib/imageUpload';
+import LocationAutocomplete from '@/components/LocationAutocomplete';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/firebase';
+import { getUserLists, addEntryToList } from '@/services/firebase/listService';
+import { UserList } from '@/types/library';
+import { getLogoUrl } from '@/lib/logo';
 
 export default function ProfileScreen() {
-  const { profile, isDarkMode } = useUser();
+  const { profile, isDarkMode, clerkUser, setUserDetails } = useUser();
+  const { brands } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
+  const router = useRouter();
 
-  const isBusiness = profile.accountType === 'business';
+  const userDetails = profile.userDetails || {
+    name: '',
+    description: '',
+    website: '',
+    location: '',
+    socialMedia: {
+      facebook: '',
+      instagram: '',
+      twitter: '',
+      linkedin: '',
+    },
+    profileImage: '',
+  };
+
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(userDetails.name || '');
+  const [description, setDescription] = useState(userDetails.description || '');
+  const [website, setWebsite] = useState(userDetails.website || '');
+  const [location, setLocation] = useState(userDetails.location || '');
+  const [latitude, setLatitude] = useState<number | undefined>(userDetails.latitude);
+  const [longitude, setLongitude] = useState<number | undefined>(userDetails.longitude);
+  const [facebook, setFacebook] = useState(userDetails.socialMedia?.facebook || '');
+  const [instagram, setInstagram] = useState(userDetails.socialMedia?.instagram || '');
+  const [twitter, setTwitter] = useState(userDetails.socialMedia?.twitter || '');
+  const [linkedin, setLinkedin] = useState(userDetails.socialMedia?.linkedin || '');
+  const [profileImage, setProfileImage] = useState(userDetails.profileImage || '');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [isPublicProfile, setIsPublicProfile] = useState(profile.isPublicProfile !== false);
+
+  // Library state
+  const [userLists, setUserLists] = useState<UserList[]>([]);
+  const [isLoadingLists, setIsLoadingLists] = useState(false);
+  const [expandedListId, setExpandedListId] = useState<string | null>(null);
+
+  const handleLocationSelect = (locationName: string, lat: number, lon: number) => {
+    setLocation(locationName);
+    setLatitude(lat);
+    setLongitude(lon);
+  };
+
+  const handleUploadImage = async () => {
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'User not logged in. Please log in and try again.');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const downloadURL = await pickAndUploadImage(clerkUser.id, 'profile');
+
+      if (downloadURL) {
+        setProfileImage(downloadURL);
+        Alert.alert('Success', 'Profile image uploaded! Remember to click "Save Changes" to save it to your profile.');
+      } else {
+        Alert.alert('Cancelled', 'Image upload was cancelled.');
+      }
+    } catch (error) {
+      console.error('[ProfileScreen] Error uploading profile image:', error);
+      Alert.alert('Error', 'Failed to upload image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'User not logged in. Please log in and try again.');
+      return;
+    }
+
+    const updateInfo: any = {
+      name: name.trim(),
+      description: description.trim(),
+      website: website.trim(),
+      socialMedia: {
+        facebook: facebook.trim(),
+        instagram: instagram.trim(),
+        twitter: twitter.trim(),
+        linkedin: linkedin.trim(),
+      },
+    };
+
+    if (location.trim()) {
+      updateInfo.location = location.trim();
+    }
+    if (latitude !== undefined) {
+      updateInfo.latitude = latitude;
+    }
+    if (longitude !== undefined) {
+      updateInfo.longitude = longitude;
+    }
+    if (profileImage) {
+      updateInfo.profileImage = profileImage;
+    }
+
+    await setUserDetails(updateInfo);
+
+    // Update profile privacy setting
+    try {
+      const userRef = doc(db, 'users', clerkUser.id);
+      await updateDoc(userRef, {
+        isPublicProfile,
+      });
+    } catch (error) {
+      console.error('[ProfileScreen] Error updating profile privacy:', error);
+    }
+
+    setEditing(false);
+    Alert.alert('Success', 'Profile updated successfully');
+  };
+
+  const handleCancel = () => {
+    setName(userDetails.name || '');
+    setDescription(userDetails.description || '');
+    setWebsite(userDetails.website || '');
+    setLocation(userDetails.location || '');
+    setLatitude(userDetails.latitude);
+    setLongitude(userDetails.longitude);
+    setFacebook(userDetails.socialMedia?.facebook || '');
+    setInstagram(userDetails.socialMedia?.instagram || '');
+    setTwitter(userDetails.socialMedia?.twitter || '');
+    setLinkedin(userDetails.socialMedia?.linkedin || '');
+    setProfileImage(userDetails.profileImage || '');
+    setIsPublicProfile(profile.isPublicProfile !== false);
+    setEditing(false);
+  };
+
+  const loadUserLists = useCallback(async () => {
+    if (!clerkUser?.id) return;
+
+    setIsLoadingLists(true);
+    try {
+      const lists = await getUserLists(clerkUser.id);
+      setUserLists(lists);
+    } catch (error) {
+      console.error('[ProfileScreen] Error loading user lists:', error);
+    } finally {
+      setIsLoadingLists(false);
+    }
+  }, [clerkUser?.id]);
+
+  useEffect(() => {
+    loadUserLists();
+  }, [loadUserLists]);
+
+  const toggleListExpansion = (listId: string) => {
+    setExpandedListId(expandedListId === listId ? null : listId);
+  };
+
+  const handleListPress = (listId: string) => {
+    router.push(`/list/${listId}`);
+  };
+
+  const userName = userDetails.name || clerkUser?.firstName || 'User';
+  const profileImageUrl = profileImage || userDetails.profileImage || clerkUser?.imageUrl;
+
+  // Filter out endorsement list and sort
+  const endorsementList = userLists.find(list => list.isEndorsed);
+  const customLists = userLists.filter(list => !list.isEndorsed);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -25,7 +202,7 @@ export default function ProfileScreen() {
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
       />
-      <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
+      <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
             source={require('@/assets/images/endorse2.png')}
@@ -38,14 +215,391 @@ export default function ProfileScreen() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
+        contentContainerStyle={Platform.OS === 'web' ? [styles.content, styles.webContent] : styles.content}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Profile Details - styled to match brand detail page */}
-        {isBusiness ? (
-          <BusinessProfileEditor />
-        ) : (
-          <UserDetailsEditor />
-        )}
+        {/* Profile Header - Matches Brand/Business Details Structure */}
+        <View style={[styles.profileHeaderSection, { backgroundColor: colors.backgroundSecondary }]}>
+          <View style={styles.profileHeader}>
+            {/* Profile Image */}
+            <View style={styles.profileImageContainer}>
+              {profileImageUrl ? (
+                <ExpoImage source={{ uri: profileImageUrl }} style={styles.profileImage} contentFit="cover" />
+              ) : (
+                <View style={[styles.profileIconContainer, { backgroundColor: colors.primary }]}>
+                  <User size={40} color={colors.white} strokeWidth={1.5} />
+                </View>
+              )}
+              {editing && (
+                <TouchableOpacity
+                  style={[styles.uploadImageButton, { backgroundColor: colors.primary }]}
+                  onPress={handleUploadImage}
+                  disabled={uploadingImage}
+                  activeOpacity={0.7}
+                >
+                  {uploadingImage ? (
+                    <ActivityIndicator size="small" color={colors.white} />
+                  ) : (
+                    <Camera size={20} color={colors.white} strokeWidth={2} />
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Title Container */}
+            <View style={styles.titleContainer}>
+              <View style={styles.nameRow}>
+                <Text style={[styles.profileName, { color: colors.text }]}>{userName}</Text>
+                {!editing && (
+                  <TouchableOpacity
+                    onPress={() => setEditing(true)}
+                    activeOpacity={0.7}
+                    style={[styles.editIconButton, { backgroundColor: colors.background }]}
+                  >
+                    <Edit size={16} color={colors.primary} strokeWidth={2} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              {userDetails.location && (
+                <View style={styles.locationRow}>
+                  <MapPin size={14} color={colors.textSecondary} strokeWidth={2} />
+                  <Text style={[styles.locationText, { color: colors.textSecondary }]}>
+                    {userDetails.location}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Privacy Badge */}
+            <View style={[styles.privacyBadge, { backgroundColor: isPublicProfile ? colors.primary : colors.backgroundSecondary, borderColor: colors.border }]}>
+              {isPublicProfile ? (
+                <Eye size={16} color={colors.white} strokeWidth={2} />
+              ) : (
+                <EyeOff size={16} color={colors.textSecondary} strokeWidth={2} />
+              )}
+            </View>
+          </View>
+
+          {/* Description */}
+          {!editing && userDetails.description && (
+            <Text style={[styles.profileDescription, { color: colors.textSecondary }]}>
+              {userDetails.description}
+            </Text>
+          )}
+
+          {/* Social Links */}
+          {!editing && (userDetails.socialMedia?.twitter || userDetails.socialMedia?.instagram || userDetails.socialMedia?.facebook || userDetails.socialMedia?.linkedin || userDetails.website) && (
+            <View style={styles.socialLinksContainer}>
+              {userDetails.website && (
+                <TouchableOpacity
+                  style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.background }]}
+                  onPress={() => Linking.openURL(userDetails.website.startsWith('http') ? userDetails.website : `https://${userDetails.website}`)}
+                  activeOpacity={0.7}
+                >
+                  <ExternalLink size={14} color={colors.primary} strokeWidth={2} />
+                  <Text style={[styles.socialButtonText, { color: colors.text }]}>Website</Text>
+                </TouchableOpacity>
+              )}
+              {userDetails.socialMedia?.twitter && (
+                <TouchableOpacity
+                  style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.background }]}
+                  onPress={() => Linking.openURL(`https://x.com/${userDetails.socialMedia.twitter}`)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.socialButtonText, { color: colors.text }]}>𝕏</Text>
+                </TouchableOpacity>
+              )}
+              {userDetails.socialMedia?.instagram && (
+                <TouchableOpacity
+                  style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.background }]}
+                  onPress={() => Linking.openURL(`https://instagram.com/${userDetails.socialMedia.instagram.replace('@', '')}`)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.socialButtonText, { color: colors.text }]}>Instagram</Text>
+                </TouchableOpacity>
+              )}
+              {userDetails.socialMedia?.facebook && (
+                <TouchableOpacity
+                  style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.background }]}
+                  onPress={() => Linking.openURL(userDetails.socialMedia.facebook.startsWith('http') ? userDetails.socialMedia.facebook : `https://${userDetails.socialMedia.facebook}`)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.socialButtonText, { color: colors.text }]}>Facebook</Text>
+                </TouchableOpacity>
+              )}
+              {userDetails.socialMedia?.linkedin && (
+                <TouchableOpacity
+                  style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.background }]}
+                  onPress={() => Linking.openURL(userDetails.socialMedia.linkedin.startsWith('http') ? userDetails.socialMedia.linkedin : `https://${userDetails.socialMedia.linkedin}`)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.socialButtonText, { color: colors.text }]}>LinkedIn</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* Edit Form */}
+          {editing && (
+            <View style={styles.editForm}>
+              {/* Name */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Name</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  placeholder="Your name"
+                  placeholderTextColor={colors.textSecondary}
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              {/* Bio */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Bio</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  placeholder="Tell people about yourself..."
+                  placeholderTextColor={colors.textSecondary}
+                  value={description}
+                  onChangeText={setDescription}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              {/* Location */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Location</Text>
+                <LocationAutocomplete
+                  value={location}
+                  onLocationSelect={handleLocationSelect}
+                  isDarkMode={isDarkMode}
+                />
+              </View>
+
+              {/* Website */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Website</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  placeholder="https://your-website.com"
+                  placeholderTextColor={colors.textSecondary}
+                  value={website}
+                  onChangeText={setWebsite}
+                  autoCapitalize="none"
+                  keyboardType="url"
+                />
+              </View>
+
+              {/* Social Media */}
+              <Text style={[styles.sectionSubtitle, { color: colors.text }]}>Social Media</Text>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Twitter/X</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  placeholder="@username"
+                  placeholderTextColor={colors.textSecondary}
+                  value={twitter}
+                  onChangeText={setTwitter}
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Instagram</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  placeholder="@username"
+                  placeholderTextColor={colors.textSecondary}
+                  value={instagram}
+                  onChangeText={setInstagram}
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Facebook</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  placeholder="facebook.com/username"
+                  placeholderTextColor={colors.textSecondary}
+                  value={facebook}
+                  onChangeText={setFacebook}
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>LinkedIn</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                  placeholder="linkedin.com/in/username"
+                  placeholderTextColor={colors.textSecondary}
+                  value={linkedin}
+                  onChangeText={setLinkedin}
+                  autoCapitalize="none"
+                />
+              </View>
+
+              {/* Privacy Toggle */}
+              <View style={styles.privacySection}>
+                <View style={styles.privacyHeader}>
+                  <View style={styles.privacyIconRow}>
+                    {isPublicProfile ? (
+                      <Eye size={16} color={colors.primary} strokeWidth={2} />
+                    ) : (
+                      <EyeOff size={16} color={colors.textSecondary} strokeWidth={2} />
+                    )}
+                    <View style={styles.privacyTextContainer}>
+                      <Text style={[styles.privacyTitle, { color: colors.text }]}>Public Profile</Text>
+                      <Text style={[styles.privacyDescription, { color: colors.textSecondary }]}>
+                        {isPublicProfile
+                          ? 'Your profile and public lists are visible to others'
+                          : 'Your profile is private and only visible to you'}
+                      </Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={isPublicProfile}
+                    onValueChange={setIsPublicProfile}
+                    trackColor={{ false: colors.border, true: colors.primaryLight }}
+                    thumbColor={isPublicProfile ? colors.primary : colors.textSecondary}
+                  />
+                </View>
+              </View>
+
+              {/* Action Buttons */}
+              <View style={styles.editActions}>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.cancelButton, { borderColor: colors.border }]}
+                  onPress={handleCancel}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.actionButtonText, { color: colors.text }]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.saveButton, { backgroundColor: colors.primary }]}
+                  onPress={handleSave}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.actionButtonText, { color: colors.white }]}>Save Changes</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Library Section - Matches Home Tab Library */}
+        <View style={styles.librarySection}>
+          <Text style={[styles.librarySectionTitle, { color: colors.text }]}>My Library</Text>
+
+          {isLoadingLists ? (
+            <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundSecondary }]}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading your lists...</Text>
+            </View>
+          ) : (
+            <>
+              {/* Endorsement List */}
+              {endorsementList && (
+                <TouchableOpacity
+                  style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                  onPress={() => handleListPress(endorsementList.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.listCardHeader}>
+                    <View style={styles.listImageContainer}>
+                      {profileImageUrl ? (
+                        <ExpoImage
+                          source={{ uri: profileImageUrl }}
+                          style={styles.listImage}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <View style={[styles.listIconPlaceholder, { backgroundColor: colors.primary }]}>
+                          <User size={20} color={colors.white} strokeWidth={2} />
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.listInfo}>
+                      <View style={styles.listTitleRow}>
+                        <Text style={[styles.listTitle, { color: colors.text }]} numberOfLines={1}>
+                          {endorsementList.name}
+                        </Text>
+                        <EndorsedBadge isDarkMode={isDarkMode} size="small" />
+                      </View>
+                      <Text style={[styles.listCount, { color: colors.textSecondary }]}>
+                        {endorsementList.entries.length} {endorsementList.entries.length === 1 ? 'item' : 'items'}
+                      </Text>
+                    </View>
+                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                  </View>
+                </TouchableOpacity>
+              )}
+
+              {/* Custom Lists */}
+              {customLists.length > 0 ? (
+                customLists.map((list) => (
+                  <TouchableOpacity
+                    key={list.id}
+                    style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                    onPress={() => handleListPress(list.id)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.listCardHeader}>
+                      <View style={styles.listImageContainer}>
+                        {profileImageUrl ? (
+                          <ExpoImage
+                            source={{ uri: profileImageUrl }}
+                            style={styles.listImage}
+                            contentFit="cover"
+                          />
+                        ) : (
+                          <View style={[styles.listIconPlaceholder, { backgroundColor: colors.primaryLight }]}>
+                            <User size={20} color={colors.primary} strokeWidth={2} />
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.listInfo}>
+                        <Text style={[styles.listTitle, { color: colors.text }]} numberOfLines={1}>
+                          {list.name}
+                        </Text>
+                        <View style={styles.listMetaRow}>
+                          <Text style={[styles.listCount, { color: colors.textSecondary }]}>
+                            {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
+                          </Text>
+                          {list.isPublic ? (
+                            <View style={styles.publicBadge}>
+                              <Globe size={10} color={colors.primary} strokeWidth={2} />
+                              <Text style={[styles.publicBadgeText, { color: colors.primary }]}>Public</Text>
+                            </View>
+                          ) : (
+                            <View style={styles.privateBadge}>
+                              <Lock size={10} color={colors.textSecondary} strokeWidth={2} />
+                              <Text style={[styles.privateBadgeText, { color: colors.textSecondary }]}>Private</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                      <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View style={[styles.emptyContainer, { backgroundColor: colors.backgroundSecondary }]}>
+                  <User size={48} color={colors.textSecondary} strokeWidth={1.5} />
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                    No custom lists yet. Create one from the home tab!
+                  </Text>
+                </View>
+              )}
+            </>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -59,9 +613,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 20,
+    paddingBottom: 100,
+  },
+  webContent: {
     maxWidth: 768,
     alignSelf: 'center',
     width: '100%',
@@ -82,5 +636,301 @@ const styles = StyleSheet.create({
     height: 47,
     marginTop: 8,
     alignSelf: 'flex-start',
+  },
+
+  // Profile Header Section (Matches Brand/Business Details)
+  profileHeaderSection: {
+    borderRadius: 16,
+    padding: 20,
+    margin: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+      },
+    }),
+  },
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  profileImageContainer: {
+    position: 'relative',
+    marginRight: 16,
+  },
+  profileImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+  },
+  profileIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadImageButton: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  profileName: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  editIconButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  locationText: {
+    fontSize: 14,
+  },
+  privacyBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  profileDescription: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  socialLinksContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  socialButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  socialButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // Edit Form
+  editForm: {
+    gap: 16,
+  },
+  inputGroup: {
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  input: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    fontSize: 15,
+  },
+  textArea: {
+    minHeight: 80,
+    paddingTop: 10,
+  },
+  sectionSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  privacySection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  privacyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  privacyIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  privacyTextContainer: {
+    flex: 1,
+  },
+  privacyTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  privacyDescription: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  editActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    borderWidth: 1,
+  },
+  saveButton: {},
+  actionButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+
+  // Library Section
+  librarySection: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  librarySectionTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 16,
+  },
+  loadingContainer: {
+    padding: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+  },
+  listCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  listCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  listImageContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  listImage: {
+    width: '100%',
+    height: '100%',
+  },
+  listIconPlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listInfo: {
+    flex: 1,
+  },
+  listTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  listTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  listMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  listCount: {
+    fontSize: 13,
+  },
+  publicBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  publicBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  privateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  privateBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    padding: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    gap: 12,
+  },
+  emptyText: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
