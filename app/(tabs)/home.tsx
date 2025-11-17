@@ -96,7 +96,6 @@ import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusin
 import BusinessMapView from '@/components/BusinessMapView';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
 import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList, updateListMetadata, reorderListEntries, getEndorsementList, ensureEndorsementList } from '@/services/firebase/listService';
-import { UnifiedLibrary, useLibrary } from '@/components/Library';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 
@@ -204,7 +203,6 @@ export default function HomeScreen() {
 
   // Share modal state
   const [showShareModal, setShowShareModal] = useState(false);
-  const [shareItem, setShareItem] = useState<any>(null);
   const [shareData, setShareData] = useState<{ url: string; title: string; description?: string } | null>(null);
 
   // Card three-dot menu state
@@ -1979,35 +1977,8 @@ export default function HomeScreen() {
   };
 
   const renderForYouView = () => {
-    // Use UnifiedLibrary component instead of inline rendering
-    return (
-      <UnifiedLibrary
-        mode="edit"
-        currentUserId={clerkUser?.id}
-        alignedItems={allSupportFull}
-        unalignedItems={allAvoidFull}
-        isDarkMode={isDarkMode}
-        profileImage={profile?.userDetails?.profileImage || clerkUser?.imageUrl}
-        onItemPress={(item, listId) => {
-          // Handle item press - navigate to item details
-          if (item.type === 'brand') {
-            router.push(`/product/${item.id}`);
-          } else if (item.type === 'business') {
-            // Navigate to business details
-          }
-        }}
-        onAddItem={(listId) => {
-          // Handle add item - open modal
-          setSelectedList(userLists.find(l => l.id === listId) || null);
-          setShowAddItemModal(true);
-        }}
-        onShareItem={(item) => {
-          // Handle share item
-          setShareItem(item);
-          setShowShareModal(true);
-        }}
-      />
-    );
+    // Render the library directory in the scrollable area
+    return renderLibraryDirectory();
   };
 
   const renderNewsFeedView = () => {
