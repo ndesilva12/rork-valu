@@ -331,13 +331,30 @@ export const ensureEndorsementList = async (
 ): Promise<string> => {
   try {
     // Check if user already has an endorsement list
-    const existingList = await getEndorsementList(userId);
+    const existingEndorsedList = await getEndorsementList(userId);
 
-    if (existingList) {
-      return existingList.id;
+    if (existingEndorsedList) {
+      return existingEndorsedList.id;
     }
 
-    // Create new endorsement list
+    // Check if user has an existing "My List" to convert
+    const allLists = await getUserLists(userId);
+    const myList = allLists.find(list => list.name === 'My List');
+
+    if (myList) {
+      // Convert existing "My List" to endorsed list
+      const listRef = doc(db, LISTS_COLLECTION, myList.id);
+      await updateDoc(listRef, {
+        name: userName, // Update name to user's actual name
+        isEndorsed: true,
+        isPublic: true, // Endorsement lists are public by default
+        updatedAt: serverTimestamp(),
+      });
+      console.log('Converted existing "My List" to endorsement list:', myList.id);
+      return myList.id;
+    }
+
+    // Create new endorsement list if no existing list found
     const listsRef = collection(db, LISTS_COLLECTION);
     const newList = {
       userId,

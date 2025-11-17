@@ -1196,7 +1196,7 @@ export default function HomeScreen() {
               styles.subsectionTabText,
               { color: forYouSubsection === 'userList' ? colors.text : colors.textSecondary }
             ]}>
-              My List
+              Endorsements
             </Text>
             {forYouSubsection === 'userList' && (
               <View style={[styles.subsectionTabUnderline, { backgroundColor: colors.primary }]} />
@@ -1861,7 +1861,7 @@ export default function HomeScreen() {
 
     // Get source display name
     const getSourceDisplayName = (sourceId: string): string => {
-      if (sourceId === 'myList') return 'My List';
+      if (sourceId === 'myList') return 'Endorsements';
       if (sourceId === 'aligned') return 'Aligned';
       if (sourceId === 'unaligned') return 'Unaligned';
       const customList = userLists.find(list => list.id === sourceId);
@@ -1879,7 +1879,7 @@ export default function HomeScreen() {
               activeOpacity={0.7}
             >
               <Text style={[styles.newsSourceText, { color: colors.text }]}>
-                {selectedNewsSource === 'myList' ? 'My List' :
+                {selectedNewsSource === 'myList' ? 'Endorsements' :
                  selectedNewsSource === 'aligned' ? 'Aligned' :
                  selectedNewsSource === 'unaligned' ? 'Unaligned' :
                  userLists.find(list => list.id === selectedNewsSource)?.name || 'Select Source'}
@@ -5567,7 +5567,7 @@ export default function HomeScreen() {
             </View>
 
             <ScrollView style={styles.newsSourceOptionsContainer}>
-              {/* My List */}
+              {/* Endorsements */}
               <TouchableOpacity
                 style={[
                   styles.newsSourceOption,
@@ -5580,7 +5580,7 @@ export default function HomeScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.newsSourceOptionText, { color: colors.text }]}>My List</Text>
+                <Text style={[styles.newsSourceOptionText, { color: colors.text }]}>Endorsements</Text>
                 {selectedNewsSource === 'myList' && (
                   <View style={[styles.newsSourceCheckmark, { backgroundColor: colors.primary }]}>
                     <Text style={[styles.newsSourceCheckmarkText, { color: colors.white }]}>✓</Text>
