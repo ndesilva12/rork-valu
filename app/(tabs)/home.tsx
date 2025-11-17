@@ -1156,6 +1156,56 @@ export default function HomeScreen() {
 
   const localDistanceOptions: LocalDistanceOption[] = [100, 50, 10, 5, 1];
 
+  // Helper function to toggle list expansion
+  const toggleListExpansion = (listId: string) => {
+    if (expandedListId === listId) {
+      // Collapse if already expanded
+      setExpandedListId(null);
+    } else {
+      // Expand the clicked list
+      setExpandedListId(listId);
+    }
+  };
+
+  // Render collapsible list header
+  const renderCollapsibleListHeader = (
+    listId: string,
+    title: string,
+    itemCount: number,
+    isExpanded: boolean,
+    isEndorsed: boolean = false,
+    isPinned: boolean = false
+  ) => {
+    const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.collapsibleListHeader,
+          { backgroundColor: isExpanded ? colors.backgroundSecondary : colors.background, borderColor: colors.border },
+          isPinned && styles.pinnedListHeader,
+        ]}
+        onPress={() => toggleListExpansion(listId)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.collapsibleListHeaderContent}>
+          <View style={styles.collapsibleListInfo}>
+            <View style={styles.collapsibleListTitleRow}>
+              <ChevronIcon size={20} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.collapsibleListTitle, { color: colors.text }]}>
+                {title}
+              </Text>
+              {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" />}
+            </View>
+            <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
+              {itemCount} {itemCount === 1 ? 'item' : 'items'}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   const renderMainViewSelector = () => (
     <>
       {/* Main View Selector - Three Views */}
@@ -7624,5 +7674,39 @@ const styles = StyleSheet.create({
   newsSourceCheckmarkText: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  // Collapsible Library Directory Styles
+  collapsibleListHeader: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginHorizontal: 16,
+    marginVertical: 6,
+  },
+  pinnedListHeader: {
+    borderWidth: 2,
+  },
+  collapsibleListHeaderContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  collapsibleListInfo: {
+    flex: 1,
+  },
+  collapsibleListTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  collapsibleListTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  collapsibleListCount: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginLeft: 28,
   },
 });
