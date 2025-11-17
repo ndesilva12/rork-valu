@@ -1,5 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Plus, List as ListIcon, ExternalLink, Globe, Lock, MapPin } from 'lucide-react-native';
+import { ArrowLeft, Plus, List as ListIcon, Globe, Lock, MapPin, User, Eye, EyeOff, TrendingUp, TrendingDown, Minus, MoreVertical } from 'lucide-react-native';
+import LibraryView from '@/components/LibraryView';
 import {
   View,
   Text,
@@ -13,25 +14,29 @@ import {
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { UserProfile } from '@/types';
 import { getUserLists, copyListToLibrary } from '@/services/firebase/listService';
 import { UserList } from '@/types/library';
 import EndorsedBadge from '@/components/EndorsedBadge';
+import { calculateAlignmentScore } from '@/services/firebase/businessService';
 
 export default function UserProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const router = useRouter();
   const { isDarkMode, clerkUser, profile: currentUserProfile } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userLists, setUserLists] = useState<UserList[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copyingListId, setCopyingListId] = useState<string | null>(null);
+  const [expandedListId, setExpandedListId] = useState<string | null>(null);
+  const [activeListMenuId, setActiveListMenuId] = useState<string | null>(null);
 
   useEffect(() => {
     loadUserProfile();
@@ -125,13 +130,7 @@ export default function UserProfileScreen() {
   if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Stack.Screen
-          options={{
-            title: 'Loading...',
-            headerStyle: { backgroundColor: colors.background },
-            headerTintColor: colors.text,
-          }}
-        />
+        <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading profile...</Text>
@@ -143,22 +142,7 @@ export default function UserProfileScreen() {
   if (error || !userProfile) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Stack.Screen
-          options={{
-            title: 'Error',
-            headerStyle: { backgroundColor: colors.background },
-            headerTintColor: colors.text,
-            headerLeft: () => (
-              <TouchableOpacity
-                onPress={() => router.back()}
-                style={styles.backButton}
-                activeOpacity={0.7}
-              >
-                <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-            ),
-          }}
-        />
+        <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.centerContainer}>
           <Text style={[styles.errorTitle, { color: colors.text }]}>Profile Not Available</Text>
           <Text style={[styles.errorMessage, { color: colors.textSecondary }]}>
@@ -179,53 +163,78 @@ export default function UserProfileScreen() {
   const userDetails = userProfile.userDetails;
   const userName = userDetails?.name || 'User';
   const isOwnProfile = userId === clerkUser?.id;
+  const profileImageUrl = userDetails?.profileImage;
+
+  // Calculate alignment score if viewing someone else's profile
+  let alignmentData = {
+    isAligned: false,
+    alignmentStrength: 50
+  };
+
+  if (!isOwnProfile && userProfile.causes && currentUserProfile?.causes && currentUserProfile.causes.length > 0) {
+    const rawScore = calculateAlignmentScore(currentUserProfile.causes, userProfile.causes);
+    const alignmentScore = Math.round(50 + (rawScore * 0.8));
+    alignmentData = {
+      isAligned: alignmentScore >= 50,
+      alignmentStrength: Math.max(10, Math.min(90, alignmentScore))
+    };
+  }
+
+  const alignmentColor = alignmentData.isAligned ? colors.success : colors.danger;
+  const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen
-        options={{
-          title: userName,
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
-          headerLeft: () => (
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={styles.backButton}
-              activeOpacity={0.7}
-            >
-              <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
-            </TouchableOpacity>
-          ),
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
 
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={Platform.OS === 'web' ? styles.webContent : undefined}
         showsVerticalScrollIndicator={false}
       >
-        {/* User Profile Header */}
-        <View style={[styles.profileHeader, { backgroundColor: colors.backgroundSecondary }]}>
-          <View style={styles.profileInfo}>
-            {userDetails?.profileImage ? (
+        {/* Hero Image Container */}
+        <View style={styles.heroImageContainer}>
+          <Image
+            source={{ uri: profileImageUrl || 'https://via.placeholder.com/800x130/4A90E2/FFFFFF?text=Profile' }}
+            style={styles.heroImage}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
+            priority="high"
+            placeholder={{ blurhash: 'LGF5?xoffQj[~qoffQof?bofj[ay' }}
+          />
+
+          {/* Back button on hero */}
+          <TouchableOpacity
+            style={[styles.backButtonOverlay, { backgroundColor: colors.backgroundSecondary + 'DD' }]}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.content}>
+          {/* Header with profile image, user info, and alignment score */}
+          <View style={styles.header}>
+            {profileImageUrl ? (
               <Image
-                source={{ uri: userDetails.profileImage }}
-                style={styles.profileImage}
+                source={{ uri: profileImageUrl }}
+                style={styles.headerLogo}
                 contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
               />
             ) : (
-              <View style={[styles.profileImagePlaceholder, { backgroundColor: colors.primary }]}>
-                <Text style={[styles.profileImageText, { color: colors.white }]}>
-                  {userName.charAt(0).toUpperCase()}
-                </Text>
+              <View style={[styles.headerLogoPlaceholder, { backgroundColor: colors.primary }]}>
+                <User size={28} color={colors.white} strokeWidth={2} />
               </View>
             )}
-            <View style={styles.profileTextInfo}>
+
+            <View style={styles.titleContainer}>
               <View style={styles.nameRow}>
                 <Text style={[styles.userName, { color: colors.text }]}>{userName}</Text>
-                {userProfile.isPublicProfile && (
-                  <Globe size={16} color={colors.primary} strokeWidth={2} />
-                )}
               </View>
               {userDetails?.location && (
                 <View style={styles.locationRow}>
@@ -235,100 +244,60 @@ export default function UserProfileScreen() {
                   </Text>
                 </View>
               )}
-              {userDetails?.description && (
-                <Text style={[styles.bio, { color: colors.text }]}>{userDetails.description}</Text>
-              )}
             </View>
-          </View>
-        </View>
 
-        {/* Library Section */}
-        <View style={styles.librarySection}>
-          <View style={styles.librarySectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            {/* Show alignment score only when viewing another user's profile */}
+            {!isOwnProfile && (
+              <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.backgroundSecondary }]}>
+                <AlignmentIcon size={20} color={alignmentColor} strokeWidth={2.5} />
+                <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
+                  {alignmentData.alignmentStrength}
+                </Text>
+              </View>
+            )}
+
+            {/* Show privacy badge when viewing own profile */}
+            {isOwnProfile && (
+              <View style={[styles.privacyBadge, { backgroundColor: userProfile.isPublicProfile ? colors.primary : colors.backgroundSecondary }]}>
+                {userProfile.isPublicProfile ? (
+                  <Eye size={16} color={colors.white} />
+                ) : (
+                  <EyeOff size={16} color={colors.textSecondary} />
+                )}
+              </View>
+            )}
+          </View>
+
+          {userDetails?.description && (
+            <Text style={[styles.userDescription, { color: colors.textSecondary }]}>
+              {userDetails.description}
+            </Text>
+          )}
+
+          {/* Library Section - Uses Shared LibraryView Component */}
+          <View style={styles.librarySection}>
+            <Text style={[styles.librarySectionTitle, { color: colors.text }]}>
               {isOwnProfile ? 'My Library' : `${userName}'s Library`}
             </Text>
-            <Text style={[styles.listCount, { color: colors.textSecondary }]}>
-              {userLists.length} {userLists.length === 1 ? 'list' : 'lists'}
-            </Text>
+
+            <LibraryView
+              userLists={userLists}
+              userPersonalList={(() => {
+                // Find THE ONE endorsement list (matching name or oldest)
+                let endorsementList = userLists.find(list => list.name === userName);
+                if (!endorsementList && userLists.length > 0) {
+                  const sortedByAge = [...userLists].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+                  endorsementList = sortedByAge[0];
+                }
+                return endorsementList || null;
+              })()}
+              profile={userProfile || {} as any}
+              isDarkMode={isDarkMode}
+              isOwnLibrary={isOwnProfile}
+              userId={userId}
+              showSystemLists={false}
+            />
           </View>
-
-          {userLists.length === 0 ? (
-            <View style={[styles.emptyContainer, { backgroundColor: colors.backgroundSecondary }]}>
-              <ListIcon size={48} color={colors.textSecondary} strokeWidth={1.5} />
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                {isOwnProfile ? 'No lists yet' : 'No public lists'}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.listsContainer}>
-              {userLists.map((list) => (
-                <View
-                  key={list.id}
-                  style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                >
-                  <TouchableOpacity
-                    style={styles.listCardContent}
-                    onPress={() => router.push(`/list/${list.id}`)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.listCardHeader}>
-                      <View style={[styles.listIconContainer, list.isEndorsed ? { backgroundColor: colors.primary } : { backgroundColor: colors.primaryLight + '20' }]}>
-                        <ListIcon size={20} color={list.isEndorsed ? colors.white : colors.primary} strokeWidth={2} />
-                      </View>
-                      <View style={styles.listCardInfo}>
-                        <View style={styles.listTitleRow}>
-                          <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
-                            {list.name}
-                          </Text>
-                          {list.isEndorsed && (
-                            <EndorsedBadge isDarkMode={isDarkMode} size="small" />
-                          )}
-                        </View>
-                        <View style={styles.listMetaRow}>
-                          <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
-                            {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
-                          </Text>
-                          {list.isPublic ? (
-                            <View style={styles.publicBadge}>
-                              <Globe size={12} color={colors.primary} strokeWidth={2} />
-                              <Text style={[styles.publicBadgeText, { color: colors.primary }]}>Public</Text>
-                            </View>
-                          ) : (
-                            <View style={styles.privateBadge}>
-                              <Lock size={12} color={colors.textSecondary} strokeWidth={2} />
-                              <Text style={[styles.privateBadgeText, { color: colors.textSecondary }]}>Private</Text>
-                            </View>
-                          )}
-                        </View>
-                        {list.description && (
-                          <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                            {list.description}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-
-                  {/* Copy Button - Only show if not own profile and list is public */}
-                  {!isOwnProfile && list.isPublic && (
-                    <TouchableOpacity
-                      style={[styles.copyButton, { backgroundColor: colors.primary }]}
-                      onPress={() => handleCopyList(list.id)}
-                      activeOpacity={0.7}
-                      disabled={copyingListId === list.id}
-                    >
-                      {copyingListId === list.id ? (
-                        <ActivityIndicator size="small" color={colors.white} />
-                      ) : (
-                        <Plus size={20} color={colors.white} strokeWidth={2.5} />
-                      )}
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ))}
-            </View>
-          )}
         </View>
       </ScrollView>
     </View>
@@ -342,9 +311,251 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  webContent: {
+    maxWidth: 768,
+    alignSelf: 'center' as const,
+    width: '100%',
+  },
+  heroImageContainer: {
+    width: '100%',
+    height: 130,
+    position: 'relative' as const,
+  },
+  heroImage: {
+    width: '100%',
+    height: 130,
+  },
+  backButtonOverlay: {
+    position: 'absolute' as const,
+    bottom: 16,
+    left: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
   content: {
     padding: 16,
-    paddingBottom: 32,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    gap: 10,
+  },
+  headerLogo: {
+    width: 56,
+    height: 56,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  headerLogoPlaceholder: {
+    width: 56,
+    height: 56,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleContainer: {
+    flex: 1,
+    marginRight: 12,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  userName: {
+    fontSize: 22,
+    fontWeight: '700' as const,
+    flex: 1,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 5,
+  },
+  locationText: {
+    fontSize: 12,
+  },
+  scoreCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scoreNumber: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginTop: 3,
+  },
+  privacyBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  userDescription: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 16,
+  },
+  librarySection: {
+    marginTop: 8,
+  },
+  librarySectionTitle: {
+    fontSize: 22,
+    fontWeight: '700' as const,
+    marginBottom: 16,
+  },
+  emptyContainer: {
+    padding: 48,
+    alignItems: 'center',
+    borderRadius: 16,
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 12,
+  },
+  listsContainer: {
+    gap: 12,
+  },
+  listWrapper: {
+    marginBottom: 0,
+  },
+  listHeader: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  listHeaderLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  listIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listHeaderInfo: {
+    flex: 1,
+  },
+  listTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  listTitle: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+    flex: 1,
+  },
+  listMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  listItemCount: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+  },
+  publicIndicator: {
+    width: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  privateIndicator: {
+    width: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  listMenuButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listMenuDropdown: {
+    position: 'absolute' as const,
+    top: 60,
+    right: 10,
+    minWidth: 150,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  listMenuOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    borderRadius: 8,
+  },
+  listMenuText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  listItemsContainer: {
+    marginTop: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 12,
+  },
+  listItemNumber: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    minWidth: 24,
+  },
+  listItemText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    flex: 1,
   },
   centerContainer: {
     flex: 1,
@@ -358,7 +569,7 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '700' as const,
     marginBottom: 8,
     textAlign: 'center',
   },
@@ -374,193 +585,6 @@ const styles = StyleSheet.create({
   },
   homeButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-  },
-  backButton: {
-    padding: 8,
-    marginLeft: 8,
-  },
-  profileHeader: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-      },
-    }),
-  },
-  profileInfo: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  profileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-  },
-  profileImagePlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  profileImageText: {
-    fontSize: 32,
-    fontWeight: '700',
-  },
-  profileTextInfo: {
-    flex: 1,
-    gap: 8,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  locationText: {
-    fontSize: 14,
-  },
-  bio: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  librarySection: {
-    marginTop: 8,
-  },
-  librarySectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  listCount: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  emptyContainer: {
-    padding: 48,
-    alignItems: 'center',
-    borderRadius: 16,
-  },
-  emptyText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 12,
-  },
-  listsContainer: {
-    gap: 12,
-  },
-  listCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)',
-      },
-    }),
-  },
-  listCardContent: {
-    flex: 1,
-  },
-  listCardHeader: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  listIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  listCardInfo: {
-    flex: 1,
-  },
-  listTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  listCardTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    flex: 1,
-  },
-  listMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  listCardCount: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  publicBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  publicBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  privateBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  privateBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  listCardDescription: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  copyButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    fontWeight: '600' as const,
   },
 });

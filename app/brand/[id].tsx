@@ -300,153 +300,109 @@ export default function BrandDetailScreen() {
     }
   };
 
-  // Calculate alignment data without useMemo to avoid infinite re-render
-  // Early return for loading/missing data
-  if (!brand || !valuesMatrix) {
-    var alignmentData = {
-      isAligned: false,
-      matchingValues: [],
-      avgPosition: 0,
-      totalSupportScore: 0,
-      totalAvoidScore: 0,
-      alignmentStrength: 50
-    };
-  } else {
-    // Calculate causes
-    const supportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
-    const avoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
-    const allUserCauses = [...supportedCauses, ...avoidedCauses];
+  // Calculate alignment score based on user causes and brand's valueAlignments
+  let alignmentData = {
+    isAligned: false,
+    matchingValues: [] as string[],
+    alignmentStrength: 50
+  };
 
-    const brandName = brand?.name;
+  if (brand && profile.causes && profile.causes.length > 0 && valuesMatrix) {
+    const userSupportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
+    const userAvoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
+    const allUserCauses = [...userSupportedCauses, ...userAvoidedCauses];
+
     let totalSupportScore = 0;
     let totalAvoidScore = 0;
-    const matchingValues = new Set<string>();
-
-    // Collect scores for this brand across all user's selected values
+    const matchingValues: string[] = [];
     const alignedScores: number[] = [];
     const unalignedScores: number[] = [];
 
-    // Check EACH user cause to find the brand's position
+    // Check each user cause against the brand's position in the valuesMatrix
     allUserCauses.forEach((causeId) => {
       const causeData = valuesMatrix[causeId];
       if (!causeData) {
-        // If cause data doesn't exist, treat as neutral (score 50)
         alignedScores.push(50);
         unalignedScores.push(50);
         return;
       }
 
-      // Get array lengths for dynamic scoring
       const supportArrayLength = causeData.support?.length || 0;
       const opposeArrayLength = causeData.oppose?.length || 0;
 
-      // Find position in support list (1-based, or notFoundPosition if not found)
-      const supportIndex = causeData.support?.indexOf(brandName);
+      // Find brand's position in support/oppose lists
+      const supportIndex = causeData.support?.indexOf(brand.name);
       const supportPosition = supportIndex !== undefined && supportIndex >= 0
-        ? supportIndex + 1 // Convert to 1-indexed
-        : supportArrayLength + 1; // Not found - one position past the end
+        ? supportIndex + 1
+        : supportArrayLength + 1;
 
-      // Find position in oppose list (1-based, or notFoundPosition if not found)
-      const opposeIndex = causeData.oppose?.indexOf(brandName);
+      const opposeIndex = causeData.oppose?.indexOf(brand.name);
       const opposePosition = opposeIndex !== undefined && opposeIndex >= 0
-        ? opposeIndex + 1 // Convert to 1-indexed
-        : opposeArrayLength + 1; // Not found - one position past the end
+        ? opposeIndex + 1
+        : opposeArrayLength + 1;
 
       // If user supports this cause
-      if (supportedCauses.includes(causeId)) {
-        // Good if brand is in support list, bad if in oppose list
+      if (userSupportedCauses.includes(causeId)) {
         if (supportIndex !== undefined && supportIndex >= 0) {
-          // Brand is in support list - calculate aligned score
-          matchingValues.add(causeId);
+          matchingValues.push(causeId);
           const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
-          // Formula: score = 100 - ((position - 1) / maxPosition) * 50
-          // This maps position 1 → 100, position maxPosition+1 → 50
           const score = Math.round(100 - ((supportPosition - 1) / maxPosition) * 50);
           alignedScores.push(score);
           totalSupportScore += 100;
-          // For unaligned calculation, this value doesn't apply (brand is good here)
           unalignedScores.push(50);
         } else if (opposeIndex !== undefined && opposeIndex >= 0) {
-          // Brand is in oppose list - calculate unaligned score
-          matchingValues.add(causeId);
+          matchingValues.push(causeId);
           const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
-          // Formula: score = ((position - 1) / maxPosition) * 50
-          // This maps position 1 → 0, position maxPosition+1 → 50
           const score = Math.round(((opposePosition - 1) / maxPosition) * 50);
           unalignedScores.push(score);
           totalAvoidScore += 100;
-          // For aligned calculation, this value doesn't apply (brand is bad here)
           alignedScores.push(50);
         } else {
-          // Brand doesn't appear in either list for this value
           alignedScores.push(50);
           unalignedScores.push(50);
         }
       }
 
       // If user avoids this cause
-      if (avoidedCauses.includes(causeId)) {
-        // Good if brand is in oppose list, bad if in support list
+      if (userAvoidedCauses.includes(causeId)) {
         if (opposeIndex !== undefined && opposeIndex >= 0) {
-          // Brand is in oppose list - calculate aligned score
-          matchingValues.add(causeId);
+          matchingValues.push(causeId);
           const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
-          // Formula: score = 100 - ((position - 1) / maxPosition) * 50
-          // This maps position 1 → 100, position maxPosition+1 → 50
           const score = Math.round(100 - ((opposePosition - 1) / maxPosition) * 50);
           alignedScores.push(score);
           totalSupportScore += 100;
-          // For unaligned calculation, this value doesn't apply (brand is good here)
           unalignedScores.push(50);
         } else if (supportIndex !== undefined && supportIndex >= 0) {
-          // Brand is in support list - calculate unaligned score
-          matchingValues.add(causeId);
+          matchingValues.push(causeId);
           const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
-          // Formula: score = ((position - 1) / maxPosition) * 50
-          // This maps position 1 → 0, position maxPosition+1 → 50
           const score = Math.round(((supportPosition - 1) / maxPosition) * 50);
           unalignedScores.push(score);
           totalAvoidScore += 100;
-          // For aligned calculation, this value doesn't apply (brand is bad here)
           alignedScores.push(50);
         } else {
-          // Brand doesn't appear in either list for this value
           alignedScores.push(50);
           unalignedScores.push(50);
         }
       }
     });
 
-    // Calculate alignment strength based on average score across ALL values
-    let alignmentStrength = 50; // Neutral default
-    let avgPosition = 0; // For display purposes only
-
+    // Calculate alignment strength based on average score
+    let alignmentStrength = 50;
     if (totalSupportScore > totalAvoidScore && totalSupportScore > 0) {
-      // Aligned brand: average the aligned scores
       alignmentStrength = Math.round(
         alignedScores.reduce((sum, score) => sum + score, 0) / alignedScores.length
       );
-      // Calculate avgPosition for display (approximation based on score)
-      // Reverse formula: position = ((100 - score) / 50) * 10 + 1
-      avgPosition = ((100 - alignmentStrength) / 50) * 10 + 1;
     } else if (totalAvoidScore > totalSupportScore && totalAvoidScore > 0) {
-      // Unaligned brand: average the unaligned scores
       alignmentStrength = Math.round(
         unalignedScores.reduce((sum, score) => sum + score, 0) / unalignedScores.length
       );
-      // Calculate avgPosition for display (approximation based on score)
-      // Reverse formula: position = (score / 50) * 10 + 1
-      avgPosition = (alignmentStrength / 50) * 10 + 1;
     }
 
     const isAligned = totalSupportScore > totalAvoidScore && totalSupportScore > 0;
 
-    var alignmentData = {
+    alignmentData = {
       isAligned,
-      matchingValues: Array.from(matchingValues),
-      avgPosition: Math.round(avgPosition * 10) / 10,
-      totalSupportScore,
-      totalAvoidScore,
+      matchingValues,
       alignmentStrength
     };
   }
