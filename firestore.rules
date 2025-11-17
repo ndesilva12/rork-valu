@@ -53,6 +53,12 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Business Team Members collection - OPEN ACCESS
+    // Business owners can manage their team members (Clerk handles authentication)
+    match /businessTeamMembers/{memberId} {
+      allow read, write: if true;
+    }
+
     // Deny all other collections
     match /{document=**} {
       allow read, write: if false;
