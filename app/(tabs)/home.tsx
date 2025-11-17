@@ -98,6 +98,8 @@ import { UserList, ListEntry, ValueListMode } from '@/types/library';
 import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList, updateListMetadata, reorderListEntries, getEndorsementList, ensureEndorsementList } from '@/services/firebase/listService';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
+import { UnifiedLibrary } from '@/components/Library';
+import { useLibrary } from '@/contexts/LibraryContext';
 
 type MainView = 'forYou' | 'myLibrary' | 'local';
 type ForYouSubsection = 'userList' | 'aligned' | 'unaligned';
@@ -128,6 +130,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { profile, isDarkMode, clerkUser } = useUser();
+  const library = useLibrary();
   const colors = isDarkMode ? darkColors : lightColors;
   const [mainView, setMainView] = useState<MainView>('forYou');
   const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
@@ -1977,8 +1980,17 @@ export default function HomeScreen() {
   };
 
   const renderForYouView = () => {
-    // Render the library directory in the scrollable area
-    return renderLibraryDirectory();
+    // Render unified library component with edit mode
+    return (
+      <UnifiedLibrary
+        mode="edit"
+        currentUserId={clerkUser?.id}
+        alignedItems={allSupportFull}
+        unalignedItems={allAvoidFull}
+        isDarkMode={isDarkMode}
+        profileImage={profile?.userDetails?.profileImage || clerkUser?.imageUrl}
+      />
+    );
   };
 
   const renderNewsFeedView = () => {
