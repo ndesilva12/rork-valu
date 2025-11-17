@@ -282,63 +282,39 @@ export default function BusinessDetailScreen() {
     alignmentStrength: 50
   };
 
-  if (business && business.causes && business.causes.length > 0 && profile.causes && profile.causes.length > 0) {
+  if (business && profile.causes && profile.causes.length > 0) {
     // Calculate raw alignment score using the same method as list views
-    const rawScore = calculateAlignmentScore(profile.causes, business.causes);
+    const rawScore = calculateAlignmentScore(profile.causes, business.causes || []);
 
-    // Calculate score components for normalization
+    // Create sets for matching values calculation
     const userSupportSet = new Set(profile.causes.filter(c => c.type === 'support').map(c => c.id));
     const userAvoidSet = new Set(profile.causes.filter(c => c.type === 'avoid').map(c => c.id));
-    const bizSupportSet = new Set(business.causes.filter(c => c.type === 'support').map(c => c.id));
-    const bizAvoidSet = new Set(business.causes.filter(c => c.type === 'avoid').map(c => c.id));
+    const bizCauses = business.causes || [];
+    const bizSupportSet = new Set(bizCauses.filter(c => c.type === 'support').map(c => c.id));
+    const bizAvoidSet = new Set(bizCauses.filter(c => c.type === 'avoid').map(c => c.id));
 
-    // Get all unique value IDs from both users
+    // Get all unique value IDs
     const allValueIds = new Set([...userSupportSet, ...userAvoidSet, ...bizSupportSet, ...bizAvoidSet]);
 
-    // Count matches, conflicts, and partial matches
-    let matches = 0;
-    let conflicts = 0;
-    let partialMatch = 0;
+    // Find matching/conflicting values for display
     const matchingValues = new Set<string>();
-
     allValueIds.forEach(valueId => {
-      const userSupports = userSupportSet.has(valueId);
-      const userAvoids = userAvoidSet.has(valueId);
-      const bizSupports = bizSupportSet.has(valueId);
-      const bizAvoids = bizAvoidSet.has(valueId);
-
-      const userHasPosition = userSupports || userAvoids;
-      const bizHasPosition = bizSupports || bizAvoids;
-
+      const userHasPosition = userSupportSet.has(valueId) || userAvoidSet.has(valueId);
+      const bizHasPosition = bizSupportSet.has(valueId) || bizAvoidSet.has(valueId);
       if (userHasPosition && bizHasPosition) {
-        // Both have positions - check if they match or conflict
-        if ((userSupports && bizSupports) || (userAvoids && bizAvoids)) {
-          matches++;
-          matchingValues.add(valueId);
-        } else if ((userSupports && bizAvoids) || (userAvoids && bizSupports)) {
-          conflicts++;
-          matchingValues.add(valueId);
-        }
-      } else if (userHasPosition || bizHasPosition) {
-        partialMatch++;
+        matchingValues.add(valueId);
       }
     });
 
-    // Calculate alignment score based on percentage
-    // Map raw score to 10-90 range similar to normalized scores in list view
-    const totalPositions = matches + conflicts + partialMatch;
-    let alignmentScore = 50; // Default midpoint
+    // Map raw score to 10-90 range
+    // Raw scores typically range from -50 to +50, map this to 10-90
+    // Negative scores (conflicts) -> 10-49, Positive scores (matches) -> 51-90
+    let alignmentScore = 50; // Default neutral
 
-    if (totalPositions > 0) {
-      // Calculate a percentage-based score
-      // Perfect alignment (all matches) = 90
-      // No alignment (all partial) = 50
-      // Perfect conflict (all conflicts) = 10
-      const matchRatio = matches / totalPositions;
-      const conflictRatio = conflicts / totalPositions;
-
-      // Score ranges from 10 (all conflicts) to 90 (all matches)
-      alignmentScore = Math.round(10 + (matchRatio * 80) - (conflictRatio * 40));
+    if (rawScore !== 0) {
+      // Map rawScore (-50 to +50) to alignment score (10 to 90)
+      // Formula: score = 50 + (rawScore * 0.8)
+      alignmentScore = Math.round(50 + (rawScore * 0.8));
       alignmentScore = Math.max(10, Math.min(90, alignmentScore));
     }
 
