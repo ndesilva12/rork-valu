@@ -4314,39 +4314,45 @@ export default function HomeScreen() {
                       </>
                     )}
 
-                    {/* Reorder option */}
-                    <TouchableOpacity
-                      style={styles.listOptionItem}
-                      onPress={() => {
-                        setActiveItemOptionsMenu(null);
-                        setIsEditMode(true);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <ChevronUp size={18} color={colors.text} strokeWidth={2} />
-                      <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
-                    </TouchableOpacity>
-                    <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                    {/* Reorder option - only for user's own lists */}
+                    {list.userId === clerkUser?.id && (
+                      <>
+                        <TouchableOpacity
+                          style={styles.listOptionItem}
+                          onPress={() => {
+                            setActiveItemOptionsMenu(null);
+                            setIsEditMode(true);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <ChevronUp size={18} color={colors.text} strokeWidth={2} />
+                          <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
+                        </TouchableOpacity>
+                        <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
 
-                    {/* Remove option */}
-                    <TouchableOpacity
-                      style={styles.listOptionItem}
-                      onPress={() => {
-                        console.log('[Home] Delete entry pressed, ID:', activeItemOptionsMenu);
-                        if (activeItemOptionsMenu) {
-                          handleDeleteEntry(activeItemOptionsMenu);
-                        }
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Trash2 size={16} color="#EF4444" strokeWidth={2} />
-                      <Text style={[styles.listOptionText, { color: '#EF4444', fontWeight: '700' }]}>Remove</Text>
-                    </TouchableOpacity>
+                        {/* Remove option - RED and only for user's own lists */}
+                        <TouchableOpacity
+                          style={styles.listOptionItem}
+                          onPress={() => {
+                            console.log('[Home] Delete entry pressed, ID:', activeItemOptionsMenu);
+                            if (activeItemOptionsMenu) {
+                              handleDeleteEntry(activeItemOptionsMenu);
+                            }
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Trash2 size={16} color="#EF4444" strokeWidth={2} />
+                          <Text style={[styles.listOptionText, { color: '#EF4444', fontWeight: '700' }]}>Remove</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
 
                     {/* Share option - only for brand/business entries */}
                     {(entry.type === 'brand' || entry.type === 'business') && (
                       <>
-                        <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                        {list.userId === clerkUser?.id && (
+                          <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                        )}
                         <TouchableOpacity
                           style={styles.listOptionItem}
                           onPress={async () => {
