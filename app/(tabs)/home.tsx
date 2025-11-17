@@ -1344,6 +1344,9 @@ export default function HomeScreen() {
         unalignedItems={allAvoidFull}
         isDarkMode={isDarkMode}
         profileImage={profile?.userDetails?.profileImage || clerkUser?.imageUrl}
+        userBusinesses={userBusinesses}
+        scoredBrands={scoredBrands}
+        userCauses={profile?.causes || []}
       />
     );
   };

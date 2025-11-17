@@ -29,6 +29,9 @@ import { UserList, ListEntry } from '@/types/library';
 import { useLibrary } from '@/contexts/LibraryContext';
 import EndorsedBadge from '@/components/EndorsedBadge';
 import { getLogoUrl } from '@/lib/logo';
+import { Product } from '@/types';
+import { BusinessUser, calculateAlignmentScore } from '@/services/firebase/businessService';
+import { useUser } from '@/contexts/UserContext';
 
 // ===== Types =====
 
@@ -42,10 +45,14 @@ interface UnifiedLibraryProps {
   viewingUserId?: string;
   userLists?: UserList[];
   endorsementList?: UserList | null;
-  alignedItems?: any[];
-  unalignedItems?: any[];
+  alignedItems?: Product[];  // Changed from any[] to Product[]
+  unalignedItems?: Product[];  // Changed from any[] to Product[]
   isDarkMode?: boolean;
   profileImage?: string;
+  // Additional props for score calculation
+  userBusinesses?: BusinessUser[];
+  scoredBrands?: Map<string, number>;
+  userCauses?: string[];
 }
 
 export default function UnifiedLibrary({
@@ -58,9 +65,13 @@ export default function UnifiedLibrary({
   unalignedItems = [],
   isDarkMode = false,
   profileImage,
+  userBusinesses = [],
+  scoredBrands = new Map(),
+  userCauses = [],
 }: UnifiedLibraryProps) {
   const colors = isDarkMode ? darkColors : lightColors;
   const library = useLibrary();
+  const { profile } = useUser();
 
   const [activeListOptionsId, setActiveListOptionsId] = useState<string | null>(null);
 
@@ -82,13 +93,109 @@ export default function UnifiedLibrary({
   // Filter out endorsement list from custom lists
   const customLists = userLists.filter(list => list.id !== endorsementList?.id);
 
-  // EXACT copy of Home tab's renderListEntry
+  // Render brand card with score (for Product type)
+  const renderBrandCard = (product: Product, type: 'support' | 'avoid') => {
+    const isSupport = type === 'support';
+    const titleColor = isSupport ? colors.primary : colors.danger;
+    const alignmentScore = scoredBrands.get(product.id) || 0;
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.brandCard,
+          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+        ]}
+        onPress={() => {
+          // TODO: Navigate to product details
+        }}
+        activeOpacity={0.7}
+        disabled={!canInteract}
+      >
+        <View style={styles.brandCardInner}>
+          <View style={styles.brandLogoContainer}>
+            <Image
+              source={{ uri: getLogoUrl(product.website || '') }}
+              style={styles.brandLogo}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
+            />
+          </View>
+          <View style={styles.brandCardContent}>
+            <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>
+              {product.name}
+            </Text>
+            <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+              {product.category}
+            </Text>
+          </View>
+          <View style={styles.brandScoreContainer}>
+            <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
+          </View>
+          {mode === 'edit' && (
+            <TouchableOpacity
+              style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+              onPress={(e) => {
+                e.stopPropagation();
+                // TODO: Show options menu
+              }}
+              activeOpacity={0.7}
+            >
+              <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+            </TouchableOpacity>
+          )}
+          {mode === 'view' && (
+            <TouchableOpacity
+              style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+              onPress={(e) => {
+                e.stopPropagation();
+                // TODO: Quick add to library
+              }}
+              activeOpacity={0.7}
+            >
+              <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  // EXACT copy of Home tab's renderListEntry with score calculation
   const renderListEntry = (entry: ListEntry) => {
+    if (!entry) return null;
+
     switch (entry.type) {
+      case 'brand':
+        if ('brandId' in entry) {
+          const brand = alignedItems.find(b => b.id === entry.brandId) ||
+                       unalignedItems.find(b => b.id === entry.brandId);
+          if (!brand) {
+            // Brand not found - show placeholder
+            return (
+              <View style={[styles.brandCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <View style={styles.brandCardContent}>
+                  <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={1}>
+                    {entry.brandName || 'Brand not found'}
+                  </Text>
+                </View>
+              </View>
+            );
+          }
+          // Render brand card with score
+          return renderBrandCard(brand, 'support');
+        }
+        break;
+
       case 'business':
         if ('businessId' in entry) {
-          // Render business entry with full card layout
-          const titleColor = colors.primary;
+          // Find business to get alignment score
+          const businessData = userBusinesses.find(b => b.id === entry.businessId);
+          const rawScore = businessData ? calculateAlignmentScore(userCauses || profile?.causes || [], businessData.causes || []) : 0;
+          let alignmentScore = Math.round(50 + (rawScore * 0.8));
+          alignmentScore = Math.max(10, Math.min(90, alignmentScore));
+          const isAligned = alignmentScore >= 50;
+          const titleColor = isAligned ? colors.primary : colors.danger;
 
           return (
             <TouchableOpacity
@@ -97,10 +204,7 @@ export default function UnifiedLibrary({
                 { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
               ]}
               onPress={() => {
-                // Navigation handled by mode
-                if (canInteract && entry.businessId) {
-                  // TODO: Navigate to business details
-                }
+                // TODO: Navigation handled by mode
               }}
               activeOpacity={0.7}
               disabled={!canInteract}
@@ -124,6 +228,9 @@ export default function UnifiedLibrary({
                       {entry.businessCategory}
                     </Text>
                   )}
+                </View>
+                <View style={styles.brandScoreContainer}>
+                  <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
                 </View>
                 {mode === 'edit' && (
                   <TouchableOpacity
@@ -444,16 +551,13 @@ export default function UnifiedLibrary({
     return (
       <View style={styles.listContentContainer}>
         <View style={styles.brandsContainer}>
-          {alignedItems.map((item, index) => (
-            <View key={item.id || index} style={styles.forYouItemRow}>
+          {alignedItems.map((product, index) => (
+            <View key={product.id} style={styles.forYouItemRow}>
               <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
                 {index + 1}
               </Text>
               <View style={styles.forYouCardWrapper}>
-                {/* TODO: Render aligned item cards */}
-                <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-                  Aligned item rendering to be added
-                </Text>
+                {renderBrandCard(product, 'support')}
               </View>
             </View>
           ))}
@@ -469,16 +573,13 @@ export default function UnifiedLibrary({
     return (
       <View style={styles.listContentContainer}>
         <View style={styles.brandsContainer}>
-          {unalignedItems.map((item, index) => (
-            <View key={item.id || index} style={styles.forYouItemRow}>
+          {unalignedItems.map((product, index) => (
+            <View key={product.id} style={styles.forYouItemRow}>
               <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
                 {index + 1}
               </Text>
               <View style={styles.forYouCardWrapper}>
-                {/* TODO: Render unaligned item cards */}
-                <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-                  Unaligned item rendering to be added
-                </Text>
+                {renderBrandCard(product, 'avoid')}
               </View>
             </View>
           ))}
@@ -782,6 +883,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 10,
     paddingVertical: 6,
+  },
+  brandScoreContainer: {
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  brandScore: {
+    fontSize: 17,
+    fontWeight: '700',
   },
   brandName: {
     fontSize: 13,
