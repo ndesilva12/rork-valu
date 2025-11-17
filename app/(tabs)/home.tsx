@@ -4854,27 +4854,73 @@ export default function HomeScreen() {
                 </Text>
               ) : (
                 <View style={styles.quickAddListsContainer}>
-                  {userLists.map((list) => (
-                    <TouchableOpacity
-                      key={list.id}
-                      style={[styles.quickAddListItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                      onPress={() => handleAddToList(list.id)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
-                        <List size={18} color={colors.primary} strokeWidth={2} />
-                      </View>
-                      <View style={styles.quickAddListInfo}>
-                        <Text style={[styles.quickAddListName, { color: colors.text }]} numberOfLines={1}>
-                          {list.name}
-                        </Text>
-                        <Text style={[styles.quickAddListCount, { color: colors.textSecondary }]}>
-                          {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
-                        </Text>
-                      </View>
-                      <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-                    </TouchableOpacity>
-                  ))}
+                  {(() => {
+                    // Find endorsement list (personal list) - matches user name or is oldest list
+                    const userName = clerkUser?.firstName || clerkUser?.username || 'My List';
+                    let endorsementList = userLists.find(list => list.name === userName);
+
+                    // If not found by name, use the oldest list as the endorsement list
+                    if (!endorsementList && userLists.length > 0) {
+                      const sortedByAge = [...userLists].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+                      endorsementList = sortedByAge[0];
+                    }
+
+                    // Separate endorsement list from other lists
+                    const otherLists = userLists.filter(list => list.id !== endorsementList?.id);
+
+                    return (
+                      <>
+                        {/* Endorsement List - Pinned at top */}
+                        {endorsementList && (
+                          <TouchableOpacity
+                            key={endorsementList.id}
+                            style={[styles.quickAddListItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.primary, borderWidth: 2 }]}
+                            onPress={() => handleAddToList(endorsementList.id)}
+                            activeOpacity={0.7}
+                          >
+                            <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+                              <List size={18} color={colors.primary} strokeWidth={2} />
+                            </View>
+                            <View style={styles.quickAddListInfo}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <Text style={[styles.quickAddListName, { color: colors.text }]} numberOfLines={1}>
+                                  {endorsementList.name}
+                                </Text>
+                                <EndorsedBadge isDarkMode={isDarkMode} size="small" />
+                              </View>
+                              <Text style={[styles.quickAddListCount, { color: colors.textSecondary }]}>
+                                {endorsementList.entries.length} {endorsementList.entries.length === 1 ? 'item' : 'items'}
+                              </Text>
+                            </View>
+                            <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                          </TouchableOpacity>
+                        )}
+
+                        {/* Other Lists */}
+                        {otherLists.map((list) => (
+                          <TouchableOpacity
+                            key={list.id}
+                            style={[styles.quickAddListItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                            onPress={() => handleAddToList(list.id)}
+                            activeOpacity={0.7}
+                          >
+                            <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+                              <List size={18} color={colors.primary} strokeWidth={2} />
+                            </View>
+                            <View style={styles.quickAddListInfo}>
+                              <Text style={[styles.quickAddListName, { color: colors.text }]} numberOfLines={1}>
+                                {list.name}
+                              </Text>
+                              <Text style={[styles.quickAddListCount, { color: colors.textSecondary }]}>
+                                {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
+                              </Text>
+                            </View>
+                            <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                          </TouchableOpacity>
+                        ))}
+                      </>
+                    );
+                  })()}
                 </View>
               )}
 
