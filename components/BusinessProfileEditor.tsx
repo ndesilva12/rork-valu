@@ -20,6 +20,7 @@ import LocationAutocomplete from '@/components/LocationAutocomplete';
 import { BusinessLocation, GalleryImage } from '@/types';
 import { getUserLists } from '@/services/firebase/listService';
 import { UserList, BrandListEntry, BusinessListEntry } from '@/types/library';
+import TeamManagement from '@/components/TeamManagement';
 
 const BUSINESS_CATEGORIES = [
   'Retail',
@@ -1172,6 +1173,9 @@ export default function BusinessProfileEditor() {
           </View>
         )}
       </View>
+
+      {/* Team Management (Phase 0) */}
+      <TeamManagement />
     </View>
   );
 }

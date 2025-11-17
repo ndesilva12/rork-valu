@@ -23,7 +23,7 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/firebase';
 
 export default function MerchantVerify() {
-  const { profile, isDarkMode } = useUser();
+  const { profile, isDarkMode, getBusinessId, isTeamMember } = useUser();
   const { user: clerkUser } = useClerkUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
@@ -56,7 +56,7 @@ export default function MerchantVerify() {
     }
   }, [expiryTime]);
 
-  // Check if user is signed in and is a business
+  // Check if user is signed in and is a business (or team member - Phase 0)
   if (!clerkUser) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -76,13 +76,16 @@ export default function MerchantVerify() {
     );
   }
 
-  if (!isBusiness) {
+  // Allow both business owners and team members (Phase 0)
+  const canVerifyTransactions = isBusiness || isTeamMember();
+
+  if (!canVerifyTransactions) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.centered}>
           <Text style={[styles.title, { color: colors.text }]}>Merchant Account Required</Text>
           <Text style={[styles.message, { color: colors.textSecondary }]}>
-            This page is only accessible to business accounts.
+            This page is only accessible to business accounts and team members.
           </Text>
           <TouchableOpacity
             style={[styles.button, { backgroundColor: colors.primary }]}
@@ -148,16 +151,32 @@ export default function MerchantVerify() {
       // Record transaction in Firebase
       const transactionRef = doc(db, 'transactions', transactionCode as string);
 
-      // Get merchant business info
-      const merchantName = profile.businessInfo?.name || 'Unknown Business';
-      const merchantDiscount = profile.businessInfo?.customerDiscountPercent || 0;
+      // Get business ID (works for both owners and team members - Phase 0)
+      const businessId = getBusinessId() || clerkUser.id;
+
+      // Get merchant business info (for team members, need to fetch from business owner)
+      let merchantName = profile.businessInfo?.name || '';
+      let merchantDiscount = profile.businessInfo?.customerDiscountPercent || 0;
+
+      // If user is a team member, they might not have businessInfo directly
+      if (isTeamMember() && profile.businessMembership) {
+        merchantName = profile.businessMembership.businessName;
+        // Note: team members can confirm transactions, discount comes from business settings
+      }
+
       const uprightFeePercent = 2.5;
+
+      // Get team member name for verification tracking
+      const verifiedByName = clerkUser.fullName || clerkUser.firstName || clerkUser.primaryEmailAddress?.emailAddress?.split('@')[0] || 'Unknown';
 
       console.log('[MerchantVerify] Recording transaction with:', {
         merchantDiscount,
         uprightFeePercent,
         purchaseAmount: parseFloat(purchaseAmount),
-        businessInfo: profile.businessInfo
+        businessId,
+        verifiedBy: clerkUser.id,
+        verifiedByName,
+        isTeamMember: isTeamMember()
       });
 
       await setDoc(transactionRef, {
@@ -165,7 +184,7 @@ export default function MerchantVerify() {
         customerId: customerUserId,
         customerName: customerName,
         customerEmail: customerEmail,
-        merchantId: clerkUser.id,
+        merchantId: businessId, // Use business ID (works for both owner and team)
         merchantName: merchantName,
         purchaseAmount: parseFloat(purchaseAmount),
         discountPercent: merchantDiscount,
@@ -175,6 +194,8 @@ export default function MerchantVerify() {
         status: 'completed',
         createdAt: serverTimestamp(),
         verifiedAt: serverTimestamp(),
+        verifiedBy: clerkUser.id, // Track who confirmed the transaction (Phase 0)
+        verifiedByName: verifiedByName, // Name of person who confirmed
       });
 
       console.log('[MerchantVerify] ✅ Transaction recorded successfully:', transactionCode);
