@@ -16,7 +16,8 @@ import {
 import { Image as ExpoImage } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import EndorsedBadge from '@/components/EndorsedBadge';
-import LibraryView from '@/components/LibraryView';
+import { UnifiedLibrary } from '@/components/Library';
+import { useLibrary } from '@/contexts/LibraryContext';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
@@ -27,8 +28,6 @@ import { pickAndUploadImage } from '@/lib/imageUpload';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
-import { getUserLists, addEntryToList } from '@/services/firebase/listService';
-import { UserList } from '@/types/library';
 import { getLogoUrl } from '@/lib/logo';
 
 export default function ProfileScreen() {
@@ -66,10 +65,8 @@ export default function ProfileScreen() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [isPublicProfile, setIsPublicProfile] = useState(profile.isPublicProfile !== false);
 
-  // Library state
-  const [userLists, setUserLists] = useState<UserList[]>([]);
-  const [isLoadingLists, setIsLoadingLists] = useState(false);
-  const [expandedListId, setExpandedListId] = useState<string | null>(null);
+  // Library context
+  const library = useLibrary();
 
   const handleLocationSelect = (locationName: string, lat: number, lon: number) => {
     setLocation(locationName);
@@ -164,38 +161,12 @@ export default function ProfileScreen() {
     setEditing(false);
   };
 
-  const loadUserLists = useCallback(async () => {
-    if (!clerkUser?.id) return;
-
-    setIsLoadingLists(true);
-    try {
-      const lists = await getUserLists(clerkUser.id);
-      setUserLists(lists);
-    } catch (error) {
-      console.error('[ProfileScreen] Error loading user lists:', error);
-    } finally {
-      setIsLoadingLists(false);
-    }
-  }, [clerkUser?.id]);
-
-  useEffect(() => {
-    loadUserLists();
-  }, [loadUserLists]);
-
-  const toggleListExpansion = (listId: string) => {
-    setExpandedListId(expandedListId === listId ? null : listId);
-  };
-
   const handleListPress = (listId: string) => {
     router.push(`/list/${listId}`);
   };
 
   const userName = userDetails.name || clerkUser?.firstName || 'User';
   const profileImageUrl = profileImage || userDetails.profileImage || clerkUser?.imageUrl;
-
-  // Filter out endorsement list and sort
-  const endorsementList = userLists.find(list => list.isEndorsed);
-  const customLists = userLists.filter(list => !list.isEndorsed);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -494,24 +465,29 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Library Section - Uses Shared LibraryView Component */}
+        {/* Library Section - Uses Unified Library Component */}
         <View style={styles.librarySection}>
           <Text style={[styles.librarySectionTitle, { color: colors.text }]}>My Library</Text>
 
-          {isLoadingLists ? (
+          {library.state.isLoading ? (
             <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundSecondary }]}>
               <ActivityIndicator size="large" color={colors.primary} />
               <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading your lists...</Text>
             </View>
           ) : (
-            <LibraryView
-              userLists={userLists}
-              userPersonalList={endorsementList}
-              profile={profile}
+            <UnifiedLibrary
+              mode="own"
+              currentUserId={clerkUser?.id}
               isDarkMode={isDarkMode}
-              isOwnLibrary={true}
-              userId={clerkUser?.id}
-              showSystemLists={false}
+              profileImage={profileImageUrl}
+              onItemPress={(item, listId) => {
+                // Handle item press - could navigate to item details
+                console.log('Item pressed:', item, listId);
+              }}
+              onAddItem={(listId) => {
+                // Handle add item - could open modal
+                console.log('Add item to list:', listId);
+              }}
             />
           )}
         </View>

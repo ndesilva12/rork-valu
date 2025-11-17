@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Plus, List as ListIcon, Globe, Lock, MapPin, User, Eye, EyeOff, TrendingUp, TrendingDown, Minus, MoreVertical } from 'lucide-react-native';
-import LibraryView from '@/components/LibraryView';
+import { UnifiedLibrary } from '@/components/Library';
 import {
   View,
   Text,
@@ -18,7 +18,7 @@ import { useState, useEffect, useRef } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { UserProfile } from '@/types';
-import { getUserLists, copyListToLibrary } from '@/services/firebase/listService';
+import { getUserLists } from '@/services/firebase/listService';
 import { UserList } from '@/types/library';
 import EndorsedBadge from '@/components/EndorsedBadge';
 import { calculateAlignmentScore } from '@/services/firebase/businessService';
@@ -274,15 +274,18 @@ export default function UserProfileScreen() {
             </Text>
           )}
 
-          {/* Library Section - Uses Shared LibraryView Component */}
+          {/* Library Section - Uses Unified Library Component */}
           <View style={styles.librarySection}>
             <Text style={[styles.librarySectionTitle, { color: colors.text }]}>
               {isOwnProfile ? 'My Library' : `${userName}'s Library`}
             </Text>
 
-            <LibraryView
+            <UnifiedLibrary
+              mode={isOwnProfile ? 'own' : 'viewing'}
+              currentUserId={clerkUser?.id}
+              viewingUserId={userId}
               userLists={userLists}
-              userPersonalList={(() => {
+              endorsementList={(() => {
                 // Find THE ONE endorsement list (matching name or oldest)
                 let endorsementList = userLists.find(list => list.name === userName);
                 if (!endorsementList && userLists.length > 0) {
@@ -291,11 +294,17 @@ export default function UserProfileScreen() {
                 }
                 return endorsementList || null;
               })()}
-              profile={userProfile || {} as any}
               isDarkMode={isDarkMode}
-              isOwnLibrary={isOwnProfile}
-              userId={userId}
-              showSystemLists={false}
+              profileImage={profileImageUrl}
+              onItemPress={(item, listId) => {
+                console.log('Item pressed:', item, listId);
+              }}
+              onAddItem={(listId) => {
+                console.log('Add item to list:', listId);
+              }}
+              onShareItem={(item) => {
+                console.log('Share item:', item);
+              }}
             />
           </View>
         </View>
