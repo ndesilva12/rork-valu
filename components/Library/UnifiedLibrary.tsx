@@ -83,6 +83,12 @@ export default function UnifiedLibrary({
   const [activeListOptionsId, setActiveListOptionsId] = useState<string | null>(null);
   const [activeItemOptionsId, setActiveItemOptionsId] = useState<string | null>(null);
 
+  // Pagination state for each list
+  const [endorsementLoadCount, setEndorsementLoadCount] = useState(10);
+  const [alignedLoadCount, setAlignedLoadCount] = useState(10);
+  const [unalignedLoadCount, setUnalignedLoadCount] = useState(10);
+  const [customListLoadCounts, setCustomListLoadCounts] = useState<Record<string, number>>({});
+
   // Mode-based permissions
   const canEdit = mode === 'edit';
   const canInteract = mode !== 'preview'; // Can add/share in view mode
@@ -175,11 +181,13 @@ export default function UnifiedLibrary({
               style={[styles.quickAddButton, { backgroundColor: colors.background }]}
               onPress={(e) => {
                 e.stopPropagation();
-                // TODO: Quick add to library
+                // TODO: Show options menu (add to library, share)
               }}
               activeOpacity={0.7}
             >
-              <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+              <View style={{ transform: [{ rotate: '90deg' }] }}>
+                <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+              </View>
             </TouchableOpacity>
           )}
         </View>
@@ -196,20 +204,62 @@ export default function UnifiedLibrary({
         if ('brandId' in entry) {
           const brand = alignedItems.find(b => b.id === entry.brandId) ||
                        unalignedItems.find(b => b.id === entry.brandId);
-          if (!brand) {
-            // Brand not found - show placeholder
-            return (
-              <View style={[styles.brandCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={1}>
-                    {entry.brandName || 'Brand not found'}
-                  </Text>
-                </View>
-              </View>
-            );
+          if (brand) {
+            // Brand found - render with full data and score
+            return renderBrandCard(brand, 'support');
           }
-          // Render brand card with score
-          return renderBrandCard(brand, 'support');
+
+          // Brand not in aligned/unaligned arrays (viewing another user's profile)
+          // Render using entry data without score
+          return (
+            <TouchableOpacity
+              style={[
+                styles.brandCard,
+                { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+              ]}
+              onPress={() => {
+                // TODO: Navigate to brand details
+              }}
+              activeOpacity={0.7}
+              disabled={!canInteract}
+            >
+              <View style={styles.brandCardInner}>
+                <View style={styles.brandLogoContainer}>
+                  <Image
+                    source={{ uri: entry.logoUrl || getLogoUrl(entry.website || '') }}
+                    style={styles.brandLogo}
+                    contentFit="cover"
+                    transition={200}
+                    cachePolicy="memory-disk"
+                  />
+                </View>
+                <View style={styles.brandCardContent}>
+                  <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
+                    {entry.brandName || entry.name || 'Unknown Brand'}
+                  </Text>
+                  {entry.category && (
+                    <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {entry.category}
+                    </Text>
+                  )}
+                </View>
+                {mode === 'view' && (
+                  <TouchableOpacity
+                    style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      // TODO: Show options menu (add to library, share)
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ transform: [{ rotate: '90deg' }] }}>
+                      <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                    </View>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </TouchableOpacity>
+          );
         }
         break;
 
@@ -277,11 +327,13 @@ export default function UnifiedLibrary({
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
                       e.stopPropagation();
-                      // TODO: Quick add to user's library
+                      // TODO: Show options menu (add to library, share)
                     }}
                     activeOpacity={0.7}
                   >
-                    <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+                    <View style={{ transform: [{ rotate: '90deg' }] }}>
+                      <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                    </View>
                   </TouchableOpacity>
                 )}
               </View>
@@ -324,11 +376,13 @@ export default function UnifiedLibrary({
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
                       e.stopPropagation();
-                      // TODO: Quick add to user's library
+                      // TODO: Show options menu (add to library, share)
                     }}
                     activeOpacity={0.7}
                   >
-                    <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+                    <View style={{ transform: [{ rotate: '90deg' }] }}>
+                      <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                    </View>
                   </TouchableOpacity>
                 )}
               </View>
@@ -654,7 +708,7 @@ export default function UnifiedLibrary({
     return (
       <View style={styles.listContentContainer}>
         <View style={styles.brandsContainer}>
-          {endorsementList.entries.map((entry, index) => (
+          {endorsementList.entries.slice(0, endorsementLoadCount).map((entry, index) => (
             <View key={entry.id} style={styles.forYouItemRow}>
               <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
                 {index + 1}
@@ -664,6 +718,17 @@ export default function UnifiedLibrary({
               </View>
             </View>
           ))}
+          {endorsementLoadCount < endorsementList.entries.length && (
+            <TouchableOpacity
+              style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
+              onPress={() => setEndorsementLoadCount(endorsementLoadCount + 10)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                Load More ({endorsementList.entries.length - endorsementLoadCount} remaining)
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -676,7 +741,7 @@ export default function UnifiedLibrary({
     return (
       <View style={styles.listContentContainer}>
         <View style={styles.brandsContainer}>
-          {alignedItems.map((product, index) => (
+          {alignedItems.slice(0, alignedLoadCount).map((product, index) => (
             <View key={product.id} style={styles.forYouItemRow}>
               <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
                 {index + 1}
@@ -686,6 +751,17 @@ export default function UnifiedLibrary({
               </View>
             </View>
           ))}
+          {alignedLoadCount < alignedItems.length && (
+            <TouchableOpacity
+              style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
+              onPress={() => setAlignedLoadCount(alignedLoadCount + 10)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                Load More ({alignedItems.length - alignedLoadCount} remaining)
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -698,7 +774,7 @@ export default function UnifiedLibrary({
     return (
       <View style={styles.listContentContainer}>
         <View style={styles.brandsContainer}>
-          {unalignedItems.map((product, index) => (
+          {unalignedItems.slice(0, unalignedLoadCount).map((product, index) => (
             <View key={product.id} style={styles.forYouItemRow}>
               <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
                 {index + 1}
@@ -708,6 +784,17 @@ export default function UnifiedLibrary({
               </View>
             </View>
           ))}
+          {unalignedLoadCount < unalignedItems.length && (
+            <TouchableOpacity
+              style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
+              onPress={() => setUnalignedLoadCount(unalignedLoadCount + 10)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                Load More ({unalignedItems.length - unalignedLoadCount} remaining)
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -727,10 +814,12 @@ export default function UnifiedLibrary({
       );
     }
 
+    const loadCount = customListLoadCounts[list.id] || 10;
+
     return (
       <View style={styles.listContentContainer}>
         <View style={styles.brandsContainer}>
-          {list.entries.map((entry, index) => (
+          {list.entries.slice(0, loadCount).map((entry, index) => (
             <View key={entry.id} style={styles.forYouItemRow}>
               <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
                 {index + 1}
@@ -740,6 +829,17 @@ export default function UnifiedLibrary({
               </View>
             </View>
           ))}
+          {loadCount < list.entries.length && (
+            <TouchableOpacity
+              style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
+              onPress={() => setCustomListLoadCounts({ ...customListLoadCounts, [list.id]: loadCount + 10 })}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                Load More ({list.entries.length - loadCount} remaining)
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -972,6 +1072,17 @@ const styles = StyleSheet.create({
   },
   forYouCardWrapper: {
     flex: 1,
+  },
+  loadMoreButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  loadMoreText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
   brandCard: {
     borderRadius: 10,
