@@ -17,19 +17,16 @@ export default function EndorsedBadge({ isDarkMode = false, size = 'medium' }: E
 
   const sizeStyles = {
     small: {
-      container: { paddingHorizontal: 8, paddingVertical: 3 },
-      text: { fontSize: 12 },
-      icon: 14,
+      container: { width: 18, height: 18 },
+      icon: 10,
     },
     medium: {
-      container: { paddingHorizontal: 10, paddingVertical: 4 },
-      text: { fontSize: 13 },
-      icon: 16,
+      container: { width: 22, height: 22 },
+      icon: 13,
     },
     large: {
-      container: { paddingHorizontal: 12, paddingVertical: 5 },
-      text: { fontSize: 14 },
-      icon: 18,
+      container: { width: 26, height: 26 },
+      icon: 15,
     },
   };
 
@@ -40,32 +37,24 @@ export default function EndorsedBadge({ isDarkMode = false, size = 'medium' }: E
       styles.badge,
       currentSize.container,
       {
-        backgroundColor: 'transparent',
-        borderWidth: 1.5,
-        borderColor: colors.primary
+        backgroundColor: colors.primary,
       }
     ]}>
-      <CheckCircle size={currentSize.icon} color={colors.primary} strokeWidth={2.5} />
-      <Text style={[
-        styles.badgeText,
-        currentSize.text,
-        { color: colors.primary }
-      ]}>
-        ENDORSED
-      </Text>
+      <CheckCircle size={currentSize.icon} color={colors.white} strokeWidth={2.5} fill={colors.white} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   badge: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    borderRadius: 6,
-  },
-  badgeText: {
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    justifyContent: 'center',
+    borderRadius: 999,
+    // Star/badge shape with 8 points
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
 });

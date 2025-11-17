@@ -1221,7 +1221,8 @@ export default function HomeScreen() {
     attribution?: string,
     description?: string,
     isPublic?: boolean,
-    creatorProfileImage?: string
+    creatorProfileImage?: string,
+    useAppIcon?: boolean
   ) => {
     const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
     const isOptionsOpen = activeListOptionsId === listId;
@@ -1237,7 +1238,15 @@ export default function HomeScreen() {
         >
           {/* Profile Image */}
           <View style={[styles.listProfileImageContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-            {creatorProfileImage ? (
+            {useAppIcon ? (
+              <Image
+                source={require('@/assets/images/endorse1.png')}
+                style={styles.listProfileImage}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+              />
+            ) : creatorProfileImage ? (
               <Image
                 source={{ uri: creatorProfileImage }}
                 style={styles.listProfileImage}
@@ -1466,6 +1475,12 @@ export default function HomeScreen() {
 
       case 'business':
         if ('businessId' in entry) {
+          // Find business to get alignment score
+          const businessData = allLocalBusinesses.find(b => b.business.id === entry.businessId);
+          const alignmentScore = businessData?.alignmentScore || 0;
+          const isAligned = alignmentScore >= 50;
+          const titleColor = isAligned ? colors.primaryLight : colors.danger;
+
           // Render business entry with full card layout
           return (
             <TouchableOpacity
@@ -1487,7 +1502,7 @@ export default function HomeScreen() {
                   />
                 </View>
                 <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
+                  <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>
                     {entry.businessName}
                   </Text>
                   {entry.businessCategory && (
@@ -1495,6 +1510,9 @@ export default function HomeScreen() {
                       {entry.businessCategory}
                     </Text>
                   )}
+                </View>
+                <View style={styles.brandScoreContainer}>
+                  <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
                 </View>
                 <TouchableOpacity
                   style={[styles.quickAddButton, { backgroundColor: colors.background }]}
@@ -1752,7 +1770,7 @@ export default function HomeScreen() {
               `Endorsed by ${userPersonalList.creatorName || 'you'}`,
               userPersonalList.description,
               userPersonalList.isPublic,
-              clerkUser?.imageUrl
+              profile?.userDetails?.profileImage || clerkUser?.imageUrl
             )}
             {expandedListId === 'endorsement' && renderEndorsementContent()}
           </>
@@ -1769,7 +1787,8 @@ export default function HomeScreen() {
           undefined,
           'Brands and businesses aligned with your values',
           alignedListPublic,
-          clerkUser?.imageUrl
+          undefined,
+          true
         )}
         {expandedListId === 'aligned' && renderAlignedContent()}
 
@@ -1784,7 +1803,8 @@ export default function HomeScreen() {
           undefined,
           'Brands and businesses not aligned with your values',
           unalignedListPublic,
-          clerkUser?.imageUrl
+          undefined,
+          true
         )}
         {expandedListId === 'unaligned' && renderUnalignedContent()}
 
@@ -1808,7 +1828,7 @@ export default function HomeScreen() {
                 attribution,
                 list.description,
                 list.isPublic,
-                clerkUser?.imageUrl
+                profile?.userDetails?.profileImage || clerkUser?.imageUrl
               )}
               {expandedListId === list.id && renderCustomListContent(list)}
             </React.Fragment>
@@ -3313,6 +3333,12 @@ export default function HomeScreen() {
 
                       // Render based on entry type
                       if (entry.type === 'brand' && 'brandId' in entry) {
+                        // Get brand score and alignment
+                        const brandScore = scoredBrands.get(entry.brandId) || 0;
+                        const brand = allSupportFull.find(b => b.id === entry.brandId) || allAvoidFull.find(b => b.id === entry.brandId);
+                        const isAligned = allSupportFull.some(b => b.id === entry.brandId);
+                        const titleColor = isAligned ? colors.primaryLight : colors.danger;
+
                         return (
                           <View
                             key={entry.id}
@@ -3343,13 +3369,32 @@ export default function HomeScreen() {
                             />
                           </View>
                           <View style={styles.brandCardContent}>
-                            <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
+                            <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>
                               {entry.brandName || getBrandName(entry.brandId)}
                             </Text>
                             <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
                               Brand
                             </Text>
                           </View>
+                          {!isEditMode && (
+                            <>
+                              <View style={styles.brandScoreContainer}>
+                                <Text style={[styles.brandScore, { color: titleColor }]}>{brandScore}</Text>
+                              </View>
+                              <TouchableOpacity
+                                style={[styles.quickAddButton, { backgroundColor: colors.background, marginRight: 4 }]}
+                                onPress={(e) => {
+                                  e.stopPropagation();
+                                  if (brand) {
+                                    handleQuickAdd('brand', entry.brandId, brand.name, brand.website, getLogoUrl(brand.website || ''));
+                                  }
+                                }}
+                                activeOpacity={0.7}
+                              >
+                                <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+                              </TouchableOpacity>
+                            </>
+                          )}
                           {!isEditMode && (
                             <TouchableOpacity
                               style={styles.listEntryOptionsButton}
@@ -3402,6 +3447,12 @@ export default function HomeScreen() {
                     </View>
                   );
                 } else if (entry.type === 'business' && 'businessId' in entry) {
+                  // Get business score and alignment
+                  const businessData = allLocalBusinesses.find(b => b.business.id === entry.businessId);
+                  const alignmentScore = businessData?.alignmentScore || 0;
+                  const isAligned = alignmentScore >= 50;
+                  const titleColor = isAligned ? colors.primaryLight : colors.danger;
+
                   return (
                     <View
                       key={entry.id}
@@ -3432,13 +3483,30 @@ export default function HomeScreen() {
                             />
                           </View>
                           <View style={styles.brandCardContent}>
-                            <Text style={[styles.brandName, { color: colors.primaryLight }]} numberOfLines={2}>
+                            <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>
                               {entry.businessName || getBusinessName(entry.businessId)}
                             </Text>
                             <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
                               Business
                             </Text>
                           </View>
+                          {!isEditMode && (
+                            <>
+                              <View style={styles.brandScoreContainer}>
+                                <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
+                              </View>
+                              <TouchableOpacity
+                                style={[styles.quickAddButton, { backgroundColor: colors.background, marginRight: 4 }]}
+                                onPress={(e) => {
+                                  e.stopPropagation();
+                                  handleQuickAdd('business', entry.businessId, entry.businessName, entry.website, entry.logoUrl);
+                                }}
+                                activeOpacity={0.7}
+                              >
+                                <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+                              </TouchableOpacity>
+                            </>
+                          )}
                           {!isEditMode && (
                             <TouchableOpacity
                               style={styles.listEntryOptionsButton}
