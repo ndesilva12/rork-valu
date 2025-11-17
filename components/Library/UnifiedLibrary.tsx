@@ -11,6 +11,7 @@ import {
   StyleSheet,
   Platform,
   Linking,
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import {
@@ -243,12 +244,12 @@ export default function UnifiedLibrary({
                     </Text>
                   )}
                 </View>
-                {mode === 'view' && (
+                {(canEdit || mode === 'view') && (
                   <TouchableOpacity
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
                       e.stopPropagation();
-                      // TODO: Show options menu (add to library, share)
+                      setActiveItemOptionsId(entry.brandId);
                     }}
                     activeOpacity={0.7}
                   >
@@ -265,13 +266,19 @@ export default function UnifiedLibrary({
 
       case 'business':
         if ('businessId' in entry) {
-          // Find business to get alignment score
+          // Calculate score only if we have the data
           const businessData = userBusinesses.find(b => b.id === entry.businessId);
-          const rawScore = businessData ? calculateAlignmentScore(userCauses || profile?.causes || [], businessData.causes || []) : 0;
-          let alignmentScore = Math.round(50 + (rawScore * 0.8));
-          alignmentScore = Math.max(10, Math.min(90, alignmentScore));
-          const isAligned = alignmentScore >= 50;
-          const titleColor = isAligned ? colors.primary : colors.danger;
+          const causes = userCauses || profile?.causes || [];
+          let alignmentScore: number | null = null;
+          let titleColor = colors.text;
+
+          if (businessData && causes.length > 0) {
+            const rawScore = calculateAlignmentScore(causes, businessData.causes || []);
+            alignmentScore = Math.round(50 + (rawScore * 0.8));
+            alignmentScore = Math.max(10, Math.min(90, alignmentScore));
+            const isAligned = alignmentScore >= 50;
+            titleColor = isAligned ? colors.primary : colors.danger;
+          }
 
           return (
             <TouchableOpacity
@@ -305,9 +312,11 @@ export default function UnifiedLibrary({
                     </Text>
                   )}
                 </View>
-                <View style={styles.brandScoreContainer}>
-                  <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
-                </View>
+                {alignmentScore !== null && (
+                  <View style={styles.brandScoreContainer}>
+                    <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
+                  </View>
+                )}
                 {mode === 'edit' && (
                   <TouchableOpacity
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
@@ -327,7 +336,7 @@ export default function UnifiedLibrary({
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
                       e.stopPropagation();
-                      // TODO: Show options menu (add to library, share)
+                      setActiveItemOptionsId(entry.businessId);
                     }}
                     activeOpacity={0.7}
                   >
@@ -671,8 +680,20 @@ export default function UnifiedLibrary({
                       style={styles.listOptionItem}
                       onPress={() => {
                         setActiveListOptionsId(null);
-                        // TODO: Confirm and delete list
-                        console.log('Delete list:', currentList.name);
+                        if (Platform.OS === 'web') {
+                          if (window.confirm(`Are you sure you want to delete "${currentList.name}"? This cannot be undone.`)) {
+                            library.removeList(currentList.id);
+                          }
+                        } else {
+                          Alert.alert(
+                            'Delete List',
+                            `Are you sure you want to delete "${currentList.name}"? This cannot be undone.`,
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              { text: 'Delete', style: 'destructive', onPress: () => library.removeList(currentList.id) },
+                            ]
+                          );
+                        }
                       }}
                       activeOpacity={0.7}
                     >
@@ -684,6 +705,63 @@ export default function UnifiedLibrary({
               );
             })()}
           </View>
+        )}
+      </View>
+    );
+  };
+
+  // Helper to render item options menu
+  const renderItemOptionsMenu = (itemId: string, entry: ListEntry, listId: string) => {
+    const isOpen = activeItemOptionsId === itemId;
+    if (!isOpen) return null;
+
+    const canRemove = canEdit;
+    const canShare = true;
+    const canAddToLibrary = mode === 'view';
+
+    return (
+      <View style={[styles.itemOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+        {canAddToLibrary && (
+          <TouchableOpacity
+            style={styles.listOptionItem}
+            onPress={() => {
+              setActiveItemOptionsId(null);
+              // TODO: Add to library
+              console.log('Add to library:', entry);
+            }}
+            activeOpacity={0.7}
+          >
+            <Plus size={16} color={colors.text} strokeWidth={2} />
+            <Text style={[styles.listOptionText, { color: colors.text }]}>Add to Library</Text>
+          </TouchableOpacity>
+        )}
+        {canShare && (
+          <TouchableOpacity
+            style={styles.listOptionItem}
+            onPress={() => {
+              setActiveItemOptionsId(null);
+              // TODO: Share item
+              console.log('Share item:', entry);
+            }}
+            activeOpacity={0.7}
+          >
+            <Share2 size={16} color={colors.text} strokeWidth={2} />
+            <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
+          </TouchableOpacity>
+        )}
+        {canRemove && (
+          <TouchableOpacity
+            style={styles.listOptionItem}
+            onPress={() => {
+              setActiveItemOptionsId(null);
+              // Remove item from list
+              library.removeEntry(listId, entry.id);
+            }}
+            activeOpacity={0.7}
+          >
+            <Trash2 size={16} color="#EF4444" strokeWidth={2} />
+            <Text style={[styles.listOptionText, { color: '#EF4444', fontWeight: '700' }]}>Remove</Text>
+          </TouchableOpacity>
         )}
       </View>
     );
@@ -708,16 +786,22 @@ export default function UnifiedLibrary({
     return (
       <View style={styles.listContentContainer}>
         <View style={styles.brandsContainer}>
-          {endorsementList.entries.slice(0, endorsementLoadCount).map((entry, index) => (
-            <View key={entry.id} style={styles.forYouItemRow}>
-              <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
-                {index + 1}
-              </Text>
-              <View style={styles.forYouCardWrapper}>
-                {renderListEntry(entry)}
+          {endorsementList.entries.slice(0, endorsementLoadCount).map((entry, index) => {
+            const itemId = entry.brandId || entry.businessId || entry.valueId || entry.id;
+            return (
+              <View key={entry.id}>
+                <View style={styles.forYouItemRow}>
+                  <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                    {index + 1}
+                  </Text>
+                  <View style={styles.forYouCardWrapper}>
+                    {renderListEntry(entry)}
+                  </View>
+                </View>
+                {renderItemOptionsMenu(itemId, entry, endorsementList.id)}
               </View>
-            </View>
-          ))}
+            );
+          })}
           {endorsementLoadCount < endorsementList.entries.length && (
             <TouchableOpacity
               style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
@@ -819,16 +903,22 @@ export default function UnifiedLibrary({
     return (
       <View style={styles.listContentContainer}>
         <View style={styles.brandsContainer}>
-          {list.entries.slice(0, loadCount).map((entry, index) => (
-            <View key={entry.id} style={styles.forYouItemRow}>
-              <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
-                {index + 1}
-              </Text>
-              <View style={styles.forYouCardWrapper}>
-                {renderListEntry(entry)}
+          {list.entries.slice(0, loadCount).map((entry, index) => {
+            const itemId = entry.brandId || entry.businessId || entry.valueId || entry.id;
+            return (
+              <View key={entry.id}>
+                <View style={styles.forYouItemRow}>
+                  <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                    {index + 1}
+                  </Text>
+                  <View style={styles.forYouCardWrapper}>
+                    {renderListEntry(entry)}
+                  </View>
+                </View>
+                {renderItemOptionsMenu(itemId, entry, list.id)}
               </View>
-            </View>
-          ))}
+            );
+          })}
           {loadCount < list.entries.length && (
             <TouchableOpacity
               style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
@@ -991,11 +1081,34 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   listOptionsDropdown: {
+    position: 'absolute',
+    top: 42,
+    right: 0,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 4,
+    minWidth: 160,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 999,
+    zIndex: 999999,
+  },
+  itemOptionsDropdown: {
     marginHorizontal: 16,
     marginTop: 4,
-    borderRadius: 8,
+    marginBottom: 8,
     borderWidth: 1,
-    overflow: 'hidden',
+    borderRadius: 12,
+    paddingVertical: 4,
+    minWidth: 160,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+    zIndex: 10,
   },
   listOptionItem: {
     flexDirection: 'row',
