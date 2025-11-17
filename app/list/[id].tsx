@@ -21,6 +21,7 @@ import { getLogoUrl } from '@/lib/logo';
 import { getList } from '@/services/firebase/listService';
 import { UserList, ListEntry } from '@/types/library';
 import * as Clipboard from 'expo-clipboard';
+import EndorsedBadge from '@/components/EndorsedBadge';
 
 export default function SharedListScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -303,8 +304,17 @@ export default function SharedListScreen() {
 
         {list.creatorName && (
           <View style={[styles.creatorCard, { backgroundColor: colors.backgroundSecondary }]}>
-            <Text style={[styles.creatorLabel, { color: colors.textSecondary }]}>Created by</Text>
-            <Text style={[styles.creatorName, { color: colors.text }]}>{list.creatorName}</Text>
+            <View style={styles.creatorHeader}>
+              <View>
+                <Text style={[styles.creatorLabel, { color: colors.textSecondary }]}>
+                  {list.isEndorsed ? 'Endorsed by' : list.originalCreatorName ? 'Originally created by' : 'Created by'}
+                </Text>
+                <Text style={[styles.creatorName, { color: colors.text }]}>{list.isEndorsed ? list.creatorName : (list.originalCreatorName || list.creatorName)}</Text>
+              </View>
+              {list.isEndorsed && (
+                <EndorsedBadge isDarkMode={isDarkMode} size="medium" />
+              )}
+            </View>
           </View>
         )}
 
@@ -423,6 +433,12 @@ const styles = StyleSheet.create({
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
       },
     }),
+  },
+  creatorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   creatorLabel: {
     fontSize: 11,

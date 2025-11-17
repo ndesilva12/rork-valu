@@ -49,6 +49,9 @@ export const getUserLists = async (userId: string): Promise<UserList[]> => {
         createdAt: timestampToDate(data.createdAt),
         updatedAt: timestampToDate(data.updatedAt),
         isPublic: data.isPublic || false,
+        isEndorsed: data.isEndorsed || false,
+        originalListId: data.originalListId,
+        originalCreatorName: data.originalCreatorName,
       });
     });
 
@@ -83,6 +86,9 @@ export const getList = async (listId: string): Promise<UserList | null> => {
       createdAt: timestampToDate(data.createdAt),
       updatedAt: timestampToDate(data.updatedAt),
       isPublic: data.isPublic || false,
+      isEndorsed: data.isEndorsed || false,
+      originalListId: data.originalListId,
+      originalCreatorName: data.originalCreatorName,
     };
   } catch (error) {
     console.error('Error getting list:', error);
@@ -95,9 +101,18 @@ export const createList = async (
   userId: string,
   name: string,
   description?: string,
-  creatorName?: string
+  creatorName?: string,
+  isEndorsed: boolean = false
 ): Promise<string> => {
   try {
+    // Prevent creating multiple endorsed lists
+    if (isEndorsed) {
+      const existingEndorsementList = await getEndorsementList(userId);
+      if (existingEndorsementList) {
+        throw new Error('User already has an endorsement list');
+      }
+    }
+
     const listsRef = collection(db, LISTS_COLLECTION);
     const newList = {
       userId,
@@ -108,6 +123,7 @@ export const createList = async (
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       isPublic: false,
+      isEndorsed,
     };
 
     const docRef = await addDoc(listsRef, newList);
@@ -265,6 +281,129 @@ export const reorderListEntries = async (
     });
   } catch (error) {
     console.error('Error reordering list entries:', error);
+    throw error;
+  }
+};
+
+// Get a user's endorsement list
+export const getEndorsementList = async (userId: string): Promise<UserList | null> => {
+  try {
+    const listsRef = collection(db, LISTS_COLLECTION);
+    const q = query(
+      listsRef,
+      where('userId', '==', userId),
+      where('isEndorsed', '==', true)
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      return null;
+    }
+
+    const doc = querySnapshot.docs[0];
+    const data = doc.data();
+
+    return {
+      id: doc.id,
+      userId: data.userId,
+      name: data.name,
+      description: data.description,
+      creatorName: data.creatorName,
+      entries: data.entries || [],
+      createdAt: timestampToDate(data.createdAt),
+      updatedAt: timestampToDate(data.updatedAt),
+      isPublic: data.isPublic || false,
+      isEndorsed: true,
+      originalListId: data.originalListId,
+      originalCreatorName: data.originalCreatorName,
+    };
+  } catch (error) {
+    console.error('Error getting endorsement list:', error);
+    throw error;
+  }
+};
+
+// Ensure user has an endorsement list (create if doesn't exist)
+export const ensureEndorsementList = async (
+  userId: string,
+  userName: string
+): Promise<string> => {
+  try {
+    // Check if user already has an endorsement list
+    const existingList = await getEndorsementList(userId);
+
+    if (existingList) {
+      return existingList.id;
+    }
+
+    // Create new endorsement list
+    const listsRef = collection(db, LISTS_COLLECTION);
+    const newList = {
+      userId,
+      name: userName, // User's name is the list name
+      description: '',
+      creatorName: userName,
+      entries: [],
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      isPublic: true, // Endorsement lists are public by default
+      isEndorsed: true,
+    };
+
+    const docRef = await addDoc(listsRef, newList);
+    console.log('Created endorsement list for user:', userId);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error ensuring endorsement list:', error);
+    throw error;
+  }
+};
+
+// Copy a list to user's library
+export const copyListToLibrary = async (
+  sourceListId: string,
+  targetUserId: string,
+  targetUserName: string
+): Promise<string> => {
+  try {
+    // Get the source list
+    const sourceList = await getList(sourceListId);
+    if (!sourceList) {
+      throw new Error('Source list not found');
+    }
+
+    // Check if user already has this list in their library
+    const userLists = await getUserLists(targetUserId);
+    const alreadyHas = userLists.some(
+      (list) => list.originalListId === sourceListId || list.id === sourceListId
+    );
+
+    if (alreadyHas) {
+      throw new Error('You already have this list in your library');
+    }
+
+    // Create a copy in target user's library
+    const listsRef = collection(db, LISTS_COLLECTION);
+    const copiedList = {
+      userId: targetUserId,
+      name: sourceList.name,
+      description: sourceList.description || '',
+      creatorName: targetUserName,
+      entries: [...sourceList.entries], // Copy all entries
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      isPublic: false, // Copied lists are private by default
+      isEndorsed: false,
+      originalListId: sourceList.id, // Track original
+      originalCreatorName: sourceList.creatorName || 'Unknown',
+    };
+
+    const docRef = await addDoc(listsRef, copiedList);
+    console.log('Copied list to user library:', docRef.id);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error copying list to library:', error);
     throw error;
   }
 };

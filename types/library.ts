@@ -59,4 +59,7 @@ export interface UserList {
   createdAt: Date;
   updatedAt: Date;
   isPublic: boolean;
+  isEndorsed: boolean;
+  originalListId?: string; // For copied lists - tracks the original
+  originalCreatorName?: string; // For attribution
 }

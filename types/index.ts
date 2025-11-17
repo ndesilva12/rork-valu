@@ -191,4 +191,5 @@ export interface UserProfile {
   consentVersion?: string; // Version of consent agreement accepted
   codeSharing?: boolean; // Whether user allows code sharing with merchants (default: true if consented)
   businessMembership?: BusinessMembership; // For team members linked to a business
+  isPublicProfile?: boolean; // Whether user's profile and library are publicly viewable (default: false)
 }

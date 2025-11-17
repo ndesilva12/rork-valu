@@ -32,6 +32,8 @@ import {
   ChevronDown,
   GripVertical,
   Share2,
+  Globe,
+  Lock,
 } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import {
@@ -74,6 +76,7 @@ import { Image } from 'expo-image';
 import { Picker } from '@react-native-picker/picker';
 import * as Clipboard from 'expo-clipboard';
 import MenuButton from '@/components/MenuButton';
+import EndorsedBadge from '@/components/EndorsedBadge';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
@@ -89,7 +92,7 @@ import { calculateDistance, formatDistance } from '@/lib/distance';
 import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 import BusinessMapView from '@/components/BusinessMapView';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
-import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList, updateListMetadata, reorderListEntries } from '@/services/firebase/listService';
+import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList, updateListMetadata, reorderListEntries, getEndorsementList, ensureEndorsementList } from '@/services/firebase/listService';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 
@@ -468,6 +471,18 @@ export default function HomeScreen() {
 
     setIsLoadingLists(true);
     try {
+      // Ensure endorsement list exists for user
+      const fullNameFromFirebase = profile?.userDetails?.name;
+      const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
+      const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
+        ? `${clerkUser.firstName} ${clerkUser.lastName}`
+        : '';
+      const firstName = clerkUser?.firstName;
+      const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || 'My Endorsements';
+
+      await ensureEndorsementList(clerkUser.id, userName);
+
+      // Load all lists
       const lists = await getUserLists(clerkUser.id);
       setUserLists(lists);
     } catch (error) {
@@ -2774,6 +2789,29 @@ export default function HomeScreen() {
     }
   };
 
+  const handleToggleListPrivacy = async (listId: string, currentIsPublic: boolean) => {
+    try {
+      await updateListMetadata(listId, {
+        isPublic: !currentIsPublic,
+      });
+      await loadUserLists();
+      setActiveCardOptionsMenu(null);
+      const message = !currentIsPublic ? 'List is now public' : 'List is now private';
+      if (Platform.OS === 'web') {
+        window.alert(message);
+      } else {
+        Alert.alert('Success', message);
+      }
+    } catch (error) {
+      console.error('[Home] Error toggling list privacy:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Could not update list privacy. Please try again.');
+      } else {
+        Alert.alert('Error', 'Could not update list privacy. Please try again.');
+      }
+    }
+  };
+
   const handleCardDeleteList = (listId: string) => {
     setActiveCardOptionsMenu(null);
 
@@ -3638,25 +3676,18 @@ export default function HomeScreen() {
             </>
           ) : (
             (() => {
-              // Separate User Name list from other lists
-              const fullNameFromFirebase = profile?.userDetails?.name;
-              const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
-              const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
-                ? `${clerkUser.firstName} ${clerkUser.lastName}`
-                : '';
-              const firstName = clerkUser?.firstName;
-              const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || '';
-              const userNameList = userLists.find(list => list.name === userName);
-              const otherLists = userLists.filter(list => list.name !== userName);
+              // Separate endorsed list from other lists
+              const endorsedList = userLists.find(list => list.isEndorsed);
+              const otherLists = userLists.filter(list => !list.isEndorsed);
 
               return (
                 <>
-                  {/* 1. User Name List - Always first */}
-                  {userNameList && (
+                  {/* 1. Endorsed List - Always first */}
+                  {endorsedList && (
                     <TouchableOpacity
-                      key={userNameList.id}
+                      key={endorsedList.id}
                       style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                      onPress={() => handleOpenList(userNameList)}
+                      onPress={() => handleOpenList(endorsedList)}
                       activeOpacity={0.7}
                     >
                       <View style={styles.listCardContent}>
@@ -3665,15 +3696,18 @@ export default function HomeScreen() {
                             <List size={20} color={colors.white} strokeWidth={2} />
                           </View>
                           <View style={styles.listCardInfo}>
-                            <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
-                              {userNameList.name}
-                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                              <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
+                                {endorsedList.name}
+                              </Text>
+                              <EndorsedBadge isDarkMode={isDarkMode} size="small" />
+                            </View>
                             <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
-                              {userNameList.entries.length} {userNameList.entries.length === 1 ? 'item' : 'items'}
+                              {endorsedList.entries.length} {endorsedList.entries.length === 1 ? 'item' : 'items'}
                             </Text>
-                            {userNameList.description && (
+                            {endorsedList.description && (
                               <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                                {userNameList.description}
+                                {endorsedList.description}
                               </Text>
                             )}
                           </View>
@@ -4008,6 +4042,25 @@ export default function HomeScreen() {
                     >
                       <Edit size={18} color={colors.text} strokeWidth={2} />
                       <Text style={[styles.listOptionText, { color: colors.text }]}>Description</Text>
+                    </TouchableOpacity>
+                    <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        if (activeCardOptionsMenu) {
+                          handleToggleListPrivacy(activeCardOptionsMenu, activeList.isPublic);
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      {activeList.isPublic ? (
+                        <Lock size={18} color={colors.text} strokeWidth={2} />
+                      ) : (
+                        <Globe size={18} color={colors.text} strokeWidth={2} />
+                      )}
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>
+                        Make {activeList.isPublic ? 'Private' : 'Public'}
+                      </Text>
                     </TouchableOpacity>
                     <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
                     <TouchableOpacity
