@@ -145,6 +145,7 @@ export default function HomeScreen() {
 
   // Library state
   const [userLists, setUserLists] = useState<UserList[]>([]);
+  const [expandedListId, setExpandedListId] = useState<string | null>(null); // 'endorsement', 'aligned', 'unaligned', or custom list ID
   const [showCreateListModal, setShowCreateListModal] = useState(false);
   const [libraryView, setLibraryView] = useState<'overview' | 'detail'>('overview');
   const [selectedList, setSelectedList] = useState<UserList | 'browse' | null>(null);
@@ -518,6 +519,18 @@ export default function HomeScreen() {
       console.error('[Home] Error reloading personal list:', error);
     }
   };
+
+  // Set default expanded list when library loads
+  useEffect(() => {
+    if (mainView === 'forYou' && expandedListId === null) {
+      // Check if endorsement list has 3+ items
+      if (userPersonalList && userPersonalList.entries.length >= 3) {
+        setExpandedListId('endorsement');
+      } else {
+        setExpandedListId('aligned');
+      }
+    }
+  }, [mainView, userPersonalList, expandedListId]);
 
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands, brandDistances } = useMemo(() => {
     // Combine brands from CSV and user businesses
