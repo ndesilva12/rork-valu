@@ -31,6 +31,8 @@ import { lookupBarcode, findBrandInDatabase, getBrandProduct } from '@/mocks/bar
 import { getLogoUrl } from '@/lib/logo';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { getBusinessesAcceptingDiscounts, getAllUserBusinesses, BusinessUser } from '@/services/firebase/businessService';
+import { getAllPublicUsers } from '@/services/firebase/userService';
+import { UserProfile } from '@/types';
 
 interface Comment {
   id: string;
@@ -60,6 +62,7 @@ export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Product[]>([]);
   const [firebaseBusinesses, setFirebaseBusinesses] = useState<BusinessUser[]>([]);
+  const [publicUsers, setPublicUsers] = useState<Array<{ id: string; profile: UserProfile }>>([]);
   const [scannerVisible, setScannerVisible] = useState(false);
   const [scannedProduct, setScannedProduct] = useState<Product | null>(null);
   const [scannedInfo, setScannedInfo] = useState<{productName: string; brandName: string; imageUrl?: string; notInDatabase: boolean} | null>(null);
@@ -67,17 +70,20 @@ export default function SearchScreen() {
   const [lookingUp, setLookingUp] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
 
-  // Fetch Firebase businesses on mount
+  // Fetch Firebase businesses and public users on mount
   useEffect(() => {
-    const fetchBusinesses = async () => {
+    const fetchData = async () => {
       try {
         const businesses = await getAllUserBusinesses();
         setFirebaseBusinesses(businesses);
+
+        const users = await getAllPublicUsers();
+        setPublicUsers(users);
       } catch (error) {
-        console.error('Error fetching businesses:', error);
+        console.error('Error fetching data:', error);
       }
     };
-    fetchBusinesses();
+    fetchData();
   }, []);
 
   // Responsive grid columns
@@ -575,32 +581,52 @@ export default function SearchScreen() {
     );
   };
 
-  const renderExploreCard = ({ item }: { item: Product & { matchingValues?: string[] } }) => {
+  const renderUserCard = ({ item }: { item: { id: string; profile: UserProfile } }) => {
+    const userName = item.profile.userDetails?.name || 'User';
+    const userImage = item.profile.userDetails?.profileImage;
+    const userLocation = item.profile.userDetails?.location;
+    const userBio = item.profile.userDetails?.description;
+
     return (
       <TouchableOpacity
         style={[
-          styles.exploreCard,
+          styles.userCard,
           { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }
         ]}
-        onPress={() => handleGridCardPress(item)}
+        onPress={() => router.push(`/user/${item.id}`)}
         activeOpacity={0.7}
       >
-        <Image
-          source={{ uri: getLogoUrl(item.website || '') }}
-          style={styles.exploreCardImage}
-          contentFit="cover"
-          transition={200}
-          cachePolicy="memory-disk"
-        />
-        <View style={[styles.exploreCardOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.4)' }]}>
-          <View style={[styles.exploreCardBadge, { backgroundColor: colors.success + '15' }]}>
-            <Text style={[styles.exploreCardScore, { color: colors.success }]}>{normalizeScore(item.alignmentScore)}</Text>
+        <View style={styles.userCardContent}>
+          {userImage ? (
+            <Image
+              source={{ uri: userImage }}
+              style={styles.userCardImage}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
+            />
+          ) : (
+            <View style={[styles.userCardImagePlaceholder, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.userCardImageText, { color: colors.white }]}>
+                {userName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
+          <View style={styles.userCardInfo}>
+            <Text style={[styles.userCardName, { color: colors.text }]} numberOfLines={1}>
+              {userName}
+            </Text>
+            {userLocation && (
+              <Text style={[styles.userCardLocation, { color: colors.textSecondary }]} numberOfLines={1}>
+                {userLocation}
+              </Text>
+            )}
+            {userBio && (
+              <Text style={[styles.userCardBio, { color: colors.textSecondary }]} numberOfLines={2}>
+                {userBio}
+              </Text>
+            )}
           </View>
-        </View>
-        <View style={styles.exploreCardInfo}>
-          <Text style={[styles.exploreCardBrand, { color: colors.text }]} numberOfLines={1}>
-            {item.brand}
-          </Text>
         </View>
       </TouchableOpacity>
     );
@@ -777,36 +803,33 @@ export default function SearchScreen() {
       </View>
 
       {query.trim().length === 0 ? (
-        !profile?.causes || profile.causes.length === 0 ? (
-          <View style={styles.emptyState}>
-            <View style={[styles.emptyIconContainer, { backgroundColor: colors.primaryLight + '10' }]}>
-              <SearchIcon size={48} color={colors.primaryLight} strokeWidth={1.5} />
+        <FlatList
+          key="user-list"
+          data={publicUsers}
+          renderItem={renderUserCard}
+          keyExtractor={item => item.id}
+          contentContainerStyle={[styles.userListContainer, { paddingBottom: 100 }]}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <View style={styles.exploreHeader}>
+              <Text style={[styles.exploreTitle, { color: colors.text }]}>Discover Users</Text>
+              <Text style={[styles.exploreSubtitle, { color: colors.textSecondary }]}>
+                Connect with other Upright users
+              </Text>
             </View>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>Set Your Values First</Text>
-            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-              Complete your profile to see personalized product recommendations
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            key={`explore-grid-${numColumns}`}
-            data={alignedProducts}
-            renderItem={renderExploreCard}
-            keyExtractor={item => item.id}
-            numColumns={numColumns}
-            contentContainerStyle={[styles.exploreGrid, { paddingBottom: 100 }]}
-            columnWrapperStyle={styles.exploreRow}
-            showsVerticalScrollIndicator={false}
-            ListHeaderComponent={
-              <View style={styles.exploreHeader}>
-                <Text style={[styles.exploreTitle, { color: colors.text }]}>Explore</Text>
-                <Text style={[styles.exploreSubtitle, { color: colors.textSecondary }]}>
-                  Brands aligned with your values
-                </Text>
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <View style={[styles.emptyIconContainer, { backgroundColor: colors.primaryLight + '10' }]}>
+                <SearchIcon size={48} color={colors.primaryLight} strokeWidth={1.5} />
               </View>
-            }
-          />
-        )
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>No Users Yet</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                Be one of the first to make your profile public!
+              </Text>
+            </View>
+          }
+        />
       ) : results.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>No results found</Text>
@@ -1692,5 +1715,54 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     paddingHorizontal: 16,
+  },
+
+  // User Cards
+  userListContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 0,
+  },
+  userCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 12,
+  },
+  userCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  userCardImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+  },
+  userCardImagePlaceholder: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userCardImageText: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+  },
+  userCardInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  userCardName: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+  },
+  userCardLocation: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+  },
+  userCardBio: {
+    fontSize: 13,
+    lineHeight: 18,
   },
 });
