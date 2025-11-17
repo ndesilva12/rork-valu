@@ -47,6 +47,8 @@ export default function BusinessDetailScreen() {
   const [selectedGalleryImage, setSelectedGalleryImage] = useState<{ imageUrl: string; caption: string } | null>(null);
   const [showAddToListModal, setShowAddToListModal] = useState(false);
   const [userLists, setUserLists] = useState<any[]>([]);
+  const [businessOwnerLists, setBusinessOwnerLists] = useState<any[]>([]);
+  const [loadingBusinessLists, setLoadingBusinessLists] = useState(true);
 
   useEffect(() => {
     const fetchBusiness = async () => {
@@ -101,6 +103,44 @@ export default function BusinessDetailScreen() {
     }
   };
 
+  // Load business owner's lists to display their brands & businesses
+  const loadBusinessOwnerLists = async () => {
+    if (!id) return;
+    try {
+      setLoadingBusinessLists(true);
+      const lists = await getUserLists(id as string);
+      setBusinessOwnerLists(lists);
+    } catch (error) {
+      console.error('[BusinessDetail] Error loading business owner lists:', error);
+    } finally {
+      setLoadingBusinessLists(false);
+    }
+  };
+
+  // Helper to extract all brands and businesses from business owner's lists
+  const extractBrandsAndBusinesses = () => {
+    const brands: { name: string; listName: string }[] = [];
+    const businesses: { name: string; listName: string }[] = [];
+
+    businessOwnerLists.forEach(list => {
+      list.entries.forEach((entry: any) => {
+        if (entry.type === 'brand' && entry.brandName && entry.brandId) {
+          brands.push({
+            name: entry.brandName,
+            listName: list.name
+          });
+        } else if (entry.type === 'business' && entry.businessId) {
+          businesses.push({
+            name: entry.businessName || entry.name || 'Unknown Business',
+            listName: list.name
+          });
+        }
+      });
+    });
+
+    return { brands, businesses };
+  };
+
   const handleAddToList = async (listId: string) => {
     if (!business || !clerkUser?.id) return;
 
@@ -130,6 +170,10 @@ export default function BusinessDetailScreen() {
   useEffect(() => {
     loadUserLists();
   }, [clerkUser?.id]);
+
+  useEffect(() => {
+    loadBusinessOwnerLists();
+  }, [id]);
 
   const handleShopPress = async () => {
     if (!business?.businessInfo.website) return;
@@ -563,6 +607,81 @@ export default function BusinessDetailScreen() {
               </View>
             </View>
           )}
+
+          {/* Brands & Businesses Section */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Brands & Businesses</Text>
+
+            <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.success }]}>
+              {loadingBusinessLists ? (
+                <View style={styles.shareholdersContainer}>
+                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>Loading...</Text>
+                </View>
+              ) : (() => {
+                const { brands, businesses } = extractBrandsAndBusinesses();
+                const hasData = brands.length > 0 || businesses.length > 0;
+
+                if (!hasData) {
+                  return (
+                    <View style={styles.shareholdersContainer}>
+                      <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
+                        No brands or businesses in lists
+                      </Text>
+                    </View>
+                  );
+                }
+
+                // Helper function to get display name for list
+                const getListDisplayName = (listName: string) => {
+                  // If list name is "My List" or matches the business owner's name, show business name
+                  if (listName === 'My List' || listName === business?.fullName || listName === business?.businessInfo.name) {
+                    return business?.businessInfo.name || listName;
+                  }
+                  return listName;
+                };
+
+                return (
+                  <View style={styles.shareholdersContainer}>
+                    {brands.length > 0 && (
+                      <>
+                        <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
+                          <Text style={[styles.subsectionTitle, { color: colors.text }]}>Brands ({brands.length})</Text>
+                        </View>
+                        {brands.map((brand, index) => (
+                          <View key={`brand-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
+                            <View style={styles.tableRow}>
+                              <Text style={[styles.affiliateName, { color: colors.text }]}>{brand.name}</Text>
+                              <Text style={[styles.affiliateRelationship, { color: colors.textSecondary }]}>
+                                {getListDisplayName(brand.listName)}
+                              </Text>
+                            </View>
+                          </View>
+                        ))}
+                      </>
+                    )}
+
+                    {businesses.length > 0 && (
+                      <>
+                        <View style={[styles.subsectionHeader, { borderBottomColor: colors.border, marginTop: brands.length > 0 ? 16 : 0 }]}>
+                          <Text style={[styles.subsectionTitle, { color: colors.text }]}>Businesses ({businesses.length})</Text>
+                        </View>
+                        {businesses.map((biz, index) => (
+                          <View key={`business-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
+                            <View style={styles.tableRow}>
+                              <Text style={[styles.affiliateName, { color: colors.text }]}>{biz.name}</Text>
+                              <Text style={[styles.affiliateRelationship, { color: colors.textSecondary }]}>
+                                {getListDisplayName(biz.listName)}
+                              </Text>
+                            </View>
+                          </View>
+                        ))}
+                      </>
+                    )}
+                  </View>
+                );
+              })()}
+            </View>
+          </View>
 
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Money Flow</Text>
