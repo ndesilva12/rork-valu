@@ -1175,7 +1175,10 @@ export default function HomeScreen() {
     itemCount: number,
     isExpanded: boolean,
     isEndorsed: boolean = false,
-    isPinned: boolean = false
+    isPinned: boolean = false,
+    attribution?: string,
+    description?: string,
+    isPublic?: boolean
   ) => {
     const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
 
@@ -1198,9 +1201,30 @@ export default function HomeScreen() {
               </Text>
               {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" />}
             </View>
-            <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
-              {itemCount} {itemCount === 1 ? 'item' : 'items'}
-            </Text>
+            <View style={styles.collapsibleListMeta}>
+              <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
+                {itemCount} {itemCount === 1 ? 'item' : 'items'}
+              </Text>
+              {isPublic !== undefined && (
+                <View style={styles.privacyIndicator}>
+                  {isPublic ? (
+                    <><Globe size={12} color={colors.primary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.primary }]}>Public</Text></>
+                  ) : (
+                    <><Lock size={12} color={colors.textSecondary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.textSecondary }]}>Private</Text></>
+                  )}
+                </View>
+              )}
+            </View>
+            {attribution && (
+              <Text style={[styles.collapsibleListAttribution, { color: colors.textSecondary }]}>
+                {attribution}
+              </Text>
+            )}
+            {description && isExpanded && (
+              <Text style={[styles.collapsibleListDescription, { color: colors.text }]} numberOfLines={2}>
+                {description}
+              </Text>
+            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -1454,7 +1478,10 @@ export default function HomeScreen() {
               userPersonalList.entries?.length || 0,
               expandedListId === 'endorsement',
               true,
-              true
+              true,
+              `Endorsed by ${userPersonalList.creatorName || 'you'}`,
+              userPersonalList.description,
+              userPersonalList.isPublic
             )}
             {expandedListId === 'endorsement' && renderEndorsementContent()}
           </>
@@ -1467,7 +1494,9 @@ export default function HomeScreen() {
           allSupportFull.length,
           expandedListId === 'aligned',
           false,
-          false
+          false,
+          undefined,
+          'Brands and businesses aligned with your values'
         )}
         {expandedListId === 'aligned' && renderAlignedContent()}
 
@@ -1478,24 +1507,37 @@ export default function HomeScreen() {
           allAvoidFull.length,
           expandedListId === 'unaligned',
           false,
-          false
+          false,
+          undefined,
+          'Brands and businesses not aligned with your values'
         )}
         {expandedListId === 'unaligned' && renderUnalignedContent()}
 
         {/* 4. Custom Lists - After unaligned */}
-        {customLists.map(list => (
-          <React.Fragment key={list.id}>
-            {renderCollapsibleListHeader(
-              list.id,
-              list.name,
-              list.entries.length,
-              expandedListId === list.id,
-              false,
-              false
-            )}
-            {expandedListId === list.id && renderCustomListContent(list)}
-          </React.Fragment>
-        ))}
+        {customLists.map(list => {
+          const attribution = list.originalCreatorName
+            ? `Originally created by ${list.originalCreatorName}`
+            : list.creatorName
+            ? `Created by ${list.creatorName}`
+            : undefined;
+
+          return (
+            <React.Fragment key={list.id}>
+              {renderCollapsibleListHeader(
+                list.id,
+                list.name,
+                list.entries.length,
+                expandedListId === list.id,
+                false,
+                false,
+                attribution,
+                list.description,
+                list.isPublic
+              )}
+              {expandedListId === list.id && renderCustomListContent(list)}
+            </React.Fragment>
+          );
+        })}
       </View>
     );
   };
@@ -7965,9 +8007,36 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
   },
+  collapsibleListMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginLeft: 28,
+    marginBottom: 4,
+  },
   collapsibleListCount: {
     fontSize: 13,
     fontWeight: '500',
+  },
+  privacyIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  privacyText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  collapsibleListAttribution: {
+    fontSize: 12,
     marginLeft: 28,
+    marginTop: 2,
+    fontStyle: 'italic',
+  },
+  collapsibleListDescription: {
+    fontSize: 13,
+    marginLeft: 28,
+    marginTop: 6,
+    lineHeight: 18,
   },
 });
