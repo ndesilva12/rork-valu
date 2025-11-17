@@ -22,7 +22,6 @@ import { useData } from '@/contexts/DataContext';
 import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { getLogoUrl } from '@/lib/logo';
 import { getUserLists, addEntryToList } from '@/services/firebase/listService';
-import { calculateAlignmentScore } from '@/services/firebase/businessService';
 
 export default function BrandDetailScreen() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
@@ -301,54 +300,32 @@ export default function BrandDetailScreen() {
     }
   };
 
-  // Calculate alignment data using the same method as home tab and business detail
+  // Use brand's pre-calculated alignment score and find matching values
   let alignmentData = {
     isAligned: false,
     matchingValues: [] as string[],
     alignmentStrength: 50
   };
 
-  if (brand && profile.causes && profile.causes.length > 0) {
-    // Calculate raw alignment score using the same method as list views
-    const rawScore = calculateAlignmentScore(profile.causes, brand.causes || []);
-
-    // Create sets for matching values calculation
-    const userSupportSet = new Set(profile.causes.filter(c => c.type === 'support').map(c => c.id));
-    const userAvoidSet = new Set(profile.causes.filter(c => c.type === 'avoid').map(c => c.id));
-    const brandCauses = brand.causes || [];
-    const brandSupportSet = new Set(brandCauses.filter(c => c.type === 'support').map(c => c.id));
-    const brandAvoidSet = new Set(brandCauses.filter(c => c.type === 'avoid').map(c => c.id));
-
-    // Get all unique value IDs
-    const allValueIds = new Set([...userSupportSet, ...userAvoidSet, ...brandSupportSet, ...brandAvoidSet]);
-
-    // Find matching/conflicting values for display
-    const matchingValues = new Set<string>();
-    allValueIds.forEach(valueId => {
-      const userHasPosition = userSupportSet.has(valueId) || userAvoidSet.has(valueId);
-      const brandHasPosition = brandSupportSet.has(valueId) || brandAvoidSet.has(valueId);
-      if (userHasPosition && brandHasPosition) {
-        matchingValues.add(valueId);
-      }
-    });
-
-    // Map raw score to 10-90 range
-    // Raw scores typically range from -50 to +50, map this to 10-90
-    // Negative scores (conflicts) -> 10-49, Positive scores (matches) -> 51-90
-    let alignmentScore = 50; // Default neutral
-
-    if (rawScore !== 0) {
-      // Map rawScore (-50 to +50) to alignment score (10 to 90)
-      // Formula: score = 50 + (rawScore * 0.8)
-      alignmentScore = Math.round(50 + (rawScore * 0.8));
-      alignmentScore = Math.max(10, Math.min(90, alignmentScore));
-    }
-
+  if (brand) {
+    // Use the brand's existing alignment score (already calculated based on user values)
+    const alignmentScore = brand.alignmentScore || 50;
     const isAligned = alignmentScore >= 50;
+
+    // Find matching values from brand's valueAlignments
+    const matchingValues: string[] = [];
+    if (brand.valueAlignments && profile.causes && profile.causes.length > 0) {
+      const userValueIds = new Set(profile.causes.map(c => c.id));
+      brand.valueAlignments.forEach(alignment => {
+        if (userValueIds.has(alignment.valueId)) {
+          matchingValues.push(alignment.valueId);
+        }
+      });
+    }
 
     alignmentData = {
       isAligned,
-      matchingValues: Array.from(matchingValues),
+      matchingValues,
       alignmentStrength: alignmentScore
     };
   }
