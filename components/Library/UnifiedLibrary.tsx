@@ -37,6 +37,7 @@ import { getLogoUrl } from '@/lib/logo';
 import { Product } from '@/types';
 import { BusinessUser, calculateAlignmentScore } from '@/services/firebase/businessService';
 import { useUser } from '@/contexts/UserContext';
+import { useRouter } from 'expo-router';
 
 // ===== Types =====
 
@@ -77,6 +78,7 @@ export default function UnifiedLibrary({
   const colors = isDarkMode ? darkColors : lightColors;
   const library = useLibrary();
   const { profile } = useUser();
+  const router = useRouter();
 
   // Local state for independent expansion in each location
   const [localExpandedListId, setLocalExpandedListId] = useState<string | null>(null);
@@ -137,10 +139,12 @@ export default function UnifiedLibrary({
           { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
         ]}
         onPress={() => {
-          // TODO: Navigate to product details
+          router.push({
+            pathname: '/brand/[id]',
+            params: { id: product.id },
+          });
         }}
         activeOpacity={0.7}
-        disabled={!canInteract}
       >
         <View style={styles.brandCardInner}>
           <View style={styles.brandLogoContainer}>
@@ -219,10 +223,12 @@ export default function UnifiedLibrary({
                 { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
               ]}
               onPress={() => {
-                // TODO: Navigate to brand details
+                router.push({
+                  pathname: '/brand/[id]',
+                  params: { id: entry.brandId },
+                });
               }}
               activeOpacity={0.7}
-              disabled={!canInteract}
             >
               <View style={styles.brandCardInner}>
                 <View style={styles.brandLogoContainer}>
@@ -287,10 +293,12 @@ export default function UnifiedLibrary({
                 { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
               ]}
               onPress={() => {
-                // TODO: Navigation handled by mode
+                router.push({
+                  pathname: '/business/[id]',
+                  params: { id: entry.businessId },
+                });
               }}
               activeOpacity={0.7}
-              disabled={!canInteract}
             >
               <View style={styles.brandCardInner}>
                 <View style={styles.brandLogoContainer}>
