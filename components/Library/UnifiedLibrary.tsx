@@ -82,6 +82,173 @@ export default function UnifiedLibrary({
   // Filter out endorsement list from custom lists
   const customLists = userLists.filter(list => list.id !== endorsementList?.id);
 
+  // EXACT copy of Home tab's renderListEntry
+  const renderListEntry = (entry: ListEntry) => {
+    switch (entry.type) {
+      case 'business':
+        if ('businessId' in entry) {
+          // Render business entry with full card layout
+          const titleColor = colors.primary;
+
+          return (
+            <TouchableOpacity
+              style={[
+                styles.brandCard,
+                { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+              ]}
+              onPress={() => {
+                // Navigation handled by mode
+                if (canInteract && entry.businessId) {
+                  // TODO: Navigate to business details
+                }
+              }}
+              activeOpacity={0.7}
+              disabled={!canInteract}
+            >
+              <View style={styles.brandCardInner}>
+                <View style={styles.brandLogoContainer}>
+                  <Image
+                    source={{ uri: entry.logoUrl || getLogoUrl(entry.website || '') }}
+                    style={styles.brandLogo}
+                    contentFit="cover"
+                    transition={200}
+                    cachePolicy="memory-disk"
+                  />
+                </View>
+                <View style={styles.brandCardContent}>
+                  <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>
+                    {entry.businessName}
+                  </Text>
+                  {entry.businessCategory && (
+                    <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {entry.businessCategory}
+                    </Text>
+                  )}
+                </View>
+                {mode === 'edit' && (
+                  <TouchableOpacity
+                    style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      // TODO: Show options menu
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                  </TouchableOpacity>
+                )}
+                {mode === 'view' && (
+                  <TouchableOpacity
+                    style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      // TODO: Quick add to user's library
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </TouchableOpacity>
+          );
+        }
+        break;
+
+      case 'value':
+        if ('valueId' in entry) {
+          const isSupport = entry.mode !== 'maxPain';
+          const titleColor = isSupport ? colors.primary : colors.danger;
+
+          return (
+            <View style={[
+              styles.brandCard,
+              { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+            ]}>
+              <View style={styles.brandCardInner}>
+                <View style={[
+                  styles.brandLogoContainer,
+                  {
+                    backgroundColor: isSupport ? colors.primary + '20' : colors.danger + '20',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }
+                ]}>
+                  <Target size={32} color={titleColor} strokeWidth={2} />
+                </View>
+                <View style={styles.brandCardContent}>
+                  <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>
+                    {entry.valueName}
+                  </Text>
+                  <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                    {entry.mode === 'maxPain' ? 'Avoid' : 'Support'}
+                  </Text>
+                </View>
+                {mode === 'view' && (
+                  <TouchableOpacity
+                    style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      // TODO: Quick add to user's library
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          );
+        }
+        break;
+
+      case 'link':
+        if ('url' in entry) {
+          return (
+            <TouchableOpacity
+              style={[
+                styles.brandCard,
+                { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }
+              ]}
+              onPress={() => canInteract && Linking.openURL(entry.url)}
+              activeOpacity={0.7}
+              disabled={!canInteract}
+            >
+              <View style={styles.brandCardContent}>
+                <Text style={[styles.brandName, { color: colors.primary }]} numberOfLines={1}>
+                  {entry.title}
+                </Text>
+                {entry.description && (
+                  <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={2}>
+                    {entry.description}
+                  </Text>
+                )}
+              </View>
+              <ExternalLink size={16} color={colors.textSecondary} strokeWidth={2} />
+            </TouchableOpacity>
+          );
+        }
+        break;
+
+      case 'text':
+        if ('content' in entry) {
+          return (
+            <View style={[
+              styles.brandCard,
+              { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }
+            ]}>
+              <Text style={[styles.brandName, { color: colors.text }]}>
+                {entry.content}
+              </Text>
+            </View>
+          );
+        }
+        break;
+    }
+
+    return null;
+  };
+
   // EXACT copy of Home tab's renderCollapsibleListHeader
   const renderCollapsibleListHeader = (
     listId: string,
@@ -236,6 +403,122 @@ export default function UnifiedLibrary({
     );
   };
 
+  // Render content for Endorsement list
+  const renderEndorsementContent = () => {
+    if (!endorsementList) return null;
+
+    if (!endorsementList.entries || endorsementList.entries.length === 0) {
+      return (
+        <View style={styles.listContentContainer}>
+          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+              Your endorsement list is empty. Start adding items!
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.listContentContainer}>
+        <View style={styles.brandsContainer}>
+          {endorsementList.entries.map((entry, index) => (
+            <View key={entry.id} style={styles.forYouItemRow}>
+              <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                {index + 1}
+              </Text>
+              <View style={styles.forYouCardWrapper}>
+                {renderListEntry(entry)}
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  // Render content for Aligned list
+  const renderAlignedContent = () => {
+    if (alignedItems.length === 0) return null;
+
+    return (
+      <View style={styles.listContentContainer}>
+        <View style={styles.brandsContainer}>
+          {alignedItems.map((item, index) => (
+            <View key={item.id || index} style={styles.forYouItemRow}>
+              <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                {index + 1}
+              </Text>
+              <View style={styles.forYouCardWrapper}>
+                {/* TODO: Render aligned item cards */}
+                <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+                  Aligned item rendering to be added
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  // Render content for Unaligned list
+  const renderUnalignedContent = () => {
+    if (unalignedItems.length === 0) return null;
+
+    return (
+      <View style={styles.listContentContainer}>
+        <View style={styles.brandsContainer}>
+          {unalignedItems.map((item, index) => (
+            <View key={item.id || index} style={styles.forYouItemRow}>
+              <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                {index + 1}
+              </Text>
+              <View style={styles.forYouCardWrapper}>
+                {/* TODO: Render unaligned item cards */}
+                <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+                  Unaligned item rendering to be added
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  // Render content for custom lists
+  const renderCustomListContent = (list: UserList) => {
+    if (!list.entries || list.entries.length === 0) {
+      return (
+        <View style={styles.listContentContainer}>
+          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+              This list is empty
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.listContentContainer}>
+        <View style={styles.brandsContainer}>
+          {list.entries.map((entry, index) => (
+            <View key={entry.id} style={styles.forYouItemRow}>
+              <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                {index + 1}
+              </Text>
+              <View style={styles.forYouCardWrapper}>
+                {renderListEntry(entry)}
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.libraryDirectory}>
       {/* 1. Endorsement List - Always first, pinned */}
@@ -253,13 +536,7 @@ export default function UnifiedLibrary({
             endorsementList.isPublic,
             profileImage
           )}
-          {expandedListId === 'endorsement' && (
-            <View style={styles.listContentContainer}>
-              <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
-                {endorsementList.entries?.length || 0} items (content rendering to be added)
-              </Text>
-            </View>
-          )}
+          {expandedListId === 'endorsement' && renderEndorsementContent()}
         </>
       )}
 
@@ -279,13 +556,7 @@ export default function UnifiedLibrary({
             undefined,
             true
           )}
-          {expandedListId === 'aligned' && (
-            <View style={styles.listContentContainer}>
-              <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
-                {alignedItems.length} items (content rendering to be added)
-              </Text>
-            </View>
-          )}
+          {expandedListId === 'aligned' && renderAlignedContent()}
         </>
       )}
 
@@ -305,13 +576,7 @@ export default function UnifiedLibrary({
             undefined,
             true
           )}
-          {expandedListId === 'unaligned' && (
-            <View style={styles.listContentContainer}>
-              <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
-                {unalignedItems.length} items (content rendering to be added)
-              </Text>
-            </View>
-          )}
+          {expandedListId === 'unaligned' && renderUnalignedContent()}
         </>
       )}
 
@@ -337,13 +602,7 @@ export default function UnifiedLibrary({
               list.isPublic,
               profileImage
             )}
-            {expandedListId === list.id && (
-              <View style={styles.listContentContainer}>
-                <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
-                  {list.entries.length} items (content rendering to be added)
-                </Text>
-              </View>
-            )}
+            {expandedListId === list.id && renderCustomListContent(list)}
           </React.Fragment>
         );
       })}
@@ -467,5 +726,91 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginLeft: 26,
     lineHeight: 16,
+  },
+  // Brand card and item row styles from Home tab
+  brandsContainer: {
+    gap: 8,
+  },
+  forYouItemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  forYouItemNumber: {
+    fontSize: 12,
+    fontWeight: '500',
+    paddingTop: 20,
+    minWidth: 20,
+    textAlign: 'right',
+    marginLeft: -4,
+  },
+  forYouCardWrapper: {
+    flex: 1,
+  },
+  brandCard: {
+    borderRadius: 10,
+    height: 56,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
+    overflow: 'visible',
+    width: '100%',
+  },
+  brandCardInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: '100%',
+    overflow: 'visible',
+    borderRadius: 10,
+  },
+  brandLogoContainer: {
+    width: 56,
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopLeftRadius: 10,
+    borderBottomLeftRadius: 10,
+    overflow: 'hidden',
+  },
+  brandLogo: {
+    width: '100%',
+    height: '100%',
+  },
+  brandCardContent: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  brandName: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  brandCategory: {
+    fontSize: 11,
+    opacity: 0.7,
+  },
+  quickAddButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  placeholderContainer: {
+    padding: 40,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 32,
+  },
+  placeholderText: {
+    fontSize: 15,
+    textAlign: 'center',
   },
 });
