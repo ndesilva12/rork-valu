@@ -1207,6 +1207,97 @@ export default function HomeScreen() {
     );
   };
 
+  // Render a single list entry (handles all entry types)
+  const renderListEntry = (entry: ListEntry) => {
+    switch (entry.type) {
+      case 'brand':
+        if ('brandId' in entry) {
+          const brand = allSupportFull.find(b => b.id === entry.brandId) ||
+                       allAvoidFull.find(b => b.id === entry.brandId);
+          return renderBrandCard(brand, 'support');
+        }
+        break;
+
+      case 'business':
+        if ('businessId' in entry) {
+          // Render business entry
+          return (
+            <View style={[styles.brandCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <View style={styles.brandCardContent}>
+                <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={1}>
+                  {entry.businessName}
+                </Text>
+                {entry.businessCategory && (
+                  <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                    {entry.businessCategory}
+                  </Text>
+                )}
+              </View>
+            </View>
+          );
+        }
+        break;
+
+      case 'value':
+        if ('valueId' in entry) {
+          // Render value entry
+          return (
+            <View style={[styles.brandCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <View style={styles.brandCardContent}>
+                <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={1}>
+                  {entry.valueName}
+                </Text>
+                <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                  {entry.mode === 'maxPain' ? 'Avoid' : 'Support'}
+                </Text>
+              </View>
+            </View>
+          );
+        }
+        break;
+
+      case 'link':
+        if ('url' in entry) {
+          // Render link entry
+          return (
+            <TouchableOpacity
+              style={[styles.brandCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+              onPress={() => Linking.openURL(entry.url)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.brandCardContent}>
+                <Text style={[styles.brandName, { color: colors.primary }]} numberOfLines={1}>
+                  {entry.title}
+                </Text>
+                {entry.description && (
+                  <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={2}>
+                    {entry.description}
+                  </Text>
+                )}
+              </View>
+              <ExternalLink size={16} color={colors.textSecondary} strokeWidth={2} />
+            </TouchableOpacity>
+          );
+        }
+        break;
+
+      case 'text':
+        if ('content' in entry) {
+          // Render text entry
+          return (
+            <View style={[styles.brandCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <Text style={[styles.brandName, { color: colors.text }]}>
+                {entry.content}
+              </Text>
+            </View>
+          );
+        }
+        break;
+    }
+
+    return null;
+  };
+
   // Render content for Aligned list
   const renderAlignedContent = () => {
     return (
@@ -1285,7 +1376,7 @@ export default function HomeScreen() {
       );
     }
 
-    // Render endorsement list items (similar to current userList rendering)
+    // Render endorsement list items
     return (
       <View style={styles.listContentContainer}>
         <View style={styles.brandsContainer}>
@@ -1295,13 +1386,7 @@ export default function HomeScreen() {
                 {index + 1}
               </Text>
               <View style={styles.forYouCardWrapper}>
-                {/* Render based on entry type */}
-                {entry.type === 'brand' && 'brandId' in entry && (
-                  renderBrandCard(
-                    allSupportFull.find(b => b.id === entry.brandId) || allAvoidFull.find(b => b.id === entry.brandId),
-                    'support'
-                  )
-                )}
+                {renderListEntry(entry)}
               </View>
             </View>
           ))}
@@ -1344,12 +1429,7 @@ export default function HomeScreen() {
                 {index + 1}
               </Text>
               <View style={styles.forYouCardWrapper}>
-                {entry.type === 'brand' && 'brandId' in entry && (
-                  renderBrandCard(
-                    allSupportFull.find(b => b.id === entry.brandId) || allAvoidFull.find(b => b.id === entry.brandId),
-                    'support'
-                  )
-                )}
+                {renderListEntry(entry)}
               </View>
             </View>
           ))}
