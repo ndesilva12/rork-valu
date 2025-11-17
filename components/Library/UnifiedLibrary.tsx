@@ -42,12 +42,15 @@ import { copyListToLibrary } from '@/services/firebase/listService';
 // ===== Types =====
 
 interface UnifiedLibraryProps {
-  // Mode
-  mode: 'own' | 'viewing'; // 'own' = full edit, 'viewing' = can share/copy only
+  // Mode - determines what actions are available
+  mode: 'edit' | 'preview' | 'view';
+  // 'edit' = Home tab - full editing (add, remove, reorder, delete)
+  // 'preview' = Profile tab - view only (no interactions - what others see)
+  // 'view' = Profile details page - can add to my library & share
 
   // User info
   currentUserId?: string; // The logged-in user's ID
-  viewingUserId?: string; // The user whose library is being viewed (for 'viewing' mode)
+  viewingUserId?: string; // The user whose library is being viewed
 
   // Data (optional - if not provided, uses context)
   userLists?: UserList[]; // Override lists from context
@@ -88,8 +91,11 @@ export default function UnifiedLibrary({
   const [shareItem, setShareItem] = useState<any>(null);
   const [copyingListId, setCopyingListId] = useState<string | null>(null);
 
-  const isOwnLibrary = mode === 'own';
-  const isEditable = mode === 'own';
+  // Mode-based permissions
+  const canEdit = mode === 'edit';        // Can add, remove, reorder, delete
+  const canAddToMyLibrary = mode === 'view';  // Can copy items/lists to my library
+  const canShare = mode === 'edit' || mode === 'view';  // Can share items/lists
+  const isInteractive = mode !== 'preview';  // Preview mode has no interactions
 
   // ===== Helper Functions =====
 
@@ -127,12 +133,12 @@ export default function UnifiedLibrary({
   };
 
   const handleAddToList = (entry: Omit<ListEntry, 'id'>, listId: string) => {
-    if (!isOwnLibrary) return;
+    if (!canEdit) return;
     library.addEntry(listId, entry);
   };
 
   const handleRemoveFromList = (entryId: string, listId: string) => {
-    if (!isOwnLibrary) return;
+    if (!canEdit) return;
     library.removeEntry(listId, entryId);
   };
 
@@ -392,7 +398,7 @@ export default function UnifiedLibrary({
       return (
         <View style={[styles.listContent, { backgroundColor: colors.background, borderColor: colors.border }]}>
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-            {isOwnLibrary ? 'No items yet. Tap + to add items.' : 'No items in this list.'}
+            {canEdit ? 'No items yet. Tap + to add items.' : 'No items in this list.'}
           </Text>
         </View>
       );
@@ -449,7 +455,7 @@ export default function UnifiedLibrary({
             </View>
 
             {/* Actions */}
-            {isOwnLibrary && (
+            {canEdit && (
               <TouchableOpacity
                 style={styles.itemRemoveButton}
                 onPress={() => handleRemoveFromList(entry.id, listId)}
@@ -458,7 +464,7 @@ export default function UnifiedLibrary({
                 <Trash2 size={18} color="#EF4444" strokeWidth={2} />
               </TouchableOpacity>
             )}
-            {!isOwnLibrary && onShareItem && (
+            {canAddToMyLibrary && onShareItem && (
               <TouchableOpacity
                 style={styles.itemShareButton}
                 onPress={() => onShareItem(entry)}
@@ -470,8 +476,8 @@ export default function UnifiedLibrary({
           </TouchableOpacity>
         ))}
 
-        {/* Add Item Button (for own library) */}
-        {isOwnLibrary && onAddItem && (
+        {/* Add Item Button (for edit mode) */}
+        {canEdit && onAddItem && (
           <TouchableOpacity
             style={[styles.addItemButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
             onPress={() => onAddItem(listId)}
@@ -512,11 +518,11 @@ export default function UnifiedLibrary({
               description: endorsementList.description,
               isPublic: endorsementList.isPublic,
               creatorProfileImage: profileImage,
-              canReorder: isOwnLibrary,
-              canEdit: isOwnLibrary,
+              canReorder: canEdit,
+              canEdit: canEdit,
               canRemove: false, // Cannot delete endorsement list
-              canCopy: !isOwnLibrary,
-              canShare: true,
+              canCopy: canAddToMyLibrary,
+              canShare: canShare,
             }
           )}
           {expandedListId === 'endorsement' && renderListContent(endorsementList.entries || [], 'endorsement')}
@@ -581,11 +587,11 @@ export default function UnifiedLibrary({
                 description: list.description,
                 isPublic: list.isPublic,
                 creatorProfileImage: profileImage,
-                canReorder: isOwnLibrary,
-                canEdit: isOwnLibrary && !list.originalListId,
-                canRemove: isOwnLibrary,
-                canCopy: !isOwnLibrary,
-                canShare: true,
+                canReorder: canEdit,
+                canEdit: canEdit && !list.originalListId,
+                canRemove: canEdit,
+                canCopy: canAddToMyLibrary,
+                canShare: canShare,
               }
             )}
             {expandedListId === list.id && renderListContent(list.entries, list.id)}
@@ -599,7 +605,7 @@ export default function UnifiedLibrary({
           <User size={48} color={colors.textSecondary} strokeWidth={1.5} />
           <Text style={[styles.emptyTitle, { color: colors.text }]}>No Lists Yet</Text>
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-            {isOwnLibrary ? 'Create your first list to get started' : 'This user has no public lists'}
+            {mode === 'edit' ? 'Create your first list to get started' : 'This user has no public lists'}
           </Text>
         </View>
       )}

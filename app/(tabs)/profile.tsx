@@ -476,18 +476,10 @@ export default function ProfileScreen() {
             </View>
           ) : (
             <UnifiedLibrary
-              mode="own"
+              mode="preview"
               currentUserId={clerkUser?.id}
               isDarkMode={isDarkMode}
               profileImage={profileImageUrl}
-              onItemPress={(item, listId) => {
-                // Handle item press - could navigate to item details
-                console.log('Item pressed:', item, listId);
-              }}
-              onAddItem={(listId) => {
-                // Handle add item - could open modal
-                console.log('Add item to list:', listId);
-              }}
             />
           )}
         </View>

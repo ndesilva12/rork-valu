@@ -281,7 +281,7 @@ export default function UserProfileScreen() {
             </Text>
 
             <UnifiedLibrary
-              mode={isOwnProfile ? 'own' : 'viewing'}
+              mode={isOwnProfile ? 'preview' : 'view'}
               currentUserId={clerkUser?.id}
               viewingUserId={userId}
               userLists={userLists}
@@ -296,12 +296,6 @@ export default function UserProfileScreen() {
               })()}
               isDarkMode={isDarkMode}
               profileImage={profileImageUrl}
-              onItemPress={(item, listId) => {
-                console.log('Item pressed:', item, listId);
-              }}
-              onAddItem={(listId) => {
-                console.log('Add item to list:', listId);
-              }}
               onShareItem={(item) => {
                 console.log('Share item:', item);
               }}
