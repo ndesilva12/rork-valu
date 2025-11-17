@@ -300,33 +300,110 @@ export default function BrandDetailScreen() {
     }
   };
 
-  // Use brand's pre-calculated alignment score and find matching values
+  // Calculate alignment score based on user causes and brand's valueAlignments
   let alignmentData = {
     isAligned: false,
     matchingValues: [] as string[],
     alignmentStrength: 50
   };
 
-  if (brand) {
-    // Use the brand's existing alignment score (already calculated based on user values)
-    const alignmentScore = brand.alignmentScore || 50;
-    const isAligned = alignmentScore >= 50;
+  if (brand && profile.causes && profile.causes.length > 0 && valuesMatrix) {
+    const userSupportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
+    const userAvoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
+    const allUserCauses = [...userSupportedCauses, ...userAvoidedCauses];
 
-    // Find matching values from brand's valueAlignments
+    let totalSupportScore = 0;
+    let totalAvoidScore = 0;
     const matchingValues: string[] = [];
-    if (brand.valueAlignments && profile.causes && profile.causes.length > 0) {
-      const userValueIds = new Set(profile.causes.map(c => c.id));
-      brand.valueAlignments.forEach(alignment => {
-        if (userValueIds.has(alignment.valueId)) {
-          matchingValues.push(alignment.valueId);
+    const alignedScores: number[] = [];
+    const unalignedScores: number[] = [];
+
+    // Check each user cause against the brand's position in the valuesMatrix
+    allUserCauses.forEach((causeId) => {
+      const causeData = valuesMatrix[causeId];
+      if (!causeData) {
+        alignedScores.push(50);
+        unalignedScores.push(50);
+        return;
+      }
+
+      const supportArrayLength = causeData.support?.length || 0;
+      const opposeArrayLength = causeData.oppose?.length || 0;
+
+      // Find brand's position in support/oppose lists
+      const supportIndex = causeData.support?.indexOf(brand.name);
+      const supportPosition = supportIndex !== undefined && supportIndex >= 0
+        ? supportIndex + 1
+        : supportArrayLength + 1;
+
+      const opposeIndex = causeData.oppose?.indexOf(brand.name);
+      const opposePosition = opposeIndex !== undefined && opposeIndex >= 0
+        ? opposeIndex + 1
+        : opposeArrayLength + 1;
+
+      // If user supports this cause
+      if (userSupportedCauses.includes(causeId)) {
+        if (supportIndex !== undefined && supportIndex >= 0) {
+          matchingValues.push(causeId);
+          const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
+          const score = Math.round(100 - ((supportPosition - 1) / maxPosition) * 50);
+          alignedScores.push(score);
+          totalSupportScore += 100;
+          unalignedScores.push(50);
+        } else if (opposeIndex !== undefined && opposeIndex >= 0) {
+          matchingValues.push(causeId);
+          const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
+          const score = Math.round(((opposePosition - 1) / maxPosition) * 50);
+          unalignedScores.push(score);
+          totalAvoidScore += 100;
+          alignedScores.push(50);
+        } else {
+          alignedScores.push(50);
+          unalignedScores.push(50);
         }
-      });
+      }
+
+      // If user avoids this cause
+      if (userAvoidedCauses.includes(causeId)) {
+        if (opposeIndex !== undefined && opposeIndex >= 0) {
+          matchingValues.push(causeId);
+          const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
+          const score = Math.round(100 - ((opposePosition - 1) / maxPosition) * 50);
+          alignedScores.push(score);
+          totalSupportScore += 100;
+          unalignedScores.push(50);
+        } else if (supportIndex !== undefined && supportIndex >= 0) {
+          matchingValues.push(causeId);
+          const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
+          const score = Math.round(((supportPosition - 1) / maxPosition) * 50);
+          unalignedScores.push(score);
+          totalAvoidScore += 100;
+          alignedScores.push(50);
+        } else {
+          alignedScores.push(50);
+          unalignedScores.push(50);
+        }
+      }
+    });
+
+    // Calculate alignment strength based on average score
+    let alignmentStrength = 50;
+    if (totalSupportScore > totalAvoidScore && totalSupportScore > 0) {
+      alignmentStrength = Math.round(
+        alignedScores.reduce((sum, score) => sum + score, 0) / alignedScores.length
+      );
+    } else if (totalAvoidScore > totalSupportScore && totalAvoidScore > 0) {
+      alignmentStrength = Math.round(
+        unalignedScores.reduce((sum, score) => sum + score, 0) / unalignedScores.length
+      );
     }
+
+    const isAligned = totalSupportScore > totalAvoidScore && totalSupportScore > 0;
 
     alignmentData = {
       isAligned,
       matchingValues,
-      alignmentStrength: alignmentScore
+      alignmentStrength
     };
   }
 

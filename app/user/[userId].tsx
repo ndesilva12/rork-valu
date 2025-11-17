@@ -287,11 +287,20 @@ export default function UserProfileScreen() {
               </View>
             ) : (
               <View style={styles.listsContainer}>
-                {userLists.map((list) => {
-                  const isExpanded = expandedListId === list.id;
-                  const isEndorsed = list.name === userName || (userLists.length > 0 && list.id === userLists.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[0].id);
+                {(() => {
+                  // Find THE ONE endorsement list (matching name or oldest)
+                  let endorsementList = userLists.find(list => list.name === userName);
+                  if (!endorsementList && userLists.length > 0) {
+                    const sortedByAge = [...userLists].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+                    endorsementList = sortedByAge[0];
+                  }
+                  const endorsementListId = endorsementList?.id;
 
-                  return (
+                  return userLists.map((list) => {
+                    const isExpanded = expandedListId === list.id;
+                    const isEndorsed = list.id === endorsementListId;
+
+                    return (
                     <View key={list.id} style={styles.listWrapper}>
                       {/* List Header */}
                       <TouchableOpacity
@@ -376,8 +385,9 @@ export default function UserProfileScreen() {
                         </View>
                       )}
                     </View>
-                  );
-                })}
+                    );
+                  });
+                })()}
               </View>
             )}
           </View>
