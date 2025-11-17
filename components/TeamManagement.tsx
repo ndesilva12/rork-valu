@@ -34,35 +34,59 @@ export default function TeamManagement() {
 
   // Load team members
   const loadTeamMembers = async () => {
-    if (!clerkUser) return;
+    if (!clerkUser) {
+      console.log('[TeamManagement] No clerkUser, skipping load');
+      return;
+    }
+
+    if (!profile.businessInfo?.name) {
+      console.log('[TeamManagement] No business info yet, skipping lazy init check');
+      setIsLoading(true);
+      try {
+        const members = await getTeamMembers(clerkUser.id);
+        setTeamMembers(members);
+      } catch (error) {
+        console.error('[TeamManagement] Error loading team members:', error);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
 
     setIsLoading(true);
     try {
+      console.log('[TeamManagement] Loading team members for business:', profile.businessInfo.name);
       const members = await getTeamMembers(clerkUser.id);
+      console.log('[TeamManagement] Found', members.length, 'team members');
 
       // Lazy initialization: If owner doesn't exist in team, add them (for existing businesses)
       const ownerExists = members.some(m => m.role === 'owner' && m.id === clerkUser.id);
-      if (!ownerExists && profile.businessInfo?.name) {
-        console.log('[TeamManagement] Owner not found in team, initializing...');
+      console.log('[TeamManagement] Owner exists in team?', ownerExists);
+
+      if (!ownerExists) {
+        console.log('[TeamManagement] 🔄 Initializing owner as team member...');
         const email = clerkUser.primaryEmailAddress?.emailAddress || '';
         await initializeBusinessOwner(clerkUser.id, profile.businessInfo.name, email);
+        console.log('[TeamManagement] ✅ Owner initialized, reloading team members...');
 
         // Reload to include the newly added owner
         const updatedMembers = await getTeamMembers(clerkUser.id);
+        console.log('[TeamManagement] After init, found', updatedMembers.length, 'team members');
         setTeamMembers(updatedMembers);
       } else {
         setTeamMembers(members);
       }
     } catch (error) {
-      console.error('[TeamManagement] Error loading team members:', error);
+      console.error('[TeamManagement] ❌ Error loading team members:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Re-run when clerkUser OR businessInfo changes (important for lazy initialization)
   useEffect(() => {
     loadTeamMembers();
-  }, [clerkUser]);
+  }, [clerkUser, profile.businessInfo?.name]);
 
   const handleInviteTeamMember = async () => {
     if (!inviteEmail.trim()) {
