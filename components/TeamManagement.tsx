@@ -269,20 +269,20 @@ export default function TeamManagement() {
                 <View style={styles.memberHeader}>
                   <Text style={[styles.memberName, { color: colors.text }]}>{member.name}</Text>
                   {member.role === 'owner' && (
-                    <View style={[styles.roleBadge, { backgroundColor: colors.primary + '20' }]}>
+                    <View style={[styles.roleBadge, { borderColor: colors.primary }]}>
                       <Text style={[styles.roleBadgeText, { color: colors.primary }]}>Owner</Text>
                     </View>
                   )}
                   {member.status === 'pending' && (
-                    <View style={[styles.statusBadge, { backgroundColor: colors.textSecondary + '20' }]}>
+                    <View style={[styles.statusBadge, { borderColor: colors.textSecondary }]}>
                       <Clock size={12} color={colors.textSecondary} />
                       <Text style={[styles.statusBadgeText, { color: colors.textSecondary }]}>Pending</Text>
                     </View>
                   )}
                   {member.status === 'active' && member.role !== 'owner' && (
-                    <View style={[styles.statusBadge, { backgroundColor: '#28a745' + '20' }]}>
-                      <CheckCircle size={12} color="#28a745" />
-                      <Text style={[styles.statusBadgeText, { color: '#28a745' }]}>Active</Text>
+                    <View style={[styles.statusBadge, { borderColor: colors.success }]}>
+                      <CheckCircle size={12} color={colors.success} />
+                      <Text style={[styles.statusBadgeText, { color: colors.success }]}>Active</Text>
                     </View>
                   )}
                 </View>
@@ -434,6 +434,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
+    borderWidth: 1,
   },
   roleBadgeText: {
     fontSize: 11,
@@ -447,6 +448,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+    borderWidth: 1,
   },
   statusBadgeText: {
     fontSize: 11,
