@@ -1232,6 +1232,7 @@ export default function HomeScreen() {
           style={[
             styles.collapsibleListHeader,
             isPinned && styles.pinnedListHeader,
+            isExpanded && { backgroundColor: colors.backgroundSecondary, borderWidth: 2, borderColor: colors.primary, borderRadius: 12 },
           ]}
         >
           {/* Profile Image */}
@@ -1295,21 +1296,21 @@ export default function HomeScreen() {
                 <View style={styles.collapsibleListRowLayout}>
                   <View style={styles.collapsibleListTitleRow}>
                     <ChevronIcon size={20} color={colors.text} strokeWidth={2} />
-                    <Text style={[styles.collapsibleListTitle, { color: colors.text }]}>
+                    <Text style={[styles.collapsibleListTitle, { color: colors.text }]} numberOfLines={1}>
                       {title}
                     </Text>
                     {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" />}
                   </View>
                   <View style={styles.collapsibleListMetaRow}>
-                    <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
+                    <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]} numberOfLines={1}>
                       {itemCount} {itemCount === 1 ? 'item' : 'items'}
                     </Text>
                     {isPublic !== undefined && (
                       <View style={styles.privacyIndicator}>
                         {isPublic ? (
-                          <><Globe size={12} color={colors.primary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.primary }]}>Public</Text></>
+                          <><Globe size={12} color={colors.primary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.primary }]} numberOfLines={1}>Public</Text></>
                         ) : (
-                          <><Lock size={12} color={colors.textSecondary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.textSecondary }]}>Private</Text></>
+                          <><Lock size={12} color={colors.textSecondary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.textSecondary }]} numberOfLines={1}>Private</Text></>
                         )}
                       </View>
                     )}
@@ -7796,16 +7797,16 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   collapsibleListRowLayout: {
-    flexDirection: 'column', // Stack on mobile to prevent overflow
-    alignItems: 'flex-start',
+    flexDirection: 'row', // Horizontal layout for collapsed lists
+    alignItems: 'center',
+    justifyContent: 'space-between',
     width: '100%',
-    gap: 4,
+    gap: 8,
   },
   collapsibleListMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    flexWrap: 'wrap', // Allow wrapping on small screens
   },
   listHeaderOptionsButton: {
     padding: 4,
@@ -7835,8 +7836,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 4,
-    flexWrap: 'wrap', // Allow wrapping on small screens
+    flexShrink: 1,
   },
   collapsibleListTitle: {
     fontSize: 16, // Smaller for mobile browsers

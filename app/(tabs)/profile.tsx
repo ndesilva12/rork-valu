@@ -62,6 +62,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 20,
+    maxWidth: 768,
+    alignSelf: 'center',
+    width: '100%',
   },
   stickyHeaderContainer: {
     borderBottomWidth: 1,
