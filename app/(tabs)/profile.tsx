@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: Platform.OS === 'web' ? 16 : 12,
     paddingTop: Platform.OS === 'web' ? 0 : 56,
     paddingBottom: 4,
   },

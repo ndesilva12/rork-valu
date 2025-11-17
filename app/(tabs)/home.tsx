@@ -1294,7 +1294,7 @@ export default function HomeScreen() {
                     <Text style={[styles.collapsibleListTitle, { color: colors.text }]}>
                       {title}
                     </Text>
-                    {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" />}
+                    {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" showText={false} />}
                   </View>
                   <View style={styles.collapsibleListMeta}>
                     <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
@@ -1303,9 +1303,9 @@ export default function HomeScreen() {
                     {isPublic !== undefined && (
                       <View style={styles.privacyIndicator}>
                         {isPublic ? (
-                          <><Globe size={12} color={colors.primary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.primary }]}>Public</Text></>
+                          <Globe size={14} color={colors.primary} strokeWidth={2} />
                         ) : (
-                          <><Lock size={12} color={colors.textSecondary} strokeWidth={2} /><Text style={[styles.privacyText, { color: colors.textSecondary }]}>Private</Text></>
+                          <Lock size={14} color={colors.textSecondary} strokeWidth={2} />
                         )}
                       </View>
                     )}
@@ -1329,7 +1329,7 @@ export default function HomeScreen() {
                     <Text style={[styles.collapsibleListTitle, { color: colors.text }]} numberOfLines={1}>
                       {title}
                     </Text>
-                    {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" />}
+                    {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" showText={false} />}
                   </View>
                   <View style={styles.collapsibleListMetaRow}>
                     <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]} numberOfLines={1}>
@@ -5958,7 +5958,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 16,
+    paddingHorizontal: Platform.OS === 'web' ? 16 : 12,
     paddingTop: 8,
   },
   webContent: {
@@ -5976,7 +5976,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: Platform.OS === 'web' ? 16 : 12,
     paddingTop: Platform.OS === 'web' ? 0 : 56,
     paddingBottom: 4,
   },
@@ -7933,7 +7933,7 @@ const styles = StyleSheet.create({
   listProfileImageContainer: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 6,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',

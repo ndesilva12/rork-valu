@@ -156,7 +156,7 @@ export default function LibraryView({
             <Text style={[styles.listTitle, { color: colors.text }]} numberOfLines={1}>
               {title}
             </Text>
-            {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" />}
+            {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" showText={false} />}
           </View>
           <View style={styles.listMeta}>
             <Text style={[styles.listCount, { color: colors.textSecondary }]}>
@@ -165,15 +165,9 @@ export default function LibraryView({
             {isPublic !== undefined && (
               <View style={styles.privacyBadge}>
                 {isPublic ? (
-                  <>
-                    <Globe size={12} color={colors.primary} strokeWidth={2} />
-                    <Text style={[styles.privacyText, { color: colors.primary }]}>Public</Text>
-                  </>
+                  <Globe size={14} color={colors.primary} strokeWidth={2} />
                 ) : (
-                  <>
-                    <Lock size={12} color={colors.textSecondary} strokeWidth={2} />
-                    <Text style={[styles.privacyText, { color: colors.textSecondary }]}>Private</Text>
-                  </>
+                  <Lock size={14} color={colors.textSecondary} strokeWidth={2} />
                 )}
               </View>
             )}
@@ -354,7 +348,7 @@ const styles = StyleSheet.create({
   listImageContainer: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -363,7 +357,7 @@ const styles = StyleSheet.create({
   listImage: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 8,
   },
   listInfo: {
     flex: 1,
