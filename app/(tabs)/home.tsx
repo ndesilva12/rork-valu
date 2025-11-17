@@ -79,6 +79,7 @@ import { Picker } from '@react-native-picker/picker';
 import * as Clipboard from 'expo-clipboard';
 import MenuButton from '@/components/MenuButton';
 import EndorsedBadge from '@/components/EndorsedBadge';
+import ShareModal from '@/components/ShareModal';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
@@ -202,7 +203,7 @@ export default function HomeScreen() {
 
   // Share modal state
   const [showShareModal, setShowShareModal] = useState(false);
-  const [shareListData, setShareListData] = useState<UserList | null>(null);
+  const [shareData, setShareData] = useState<{ url: string; title: string; description?: string } | null>(null);
 
   // Card three-dot menu state
   const [activeCardMenuId, setActiveCardMenuId] = useState<string | null>(null);
@@ -2157,99 +2158,20 @@ export default function HomeScreen() {
   };
 
   const handleShareList = async (list: UserList) => {
-    const shareMessage = `Check out my list "${list.name}" on Upright Money!\n\n` +
-      (list.creatorName ? `Created by: ${list.creatorName}\n` : '') +
-      (list.description ? `${list.description}\n\n` : '') +
+    const description = (list.creatorName ? `Created by: ${list.creatorName}. ` : '') +
+      (list.description ? `${list.description}. ` : '') +
       `${list.entries.length} ${list.entries.length === 1 ? 'item' : 'items'}`;
 
-    // Generate shareable link (you can customize this URL)
+    // Generate shareable link
     const shareLink = `https://upright.money/list/${list.id}`;
-    const shareMessageWithLink = `${shareMessage}\n\n${shareLink}`;
 
-    // Show action sheet with options
-    if (Platform.OS === 'web') {
-      // For web, show custom modal
-      setShareListData(list);
-      setShowShareModal(true);
-    } else {
-      // For mobile, show action sheet
-      Alert.alert(
-        'Share List',
-        'Choose how to share this list:',
-        [
-          {
-            text: 'Share',
-            onPress: async () => {
-              try {
-                // On iOS/Android, use url parameter for clickable link
-                await Share.share({
-                  message: shareMessage,
-                  url: shareLink,
-                  title: list.name,
-                });
-              } catch (error) {
-                console.error('[Home] Error sharing list:', error);
-                Alert.alert('Error', 'Could not share list. Please try again.');
-              }
-            },
-          },
-          {
-            text: 'Copy Link',
-            onPress: async () => {
-              try {
-                await Clipboard.setStringAsync(shareLink);
-                Alert.alert('Success', 'Link copied to clipboard!');
-              } catch (error) {
-                console.error('[Home] Error copying link:', error);
-                Alert.alert('Error', 'Could not copy link. Please try again.');
-              }
-            },
-          },
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-        ]
-      );
-    }
-  };
-
-  const handleShareModalShare = async () => {
-    if (!shareListData) return;
-
-    const shareMessage = `Check out my list "${shareListData.name}" on Upright Money!\n\n` +
-      (shareListData.creatorName ? `Created by: ${shareListData.creatorName}\n` : '') +
-      (shareListData.description ? `${shareListData.description}\n\n` : '') +
-      `${shareListData.entries.length} ${shareListData.entries.length === 1 ? 'item' : 'items'}`;
-    const shareLink = `https://upright.money/list/${shareListData.id}`;
-    const shareMessageWithLink = `${shareMessage}\n\n${shareLink}`;
-
-    try {
-      await Share.share({
-        message: shareMessageWithLink,
-        title: shareListData.name,
-      });
-      setShowShareModal(false);
-      setShareListData(null);
-    } catch (error) {
-      console.error('[Home] Error sharing list:', error);
-      window.alert('Could not share list. Please try again.');
-    }
-  };
-
-  const handleShareModalCopyLink = async () => {
-    if (!shareListData) return;
-
-    const shareLink = `https://upright.money/list/${shareListData.id}`;
-    try {
-      await Clipboard.setStringAsync(shareLink);
-      setShowShareModal(false);
-      setShareListData(null);
-      window.alert('Link copied to clipboard!');
-    } catch (error) {
-      console.error('[Home] Error copying link:', error);
-      window.alert('Could not copy link. Please try again.');
-    }
+    // Show ShareModal with platform options (works for both web and mobile)
+    setShareData({
+      url: shareLink,
+      title: list.name,
+      description: description
+    });
+    setShowShareModal(true);
   };
 
   const handleOpenRenameModal = () => {
@@ -2680,27 +2602,14 @@ export default function HomeScreen() {
 
     const itemType = cardMenuData.type;
     const shareLink = `https://upright.money/${itemType}/${cardMenuData.id}`;
-    const shareMessage = `Check out ${cardMenuData.name} on Upright Money!\n\n${shareLink}`;
 
-    if (Platform.OS === 'web') {
-      // Web: Copy to clipboard
-      try {
-        await navigator.clipboard.writeText(shareLink);
-        window.alert('Link copied to clipboard!');
-      } catch (err) {
-        window.alert('Could not copy link. Please copy manually:\n\n' + shareLink);
-      }
-    } else {
-      // Mobile: Use native share
-      try {
-        await Share.share({
-          message: shareMessage,
-          url: shareLink,
-        });
-      } catch (error) {
-        console.error('Error sharing:', error);
-      }
-    }
+    // Show ShareModal with platform options
+    setShareData({
+      url: shareLink,
+      title: cardMenuData.name,
+      description: `Check out ${cardMenuData.name} on Upright Money`
+    });
+    setShowShareModal(true);
   };
 
   const handleValueModeSelected = (mode: ValueListMode) => {
@@ -4381,23 +4290,13 @@ export default function HomeScreen() {
 
                             const shareLink = `https://upright.money/${itemType}/${itemId}`;
 
-                            if (Platform.OS === 'web') {
-                              try {
-                                await navigator.clipboard.writeText(shareLink);
-                                window.alert('Link copied to clipboard!');
-                              } catch (err) {
-                                window.alert('Could not copy link. Please copy manually:\n\n' + shareLink);
-                              }
-                            } else {
-                              try {
-                                await Share.share({
-                                  message: `Check out ${itemName} on Upright Money!\n\n${shareLink}`,
-                                  url: shareLink,
-                                });
-                              } catch (error) {
-                                console.error('Error sharing:', error);
-                              }
-                            }
+                            // Show ShareModal with platform options
+                            setShareData({
+                              url: shareLink,
+                              title: itemName,
+                              description: `Check out ${itemName} on Upright Money`
+                            });
+                            setShowShareModal(true);
                           }}
                           activeOpacity={0.7}
                         >
@@ -5913,61 +5812,18 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* Share Modal - For web share dialog */}
-      <Modal
+      {/* Share Modal - With platform options */}
+      <ShareModal
         visible={showShareModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => {
+        onClose={() => {
           setShowShareModal(false);
-          setShareListData(null);
+          setShareData(null);
         }}
-      >
-        <TouchableWithoutFeedback onPress={() => {
-          setShowShareModal(false);
-          setShareListData(null);
-        }}>
-          <View style={styles.shareModalOverlay}>
-            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-              <View style={[styles.shareModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                <Text style={[styles.shareModalTitle, { color: colors.text }]}>Share List</Text>
-                <Text style={[styles.shareModalSubtitle, { color: colors.textSecondary }]}>
-                  Choose how to share "{shareListData?.name}"
-                </Text>
-
-                <TouchableOpacity
-                  style={[styles.shareModalButton, styles.shareModalButtonPrimary, { backgroundColor: colors.primary }]}
-                  onPress={handleShareModalShare}
-                  activeOpacity={0.7}
-                >
-                  <Share2 size={20} color={colors.white} strokeWidth={2} />
-                  <Text style={[styles.shareModalButtonText, { color: colors.white }]}>Share</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.shareModalButton, styles.shareModalButtonSecondary, { backgroundColor: colors.background, borderColor: colors.border }]}
-                  onPress={handleShareModalCopyLink}
-                  activeOpacity={0.7}
-                >
-                  <ExternalLink size={20} color={colors.text} strokeWidth={2} />
-                  <Text style={[styles.shareModalButtonText, { color: colors.text }]}>Copy Link</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.shareModalButton, styles.shareModalButtonCancel]}
-                  onPress={() => {
-                    setShowShareModal(false);
-                    setShareListData(null);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.shareModalButtonTextCancel, { color: colors.textSecondary }]}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+        shareUrl={shareData?.url || ''}
+        title={shareData?.title || ''}
+        description={shareData?.description}
+        isDarkMode={isDarkMode}
+      />
 
       {/* News Source Selection Modal */}
       <Modal
