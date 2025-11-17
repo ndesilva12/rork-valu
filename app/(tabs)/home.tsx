@@ -1759,8 +1759,8 @@ export default function HomeScreen() {
 
   // Render the unified collapsible library directory
   const renderLibraryDirectory = () => {
-    // Get custom lists (non-endorsed)
-    const customLists = userLists.filter(list => !list.isEndorsed);
+    // Get custom lists - exclude the endorsement list (userPersonalList) by ID
+    const customLists = userLists.filter(list => list.id !== userPersonalList?.id);
 
     return (
       <View style={styles.libraryDirectory}>
