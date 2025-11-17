@@ -1282,20 +1282,107 @@ export default function HomeScreen() {
         </View>
         {isOptionsOpen && (
           <View style={[styles.listOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-            <TouchableOpacity
-              style={styles.listOptionItem}
-              onPress={() => {
-                toggleListPrivacy(listId);
-                setActiveListOptionsId(null);
-              }}
-              activeOpacity={0.7}
-            >
-              {isPublic ? (
-                <><Lock size={16} color={colors.text} strokeWidth={2} /><Text style={[styles.listOptionText, { color: colors.text }]}>Make Private</Text></>
-              ) : (
-                <><Globe size={16} color={colors.text} strokeWidth={2} /><Text style={[styles.listOptionText, { color: colors.text }]}>Make Public</Text></>
-              )}
-            </TouchableOpacity>
+            {(() => {
+              // Get the current list to determine which options to show
+              let currentList: UserList | null = null;
+              let canReorder = false;
+              let canEdit = false;
+              let canRemove = false;
+
+              if (listId === 'endorsement') {
+                currentList = userPersonalList;
+                canReorder = true;
+                canEdit = true; // Can edit endorsement list
+                canRemove = false; // Cannot delete endorsement list
+              } else if (listId !== 'aligned' && listId !== 'unaligned') {
+                currentList = userLists.find(l => l.id === listId) || null;
+                if (currentList) {
+                  canReorder = true;
+                  canEdit = !currentList.originalListId; // Can only edit if not a copied list
+                  canRemove = true;
+                }
+              }
+
+              return (
+                <>
+                  {canReorder && (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveListOptionsId(null);
+                        setIsEditMode(true);
+                        setExpandedListId(listId); // Make sure this list is selected
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <GripVertical size={16} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {canEdit && currentList && (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveListOptionsId(null);
+                        setSelectedList(currentList);
+                        setRenameListName(currentList.name);
+                        setRenameListDescription(currentList.description || '');
+                        setShowRenameModal(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Edit size={16} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Edit</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {canRemove && currentList && (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveListOptionsId(null);
+                        if (Platform.OS === 'web') {
+                          if (window.confirm(`Are you sure you want to delete "${currentList.name}"? This cannot be undone.`)) {
+                            handleDeleteList(currentList.id);
+                          }
+                        } else {
+                          Alert.alert(
+                            'Delete List',
+                            `Are you sure you want to delete "${currentList.name}"? This cannot be undone.`,
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              { text: 'Delete', style: 'destructive', onPress: () => handleDeleteList(currentList.id) },
+                            ]
+                          );
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Trash2 size={16} color={colors.error} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.error }]}>Remove</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {isPublic !== undefined && (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        toggleListPrivacy(listId);
+                        setActiveListOptionsId(null);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      {isPublic ? (
+                        <><Lock size={16} color={colors.text} strokeWidth={2} /><Text style={[styles.listOptionText, { color: colors.text }]}>Make Private</Text></>
+                      ) : (
+                        <><Globe size={16} color={colors.text} strokeWidth={2} /><Text style={[styles.listOptionText, { color: colors.text }]}>Make Public</Text></>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </>
+              );
+            })()}
           </View>
         )}
       </View>
@@ -3748,7 +3835,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright100w.png')}
+            source={require('@/assets/images/endorse2.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3768,7 +3855,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright100w.png')}
+            source={require('@/assets/images/endorse2.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3790,7 +3877,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright100w.png')}
+            source={require('@/assets/images/endorse2.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3818,7 +3905,7 @@ export default function HomeScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/upright100w.png')}
+            source={require('@/assets/images/endorse2.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -4285,7 +4372,7 @@ export default function HomeScreen() {
             onPress={() => {}}
           >
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Create New List</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Options</Text>
               <TouchableOpacity onPress={() => setShowNewListChoiceModal(false)}>
                 <X size={24} color={colors.text} strokeWidth={2} />
               </TouchableOpacity>
@@ -4314,6 +4401,62 @@ export default function HomeScreen() {
               >
                 <Text style={[styles.modalButtonText, { color: colors.text }]}>List from Values</Text>
               </TouchableOpacity>
+
+              {/* Show these options only in For You view and if there's a selected list */}
+              {mainView === 'forYou' && expandedListId && (
+                <>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: colors.backgroundSecondary, marginTop: 12 }]}
+                    onPress={() => {
+                      setShowNewListChoiceModal(false);
+                      setShowAddItemModal(true);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.modalButtonText, { color: colors.text }]}>Add to This List</Text>
+                  </TouchableOpacity>
+
+                  {(() => {
+                    // Get the current list
+                    let currentList: UserList | null = null;
+                    if (expandedListId === 'endorsement') {
+                      currentList = userPersonalList;
+                    } else if (expandedListId !== 'aligned' && expandedListId !== 'unaligned') {
+                      currentList = userLists.find(l => l.id === expandedListId) || null;
+                    }
+
+                    // Only show reorder and share for actual user lists (not Aligned/Unaligned)
+                    if (currentList) {
+                      return (
+                        <>
+                          <TouchableOpacity
+                            style={[styles.modalButton, { backgroundColor: colors.backgroundSecondary, marginTop: 12 }]}
+                            onPress={() => {
+                              setShowNewListChoiceModal(false);
+                              setIsEditMode(true);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.modalButtonText, { color: colors.text }]}>Reorder</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            style={[styles.modalButton, { backgroundColor: colors.backgroundSecondary, marginTop: 12 }]}
+                            onPress={() => {
+                              setShowNewListChoiceModal(false);
+                              handleShareList(currentList);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.modalButtonText, { color: colors.text }]}>Share</Text>
+                          </TouchableOpacity>
+                        </>
+                      );
+                    }
+                    return null;
+                  })()}
+                </>
+              )}
             </View>
           </Pressable>
         </View>

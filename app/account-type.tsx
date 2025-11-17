@@ -51,7 +51,7 @@ export default function AccountTypeScreen() {
         {/* Logo */}
         <View style={styles.logoContainer}>
           <Image
-            source={require('@/assets/images/upright100s.png')}
+            source={require('@/assets/images/endorse3.png')}
             style={styles.logo}
             resizeMode="contain"
           />
