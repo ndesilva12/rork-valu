@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Plus, List as ListIcon, Globe, Lock, MapPin, User, Eye, EyeOff, TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
+import { ArrowLeft, Plus, List as ListIcon, Globe, Lock, MapPin, User, Eye, EyeOff, TrendingUp, TrendingDown, Minus, MoreVertical } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -35,6 +35,7 @@ export default function UserProfileScreen() {
   const [error, setError] = useState<string | null>(null);
   const [copyingListId, setCopyingListId] = useState<string | null>(null);
   const [expandedListId, setExpandedListId] = useState<string | null>(null);
+  const [activeListMenuId, setActiveListMenuId] = useState<string | null>(null);
 
   useEffect(() => {
     loadUserProfile();
@@ -341,47 +342,57 @@ export default function UserProfileScreen() {
                           </View>
                         </View>
 
-                        {/* Copy Button - Only show if not own profile and list is public */}
+                        {/* Three-dot menu button - Show for other users' public lists */}
                         {!isOwnProfile && list.isPublic && (
                           <TouchableOpacity
-                            style={[styles.copyButton, { backgroundColor: colors.primary }]}
+                            style={styles.listMenuButton}
                             onPress={(e) => {
                               e.stopPropagation();
-                              handleCopyList(list.id);
+                              setActiveListMenuId(activeListMenuId === list.id ? null : list.id);
                             }}
                             activeOpacity={0.7}
-                            disabled={copyingListId === list.id}
                           >
-                            {copyingListId === list.id ? (
-                              <ActivityIndicator size="small" color={colors.white} />
-                            ) : (
-                              <Plus size={18} color={colors.white} strokeWidth={2.5} />
-                            )}
+                            <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
                           </TouchableOpacity>
                         )}
                       </TouchableOpacity>
 
-                      {/* List Items - Expanded View */}
+                      {/* List Menu Dropdown */}
+                      {activeListMenuId === list.id && !isOwnProfile && list.isPublic && (
+                        <View style={[styles.listMenuDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                          <TouchableOpacity
+                            style={styles.listMenuOption}
+                            onPress={async () => {
+                              setActiveListMenuId(null);
+                              await handleCopyList(list.id);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Plus size={18} color={colors.text} strokeWidth={2} />
+                            <Text style={[styles.listMenuText, { color: colors.text }]}>Add to Library</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+
+                      {/* List Items - Expanded View - Show ALL items */}
                       {isExpanded && list.entries.length > 0 && (
                         <View style={[styles.listItemsContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                          {list.entries.slice(0, 5).map((entry, index) => (
+                          {list.entries.map((entry, index) => (
                             <View
                               key={entry.id}
                               style={[
                                 styles.listItem,
-                                index < Math.min(4, list.entries.length - 1) && { borderBottomWidth: 1, borderBottomColor: colors.border }
+                                index < list.entries.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }
                               ]}
                             >
+                              <Text style={[styles.listItemNumber, { color: colors.textSecondary }]}>
+                                {index + 1}
+                              </Text>
                               <Text style={[styles.listItemText, { color: colors.text }]} numberOfLines={1}>
                                 {entry.name || entry.brandName || entry.businessName || 'Item'}
                               </Text>
                             </View>
                           ))}
-                          {list.entries.length > 5 && (
-                            <Text style={[styles.moreItemsText, { color: colors.textSecondary }]}>
-                              +{list.entries.length - 5} more
-                            </Text>
-                          )}
                         </View>
                       )}
                     </View>
@@ -595,12 +606,38 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  copyButton: {
+  listMenuButton: {
     width: 40,
     height: 40,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  listMenuDropdown: {
+    position: 'absolute' as const,
+    top: 60,
+    right: 10,
+    minWidth: 150,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  listMenuOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    borderRadius: 8,
+  },
+  listMenuText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
   },
   listItemsContainer: {
     marginTop: 8,
@@ -609,17 +646,20 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 12,
+    gap: 12,
+  },
+  listItemNumber: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    minWidth: 24,
   },
   listItemText: {
     fontSize: 14,
     fontWeight: '500' as const,
-  },
-  moreItemsText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    padding: 12,
-    textAlign: 'center',
+    flex: 1,
   },
   centerContainer: {
     flex: 1,
