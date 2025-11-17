@@ -1439,8 +1439,8 @@ export default function HomeScreen() {
                       }}
                       activeOpacity={0.7}
                     >
-                      <Trash2 size={16} color={colors.error} strokeWidth={2} />
-                      <Text style={[styles.listOptionText, { color: colors.error }]}>Remove</Text>
+                      <Trash2 size={16} color="#EF4444" strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: '#EF4444', fontWeight: '700' }]}>Remove</Text>
                     </TouchableOpacity>
                   )}
 
@@ -3276,8 +3276,8 @@ export default function HomeScreen() {
                     }}
                     activeOpacity={0.7}
                   >
-                    <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-                    <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+                    <Trash2 size={18} color="#EF4444" strokeWidth={2} />
+                    <Text style={[styles.listOptionText, { color: '#EF4444', fontWeight: '700' }]}>Delete</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -4186,8 +4186,8 @@ export default function HomeScreen() {
                       }}
                       activeOpacity={0.7}
                     >
-                      <Trash2 size={18} color={colors.danger} strokeWidth={2} />
-                      <Text style={[styles.listOptionText, { color: colors.danger }]}>Delete</Text>
+                      <Trash2 size={18} color="#EF4444" strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: '#EF4444', fontWeight: '700' }]}>Delete</Text>
                     </TouchableOpacity>
                   </>
                 );
