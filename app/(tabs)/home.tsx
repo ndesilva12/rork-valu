@@ -1745,6 +1745,8 @@ export default function HomeScreen() {
     // Render the library directory in the scrollable area
     return renderLibraryDirectory();
   };
+
+  const renderNewsFeedView = () => {
     return (
       <View style={styles.section}>
         <View style={styles.newsHeaderContainer}>
