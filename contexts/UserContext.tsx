@@ -3,9 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
-import { Cause, UserProfile, Charity, AccountType, BusinessInfo, UserDetails } from '@/types';
+import { Cause, UserProfile, Charity, AccountType, BusinessInfo, UserDetails, BusinessMembership } from '@/types';
 import { saveUserProfile, getUserProfile, createUser, updateUserMetadata, aggregateUserTransactions, aggregateBusinessTransactions } from '@/services/firebase/userService';
 import { createList, getUserLists } from '@/services/firebase/listService';
+import { hasPermission as checkTeamPermission, initializeBusinessOwner } from '@/services/firebase/businessTeamService';
 
 const PROFILE_KEY = '@user_profile';
 const IS_NEW_USER_KEY = '@is_new_user';
@@ -485,6 +486,8 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
     console.log('[UserContext] Updating business info');
 
+    const isFirstTimeSetup = !profile.businessInfo;
+
     let newProfile: UserProfile | null = null;
     setProfile((prevProfile) => {
       newProfile = {
@@ -504,10 +507,17 @@ export const [UserProvider, useUser] = createContextHook(() => {
       await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
       await saveUserProfile(clerkUser.id, newProfile);
       console.log('[UserContext] ✅ Business info saved and synced to Firebase');
+
+      // Initialize owner as team member on first setup (Phase 0)
+      if (isFirstTimeSetup && businessInfo.name) {
+        const email = clerkUser.primaryEmailAddress?.emailAddress || '';
+        await initializeBusinessOwner(clerkUser.id, businessInfo.name, email);
+        console.log('[UserContext] ✅ Business owner initialized in team');
+      }
     } catch (error) {
       console.error('[UserContext] ❌ Failed to save business info:', error);
     }
-  }, [clerkUser]);
+  }, [clerkUser, profile.businessInfo]);
 
   const setUserDetails = useCallback(async (userDetails: Partial<UserDetails>) => {
     if (!clerkUser) {
@@ -622,6 +632,45 @@ export const [UserProvider, useUser] = createContextHook(() => {
     }
   }, [clerkUser, profile]);
 
+  // Team Management (Phase 0)
+  const hasPermission = useCallback(async (permission: 'viewData' | 'editMoney' | 'confirmTransactions'): Promise<boolean> => {
+    if (!clerkUser) return false;
+
+    // If user is the business owner, they have all permissions
+    if (profile.accountType === 'business' && profile.businessInfo) {
+      return true;
+    }
+
+    // If user is a team member, check their permissions
+    if (profile.businessMembership) {
+      return await checkTeamPermission(clerkUser.id, permission);
+    }
+
+    return false;
+  }, [clerkUser, profile]);
+
+  const getBusinessId = useCallback((): string | null => {
+    // If they own a business
+    if (profile.accountType === 'business' && clerkUser) {
+      return clerkUser.id;
+    }
+
+    // If they're a team member
+    if (profile.businessMembership) {
+      return profile.businessMembership.businessId;
+    }
+
+    return null;
+  }, [profile, clerkUser]);
+
+  const isBusinessOwner = useCallback((): boolean => {
+    return profile.accountType === 'business' && !!profile.businessInfo;
+  }, [profile]);
+
+  const isTeamMember = useCallback((): boolean => {
+    return !!profile.businessMembership && profile.businessMembership.role === 'team';
+  }, [profile]);
+
   return useMemo(() => ({
     profile,
     isLoading: isLoading || !isClerkLoaded,
@@ -640,5 +689,10 @@ export const [UserProvider, useUser] = createContextHook(() => {
     setBusinessInfo,
     setUserDetails,
     refreshTransactionTotals,
-  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, removeCauses, toggleCauseType, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, clerkUser, setAccountType, setBusinessInfo, setUserDetails, refreshTransactionTotals]);
+    // Team Management (Phase 0)
+    hasPermission,
+    getBusinessId,
+    isBusinessOwner,
+    isTeamMember,
+  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, removeCauses, toggleCauseType, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, clerkUser, setAccountType, setBusinessInfo, setUserDetails, refreshTransactionTotals, hasPermission, getBusinessId, isBusinessOwner, isTeamMember]);
 });

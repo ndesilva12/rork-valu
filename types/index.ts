@@ -80,6 +80,29 @@ export interface Charity {
 
 export type AccountType = 'individual' | 'business';
 
+// Team Member Types (Phase 0)
+export type TeamRole = 'owner' | 'team';
+export type TeamMemberStatus = 'pending' | 'active' | 'suspended';
+
+export interface BusinessTeamMember {
+  id: string; // Clerk user ID
+  businessId: string; // Business they belong to
+  email: string;
+  name: string;
+  role: TeamRole; // 'owner' or 'team' in Phase 0
+  inviteCode: string; // Unique code for join link
+  status: TeamMemberStatus;
+  invitedBy: string; // User ID who created the invite
+  joinedAt?: string; // ISO timestamp
+  createdAt: string; // When invite was created
+}
+
+export interface BusinessMembership {
+  businessId: string;
+  role: TeamRole;
+  businessName: string;
+}
+
 export interface SocialMedia {
   facebook?: string;
   instagram?: string;
@@ -161,10 +184,11 @@ export interface UserProfile {
   donationAmount?: number; // Total donations committed through transactions
   totalSavings?: number; // Total discount amount saved through transactions
   selectedCharities?: Charity[];
-  businessInfo?: BusinessInfo; // Only for business accounts
+  businessInfo?: BusinessInfo; // Only for business accounts (owner)
   valueCodeCustomers?: ValueCodeCustomer[]; // Only for business accounts
   userDetails?: UserDetails; // Only for individual accounts
   consentGivenAt?: string; // ISO timestamp when user gave consent
   consentVersion?: string; // Version of consent agreement accepted
   codeSharing?: boolean; // Whether user allows code sharing with merchants (default: true if consented)
+  businessMembership?: BusinessMembership; // For team members linked to a business
 }

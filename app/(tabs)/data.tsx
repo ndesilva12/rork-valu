@@ -26,8 +26,9 @@ import { PieChart, BarChart } from 'react-native-chart-kit';
 type CollapsibleSection = 'customers' | 'transactions' | 'discounts' | 'customerMetrics';
 
 export default function DataScreen() {
-  const { profile, isDarkMode, clerkUser } = useUser();
+  const { profile, isDarkMode, clerkUser, hasPermission, isTeamMember } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+  const [canViewData, setCanViewData] = useState<boolean | null>(null);
 
   const [expandedSection, setExpandedSection] = useState<CollapsibleSection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -218,11 +219,22 @@ export default function DataScreen() {
     }
   }, [clerkUser]);
 
+  // Check permissions (Phase 0)
+  useEffect(() => {
+    const checkPermissions = async () => {
+      const canView = await hasPermission('viewData');
+      setCanViewData(canView);
+    };
+    checkPermissions();
+  }, [hasPermission]);
+
   // Reload data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      loadBusinessData();
-    }, [loadBusinessData])
+      if (canViewData) {
+        loadBusinessData();
+      }
+    }, [loadBusinessData, canViewData])
   );
 
   const toggleSection = (section: CollapsibleSection) => {
@@ -248,7 +260,25 @@ export default function DataScreen() {
       ? businessMetrics.totalDiscountGiven / businessMetrics.transactionCount
       : 0;
 
-  if (isLoading) {
+  // Permission check (Phase 0)
+  if (canViewData === false) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar
+          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+          backgroundColor={colors.background}
+        />
+        <View style={styles.centered}>
+          <Text style={[styles.title, { color: colors.text }]}>Access Restricted</Text>
+          <Text style={[styles.message, { color: colors.textSecondary }]}>
+            You don't have permission to view the Data tab. Contact the business owner if you need access.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (isLoading || canViewData === null) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar
@@ -1039,5 +1069,17 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700' as const,
     textTransform: 'uppercase',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  message: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+    paddingHorizontal: 24,
   },
 });
