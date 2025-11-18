@@ -305,13 +305,11 @@ export default function ValueDetailScreen() {
 
         await addEntryToList(listId, entry);
 
-        // Close modal and reset state
-        setShowListSelectionModal(false);
         setNewListName('');
         setNewListDescription('');
+        setShowListSelectionModal(false);
         setQuickAddBrandId(null);
         setQuickAddBrandName(null);
-
         Alert.alert('Success', `Created list and added ${quickAddBrandName}!`);
       }
       // If adding a value
@@ -347,12 +345,10 @@ export default function ValueDetailScreen() {
           }
         }
 
-        // Close modal and reset state
-        setShowListSelectionModal(false);
         setNewListName('');
         setNewListDescription('');
+        setShowListSelectionModal(false);
         setSelectedMode(null);
-
         Alert.alert('Success', `Created list and added ${addedCount} brands from ${userCause.name}!`);
       }
     } catch (error) {

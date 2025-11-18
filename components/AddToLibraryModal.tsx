@@ -15,7 +15,7 @@ import {
   TextInput,
   ScrollView,
 } from 'react-native';
-import { X, Plus, List as ListIcon, ChevronRight, Check } from 'lucide-react-native';
+import { X, Plus, List as ListIcon, ChevronRight } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { UserList, ListEntry } from '@/types/library';
 
@@ -42,19 +42,12 @@ export default function AddToLibraryModal({
   const [showCreateNew, setShowCreateNew] = useState(false);
   const [newListName, setNewListName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  const [selectedListId, setSelectedListId] = useState<string | null>(null);
 
   const handleSelectList = async (listId: string) => {
-    setSelectedListId(listId);
     try {
       await onSelectList(listId);
-      // Close is now handled by parent after success
-      setTimeout(() => {
-        setSelectedListId(null);
-        onClose();
-      }, 500); // Brief delay to show success feedback
+      onClose();
     } catch (error: any) {
-      setSelectedListId(null);
       Alert.alert('Error', error.message || 'Failed to add item');
     }
   };
@@ -111,45 +104,29 @@ export default function AddToLibraryModal({
 
               {/* Lists */}
               <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
-                {availableLists.map((list) => {
-                  const isSelected = selectedListId === list.id;
-                  return (
-                    <TouchableOpacity
-                      key={list.id}
-                      style={[
-                        styles.listItem,
-                        { backgroundColor: colors.backgroundSecondary },
-                        isSelected && { backgroundColor: colors.primary + '20', borderColor: colors.primary, borderWidth: 2 }
-                      ]}
-                      onPress={() => handleSelectList(list.id)}
-                      activeOpacity={0.7}
-                      disabled={isSelected}
-                    >
-                      <View style={styles.listItemLeft}>
-                        <View style={[styles.listIcon, { backgroundColor: colors.primary + '20' }]}>
-                          {isSelected ? (
-                            <Check size={20} color={colors.primary} strokeWidth={2.5} />
-                          ) : (
-                            <ListIcon size={20} color={colors.primary} strokeWidth={2} />
-                          )}
-                        </View>
-                        <View style={styles.listInfo}>
-                          <Text style={[styles.listName, { color: colors.text }]} numberOfLines={1}>
-                            {list.name}
-                          </Text>
-                          <Text style={[styles.listCount, { color: colors.textSecondary }]}>
-                            {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
-                          </Text>
-                        </View>
+                {availableLists.map((list) => (
+                  <TouchableOpacity
+                    key={list.id}
+                    style={[styles.listItem, { backgroundColor: colors.backgroundSecondary }]}
+                    onPress={() => handleSelectList(list.id)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.listItemLeft}>
+                      <View style={[styles.listIcon, { backgroundColor: colors.primary + '20' }]}>
+                        <ListIcon size={20} color={colors.primary} strokeWidth={2} />
                       </View>
-                      {isSelected ? (
-                        <Text style={[styles.addingText, { color: colors.primary }]}>Adding...</Text>
-                      ) : (
-                        <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
+                      <View style={styles.listInfo}>
+                        <Text style={[styles.listName, { color: colors.text }]} numberOfLines={1}>
+                          {list.name}
+                        </Text>
+                        <Text style={[styles.listCount, { color: colors.textSecondary }]}>
+                          {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
+                        </Text>
+                      </View>
+                    </View>
+                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                  </TouchableOpacity>
+                ))}
 
                 {/* Create New List Section */}
                 {!showCreateNew ? (
@@ -211,22 +188,14 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    justifyContent: 'flex-end',
   },
   container: {
-    width: '100%',
-    maxWidth: 500,
-    borderRadius: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     padding: 20,
     paddingBottom: Platform.OS === 'ios' ? 40 : 20,
     maxHeight: '80%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
   },
   header: {
     flexDirection: 'row',
@@ -344,10 +313,6 @@ const styles = StyleSheet.create({
   },
   createButtonText: {
     fontSize: 15,
-    fontWeight: '600',
-  },
-  addingText: {
-    fontSize: 14,
     fontWeight: '600',
   },
 });
