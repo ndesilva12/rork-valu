@@ -469,19 +469,7 @@ export default function HomeScreen() {
     }
   }, [profile]);
 
-  // Fetch user lists when library view is activated
-  useEffect(() => {
-    if ((mainView === 'myLibrary' || mainView === 'forYou') && clerkUser?.id) {
-      loadUserLists();
-    }
-    // Reset to overview when leaving library
-    if (mainView !== 'myLibrary') {
-      setLibraryView('overview');
-      setSelectedList(null);
-    }
-  }, [mainView, clerkUser?.id]);
-
-  const loadUserLists = async () => {
+  const loadUserLists = useCallback(async () => {
     if (!clerkUser?.id) return;
 
     setIsLoadingLists(true);
@@ -506,7 +494,19 @@ export default function HomeScreen() {
     } finally {
       setIsLoadingLists(false);
     }
-  };
+  }, [clerkUser?.id, profile?.userDetails?.name, clerkUser?.unsafeMetadata?.fullName, clerkUser?.firstName, clerkUser?.lastName]);
+
+  // Fetch user lists when library view is activated
+  useEffect(() => {
+    if ((mainView === 'myLibrary' || mainView === 'forYou') && clerkUser?.id) {
+      loadUserLists();
+    }
+    // Reset to overview when leaving library
+    if (mainView !== 'myLibrary') {
+      setLibraryView('overview');
+      setSelectedList(null);
+    }
+  }, [mainView, clerkUser?.id, loadUserLists]);
 
   // Reload personal list (used in For You view)
   const reloadPersonalList = async () => {
