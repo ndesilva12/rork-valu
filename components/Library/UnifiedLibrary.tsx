@@ -42,6 +42,7 @@ import { BusinessUser, calculateAlignmentScore } from '@/services/firebase/busin
 import { useUser } from '@/contexts/UserContext';
 import { useRouter } from 'expo-router';
 import { updateListMetadata } from '@/services/firebase/listService';
+import AddToLibraryModal from '@/components/AddToLibraryModal';
 
 // ===== Types =====
 
@@ -89,6 +90,8 @@ export default function UnifiedLibrary({
   const [localSelectedListId, setLocalSelectedListId] = useState<string | null>(null);
   const [activeListOptionsId, setActiveListOptionsId] = useState<string | null>(null);
   const [activeItemOptionsId, setActiveItemOptionsId] = useState<string | null>(null);
+  const [showAddToLibraryModal, setShowAddToLibraryModal] = useState(false);
+  const [selectedItemToAdd, setSelectedItemToAdd] = useState<ListEntry | null>(null);
 
   // Pagination state for each list
   const [endorsementLoadCount, setEndorsementLoadCount] = useState(10);
@@ -205,68 +208,61 @@ export default function UnifiedLibrary({
 
   // Add to Library handler - uses CURRENT user's lists from context
   const handleAddToLibrary = async (entry: ListEntry) => {
-    // CRITICAL: Always use library.state (current user's lists), never props
-    // This ensures we're adding to OUR lists, not the viewed user's lists
+    // Show the modal with the item
+    setSelectedItemToAdd(entry);
+    setShowAddToLibraryModal(true);
+  };
+
+  const handleSelectList = async (listId: string) => {
+    if (!selectedItemToAdd) return;
+
+    try {
+      await library.addEntry(listId, selectedItemToAdd);
+      const listName = library.state.userLists.find(l => l.id === listId)?.name ||
+                       library.state.endorsementList?.name || 'list';
+      Alert.alert('Success', `Added to "${listName}"`);
+    } catch (error: any) {
+      throw error; // Let modal handle it
+    }
+  };
+
+  const handleCreateNewList = async (listName: string) => {
+    if (!currentUserId || !selectedItemToAdd) return;
+
+    try {
+      const newList = await library.createNewList(currentUserId, listName.trim());
+      await library.addEntry(newList.id, selectedItemToAdd);
+      Alert.alert('Success', `Created "${listName}" and added item`);
+    } catch (error: any) {
+      throw error; // Let modal handle it
+    }
+  };
+
+  const getAddToLibraryLists = () => {
     const myEndorsementList = library.state.endorsementList;
     const myCustomLists = library.state.userLists.filter(list => list.id !== myEndorsementList?.id);
 
-    const availableLists = [
+    return [
       ...(myEndorsementList ? [myEndorsementList] : []),
       ...myCustomLists,
     ];
+  };
 
-    if (availableLists.length === 0) {
-      Alert.alert('No Lists', 'You need to create a list first to add items.');
-      return;
+  const getItemName = (entry: ListEntry): string => {
+    switch (entry.type) {
+      case 'brand':
+        return (entry as any).brandName || (entry as any).name || 'Brand';
+      case 'business':
+        return (entry as any).businessName || (entry as any).name || 'Business';
+      case 'value':
+        return (entry as any).valueName || (entry as any).name || 'Value';
+      case 'link':
+        return (entry as any).title || (entry as any).name || 'Link';
+      case 'text':
+        return 'Note';
+      default:
+        return 'Item';
     }
-
-    // Use Alert.alert with options (works on both web and native)
-    const buttons = [
-      ...availableLists.map(list => ({
-        text: list.name,
-        onPress: async () => {
-          try {
-            await library.addEntry(list.id, entry);
-            Alert.alert('Success', `Added to "${list.name}"`);
-          } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to add item');
-          }
-        },
-      })),
-      {
-        text: 'Create New List',
-        onPress: () => {
-          Alert.prompt(
-            'Create New List',
-            'Enter list name:',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Create',
-                onPress: async (listName) => {
-                  if (listName && listName.trim() && currentUserId) {
-                    try {
-                      const newList = await library.createNewList(currentUserId, listName.trim());
-                      await library.addEntry(newList.id, entry);
-                      Alert.alert('Success', `Created "${listName}" and added item`);
-                    } catch (error: any) {
-                      Alert.alert('Error', error.message || 'Failed to create list');
-                    }
-                  }
-                },
-              },
-            ],
-            'plain-text'
-          );
-        },
-      },
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-    ];
-
-    Alert.alert('Add to Library', 'Select a list:', buttons);
   };
 
   // Edit list handler
@@ -711,7 +707,7 @@ export default function UnifiedLibrary({
     const isSelected = selectedListId === listId;
 
     return (
-      <View>
+      <View style={{ position: 'relative', overflow: 'visible', zIndex: isOptionsOpen ? 9999 : 1 }}>
         <View
           style={[
             styles.collapsibleListHeader,
@@ -819,7 +815,7 @@ export default function UnifiedLibrary({
             </View>
           </TouchableOpacity>
 
-          {/* Three-dot menu - show in edit mode AND view mode (other users' lists) */}
+          {/* Action Menu - show in edit mode AND view mode (other users' lists) */}
           {(canEdit || mode === 'view') && (
             <TouchableOpacity
               style={styles.listHeaderOptionsButton}
@@ -1005,7 +1001,7 @@ export default function UnifiedLibrary({
             activeOpacity={0.7}
           >
             <Plus size={16} color={colors.text} strokeWidth={2} />
-            <Text style={[styles.listOptionText, { color: colors.text }]}>Add to Library</Text>
+            <Text style={[styles.listOptionText, { color: colors.text }]}>Add to</Text>
           </TouchableOpacity>
         )}
         {canShare && (
@@ -1225,6 +1221,20 @@ export default function UnifiedLibrary({
           onPress={closeAllMenus}
         />
       )}
+
+      {/* Add to Library Modal */}
+      <AddToLibraryModal
+        visible={showAddToLibraryModal}
+        onClose={() => {
+          setShowAddToLibraryModal(false);
+          setSelectedItemToAdd(null);
+        }}
+        availableLists={getAddToLibraryLists()}
+        onSelectList={handleSelectList}
+        onCreateNewList={handleCreateNewList}
+        itemName={selectedItemToAdd ? getItemName(selectedItemToAdd) : undefined}
+        isDarkMode={isDarkMode}
+      />
       {/* 1. Endorsement List - Always first, pinned */}
       {endorsementList && (
         <>
@@ -1385,26 +1395,38 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     minWidth: 160,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 999,
-    zIndex: 999999,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 99999,
+    zIndex: 99999999,
+    opacity: 1,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
+      },
+    }),
   },
   itemOptionsDropdown: {
-    marginHorizontal: 16,
-    marginTop: 4,
-    marginBottom: 8,
+    position: 'absolute',
+    right: 16,
+    top: 4,
     borderWidth: 1,
     borderRadius: 12,
     paddingVertical: 4,
     minWidth: 160,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 999,
-    zIndex: 999999,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 99999,
+    zIndex: 99999999,
+    opacity: 1,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
+      },
+    }),
   },
   listOptionItem: {
     flexDirection: 'row',

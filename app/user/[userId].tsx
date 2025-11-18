@@ -228,14 +228,19 @@ export default function UserProfileScreen() {
       });
 
       const finalScore = causeCount > 0 ? Math.round(totalScore / causeCount) : 50;
-      return { product, score: finalScore };
+      return { product, score: finalScore, causeCount };
     });
 
     const scoredBrandsMap = new Map<string, number>();
-    const aligned = scored.filter(item => item.score >= 50);
-    const unaligned = scored.filter(item => item.score < 50);
+    // Only include brands that have actual values data (causeCount > 0)
+    const aligned = scored.filter(item => item.causeCount > 0 && item.score >= 50);
+    const unaligned = scored.filter(item => item.causeCount > 0 && item.score < 50);
 
-    scored.forEach(item => scoredBrandsMap.set(item.product.id, item.score));
+    scored.forEach(item => {
+      if (item.causeCount > 0) {
+        scoredBrandsMap.set(item.product.id, item.score);
+      }
+    });
 
     return {
       allSupportFull: aligned.map(item => item.product),

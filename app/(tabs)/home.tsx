@@ -208,7 +208,7 @@ export default function HomeScreen() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareData, setShareData] = useState<{ url: string; title: string; description?: string } | null>(null);
 
-  // Card three-dot menu state
+  // Card Action Menu state
   const [activeCardMenuId, setActiveCardMenuId] = useState<string | null>(null);
   const [cardMenuData, setCardMenuData] = useState<{ type: 'brand' | 'business', id: string, name: string, website?: string, logoUrl?: string, listId?: string } | null>(null);
 
@@ -2524,7 +2524,7 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Title row with 3-dot menu and optional Add button */}
+          {/* Title row with Action Menu and optional Add button */}
           {!isEditMode && (
           <View style={styles.listDetailTitleRow}>
             <View style={styles.listDetailTitleContainer}>
@@ -2569,7 +2569,7 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Three dot options dropdown */}
+        {/* Action Menu options dropdown */}
         {!isEditMode && showEditDropdown && (() => {
           // Check if this is the user's personal list
           const fullNameFromFirebase = profile?.userDetails?.name;
