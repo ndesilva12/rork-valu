@@ -353,9 +353,10 @@ export default function UnifiedLibrary({
     const myEndorsementList = library.state.endorsementList;
     const myCustomLists = library.state.userLists.filter(list => list.id !== myEndorsementList?.id);
 
-    // Only show lists that the current user owns (created)
-    const ownedEndorsementList = myEndorsementList && myEndorsementList.userId === currentUserId ? myEndorsementList : null;
-    const ownedCustomLists = myCustomLists.filter(list => list.userId === currentUserId);
+    // Only show lists that the current user owns (created) AND not copied from others
+    // Lists with originalListId are copies from other users and should not be modifiable
+    const ownedEndorsementList = myEndorsementList && myEndorsementList.userId === currentUserId && !myEndorsementList.originalListId ? myEndorsementList : null;
+    const ownedCustomLists = myCustomLists.filter(list => list.userId === currentUserId && !list.originalListId);
 
     return [
       ...(ownedEndorsementList ? [ownedEndorsementList] : []),
@@ -890,10 +891,11 @@ export default function UnifiedLibrary({
               const isEndorsementList = listId === 'endorsement';
               const isSystemList = listId === 'aligned' || listId === 'unaligned';
               const currentList = isEndorsementList ? endorsementList : userLists.find(l => l.id === listId);
+              const isCopiedList = currentList?.originalListId !== undefined; // List was copied from another user
 
-              const canEditMeta = !isSystemList && canEdit;
-              const canRemove = !isEndorsementList && !isSystemList && canEdit;
-              const canTogglePrivacy = isPublic !== undefined && canEdit;
+              const canEditMeta = !isSystemList && !isCopiedList && canEdit;
+              const canRemove = !isEndorsementList && !isSystemList && !isCopiedList && canEdit;
+              const canTogglePrivacy = isPublic !== undefined && !isCopiedList && canEdit;
               const canCopyList = mode === 'view'; // Only in view mode (other users)
 
               return (
@@ -1414,15 +1416,16 @@ export default function UnifiedLibrary({
             onPress: () => handleShareItem(selectedItemForOptions),
           });
 
-          // Remove option (only in edit mode)
-          if (canRemove) {
-            options.push({
-              icon: Trash2,
-              label: 'Remove',
-              onPress: () => handleRemoveFromLibrary(selectedItemForOptions),
-              isDanger: true,
-            });
-          }
+          // TODO: Remove option - functionality not yet implemented
+          // Removing from copied lists (with originalListId) should be disabled
+          // if (canRemove) {
+          //   options.push({
+          //     icon: Trash2,
+          //     label: 'Remove',
+          //     onPress: () => handleRemoveFromLibrary(selectedItemForOptions),
+          //     isDanger: true,
+          //   });
+          // }
 
           return options;
         })()}
