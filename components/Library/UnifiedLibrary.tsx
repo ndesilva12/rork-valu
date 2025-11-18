@@ -202,6 +202,136 @@ export default function UnifiedLibrary({
     }
   };
 
+  // Add to Library handler
+  const handleAddToLibrary = async (entry: ListEntry) => {
+    // Get available lists (user's own lists from context)
+    const availableLists = [
+      ...(endorsementList ? [endorsementList] : []),
+      ...customLists,
+    ];
+
+    if (availableLists.length === 0) {
+      if (Platform.OS === 'web') {
+        window.alert('You need to create a list first.');
+      } else {
+        Alert.alert('No Lists', 'You need to create a list first.');
+      }
+      return;
+    }
+
+    // Show list selection
+    if (Platform.OS === 'web') {
+      const listNames = availableLists.map((l, i) => `${i + 1}. ${l.name}`).join('\n');
+      const selection = window.prompt(`Add to which list?\n\n${listNames}\n\nEnter number (1-${availableLists.length}):`);
+
+      if (selection) {
+        const index = parseInt(selection) - 1;
+        if (index >= 0 && index < availableLists.length) {
+          const selectedList = availableLists[index];
+          try {
+            await library.addEntry(selectedList.id, entry);
+            window.alert(`Added to "${selectedList.name}"`);
+          } catch (error: any) {
+            window.alert(error.message || 'Failed to add item');
+          }
+        }
+      }
+    } else {
+      // For native, create action sheet options
+      Alert.alert(
+        'Add to Library',
+        'Select a list:',
+        [
+          ...availableLists.map(list => ({
+            text: list.name,
+            onPress: async () => {
+              try {
+                await library.addEntry(list.id, entry);
+                Alert.alert('Success', `Added to "${list.name}"`);
+              } catch (error: any) {
+                Alert.alert('Error', error.message || 'Failed to add item');
+              }
+            },
+          })),
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
+    }
+  };
+
+  // Edit list handler
+  const handleEditList = (list: UserList) => {
+    if (Platform.OS === 'web') {
+      const newName = window.prompt('List name:', list.name);
+      if (newName !== null && newName.trim() !== '') {
+        const newDescription = window.prompt('Description (optional):', list.description || '');
+        updateListMetadata(list.id, {
+          name: newName.trim(),
+          description: newDescription?.trim() || '',
+        }).then(() => {
+          if (currentUserId) {
+            library.loadUserLists(currentUserId, true);
+          }
+        }).catch(error => {
+          console.error('Error updating list:', error);
+          window.alert('Failed to update list. Please try again.');
+        });
+      }
+    } else {
+      // For native, use Alert with multiple prompts
+      Alert.prompt(
+        'Edit List',
+        'Enter new name:',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Next',
+            onPress: (newName) => {
+              if (newName && newName.trim() !== '') {
+                Alert.prompt(
+                  'Edit List',
+                  'Enter description (optional):',
+                  [
+                    {
+                      text: 'Cancel',
+                      style: 'cancel',
+                    },
+                    {
+                      text: 'Save',
+                      onPress: (newDescription) => {
+                        updateListMetadata(list.id, {
+                          name: newName.trim(),
+                          description: newDescription?.trim() || '',
+                        }).then(() => {
+                          if (currentUserId) {
+                            library.loadUserLists(currentUserId, true);
+                          }
+                        }).catch(error => {
+                          console.error('Error updating list:', error);
+                          Alert.alert('Error', 'Failed to update list. Please try again.');
+                        });
+                      },
+                    },
+                  ],
+                  'plain-text',
+                  list.description || ''
+                );
+              }
+            },
+          },
+        ],
+        'plain-text',
+        list.name
+      );
+    }
+  };
+
   // Render brand card with score (for Product type)
   const renderBrandCard = (product: Product, type: 'support' | 'avoid') => {
     const isSupport = type === 'support';
@@ -734,8 +864,7 @@ export default function UnifiedLibrary({
                       style={styles.listOptionItem}
                       onPress={() => {
                         setActiveListOptionsId(null);
-                        // TODO: Show edit modal
-                        console.log('Edit list:', currentList.name);
+                        handleEditList(currentList);
                       }}
                       activeOpacity={0.7}
                     >
@@ -832,8 +961,7 @@ export default function UnifiedLibrary({
             style={styles.listOptionItem}
             onPress={() => {
               setActiveItemOptionsId(null);
-              // TODO: Add to library
-              console.log('Add to library:', entry);
+              handleAddToLibrary(entry);
             }}
             activeOpacity={0.7}
           >
