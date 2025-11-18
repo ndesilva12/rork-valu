@@ -7,13 +7,13 @@ import { Cause } from '@/types';
 /**
  * Calculate a brand's alignment score for a user based on their values
  *
- * @param brandId - The brand to score
+ * @param brandName - The brand name to score (not ID - valuesMatrix uses names)
  * @param userCauses - User's selected causes/values
- * @param valuesMatrix - Matrix mapping value IDs to aligned/opposed brand IDs
+ * @param valuesMatrix - Matrix mapping value IDs to aligned/opposed brand NAMES
  * @returns Score from 0-100 (50 = neutral, >50 = aligned, <50 = opposed)
  */
 export function calculateBrandScore(
-  brandId: string,
+  brandName: string,
   userCauses: Cause[],
   valuesMatrix: Record<string, { support: string[]; oppose: string[] }>
 ): number {
@@ -31,8 +31,8 @@ export function calculateBrandScore(
     const weight = cause.weight || 1.0;
     maxPossibleScore += weight;
 
-    const isInSupport = valueData.support.includes(brandId);
-    const isInOppose = valueData.oppose.includes(brandId);
+    const isInSupport = valueData.support.includes(brandName);
+    const isInOppose = valueData.oppose.includes(brandName);
 
     if (cause.type === 'support') {
       // User supports this value
@@ -51,7 +51,7 @@ export function calculateBrandScore(
   if (maxPossibleScore === 0) return 50;
 
   const normalizedScore = 50 + (rawScore / maxPossibleScore) * 50;
-  return Math.max(0, Math.min(100, normalizedScore));
+  return Math.round(Math.max(0, Math.min(100, normalizedScore)));
 }
 
 /**
