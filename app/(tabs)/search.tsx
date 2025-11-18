@@ -55,8 +55,8 @@ export default function SearchScreen() {
   const { width } = useWindowDimensions();
 
   // Helper function to normalize alignment scores to 0-100 range
-  const normalizeScore = useCallback((score: number): number => {
-    return Math.min(100, Math.max(0, Math.round(Math.abs(score))));
+  const normalizeScore = useCallback((score: number | undefined): number => {
+    return Math.min(100, Math.max(0, Math.round(Math.abs(score ?? 50))));
   }, []);
 
   const [query, setQuery] = useState('');
@@ -527,21 +527,24 @@ export default function SearchScreen() {
     }
   };
 
-  const getAlignmentColor = (score: number) => {
-    if (score >= 70) return Colors.success;
-    if (score >= 40) return Colors.neutral;
+  const getAlignmentColor = (score: number | undefined) => {
+    const normalizedScore = score ?? 50;
+    if (normalizedScore >= 70) return Colors.success;
+    if (normalizedScore >= 40) return Colors.neutral;
     return Colors.danger;
   };
 
-  const getAlignmentIcon = (score: number) => {
-    if (score >= 70) return TrendingUp;
-    if (score >= 40) return Minus;
+  const getAlignmentIcon = (score: number | undefined) => {
+    const normalizedScore = score ?? 50;
+    if (normalizedScore >= 70) return TrendingUp;
+    if (normalizedScore >= 40) return Minus;
     return TrendingDown;
   };
 
-  const getAlignmentLabel = (score: number) => {
-    if (score >= 70) return 'Strongly Aligned';
-    if (score >= 40) return 'Neutral';
+  const getAlignmentLabel = (score: number | undefined) => {
+    const normalizedScore = score ?? 50;
+    if (normalizedScore >= 70) return 'Strongly Aligned';
+    if (normalizedScore >= 40) return 'Neutral';
     return 'Not Aligned';
   };
 

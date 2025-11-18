@@ -290,18 +290,18 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
                 {/* Alignment Score Badge */}
                 <View style={[
                   styles.scoreBadge,
-                  { backgroundColor: selectedBusiness.alignmentScore >= 50 ? '#22C55E15' : '#EF444415' }
+                  { backgroundColor: (selectedBusiness.alignmentScore ?? 50) >= 50 ? '#22C55E15' : '#EF444415' }
                 ]}>
-                  {selectedBusiness.alignmentScore >= 50 ? (
+                  {(selectedBusiness.alignmentScore ?? 50) >= 50 ? (
                     <TrendingUp size={16} color="#22C55E" strokeWidth={2.5} />
                   ) : (
                     <TrendingDown size={16} color="#EF4444" strokeWidth={2.5} />
                   )}
                   <Text style={[
                     styles.scoreText,
-                    { color: selectedBusiness.alignmentScore >= 50 ? '#22C55E' : '#EF4444' }
+                    { color: (selectedBusiness.alignmentScore ?? 50) >= 50 ? '#22C55E' : '#EF4444' }
                   ]}>
-                    Score: {selectedBusiness.alignmentScore}
+                    Score: {selectedBusiness.alignmentScore ?? 50}
                   </Text>
                 </View>
 

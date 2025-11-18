@@ -160,21 +160,24 @@ export default function SearchScreen() {
     }
   };
 
-  const getAlignmentColor = (score: number) => {
-    if (score >= 70) return Colors.success;
-    if (score >= 40) return Colors.neutral;
+  const getAlignmentColor = (score: number | undefined) => {
+    const normalizedScore = score ?? 50;
+    if (normalizedScore >= 70) return Colors.success;
+    if (normalizedScore >= 40) return Colors.neutral;
     return Colors.danger;
   };
 
-  const getAlignmentIcon = (score: number) => {
-    if (score >= 70) return TrendingUp;
-    if (score >= 40) return Minus;
+  const getAlignmentIcon = (score: number | undefined) => {
+    const normalizedScore = score ?? 50;
+    if (normalizedScore >= 70) return TrendingUp;
+    if (normalizedScore >= 40) return Minus;
     return TrendingDown;
   };
 
-  const getAlignmentLabel = (score: number) => {
-    if (score >= 70) return 'Strongly Aligned';
-    if (score >= 40) return 'Neutral';
+  const getAlignmentLabel = (score: number | undefined) => {
+    const normalizedScore = score ?? 50;
+    if (normalizedScore >= 70) return 'Strongly Aligned';
+    if (normalizedScore >= 40) return 'Neutral';
     return 'Not Aligned';
   };
 
@@ -205,7 +208,7 @@ export default function SearchScreen() {
             <View style={[styles.scoreContainer, { backgroundColor: alignmentColor + '15' }]}>
               <AlignmentIcon size={16} color={alignmentColor} strokeWidth={2.5} />
               <Text style={[styles.scoreText, { color: alignmentColor }]}>
-                {Math.abs(item.alignmentScore)}
+                {Math.abs(item.alignmentScore ?? 50)}
               </Text>
             </View>
           </View>
@@ -376,7 +379,7 @@ export default function SearchScreen() {
                         <View style={[styles.alignmentScore, { backgroundColor: alignmentColor + '15' }]}>
                           <AlignmentIcon size={24} color={alignmentColor} strokeWidth={2.5} />
                           <Text style={[styles.alignmentScoreText, { color: alignmentColor }]}>
-                            {Math.abs(scannedProduct.alignmentScore)}
+                            {Math.abs(scannedProduct.alignmentScore ?? 50)}
                           </Text>
                         </View>
                         <Text style={[styles.alignmentLabel, { color: alignmentColor }]}>
