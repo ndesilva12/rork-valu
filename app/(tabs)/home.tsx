@@ -513,6 +513,7 @@ export default function HomeScreen() {
       if (personalList) {
         setUserPersonalList(personalList);
         console.log('[Home] ✅ Personal list reloaded');
+      }
     } catch (error) {
       console.error('[Home] Error reloading personal list:', error);
     }
