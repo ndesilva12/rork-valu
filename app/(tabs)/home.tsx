@@ -1298,12 +1298,27 @@ export default function HomeScreen() {
         (clerkUser.firstName && clerkUser.lastName
           ? `${clerkUser.firstName} ${clerkUser.lastName}`
           : '');
-      const creatorName = profile?.fullName || fullNameFromClerk || clerkUser.firstName || '';
-      await createList(clerkUser.id, newListName.trim(), newListDescription.trim(), creatorName);
+      const creatorName = profile?.userDetails?.name || fullNameFromClerk || clerkUser.firstName || '';
+      const creatorImage = profile?.userDetails?.profileImage || clerkUser?.imageUrl;
+
+      const newList = await library.createNewList(
+        clerkUser.id,
+        newListName.trim(),
+        newListDescription.trim(),
+        creatorName,
+        false, // not endorsed
+        undefined, // no original list
+        undefined, // no original creator
+        creatorImage
+      );
+
       setNewListName('');
       setNewListDescription('');
       setShowCreateListModal(false);
-      await loadUserLists();
+
+      // Expand the newly created list
+      library.setExpandedList(newList.id);
+
       Alert.alert('Success', 'List created successfully!');
     } catch (error) {
       console.error('[Home] Error creating list:', error);
@@ -1520,33 +1535,45 @@ export default function HomeScreen() {
         listDescription = `Auto-generated list based on ${supportCount} supported and ${avoidCount} avoided values`;
       }
 
-      // Create the list
+      // Create the list using library context
       const fullNameFromClerk = clerkUser.fullName ||
         (clerkUser.firstName && clerkUser.lastName
           ? `${clerkUser.firstName} ${clerkUser.lastName}`
           : '');
-      const creatorName = profile?.fullName || fullNameFromClerk || clerkUser.firstName || '';
-      const listId = await createList(clerkUser.id, listName, listDescription, creatorName);
+      const creatorName = profile?.userDetails?.name || fullNameFromClerk || clerkUser.firstName || '';
+      const creatorImage = profile?.userDetails?.profileImage || clerkUser?.imageUrl;
+
+      const newList = await library.createNewList(
+        clerkUser.id,
+        listName,
+        listDescription,
+        creatorName,
+        false, // not endorsed
+        undefined, // no original list
+        undefined, // no original creator
+        creatorImage
+      );
 
       // Add brands to the list
       for (const item of topBrands) {
-        const entry: Omit<ListEntry, 'id' | 'createdAt'> = {
+        const entry: Omit<ListEntry, 'id'> = {
           type: 'brand',
           brandId: item.brand.id,
           brandName: item.brand.name,
           website: item.brand.website,
+          createdAt: new Date(),
         };
-        await addEntryToList(listId, entry);
+        await library.addEntry(newList.id, entry);
       }
-
-      // Reload lists
-      await loadUserLists();
 
       // Close modal and reset state
       setShowValuesSelectionModal(false);
       setSelectedValuesForList([]);
       setValuesListName('');
       setValuesListDescription('');
+
+      // Expand the newly created list
+      library.setExpandedList(newList.id);
 
       Alert.alert('Success', `Created list with ${topBrands.length} aligned brands!`);
     } catch (error) {
@@ -1914,11 +1941,22 @@ export default function HomeScreen() {
         (clerkUser.firstName && clerkUser.lastName
           ? `${clerkUser.firstName} ${clerkUser.lastName}`
           : '');
-      const creatorName = profile?.fullName || fullNameFromClerk || clerkUser.firstName || '';
-      const listId = await createList(clerkUser.id, newListName.trim(), newListDescription.trim(), creatorName);
+      const creatorName = profile?.userDetails?.name || fullNameFromClerk || clerkUser.firstName || '';
+      const creatorImage = profile?.userDetails?.profileImage || clerkUser?.imageUrl;
+
+      const newList = await library.createNewList(
+        clerkUser.id,
+        newListName.trim(),
+        newListDescription.trim(),
+        creatorName,
+        false, // not endorsed
+        undefined, // no original list
+        undefined, // no original creator
+        creatorImage
+      );
 
       // Add the item to the new list
-      let entry: Omit<ListEntry, 'id' | 'createdAt'>;
+      let entry: Omit<ListEntry, 'id'>;
 
       if (quickAddItem.type === 'brand') {
         entry = {
@@ -1927,6 +1965,7 @@ export default function HomeScreen() {
           brandName: quickAddItem.name,
           website: quickAddItem.website,
           logoUrl: quickAddItem.logoUrl,
+          createdAt: new Date(),
         };
       } else if (quickAddItem.type === 'business') {
         entry = {
@@ -1935,6 +1974,7 @@ export default function HomeScreen() {
           businessName: quickAddItem.name,
           website: quickAddItem.website,
           logoUrl: quickAddItem.logoUrl,
+          createdAt: new Date(),
         };
       } else if (quickAddItem.type === 'value') {
         if (!selectedValueMode) {
@@ -1962,20 +2002,17 @@ export default function HomeScreen() {
         for (const brandName of brandsToAdd) {
           const brand = brands.find(b => b.name === brandName);
           if (brand) {
-            const brandEntry: Omit<ListEntry, 'id' | 'createdAt'> = {
+            const brandEntry: Omit<ListEntry, 'id'> = {
               type: 'brand',
               brandId: brand.id,
               brandName: brand.name,
               website: brand.website,
+              createdAt: new Date(),
             };
-            await addEntryToList(listId, brandEntry);
+            await library.addEntry(newList.id, brandEntry);
             addedCount++;
           }
         }
-
-        // Always reload lists and personal list to keep For You and Library in sync
-        await loadUserLists();
-        await reloadPersonalList();
 
         setShowQuickAddModal(false);
         setQuickAddItem(null);
@@ -1983,13 +2020,16 @@ export default function HomeScreen() {
         setNewListDescription('');
         setSelectedValueMode(null);
 
+        // Expand the newly created list
+        library.setExpandedList(newList.id);
+
         Alert.alert('Success', `Created list and added ${addedCount} brands from ${quickAddItem.name}!`);
         return;
       } else {
         return;
       }
 
-      await addEntryToList(listId, entry);
+      await library.addEntry(newList.id, entry);
 
       // Clean up state
       setNewListName('');
@@ -1998,9 +2038,8 @@ export default function HomeScreen() {
       setQuickAddItem(null);
       setSelectedValueMode(null);
 
-      // Always reload lists and personal list to keep For You and Library in sync
-      await loadUserLists();
-      await reloadPersonalList();
+      // Expand the newly created list
+      library.setExpandedList(newList.id);
 
       Alert.alert('Success', `Created list and added ${quickAddItem.name}!`);
     } catch (error: any) {
