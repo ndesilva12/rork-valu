@@ -13,6 +13,7 @@ import {
   Linking,
   Alert,
   Pressable,
+  Share,
 } from 'react-native';
 import { Image } from 'expo-image';
 import {
@@ -39,6 +40,7 @@ import { Product } from '@/types';
 import { BusinessUser, calculateAlignmentScore } from '@/services/firebase/businessService';
 import { useUser } from '@/contexts/UserContext';
 import { useRouter } from 'expo-router';
+import { updateListMetadata } from '@/services/firebase/listService';
 
 // ===== Types =====
 
@@ -126,6 +128,79 @@ export default function UnifiedLibrary({
 
   // Filter out endorsement list from custom lists
   const customLists = userLists.filter(list => list.id !== endorsementList?.id);
+
+  // Share handlers
+  const handleShareList = async (list: UserList) => {
+    try {
+      const message = `Check out my list "${list.name}" on Upright Money!\n${list.description || ''}`;
+      await Share.share({
+        message,
+        title: list.name,
+      });
+    } catch (error) {
+      console.error('Error sharing list:', error);
+    }
+  };
+
+  const handleShareItem = async (entry: ListEntry) => {
+    try {
+      let message = '';
+      let title = '';
+
+      switch (entry.type) {
+        case 'brand':
+          const brandName = (entry as any).brandName || (entry as any).name || 'Brand';
+          title = brandName;
+          message = `Check out ${brandName} on Upright Money!`;
+          break;
+        case 'business':
+          const businessName = (entry as any).businessName || (entry as any).name || 'Business';
+          title = businessName;
+          message = `Check out ${businessName} on Upright Money!`;
+          break;
+        case 'value':
+          const valueName = (entry as any).valueName || (entry as any).name || 'Value';
+          title = valueName;
+          message = `I value ${valueName}`;
+          break;
+        case 'link':
+          const linkTitle = (entry as any).title || (entry as any).name || 'Link';
+          title = linkTitle;
+          message = `${linkTitle}\n${(entry as any).url}`;
+          break;
+        case 'text':
+          const textContent = (entry as any).content || (entry as any).text || '';
+          title = 'Shared Note';
+          message = textContent;
+          break;
+      }
+
+      await Share.share({
+        message,
+        title,
+      });
+    } catch (error) {
+      console.error('Error sharing item:', error);
+    }
+  };
+
+  // Privacy toggle handler
+  const handleTogglePrivacy = async (listId: string, currentStatus: boolean) => {
+    try {
+      await updateListMetadata(listId, { isPublic: !currentStatus });
+      // Reload lists to reflect the change
+      if (currentUserId) {
+        await library.loadUserLists(currentUserId, true);
+      }
+    } catch (error) {
+      console.error('Error toggling privacy:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Failed to update privacy setting. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to update privacy setting. Please try again.');
+      }
+    }
+  };
 
   // Render brand card with score (for Product type)
   const renderBrandCard = (product: Product, type: 'support' | 'avoid') => {
@@ -674,8 +749,7 @@ export default function UnifiedLibrary({
                       style={styles.listOptionItem}
                       onPress={() => {
                         setActiveListOptionsId(null);
-                        // TODO: Show share modal
-                        console.log('Share list:', currentList.name);
+                        handleShareList(currentList);
                       }}
                       activeOpacity={0.7}
                     >
@@ -689,8 +763,7 @@ export default function UnifiedLibrary({
                       style={styles.listOptionItem}
                       onPress={() => {
                         setActiveListOptionsId(null);
-                        // TODO: Toggle privacy
-                        console.log('Toggle privacy for:', listId, 'from', isPublic ? 'public' : 'private');
+                        handleTogglePrivacy(listId, isPublic || false);
                       }}
                       activeOpacity={0.7}
                     >
@@ -773,8 +846,7 @@ export default function UnifiedLibrary({
             style={styles.listOptionItem}
             onPress={() => {
               setActiveItemOptionsId(null);
-              // TODO: Share item
-              console.log('Share item:', entry);
+              handleShareItem(entry);
             }}
             activeOpacity={0.7}
           >
