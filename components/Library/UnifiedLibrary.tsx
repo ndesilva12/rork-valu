@@ -46,6 +46,7 @@ import { updateListMetadata } from '@/services/firebase/listService';
 import AddToLibraryModal from '@/components/AddToLibraryModal';
 import EditListModal from '@/components/EditListModal';
 import ShareOptionsModal from '@/components/ShareOptionsModal';
+import ItemOptionsModal from '@/components/ItemOptionsModal';
 
 // ===== Types =====
 
@@ -92,7 +93,6 @@ export default function UnifiedLibrary({
   const [localExpandedListId, setLocalExpandedListId] = useState<string | null>(null);
   const [localSelectedListId, setLocalSelectedListId] = useState<string | null>(null);
   const [activeListOptionsId, setActiveListOptionsId] = useState<string | null>(null);
-  const [activeItemOptionsId, setActiveItemOptionsId] = useState<string | null>(null);
   const [showAddToLibraryModal, setShowAddToLibraryModal] = useState(false);
   const [selectedItemToAdd, setSelectedItemToAdd] = useState<ListEntry | null>(null);
   const [isReorderMode, setIsReorderMode] = useState(false);
@@ -105,6 +105,10 @@ export default function UnifiedLibrary({
   // Share Options Modal state
   const [showShareOptionsModal, setShowShareOptionsModal] = useState(false);
   const [sharingItem, setSharingItem] = useState<{type: 'list' | 'entry', data: UserList | ListEntry} | null>(null);
+
+  // Item Options Modal state
+  const [showItemOptionsModal, setShowItemOptionsModal] = useState(false);
+  const [selectedItemForOptions, setSelectedItemForOptions] = useState<ListEntry | null>(null);
 
   // Pagination state for each list
   const [endorsementLoadCount, setEndorsementLoadCount] = useState(10);
@@ -405,7 +409,8 @@ export default function UnifiedLibrary({
               style={[styles.quickAddButton, { backgroundColor: colors.background }]}
               onPress={(e) => {
                 e.stopPropagation();
-                setActiveItemOptionsId(product.id);
+                setSelectedItemForOptions({ type: 'brand', id: product.id, brandId: product.id, createdAt: new Date() } as ListEntry);
+                setShowItemOptionsModal(true);
               }}
               activeOpacity={0.7}
             >
@@ -415,7 +420,6 @@ export default function UnifiedLibrary({
             </TouchableOpacity>
           )}
         </View>
-        {renderItemOptionsMenu(product.id, { type: 'brand', id: product.id, brandId: product.id } as ListEntry, 'system')}
       </TouchableOpacity>
       </View>
     );
@@ -480,7 +484,8 @@ export default function UnifiedLibrary({
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
                       e.stopPropagation();
-                      setActiveItemOptionsId(entry.brandId);
+                      setSelectedItemForOptions(entry);
+                      setShowItemOptionsModal(true);
                     }}
                     activeOpacity={0.7}
                   >
@@ -550,7 +555,8 @@ export default function UnifiedLibrary({
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
                       e.stopPropagation();
-                      setActiveItemOptionsId(entry.businessId);
+                      setSelectedItemForOptions(entry);
+                      setShowItemOptionsModal(true);
                     }}
                     activeOpacity={0.7}
                   >
@@ -600,7 +606,8 @@ export default function UnifiedLibrary({
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
                       e.stopPropagation();
-                      setActiveItemOptionsId(entry.valueId);
+                      setSelectedItemForOptions(entry);
+                      setShowItemOptionsModal(true);
                     }}
                     activeOpacity={0.7}
                   >
@@ -645,7 +652,8 @@ export default function UnifiedLibrary({
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
                       e.stopPropagation();
-                      setActiveItemOptionsId(entry.id);
+                      setSelectedItemForOptions(entry);
+                      setShowItemOptionsModal(true);
                     }}
                     activeOpacity={0.7}
                   >
@@ -679,7 +687,8 @@ export default function UnifiedLibrary({
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
                       e.stopPropagation();
-                      setActiveItemOptionsId(entry.id);
+                      setSelectedItemForOptions(entry);
+                      setShowItemOptionsModal(true);
                     }}
                     activeOpacity={0.7}
                   >
@@ -997,75 +1006,6 @@ export default function UnifiedLibrary({
     );
   };
 
-  // Helper to render item options menu
-  const renderItemOptionsMenu = (itemId: string, entry: ListEntry, listId: string) => {
-    const isOpen = activeItemOptionsId === itemId;
-    if (!isOpen) return null;
-
-    const canRemove = canEdit;
-    const canShare = true;
-    const canAddToLibrary = true; // ALWAYS show "Add to" - both edit and view modes
-    const canFollow = entry.type === 'brand' || entry.type === 'business'; // Only brands and businesses can be followed
-
-    return (
-      <View style={[styles.itemOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-        {canAddToLibrary && (
-          <TouchableOpacity
-            style={styles.listOptionItem}
-            onPress={() => {
-              setActiveItemOptionsId(null);
-              handleAddToLibrary(entry);
-            }}
-            activeOpacity={0.7}
-          >
-            <Plus size={16} color={colors.text} strokeWidth={2} />
-            <Text style={[styles.listOptionText, { color: colors.text }]}>Add to</Text>
-          </TouchableOpacity>
-        )}
-        {canFollow && (
-          <TouchableOpacity
-            style={styles.listOptionItem}
-            onPress={() => {
-              setActiveItemOptionsId(null);
-              handleFollow(entry);
-            }}
-            activeOpacity={0.7}
-          >
-            <UserPlus size={16} color={colors.text} strokeWidth={2} />
-            <Text style={[styles.listOptionText, { color: colors.text }]}>Follow</Text>
-          </TouchableOpacity>
-        )}
-        {canShare && (
-          <TouchableOpacity
-            style={styles.listOptionItem}
-            onPress={() => {
-              setActiveItemOptionsId(null);
-              handleShareItem(entry);
-            }}
-            activeOpacity={0.7}
-          >
-            <Share2 size={16} color={colors.text} strokeWidth={2} />
-            <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
-          </TouchableOpacity>
-        )}
-        {canRemove && (
-          <TouchableOpacity
-            style={styles.listOptionItem}
-            onPress={() => {
-              setActiveItemOptionsId(null);
-              // Remove item from list
-              library.removeEntry(listId, entry.id);
-            }}
-            activeOpacity={0.7}
-          >
-            <Trash2 size={16} color="#EF4444" strokeWidth={2} />
-            <Text style={[styles.listOptionText, { color: '#EF4444', fontWeight: '700' }]}>Remove</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    );
-  };
-
   // Render content for Endorsement list
   const renderEndorsementContent = () => {
     if (!endorsementList) return null;
@@ -1097,7 +1037,6 @@ export default function UnifiedLibrary({
                     {renderListEntry(entry)}
                   </View>
                 </View>
-                {renderItemOptionsMenu(itemId, entry, endorsementList.id)}
               </View>
             );
           })}
@@ -1214,7 +1153,6 @@ export default function UnifiedLibrary({
                     {renderListEntry(entry)}
                   </View>
                 </View>
-                {renderItemOptionsMenu(itemId, entry, list.id)}
               </View>
             );
           })}
@@ -1234,13 +1172,12 @@ export default function UnifiedLibrary({
     );
   };
 
-  // Check if any menu is open
-  const isAnyMenuOpen = activeListOptionsId !== null || activeItemOptionsId !== null;
+  // Check if any menu is open (only list options dropdown now, items use modal)
+  const isAnyMenuOpen = activeListOptionsId !== null;
 
   // Close all menus
   const closeAllMenus = () => {
     setActiveListOptionsId(null);
-    setActiveItemOptionsId(null);
   };
 
   return (
@@ -1391,6 +1328,58 @@ export default function UnifiedLibrary({
           }
         }}
         shareUrl={sharingItem?.type === 'list' ? getListShareUrl(sharingItem.data as UserList) : undefined}
+        isDarkMode={isDarkMode}
+      />
+
+      <ItemOptionsModal
+        visible={showItemOptionsModal}
+        onClose={() => {
+          setShowItemOptionsModal(false);
+          setSelectedItemForOptions(null);
+        }}
+        options={(() => {
+          if (!selectedItemForOptions) return [];
+
+          const options = [];
+          const canRemove = canEdit;
+          const canFollow = selectedItemForOptions.type === 'brand' || selectedItemForOptions.type === 'business';
+
+          // Add to library option (always available)
+          options.push({
+            icon: Plus,
+            label: 'Add to',
+            onPress: () => handleAddToLibrary(selectedItemForOptions),
+          });
+
+          // Follow option (for brands and businesses)
+          if (canFollow) {
+            options.push({
+              icon: UserPlus,
+              label: 'Follow',
+              onPress: () => handleFollow(selectedItemForOptions),
+            });
+          }
+
+          // Share option (always available)
+          options.push({
+            icon: Share2,
+            label: 'Share',
+            onPress: () => handleShareItem(selectedItemForOptions),
+          });
+
+          // Remove option (only in edit mode)
+          if (canRemove) {
+            options.push({
+              icon: Trash2,
+              label: 'Remove',
+              onPress: () => handleRemoveFromLibrary(selectedItemForOptions),
+              isDanger: true,
+            });
+          }
+
+          return options;
+        })()}
+        itemName={selectedItemForOptions ? getItemName(selectedItemForOptions) : undefined}
         isDarkMode={isDarkMode}
       />
     </View>
