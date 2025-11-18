@@ -880,6 +880,7 @@ export default function HomeScreen() {
         const userRef = doc(db, 'users', clerkUser.id);
         await updateDoc(userRef, { alignedListPublic: newValue });
         return;
+      }
 
       if (listId === 'unaligned') {
         const newValue = !unalignedListPublic;
@@ -888,6 +889,7 @@ export default function HomeScreen() {
         const userRef = doc(db, 'users', clerkUser.id);
         await updateDoc(userRef, { unalignedListPublic: newValue });
         return;
+      }
 
       // Handle custom lists (including endorsement)
       const list = userLists.find(l => l.id === listId);
@@ -896,6 +898,7 @@ export default function HomeScreen() {
         await updateListMetadata(listId, { isPublic: newValue });
         // Reload lists to reflect change
         await loadUserLists();
+      }
     } catch (error) {
       console.error('Error toggling list privacy:', error);
     }
@@ -1268,7 +1271,7 @@ export default function HomeScreen() {
             const score = Math.round(100 - ((position - 1) / maxPosition) * 50);
             alignedScores.push(score);
             totalSupportScore += 100;
-          
+          } else {
             alignedScores.push(50);
           }
         });
@@ -1295,8 +1298,9 @@ export default function HomeScreen() {
         .slice(0, 20);
 
       if (topBrands.length === 0) {
-      Alert.alert('Error', 'No brands found that align with the selected values');
+        Alert.alert('Error', 'No brands found that align with the selected values');
         return;
+      }
 
       // Use custom name/description if provided, otherwise generate them
       let listName = valuesListName.trim();
@@ -1311,11 +1315,13 @@ export default function HomeScreen() {
           .join(', ');
 
         listName = `Aligned with ${selectedValueNames}${selectedValuesForList.length > 3 ? ' +' + (selectedValuesForList.length - 3) : ''}`;
+      }
 
       if (!listDescription) {
         const supportCount = selectedValuesForList.filter(sv => sv.type === 'support').length;
         const avoidCount = selectedValuesForList.filter(sv => sv.type === 'avoid').length;
         listDescription = `Auto-generated list based on ${supportCount} supported and ${avoidCount} avoided values`;
+      }
 
       // Create the list using library context
       const fullNameFromClerk = clerkUser.fullName ||
@@ -1346,6 +1352,7 @@ export default function HomeScreen() {
           createdAt: new Date(),
         };
         await library.addEntry(newList.id, entry);
+      }
 
       // Close modal and reset state
       setShowValuesSelectionModal(false);
@@ -1426,7 +1433,8 @@ export default function HomeScreen() {
         await loadUserLists();
       } catch (error) {
         console.error('[Home] Error moving entry:', error);
-      Alert.alert('Error', 'Could not reorder entry. Please try again.');
+        Alert.alert('Error', 'Could not reorder entry. Please try again.');
+      }
     }
   };
 
@@ -1450,8 +1458,9 @@ export default function HomeScreen() {
           await loadUserLists();
         } catch (error) {
           console.error('[Home] Error moving entry:', error);
-        Alert.alert('Error', 'Could not reorder entry. Please try again.');
+          Alert.alert('Error', 'Could not reorder entry. Please try again.');
         }
+      }
     }
   };
 
@@ -1474,16 +1483,10 @@ export default function HomeScreen() {
             setSelectedList(updatedList);
           }
 
-          
-          
           Alert.alert('Success', 'Item removed from list');
-          }
         } catch (error) {
           console.error('[Home] Error removing entry:', error);
-          
-          
           Alert.alert('Error', 'Could not remove item. Please try again.');
-          }
         }
       };
 
@@ -1534,13 +1537,14 @@ export default function HomeScreen() {
         setUserLists(lists);
       } catch (error) {
         console.error('[Home] Error loading lists for quick-add:', error);
+      }
     }
 
     // For values, show mode selection first
     if (type === 'value') {
       setQuickAddItem({ type, id, name, website, logoUrl });
       setShowValueModeModal(true);
-    
+    } else {
       // For brands and businesses, go straight to list selection
       setQuickAddItem({ type, id, name, website, logoUrl });
       setShowQuickAddModal(true);
@@ -1599,7 +1603,7 @@ export default function HomeScreen() {
     if (selectedList && selectedList !== 'browse' && quickAddItem) {
       const list = selectedList as UserList;
       handleAddItemSubmit({ valueId: quickAddItem.id, name: quickAddItem.name, mode });
-    
+    } else {
       // Otherwise, show the quick add modal to select a list
       setShowQuickAddModal(true);
     }
@@ -1672,10 +1676,9 @@ export default function HomeScreen() {
         await loadUserLists();
         await reloadPersonalList();
 
-      Alert.alert('Success', `Added ${addedCount} brands from ${quickAddItem.name} to list!`);
+        Alert.alert('Success', `Added ${addedCount} brands from ${quickAddItem.name} to list!`);
         return;
-      
-        return;
+      }
 
       await addEntryToList(listId, entry);
       setShowQuickAddModal(false);
@@ -1692,8 +1695,6 @@ export default function HomeScreen() {
       const errorMessage = error?.message === 'This item is already in the list'
         ? 'This item is already in the list'
         : 'Could not add item to list. Please try again.';
-      
-      
       Alert.alert('Error', errorMessage);
     }
   };
@@ -1793,10 +1794,9 @@ export default function HomeScreen() {
         // Expand the newly created list
         library.setExpandedList(newList.id);
 
-      Alert.alert('Success', `Created list and added ${addedCount} brands from ${quickAddItem.name}!`);
+        Alert.alert('Success', `Created list and added ${addedCount} brands from ${quickAddItem.name}!`);
         return;
-      
-        return;
+      }
 
       await library.addEntry(newList.id, entry);
 
@@ -1816,8 +1816,6 @@ export default function HomeScreen() {
       const errorMessage = error?.message === 'This item is already in the list'
         ? 'This item is already in the list'
         : 'Could not create list. Please try again.';
-      
-      
       Alert.alert('Error', errorMessage);
     }
   };
@@ -1881,16 +1879,11 @@ export default function HomeScreen() {
       try {
         await deleteList(listId);
         await loadUserLists();
-        
-        
         Alert.alert('Success', 'List deleted successfully');
-        }
       } catch (error) {
         console.error('[Home] Error deleting list:', error);
-        
-        
         Alert.alert('Error', 'Could not delete list. Please try again.');
-        }
+      }
     };
 
     
@@ -2017,8 +2010,7 @@ export default function HomeScreen() {
           type: 'text',
           content: textContent.trim(),
         };
-      
-        return;
+      }
 
       await addEntryToList(list.id, entry);
       await loadUserLists();
@@ -2029,6 +2021,7 @@ export default function HomeScreen() {
       const updatedList = updatedLists.find(l => l.id === list.id);
       if (updatedList) {
         setSelectedList(updatedList);
+      }
 
       // Reset modal state
       setShowAddItemModal(false);
