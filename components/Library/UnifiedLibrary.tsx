@@ -203,64 +203,70 @@ export default function UnifiedLibrary({
     }
   };
 
-  // Add to Library handler
+  // Add to Library handler - uses CURRENT user's lists from context
   const handleAddToLibrary = async (entry: ListEntry) => {
-    // Get available lists (user's own lists from context)
+    // CRITICAL: Always use library.state (current user's lists), never props
+    // This ensures we're adding to OUR lists, not the viewed user's lists
+    const myEndorsementList = library.state.endorsementList;
+    const myCustomLists = library.state.userLists.filter(list => list.id !== myEndorsementList?.id);
+
     const availableLists = [
-      ...(endorsementList ? [endorsementList] : []),
-      ...customLists,
+      ...(myEndorsementList ? [myEndorsementList] : []),
+      ...myCustomLists,
     ];
 
     if (availableLists.length === 0) {
-      if (Platform.OS === 'web') {
-        window.alert('You need to create a list first.');
-      } else {
-        Alert.alert('No Lists', 'You need to create a list first.');
-      }
+      Alert.alert('No Lists', 'You need to create a list first to add items.');
       return;
     }
 
-    // Show list selection
-    if (Platform.OS === 'web') {
-      const listNames = availableLists.map((l, i) => `${i + 1}. ${l.name}`).join('\n');
-      const selection = window.prompt(`Add to which list?\n\n${listNames}\n\nEnter number (1-${availableLists.length}):`);
-
-      if (selection) {
-        const index = parseInt(selection) - 1;
-        if (index >= 0 && index < availableLists.length) {
-          const selectedList = availableLists[index];
+    // Use Alert.alert with options (works on both web and native)
+    const buttons = [
+      ...availableLists.map(list => ({
+        text: list.name,
+        onPress: async () => {
           try {
-            await library.addEntry(selectedList.id, entry);
-            window.alert(`Added to "${selectedList.name}"`);
+            await library.addEntry(list.id, entry);
+            Alert.alert('Success', `Added to "${list.name}"`);
           } catch (error: any) {
-            window.alert(error.message || 'Failed to add item');
+            Alert.alert('Error', error.message || 'Failed to add item');
           }
-        }
-      }
-    } else {
-      // For native, create action sheet options
-      Alert.alert(
-        'Add to Library',
-        'Select a list:',
-        [
-          ...availableLists.map(list => ({
-            text: list.name,
-            onPress: async () => {
-              try {
-                await library.addEntry(list.id, entry);
-                Alert.alert('Success', `Added to "${list.name}"`);
-              } catch (error: any) {
-                Alert.alert('Error', error.message || 'Failed to add item');
-              }
-            },
-          })),
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-        ]
-      );
-    }
+        },
+      })),
+      {
+        text: 'Create New List',
+        onPress: () => {
+          Alert.prompt(
+            'Create New List',
+            'Enter list name:',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Create',
+                onPress: async (listName) => {
+                  if (listName && listName.trim() && currentUserId) {
+                    try {
+                      const newList = await library.createNewList(currentUserId, listName.trim());
+                      await library.addEntry(newList.id, entry);
+                      Alert.alert('Success', `Created "${listName}" and added item`);
+                    } catch (error: any) {
+                      Alert.alert('Error', error.message || 'Failed to create list');
+                    }
+                  }
+                },
+              },
+            ],
+            'plain-text'
+          );
+        },
+      },
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+    ];
+
+    Alert.alert('Add to Library', 'Select a list:', buttons);
   };
 
   // Edit list handler
@@ -813,8 +819,8 @@ export default function UnifiedLibrary({
             </View>
           </TouchableOpacity>
 
-          {/* Three-dot menu - only show in edit mode */}
-          {canEdit && (
+          {/* Three-dot menu - show in edit mode AND view mode (other users' lists) */}
+          {(canEdit || mode === 'view') && (
             <TouchableOpacity
               style={styles.listHeaderOptionsButton}
               onPress={() => {
@@ -829,8 +835,8 @@ export default function UnifiedLibrary({
           )}
         </View>
 
-        {/* Options dropdown - only in edit mode */}
-        {canEdit && isOptionsOpen && (
+        {/* Options dropdown - show in edit mode AND view mode */}
+        {(canEdit || mode === 'view') && isOptionsOpen && (
           <View style={[styles.listOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
             {(() => {
               // Determine which options to show based on list type
@@ -838,10 +844,11 @@ export default function UnifiedLibrary({
               const isSystemList = listId === 'aligned' || listId === 'unaligned';
               const currentList = isEndorsementList ? endorsementList : userLists.find(l => l.id === listId);
 
-              const canReorder = !isSystemList;
-              const canEditMeta = !isSystemList;
-              const canRemove = !isEndorsementList && !isSystemList;
-              const canTogglePrivacy = isPublic !== undefined;
+              const canReorder = !isSystemList && canEdit;
+              const canEditMeta = !isSystemList && canEdit;
+              const canRemove = !isEndorsementList && !isSystemList && canEdit;
+              const canTogglePrivacy = isPublic !== undefined && canEdit;
+              const canCopyList = mode === 'view'; // Only in view mode (other users)
 
               return (
                 <>
@@ -871,6 +878,37 @@ export default function UnifiedLibrary({
                     >
                       <Edit size={16} color={colors.text} strokeWidth={2} />
                       <Text style={[styles.listOptionText, { color: colors.text }]}>Edit</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {canCopyList && currentList && (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={async () => {
+                        setActiveListOptionsId(null);
+                        if (!currentUserId) {
+                          Alert.alert('Error', 'You must be logged in to copy lists');
+                          return;
+                        }
+                        try {
+                          // Copy list to current user's library
+                          const newListName = `${currentList.name} (Copy)`;
+                          const newList = await library.createNewList(currentUserId, newListName, currentList.description);
+
+                          // Copy all entries
+                          for (const entry of currentList.entries) {
+                            await library.addEntry(newList.id, entry);
+                          }
+
+                          Alert.alert('Success', `Copied "${currentList.name}" to your library`);
+                        } catch (error: any) {
+                          Alert.alert('Error', error.message || 'Failed to copy list');
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Plus size={16} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Copy to My Library</Text>
                     </TouchableOpacity>
                   )}
 
@@ -953,7 +991,7 @@ export default function UnifiedLibrary({
 
     const canRemove = canEdit;
     const canShare = true;
-    const canAddToLibrary = mode === 'view';
+    const canAddToLibrary = true; // ALWAYS show "Add to" - both edit and view modes
 
     return (
       <View style={[styles.itemOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
@@ -1365,8 +1403,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 10,
-    zIndex: 10,
+    elevation: 999,
+    zIndex: 999999,
   },
   listOptionItem: {
     flexDirection: 'row',
