@@ -295,15 +295,17 @@ export default function HomeScreen() {
         const result = await Location.requestForegroundPermissionsAsync();
         status = result.status;
         console.log('[Home] Permission request result:', status);
+      }
 
       if (status !== 'granted') {
         console.log('[Home] ❌ Location permission denied');
-      Alert.alert(
+        Alert.alert(
           'Location Permission Required',
           'Please enable location access to filter brands by distance.',
           [{ text: 'OK' }]
         );
         return;
+      }
 
       console.log('[Home] ✅ Permission granted, getting location...');
       const location = await Location.getCurrentPositionAsync({});
