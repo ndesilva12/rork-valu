@@ -6,6 +6,7 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { UserProvider, useUser } from "@/contexts/UserContext";
 import { DataProvider } from "@/contexts/DataContext";
+import { LibraryProvider } from "@/contexts/LibraryContext";
 import { trpc, trpcClient } from "@/lib/trpc";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
@@ -92,33 +93,35 @@ if (!publishableKey) {
 }
 
 function RootLayoutNav() {
-  const { isDarkMode } = useUser();
+  const { isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
   return (
-    <Stack
-      screenOptions={{
-        headerBackTitle: "Back",
-        headerStyle: {
-          backgroundColor: colors.background,
-        },
-        headerTintColor: colors.text,
-        headerTitleStyle: {
-          color: colors.text,
-        },
-      }}
-    >
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="account-type" options={{ headerShown: false }} />
-      <Stack.Screen name="business-setup" options={{ headerShown: false }} />
-      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="product/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="value/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="customer-discount" options={{ headerShown: false }} />
-      <Stack.Screen name="merchant/verify" options={{ headerShown: false }} />
-    </Stack>
+    <LibraryProvider userId={clerkUser?.id} autoLoad={true}>
+      <Stack
+        screenOptions={{
+          headerBackTitle: "Back",
+          headerStyle: {
+            backgroundColor: colors.background,
+          },
+          headerTintColor: colors.text,
+          headerTitleStyle: {
+            color: colors.text,
+          },
+        }}
+      >
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="account-type" options={{ headerShown: false }} />
+        <Stack.Screen name="business-setup" options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="product/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="value/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="customer-discount" options={{ headerShown: false }} />
+        <Stack.Screen name="merchant/verify" options={{ headerShown: false }} />
+      </Stack>
+    </LibraryProvider>
   );
 }
 

@@ -16,26 +16,30 @@ import {
 import { Image as ExpoImage } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import EndorsedBadge from '@/components/EndorsedBadge';
-import LibraryView from '@/components/LibraryView';
+import { UnifiedLibrary } from '@/components/Library';
+import { useLibrary } from '@/contexts/LibraryContext';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 import { useRouter } from 'expo-router';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { User, Globe, MapPin, Facebook, Instagram, Twitter, Linkedin, ExternalLink, Camera, Eye, EyeOff, ChevronDown, ChevronRight, MoreVertical, Plus, Edit, Trash2, Lock } from 'lucide-react-native';
 import { pickAndUploadImage } from '@/lib/imageUpload';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
-import { getUserLists, addEntryToList } from '@/services/firebase/listService';
-import { UserList } from '@/types/library';
 import { getLogoUrl } from '@/lib/logo';
+
+import { getAllUserBusinesses, BusinessUser } from '@/services/firebase/businessService';
 
 export default function ProfileScreen() {
   const { profile, isDarkMode, clerkUser, setUserDetails } = useUser();
-  const { brands } = useData();
+  const { brands, valuesMatrix } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
   const router = useRouter();
+
+  // Fetch user businesses for scoring
+  const [userBusinesses, setUserBusinesses] = useState<BusinessUser[]>([]);
 
   const userDetails = profile.userDetails || {
     name: '',
@@ -66,10 +70,8 @@ export default function ProfileScreen() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [isPublicProfile, setIsPublicProfile] = useState(profile.isPublicProfile !== false);
 
-  // Library state
-  const [userLists, setUserLists] = useState<UserList[]>([]);
-  const [isLoadingLists, setIsLoadingLists] = useState(false);
-  const [expandedListId, setExpandedListId] = useState<string | null>(null);
+  // Library context
+  const library = useLibrary();
 
   const handleLocationSelect = (locationName: string, lat: number, lon: number) => {
     setLocation(locationName);
@@ -164,28 +166,6 @@ export default function ProfileScreen() {
     setEditing(false);
   };
 
-  const loadUserLists = useCallback(async () => {
-    if (!clerkUser?.id) return;
-
-    setIsLoadingLists(true);
-    try {
-      const lists = await getUserLists(clerkUser.id);
-      setUserLists(lists);
-    } catch (error) {
-      console.error('[ProfileScreen] Error loading user lists:', error);
-    } finally {
-      setIsLoadingLists(false);
-    }
-  }, [clerkUser?.id]);
-
-  useEffect(() => {
-    loadUserLists();
-  }, [loadUserLists]);
-
-  const toggleListExpansion = (listId: string) => {
-    setExpandedListId(expandedListId === listId ? null : listId);
-  };
-
   const handleListPress = (listId: string) => {
     router.push(`/list/${listId}`);
   };
@@ -193,9 +173,113 @@ export default function ProfileScreen() {
   const userName = userDetails.name || clerkUser?.firstName || 'User';
   const profileImageUrl = profileImage || userDetails.profileImage || clerkUser?.imageUrl;
 
-  // Filter out endorsement list and sort
-  const endorsementList = userLists.find(list => list.isEndorsed);
-  const customLists = userLists.filter(list => !list.isEndorsed);
+  // Fetch user businesses
+  useEffect(() => {
+    const fetchBusinesses = async () => {
+      try {
+        const businesses = await getAllUserBusinesses();
+        setUserBusinesses(businesses);
+      } catch (error) {
+        console.error('[ProfileScreen] Error fetching businesses:', error);
+      }
+    };
+    fetchBusinesses();
+  }, []);
+
+  // Calculate brand scores (same logic as home.tsx)
+  const { allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
+    const csvBrands = brands || [];
+    const localBizList = userBusinesses || [];
+
+    const userValueIds = new Set(profile.causes.map(c => c.id));
+    const filteredLocalBiz = localBizList.filter((biz: any) => {
+      if (!biz.values || biz.values.length === 0 || userValueIds.size === 0) return false;
+      const bizValueIds = new Set(biz.values.map((v: any) => v.id));
+      const overlapCount = Array.from(userValueIds).filter(id => bizValueIds.has(id)).length;
+      const overlapPercentage = (overlapCount / userValueIds.size) * 100;
+      return overlapPercentage > 50;
+    });
+
+    const currentBrands = [...csvBrands, ...filteredLocalBiz];
+
+    if (!currentBrands || currentBrands.length === 0 || !valuesMatrix) {
+      return {
+        allSupportFull: [],
+        allAvoidFull: [],
+        scoredBrands: new Map(),
+      };
+    }
+
+    const supportedCauses = profile.causes.filter((c) => c.type === 'support').map((c) => c.id);
+    const avoidedCauses = profile.causes.filter((c) => c.type === 'avoid').map((c) => c.id);
+    const allUserCauses = [...supportedCauses, ...avoidedCauses];
+
+    // Score each brand
+    const scored = currentBrands.map((product) => {
+      const brandName = product.name;
+      let totalScore = 0;
+      let causeCount = 0;
+
+      allUserCauses.forEach((causeId) => {
+        const causeData = valuesMatrix[causeId];
+        if (!causeData) return;
+
+        const supportArrayLength = causeData.support?.length || 0;
+        const opposeArrayLength = causeData.oppose?.length || 0;
+        const supportIndex = causeData.support?.indexOf(brandName);
+        const opposeIndex = causeData.oppose?.indexOf(brandName);
+
+        const supportPosition = supportIndex !== undefined && supportIndex >= 0 ? supportIndex + 1 : supportArrayLength + 1;
+        const opposePosition = opposeIndex !== undefined && opposeIndex >= 0 ? opposeIndex + 1 : opposeArrayLength + 1;
+
+        if (supportedCauses.includes(causeId)) {
+          if (supportIndex !== undefined && supportIndex >= 0) {
+            const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
+            const score = Math.round(100 - ((supportPosition - 1) / maxPosition) * 50);
+            totalScore += score;
+            causeCount++;
+          } else if (opposeIndex !== undefined && opposeIndex >= 0) {
+            const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
+            const score = Math.round(((opposePosition - 1) / maxPosition) * 50);
+            totalScore += score;
+            causeCount++;
+          }
+        } else if (avoidedCauses.includes(causeId)) {
+          if (opposeIndex !== undefined && opposeIndex >= 0) {
+            const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
+            const score = Math.round(100 - ((opposePosition - 1) / maxPosition) * 50);
+            totalScore += score;
+            causeCount++;
+          } else if (supportIndex !== undefined && supportIndex >= 0) {
+            const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
+            const score = Math.round(((supportPosition - 1) / maxPosition) * 50);
+            totalScore += score;
+            causeCount++;
+          }
+        }
+      });
+
+      const finalScore = causeCount > 0 ? Math.round(totalScore / causeCount) : 50;
+      return { product, score: finalScore, causeCount };
+    });
+
+    const scoredBrandsMap = new Map<string, number>();
+    // Only include brands that have actual values data (causeCount > 0)
+    const aligned = scored.filter(item => item.causeCount > 0 && item.score >= 50);
+    const unaligned = scored.filter(item => item.causeCount > 0 && item.score < 50);
+
+    scored.forEach(item => {
+      if (item.causeCount > 0) {
+        scoredBrandsMap.set(item.product.id, item.score);
+      }
+    });
+
+    return {
+      allSupportFull: aligned.map(item => item.product),
+      allAvoidFull: unaligned.map(item => item.product),
+      scoredBrands: scoredBrandsMap,
+    };
+  }, [brands, userBusinesses, valuesMatrix, profile.causes]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -494,24 +578,26 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Library Section - Uses Shared LibraryView Component */}
+        {/* Library Section - Uses Unified Library Component */}
         <View style={styles.librarySection}>
           <Text style={[styles.librarySectionTitle, { color: colors.text }]}>My Library</Text>
 
-          {isLoadingLists ? (
+          {library.state.isLoading ? (
             <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundSecondary }]}>
               <ActivityIndicator size="large" color={colors.primary} />
               <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading your lists...</Text>
             </View>
           ) : (
-            <LibraryView
-              userLists={userLists}
-              userPersonalList={endorsementList}
-              profile={profile}
+            <UnifiedLibrary
+              mode="preview"
+              currentUserId={clerkUser?.id}
+              alignedItems={allSupportFull}
+              unalignedItems={allAvoidFull}
               isDarkMode={isDarkMode}
-              isOwnLibrary={true}
-              userId={clerkUser?.id}
-              showSystemLists={false}
+              profileImage={profileImageUrl}
+              userBusinesses={userBusinesses}
+              scoredBrands={scoredBrands}
+              userCauses={profile?.causes || []}
             />
           )}
         </View>
