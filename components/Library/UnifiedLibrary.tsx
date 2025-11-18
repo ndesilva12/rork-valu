@@ -688,13 +688,15 @@ export default function UnifiedLibrary({
 
     return (
       <View style={{ position: 'relative', overflow: 'visible', zIndex: isOptionsOpen ? 9999 : 1 }}>
-        <View
+        <TouchableOpacity
           style={[
             styles.collapsibleListHeader,
             isPinned && styles.pinnedListHeader,
             isExpanded && { backgroundColor: colors.backgroundSecondary, borderWidth: 2, borderColor: colors.primary, borderRadius: 12 },
             !isExpanded && isSelected && { borderWidth: 2, borderColor: colors.primary, borderRadius: 12 },
           ]}
+          onPress={() => toggleListExpansion(listId)}
+          activeOpacity={0.7}
         >
           {/* Profile Image */}
           <View style={[styles.listProfileImageContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
@@ -719,10 +721,8 @@ export default function UnifiedLibrary({
             )}
           </View>
 
-          <TouchableOpacity
+          <View
             style={styles.collapsibleListHeaderContent}
-            onPress={() => toggleListExpansion(listId)}
-            activeOpacity={0.7}
           >
             <View style={styles.collapsibleListInfo}>
               {isExpanded ? (
@@ -793,13 +793,14 @@ export default function UnifiedLibrary({
                 </View>
               )}
             </View>
-          </TouchableOpacity>
+          </View>
 
           {/* Action Menu - show in edit mode AND view mode (other users' lists) */}
           {(canEdit || mode === 'view') && (
             <TouchableOpacity
               style={styles.listHeaderOptionsButton}
-              onPress={() => {
+              onPress={(e) => {
+                e.stopPropagation();
                 setActiveListOptionsId(isOptionsOpen ? null : listId);
               }}
               activeOpacity={0.7}
@@ -809,7 +810,7 @@ export default function UnifiedLibrary({
               </View>
             </TouchableOpacity>
           )}
-        </View>
+        </TouchableOpacity>
 
         {/* Options dropdown - show in edit mode AND view mode */}
         {(canEdit || mode === 'view') && isOptionsOpen && (
