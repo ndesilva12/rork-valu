@@ -1193,10 +1193,11 @@ export default function HomeScreen() {
           setSelectedList(updatedList);
         }
 
-      Alert.alert('Success', 'List renamed successfully!');
+        Alert.alert('Success', 'List renamed successfully!');
       } catch (error) {
         console.error('[Home] Error renaming list:', error);
-      Alert.alert('Error', 'Could not rename list. Please try again.');
+        Alert.alert('Error', 'Could not rename list. Please try again.');
+      }
     }
   };
 
@@ -1218,10 +1219,11 @@ export default function HomeScreen() {
           setSelectedList(updatedList);
         }
 
-      Alert.alert('Success', 'Description updated successfully!');
+        Alert.alert('Success', 'Description updated successfully!');
       } catch (error) {
         console.error('[Home] Error updating description:', error);
-      Alert.alert('Error', 'Could not update description. Please try again.');
+        Alert.alert('Error', 'Could not update description. Please try again.');
+      }
     }
   };
 
@@ -1576,6 +1578,7 @@ export default function HomeScreen() {
       );
       if (entry) {
         handleDeleteEntry(entry.id);
+      }
     }
   };
 
@@ -4785,9 +4788,6 @@ export default function HomeScreen() {
         description={shareData?.description}
         isDarkMode={isDarkMode}
       />
-    }
-    }
-    }
     </View>
   );
 }
