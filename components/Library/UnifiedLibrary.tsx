@@ -362,10 +362,9 @@ export default function UnifiedLibrary({
     const scoreColor = alignmentScore !== undefined
       ? (alignmentScore >= 50 ? colors.primary : colors.danger)
       : colors.textSecondary;
-    const isMenuOpen = activeItemOptionsId === product.id;
 
     return (
-      <View style={{ position: 'relative', zIndex: isMenuOpen ? 99999 : 1, overflow: 'visible' }}>
+      <View style={{ position: 'relative' }}>
         <TouchableOpacity
           style={[
             styles.brandCard,
