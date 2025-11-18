@@ -181,6 +181,24 @@ export default function UnifiedLibrary({
     return `uprightmoney://list/${list.id}`;
   };
 
+  const getItemShareUrl = (entry: ListEntry): string => {
+    if (entry.type === 'brand') {
+      const brandId = (entry as any).brandId;
+      if (Platform.OS === 'web') {
+        return `${window.location.origin}/brand/${brandId}`;
+      }
+      return `uprightmoney://brand/${brandId}`;
+    } else if (entry.type === 'business') {
+      const businessId = (entry as any).businessId;
+      if (Platform.OS === 'web') {
+        return `${window.location.origin}/business/${businessId}`;
+      }
+      return `uprightmoney://business/${businessId}`;
+    }
+    // For other types (value, link, text), no URL
+    return '';
+  };
+
   const performShareList = async (list: UserList) => {
     try {
       const message = `Check out my list "${list.name}" on Upright Money!\n${list.description || ''}`;
@@ -1385,7 +1403,13 @@ export default function UnifiedLibrary({
             }
           }
         }}
-        shareUrl={sharingItem?.type === 'list' ? getListShareUrl(sharingItem.data as UserList) : undefined}
+        shareUrl={
+          sharingItem?.type === 'list'
+            ? getListShareUrl(sharingItem.data as UserList)
+            : sharingItem?.type === 'entry'
+            ? getItemShareUrl(sharingItem.data as ListEntry)
+            : undefined
+        }
         isDarkMode={isDarkMode}
       />
 
