@@ -22,7 +22,7 @@ import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 import { useRouter } from 'expo-router';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { User, Globe, MapPin, Facebook, Instagram, Twitter, Linkedin, ExternalLink, Camera, Eye, EyeOff, ChevronDown, ChevronRight, MoreVertical, Plus, Edit, Trash2, Lock } from 'lucide-react-native';
 import { pickAndUploadImage } from '@/lib/imageUpload';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
@@ -30,11 +30,16 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { getLogoUrl } from '@/lib/logo';
 
+import { getAllUserBusinesses, BusinessUser } from '@/services/firebase/businessService';
+
 export default function ProfileScreen() {
   const { profile, isDarkMode, clerkUser, setUserDetails } = useUser();
-  const { brands } = useData();
+  const { brands, valuesMatrix } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
   const router = useRouter();
+
+  // Fetch user businesses for scoring
+  const [userBusinesses, setUserBusinesses] = useState<BusinessUser[]>([]);
 
   const userDetails = profile.userDetails || {
     name: '',
@@ -167,6 +172,109 @@ export default function ProfileScreen() {
 
   const userName = userDetails.name || clerkUser?.firstName || 'User';
   const profileImageUrl = profileImage || userDetails.profileImage || clerkUser?.imageUrl;
+
+  // Fetch user businesses
+  useEffect(() => {
+    const fetchBusinesses = async () => {
+      try {
+        const businesses = await getAllUserBusinesses();
+        setUserBusinesses(businesses);
+      } catch (error) {
+        console.error('[ProfileScreen] Error fetching businesses:', error);
+      }
+    };
+    fetchBusinesses();
+  }, []);
+
+  // Calculate brand scores (same logic as home.tsx)
+  const { allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
+    const csvBrands = brands || [];
+    const localBizList = userBusinesses || [];
+
+    const userValueIds = new Set(profile.causes.map(c => c.id));
+    const filteredLocalBiz = localBizList.filter((biz: any) => {
+      if (!biz.values || biz.values.length === 0 || userValueIds.size === 0) return false;
+      const bizValueIds = new Set(biz.values.map((v: any) => v.id));
+      const overlapCount = Array.from(userValueIds).filter(id => bizValueIds.has(id)).length;
+      const overlapPercentage = (overlapCount / userValueIds.size) * 100;
+      return overlapPercentage > 50;
+    });
+
+    const currentBrands = [...csvBrands, ...filteredLocalBiz];
+
+    if (!currentBrands || currentBrands.length === 0 || !valuesMatrix) {
+      return {
+        allSupportFull: [],
+        allAvoidFull: [],
+        scoredBrands: new Map(),
+      };
+    }
+
+    const supportedCauses = profile.causes.filter((c) => c.type === 'support').map((c) => c.id);
+    const avoidedCauses = profile.causes.filter((c) => c.type === 'avoid').map((c) => c.id);
+    const allUserCauses = [...supportedCauses, ...avoidedCauses];
+
+    // Score each brand
+    const scored = currentBrands.map((product) => {
+      const brandName = product.name;
+      let totalScore = 0;
+      let causeCount = 0;
+
+      allUserCauses.forEach((causeId) => {
+        const causeData = valuesMatrix[causeId];
+        if (!causeData) return;
+
+        const supportArrayLength = causeData.support?.length || 0;
+        const opposeArrayLength = causeData.oppose?.length || 0;
+        const supportIndex = causeData.support?.indexOf(brandName);
+        const opposeIndex = causeData.oppose?.indexOf(brandName);
+
+        const supportPosition = supportIndex !== undefined && supportIndex >= 0 ? supportIndex + 1 : supportArrayLength + 1;
+        const opposePosition = opposeIndex !== undefined && opposeIndex >= 0 ? opposeIndex + 1 : opposeArrayLength + 1;
+
+        if (supportedCauses.includes(causeId)) {
+          if (supportIndex !== undefined && supportIndex >= 0) {
+            const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
+            const score = Math.round(100 - ((supportPosition - 1) / maxPosition) * 50);
+            totalScore += score;
+            causeCount++;
+          } else if (opposeIndex !== undefined && opposeIndex >= 0) {
+            const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
+            const score = Math.round(((opposePosition - 1) / maxPosition) * 50);
+            totalScore += score;
+            causeCount++;
+          }
+        } else if (avoidedCauses.includes(causeId)) {
+          if (opposeIndex !== undefined && opposeIndex >= 0) {
+            const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
+            const score = Math.round(100 - ((opposePosition - 1) / maxPosition) * 50);
+            totalScore += score;
+            causeCount++;
+          } else if (supportIndex !== undefined && supportIndex >= 0) {
+            const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
+            const score = Math.round(((supportPosition - 1) / maxPosition) * 50);
+            totalScore += score;
+            causeCount++;
+          }
+        }
+      });
+
+      const finalScore = causeCount > 0 ? Math.round(totalScore / causeCount) : 50;
+      return { product, score: finalScore };
+    });
+
+    const scoredBrandsMap = new Map<string, number>();
+    const aligned = scored.filter(item => item.score >= 50);
+    const unaligned = scored.filter(item => item.score < 50);
+
+    scored.forEach(item => scoredBrandsMap.set(item.product.id, item.score));
+
+    return {
+      allSupportFull: aligned.map(item => item.product),
+      allAvoidFull: unaligned.map(item => item.product),
+      scoredBrands: scoredBrandsMap,
+    };
+  }, [brands, userBusinesses, valuesMatrix, profile.causes]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -478,8 +586,13 @@ export default function ProfileScreen() {
             <UnifiedLibrary
               mode="preview"
               currentUserId={clerkUser?.id}
+              alignedItems={allSupportFull}
+              unalignedItems={allAvoidFull}
               isDarkMode={isDarkMode}
               profileImage={profileImageUrl}
+              userBusinesses={userBusinesses}
+              scoredBrands={scoredBrands}
+              userCauses={profile?.causes || []}
             />
           )}
         </View>

@@ -14,6 +14,7 @@ import {
   Alert,
   Pressable,
   Share,
+  Modal,
 } from 'react-native';
 import { Image } from 'expo-image';
 import {
@@ -1168,18 +1169,24 @@ export default function UnifiedLibrary({
     );
   };
 
-  // Close all menus when clicking outside
-  const handlePressOutside = () => {
-    if (activeListOptionsId !== null) {
-      setActiveListOptionsId(null);
-    }
-    if (activeItemOptionsId !== null) {
-      setActiveItemOptionsId(null);
-    }
+  // Check if any menu is open
+  const isAnyMenuOpen = activeListOptionsId !== null || activeItemOptionsId !== null;
+
+  // Close all menus
+  const closeAllMenus = () => {
+    setActiveListOptionsId(null);
+    setActiveItemOptionsId(null);
   };
 
   return (
-    <Pressable style={styles.libraryDirectory} onPress={handlePressOutside}>
+    <View style={styles.libraryDirectory}>
+      {/* Backdrop to close menus when clicking outside */}
+      {isAnyMenuOpen && (
+        <Pressable
+          style={styles.menuBackdrop}
+          onPress={closeAllMenus}
+        />
+      )}
       {/* 1. Endorsement List - Always first, pinned */}
       {endorsementList && (
         <>
@@ -1265,7 +1272,7 @@ export default function UnifiedLibrary({
           </React.Fragment>
         );
       })}
-    </Pressable>
+    </View>
   );
 }
 
@@ -1273,6 +1280,14 @@ export default function UnifiedLibrary({
 const styles = StyleSheet.create({
   libraryDirectory: {
     flex: 1,
+  },
+  menuBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
   },
   collapsibleListHeader: {
     flexDirection: 'row',
