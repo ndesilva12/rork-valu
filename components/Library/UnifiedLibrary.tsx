@@ -15,6 +15,8 @@ import {
   Pressable,
   Share,
   Modal,
+  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import {
@@ -125,6 +127,10 @@ export default function UnifiedLibrary({
   const [alignedLoadCount, setAlignedLoadCount] = useState(10);
   const [unalignedLoadCount, setUnalignedLoadCount] = useState(10);
   const [customListLoadCounts, setCustomListLoadCounts] = useState<Record<string, number>>({});
+
+  // Detect larger screens for responsive text display
+  const { width } = useWindowDimensions();
+  const isLargeScreen = width >= 768;
 
   // Mode-based permissions
   const canEdit = mode === 'edit';
@@ -782,7 +788,7 @@ export default function UnifiedLibrary({
                     <Text style={[styles.collapsibleListTitle, { color: colors.text }]}>
                       {title}
                     </Text>
-                    {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" showText={false} />}
+                    {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" showText={isLargeScreen} />}
                   </View>
                   <View style={styles.collapsibleListMeta}>
                     <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
@@ -791,9 +797,15 @@ export default function UnifiedLibrary({
                     {isPublic !== undefined && (
                       <View style={styles.privacyIndicator}>
                         {isPublic ? (
-                          <Globe size={14} color={colors.primary} strokeWidth={2} />
+                          <>
+                            <Globe size={14} color={colors.primary} strokeWidth={2} />
+                            {isLargeScreen && <Text style={[styles.privacyText, { color: colors.primary }]}>Public</Text>}
+                          </>
                         ) : (
-                          <Lock size={14} color={colors.textSecondary} strokeWidth={2} />
+                          <>
+                            <Lock size={14} color={colors.textSecondary} strokeWidth={2} />
+                            {isLargeScreen && <Text style={[styles.privacyText, { color: colors.textSecondary }]}>Private</Text>}
+                          </>
                         )}
                       </View>
                     )}
@@ -817,7 +829,7 @@ export default function UnifiedLibrary({
                     <Text style={[styles.collapsibleListTitle, { color: colors.text }]} numberOfLines={1}>
                       {title}
                     </Text>
-                    {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" showText={false} />}
+                    {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" showText={isLargeScreen} />}
                   </View>
                   <View style={styles.collapsibleListMetaRow}>
                     <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]} numberOfLines={1}>
@@ -828,12 +840,12 @@ export default function UnifiedLibrary({
                         {isPublic ? (
                           <>
                             <Globe size={12} color={colors.primary} strokeWidth={2} />
-                            {Platform.OS !== 'web' && <Text style={[styles.privacyText, { color: colors.primary }]} numberOfLines={1}>Public</Text>}
+                            {isLargeScreen && <Text style={[styles.privacyText, { color: colors.primary }]} numberOfLines={1}>Public</Text>}
                           </>
                         ) : (
                           <>
                             <Lock size={12} color={colors.textSecondary} strokeWidth={2} />
-                            {Platform.OS !== 'web' && <Text style={[styles.privacyText, { color: colors.textSecondary }]} numberOfLines={1}>Private</Text>}
+                            {isLargeScreen && <Text style={[styles.privacyText, { color: colors.textSecondary }]} numberOfLines={1}>Private</Text>}
                           </>
                         )}
                       </View>
