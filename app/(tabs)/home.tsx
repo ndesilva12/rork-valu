@@ -601,8 +601,9 @@ export default function HomeScreen() {
           ...tempResult,
           isWithinRange: true,
         };
-      
+      } else {
         rangeResult = isBusinessWithinRange(business, userLocation.latitude, userLocation.longitude, localDistance);
+      }
 
       return {
         business,
