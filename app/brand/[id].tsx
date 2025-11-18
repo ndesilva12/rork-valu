@@ -318,7 +318,8 @@ export default function BrandDetailScreen() {
   };
 
   // Calculate alignment score using new scoring system
-  const brandScore = brand && brand.id ? calculateBrandScore(brand.id, profile.causes || [], valuesMatrix) : 50;
+  // Note: valuesMatrix contains brand NAMES not IDs in support/oppose arrays
+  const brandScore = brand && brand.name ? calculateBrandScore(brand.name, profile.causes || [], valuesMatrix) : 50;
   const scoreLabel = getBrandScoreLabel(brandScore);
   const scoreColor = getBrandScoreColor(brandScore, colors);
 
@@ -328,13 +329,13 @@ export default function BrandDetailScreen() {
 
   // Calculate which values match with this brand
   const matchingValues: string[] = [];
-  if (brand && brand.id && profile.causes && valuesMatrix) {
+  if (brand && brand.name && profile.causes && valuesMatrix) {
     profile.causes.forEach(cause => {
       const valueData = valuesMatrix[cause.id];
       if (!valueData) return;
 
-      const isInSupport = valueData.support.includes(brand.id);
-      const isInOppose = valueData.oppose.includes(brand.id);
+      const isInSupport = valueData.support.includes(brand.name);
+      const isInOppose = valueData.oppose.includes(brand.name);
 
       if (isInSupport || isInOppose) {
         matchingValues.push(cause.id);
