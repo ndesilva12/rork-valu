@@ -941,7 +941,9 @@ export default function UnifiedLibrary({
                                 profile?.userDetails?.name, // Current user as creator
                                 false, // not endorsed
                                 currentList.id, // original list ID
-                                currentList.creatorName || currentList.userId // original creator
+                                currentList.creatorName || currentList.userId, // original creator
+                                profile?.userDetails?.profileImage, // current user's image
+                                currentList.creatorImage // original creator's image
                               );
 
                               // Copy all entries WITHOUT the id field
@@ -1310,6 +1312,9 @@ export default function UnifiedLibrary({
           ? `Created by ${list.creatorName}`
           : undefined;
 
+        // Use original creator's image for copied lists, otherwise current user's image
+        const listProfileImage = list.originalCreatorImage || profileImage;
+
         return (
           <React.Fragment key={list.id}>
             {renderCollapsibleListHeader(
@@ -1322,7 +1327,7 @@ export default function UnifiedLibrary({
               attribution,
               list.description,
               list.isPublic,
-              profileImage
+              listProfileImage
             )}
             {expandedListId === list.id && renderCustomListContent(list)}
           </React.Fragment>

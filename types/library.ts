@@ -55,6 +55,7 @@ export interface UserList {
   name: string;
   description?: string;
   creatorName?: string;
+  creatorImage?: string;
   entries: ListEntry[];
   createdAt: Date;
   updatedAt: Date;
@@ -62,4 +63,5 @@ export interface UserList {
   isEndorsed: boolean;
   originalListId?: string; // For copied lists - tracks the original
   originalCreatorName?: string; // For attribution
+  originalCreatorImage?: string; // For displaying original creator's image
 }

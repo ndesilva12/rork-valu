@@ -62,7 +62,7 @@ interface LibraryContextValue {
 
   // Data operations
   loadUserLists: (userId: string, forceRefresh?: boolean) => Promise<void>;
-  createNewList: (userId: string, name: string, description?: string, creatorName?: string, isEndorsed?: boolean, originalListId?: string, originalCreatorName?: string) => Promise<UserList>;
+  createNewList: (userId: string, name: string, description?: string, creatorName?: string, isEndorsed?: boolean, originalListId?: string, originalCreatorName?: string, creatorImage?: string, originalCreatorImage?: string) => Promise<UserList>;
   updateList: (listId: string, updates: Partial<UserList>) => Promise<void>;
   removeList: (listId: string) => Promise<void>;
 
@@ -290,12 +290,14 @@ export function LibraryProvider({ children, userId, autoLoad = true }: LibraryPr
     creatorName?: string,
     isEndorsed?: boolean,
     originalListId?: string,
-    originalCreatorName?: string
+    originalCreatorName?: string,
+    creatorImage?: string,
+    originalCreatorImage?: string
   ): Promise<UserList> => {
     if (!uid) throw new Error('User ID is required');
 
     try {
-      const newList = await createList(uid, name, description, creatorName, isEndorsed, originalListId, originalCreatorName);
+      const newList = await createList(uid, name, description, creatorName, isEndorsed, originalListId, originalCreatorName, creatorImage, originalCreatorImage);
       dispatch({ type: 'ADD_LIST', payload: newList });
       return newList;
     } catch (error) {
