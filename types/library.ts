@@ -55,11 +55,14 @@ export interface UserList {
   name: string;
   description?: string;
   creatorName?: string;
+  creatorImage?: string;
   entries: ListEntry[];
   createdAt: Date;
   updatedAt: Date;
   isPublic: boolean;
   isEndorsed: boolean;
+  order?: number; // For custom ordering of lists
   originalListId?: string; // For copied lists - tracks the original
   originalCreatorName?: string; // For attribution
+  originalCreatorImage?: string; // For displaying original creator's image
 }

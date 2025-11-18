@@ -128,7 +128,8 @@ export default function DiscountScreen() {
       if (isBusiness) {
         loadBusinessData();
       }
-    }, [isBusiness, loadBusinessData, refreshTransactionTotals])
+    }, [isBusiness])
+    // Note: loadBusinessData and refreshTransactionTotals are stable callbacks, don't need in deps
   );
 
   const toggleDataSection = (section: 'customers' | 'transactions') => {

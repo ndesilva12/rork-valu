@@ -212,19 +212,6 @@ export default function HomeScreen() {
   const [activeCardMenuId, setActiveCardMenuId] = useState<string | null>(null);
   const [cardMenuData, setCardMenuData] = useState<{ type: 'brand' | 'business', id: string, name: string, website?: string, logoUrl?: string, listId?: string } | null>(null);
 
-  // News feed state
-  const [newsArticles, setNewsArticles] = useState<Array<{
-    title: string;
-    link: string;
-    pubDate: string;
-    source: string;
-    brandName: string;
-    description?: string;
-  }>>([]);
-  const [isLoadingNews, setIsLoadingNews] = useState(false);
-  const [selectedNewsSource, setSelectedNewsSource] = useState<'myList' | 'aligned' | 'unaligned' | string>('myList');
-  const [showNewsSourceModal, setShowNewsSourceModal] = useState(false);
-
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Fetch brands and values from Firebase via DataContext
@@ -469,19 +456,7 @@ export default function HomeScreen() {
     }
   }, [profile]);
 
-  // Fetch user lists when library view is activated
-  useEffect(() => {
-    if ((mainView === 'myLibrary' || mainView === 'forYou') && clerkUser?.id) {
-      loadUserLists();
-    }
-    // Reset to overview when leaving library
-    if (mainView !== 'myLibrary') {
-      setLibraryView('overview');
-      setSelectedList(null);
-    }
-  }, [mainView, clerkUser?.id]);
-
-  const loadUserLists = async () => {
+  const loadUserLists = useCallback(async () => {
     if (!clerkUser?.id) return;
 
     setIsLoadingLists(true);
@@ -506,7 +481,19 @@ export default function HomeScreen() {
     } finally {
       setIsLoadingLists(false);
     }
-  };
+  }, [clerkUser?.id, profile?.userDetails?.name, clerkUser?.unsafeMetadata?.fullName, clerkUser?.firstName, clerkUser?.lastName]);
+
+  // Fetch user lists when library view is activated
+  useEffect(() => {
+    if ((mainView === 'myLibrary' || mainView === 'forYou') && clerkUser?.id) {
+      loadUserLists();
+    }
+    // Reset to overview when leaving library
+    if (mainView !== 'myLibrary') {
+      setLibraryView('overview');
+      setSelectedList(null);
+    }
+  }, [mainView, clerkUser?.id, loadUserLists]);
 
   // Reload personal list (used in For You view)
   const reloadPersonalList = async () => {
@@ -649,8 +636,8 @@ export default function HomeScreen() {
 
     allSupport.forEach((product) => {
       FOLDER_CATEGORIES.forEach((category) => {
-        const productCategory = product.category.toLowerCase();
-        const productBrand = product.name.toLowerCase();
+        const productCategory = product.category?.toLowerCase() || '';
+        const productBrand = product.name?.toLowerCase() || '';
 
         let match = false;
 
@@ -751,115 +738,6 @@ export default function HomeScreen() {
 
     return categorized;
   }, [allSupport]);
-
-  // Fetch news articles function (defined after allSupportFull and allAvoidFull are available)
-  const fetchNewsArticles = useCallback(async () => {
-    setIsLoadingNews(true);
-    try {
-      console.log('[Home] Attempting to fetch news articles for source:', selectedNewsSource);
-
-      // Collect brand names based on selected source
-      const brandNames = new Set<string>();
-
-      if (selectedNewsSource === 'myList') {
-        // Add brands from My List
-        console.log('[Home] userPersonalList:', userPersonalList);
-        console.log('[Home] userPersonalList entries:', userPersonalList?.entries);
-        if (userPersonalList?.entries) {
-          userPersonalList.entries.forEach((entry) => {
-            console.log('[Home] Processing entry:', entry);
-            if (entry.type === 'brand' && 'brandId' in entry) {
-              const brandName = entry.brandName || getBrandName(entry.brandId);
-              console.log('[Home] Found brand:', brandName);
-              if (brandName && brandName !== 'Unknown Brand') {
-                brandNames.add(brandName);
-              }
-            }
-          });
-        }
-      } else if (selectedNewsSource === 'aligned') {
-        // Add all aligned brands
-        allSupportFull?.forEach((brand) => {
-          brandNames.add(brand.name);
-        });
-      } else if (selectedNewsSource === 'unaligned') {
-        // Add all unaligned brands
-        allAvoidFull?.forEach((brand) => {
-          brandNames.add(brand.name);
-        });
-      } else {
-        // It's a custom list ID - find it in userLists
-        const customList = userLists.find(list => list.id === selectedNewsSource);
-        if (customList?.entries) {
-          customList.entries.forEach((entry) => {
-            if (entry.type === 'brand' && 'brandId' in entry) {
-              const brandName = entry.brandName || getBrandName(entry.brandId);
-              if (brandName && brandName !== 'Unknown Brand') {
-                brandNames.add(brandName);
-              }
-            }
-          });
-        }
-      }
-
-      const brandNamesArray = Array.from(brandNames);
-      console.log('[Home] Collected brand names for news:', brandNamesArray);
-
-      if (brandNamesArray.length === 0) {
-        console.log('[Home] No brand names to fetch news for');
-        setNewsArticles([]);
-        return;
-      }
-
-      console.log('[Home] Fetching news from REST API...');
-
-      // Fetch news articles using REST API (bypassing tRPC issues)
-      const response = await fetch('/api/news/articles', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          brandNames: brandNamesArray,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`News API returned ${response.status}: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-
-      console.log('[Home] News fetch successful! Received', result.articles?.length || 0, 'articles');
-      setNewsArticles(result.articles || []);
-    } catch (error) {
-      console.error('[Home] Error fetching news:', error);
-      if (error instanceof Error) {
-        console.error('[Home] Error message:', error.message);
-      }
-      setNewsArticles([]);
-    } finally {
-      setIsLoadingNews(false);
-    }
-  }, [selectedNewsSource, userPersonalList, allSupportFull, allAvoidFull, userLists]);
-
-  // Fetch news articles when news view is activated or source changes
-  useEffect(() => {
-    if (mainView === 'myLibrary') {
-      fetchNewsArticles();
-    }
-  }, [mainView, fetchNewsArticles]);
-
-  // Set default news source to 'aligned' if user's Name List (My List) is empty
-  useEffect(() => {
-    if (userPersonalList && selectedNewsSource === 'myList') {
-      const hasEntries = userPersonalList.entries && userPersonalList.entries.length > 0;
-      if (!hasEntries) {
-        console.log('[Home] User Name List is empty, setting news source to aligned');
-        setSelectedNewsSource('aligned');
-      }
-    }
-  }, [userPersonalList, selectedNewsSource]);
 
   const handleProductPress = (product: Product) => {
     router.push({
@@ -1045,16 +923,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.mainViewButton, mainView === 'myLibrary' && { backgroundColor: colors.primary }]}
-            onPress={() => setMainView('myLibrary')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.mainViewText, { color: mainView === 'myLibrary' ? colors.white : colors.textSecondary }]}>
-              News
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
             style={[styles.mainViewButton, mainView === 'local' && { backgroundColor: colors.primary }]}
             onPress={() => {
               setMainView('local');
@@ -1160,78 +1028,6 @@ export default function HomeScreen() {
     );
   };
 
-  const renderNewsFeedView = () => {
-    return (
-      <View style={styles.section}>
-        <View style={styles.newsHeaderContainer}>
-          {/* News source dropdown as title */}
-          <View style={styles.newsSourceDropdownContainer}>
-            <TouchableOpacity
-              style={styles.newsSourceDropdown}
-              onPress={() => setShowNewsSourceModal(true)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.newsSourceText, { color: colors.text }]}>
-                {selectedNewsSource === 'myList' ? 'Endorsements' :
-                 selectedNewsSource === 'aligned' ? 'Aligned' :
-                 selectedNewsSource === 'unaligned' ? 'Unaligned' :
-                 userLists.find(list => list.id === selectedNewsSource)?.name || 'Select Source'}
-              </Text>
-              <ChevronDown size={16} color={colors.text} strokeWidth={2} />
-            </TouchableOpacity>
-            <View style={[styles.newsSourceBorder, { backgroundColor: colors.primary }]} />
-          </View>
-
-          <Text style={[styles.newsCount, { color: colors.textSecondary }]}>
-            {newsArticles.length} {newsArticles.length === 1 ? 'article' : 'articles'}
-          </Text>
-        </View>
-
-        <View style={styles.newsContainer}>
-          {newsArticles.map((article, index) => (
-            <TouchableOpacity
-              key={`${article.link}-${index}`}
-              style={[styles.newsArticleCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-              onPress={() => {
-                if (Platform.OS === 'web') {
-                  window.open(article.link, '_blank');
-                } else {
-                  // On mobile, use Linking API
-                  Linking.openURL(article.link);
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={styles.newsArticleContent}>
-                <View style={styles.newsArticleHeader}>
-                  <Text style={[styles.newsBrandTag, { color: colors.primary, borderColor: colors.primary, borderWidth: 1.5, backgroundColor: 'transparent' }]}>
-                    {article.brandName}
-                  </Text>
-                  <Text style={[styles.newsDate, { color: colors.textSecondary }]}>
-                    {new Date(article.pubDate).toLocaleDateString()}
-                  </Text>
-                </View>
-                <Text style={[styles.newsTitle, { color: colors.text }]} numberOfLines={3}>
-                  {article.title}
-                </Text>
-                {article.description && (
-                  <Text style={[styles.newsDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                    {article.description}
-                  </Text>
-                )}
-                <View style={styles.newsFooter}>
-                  <Text style={[styles.newsSource, { color: colors.textSecondary }]}>
-                    {article.source}
-                  </Text>
-                  <ExternalLink size={16} color={colors.primary} strokeWidth={2} />
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    );
-  };
 
   const renderLocalView = () => {
     const { allBusinesses } = localBusinessData;
@@ -1298,12 +1094,27 @@ export default function HomeScreen() {
         (clerkUser.firstName && clerkUser.lastName
           ? `${clerkUser.firstName} ${clerkUser.lastName}`
           : '');
-      const creatorName = profile?.fullName || fullNameFromClerk || clerkUser.firstName || '';
-      await createList(clerkUser.id, newListName.trim(), newListDescription.trim(), creatorName);
+      const creatorName = profile?.userDetails?.name || fullNameFromClerk || clerkUser.firstName || '';
+      const creatorImage = profile?.userDetails?.profileImage || clerkUser?.imageUrl;
+
+      const newList = await library.createNewList(
+        clerkUser.id,
+        newListName.trim(),
+        newListDescription.trim(),
+        creatorName,
+        false, // not endorsed
+        undefined, // no original list
+        undefined, // no original creator
+        creatorImage
+      );
+
       setNewListName('');
       setNewListDescription('');
       setShowCreateListModal(false);
-      await loadUserLists();
+
+      // Expand the newly created list
+      library.setExpandedList(newList.id);
+
       Alert.alert('Success', 'List created successfully!');
     } catch (error) {
       console.error('[Home] Error creating list:', error);
@@ -1520,33 +1331,45 @@ export default function HomeScreen() {
         listDescription = `Auto-generated list based on ${supportCount} supported and ${avoidCount} avoided values`;
       }
 
-      // Create the list
+      // Create the list using library context
       const fullNameFromClerk = clerkUser.fullName ||
         (clerkUser.firstName && clerkUser.lastName
           ? `${clerkUser.firstName} ${clerkUser.lastName}`
           : '');
-      const creatorName = profile?.fullName || fullNameFromClerk || clerkUser.firstName || '';
-      const listId = await createList(clerkUser.id, listName, listDescription, creatorName);
+      const creatorName = profile?.userDetails?.name || fullNameFromClerk || clerkUser.firstName || '';
+      const creatorImage = profile?.userDetails?.profileImage || clerkUser?.imageUrl;
+
+      const newList = await library.createNewList(
+        clerkUser.id,
+        listName,
+        listDescription,
+        creatorName,
+        false, // not endorsed
+        undefined, // no original list
+        undefined, // no original creator
+        creatorImage
+      );
 
       // Add brands to the list
       for (const item of topBrands) {
-        const entry: Omit<ListEntry, 'id' | 'createdAt'> = {
+        const entry: Omit<ListEntry, 'id'> = {
           type: 'brand',
           brandId: item.brand.id,
           brandName: item.brand.name,
           website: item.brand.website,
+          createdAt: new Date(),
         };
-        await addEntryToList(listId, entry);
+        await library.addEntry(newList.id, entry);
       }
-
-      // Reload lists
-      await loadUserLists();
 
       // Close modal and reset state
       setShowValuesSelectionModal(false);
       setSelectedValuesForList([]);
       setValuesListName('');
       setValuesListDescription('');
+
+      // Expand the newly created list
+      library.setExpandedList(newList.id);
 
       Alert.alert('Success', `Created list with ${topBrands.length} aligned brands!`);
     } catch (error) {
@@ -1914,11 +1737,22 @@ export default function HomeScreen() {
         (clerkUser.firstName && clerkUser.lastName
           ? `${clerkUser.firstName} ${clerkUser.lastName}`
           : '');
-      const creatorName = profile?.fullName || fullNameFromClerk || clerkUser.firstName || '';
-      const listId = await createList(clerkUser.id, newListName.trim(), newListDescription.trim(), creatorName);
+      const creatorName = profile?.userDetails?.name || fullNameFromClerk || clerkUser.firstName || '';
+      const creatorImage = profile?.userDetails?.profileImage || clerkUser?.imageUrl;
+
+      const newList = await library.createNewList(
+        clerkUser.id,
+        newListName.trim(),
+        newListDescription.trim(),
+        creatorName,
+        false, // not endorsed
+        undefined, // no original list
+        undefined, // no original creator
+        creatorImage
+      );
 
       // Add the item to the new list
-      let entry: Omit<ListEntry, 'id' | 'createdAt'>;
+      let entry: Omit<ListEntry, 'id'>;
 
       if (quickAddItem.type === 'brand') {
         entry = {
@@ -1927,6 +1761,7 @@ export default function HomeScreen() {
           brandName: quickAddItem.name,
           website: quickAddItem.website,
           logoUrl: quickAddItem.logoUrl,
+          createdAt: new Date(),
         };
       } else if (quickAddItem.type === 'business') {
         entry = {
@@ -1935,6 +1770,7 @@ export default function HomeScreen() {
           businessName: quickAddItem.name,
           website: quickAddItem.website,
           logoUrl: quickAddItem.logoUrl,
+          createdAt: new Date(),
         };
       } else if (quickAddItem.type === 'value') {
         if (!selectedValueMode) {
@@ -1962,20 +1798,17 @@ export default function HomeScreen() {
         for (const brandName of brandsToAdd) {
           const brand = brands.find(b => b.name === brandName);
           if (brand) {
-            const brandEntry: Omit<ListEntry, 'id' | 'createdAt'> = {
+            const brandEntry: Omit<ListEntry, 'id'> = {
               type: 'brand',
               brandId: brand.id,
               brandName: brand.name,
               website: brand.website,
+              createdAt: new Date(),
             };
-            await addEntryToList(listId, brandEntry);
+            await library.addEntry(newList.id, brandEntry);
             addedCount++;
           }
         }
-
-        // Always reload lists and personal list to keep For You and Library in sync
-        await loadUserLists();
-        await reloadPersonalList();
 
         setShowQuickAddModal(false);
         setQuickAddItem(null);
@@ -1983,13 +1816,16 @@ export default function HomeScreen() {
         setNewListDescription('');
         setSelectedValueMode(null);
 
+        // Expand the newly created list
+        library.setExpandedList(newList.id);
+
         Alert.alert('Success', `Created list and added ${addedCount} brands from ${quickAddItem.name}!`);
         return;
       } else {
         return;
       }
 
-      await addEntryToList(listId, entry);
+      await library.addEntry(newList.id, entry);
 
       // Clean up state
       setNewListName('');
@@ -1998,9 +1834,8 @@ export default function HomeScreen() {
       setQuickAddItem(null);
       setSelectedValueMode(null);
 
-      // Always reload lists and personal list to keep For You and Library in sync
-      await loadUserLists();
-      await reloadPersonalList();
+      // Expand the newly created list
+      library.setExpandedList(newList.id);
 
       Alert.alert('Success', `Created list and added ${quickAddItem.name}!`);
     } catch (error: any) {
@@ -2881,11 +2716,6 @@ export default function HomeScreen() {
   };
 
   const renderMyLibraryView = () => {
-    // If called from News view (mainView === 'myLibrary'), show news feed
-    if (mainView === 'myLibrary') {
-      return renderNewsFeedView();
-    }
-
     // If viewing a list detail, show that instead
     if (libraryView === 'detail') {
       return renderListDetailView();
@@ -3185,7 +3015,8 @@ export default function HomeScreen() {
     );
   }
 
-  if (profile.causes.length === 0) {
+  // Check if profile exists and has causes
+  if (!profile || !profile.causes || profile.causes.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
@@ -4647,7 +4478,7 @@ export default function HomeScreen() {
                     autoFocus
                   />
                   <View style={styles.searchResultsContainer}>
-                    {brands?.filter(b => b.name.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(brand => (
+                    {brands?.filter(b => b.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(brand => (
                       <TouchableOpacity
                         key={brand.id}
                         style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
@@ -4676,7 +4507,7 @@ export default function HomeScreen() {
                     autoFocus
                   />
                   <View style={styles.searchResultsContainer}>
-                    {userBusinesses?.filter(b => b.businessInfo.name.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(business => (
+                    {userBusinesses?.filter(b => b.businessInfo?.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(business => (
                       <TouchableOpacity
                         key={business.id}
                         style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
@@ -4705,7 +4536,7 @@ export default function HomeScreen() {
                     autoFocus
                   />
                   <View style={styles.searchResultsContainer}>
-                    {values?.filter(v => v.name.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(value => (
+                    {values?.filter(v => v.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(value => (
                       <View key={value.id}>
                         <TouchableOpacity
                           style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
@@ -5000,122 +4831,6 @@ export default function HomeScreen() {
         description={shareData?.description}
         isDarkMode={isDarkMode}
       />
-
-      {/* News Source Selection Modal */}
-      <Modal
-        visible={showNewsSourceModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowNewsSourceModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableWithoutFeedback onPress={() => setShowNewsSourceModal(false)}>
-            <View style={StyleSheet.absoluteFill} />
-          </TouchableWithoutFeedback>
-          <Pressable
-            style={[styles.newsSourceModalContainer, { backgroundColor: colors.background }]}
-            onPress={() => {}}
-          >
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                Select News Source
-              </Text>
-              <TouchableOpacity onPress={() => setShowNewsSourceModal(false)}>
-                <X size={24} color={colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.newsSourceOptionsContainer}>
-              {/* Endorsements */}
-              <TouchableOpacity
-                style={[
-                  styles.newsSourceOption,
-                  { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-                  selectedNewsSource === 'myList' && { borderColor: colors.primary, borderWidth: 2 }
-                ]}
-                onPress={() => {
-                  setSelectedNewsSource('myList');
-                  setShowNewsSourceModal(false);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.newsSourceOptionText, { color: colors.text }]}>Endorsements</Text>
-                {selectedNewsSource === 'myList' && (
-                  <View style={[styles.newsSourceCheckmark, { backgroundColor: colors.primary }]}>
-                    <Text style={[styles.newsSourceCheckmarkText, { color: colors.white }]}>✓</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-
-              {/* Aligned */}
-              <TouchableOpacity
-                style={[
-                  styles.newsSourceOption,
-                  { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-                  selectedNewsSource === 'aligned' && { borderColor: colors.primary, borderWidth: 2 }
-                ]}
-                onPress={() => {
-                  setSelectedNewsSource('aligned');
-                  setShowNewsSourceModal(false);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.newsSourceOptionText, { color: colors.text }]}>Aligned</Text>
-                {selectedNewsSource === 'aligned' && (
-                  <View style={[styles.newsSourceCheckmark, { backgroundColor: colors.primary }]}>
-                    <Text style={[styles.newsSourceCheckmarkText, { color: colors.white }]}>✓</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-
-              {/* Unaligned */}
-              <TouchableOpacity
-                style={[
-                  styles.newsSourceOption,
-                  { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-                  selectedNewsSource === 'unaligned' && { borderColor: colors.primary, borderWidth: 2 }
-                ]}
-                onPress={() => {
-                  setSelectedNewsSource('unaligned');
-                  setShowNewsSourceModal(false);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.newsSourceOptionText, { color: colors.text }]}>Unaligned</Text>
-                {selectedNewsSource === 'unaligned' && (
-                  <View style={[styles.newsSourceCheckmark, { backgroundColor: colors.primary }]}>
-                    <Text style={[styles.newsSourceCheckmarkText, { color: colors.white }]}>✓</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-
-              {/* Custom Lists */}
-              {userLists.map((list) => (
-                <TouchableOpacity
-                  key={list.id}
-                  style={[
-                    styles.newsSourceOption,
-                    { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-                    selectedNewsSource === list.id && { borderColor: colors.primary, borderWidth: 2 }
-                  ]}
-                  onPress={() => {
-                    setSelectedNewsSource(list.id);
-                    setShowNewsSourceModal(false);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.newsSourceOptionText, { color: colors.text }]}>{list.name}</Text>
-                  {selectedNewsSource === list.id && (
-                    <View style={[styles.newsSourceCheckmark, { backgroundColor: colors.primary }]}>
-                      <Text style={[styles.newsSourceCheckmarkText, { color: colors.white }]}>✓</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </Pressable>
-        </View>
-      </Modal>
 
     </View>
   );
@@ -6958,130 +6673,6 @@ const styles = StyleSheet.create({
   shareModalButtonTextCancel: {
     fontSize: 16,
     fontWeight: '500' as const,
-  },
-  // News feed styles
-  newsContainer: {
-    gap: 12,
-  },
-  newsCount: {
-    fontSize: 13,
-    fontWeight: '500' as const,
-    paddingTop: 16,
-  },
-  newsArticleCard: {
-    borderRadius: 12,
-    borderWidth: 1,
-    overflow: 'hidden',
-    marginBottom: 0,
-  },
-  newsArticleContent: {
-    padding: 14,
-  },
-  newsArticleHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  newsBrandTag: {
-    fontSize: 11,
-    fontWeight: '700' as const,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    overflow: 'hidden',
-    textTransform: 'uppercase' as const,
-  },
-  newsDate: {
-    fontSize: 11,
-    fontWeight: '500' as const,
-  },
-  newsTitle: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    lineHeight: 22,
-    marginBottom: 6,
-  },
-  newsDescription: {
-    fontSize: 13,
-    lineHeight: 18,
-    marginBottom: 10,
-  },
-  newsFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  newsSource: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-  },
-  newsHeaderContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  newsSourceDropdownContainer: {
-    alignSelf: 'flex-start',
-  },
-  newsSourceDropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    minWidth: 240,
-    gap: 32,
-  },
-  newsSourceText: {
-    fontSize: 30,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  newsSourceBorder: {
-    height: 2,
-    marginTop: 4,
-    borderRadius: 1,
-  },
-  newsSourceModalContainer: {
-    width: '90%',
-    maxWidth: 500,
-    maxHeight: '70%',
-    borderRadius: 16,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    overflow: 'hidden',
-  },
-  newsSourceOptionsContainer: {
-    padding: 20,
-  },
-  newsSourceOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 12,
-  },
-  newsSourceOptionText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  newsSourceCheckmark: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  newsSourceCheckmarkText: {
-    fontSize: 14,
-    fontWeight: '700',
   },
   // Collapsible Library Directory Styles
   libraryDirectory: {

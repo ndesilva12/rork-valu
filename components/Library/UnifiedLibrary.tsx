@@ -15,6 +15,8 @@ import {
   Pressable,
   Share,
   Modal,
+  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import {
@@ -46,6 +48,8 @@ import { updateListMetadata } from '@/services/firebase/listService';
 import AddToLibraryModal from '@/components/AddToLibraryModal';
 import EditListModal from '@/components/EditListModal';
 import ShareOptionsModal from '@/components/ShareOptionsModal';
+import ItemOptionsModal from '@/components/ItemOptionsModal';
+import ConfirmModal from '@/components/ConfirmModal';
 
 // ===== Types =====
 
@@ -92,9 +96,10 @@ export default function UnifiedLibrary({
   const [localExpandedListId, setLocalExpandedListId] = useState<string | null>(null);
   const [localSelectedListId, setLocalSelectedListId] = useState<string | null>(null);
   const [activeListOptionsId, setActiveListOptionsId] = useState<string | null>(null);
-  const [activeItemOptionsId, setActiveItemOptionsId] = useState<string | null>(null);
   const [showAddToLibraryModal, setShowAddToLibraryModal] = useState(false);
   const [selectedItemToAdd, setSelectedItemToAdd] = useState<ListEntry | null>(null);
+  const [isReorderMode, setIsReorderMode] = useState(false);
+  const [reorderingListId, setReorderingListId] = useState<string | null>(null);
 
   // Edit List Modal state
   const [showEditListModal, setShowEditListModal] = useState(false);
@@ -104,11 +109,28 @@ export default function UnifiedLibrary({
   const [showShareOptionsModal, setShowShareOptionsModal] = useState(false);
   const [sharingItem, setSharingItem] = useState<{type: 'list' | 'entry', data: UserList | ListEntry} | null>(null);
 
+  // Item Options Modal state
+  const [showItemOptionsModal, setShowItemOptionsModal] = useState(false);
+  const [selectedItemForOptions, setSelectedItemForOptions] = useState<ListEntry | null>(null);
+
+  // Confirm Modal state (for copying lists)
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalData, setConfirmModalData] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
+  const [isConfirmLoading, setIsConfirmLoading] = useState(false);
+
   // Pagination state for each list
   const [endorsementLoadCount, setEndorsementLoadCount] = useState(10);
   const [alignedLoadCount, setAlignedLoadCount] = useState(10);
   const [unalignedLoadCount, setUnalignedLoadCount] = useState(10);
   const [customListLoadCounts, setCustomListLoadCounts] = useState<Record<string, number>>({});
+
+  // Detect larger screens for responsive text display
+  const { width } = useWindowDimensions();
+  const isLargeScreen = width >= 768;
 
   // Mode-based permissions
   const canEdit = mode === 'edit';
@@ -148,6 +170,33 @@ export default function UnifiedLibrary({
   const handleShareList = (list: UserList) => {
     setSharingItem({ type: 'list', data: list });
     setShowShareOptionsModal(true);
+  };
+
+  // Generate share URL for lists
+  const getListShareUrl = (list: UserList): string => {
+    if (Platform.OS === 'web') {
+      return `${window.location.origin}/list/${list.id}`;
+    }
+    // For mobile, use a deep link format (can be updated with actual deep link scheme)
+    return `uprightmoney://list/${list.id}`;
+  };
+
+  const getItemShareUrl = (entry: ListEntry): string => {
+    if (entry.type === 'brand') {
+      const brandId = (entry as any).brandId;
+      if (Platform.OS === 'web') {
+        return `${window.location.origin}/brand/${brandId}`;
+      }
+      return `uprightmoney://brand/${brandId}`;
+    } else if (entry.type === 'business') {
+      const businessId = (entry as any).businessId;
+      if (Platform.OS === 'web') {
+        return `${window.location.origin}/business/${businessId}`;
+      }
+      return `uprightmoney://business/${businessId}`;
+    }
+    // For other types (value, link, text), no URL
+    return '';
   };
 
   const performShareList = async (list: UserList) => {
@@ -317,9 +366,13 @@ export default function UnifiedLibrary({
     const myEndorsementList = library.state.endorsementList;
     const myCustomLists = library.state.userLists.filter(list => list.id !== myEndorsementList?.id);
 
+    // Only show lists that the current user owns (created)
+    const ownedEndorsementList = myEndorsementList && myEndorsementList.userId === currentUserId ? myEndorsementList : null;
+    const ownedCustomLists = myCustomLists.filter(list => list.userId === currentUserId);
+
     return [
-      ...(myEndorsementList ? [myEndorsementList] : []),
-      ...myCustomLists,
+      ...(ownedEndorsementList ? [ownedEndorsementList] : []),
+      ...ownedCustomLists,
     ];
   };
 
@@ -347,10 +400,9 @@ export default function UnifiedLibrary({
     const scoreColor = alignmentScore !== undefined
       ? (alignmentScore >= 50 ? colors.primary : colors.danger)
       : colors.textSecondary;
-    const isMenuOpen = activeItemOptionsId === product.id;
 
     return (
-      <View style={{ position: 'relative', zIndex: isMenuOpen ? 99999 : 1, overflow: 'visible' }}>
+      <View style={{ position: 'relative' }}>
         <TouchableOpacity
           style={[
             styles.brandCard,
@@ -394,7 +446,8 @@ export default function UnifiedLibrary({
               style={[styles.quickAddButton, { backgroundColor: colors.background }]}
               onPress={(e) => {
                 e.stopPropagation();
-                setActiveItemOptionsId(product.id);
+                setSelectedItemForOptions({ type: 'brand', id: product.id, brandId: product.id, createdAt: new Date() } as ListEntry);
+                setShowItemOptionsModal(true);
               }}
               activeOpacity={0.7}
             >
@@ -404,7 +457,6 @@ export default function UnifiedLibrary({
             </TouchableOpacity>
           )}
         </View>
-        {renderItemOptionsMenu(product.id, { type: 'brand', id: product.id, brandId: product.id } as ListEntry, 'system')}
       </TouchableOpacity>
       </View>
     );
@@ -469,7 +521,8 @@ export default function UnifiedLibrary({
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
                       e.stopPropagation();
-                      setActiveItemOptionsId(entry.brandId);
+                      setSelectedItemForOptions(entry);
+                      setShowItemOptionsModal(true);
                     }}
                     activeOpacity={0.7}
                   >
@@ -539,7 +592,8 @@ export default function UnifiedLibrary({
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
                       e.stopPropagation();
-                      setActiveItemOptionsId(entry.businessId);
+                      setSelectedItemForOptions(entry);
+                      setShowItemOptionsModal(true);
                     }}
                     activeOpacity={0.7}
                   >
@@ -589,7 +643,8 @@ export default function UnifiedLibrary({
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
                       e.stopPropagation();
-                      setActiveItemOptionsId(entry.valueId);
+                      setSelectedItemForOptions(entry);
+                      setShowItemOptionsModal(true);
                     }}
                     activeOpacity={0.7}
                   >
@@ -634,7 +689,8 @@ export default function UnifiedLibrary({
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
                       e.stopPropagation();
-                      setActiveItemOptionsId(entry.id);
+                      setSelectedItemForOptions(entry);
+                      setShowItemOptionsModal(true);
                     }}
                     activeOpacity={0.7}
                   >
@@ -668,7 +724,8 @@ export default function UnifiedLibrary({
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
                       e.stopPropagation();
-                      setActiveItemOptionsId(entry.id);
+                      setSelectedItemForOptions(entry);
+                      setShowItemOptionsModal(true);
                     }}
                     activeOpacity={0.7}
                   >
@@ -716,6 +773,7 @@ export default function UnifiedLibrary({
           ]}
           onPress={() => toggleListExpansion(listId)}
           activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           {/* Profile Image */}
           <View style={[styles.listProfileImageContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
@@ -752,7 +810,7 @@ export default function UnifiedLibrary({
                     <Text style={[styles.collapsibleListTitle, { color: colors.text }]}>
                       {title}
                     </Text>
-                    {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" showText={false} />}
+                    {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" showText={isLargeScreen} />}
                   </View>
                   <View style={styles.collapsibleListMeta}>
                     <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
@@ -761,9 +819,15 @@ export default function UnifiedLibrary({
                     {isPublic !== undefined && (
                       <View style={styles.privacyIndicator}>
                         {isPublic ? (
-                          <Globe size={14} color={colors.primary} strokeWidth={2} />
+                          <>
+                            <Globe size={14} color={colors.primary} strokeWidth={2} />
+                            {isLargeScreen && <Text style={[styles.privacyText, { color: colors.primary }]}>Public</Text>}
+                          </>
                         ) : (
-                          <Lock size={14} color={colors.textSecondary} strokeWidth={2} />
+                          <>
+                            <Lock size={14} color={colors.textSecondary} strokeWidth={2} />
+                            {isLargeScreen && <Text style={[styles.privacyText, { color: colors.textSecondary }]}>Private</Text>}
+                          </>
                         )}
                       </View>
                     )}
@@ -787,7 +851,7 @@ export default function UnifiedLibrary({
                     <Text style={[styles.collapsibleListTitle, { color: colors.text }]} numberOfLines={1}>
                       {title}
                     </Text>
-                    {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" showText={false} />}
+                    {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" showText={isLargeScreen} />}
                   </View>
                   <View style={styles.collapsibleListMetaRow}>
                     <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]} numberOfLines={1}>
@@ -798,12 +862,12 @@ export default function UnifiedLibrary({
                         {isPublic ? (
                           <>
                             <Globe size={12} color={colors.primary} strokeWidth={2} />
-                            {Platform.OS !== 'web' && <Text style={[styles.privacyText, { color: colors.primary }]} numberOfLines={1}>Public</Text>}
+                            {isLargeScreen && <Text style={[styles.privacyText, { color: colors.primary }]} numberOfLines={1}>Public</Text>}
                           </>
                         ) : (
                           <>
                             <Lock size={12} color={colors.textSecondary} strokeWidth={2} />
-                            {Platform.OS !== 'web' && <Text style={[styles.privacyText, { color: colors.textSecondary }]} numberOfLines={1}>Private</Text>}
+                            {isLargeScreen && <Text style={[styles.privacyText, { color: colors.textSecondary }]} numberOfLines={1}>Private</Text>}
                           </>
                         )}
                       </View>
@@ -853,8 +917,14 @@ export default function UnifiedLibrary({
                       style={styles.listOptionItem}
                       onPress={() => {
                         setActiveListOptionsId(null);
-                        // TODO: Enable reorder mode
-                        console.log('Reorder mode for list:', listId);
+                        setIsReorderMode(true);
+                        setReorderingListId(listId);
+                        // Expand the list to show items
+                        if (mode === 'edit') {
+                          library.setExpandedList(listId);
+                        } else {
+                          setLocalExpandedListId(listId);
+                        }
                       }}
                       activeOpacity={0.7}
                     >
@@ -880,31 +950,64 @@ export default function UnifiedLibrary({
                   {canCopyList && currentList && (
                     <TouchableOpacity
                       style={styles.listOptionItem}
-                      onPress={async () => {
+                      onPress={() => {
                         setActiveListOptionsId(null);
                         if (!currentUserId) {
-                          Alert.alert('Error', 'You must be logged in to copy lists');
+                          if (Platform.OS === 'web') {
+                            window.alert('You must be logged in to copy lists');
+                          } else {
+                            Alert.alert('Error', 'You must be logged in to copy lists');
+                          }
                           return;
                         }
-                        try {
-                          // Copy list to current user's library
-                          const newListName = `${currentList.name} (Copy)`;
-                          const newList = await library.createNewList(currentUserId, newListName, currentList.description);
 
-                          // Copy all entries
-                          for (const entry of currentList.entries) {
-                            await library.addEntry(newList.id, entry);
-                          }
+                        // Show confirmation modal
+                        setConfirmModalData({
+                          title: 'Add to Your Library',
+                          message: `Add "${currentList.name}" to your library? All items will be copied.`,
+                          onConfirm: async () => {
+                            setIsConfirmLoading(true);
+                            try {
+                              // Copy list to current user's library WITHOUT "(Copy)" suffix
+                              const newList = await library.createNewList(
+                                currentUserId,
+                                currentList.name, // NO (Copy) suffix
+                                currentList.description,
+                                profile?.userDetails?.name, // Current user as creator
+                                false, // not endorsed
+                                currentList.id, // original list ID
+                                currentList.creatorName || currentList.userId, // original creator
+                                profile?.userDetails?.profileImage, // current user's image
+                                currentList.creatorImage // original creator's image
+                              );
 
-                          Alert.alert('Success', `Copied "${currentList.name}" to your library`);
-                        } catch (error: any) {
-                          Alert.alert('Error', error.message || 'Failed to copy list');
-                        }
+                              // Copy all entries WITHOUT the id field
+                              for (const entry of currentList.entries) {
+                                const { id, ...entryWithoutId } = entry;
+                                await library.addEntry(newList.id, entryWithoutId);
+                              }
+
+                              setShowConfirmModal(false);
+                              setConfirmModalData(null);
+                              // Success - no alert needed, user can see it in their library
+                            } catch (error: any) {
+                              console.error('Error copying list:', error);
+                              if (Platform.OS === 'web') {
+                                window.alert(error.message || 'Failed to copy list');
+                              } else {
+                                Alert.alert('Error', error.message || 'Failed to copy list');
+                              }
+                            } finally {
+                              setIsConfirmLoading(false);
+                            }
+                          },
+                        });
+                        setShowConfirmModal(true);
                       }}
                       activeOpacity={0.7}
                     >
                       <Plus size={16} color={colors.text} strokeWidth={2} />
-                      <Text style={[styles.listOptionText, { color: colors.text }]}>Copy to My Library</Text>
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Add to My Library</Text>
                     </TouchableOpacity>
                   )}
 
@@ -980,75 +1083,6 @@ export default function UnifiedLibrary({
     );
   };
 
-  // Helper to render item options menu
-  const renderItemOptionsMenu = (itemId: string, entry: ListEntry, listId: string) => {
-    const isOpen = activeItemOptionsId === itemId;
-    if (!isOpen) return null;
-
-    const canRemove = canEdit;
-    const canShare = true;
-    const canAddToLibrary = true; // ALWAYS show "Add to" - both edit and view modes
-    const canFollow = entry.type === 'brand' || entry.type === 'business'; // Only brands and businesses can be followed
-
-    return (
-      <View style={[styles.itemOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-        {canAddToLibrary && (
-          <TouchableOpacity
-            style={styles.listOptionItem}
-            onPress={() => {
-              setActiveItemOptionsId(null);
-              handleAddToLibrary(entry);
-            }}
-            activeOpacity={0.7}
-          >
-            <Plus size={16} color={colors.text} strokeWidth={2} />
-            <Text style={[styles.listOptionText, { color: colors.text }]}>Add to</Text>
-          </TouchableOpacity>
-        )}
-        {canFollow && (
-          <TouchableOpacity
-            style={styles.listOptionItem}
-            onPress={() => {
-              setActiveItemOptionsId(null);
-              handleFollow(entry);
-            }}
-            activeOpacity={0.7}
-          >
-            <UserPlus size={16} color={colors.text} strokeWidth={2} />
-            <Text style={[styles.listOptionText, { color: colors.text }]}>Follow</Text>
-          </TouchableOpacity>
-        )}
-        {canShare && (
-          <TouchableOpacity
-            style={styles.listOptionItem}
-            onPress={() => {
-              setActiveItemOptionsId(null);
-              handleShareItem(entry);
-            }}
-            activeOpacity={0.7}
-          >
-            <Share2 size={16} color={colors.text} strokeWidth={2} />
-            <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
-          </TouchableOpacity>
-        )}
-        {canRemove && (
-          <TouchableOpacity
-            style={styles.listOptionItem}
-            onPress={() => {
-              setActiveItemOptionsId(null);
-              // Remove item from list
-              library.removeEntry(listId, entry.id);
-            }}
-            activeOpacity={0.7}
-          >
-            <Trash2 size={16} color="#EF4444" strokeWidth={2} />
-            <Text style={[styles.listOptionText, { color: '#EF4444', fontWeight: '700' }]}>Remove</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    );
-  };
-
   // Render content for Endorsement list
   const renderEndorsementContent = () => {
     if (!endorsementList) return null;
@@ -1080,7 +1114,6 @@ export default function UnifiedLibrary({
                     {renderListEntry(entry)}
                   </View>
                 </View>
-                {renderItemOptionsMenu(itemId, entry, endorsementList.id)}
               </View>
             );
           })}
@@ -1197,7 +1230,6 @@ export default function UnifiedLibrary({
                     {renderListEntry(entry)}
                   </View>
                 </View>
-                {renderItemOptionsMenu(itemId, entry, list.id)}
               </View>
             );
           })}
@@ -1217,13 +1249,12 @@ export default function UnifiedLibrary({
     );
   };
 
-  // Check if any menu is open
-  const isAnyMenuOpen = activeListOptionsId !== null || activeItemOptionsId !== null;
+  // Check if any menu is open (only list options dropdown now, items use modal)
+  const isAnyMenuOpen = activeListOptionsId !== null;
 
   // Close all menus
   const closeAllMenus = () => {
     setActiveListOptionsId(null);
-    setActiveItemOptionsId(null);
   };
 
   return (
@@ -1316,6 +1347,9 @@ export default function UnifiedLibrary({
           ? `Created by ${list.creatorName}`
           : undefined;
 
+        // Use original creator's image for copied lists, otherwise the list creator's image, or fall back to profile image
+        const listProfileImage = list.originalCreatorImage || list.creatorImage || profileImage;
+
         return (
           <React.Fragment key={list.id}>
             {renderCollapsibleListHeader(
@@ -1328,7 +1362,7 @@ export default function UnifiedLibrary({
               attribution,
               list.description,
               list.isPublic,
-              profileImage
+              listProfileImage
             )}
             {expandedListId === list.id && renderCustomListContent(list)}
           </React.Fragment>
@@ -1373,7 +1407,86 @@ export default function UnifiedLibrary({
             }
           }
         }}
+        shareUrl={
+          sharingItem?.type === 'list'
+            ? getListShareUrl(sharingItem.data as UserList)
+            : sharingItem?.type === 'entry'
+            ? getItemShareUrl(sharingItem.data as ListEntry)
+            : undefined
+        }
         isDarkMode={isDarkMode}
+      />
+
+      <ItemOptionsModal
+        visible={showItemOptionsModal}
+        onClose={() => {
+          setShowItemOptionsModal(false);
+          setSelectedItemForOptions(null);
+        }}
+        options={(() => {
+          if (!selectedItemForOptions) return [];
+
+          const options = [];
+          const canRemove = canEdit;
+          const canFollow = selectedItemForOptions.type === 'brand' || selectedItemForOptions.type === 'business';
+
+          // Add to library option (always available)
+          options.push({
+            icon: Plus,
+            label: 'Add to',
+            onPress: () => handleAddToLibrary(selectedItemForOptions),
+          });
+
+          // Follow option (for brands and businesses)
+          if (canFollow) {
+            options.push({
+              icon: UserPlus,
+              label: 'Follow',
+              onPress: () => handleFollow(selectedItemForOptions),
+            });
+          }
+
+          // Share option (always available)
+          options.push({
+            icon: Share2,
+            label: 'Share',
+            onPress: () => handleShareItem(selectedItemForOptions),
+          });
+
+          // Remove option (only in edit mode)
+          if (canRemove) {
+            options.push({
+              icon: Trash2,
+              label: 'Remove',
+              onPress: () => handleRemoveFromLibrary(selectedItemForOptions),
+              isDanger: true,
+            });
+          }
+
+          return options;
+        })()}
+        itemName={selectedItemForOptions ? getItemName(selectedItemForOptions) : undefined}
+        isDarkMode={isDarkMode}
+      />
+
+      <ConfirmModal
+        visible={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setConfirmModalData(null);
+          setIsConfirmLoading(false);
+        }}
+        onConfirm={() => {
+          if (confirmModalData) {
+            confirmModalData.onConfirm();
+          }
+        }}
+        title={confirmModalData?.title || ''}
+        message={confirmModalData?.message || ''}
+        confirmText="Add to Library"
+        cancelText="Cancel"
+        isDarkMode={isDarkMode}
+        isLoading={isConfirmLoading}
       />
     </View>
   );

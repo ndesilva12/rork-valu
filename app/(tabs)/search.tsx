@@ -55,8 +55,8 @@ export default function SearchScreen() {
   const { width } = useWindowDimensions();
 
   // Helper function to normalize alignment scores to 0-100 range
-  const normalizeScore = useCallback((score: number): number => {
-    return Math.min(100, Math.max(0, Math.round(Math.abs(score))));
+  const normalizeScore = useCallback((score: number | undefined): number => {
+    return Math.min(100, Math.max(0, Math.round(Math.abs(score ?? 50))));
   }, []);
 
   const [query, setQuery] = useState('');
@@ -527,21 +527,24 @@ export default function SearchScreen() {
     }
   };
 
-  const getAlignmentColor = (score: number) => {
-    if (score >= 70) return Colors.success;
-    if (score >= 40) return Colors.neutral;
+  const getAlignmentColor = (score: number | undefined) => {
+    const normalizedScore = score ?? 50;
+    if (normalizedScore >= 70) return Colors.success;
+    if (normalizedScore >= 40) return Colors.neutral;
     return Colors.danger;
   };
 
-  const getAlignmentIcon = (score: number) => {
-    if (score >= 70) return TrendingUp;
-    if (score >= 40) return Minus;
+  const getAlignmentIcon = (score: number | undefined) => {
+    const normalizedScore = score ?? 50;
+    if (normalizedScore >= 70) return TrendingUp;
+    if (normalizedScore >= 40) return Minus;
     return TrendingDown;
   };
 
-  const getAlignmentLabel = (score: number) => {
-    if (score >= 70) return 'Strongly Aligned';
-    if (score >= 40) return 'Neutral';
+  const getAlignmentLabel = (score: number | undefined) => {
+    const normalizedScore = score ?? 50;
+    if (normalizedScore >= 70) return 'Strongly Aligned';
+    if (normalizedScore >= 40) return 'Neutral';
     return 'Not Aligned';
   };
 
@@ -595,20 +598,6 @@ export default function SearchScreen() {
     const userLocation = item.profile.userDetails?.location;
     const userBio = item.profile.userDetails?.description;
 
-    // Calculate alignment score with this user (same as businesses)
-    let alignmentScore = 50; // Default neutral
-    let isAligned = false;
-
-    if (profile?.causes && item.profile.causes && profile.causes.length > 0 && item.profile.causes.length > 0) {
-      const rawScore = calculateAlignmentScore(profile.causes, item.profile.causes);
-      alignmentScore = Math.round(50 + (rawScore * 0.8));
-      alignmentScore = Math.max(10, Math.min(90, alignmentScore)); // Clamp to 10-90 range
-      isAligned = alignmentScore >= 50;
-    }
-
-    const alignmentColor = isAligned ? colors.success : colors.danger;
-    const AlignmentIcon = isAligned ? TrendingUp : TrendingDown;
-
     return (
       <TouchableOpacity
         style={[
@@ -648,14 +637,6 @@ export default function SearchScreen() {
                 {userBio}
               </Text>
             )}
-          </View>
-
-          {/* Alignment Score Badge */}
-          <View style={[styles.userScoreCircle, { borderColor: alignmentColor, backgroundColor: colors.background }]}>
-            <AlignmentIcon size={16} color={alignmentColor} strokeWidth={2.5} />
-            <Text style={[styles.userScoreNumber, { color: alignmentColor }]}>
-              {alignmentScore}
-            </Text>
           </View>
         </View>
       </TouchableOpacity>

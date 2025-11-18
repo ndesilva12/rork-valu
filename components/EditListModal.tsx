@@ -174,14 +174,16 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   keyboardView: {
-    justifyContent: 'flex-end',
+    width: '100%',
+    maxWidth: 500,
   },
   container: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderRadius: 20,
     paddingBottom: Platform.OS === 'ios' ? 40 : 20,
     maxHeight: '80%',
   },

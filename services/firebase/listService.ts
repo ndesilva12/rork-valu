@@ -45,6 +45,7 @@ export const getUserLists = async (userId: string): Promise<UserList[]> => {
         name: data.name,
         description: data.description,
         creatorName: data.creatorName,
+        creatorImage: data.creatorImage,
         entries: data.entries || [],
         createdAt: timestampToDate(data.createdAt),
         updatedAt: timestampToDate(data.updatedAt),
@@ -52,6 +53,7 @@ export const getUserLists = async (userId: string): Promise<UserList[]> => {
         isEndorsed: data.isEndorsed || false,
         originalListId: data.originalListId,
         originalCreatorName: data.originalCreatorName,
+        originalCreatorImage: data.originalCreatorImage,
       });
     });
 
@@ -82,6 +84,7 @@ export const getList = async (listId: string): Promise<UserList | null> => {
       name: data.name,
       description: data.description,
       creatorName: data.creatorName,
+      creatorImage: data.creatorImage,
       entries: data.entries || [],
       createdAt: timestampToDate(data.createdAt),
       updatedAt: timestampToDate(data.updatedAt),
@@ -89,6 +92,7 @@ export const getList = async (listId: string): Promise<UserList | null> => {
       isEndorsed: data.isEndorsed || false,
       originalListId: data.originalListId,
       originalCreatorName: data.originalCreatorName,
+      originalCreatorImage: data.originalCreatorImage,
     };
   } catch (error) {
     console.error('Error getting list:', error);
@@ -102,8 +106,12 @@ export const createList = async (
   name: string,
   description?: string,
   creatorName?: string,
-  isEndorsed: boolean = false
-): Promise<string> => {
+  isEndorsed: boolean = false,
+  originalListId?: string,
+  originalCreatorName?: string,
+  creatorImage?: string,
+  originalCreatorImage?: string
+): Promise<UserList> => {
   try {
     // Prevent creating multiple endorsed lists
     if (isEndorsed) {
@@ -114,20 +122,42 @@ export const createList = async (
     }
 
     const listsRef = collection(db, LISTS_COLLECTION);
+    const now = new Date();
     const newList = {
       userId,
       name,
       description: description || '',
       creatorName: creatorName || '',
+      ...(creatorImage && { creatorImage }),
       entries: [],
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       isPublic: true, // Default to public
       isEndorsed,
+      ...(originalListId && { originalListId }),
+      ...(originalCreatorName && { originalCreatorName }),
+      ...(originalCreatorImage && { originalCreatorImage }),
     };
 
     const docRef = await addDoc(listsRef, newList);
-    return docRef.id;
+
+    // Return the full UserList object
+    return {
+      id: docRef.id,
+      userId,
+      name,
+      description: description || '',
+      creatorName: creatorName || '',
+      ...(creatorImage && { creatorImage }),
+      entries: [],
+      createdAt: now,
+      updatedAt: now,
+      isPublic: true,
+      isEndorsed,
+      ...(originalListId && { originalListId }),
+      ...(originalCreatorName && { originalCreatorName }),
+      ...(originalCreatorImage && { originalCreatorImage }),
+    };
   } catch (error) {
     console.error('Error creating list:', error);
     throw error;
