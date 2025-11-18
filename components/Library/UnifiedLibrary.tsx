@@ -927,35 +927,33 @@ export default function UnifiedLibrary({
                         // Show confirmation modal
                         setConfirmModalData({
                           title: 'Add to Your Library',
-                          message: `Add "${currentList.name}" to your library? All items will be copied.`,
+                          message: `Add "${currentList.name}" to your library? This will create a live reference that updates when the original author modifies it.`,
                           onConfirm: async () => {
                             setIsConfirmLoading(true);
                             try {
-                              // Copy list to current user's library WITHOUT "(Copy)" suffix
+                              // Create a reference list (NOT a copy) - no entries are duplicated
+                              // This list will display the original list's current data
                               const newList = await library.createNewList(
                                 currentUserId,
-                                currentList.name, // NO (Copy) suffix
+                                currentList.name,
                                 currentList.description,
-                                profile?.userDetails?.name, // Current user as creator
+                                profile?.userDetails?.name, // Current user as creator (who added it)
                                 false, // not endorsed
-                                currentList.id, // original list ID
+                                currentList.id, // original list ID - this makes it a reference
                                 currentList.creatorName || currentList.userId, // original creator
                                 profile?.userDetails?.profileImage, // current user's image
                                 currentList.creatorImage // original creator's image
                               );
 
-                              // Copy all entries WITHOUT the id field
-                              for (const entry of currentList.entries) {
-                                const { id, ...entryWithoutId } = entry;
-                                await library.addEntry(newList.id, entryWithoutId);
-                              }
+                              // DO NOT copy entries - this is a live reference, not a snapshot
+                              // Entries will be fetched from the original list when displayed
 
                               setShowConfirmModal(false);
                               setConfirmModalData(null);
-                              // Success - no alert needed, user can see it in their library
+                              Alert.alert('Success', `Added "${currentList.name}" to your library. This list will update automatically when the original author makes changes.`);
                             } catch (error: any) {
-                              console.error('Error copying list:', error);
-                              Alert.alert('Error', error.message || 'Failed to copy list');
+                              console.error('Error adding list reference:', error);
+                              Alert.alert('Error', error.message || 'Failed to add list');
                             } finally {
                               setIsConfirmLoading(false);
                             }

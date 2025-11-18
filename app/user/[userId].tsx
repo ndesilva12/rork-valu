@@ -19,7 +19,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { UserProfile } from '@/types';
-import { getUserLists } from '@/services/firebase/listService';
+import { getUserLists, resolveList } from '@/services/firebase/listService';
 import { UserList } from '@/types/library';
 import EndorsedBadge from '@/components/EndorsedBadge';
 import { getAllUserBusinesses, BusinessUser } from '@/services/firebase/businessService';
@@ -79,7 +79,12 @@ export default function UserProfileScreen() {
         ? lists
         : lists.filter(list => list.isPublic);
 
-      setUserLists(publicLists);
+      // Resolve all lists to fetch live data for referenced lists
+      const resolvedLists = await Promise.all(
+        publicLists.map(list => resolveList(list))
+      );
+
+      setUserLists(resolvedLists);
     } catch (err) {
       console.error('Error loading user profile:', err);
       setError('Failed to load profile');
