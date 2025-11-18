@@ -12,6 +12,7 @@ import {
   Platform,
   Linking,
   Alert,
+  Pressable,
 } from 'react-native';
 import { Image } from 'expo-image';
 import {
@@ -129,8 +130,10 @@ export default function UnifiedLibrary({
   // Render brand card with score (for Product type)
   const renderBrandCard = (product: Product, type: 'support' | 'avoid') => {
     const isSupport = type === 'support';
-    const titleColor = isSupport ? colors.primary : colors.danger;
-    const alignmentScore = scoredBrands.get(product.id) || 0;
+    const alignmentScore = scoredBrands.get(product.id);
+    const scoreColor = alignmentScore !== undefined
+      ? (alignmentScore >= 50 ? colors.primary : colors.danger)
+      : colors.textSecondary;
 
     return (
       <TouchableOpacity
@@ -157,36 +160,26 @@ export default function UnifiedLibrary({
             />
           </View>
           <View style={styles.brandCardContent}>
-            <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>
-              {product.name}
+            <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
+              {product.name || 'Unknown Brand'}
             </Text>
-            <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-              {product.category}
-            </Text>
+            {product.category && (
+              <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                {product.category}
+              </Text>
+            )}
           </View>
-          <View style={styles.brandScoreContainer}>
-            <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
-          </View>
-          {mode === 'edit' && (
-            <TouchableOpacity
-              style={[styles.quickAddButton, { backgroundColor: colors.background }]}
-              onPress={(e) => {
-                e.stopPropagation();
-                // TODO: Show options menu for brand
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={{ transform: [{ rotate: '90deg' }] }}>
-                <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
-              </View>
-            </TouchableOpacity>
+          {alignmentScore !== undefined && (
+            <View style={styles.brandScoreContainer}>
+              <Text style={[styles.brandScore, { color: scoreColor }]}>{alignmentScore}</Text>
+            </View>
           )}
-          {mode === 'view' && (
+          {(mode === 'edit' || mode === 'view') && (
             <TouchableOpacity
               style={[styles.quickAddButton, { backgroundColor: colors.background }]}
               onPress={(e) => {
                 e.stopPropagation();
-                // TODO: Show options menu (add to library, share)
+                setActiveItemOptionsId(product.id);
               }}
               activeOpacity={0.7}
             >
@@ -214,8 +207,12 @@ export default function UnifiedLibrary({
             return renderBrandCard(brand, 'support');
           }
 
-          // Brand not in aligned/unaligned arrays (viewing another user's profile)
-          // Render using entry data without score
+          // Brand not in aligned/unaligned arrays - render using entry data
+          // Get brand name from multiple possible fields
+          const brandName = (entry as any).brandName || (entry as any).name || 'Unknown Brand';
+          const brandCategory = (entry as any).brandCategory || (entry as any).category;
+          const logoUrl = (entry as any).logoUrl || getLogoUrl((entry as any).website || '');
+
           return (
             <TouchableOpacity
               style={[
@@ -233,7 +230,7 @@ export default function UnifiedLibrary({
               <View style={styles.brandCardInner}>
                 <View style={styles.brandLogoContainer}>
                   <Image
-                    source={{ uri: entry.logoUrl || getLogoUrl(entry.website || '') }}
+                    source={{ uri: logoUrl }}
                     style={styles.brandLogo}
                     contentFit="cover"
                     transition={200}
@@ -242,15 +239,15 @@ export default function UnifiedLibrary({
                 </View>
                 <View style={styles.brandCardContent}>
                   <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
-                    {entry.brandName || entry.name || 'Unknown Brand'}
+                    {brandName}
                   </Text>
-                  {entry.category && (
+                  {brandCategory && (
                     <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {entry.category}
+                      {brandCategory}
                     </Text>
                   )}
                 </View>
-                {(canEdit || mode === 'view') && (
+                {(mode === 'edit' || mode === 'view') && (
                   <TouchableOpacity
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
@@ -276,15 +273,20 @@ export default function UnifiedLibrary({
           const businessData = userBusinesses.find(b => b.id === entry.businessId);
           const causes = userCauses || profile?.causes || [];
           let alignmentScore: number | null = null;
-          let titleColor = colors.text;
+          let scoreColor = colors.textSecondary;
 
           if (businessData && causes.length > 0) {
             const rawScore = calculateAlignmentScore(causes, businessData.causes || []);
             alignmentScore = Math.round(50 + (rawScore * 0.8));
             alignmentScore = Math.max(10, Math.min(90, alignmentScore));
             const isAligned = alignmentScore >= 50;
-            titleColor = isAligned ? colors.primary : colors.danger;
+            scoreColor = isAligned ? colors.primary : colors.danger;
           }
+
+          // Get business name from multiple possible fields
+          const businessName = (entry as any).businessName || (entry as any).name || 'Unknown Business';
+          const businessCategory = (entry as any).businessCategory || (entry as any).category;
+          const logoUrl = (entry as any).logoUrl || getLogoUrl((entry as any).website || '');
 
           return (
             <TouchableOpacity
@@ -303,7 +305,7 @@ export default function UnifiedLibrary({
               <View style={styles.brandCardInner}>
                 <View style={styles.brandLogoContainer}>
                   <Image
-                    source={{ uri: entry.logoUrl || getLogoUrl(entry.website || '') }}
+                    source={{ uri: logoUrl }}
                     style={styles.brandLogo}
                     contentFit="cover"
                     transition={200}
@@ -311,35 +313,21 @@ export default function UnifiedLibrary({
                   />
                 </View>
                 <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>
-                    {entry.businessName}
+                  <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
+                    {businessName}
                   </Text>
-                  {entry.businessCategory && (
+                  {businessCategory && (
                     <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {entry.businessCategory}
+                      {businessCategory}
                     </Text>
                   )}
                 </View>
                 {alignmentScore !== null && (
                   <View style={styles.brandScoreContainer}>
-                    <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
+                    <Text style={[styles.brandScore, { color: scoreColor }]}>{alignmentScore}</Text>
                   </View>
                 )}
-                {mode === 'edit' && (
-                  <TouchableOpacity
-                    style={[styles.quickAddButton, { backgroundColor: colors.background }]}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      setActiveItemOptionsId(entry.businessId);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={{ transform: [{ rotate: '90deg' }] }}>
-                      <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
-                    </View>
-                  </TouchableOpacity>
-                )}
-                {mode === 'view' && (
+                {(mode === 'edit' || mode === 'view') && (
                   <TouchableOpacity
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
@@ -362,7 +350,8 @@ export default function UnifiedLibrary({
       case 'value':
         if ('valueId' in entry) {
           const isSupport = entry.mode !== 'maxPain';
-          const titleColor = isSupport ? colors.primary : colors.danger;
+          const iconColor = isSupport ? colors.primary : colors.danger;
+          const valueName = (entry as any).valueName || (entry as any).name || 'Unknown Value';
 
           return (
             <View style={[
@@ -378,22 +367,22 @@ export default function UnifiedLibrary({
                     alignItems: 'center',
                   }
                 ]}>
-                  <Target size={32} color={titleColor} strokeWidth={2} />
+                  <Target size={32} color={iconColor} strokeWidth={2} />
                 </View>
                 <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>
-                    {entry.valueName}
+                  <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
+                    {valueName}
                   </Text>
                   <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
                     {entry.mode === 'maxPain' ? 'Avoid' : 'Support'}
                   </Text>
                 </View>
-                {mode === 'view' && (
+                {(mode === 'edit' || mode === 'view') && (
                   <TouchableOpacity
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                     onPress={(e) => {
                       e.stopPropagation();
-                      // TODO: Show options menu (add to library, share)
+                      setActiveItemOptionsId(entry.valueId);
                     }}
                     activeOpacity={0.7}
                   >
@@ -410,6 +399,7 @@ export default function UnifiedLibrary({
 
       case 'link':
         if ('url' in entry) {
+          const linkTitle = (entry as any).title || (entry as any).name || 'Link';
           return (
             <TouchableOpacity
               style={[
@@ -420,17 +410,33 @@ export default function UnifiedLibrary({
               activeOpacity={0.7}
               disabled={!canInteract}
             >
-              <View style={styles.brandCardContent}>
-                <Text style={[styles.brandName, { color: colors.primary }]} numberOfLines={1}>
-                  {entry.title}
-                </Text>
-                {entry.description && (
-                  <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={2}>
-                    {entry.description}
+              <View style={styles.brandCardInner}>
+                <View style={styles.brandCardContent}>
+                  <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={1}>
+                    {linkTitle}
                   </Text>
+                  {(entry as any).description && (
+                    <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={2}>
+                      {(entry as any).description}
+                    </Text>
+                  )}
+                </View>
+                <ExternalLink size={16} color={colors.textSecondary} strokeWidth={2} />
+                {(mode === 'edit' || mode === 'view') && (
+                  <TouchableOpacity
+                    style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      setActiveItemOptionsId(entry.id);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ transform: [{ rotate: '90deg' }] }}>
+                      <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                    </View>
+                  </TouchableOpacity>
                 )}
               </View>
-              <ExternalLink size={16} color={colors.textSecondary} strokeWidth={2} />
             </TouchableOpacity>
           );
         }
@@ -438,14 +444,33 @@ export default function UnifiedLibrary({
 
       case 'text':
         if ('content' in entry) {
+          const textContent = (entry as any).content || (entry as any).text || 'No content';
           return (
             <View style={[
               styles.brandCard,
               { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }
             ]}>
-              <Text style={[styles.brandName, { color: colors.text }]}>
-                {entry.content}
-              </Text>
+              <View style={styles.brandCardInner}>
+                <View style={styles.brandCardContent}>
+                  <Text style={[styles.brandName, { color: colors.text }]}>
+                    {textContent}
+                  </Text>
+                </View>
+                {(mode === 'edit' || mode === 'view') && (
+                  <TouchableOpacity
+                    style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      setActiveItemOptionsId(entry.id);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ transform: [{ rotate: '90deg' }] }}>
+                      <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                    </View>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           );
         }
@@ -943,8 +968,18 @@ export default function UnifiedLibrary({
     );
   };
 
+  // Close all menus when clicking outside
+  const handlePressOutside = () => {
+    if (activeListOptionsId !== null) {
+      setActiveListOptionsId(null);
+    }
+    if (activeItemOptionsId !== null) {
+      setActiveItemOptionsId(null);
+    }
+  };
+
   return (
-    <View style={styles.libraryDirectory}>
+    <Pressable style={styles.libraryDirectory} onPress={handlePressOutside}>
       {/* 1. Endorsement List - Always first, pinned */}
       {endorsementList && (
         <>
@@ -1030,7 +1065,7 @@ export default function UnifiedLibrary({
           </React.Fragment>
         );
       })}
-    </View>
+    </Pressable>
   );
 }
 
