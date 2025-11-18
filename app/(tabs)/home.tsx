@@ -531,12 +531,13 @@ export default function HomeScreen() {
           setExpandedListId('aligned');
           setSelectedListId('aligned');
           await AsyncStorage.setItem(firstTimeKey, 'false'); // Mark as visited
-        
+        } else {
           // Not first time: select (highlight) endorsed list but keep collapsed
           setExpandedListId(null);
           setSelectedListId('endorsement');
         }
         setHasSetDefaultExpansion(true);
+      }
     };
     handleDefaultLibraryState();
   }, [mainView, userPersonalList, hasSetDefaultExpansion, clerkUser?.id]);
