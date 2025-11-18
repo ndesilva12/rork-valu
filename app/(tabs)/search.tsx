@@ -286,7 +286,7 @@ export default function SearchScreen() {
 
   const handleVisitBrand = useCallback(async (product: Product) => {
     try {
-      const websiteUrl = product.website || `https://${product.brand.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '')}.com`;
+      const websiteUrl = product.website || `https://${(product.brand || product.name || 'brand').toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '')}.com`;
       const canOpen = await Linking.canOpenURL(websiteUrl);
       if (canOpen) {
         await Linking.openURL(websiteUrl);
@@ -316,8 +316,8 @@ export default function SearchScreen() {
           .filter(business => {
             const searchLower = text.toLowerCase();
             return (
-              business.businessInfo.name.toLowerCase().includes(searchLower) ||
-              business.businessInfo.category.toLowerCase().includes(searchLower) ||
+              business.businessInfo.name?.toLowerCase().includes(searchLower) ||
+              business.businessInfo.category?.toLowerCase().includes(searchLower) ||
               business.businessInfo.location?.toLowerCase().includes(searchLower) ||
               business.businessInfo.description?.toLowerCase().includes(searchLower)
             );

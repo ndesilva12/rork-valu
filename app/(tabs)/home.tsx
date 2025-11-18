@@ -648,6 +648,9 @@ export default function HomeScreen() {
     const categorized = new Map<string, Product[]>();
 
     allSupport.forEach((product) => {
+      // Safety check - skip products without required fields
+      if (!product.category || !product.name) return;
+
       FOLDER_CATEGORIES.forEach((category) => {
         const productCategory = product.category.toLowerCase();
         const productBrand = product.name.toLowerCase();
