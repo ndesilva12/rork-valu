@@ -442,6 +442,7 @@ export default function HomeScreen() {
       // Ensure local view is active
       if (mainView !== 'local') {
         setMainView('local');
+      }
     }
   }, [params.fromMap]);
 
