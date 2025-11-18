@@ -46,6 +46,7 @@ import { updateListMetadata } from '@/services/firebase/listService';
 import AddToLibraryModal from '@/components/AddToLibraryModal';
 import EditListModal from '@/components/EditListModal';
 import ShareOptionsModal from '@/components/ShareOptionsModal';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 // ===== Types =====
 
@@ -103,6 +104,14 @@ export default function UnifiedLibrary({
   // Share Options Modal state
   const [showShareOptionsModal, setShowShareOptionsModal] = useState(false);
   const [sharingItem, setSharingItem] = useState<{type: 'list' | 'entry', data: UserList | ListEntry} | null>(null);
+
+  // Confirm Dialog state
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmDialogConfig, setConfirmDialogConfig] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ title: '', message: '', onConfirm: () => {} });
 
   // Pagination state for each list
   const [endorsementLoadCount, setEndorsementLoadCount] = useState(10);
@@ -241,9 +250,12 @@ export default function UnifiedLibrary({
         name,
         description,
       });
-      // Reload lists to reflect the change
+
+      // Reload lists to reflect the change immediately
       if (currentUserId) {
         await library.loadUserLists(currentUserId, true);
+      } else if (profile?.id) {
+        await library.loadUserLists(profile.id, true);
       }
     } catch (error) {
       console.error('Error updating list:', error);
@@ -259,10 +271,14 @@ export default function UnifiedLibrary({
   const handleTogglePrivacy = async (listId: string, currentStatus: boolean) => {
     try {
       await updateListMetadata(listId, { isPublic: !currentStatus });
-      // Reload lists to reflect the change
+
+      // Reload lists to reflect the change immediately
       if (currentUserId) {
         await library.loadUserLists(currentUserId, true);
+      } else if (profile?.id) {
+        await library.loadUserLists(profile.id, true);
       }
+
       // Show success feedback
       const newStatus = !currentStatus ? 'Public' : 'Private';
       if (Platform.OS === 'web') {
@@ -293,6 +309,12 @@ export default function UnifiedLibrary({
 
     try {
       await library.addEntry(listId, selectedItemToAdd);
+
+      // Reload library to ensure changes are visible immediately
+      if (currentUserId) {
+        await library.loadUserLists(currentUserId, true);
+      }
+
       const listName = library.state.userLists.find(l => l.id === listId)?.name ||
                        library.state.endorsementList?.name || 'list';
       Alert.alert('Success', `Added to "${listName}"`);
@@ -307,6 +329,10 @@ export default function UnifiedLibrary({
     try {
       const newList = await library.createNewList(currentUserId, listName.trim());
       await library.addEntry(newList.id, selectedItemToAdd);
+
+      // Reload library to ensure changes are visible immediately
+      await library.loadUserLists(currentUserId, true);
+
       Alert.alert('Success', `Created "${listName}" and added item`);
     } catch (error: any) {
       throw error; // Let modal handle it
@@ -414,9 +440,15 @@ export default function UnifiedLibrary({
   const renderListEntry = (entry: ListEntry) => {
     if (!entry) return null;
 
+    // Safety check for required properties
+    if (!entry.type) {
+      console.warn('[UnifiedLibrary] Entry missing type:', entry);
+      return null;
+    }
+
     switch (entry.type) {
       case 'brand':
-        if ('brandId' in entry) {
+        if ('brandId' in entry && entry.brandId) {
           const brand = alignedItems.find(b => b.id === entry.brandId) ||
                        unalignedItems.find(b => b.id === entry.brandId);
           if (brand) {
@@ -950,20 +982,12 @@ export default function UnifiedLibrary({
                       style={styles.listOptionItem}
                       onPress={() => {
                         setActiveListOptionsId(null);
-                        if (Platform.OS === 'web') {
-                          if (window.confirm(`Are you sure you want to delete "${currentList.name}"? This cannot be undone.`)) {
-                            library.removeList(currentList.id);
-                          }
-                        } else {
-                          Alert.alert(
-                            'Delete List',
-                            `Are you sure you want to delete "${currentList.name}"? This cannot be undone.`,
-                            [
-                              { text: 'Cancel', style: 'cancel' },
-                              { text: 'Delete', style: 'destructive', onPress: () => library.removeList(currentList.id) },
-                            ]
-                          );
-                        }
+                        setConfirmDialogConfig({
+                          title: 'Delete List',
+                          message: `Are you sure you want to delete "${currentList.name}"? This cannot be undone.`,
+                          onConfirm: () => library.removeList(currentList.id),
+                        });
+                        setShowConfirmDialog(true);
                       }}
                       activeOpacity={0.7}
                     >
@@ -1069,6 +1093,11 @@ export default function UnifiedLibrary({
       <View style={styles.listContentContainer}>
         <View style={styles.brandsContainer}>
           {endorsementList.entries.slice(0, endorsementLoadCount).map((entry, index) => {
+            // Safety check - skip invalid entries
+            if (!entry || !entry.id) {
+              console.warn('[UnifiedLibrary] Invalid entry in endorsement list:', entry);
+              return null;
+            }
             const itemId = entry.brandId || entry.businessId || entry.valueId || entry.id;
             return (
               <View key={entry.id}>
@@ -1186,6 +1215,11 @@ export default function UnifiedLibrary({
       <View style={styles.listContentContainer}>
         <View style={styles.brandsContainer}>
           {list.entries.slice(0, loadCount).map((entry, index) => {
+            // Safety check - skip invalid entries
+            if (!entry || !entry.id) {
+              console.warn('[UnifiedLibrary] Invalid entry in custom list:', entry);
+              return null;
+            }
             const itemId = entry.brandId || entry.businessId || entry.valueId || entry.id;
             return (
               <View key={entry.id}>
@@ -1374,6 +1408,18 @@ export default function UnifiedLibrary({
           }
         }}
         isDarkMode={isDarkMode}
+      />
+
+      <ConfirmDialog
+        visible={showConfirmDialog}
+        title={confirmDialogConfig.title}
+        message={confirmDialogConfig.message}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDialogConfig.onConfirm}
+        onCancel={() => setShowConfirmDialog(false)}
+        isDarkMode={isDarkMode}
+        destructive={true}
       />
     </View>
   );
