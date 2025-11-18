@@ -29,6 +29,7 @@ import LocationAutocomplete from '@/components/LocationAutocomplete';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { getLogoUrl } from '@/lib/logo';
+import BusinessProfileEditor from '@/components/BusinessProfileEditor';
 
 import { getAllUserBusinesses, BusinessUser } from '@/services/firebase/businessService';
 
@@ -216,6 +217,37 @@ export default function ProfileScreen() {
     };
   }, [brands, userBusinesses]);
 
+  // If this is a business account, show the business profile editor instead
+  if (profile.accountType === 'business') {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar
+          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+          backgroundColor={colors.background}
+        />
+        <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+          <View style={[styles.header, { backgroundColor: colors.background }]}>
+            <Image
+              source={require('@/assets/images/endorse2.png')}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
+            <MenuButton />
+          </View>
+        </View>
+
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={Platform.OS === 'web' ? [styles.content, styles.webContent] : styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <BusinessProfileEditor />
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // Regular user profile
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar

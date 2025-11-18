@@ -15,6 +15,7 @@ import {
   reorderListEntries,
   getEndorsementList,
   ensureEndorsementList,
+  resolveList,
 } from '@/services/firebase/listService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -249,7 +250,14 @@ export function LibraryProvider({ children, userId, autoLoad = true }: LibraryPr
     try {
       // Load all user lists
       const lists = await getUserLists(uid);
-      dispatch({ type: 'SET_LISTS', payload: lists });
+
+      // Resolve all lists - if any are references (have originalListId),
+      // fetch the current data from the original list
+      const resolvedLists = await Promise.all(
+        lists.map(list => resolveList(list))
+      );
+
+      dispatch({ type: 'SET_LISTS', payload: resolvedLists });
 
       // Get or create endorsement list
       let endorsementList = await getEndorsementList(uid);

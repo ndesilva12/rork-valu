@@ -100,6 +100,47 @@ export const getList = async (listId: string): Promise<UserList | null> => {
   }
 };
 
+// Resolve a list - if it's a reference (has originalListId), fetch the original
+// This ensures referenced lists always show live data from the source
+export const resolveList = async (list: UserList): Promise<UserList> => {
+  try {
+    // If this list has no originalListId, it's not a reference - return as-is
+    if (!list.originalListId) {
+      return list;
+    }
+
+    // This is a reference list - fetch the original
+    const originalList = await getList(list.originalListId);
+
+    if (!originalList) {
+      // Original list was deleted - return the reference with empty entries
+      console.warn(`Original list ${list.originalListId} not found, returning empty reference`);
+      return {
+        ...list,
+        entries: [],
+      };
+    }
+
+    // Return a merged object: use original's entries and data, but keep reference metadata
+    return {
+      ...list, // Keep the reference's ID, userId (who added it), createdAt
+      name: originalList.name, // Use original's current name
+      description: originalList.description, // Use original's current description
+      entries: originalList.entries, // Use original's current entries (live data!)
+      updatedAt: originalList.updatedAt, // Use original's update time
+      isPublic: originalList.isPublic, // Use original's privacy setting
+      // Keep originalListId, originalCreatorName, originalCreatorImage from reference
+    };
+  } catch (error) {
+    console.error('Error resolving list reference:', error);
+    // On error, return the reference list with empty entries
+    return {
+      ...list,
+      entries: [],
+    };
+  }
+};
+
 // Create a new list
 export const createList = async (
   userId: string,
