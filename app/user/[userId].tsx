@@ -23,6 +23,7 @@ import { getUserLists, resolveList } from '@/services/firebase/listService';
 import { UserList } from '@/types/library';
 import EndorsedBadge from '@/components/EndorsedBadge';
 import { getAllUserBusinesses, BusinessUser } from '@/services/firebase/businessService';
+import { calculateSimilarityScore, getSimilarityLabel } from '@/lib/scoring';
 
 export default function UserProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
@@ -208,14 +209,21 @@ export default function UserProfileScreen() {
   const isOwnProfile = userId === clerkUser?.id;
   const profileImageUrl = userDetails?.profileImage;
 
-  // All alignment scores set to 50
+  // Calculate similarity score between current user and viewed user
+  let similarityScore = 0;
+  let similarityLabel = 'Different';
+  if (!isOwnProfile && currentUserProfile?.causes && userProfile.causes) {
+    similarityScore = calculateSimilarityScore(currentUserProfile.causes, userProfile.causes);
+    similarityLabel = getSimilarityLabel(similarityScore);
+  }
+
   let alignmentData = {
-    isAligned: false,
-    alignmentStrength: 50
+    isAligned: similarityScore >= 50,
+    alignmentStrength: similarityScore
   };
 
-  const alignmentColor = alignmentData.isAligned ? colors.success : colors.danger;
-  const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;
+  const alignmentColor = similarityScore >= 60 ? colors.success : similarityScore < 40 ? colors.danger : colors.textSecondary;
+  const AlignmentIcon = similarityScore >= 60 ? TrendingUp : TrendingDown;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -269,6 +277,11 @@ export default function UserProfileScreen() {
             <View style={styles.titleContainer}>
               <View style={styles.nameRow}>
                 <Text style={[styles.userName, { color: colors.text }]}>{userName}</Text>
+                {!isOwnProfile && similarityScore > 0 && (
+                  <View style={[styles.scoreBadge, { backgroundColor: alignmentColor + '15', borderColor: alignmentColor }]}>
+                    <Text style={[styles.scoreBadgeText, { color: alignmentColor }]}>{similarityLabel}</Text>
+                  </View>
+                )}
               </View>
               {userDetails?.location && (
                 <View style={styles.locationRow}>
@@ -418,7 +431,18 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 22,
     fontWeight: '700' as const,
-    flex: 1,
+  },
+  scoreBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginLeft: 8,
+  },
+  scoreBadgeText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase',
   },
   locationRow: {
     flexDirection: 'row',

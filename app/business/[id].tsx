@@ -25,6 +25,7 @@ import { BusinessInfo, Cause } from '@/types';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateAlignmentScore } from '@/services/firebase/businessService';
 import { getUserLists, addEntryToList } from '@/services/firebase/listService';
+import { calculateSimilarityScore, getSimilarityLabel } from '@/lib/scoring';
 
 interface BusinessUser {
   id: string;
@@ -294,53 +295,31 @@ export default function BusinessDetailScreen() {
     alignmentStrength: 50
   };
 
-  if (business && profile.causes && profile.causes.length > 0) {
-    // Calculate raw alignment score using the same method as list views
-    const rawScore = calculateAlignmentScore(profile.causes, business.causes || []);
+  // Calculate similarity score using new scoring system
+  let similarityScore = 0;
+  let similarityLabel = 'Different';
+  let matchingValues: string[] = [];
 
-    // Create sets for matching values calculation
-    const userSupportSet = new Set(profile.causes.filter(c => c.type === 'support').map(c => c.id));
-    const userAvoidSet = new Set(profile.causes.filter(c => c.type === 'avoid').map(c => c.id));
-    const bizCauses = business.causes || [];
-    const bizSupportSet = new Set(bizCauses.filter(c => c.type === 'support').map(c => c.id));
-    const bizAvoidSet = new Set(bizCauses.filter(c => c.type === 'avoid').map(c => c.id));
+  if (business && profile.causes) {
+    similarityScore = calculateSimilarityScore(profile.causes, business.causes || []);
+    similarityLabel = getSimilarityLabel(similarityScore);
 
-    // Get all unique value IDs
-    const allValueIds = new Set([...userSupportSet, ...userAvoidSet, ...bizSupportSet, ...bizAvoidSet]);
+    // Find values that both user and business have
+    const userValueIds = new Set(profile.causes.map(c => c.id));
+    const bizValueIds = new Set((business.causes || []).map(c => c.id));
+    matchingValues = [...userValueIds].filter(id => bizValueIds.has(id));
 
-    // Find matching/conflicting values for display
-    const matchingValues = new Set<string>();
-    allValueIds.forEach(valueId => {
-      const userHasPosition = userSupportSet.has(valueId) || userAvoidSet.has(valueId);
-      const bizHasPosition = bizSupportSet.has(valueId) || bizAvoidSet.has(valueId);
-      if (userHasPosition && bizHasPosition) {
-        matchingValues.add(valueId);
-      }
-    });
-
-    // Map raw score to 10-90 range
-    // Raw scores typically range from -50 to +50, map this to 10-90
-    // Negative scores (conflicts) -> 10-49, Positive scores (matches) -> 51-90
-    let alignmentScore = 50; // Default neutral
-
-    if (rawScore !== 0) {
-      // Map rawScore (-50 to +50) to alignment score (10 to 90)
-      // Formula: score = 50 + (rawScore * 0.8)
-      alignmentScore = Math.round(50 + (rawScore * 0.8));
-      alignmentScore = Math.max(10, Math.min(90, alignmentScore));
-    }
-
-    const isAligned = alignmentScore >= 50;
+    const isAligned = similarityScore >= 50;
 
     alignmentData = {
       isAligned,
-      matchingValues: Array.from(matchingValues),
-      alignmentStrength: alignmentScore
+      matchingValues,
+      alignmentStrength: similarityScore
     };
   }
 
-  const alignmentColor = alignmentData.isAligned ? colors.success : colors.danger;
-  const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;
+  const alignmentColor = similarityScore >= 60 ? colors.success : similarityScore < 40 ? colors.danger : colors.textSecondary;
+  const AlignmentIcon = similarityScore >= 60 ? TrendingUp : TrendingDown;
   const alignmentLabel = alignmentData.isAligned ? 'Aligned' : 'Not Aligned';
 
   // Get primary location
@@ -456,7 +435,14 @@ export default function BusinessDetailScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-              <Text style={[styles.category, { color: colors.primary }]}>{business.businessInfo.category}</Text>
+              <View style={styles.categoryRow}>
+                <Text style={[styles.category, { color: colors.primary }]}>{business.businessInfo.category}</Text>
+                {profile.causes && profile.causes.length > 0 && similarityScore > 0 && (
+                  <View style={[styles.scoreBadge, { backgroundColor: alignmentColor + '15', borderColor: alignmentColor }]}>
+                    <Text style={[styles.scoreBadgeText, { color: alignmentColor }]}>{similarityLabel}</Text>
+                  </View>
+                )}
+              </View>
               {getPrimaryLocation() && (
                 <View style={styles.locationRow}>
                   <MapPin size={14} color={colors.textSecondary} strokeWidth={2} />
@@ -1023,9 +1009,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  categoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+    flexWrap: 'wrap',
+  },
   category: {
     fontSize: 15,
     fontWeight: '600' as const,
+  },
+  scoreBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  scoreBadgeText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase',
   },
   locationRow: {
     flexDirection: 'row',
