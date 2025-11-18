@@ -745,6 +745,7 @@ export default function UnifiedLibrary({
           ]}
           onPress={() => toggleListExpansion(listId)}
           activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           {/* Profile Image */}
           <View style={[styles.listProfileImageContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
