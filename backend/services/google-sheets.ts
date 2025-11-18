@@ -254,15 +254,18 @@ export function searchBrands(brands: Brand[], query: string, userCauses: string[
 }
 
 function calculateRelevance(brand: Brand, userCauses: string[]): number {
-  if (userCauses.length === 0) return Math.abs(brand.alignmentScore);
+  // All brands now default to score of 50
+  const baseScore = 50;
+
+  if (userCauses.length === 0) return baseScore;
 
   const hasMatchingCause = brand.relatedValues.some((v) => userCauses.includes(v));
 
   if (hasMatchingCause) {
-    return Math.abs(brand.alignmentScore) + 100;
+    return baseScore + 100;
   }
 
-  return Math.abs(brand.alignmentScore);
+  return baseScore;
 }
 
 // Clear cache (useful for testing or manual refresh)

@@ -22,7 +22,7 @@ import { UserProfile } from '@/types';
 import { getUserLists } from '@/services/firebase/listService';
 import { UserList } from '@/types/library';
 import EndorsedBadge from '@/components/EndorsedBadge';
-import { calculateAlignmentScore, getAllUserBusinesses, BusinessUser } from '@/services/firebase/businessService';
+import { getAllUserBusinesses, BusinessUser } from '@/services/firebase/businessService';
 
 export default function UserProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
@@ -143,15 +143,14 @@ export default function UserProfileScreen() {
     fetchBusinesses();
   }, []);
 
-  // Calculate brand scores using VIEWING user's causes
+  // Get all brands and set scores to 50
   const { allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
     const csvBrands = brands || [];
     const localBizList = userBusinesses || [];
 
-    // Use CURRENT (viewing) user's causes for scoring
-    const viewingUserCauses = currentUserProfile?.causes || [];
+    const currentBrands = [...csvBrands, ...localBizList];
 
-    if (viewingUserCauses.length === 0) {
+    if (!currentBrands || currentBrands.length === 0) {
       return {
         allSupportFull: [],
         allAvoidFull: [],
@@ -159,95 +158,20 @@ export default function UserProfileScreen() {
       };
     }
 
-    const userValueIds = new Set(viewingUserCauses.map(c => c.id));
-    const filteredLocalBiz = localBizList.filter((biz: any) => {
-      if (!biz.values || biz.values.length === 0 || userValueIds.size === 0) return false;
-      const bizValueIds = new Set(biz.values.map((v: any) => v.id));
-      const overlapCount = Array.from(userValueIds).filter(id => bizValueIds.has(id)).length;
-      const overlapPercentage = (overlapCount / userValueIds.size) * 100;
-      return overlapPercentage > 50;
-    });
+    // Sort alphabetically by name
+    const sortedBrands = [...currentBrands].sort((a, b) =>
+      (a.name || '').localeCompare(b.name || '')
+    );
 
-    const currentBrands = [...csvBrands, ...filteredLocalBiz];
-
-    if (!currentBrands || currentBrands.length === 0 || !valuesMatrix) {
-      return {
-        allSupportFull: [],
-        allAvoidFull: [],
-        scoredBrands: new Map(),
-      };
-    }
-
-    const supportedCauses = viewingUserCauses.filter((c) => c.type === 'support').map((c) => c.id);
-    const avoidedCauses = viewingUserCauses.filter((c) => c.type === 'avoid').map((c) => c.id);
-    const allUserCauses = [...supportedCauses, ...avoidedCauses];
-
-    // Score each brand
-    const scored = currentBrands.map((product) => {
-      const brandName = product.name;
-      let totalScore = 0;
-      let causeCount = 0;
-
-      allUserCauses.forEach((causeId) => {
-        const causeData = valuesMatrix[causeId];
-        if (!causeData) return;
-
-        const supportArrayLength = causeData.support?.length || 0;
-        const opposeArrayLength = causeData.oppose?.length || 0;
-        const supportIndex = causeData.support?.indexOf(brandName);
-        const opposeIndex = causeData.oppose?.indexOf(brandName);
-
-        const supportPosition = supportIndex !== undefined && supportIndex >= 0 ? supportIndex + 1 : supportArrayLength + 1;
-        const opposePosition = opposeIndex !== undefined && opposeIndex >= 0 ? opposeIndex + 1 : opposeArrayLength + 1;
-
-        if (supportedCauses.includes(causeId)) {
-          if (supportIndex !== undefined && supportIndex >= 0) {
-            const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
-            const score = Math.round(100 - ((supportPosition - 1) / maxPosition) * 50);
-            totalScore += score;
-            causeCount++;
-          } else if (opposeIndex !== undefined && opposeIndex >= 0) {
-            const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
-            const score = Math.round(((opposePosition - 1) / maxPosition) * 50);
-            totalScore += score;
-            causeCount++;
-          }
-        } else if (avoidedCauses.includes(causeId)) {
-          if (opposeIndex !== undefined && opposeIndex >= 0) {
-            const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
-            const score = Math.round(100 - ((opposePosition - 1) / maxPosition) * 50);
-            totalScore += score;
-            causeCount++;
-          } else if (supportIndex !== undefined && supportIndex >= 0) {
-            const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
-            const score = Math.round(((supportPosition - 1) / maxPosition) * 50);
-            totalScore += score;
-            causeCount++;
-          }
-        }
-      });
-
-      const finalScore = causeCount > 0 ? Math.round(totalScore / causeCount) : 50;
-      return { product, score: finalScore, causeCount };
-    });
-
-    const scoredBrandsMap = new Map<string, number>();
-    // Only include brands that have actual values data (causeCount > 0)
-    const aligned = scored.filter(item => item.causeCount > 0 && item.score >= 50);
-    const unaligned = scored.filter(item => item.causeCount > 0 && item.score < 50);
-
-    scored.forEach(item => {
-      if (item.causeCount > 0) {
-        scoredBrandsMap.set(item.product.id, item.score);
-      }
-    });
+    // Set all scores to 50
+    const scoredBrandsMap = new Map(sortedBrands.map((brand) => [brand.id, 50]));
 
     return {
-      allSupportFull: aligned.map(item => item.product),
-      allAvoidFull: unaligned.map(item => item.product),
+      allSupportFull: sortedBrands,
+      allAvoidFull: [],
       scoredBrands: scoredBrandsMap,
     };
-  }, [brands, userBusinesses, valuesMatrix, currentUserProfile?.causes]);
+  }, [brands, userBusinesses]);
 
   if (isLoading) {
     return (
@@ -287,20 +211,11 @@ export default function UserProfileScreen() {
   const isOwnProfile = userId === clerkUser?.id;
   const profileImageUrl = userDetails?.profileImage;
 
-  // Calculate alignment score if viewing someone else's profile
+  // All alignment scores set to 50
   let alignmentData = {
     isAligned: false,
     alignmentStrength: 50
   };
-
-  if (!isOwnProfile && userProfile.causes && currentUserProfile?.causes && currentUserProfile.causes.length > 0) {
-    const rawScore = calculateAlignmentScore(currentUserProfile.causes, userProfile.causes);
-    const alignmentScore = Math.round(50 + (rawScore * 0.8));
-    alignmentData = {
-      isAligned: alignmentScore >= 50,
-      alignmentStrength: Math.max(10, Math.min(90, alignmentScore))
-    };
-  }
 
   const alignmentColor = alignmentData.isAligned ? colors.success : colors.danger;
   const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;

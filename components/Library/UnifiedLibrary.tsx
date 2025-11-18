@@ -31,6 +31,7 @@ import {
   Edit,
   Trash2,
   Share2,
+  UserPlus,
 } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { UserList, ListEntry } from '@/types/library';
@@ -38,11 +39,13 @@ import { useLibrary } from '@/contexts/LibraryContext';
 import EndorsedBadge from '@/components/EndorsedBadge';
 import { getLogoUrl } from '@/lib/logo';
 import { Product } from '@/types';
-import { BusinessUser, calculateAlignmentScore } from '@/services/firebase/businessService';
+import { BusinessUser } from '@/services/firebase/businessService';
 import { useUser } from '@/contexts/UserContext';
 import { useRouter } from 'expo-router';
 import { updateListMetadata } from '@/services/firebase/listService';
 import AddToLibraryModal from '@/components/AddToLibraryModal';
+import EditListModal from '@/components/EditListModal';
+import ShareOptionsModal from '@/components/ShareOptionsModal';
 
 // ===== Types =====
 
@@ -93,6 +96,14 @@ export default function UnifiedLibrary({
   const [showAddToLibraryModal, setShowAddToLibraryModal] = useState(false);
   const [selectedItemToAdd, setSelectedItemToAdd] = useState<ListEntry | null>(null);
 
+  // Edit List Modal state
+  const [showEditListModal, setShowEditListModal] = useState(false);
+  const [editingList, setEditingList] = useState<UserList | null>(null);
+
+  // Share Options Modal state
+  const [showShareOptionsModal, setShowShareOptionsModal] = useState(false);
+  const [sharingItem, setSharingItem] = useState<{type: 'list' | 'entry', data: UserList | ListEntry} | null>(null);
+
   // Pagination state for each list
   const [endorsementLoadCount, setEndorsementLoadCount] = useState(10);
   const [alignedLoadCount, setAlignedLoadCount] = useState(10);
@@ -133,8 +144,13 @@ export default function UnifiedLibrary({
   // Filter out endorsement list from custom lists
   const customLists = userLists.filter(list => list.id !== endorsementList?.id);
 
-  // Share handlers
-  const handleShareList = async (list: UserList) => {
+  // Share handlers - Open ShareOptionsModal first
+  const handleShareList = (list: UserList) => {
+    setSharingItem({ type: 'list', data: list });
+    setShowShareOptionsModal(true);
+  };
+
+  const performShareList = async (list: UserList) => {
     try {
       const message = `Check out my list "${list.name}" on Upright Money!\n${list.description || ''}`;
       await Share.share({
@@ -146,7 +162,30 @@ export default function UnifiedLibrary({
     }
   };
 
-  const handleShareItem = async (entry: ListEntry) => {
+  const handleShareItem = (entry: ListEntry) => {
+    setSharingItem({ type: 'entry', data: entry });
+    setShowShareOptionsModal(true);
+  };
+
+  const handleFollow = async (entry: ListEntry) => {
+    // TODO: Implement follow/unfollow functionality
+    const accountId = entry.type === 'brand' ? entry.brandId : entry.businessId;
+    const accountType = entry.type;
+    const accountName = (entry as any).brandName || (entry as any).businessName || (entry as any).name || 'Account';
+
+    console.log('Follow clicked:', { accountId, accountType, accountName });
+
+    // TODO: Call followService to add/remove follow
+    // TODO: Update UI to show followed state
+
+    if (Platform.OS === 'web') {
+      window.alert(`Follow functionality will be implemented soon!\nAccount: ${accountName}`);
+    } else {
+      Alert.alert('Coming Soon', `Follow functionality will be implemented soon!\nAccount: ${accountName}`);
+    }
+  };
+
+  const performShareItem = async (entry: ListEntry) => {
     try {
       let message = '';
       let title = '';
@@ -188,6 +227,34 @@ export default function UnifiedLibrary({
     }
   };
 
+  // Edit List handler - Open EditListModal
+  const handleEditList = (list: UserList) => {
+    setEditingList(list);
+    setShowEditListModal(true);
+  };
+
+  const performEditList = async (name: string, description: string) => {
+    if (!editingList) return;
+
+    try {
+      await updateListMetadata(editingList.id, {
+        name,
+        description,
+      });
+      // Reload lists to reflect the change
+      if (currentUserId) {
+        await library.loadUserLists(currentUserId, true);
+      }
+    } catch (error) {
+      console.error('Error updating list:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Failed to update list. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to update list. Please try again.');
+      }
+    }
+  };
+
   // Privacy toggle handler
   const handleTogglePrivacy = async (listId: string, currentStatus: boolean) => {
     try {
@@ -195,6 +262,14 @@ export default function UnifiedLibrary({
       // Reload lists to reflect the change
       if (currentUserId) {
         await library.loadUserLists(currentUserId, true);
+      }
+      // Show success feedback
+      const newStatus = !currentStatus ? 'Public' : 'Private';
+      if (Platform.OS === 'web') {
+        // Brief success message on web
+        console.log(`List is now ${newStatus}`);
+      } else {
+        Alert.alert('Success', `List is now ${newStatus}`);
       }
     } catch (error) {
       console.error('Error toggling privacy:', error);
@@ -265,76 +340,6 @@ export default function UnifiedLibrary({
     }
   };
 
-  // Edit list handler
-  const handleEditList = (list: UserList) => {
-    if (Platform.OS === 'web') {
-      const newName = window.prompt('List name:', list.name);
-      if (newName !== null && newName.trim() !== '') {
-        const newDescription = window.prompt('Description (optional):', list.description || '');
-        updateListMetadata(list.id, {
-          name: newName.trim(),
-          description: newDescription?.trim() || '',
-        }).then(() => {
-          if (currentUserId) {
-            library.loadUserLists(currentUserId, true);
-          }
-        }).catch(error => {
-          console.error('Error updating list:', error);
-          window.alert('Failed to update list. Please try again.');
-        });
-      }
-    } else {
-      // For native, use Alert with multiple prompts
-      Alert.prompt(
-        'Edit List',
-        'Enter new name:',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Next',
-            onPress: (newName) => {
-              if (newName && newName.trim() !== '') {
-                Alert.prompt(
-                  'Edit List',
-                  'Enter description (optional):',
-                  [
-                    {
-                      text: 'Cancel',
-                      style: 'cancel',
-                    },
-                    {
-                      text: 'Save',
-                      onPress: (newDescription) => {
-                        updateListMetadata(list.id, {
-                          name: newName.trim(),
-                          description: newDescription?.trim() || '',
-                        }).then(() => {
-                          if (currentUserId) {
-                            library.loadUserLists(currentUserId, true);
-                          }
-                        }).catch(error => {
-                          console.error('Error updating list:', error);
-                          Alert.alert('Error', 'Failed to update list. Please try again.');
-                        });
-                      },
-                    },
-                  ],
-                  'plain-text',
-                  list.description || ''
-                );
-              }
-            },
-          },
-        ],
-        'plain-text',
-        list.name
-      );
-    }
-  };
-
   // Render brand card with score (for Product type)
   const renderBrandCard = (product: Product, type: 'support' | 'avoid') => {
     const isSupport = type === 'support';
@@ -342,21 +347,23 @@ export default function UnifiedLibrary({
     const scoreColor = alignmentScore !== undefined
       ? (alignmentScore >= 50 ? colors.primary : colors.danger)
       : colors.textSecondary;
+    const isMenuOpen = activeItemOptionsId === product.id;
 
     return (
-      <TouchableOpacity
-        style={[
-          styles.brandCard,
-          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
-        ]}
-        onPress={() => {
-          router.push({
-            pathname: '/brand/[id]',
-            params: { id: product.id },
-          });
-        }}
-        activeOpacity={0.7}
-      >
+      <View style={{ position: 'relative', zIndex: isMenuOpen ? 99999 : 1, overflow: 'visible' }}>
+        <TouchableOpacity
+          style={[
+            styles.brandCard,
+            { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+          ]}
+          onPress={() => {
+            router.push({
+              pathname: '/brand/[id]',
+              params: { id: product.id },
+            });
+          }}
+          activeOpacity={0.7}
+        >
         <View style={styles.brandCardInner}>
           <View style={styles.brandLogoContainer}>
             <Image
@@ -397,7 +404,9 @@ export default function UnifiedLibrary({
             </TouchableOpacity>
           )}
         </View>
+        {renderItemOptionsMenu(product.id, { type: 'brand', id: product.id, brandId: product.id } as ListEntry, 'system')}
       </TouchableOpacity>
+      </View>
     );
   };
 
@@ -477,19 +486,9 @@ export default function UnifiedLibrary({
 
       case 'business':
         if ('businessId' in entry) {
-          // Calculate score only if we have the data
-          const businessData = userBusinesses.find(b => b.id === entry.businessId);
-          const causes = userCauses || profile?.causes || [];
-          let alignmentScore: number | null = null;
-          let scoreColor = colors.textSecondary;
-
-          if (businessData && causes.length > 0) {
-            const rawScore = calculateAlignmentScore(causes, businessData.causes || []);
-            alignmentScore = Math.round(50 + (rawScore * 0.8));
-            alignmentScore = Math.max(10, Math.min(90, alignmentScore));
-            const isAligned = alignmentScore >= 50;
-            scoreColor = isAligned ? colors.primary : colors.danger;
-          }
+          // All businesses set to score of 50
+          const alignmentScore = 50;
+          const scoreColor = colors.textSecondary;
 
           // Get business name from multiple possible fields
           const businessName = (entry as any).businessName || (entry as any).name || 'Unknown Business';
@@ -708,13 +707,15 @@ export default function UnifiedLibrary({
 
     return (
       <View style={{ position: 'relative', overflow: 'visible', zIndex: isOptionsOpen ? 9999 : 1 }}>
-        <View
+        <TouchableOpacity
           style={[
             styles.collapsibleListHeader,
             isPinned && styles.pinnedListHeader,
             isExpanded && { backgroundColor: colors.backgroundSecondary, borderWidth: 2, borderColor: colors.primary, borderRadius: 12 },
             !isExpanded && isSelected && { borderWidth: 2, borderColor: colors.primary, borderRadius: 12 },
           ]}
+          onPress={() => toggleListExpansion(listId)}
+          activeOpacity={0.7}
         >
           {/* Profile Image */}
           <View style={[styles.listProfileImageContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
@@ -739,10 +740,8 @@ export default function UnifiedLibrary({
             )}
           </View>
 
-          <TouchableOpacity
+          <View
             style={styles.collapsibleListHeaderContent}
-            onPress={() => toggleListExpansion(listId)}
-            activeOpacity={0.7}
           >
             <View style={styles.collapsibleListInfo}>
               {isExpanded ? (
@@ -813,13 +812,14 @@ export default function UnifiedLibrary({
                 </View>
               )}
             </View>
-          </TouchableOpacity>
+          </View>
 
           {/* Action Menu - show in edit mode AND view mode (other users' lists) */}
           {(canEdit || mode === 'view') && (
             <TouchableOpacity
               style={styles.listHeaderOptionsButton}
-              onPress={() => {
+              onPress={(e) => {
+                e.stopPropagation();
                 setActiveListOptionsId(isOptionsOpen ? null : listId);
               }}
               activeOpacity={0.7}
@@ -829,7 +829,7 @@ export default function UnifiedLibrary({
               </View>
             </TouchableOpacity>
           )}
-        </View>
+        </TouchableOpacity>
 
         {/* Options dropdown - show in edit mode AND view mode */}
         {(canEdit || mode === 'view') && isOptionsOpen && (
@@ -988,6 +988,7 @@ export default function UnifiedLibrary({
     const canRemove = canEdit;
     const canShare = true;
     const canAddToLibrary = true; // ALWAYS show "Add to" - both edit and view modes
+    const canFollow = entry.type === 'brand' || entry.type === 'business'; // Only brands and businesses can be followed
 
     return (
       <View style={[styles.itemOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
@@ -1002,6 +1003,19 @@ export default function UnifiedLibrary({
           >
             <Plus size={16} color={colors.text} strokeWidth={2} />
             <Text style={[styles.listOptionText, { color: colors.text }]}>Add to</Text>
+          </TouchableOpacity>
+        )}
+        {canFollow && (
+          <TouchableOpacity
+            style={styles.listOptionItem}
+            onPress={() => {
+              setActiveItemOptionsId(null);
+              handleFollow(entry);
+            }}
+            activeOpacity={0.7}
+          >
+            <UserPlus size={16} color={colors.text} strokeWidth={2} />
+            <Text style={[styles.listOptionText, { color: colors.text }]}>Follow</Text>
           </TouchableOpacity>
         )}
         {canShare && (
@@ -1320,6 +1334,47 @@ export default function UnifiedLibrary({
           </React.Fragment>
         );
       })}
+
+      {/* Modals */}
+      <AddToLibraryModal
+        visible={showAddToLibraryModal}
+        onClose={() => setShowAddToLibraryModal(false)}
+        availableLists={getAddToLibraryLists()}
+        onSelectList={handleSelectList}
+        onCreateNewList={handleCreateNewList}
+        itemName={selectedItemToAdd ? getItemName(selectedItemToAdd) : ''}
+        isDarkMode={isDarkMode}
+      />
+
+      <EditListModal
+        visible={showEditListModal}
+        onClose={() => {
+          setShowEditListModal(false);
+          setEditingList(null);
+        }}
+        onSave={performEditList}
+        initialName={editingList?.name || ''}
+        initialDescription={editingList?.description || ''}
+        isDarkMode={isDarkMode}
+      />
+
+      <ShareOptionsModal
+        visible={showShareOptionsModal}
+        onClose={() => {
+          setShowShareOptionsModal(false);
+          setSharingItem(null);
+        }}
+        onShare={async () => {
+          if (sharingItem) {
+            if (sharingItem.type === 'list') {
+              await performShareList(sharingItem.data as UserList);
+            } else {
+              await performShareItem(sharingItem.data as ListEntry);
+            }
+          }
+        }}
+        isDarkMode={isDarkMode}
+      />
     </View>
   );
 }

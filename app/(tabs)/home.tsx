@@ -92,7 +92,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
-import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
+import { getAllUserBusinesses, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 import BusinessMapView from '@/components/BusinessMapView';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
 import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList, updateListMetadata, reorderListEntries, getEndorsementList, ensureEndorsementList } from '@/services/firebase/listService';
@@ -562,26 +562,9 @@ export default function HomeScreen() {
     const csvBrands = brands || [];
     const localBizList = userBusinesses || [];
 
-    // Filter local businesses to only include those with >50% value overlap with user
-    const userValueIds = new Set(profile.causes.map(c => c.id));
-    const filteredLocalBiz = localBizList.filter((biz: any) => {
-      if (!biz.values || biz.values.length === 0 || userValueIds.size === 0) return false;
-      const bizValueIds = new Set(biz.values.map((v: any) => v.id));
-      const overlapCount = Array.from(userValueIds).filter(id => bizValueIds.has(id)).length;
-      const overlapPercentage = (overlapCount / userValueIds.size) * 100;
-      return overlapPercentage > 50;
-    });
+    const currentBrands = [...csvBrands, ...localBizList];
 
-    const currentBrands = [...csvBrands, ...filteredLocalBiz];
-
-    if (!currentBrands || currentBrands.length === 0 || !valuesMatrix) {
-      console.log('[Home] Missing data:', {
-        hasBrands: !!currentBrands,
-        brandsCount: currentBrands?.length || 0,
-        localBizCount: filteredLocalBiz.length,
-        hasValuesMatrix: !!valuesMatrix,
-        valuesCount: valuesMatrix ? Object.keys(valuesMatrix).length : 0
-      });
+    if (!currentBrands || currentBrands.length === 0) {
       return {
         topSupport: [],
         topAvoid: [],
@@ -593,159 +576,24 @@ export default function HomeScreen() {
       };
     }
 
-    const supportedCauses = profile.causes.filter((c) => c.type === 'support').map((c) => c.id);
-    const avoidedCauses = profile.causes.filter((c) => c.type === 'avoid').map((c) => c.id);
-    const allUserCauses = [...supportedCauses, ...avoidedCauses];
+    // Sort alphabetically by name
+    const sortedBrands = [...currentBrands].sort((a, b) =>
+      (a.name || '').localeCompare(b.name || '')
+    );
 
-    console.log('[Home] Scoring brands:', {
-      totalBrands: currentBrands.length,
-      userCauses: allUserCauses,
-      supportedCauses,
-      avoidedCauses,
-      sampleBrandNames: currentBrands.slice(0, 5).map(b => b.name),
-      sampleValueIds: Object.keys(valuesMatrix).slice(0, 5)
-    });
-
-    // Score each brand based on position in the values matrix
-    const scored = currentBrands.map((product) => {
-      const brandName = product.name;
-      let totalSupportScore = 0;
-      let totalAvoidScore = 0;
-
-      // Collect scores for this brand across ALL user's selected values
-      const alignedScores: number[] = [];
-      const unalignedScores: number[] = [];
-
-      // Check EACH user cause to find the brand's position
-      allUserCauses.forEach((causeId) => {
-        const causeData = valuesMatrix[causeId];
-        if (!causeData) {
-          // If cause data doesn't exist, treat as neutral (score 50)
-          alignedScores.push(50);
-          unalignedScores.push(50);
-          return;
-        }
-
-        // Get array lengths for dynamic scoring
-        const supportArrayLength = causeData.support?.length || 0;
-        const opposeArrayLength = causeData.oppose?.length || 0;
-
-        // Find position in support list (1-based, or notFoundPosition if not found)
-        const supportIndex = causeData.support?.indexOf(brandName);
-        const supportPosition = supportIndex !== undefined && supportIndex >= 0
-          ? supportIndex + 1 // Convert to 1-indexed
-          : supportArrayLength + 1; // Not found - one position past the end
-
-        // Find position in oppose list (1-based, or notFoundPosition if not found)
-        const opposeIndex = causeData.oppose?.indexOf(brandName);
-        const opposePosition = opposeIndex !== undefined && opposeIndex >= 0
-          ? opposeIndex + 1 // Convert to 1-indexed
-          : opposeArrayLength + 1; // Not found - one position past the end
-
-        // If user supports this cause
-        if (supportedCauses.includes(causeId)) {
-          // Good if brand is in support list, bad if in oppose list
-          if (supportIndex !== undefined && supportIndex >= 0) {
-            // Brand is in support list - calculate aligned score
-            const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
-            const score = Math.round(100 - ((supportPosition - 1) / maxPosition) * 50);
-            alignedScores.push(score);
-            totalSupportScore += 100;
-            // For unaligned calculation, this value doesn't apply (brand is good here)
-            unalignedScores.push(50);
-          } else if (opposeIndex !== undefined && opposeIndex >= 0) {
-            // Brand is in oppose list - calculate unaligned score
-            const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
-            const score = Math.round(((opposePosition - 1) / maxPosition) * 50);
-            unalignedScores.push(score);
-            totalAvoidScore += 100;
-            // For aligned calculation, this value doesn't apply (brand is bad here)
-            alignedScores.push(50);
-          } else {
-            // Brand doesn't appear in either list for this value
-            alignedScores.push(50);
-            unalignedScores.push(50);
-          }
-        }
-
-        // If user avoids this cause
-        if (avoidedCauses.includes(causeId)) {
-          // Good if brand is in oppose list, bad if in support list
-          if (opposeIndex !== undefined && opposeIndex >= 0) {
-            // Brand is in oppose list - calculate aligned score
-            const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
-            const score = Math.round(100 - ((opposePosition - 1) / maxPosition) * 50);
-            alignedScores.push(score);
-            totalSupportScore += 100;
-            // For unaligned calculation, this value doesn't apply (brand is good here)
-            unalignedScores.push(50);
-          } else if (supportIndex !== undefined && supportIndex >= 0) {
-            // Brand is in support list - calculate unaligned score
-            const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
-            const score = Math.round(((supportPosition - 1) / maxPosition) * 50);
-            unalignedScores.push(score);
-            totalAvoidScore += 100;
-            // For aligned calculation, this value doesn't apply (brand is bad here)
-            alignedScores.push(50);
-          } else {
-            // Brand doesn't appear in either list for this value
-            alignedScores.push(50);
-            unalignedScores.push(50);
-          }
-        }
-      });
-
-      // Calculate alignment strength based on average score across ALL values
-      let alignmentStrength = 50; // Neutral default
-
-      if (totalSupportScore > totalAvoidScore && totalSupportScore > 0) {
-        // Aligned brand: average the aligned scores
-        alignmentStrength = Math.round(
-          alignedScores.reduce((sum, score) => sum + score, 0) / alignedScores.length
-        );
-      } else if (totalAvoidScore > totalSupportScore && totalAvoidScore > 0) {
-        // Unaligned brand: average the unaligned scores
-        alignmentStrength = Math.round(
-          unalignedScores.reduce((sum, score) => sum + score, 0) / unalignedScores.length
-        );
-      }
-
-      return {
-        product,
-        totalSupportScore,
-        totalAvoidScore,
-        alignmentStrength,
-        matchingValuesCount: alignedScores.length,
-      };
-    });
-
-    // Sort brands into support and avoid categories BY ALIGNMENT STRENGTH
-    const allSupportSorted = scored
-      .filter((s) => s.totalSupportScore > s.totalAvoidScore && s.totalSupportScore > 0)
-      .sort((a, b) => b.alignmentStrength - a.alignmentStrength); // Sort by score, not count!
-
-    const allAvoidSorted = scored
-      .filter((s) => s.totalAvoidScore > s.totalSupportScore && s.totalAvoidScore > 0)
-      .sort((a, b) => a.alignmentStrength - b.alignmentStrength); // Lowest score first for unaligned
-
-    console.log('[Home] Scoring results:', {
-      alignedCount: allSupportSorted.length,
-      unalignedCount: allAvoidSorted.length,
-      topAligned: allSupportSorted.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength })),
-      topUnaligned: allAvoidSorted.slice(0, 3).map(s => ({ name: s.product.name, score: s.alignmentStrength }))
-    });
-
-    const scoredMap = new Map(scored.map((s) => [s.product.id, s.alignmentStrength]));
+    // Set all scores to 50
+    const scoredMap = new Map(sortedBrands.map((brand) => [brand.id, 50]));
 
     return {
-      topSupport: allSupportSorted.slice(0, 10).map((s) => s.product),
-      topAvoid: allAvoidSorted.slice(0, 10).map((s) => s.product),
-      allSupport: allSupportSorted.map((s) => s.product),
-      allSupportFull: allSupportSorted.map((s) => s.product),
-      allAvoidFull: allAvoidSorted.map((s) => s.product),
+      topSupport: sortedBrands.slice(0, 10),
+      topAvoid: [],
+      allSupport: sortedBrands,
+      allSupportFull: sortedBrands,
+      allAvoidFull: [],
       scoredBrands: scoredMap,
+      brandDistances: new Map(),
     };
-  }, [profile.causes, brands, userBusinesses, valuesMatrix]);
+  }, [brands, userBusinesses]);
 
   // Compute local businesses when "local" view is active
   const localBusinessData = useMemo(() => {
@@ -757,17 +605,8 @@ export default function HomeScreen() {
       };
     }
 
-    console.log('[Home] Computing local business scores:', {
-      businessCount: userBusinesses.length,
-      userCausesCount: profile.causes.length,
-      localDistance,
-      userLocation,
-    });
-
-    // Calculate raw scores for all businesses
-    const businessesWithRawScores = userBusinesses.map((business) => {
-      const rawScore = calculateAlignmentScore(profile.causes, business.causes || []);
-
+    // Filter businesses by distance and set all scores to 50
+    const businessesWithScores = userBusinesses.map((business) => {
       // Only check distance if a filter is selected, otherwise show all
       let rangeResult;
       if (localDistance === null) {
@@ -775,7 +614,7 @@ export default function HomeScreen() {
         const tempResult = isBusinessWithinRange(business, userLocation.latitude, userLocation.longitude, 999999);
         rangeResult = {
           ...tempResult,
-          isWithinRange: true, // All businesses are "in range" when no filter is applied
+          isWithinRange: true,
         };
       } else {
         rangeResult = isBusinessWithinRange(business, userLocation.latitude, userLocation.longitude, localDistance);
@@ -783,57 +622,27 @@ export default function HomeScreen() {
 
       return {
         business,
-        rawScore,
+        alignmentScore: 50,
         distance: rangeResult.closestDistance,
         closestLocation: rangeResult.closestLocation,
         isWithinRange: rangeResult.isWithinRange,
       };
     });
 
-    // Normalize scores to 10-90 range with bell curve distribution
-    const rawScores = businessesWithRawScores.map(b => b.rawScore);
-    const normalizedScores = normalizeScores(rawScores);
+    // Filter by distance
+    const businessesInRange = businessesWithScores.filter((b) => b.isWithinRange);
 
-    // Map normalized scores back to businesses
-    const scoredBusinesses = businessesWithRawScores.map((b, index) => ({
-      ...b,
-      alignmentScore: normalizedScores[index],
-    }));
-
-    // Filter by distance (all will be in range if localDistance is null)
-    const businessesInRange = scoredBusinesses.filter((b) => b.isWithinRange);
-
-    // Sort all businesses by score (direction will be handled in the component)
+    // Sort alphabetically by name
     const allBusinessesSorted = [...businessesInRange].sort((a, b) =>
-      localSortDirection === 'highToLow'
-        ? b.alignmentScore - a.alignmentScore
-        : a.alignmentScore - b.alignmentScore
+      (a.business.businessInfo.name || '').localeCompare(b.business.businessInfo.name || '')
     );
-
-    // Also keep the old split for backward compatibility (map modal)
-    const aligned = businessesInRange
-      .filter((b) => b.alignmentScore >= 50)
-      .sort((a, b) => b.alignmentScore - a.alignmentScore); // Highest score first
-
-    const unaligned = businessesInRange
-      .filter((b) => b.alignmentScore < 50)
-      .sort((a, b) => a.alignmentScore - b.alignmentScore); // Lowest score first
-
-    console.log('[Home] Local business results:', {
-      totalBusinesses: userBusinesses.length,
-      inRange: businessesInRange.length,
-      allBusinesses: allBusinessesSorted.length,
-      aligned: aligned.length,
-      unaligned: unaligned.length,
-      topBusinesses: allBusinessesSorted.slice(0, 3).map(b => ({ name: b.business.businessInfo.name, score: b.alignmentScore, distance: b.distance })),
-    });
 
     return {
       allBusinesses: allBusinessesSorted,
-      alignedBusinesses: aligned,
-      unalignedBusinesses: unaligned,
+      alignedBusinesses: allBusinessesSorted,
+      unalignedBusinesses: [],
     };
-  }, [mainView, userLocation, userBusinesses, profile.causes, localDistance, localSortDirection]);
+  }, [mainView, userLocation, userBusinesses, localDistance]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
@@ -2793,13 +2602,10 @@ export default function HomeScreen() {
                     </View>
                   );
                 } else if (entry.type === 'business' && 'businessId' in entry) {
-                  // Get business score and alignment
-                  const businessData = userBusinesses.find(b => b.id === entry.businessId);
-                  const rawScore = businessData ? calculateAlignmentScore(profile.causes, businessData.causes || []) : 0;
-                  let alignmentScore = Math.round(50 + (rawScore * 0.8)); // Map to 10-90 range
-                  alignmentScore = Math.max(10, Math.min(90, alignmentScore)); // Clamp to 10-90 to prevent negative scores
+                  // All businesses set to score of 50
+                  const alignmentScore = 50;
                   const isAligned = alignmentScore >= 50;
-                  const titleColor = isAligned ? colors.primaryLight : colors.danger;
+                  const titleColor = colors.text;
 
                   return (
                     <View

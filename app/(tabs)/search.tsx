@@ -246,8 +246,8 @@ export default function SearchScreen() {
   }, [commentText, selectedProductId, clerkUser, getProductInteraction]);
 
   const handleShare = useCallback(async (product: Product) => {
-    // Normalize score to 0-100 range for display
-    const normalizedScore = Math.min(100, Math.max(0, Math.round(Math.abs(product.alignmentScore))));
+    // All brands now default to score of 50
+    const normalizedScore = 50;
     const url = `https://yourapp.com/product/${product.id}`;
     const message = `Check out ${product.name} by ${product.brand}! Alignment score: ${normalizedScore}`;
 

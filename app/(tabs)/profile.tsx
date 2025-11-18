@@ -186,23 +186,14 @@ export default function ProfileScreen() {
     fetchBusinesses();
   }, []);
 
-  // Calculate brand scores (same logic as home.tsx)
+  // Get all brands and set scores to 50
   const { allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
     const csvBrands = brands || [];
     const localBizList = userBusinesses || [];
 
-    const userValueIds = new Set(profile.causes.map(c => c.id));
-    const filteredLocalBiz = localBizList.filter((biz: any) => {
-      if (!biz.values || biz.values.length === 0 || userValueIds.size === 0) return false;
-      const bizValueIds = new Set(biz.values.map((v: any) => v.id));
-      const overlapCount = Array.from(userValueIds).filter(id => bizValueIds.has(id)).length;
-      const overlapPercentage = (overlapCount / userValueIds.size) * 100;
-      return overlapPercentage > 50;
-    });
+    const currentBrands = [...csvBrands, ...localBizList];
 
-    const currentBrands = [...csvBrands, ...filteredLocalBiz];
-
-    if (!currentBrands || currentBrands.length === 0 || !valuesMatrix) {
+    if (!currentBrands || currentBrands.length === 0) {
       return {
         allSupportFull: [],
         allAvoidFull: [],
@@ -210,76 +201,20 @@ export default function ProfileScreen() {
       };
     }
 
-    const supportedCauses = profile.causes.filter((c) => c.type === 'support').map((c) => c.id);
-    const avoidedCauses = profile.causes.filter((c) => c.type === 'avoid').map((c) => c.id);
-    const allUserCauses = [...supportedCauses, ...avoidedCauses];
+    // Sort alphabetically by name
+    const sortedBrands = [...currentBrands].sort((a, b) =>
+      (a.name || '').localeCompare(b.name || '')
+    );
 
-    // Score each brand
-    const scored = currentBrands.map((product) => {
-      const brandName = product.name;
-      let totalScore = 0;
-      let causeCount = 0;
-
-      allUserCauses.forEach((causeId) => {
-        const causeData = valuesMatrix[causeId];
-        if (!causeData) return;
-
-        const supportArrayLength = causeData.support?.length || 0;
-        const opposeArrayLength = causeData.oppose?.length || 0;
-        const supportIndex = causeData.support?.indexOf(brandName);
-        const opposeIndex = causeData.oppose?.indexOf(brandName);
-
-        const supportPosition = supportIndex !== undefined && supportIndex >= 0 ? supportIndex + 1 : supportArrayLength + 1;
-        const opposePosition = opposeIndex !== undefined && opposeIndex >= 0 ? opposeIndex + 1 : opposeArrayLength + 1;
-
-        if (supportedCauses.includes(causeId)) {
-          if (supportIndex !== undefined && supportIndex >= 0) {
-            const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
-            const score = Math.round(100 - ((supportPosition - 1) / maxPosition) * 50);
-            totalScore += score;
-            causeCount++;
-          } else if (opposeIndex !== undefined && opposeIndex >= 0) {
-            const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
-            const score = Math.round(((opposePosition - 1) / maxPosition) * 50);
-            totalScore += score;
-            causeCount++;
-          }
-        } else if (avoidedCauses.includes(causeId)) {
-          if (opposeIndex !== undefined && opposeIndex >= 0) {
-            const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
-            const score = Math.round(100 - ((opposePosition - 1) / maxPosition) * 50);
-            totalScore += score;
-            causeCount++;
-          } else if (supportIndex !== undefined && supportIndex >= 0) {
-            const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
-            const score = Math.round(((supportPosition - 1) / maxPosition) * 50);
-            totalScore += score;
-            causeCount++;
-          }
-        }
-      });
-
-      const finalScore = causeCount > 0 ? Math.round(totalScore / causeCount) : 50;
-      return { product, score: finalScore, causeCount };
-    });
-
-    const scoredBrandsMap = new Map<string, number>();
-    // Only include brands that have actual values data (causeCount > 0)
-    const aligned = scored.filter(item => item.causeCount > 0 && item.score >= 50);
-    const unaligned = scored.filter(item => item.causeCount > 0 && item.score < 50);
-
-    scored.forEach(item => {
-      if (item.causeCount > 0) {
-        scoredBrandsMap.set(item.product.id, item.score);
-      }
-    });
+    // Set all scores to 50
+    const scoredBrandsMap = new Map(sortedBrands.map((brand) => [brand.id, 50]));
 
     return {
-      allSupportFull: aligned.map(item => item.product),
-      allAvoidFull: unaligned.map(item => item.product),
+      allSupportFull: sortedBrands,
+      allAvoidFull: [],
       scoredBrands: scoredBrandsMap,
     };
-  }, [brands, userBusinesses, valuesMatrix, profile.causes]);
+  }, [brands, userBusinesses]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -578,6 +513,44 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        {/* Following & Discover Sections */}
+        <View style={styles.socialSections}>
+          {/* Following Section */}
+          <TouchableOpacity
+            style={[styles.socialSection, { backgroundColor: colors.backgroundSecondary }]}
+            onPress={() => {
+              // TODO: Open Following modal
+              console.log('Open Following modal');
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.socialSectionHeader}>
+              <Text style={[styles.socialSectionTitle, { color: colors.text }]}>Following</Text>
+              <Text style={[styles.socialSectionCount, { color: colors.textSecondary }]}>0</Text>
+            </View>
+            <Text style={[styles.socialSectionDescription, { color: colors.textSecondary }]}>
+              Accounts you follow
+            </Text>
+          </TouchableOpacity>
+
+          {/* Discover Section */}
+          <TouchableOpacity
+            style={[styles.socialSection, { backgroundColor: colors.backgroundSecondary }]}
+            onPress={() => {
+              // TODO: Navigate to discover page
+              console.log('Navigate to discover');
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.socialSectionHeader}>
+              <Text style={[styles.socialSectionTitle, { color: colors.text }]}>Discover</Text>
+            </View>
+            <Text style={[styles.socialSectionDescription, { color: colors.textSecondary }]}>
+              Find accounts to follow
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Library Section - Uses Unified Library Component */}
         <View style={styles.librarySection}>
           <Text style={[styles.librarySectionTitle, { color: colors.text }]}>My Library</Text>
@@ -751,6 +724,41 @@ const styles = StyleSheet.create({
   socialButtonText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+
+  // Following & Discover Sections
+  socialSections: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  socialSection: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  socialSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  socialSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  socialSectionCount: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  socialSectionDescription: {
+    fontSize: 13,
   },
 
   // Edit Form

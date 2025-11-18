@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, ThumbsUp, MapPin, Plus, X, ChevronRight, List } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, ThumbsUp, MapPin, Plus, X, ChevronRight, List, UserPlus } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -300,6 +300,22 @@ export default function BrandDetailScreen() {
     }
   };
 
+  const handleFollow = async () => {
+    if (!brand) return;
+
+    // TODO: Implement follow/unfollow functionality
+    console.log('Follow clicked:', { brandId: brand.id, brandName: brand.name });
+
+    // TODO: Call followService to add/remove follow
+    // TODO: Update UI to show followed state
+
+    if (Platform.OS === 'web') {
+      window.alert(`Follow functionality will be implemented soon!\nBrand: ${brand.name}`);
+    } else {
+      Alert.alert('Coming Soon', `Follow functionality will be implemented soon!\nBrand: ${brand.name}`);
+    }
+  };
+
   // Calculate alignment score based on user causes and brand's valueAlignments
   let alignmentData = {
     isAligned: false,
@@ -525,13 +541,22 @@ export default function BrandDetailScreen() {
             <View style={styles.titleContainer}>
               <View style={styles.brandNameRow}>
                 <Text style={[styles.brandName, { color: colors.text }]}>{brand?.name}</Text>
-                <TouchableOpacity
-                  style={[styles.addToListButton, { backgroundColor: colors.background }]}
-                  onPress={handleOpenAddModal}
-                  activeOpacity={0.7}
-                >
-                  <Plus size={18} color={colors.primary} strokeWidth={2.5} />
-                </TouchableOpacity>
+                <View style={styles.actionButtonsRow}>
+                  <TouchableOpacity
+                    style={[styles.followButton, { backgroundColor: colors.background }]}
+                    onPress={handleFollow}
+                    activeOpacity={0.7}
+                  >
+                    <UserPlus size={18} color={colors.primary} strokeWidth={2.5} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.addToListButton, { backgroundColor: colors.background }]}
+                    onPress={handleOpenAddModal}
+                    activeOpacity={0.7}
+                  >
+                    <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+                  </TouchableOpacity>
+                </View>
               </View>
               <Text style={[styles.category, { color: colors.primary }]}>{brand.category}</Text>
               {brand.headquarters && (
@@ -977,6 +1002,17 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700' as const,
     flex: 1,
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  followButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   addToListButton: {
     width: 36,

@@ -51,7 +51,7 @@ export interface Brand {
   category: string;
   exampleImageUrl?: string; // Optional image of example product
   description?: string; // Brand description
-  alignmentScore: number;
+  alignmentScore?: number; // DEPRECATED: No longer used, all brands default to 50
   moneyFlow: MoneyFlow;
   keyReasons: string[];
   relatedValues: string[];
