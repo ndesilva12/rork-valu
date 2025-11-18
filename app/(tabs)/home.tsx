@@ -388,7 +388,7 @@ export default function HomeScreen() {
             setActiveExplainerStep(1); // Start with first explainer
             // Mark as shown so it won't appear again
             await AsyncStorage.setItem(explainerShownKey, 'true');
-          
+          } else {
             setActiveExplainerStep(0);
           }
 
@@ -396,11 +396,12 @@ export default function HomeScreen() {
           if (hasEntries) {
             setForYouSubsection('userList');
           }
-        
+        } else {
           console.log('[Home] ⚠️ Could not find or create personal list');
         }
       } catch (error) {
         console.error('[Home] Error loading personal list:', error);
+      }
     };
 
     loadPersonalList();
