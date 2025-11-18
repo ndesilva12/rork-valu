@@ -37,11 +37,7 @@ export default function ShareOptionsModal({
 
   const handleCopyLink = async () => {
     if (!shareUrl) {
-      if (Platform.OS === 'web') {
-        window.alert('No link available to copy');
-      } else {
-        Alert.alert('Error', 'No link available to copy');
-      }
+      Alert.alert('Error', 'No link available to copy');
       return;
     }
 
@@ -58,11 +54,7 @@ export default function ShareOptionsModal({
       }
     } catch (error) {
       console.error('Error copying to clipboard:', error);
-      if (Platform.OS === 'web') {
-        window.alert('Could not copy link');
-      } else {
-        Alert.alert('Error', 'Could not copy link');
-      }
+      Alert.alert('Error', 'Could not copy link');
     }
   };
 

@@ -86,13 +86,10 @@ export default function SharedListScreen() {
     const shareLink = `https://upright.money/list/${list.id}`;
     try {
       await Clipboard.setStringAsync(shareLink);
-      if (Platform.OS === 'web') {
-        window.alert('Link copied to clipboard!');
-      } else {
-        Alert.alert('Success', 'Link copied to clipboard!');
-      }
+      Alert.alert('Success', 'Link copied to clipboard!');
     } catch (error) {
       console.error('Error copying link:', error);
+      Alert.alert('Error', 'Could not copy link');
     }
   };
 

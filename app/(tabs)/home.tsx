@@ -275,11 +275,9 @@ export default function HomeScreen() {
       console.error('[Home] Error reordering entries:', error);
       // Revert on error
       setSelectedList(list);
-      if (Platform.OS === 'web') {
-        window.alert('Could not reorder items. Please try again.');
-      } else {
-        Alert.alert('Error', 'Could not reorder items. Please try again.');
-      }
+      
+      
+      Alert.alert('Error', 'Could not reorder items. Please try again.');
     }
   };
 
@@ -297,17 +295,15 @@ export default function HomeScreen() {
         const result = await Location.requestForegroundPermissionsAsync();
         status = result.status;
         console.log('[Home] Permission request result:', status);
-      }
 
       if (status !== 'granted') {
         console.log('[Home] ❌ Location permission denied');
-        Alert.alert(
+      Alert.alert(
           'Location Permission Required',
           'Please enable location access to filter brands by distance.',
           [{ text: 'OK' }]
         );
         return;
-      }
 
       console.log('[Home] ✅ Permission granted, getting location...');
       const location = await Location.getCurrentPositionAsync({});
@@ -390,7 +386,7 @@ export default function HomeScreen() {
             setActiveExplainerStep(1); // Start with first explainer
             // Mark as shown so it won't appear again
             await AsyncStorage.setItem(explainerShownKey, 'true');
-          } else {
+          
             setActiveExplainerStep(0);
           }
 
@@ -398,12 +394,11 @@ export default function HomeScreen() {
           if (hasEntries) {
             setForYouSubsection('userList');
           }
-        } else {
+        
           console.log('[Home] ⚠️ Could not find or create personal list');
         }
       } catch (error) {
         console.error('[Home] Error loading personal list:', error);
-      }
     };
 
     loadPersonalList();
@@ -444,7 +439,6 @@ export default function HomeScreen() {
       // Ensure local view is active
       if (mainView !== 'local') {
         setMainView('local');
-      }
     }
   }, [params.fromMap]);
 
@@ -515,7 +509,6 @@ export default function HomeScreen() {
       if (personalList) {
         setUserPersonalList(personalList);
         console.log('[Home] ✅ Personal list reloaded');
-      }
     } catch (error) {
       console.error('[Home] Error reloading personal list:', error);
     }
@@ -533,13 +526,12 @@ export default function HomeScreen() {
           setExpandedListId('aligned');
           setSelectedListId('aligned');
           await AsyncStorage.setItem(firstTimeKey, 'false'); // Mark as visited
-        } else {
+        
           // Not first time: select (highlight) endorsed list but keep collapsed
           setExpandedListId(null);
           setSelectedListId('endorsement');
         }
         setHasSetDefaultExpansion(true);
-      }
     };
     handleDefaultLibraryState();
   }, [mainView, userPersonalList, hasSetDefaultExpansion, clerkUser?.id]);
@@ -603,9 +595,8 @@ export default function HomeScreen() {
           ...tempResult,
           isWithinRange: true,
         };
-      } else {
+      
         rangeResult = isBusinessWithinRange(business, userLocation.latitude, userLocation.longitude, localDistance);
-      }
 
       return {
         business,
@@ -882,7 +873,6 @@ export default function HomeScreen() {
         const userRef = doc(db, 'users', clerkUser.id);
         await updateDoc(userRef, { alignedListPublic: newValue });
         return;
-      }
 
       if (listId === 'unaligned') {
         const newValue = !unalignedListPublic;
@@ -891,7 +881,6 @@ export default function HomeScreen() {
         const userRef = doc(db, 'users', clerkUser.id);
         await updateDoc(userRef, { unalignedListPublic: newValue });
         return;
-      }
 
       // Handle custom lists (including endorsement)
       const list = userLists.find(l => l.id === listId);
@@ -900,13 +889,10 @@ export default function HomeScreen() {
         await updateListMetadata(listId, { isPublic: newValue });
         // Reload lists to reflect change
         await loadUserLists();
-      }
     } catch (error) {
       console.error('Error toggling list privacy:', error);
     }
   };
-
-
   const renderMainViewSelector = () => (
     <>
       {/* Main View Selector - Three Views */}
@@ -1027,8 +1013,6 @@ export default function HomeScreen() {
       />
     );
   };
-
-
   const renderLocalView = () => {
     const { allBusinesses } = localBusinessData;
 
@@ -1136,10 +1120,10 @@ export default function HomeScreen() {
               await deleteList(listId);
               await loadUserLists();
               handleBackToLibrary();
-              Alert.alert('Success', 'List deleted successfully');
+            Alert.alert('Success', 'List deleted successfully');
             } catch (error) {
               console.error('[Home] Error deleting list:', error);
-              Alert.alert('Error', 'Could not delete list. Please try again.');
+            Alert.alert('Error', 'Could not delete list. Please try again.');
             }
           },
         },
@@ -1199,11 +1183,10 @@ export default function HomeScreen() {
           setSelectedList(updatedList);
         }
 
-        Alert.alert('Success', 'List renamed successfully!');
+      Alert.alert('Success', 'List renamed successfully!');
       } catch (error) {
         console.error('[Home] Error renaming list:', error);
-        Alert.alert('Error', 'Could not rename list. Please try again.');
-      }
+      Alert.alert('Error', 'Could not rename list. Please try again.');
     }
   };
 
@@ -1225,11 +1208,10 @@ export default function HomeScreen() {
           setSelectedList(updatedList);
         }
 
-        Alert.alert('Success', 'Description updated successfully!');
+      Alert.alert('Success', 'Description updated successfully!');
       } catch (error) {
         console.error('[Home] Error updating description:', error);
-        Alert.alert('Error', 'Could not update description. Please try again.');
-      }
+      Alert.alert('Error', 'Could not update description. Please try again.');
     }
   };
 
@@ -1279,7 +1261,7 @@ export default function HomeScreen() {
             const score = Math.round(100 - ((position - 1) / maxPosition) * 50);
             alignedScores.push(score);
             totalSupportScore += 100;
-          } else {
+          
             alignedScores.push(50);
           }
         });
@@ -1306,9 +1288,8 @@ export default function HomeScreen() {
         .slice(0, 20);
 
       if (topBrands.length === 0) {
-        Alert.alert('Error', 'No brands found that align with the selected values');
+      Alert.alert('Error', 'No brands found that align with the selected values');
         return;
-      }
 
       // Use custom name/description if provided, otherwise generate them
       let listName = valuesListName.trim();
@@ -1323,13 +1304,11 @@ export default function HomeScreen() {
           .join(', ');
 
         listName = `Aligned with ${selectedValueNames}${selectedValuesForList.length > 3 ? ' +' + (selectedValuesForList.length - 3) : ''}`;
-      }
 
       if (!listDescription) {
         const supportCount = selectedValuesForList.filter(sv => sv.type === 'support').length;
         const avoidCount = selectedValuesForList.filter(sv => sv.type === 'avoid').length;
         listDescription = `Auto-generated list based on ${supportCount} supported and ${avoidCount} avoided values`;
-      }
 
       // Create the list using library context
       const fullNameFromClerk = clerkUser.fullName ||
@@ -1360,7 +1339,6 @@ export default function HomeScreen() {
           createdAt: new Date(),
         };
         await library.addEntry(newList.id, entry);
-      }
 
       // Close modal and reset state
       setShowValuesSelectionModal(false);
@@ -1441,8 +1419,7 @@ export default function HomeScreen() {
         await loadUserLists();
       } catch (error) {
         console.error('[Home] Error moving entry:', error);
-        Alert.alert('Error', 'Could not reorder entry. Please try again.');
-      }
+      Alert.alert('Error', 'Could not reorder entry. Please try again.');
     }
   };
 
@@ -1466,9 +1443,8 @@ export default function HomeScreen() {
           await loadUserLists();
         } catch (error) {
           console.error('[Home] Error moving entry:', error);
-          Alert.alert('Error', 'Could not reorder entry. Please try again.');
+        Alert.alert('Error', 'Could not reorder entry. Please try again.');
         }
-      }
     }
   };
 
@@ -1491,27 +1467,25 @@ export default function HomeScreen() {
             setSelectedList(updatedList);
           }
 
-          if (Platform.OS === 'web') {
-            window.alert('Item removed from list');
-          } else {
-            Alert.alert('Success', 'Item removed from list');
+          
+          
+          Alert.alert('Success', 'Item removed from list');
           }
         } catch (error) {
           console.error('[Home] Error removing entry:', error);
-          if (Platform.OS === 'web') {
-            window.alert('Could not remove item. Please try again.');
-          } else {
-            Alert.alert('Error', 'Could not remove item. Please try again.');
+          
+          
+          Alert.alert('Error', 'Could not remove item. Please try again.');
           }
         }
       };
 
-      if (Platform.OS === 'web') {
+      
         if (window.confirm('Are you sure you want to remove this item from the list?')) {
           await performDelete();
         }
-      } else {
-        Alert.alert(
+      
+      Alert.alert(
           'Remove Item',
           'Are you sure you want to remove this item from the list?',
           [
@@ -1523,7 +1497,6 @@ export default function HomeScreen() {
             },
           ]
         );
-      }
     }
   };
 
@@ -1536,12 +1509,11 @@ export default function HomeScreen() {
       router.push(`/value/${entry.valueId}`);
     } else if (entry.type === 'link' && 'url' in entry) {
       // Open link in browser
-      if (Platform.OS === 'web') {
+      
         window.open(entry.url, '_blank');
-      } else {
+      
         // For mobile, you might want to use Linking
         // Linking.openURL(entry.url);
-      }
     }
     // Text entries are not clickable
   };
@@ -1555,14 +1527,13 @@ export default function HomeScreen() {
         setUserLists(lists);
       } catch (error) {
         console.error('[Home] Error loading lists for quick-add:', error);
-      }
     }
 
     // For values, show mode selection first
     if (type === 'value') {
       setQuickAddItem({ type, id, name, website, logoUrl });
       setShowValueModeModal(true);
-    } else {
+    
       // For brands and businesses, go straight to list selection
       setQuickAddItem({ type, id, name, website, logoUrl });
       setShowQuickAddModal(true);
@@ -1594,7 +1565,6 @@ export default function HomeScreen() {
       );
       if (entry) {
         handleDeleteEntry(entry.id);
-      }
     }
   };
 
@@ -1622,7 +1592,7 @@ export default function HomeScreen() {
     if (selectedList && selectedList !== 'browse' && quickAddItem) {
       const list = selectedList as UserList;
       handleAddItemSubmit({ valueId: quickAddItem.id, name: quickAddItem.name, mode });
-    } else {
+    
       // Otherwise, show the quick add modal to select a list
       setShowQuickAddModal(true);
     }
@@ -1652,20 +1622,20 @@ export default function HomeScreen() {
         };
       } else if (quickAddItem.type === 'value') {
         if (!selectedValueMode) {
-          Alert.alert('Error', 'Please select Max Pain or Max Benefit');
+        Alert.alert('Error', 'Please select Max Pain or Max Benefit');
           return;
         }
 
         // Add the top brands for this value instead of the value card
         const causeData = valuesMatrix[quickAddItem.id];
         if (!causeData) {
-          Alert.alert('Error', 'Value data not found');
+        Alert.alert('Error', 'Value data not found');
           return;
         }
 
         const brandList = selectedValueMode === 'maxBenefit' ? causeData.support : causeData.avoid;
         if (!brandList || brandList.length === 0) {
-          Alert.alert('Error', 'No brands found for this value');
+        Alert.alert('Error', 'No brands found for this value');
           return;
         }
 
@@ -1695,11 +1665,10 @@ export default function HomeScreen() {
         await loadUserLists();
         await reloadPersonalList();
 
-        Alert.alert('Success', `Added ${addedCount} brands from ${quickAddItem.name} to list!`);
+      Alert.alert('Success', `Added ${addedCount} brands from ${quickAddItem.name} to list!`);
         return;
-      } else {
+      
         return;
-      }
 
       await addEntryToList(listId, entry);
       setShowQuickAddModal(false);
@@ -1716,11 +1685,9 @@ export default function HomeScreen() {
       const errorMessage = error?.message === 'This item is already in the list'
         ? 'This item is already in the list'
         : 'Could not add item to list. Please try again.';
-      if (Platform.OS === 'web') {
-        window.alert(errorMessage);
-      } else {
-        Alert.alert('Error', errorMessage);
-      }
+      
+      
+      Alert.alert('Error', errorMessage);
     }
   };
 
@@ -1774,20 +1741,20 @@ export default function HomeScreen() {
         };
       } else if (quickAddItem.type === 'value') {
         if (!selectedValueMode) {
-          Alert.alert('Error', 'Please select Max Pain or Max Benefit');
+        Alert.alert('Error', 'Please select Max Pain or Max Benefit');
           return;
         }
 
         // Add the top brands for this value instead of the value card
         const causeData = valuesMatrix[quickAddItem.id];
         if (!causeData) {
-          Alert.alert('Error', 'Value data not found');
+        Alert.alert('Error', 'Value data not found');
           return;
         }
 
         const brandList = selectedValueMode === 'maxBenefit' ? causeData.support : causeData.avoid;
         if (!brandList || brandList.length === 0) {
-          Alert.alert('Error', 'No brands found for this value');
+        Alert.alert('Error', 'No brands found for this value');
           return;
         }
 
@@ -1819,11 +1786,10 @@ export default function HomeScreen() {
         // Expand the newly created list
         library.setExpandedList(newList.id);
 
-        Alert.alert('Success', `Created list and added ${addedCount} brands from ${quickAddItem.name}!`);
+      Alert.alert('Success', `Created list and added ${addedCount} brands from ${quickAddItem.name}!`);
         return;
-      } else {
+      
         return;
-      }
 
       await library.addEntry(newList.id, entry);
 
@@ -1843,11 +1809,9 @@ export default function HomeScreen() {
       const errorMessage = error?.message === 'This item is already in the list'
         ? 'This item is already in the list'
         : 'Could not create list. Please try again.';
-      if (Platform.OS === 'web') {
-        window.alert(errorMessage);
-      } else {
-        Alert.alert('Error', errorMessage);
-      }
+      
+      
+      Alert.alert('Error', errorMessage);
     }
   };
 
@@ -1891,18 +1855,14 @@ export default function HomeScreen() {
       await loadUserLists();
       setActiveCardOptionsMenu(null);
       const message = !currentIsPublic ? 'List is now public' : 'List is now private';
-      if (Platform.OS === 'web') {
-        window.alert(message);
-      } else {
-        Alert.alert('Success', message);
-      }
+      
+      
+      Alert.alert('Success', message);
     } catch (error) {
       console.error('[Home] Error toggling list privacy:', error);
-      if (Platform.OS === 'web') {
-        window.alert('Could not update list privacy. Please try again.');
-      } else {
-        Alert.alert('Error', 'Could not update list privacy. Please try again.');
-      }
+      
+      
+      Alert.alert('Error', 'Could not update list privacy. Please try again.');
     }
   };
 
@@ -1914,26 +1874,22 @@ export default function HomeScreen() {
       try {
         await deleteList(listId);
         await loadUserLists();
-        if (Platform.OS === 'web') {
-          window.alert('List deleted successfully');
-        } else {
-          Alert.alert('Success', 'List deleted successfully');
+        
+        
+        Alert.alert('Success', 'List deleted successfully');
         }
       } catch (error) {
         console.error('[Home] Error deleting list:', error);
-        if (Platform.OS === 'web') {
-          window.alert('Could not delete list. Please try again.');
-        } else {
-          Alert.alert('Error', 'Could not delete list. Please try again.');
+        
+        
+        Alert.alert('Error', 'Could not delete list. Please try again.');
         }
-      }
     };
 
-    if (Platform.OS === 'web') {
+    
       if (window.confirm('Are you sure you want to delete this list? This action cannot be undone.')) {
         performDelete();
-      }
-    } else {
+    
       Alert.alert(
         'Delete List',
         'Are you sure you want to delete this list? This action cannot be undone.',
@@ -1994,13 +1950,13 @@ export default function HomeScreen() {
         // Add the top brands for this value instead of the value card
         const causeData = valuesMatrix[itemData.valueId];
         if (!causeData) {
-          Alert.alert('Error', 'Value data not found');
+        Alert.alert('Error', 'Value data not found');
           return;
         }
 
         const brandList = itemData.mode === 'maxBenefit' ? causeData.support : causeData.avoid;
         if (!brandList || brandList.length === 0) {
-          Alert.alert('Error', 'No brands found for this value');
+        Alert.alert('Error', 'No brands found for this value');
           return;
         }
 
@@ -2033,11 +1989,11 @@ export default function HomeScreen() {
         setShowAddItemModal(false);
         setAddItemType(null);
         setAddItemSearchQuery('');
-        Alert.alert('Success', `Added ${addedCount} brands from ${itemData.name} to list!`);
+      Alert.alert('Success', `Added ${addedCount} brands from ${itemData.name} to list!`);
         return;
       } else if (addItemType === 'link') {
         if (!linkUrl.trim()) {
-          Alert.alert('Error', 'Please enter a URL');
+        Alert.alert('Error', 'Please enter a URL');
           return;
         }
         entry = {
@@ -2047,16 +2003,15 @@ export default function HomeScreen() {
         };
       } else if (addItemType === 'text') {
         if (!textContent.trim()) {
-          Alert.alert('Error', 'Please enter text content');
+        Alert.alert('Error', 'Please enter text content');
           return;
         }
         entry = {
           type: 'text',
           content: textContent.trim(),
         };
-      } else {
+      
         return;
-      }
 
       await addEntryToList(list.id, entry);
       await loadUserLists();
@@ -2067,7 +2022,6 @@ export default function HomeScreen() {
       const updatedList = updatedLists.find(l => l.id === list.id);
       if (updatedList) {
         setSelectedList(updatedList);
-      }
 
       // Reset modal state
       setShowAddItemModal(false);
@@ -2611,7 +2565,7 @@ export default function HomeScreen() {
                       </View>
                     </View>
                   );
-                } else {
+                
                   // Default render for link and text entries
                   return (
                     <View
@@ -4173,7 +4127,7 @@ export default function HomeScreen() {
                                   setSelectedValuesForList(prev =>
                                     prev.map(sv => sv.id === value.id ? { ...sv, type: 'avoid' } : sv)
                                   );
-                                } else {
+                                
                                   // Avoid -> Not selected
                                   setSelectedValuesForList(prev => prev.filter(sv => sv.id !== value.id));
                                 }
@@ -4408,7 +4362,7 @@ export default function HomeScreen() {
                     setLinkUrl('');
                     setLinkTitle('');
                     setTextContent('');
-                  } else {
+                  
                     setShowAddItemModal(false);
                   }
                 }}
