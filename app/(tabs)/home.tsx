@@ -4785,7 +4785,9 @@ export default function HomeScreen() {
         description={shareData?.description}
         isDarkMode={isDarkMode}
       />
-
+    }
+    }
+    }
     </View>
   );
 }
