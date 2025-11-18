@@ -95,6 +95,8 @@ export default function UnifiedLibrary({
   const [activeItemOptionsId, setActiveItemOptionsId] = useState<string | null>(null);
   const [showAddToLibraryModal, setShowAddToLibraryModal] = useState(false);
   const [selectedItemToAdd, setSelectedItemToAdd] = useState<ListEntry | null>(null);
+  const [isReorderMode, setIsReorderMode] = useState(false);
+  const [reorderingListId, setReorderingListId] = useState<string | null>(null);
 
   // Edit List Modal state
   const [showEditListModal, setShowEditListModal] = useState(false);
@@ -148,6 +150,15 @@ export default function UnifiedLibrary({
   const handleShareList = (list: UserList) => {
     setSharingItem({ type: 'list', data: list });
     setShowShareOptionsModal(true);
+  };
+
+  // Generate share URL for lists
+  const getListShareUrl = (list: UserList): string => {
+    if (Platform.OS === 'web') {
+      return `${window.location.origin}/list/${list.id}`;
+    }
+    // For mobile, use a deep link format (can be updated with actual deep link scheme)
+    return `uprightmoney://list/${list.id}`;
   };
 
   const performShareList = async (list: UserList) => {
@@ -853,8 +864,14 @@ export default function UnifiedLibrary({
                       style={styles.listOptionItem}
                       onPress={() => {
                         setActiveListOptionsId(null);
-                        // TODO: Enable reorder mode
-                        console.log('Reorder mode for list:', listId);
+                        setIsReorderMode(true);
+                        setReorderingListId(listId);
+                        // Expand the list to show items
+                        if (mode === 'edit') {
+                          library.setExpandedList(listId);
+                        } else {
+                          setLocalExpandedListId(listId);
+                        }
                       }}
                       activeOpacity={0.7}
                     >
@@ -904,7 +921,7 @@ export default function UnifiedLibrary({
                       activeOpacity={0.7}
                     >
                       <Plus size={16} color={colors.text} strokeWidth={2} />
-                      <Text style={[styles.listOptionText, { color: colors.text }]}>Copy to My Library</Text>
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Add to My Library</Text>
                     </TouchableOpacity>
                   )}
 
@@ -1373,6 +1390,7 @@ export default function UnifiedLibrary({
             }
           }
         }}
+        shareUrl={sharingItem?.type === 'list' ? getListShareUrl(sharingItem.data as UserList) : undefined}
         isDarkMode={isDarkMode}
       />
     </View>
