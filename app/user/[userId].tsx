@@ -112,19 +112,11 @@ export default function UserProfileScreen() {
 
       await copyListToLibrary(listId, clerkUser.id, userName);
 
-      if (Platform.OS === 'web') {
-        window.alert('List copied to your library!');
-      } else {
-        Alert.alert('Success', 'List copied to your library!');
-      }
+      Alert.alert('Success', 'List copied to your library!');
     } catch (error: any) {
       console.error('Error copying list:', error);
       const errorMessage = error?.message || 'Could not copy list. Please try again.';
-      if (Platform.OS === 'web') {
-        window.alert(errorMessage);
-      } else {
-        Alert.alert('Error', errorMessage);
-      }
+      Alert.alert('Error', errorMessage);
     } finally {
       setCopyingListId(null);
     }

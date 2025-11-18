@@ -29,7 +29,6 @@ import {
   Target,
   ExternalLink,
   Plus,
-  GripVertical,
   Edit,
   Trash2,
   Share2,
@@ -98,8 +97,6 @@ export default function UnifiedLibrary({
   const [activeListOptionsId, setActiveListOptionsId] = useState<string | null>(null);
   const [showAddToLibraryModal, setShowAddToLibraryModal] = useState(false);
   const [selectedItemToAdd, setSelectedItemToAdd] = useState<ListEntry | null>(null);
-  const [isReorderMode, setIsReorderMode] = useState(false);
-  const [reorderingListId, setReorderingListId] = useState<string | null>(null);
 
   // Edit List Modal state
   const [showEditListModal, setShowEditListModal] = useState(false);
@@ -113,12 +110,14 @@ export default function UnifiedLibrary({
   const [showItemOptionsModal, setShowItemOptionsModal] = useState(false);
   const [selectedItemForOptions, setSelectedItemForOptions] = useState<ListEntry | null>(null);
 
-  // Confirm Modal state (for copying lists)
+  // Confirm Modal state (for copying lists and deleting)
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmModalData, setConfirmModalData] = useState<{
     title: string;
     message: string;
     onConfirm: () => void;
+    confirmText?: string;
+    isDanger?: boolean;
   } | null>(null);
   const [isConfirmLoading, setIsConfirmLoading] = useState(false);
 
@@ -227,11 +226,7 @@ export default function UnifiedLibrary({
     // TODO: Call followService to add/remove follow
     // TODO: Update UI to show followed state
 
-    if (Platform.OS === 'web') {
-      window.alert(`Follow functionality will be implemented soon!\nAccount: ${accountName}`);
-    } else {
-      Alert.alert('Coming Soon', `Follow functionality will be implemented soon!\nAccount: ${accountName}`);
-    }
+    Alert.alert('Coming Soon', `Follow functionality will be implemented soon!\nAccount: ${accountName}`);
   };
 
   const performShareItem = async (entry: ListEntry) => {
@@ -296,11 +291,7 @@ export default function UnifiedLibrary({
       }
     } catch (error) {
       console.error('Error updating list:', error);
-      if (Platform.OS === 'web') {
-        window.alert('Failed to update list. Please try again.');
-      } else {
-        Alert.alert('Error', 'Failed to update list. Please try again.');
-      }
+      Alert.alert('Error', 'Failed to update list. Please try again.');
     }
   };
 
@@ -322,11 +313,7 @@ export default function UnifiedLibrary({
       }
     } catch (error) {
       console.error('Error toggling privacy:', error);
-      if (Platform.OS === 'web') {
-        window.alert('Failed to update privacy setting. Please try again.');
-      } else {
-        Alert.alert('Error', 'Failed to update privacy setting. Please try again.');
-      }
+      Alert.alert('Error', 'Failed to update privacy setting. Please try again.');
     }
   };
 
@@ -904,7 +891,6 @@ export default function UnifiedLibrary({
               const isSystemList = listId === 'aligned' || listId === 'unaligned';
               const currentList = isEndorsementList ? endorsementList : userLists.find(l => l.id === listId);
 
-              const canReorder = !isSystemList && canEdit;
               const canEditMeta = !isSystemList && canEdit;
               const canRemove = !isEndorsementList && !isSystemList && canEdit;
               const canTogglePrivacy = isPublic !== undefined && canEdit;
@@ -912,27 +898,6 @@ export default function UnifiedLibrary({
 
               return (
                 <>
-                  {canReorder && (
-                    <TouchableOpacity
-                      style={styles.listOptionItem}
-                      onPress={() => {
-                        setActiveListOptionsId(null);
-                        setIsReorderMode(true);
-                        setReorderingListId(listId);
-                        // Expand the list to show items
-                        if (mode === 'edit') {
-                          library.setExpandedList(listId);
-                        } else {
-                          setLocalExpandedListId(listId);
-                        }
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <GripVertical size={16} color={colors.text} strokeWidth={2} />
-                      <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
-                    </TouchableOpacity>
-                  )}
-
                   {canEditMeta && currentList && (
                     <TouchableOpacity
                       style={styles.listOptionItem}
@@ -953,11 +918,7 @@ export default function UnifiedLibrary({
                       onPress={() => {
                         setActiveListOptionsId(null);
                         if (!currentUserId) {
-                          if (Platform.OS === 'web') {
-                            window.alert('You must be logged in to copy lists');
-                          } else {
-                            Alert.alert('Error', 'You must be logged in to copy lists');
-                          }
+                          Alert.alert('Error', 'You must be logged in to copy lists');
                           return;
                         }
 
@@ -992,11 +953,7 @@ export default function UnifiedLibrary({
                               // Success - no alert needed, user can see it in their library
                             } catch (error: any) {
                               console.error('Error copying list:', error);
-                              if (Platform.OS === 'web') {
-                                window.alert(error.message || 'Failed to copy list');
-                              } else {
-                                Alert.alert('Error', error.message || 'Failed to copy list');
-                              }
+                              Alert.alert('Error', error.message || 'Failed to copy list');
                             } finally {
                               setIsConfirmLoading(false);
                             }
@@ -1053,20 +1010,18 @@ export default function UnifiedLibrary({
                       style={styles.listOptionItem}
                       onPress={() => {
                         setActiveListOptionsId(null);
-                        if (Platform.OS === 'web') {
-                          if (window.confirm(`Are you sure you want to delete "${currentList.name}"? This cannot be undone.`)) {
+                        setConfirmModalData({
+                          title: 'Delete List',
+                          message: `Are you sure you want to delete "${currentList.name}"? This cannot be undone.`,
+                          onConfirm: () => {
                             library.removeList(currentList.id);
-                          }
-                        } else {
-                          Alert.alert(
-                            'Delete List',
-                            `Are you sure you want to delete "${currentList.name}"? This cannot be undone.`,
-                            [
-                              { text: 'Cancel', style: 'cancel' },
-                              { text: 'Delete', style: 'destructive', onPress: () => library.removeList(currentList.id) },
-                            ]
-                          );
-                        }
+                            setShowConfirmModal(false);
+                            setConfirmModalData(null);
+                          },
+                          confirmText: 'Delete',
+                          isDanger: true,
+                        });
+                        setShowConfirmModal(true);
                       }}
                       activeOpacity={0.7}
                     >
@@ -1102,21 +1057,24 @@ export default function UnifiedLibrary({
     return (
       <View style={styles.listContentContainer}>
         <View style={styles.brandsContainer}>
-          {endorsementList.entries.slice(0, endorsementLoadCount).map((entry, index) => {
-            const itemId = entry.brandId || entry.businessId || entry.valueId || entry.id;
-            return (
-              <View key={entry.id}>
-                <View style={styles.forYouItemRow}>
-                  <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
-                    {index + 1}
-                  </Text>
-                  <View style={styles.forYouCardWrapper}>
-                    {renderListEntry(entry)}
+          {endorsementList.entries
+            .filter(entry => entry != null) // Filter out null/undefined entries
+            .slice(0, endorsementLoadCount)
+            .map((entry, index) => {
+              const itemId = entry.brandId || entry.businessId || entry.valueId || entry.id;
+              return (
+                <View key={entry.id}>
+                  <View style={styles.forYouItemRow}>
+                    <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                      {index + 1}
+                    </Text>
+                    <View style={styles.forYouCardWrapper}>
+                      {renderListEntry(entry)}
+                    </View>
                   </View>
                 </View>
-              </View>
-            );
-          })}
+              );
+            })}
           {endorsementLoadCount < endorsementList.entries.length && (
             <TouchableOpacity
               style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
@@ -1218,21 +1176,24 @@ export default function UnifiedLibrary({
     return (
       <View style={styles.listContentContainer}>
         <View style={styles.brandsContainer}>
-          {list.entries.slice(0, loadCount).map((entry, index) => {
-            const itemId = entry.brandId || entry.businessId || entry.valueId || entry.id;
-            return (
-              <View key={entry.id}>
-                <View style={styles.forYouItemRow}>
-                  <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
-                    {index + 1}
-                  </Text>
-                  <View style={styles.forYouCardWrapper}>
-                    {renderListEntry(entry)}
+          {list.entries
+            .filter(entry => entry != null) // Filter out null/undefined entries
+            .slice(0, loadCount)
+            .map((entry, index) => {
+              const itemId = entry.brandId || entry.businessId || entry.valueId || entry.id;
+              return (
+                <View key={entry.id}>
+                  <View style={styles.forYouItemRow}>
+                    <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                      {index + 1}
+                    </Text>
+                    <View style={styles.forYouCardWrapper}>
+                      {renderListEntry(entry)}
+                    </View>
                   </View>
                 </View>
-              </View>
-            );
-          })}
+              );
+            })}
           {loadCount < list.entries.length && (
             <TouchableOpacity
               style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
@@ -1483,10 +1444,11 @@ export default function UnifiedLibrary({
         }}
         title={confirmModalData?.title || ''}
         message={confirmModalData?.message || ''}
-        confirmText="Add to Library"
+        confirmText={confirmModalData?.confirmText || 'Confirm'}
         cancelText="Cancel"
         isDarkMode={isDarkMode}
         isLoading={isConfirmLoading}
+        isDanger={confirmModalData?.isDanger}
       />
     </View>
   );

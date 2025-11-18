@@ -176,11 +176,7 @@ export default function BusinessDetailScreen() {
     // TODO: Call followService to add/remove follow
     // TODO: Update UI to show followed state
 
-    if (Platform.OS === 'web') {
-      window.alert(`Follow functionality will be implemented soon!\nBusiness: ${business.businessInfo.name}`);
-    } else {
-      Alert.alert('Coming Soon', `Follow functionality will be implemented soon!\nBusiness: ${business.businessInfo.name}`);
-    }
+    Alert.alert('Coming Soon', `Follow functionality will be implemented soon!\nBusiness: ${business.businessInfo.name}`);
   };
 
   useEffect(() => {

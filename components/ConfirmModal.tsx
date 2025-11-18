@@ -24,6 +24,7 @@ interface ConfirmModalProps {
   cancelText?: string;
   isDarkMode?: boolean;
   isLoading?: boolean;
+  isDanger?: boolean;
 }
 
 export default function ConfirmModal({
@@ -36,6 +37,7 @@ export default function ConfirmModal({
   cancelText = 'Cancel',
   isDarkMode = false,
   isLoading = false,
+  isDanger = false,
 }: ConfirmModalProps) {
   const colors = isDarkMode ? darkColors : lightColors;
 
@@ -69,15 +71,15 @@ export default function ConfirmModal({
                   style={[
                     styles.button,
                     styles.confirmButton,
-                    { backgroundColor: colors.primary },
+                    { backgroundColor: isDanger ? '#EF4444' : colors.primary },
                     isLoading && styles.disabledButton,
                   ]}
                   onPress={onConfirm}
                   disabled={isLoading}
                   activeOpacity={0.7}
                 >
-                  <Check size={20} color={colors.white} strokeWidth={2} />
-                  <Text style={[styles.buttonText, { color: colors.white }]}>
+                  <Check size={20} color="#FFFFFF" strokeWidth={2} />
+                  <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>
                     {isLoading ? 'Loading...' : confirmText}
                   </Text>
                 </TouchableOpacity>

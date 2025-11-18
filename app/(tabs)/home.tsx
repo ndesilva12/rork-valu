@@ -275,11 +275,9 @@ export default function HomeScreen() {
       console.error('[Home] Error reordering entries:', error);
       // Revert on error
       setSelectedList(list);
-      if (Platform.OS === 'web') {
-        window.alert('Could not reorder items. Please try again.');
-      } else {
-        Alert.alert('Error', 'Could not reorder items. Please try again.');
-      }
+      
+      
+      Alert.alert('Error', 'Could not reorder items. Please try again.');
     }
   };
 
@@ -905,8 +903,6 @@ export default function HomeScreen() {
       console.error('Error toggling list privacy:', error);
     }
   };
-
-
   const renderMainViewSelector = () => (
     <>
       {/* Main View Selector - Three Views */}
@@ -1027,8 +1023,6 @@ export default function HomeScreen() {
       />
     );
   };
-
-
   const renderLocalView = () => {
     const { allBusinesses } = localBusinessData;
 
@@ -1136,10 +1130,10 @@ export default function HomeScreen() {
               await deleteList(listId);
               await loadUserLists();
               handleBackToLibrary();
-              Alert.alert('Success', 'List deleted successfully');
+            Alert.alert('Success', 'List deleted successfully');
             } catch (error) {
               console.error('[Home] Error deleting list:', error);
-              Alert.alert('Error', 'Could not delete list. Please try again.');
+            Alert.alert('Error', 'Could not delete list. Please try again.');
             }
           },
         },
@@ -1491,27 +1485,19 @@ export default function HomeScreen() {
             setSelectedList(updatedList);
           }
 
-          if (Platform.OS === 'web') {
-            window.alert('Item removed from list');
-          } else {
-            Alert.alert('Success', 'Item removed from list');
-          }
+          Alert.alert('Success', 'Item removed from list');
         } catch (error) {
           console.error('[Home] Error removing entry:', error);
-          if (Platform.OS === 'web') {
-            window.alert('Could not remove item. Please try again.');
-          } else {
-            Alert.alert('Error', 'Could not remove item. Please try again.');
-          }
+          Alert.alert('Error', 'Could not remove item. Please try again.');
         }
       };
 
-      if (Platform.OS === 'web') {
+      
         if (window.confirm('Are you sure you want to remove this item from the list?')) {
           await performDelete();
         }
-      } else {
-        Alert.alert(
+      
+      Alert.alert(
           'Remove Item',
           'Are you sure you want to remove this item from the list?',
           [
@@ -1523,7 +1509,6 @@ export default function HomeScreen() {
             },
           ]
         );
-      }
     }
   };
 
@@ -1536,12 +1521,11 @@ export default function HomeScreen() {
       router.push(`/value/${entry.valueId}`);
     } else if (entry.type === 'link' && 'url' in entry) {
       // Open link in browser
-      if (Platform.OS === 'web') {
+      
         window.open(entry.url, '_blank');
-      } else {
+      
         // For mobile, you might want to use Linking
         // Linking.openURL(entry.url);
-      }
     }
     // Text entries are not clickable
   };
@@ -1652,20 +1636,20 @@ export default function HomeScreen() {
         };
       } else if (quickAddItem.type === 'value') {
         if (!selectedValueMode) {
-          Alert.alert('Error', 'Please select Max Pain or Max Benefit');
+        Alert.alert('Error', 'Please select Max Pain or Max Benefit');
           return;
         }
 
         // Add the top brands for this value instead of the value card
         const causeData = valuesMatrix[quickAddItem.id];
         if (!causeData) {
-          Alert.alert('Error', 'Value data not found');
+        Alert.alert('Error', 'Value data not found');
           return;
         }
 
         const brandList = selectedValueMode === 'maxBenefit' ? causeData.support : causeData.avoid;
         if (!brandList || brandList.length === 0) {
-          Alert.alert('Error', 'No brands found for this value');
+        Alert.alert('Error', 'No brands found for this value');
           return;
         }
 
@@ -1697,8 +1681,6 @@ export default function HomeScreen() {
 
         Alert.alert('Success', `Added ${addedCount} brands from ${quickAddItem.name} to list!`);
         return;
-      } else {
-        return;
       }
 
       await addEntryToList(listId, entry);
@@ -1716,11 +1698,7 @@ export default function HomeScreen() {
       const errorMessage = error?.message === 'This item is already in the list'
         ? 'This item is already in the list'
         : 'Could not add item to list. Please try again.';
-      if (Platform.OS === 'web') {
-        window.alert(errorMessage);
-      } else {
-        Alert.alert('Error', errorMessage);
-      }
+      Alert.alert('Error', errorMessage);
     }
   };
 
@@ -1774,20 +1752,20 @@ export default function HomeScreen() {
         };
       } else if (quickAddItem.type === 'value') {
         if (!selectedValueMode) {
-          Alert.alert('Error', 'Please select Max Pain or Max Benefit');
+        Alert.alert('Error', 'Please select Max Pain or Max Benefit');
           return;
         }
 
         // Add the top brands for this value instead of the value card
         const causeData = valuesMatrix[quickAddItem.id];
         if (!causeData) {
-          Alert.alert('Error', 'Value data not found');
+        Alert.alert('Error', 'Value data not found');
           return;
         }
 
         const brandList = selectedValueMode === 'maxBenefit' ? causeData.support : causeData.avoid;
         if (!brandList || brandList.length === 0) {
-          Alert.alert('Error', 'No brands found for this value');
+        Alert.alert('Error', 'No brands found for this value');
           return;
         }
 
@@ -1821,8 +1799,6 @@ export default function HomeScreen() {
 
         Alert.alert('Success', `Created list and added ${addedCount} brands from ${quickAddItem.name}!`);
         return;
-      } else {
-        return;
       }
 
       await library.addEntry(newList.id, entry);
@@ -1843,11 +1819,7 @@ export default function HomeScreen() {
       const errorMessage = error?.message === 'This item is already in the list'
         ? 'This item is already in the list'
         : 'Could not create list. Please try again.';
-      if (Platform.OS === 'web') {
-        window.alert(errorMessage);
-      } else {
-        Alert.alert('Error', errorMessage);
-      }
+      Alert.alert('Error', errorMessage);
     }
   };
 
@@ -1891,18 +1863,14 @@ export default function HomeScreen() {
       await loadUserLists();
       setActiveCardOptionsMenu(null);
       const message = !currentIsPublic ? 'List is now public' : 'List is now private';
-      if (Platform.OS === 'web') {
-        window.alert(message);
-      } else {
-        Alert.alert('Success', message);
-      }
+      
+      
+      Alert.alert('Success', message);
     } catch (error) {
       console.error('[Home] Error toggling list privacy:', error);
-      if (Platform.OS === 'web') {
-        window.alert('Could not update list privacy. Please try again.');
-      } else {
-        Alert.alert('Error', 'Could not update list privacy. Please try again.');
-      }
+      
+      
+      Alert.alert('Error', 'Could not update list privacy. Please try again.');
     }
   };
 
@@ -1914,26 +1882,17 @@ export default function HomeScreen() {
       try {
         await deleteList(listId);
         await loadUserLists();
-        if (Platform.OS === 'web') {
-          window.alert('List deleted successfully');
-        } else {
-          Alert.alert('Success', 'List deleted successfully');
-        }
+        Alert.alert('Success', 'List deleted successfully');
       } catch (error) {
         console.error('[Home] Error deleting list:', error);
-        if (Platform.OS === 'web') {
-          window.alert('Could not delete list. Please try again.');
-        } else {
-          Alert.alert('Error', 'Could not delete list. Please try again.');
-        }
+        Alert.alert('Error', 'Could not delete list. Please try again.');
       }
     };
 
-    if (Platform.OS === 'web') {
+    
       if (window.confirm('Are you sure you want to delete this list? This action cannot be undone.')) {
         performDelete();
-      }
-    } else {
+    
       Alert.alert(
         'Delete List',
         'Are you sure you want to delete this list? This action cannot be undone.',
@@ -1994,13 +1953,13 @@ export default function HomeScreen() {
         // Add the top brands for this value instead of the value card
         const causeData = valuesMatrix[itemData.valueId];
         if (!causeData) {
-          Alert.alert('Error', 'Value data not found');
+        Alert.alert('Error', 'Value data not found');
           return;
         }
 
         const brandList = itemData.mode === 'maxBenefit' ? causeData.support : causeData.avoid;
         if (!brandList || brandList.length === 0) {
-          Alert.alert('Error', 'No brands found for this value');
+        Alert.alert('Error', 'No brands found for this value');
           return;
         }
 
@@ -2033,11 +1992,11 @@ export default function HomeScreen() {
         setShowAddItemModal(false);
         setAddItemType(null);
         setAddItemSearchQuery('');
-        Alert.alert('Success', `Added ${addedCount} brands from ${itemData.name} to list!`);
+      Alert.alert('Success', `Added ${addedCount} brands from ${itemData.name} to list!`);
         return;
       } else if (addItemType === 'link') {
         if (!linkUrl.trim()) {
-          Alert.alert('Error', 'Please enter a URL');
+        Alert.alert('Error', 'Please enter a URL');
           return;
         }
         entry = {
@@ -2047,15 +2006,13 @@ export default function HomeScreen() {
         };
       } else if (addItemType === 'text') {
         if (!textContent.trim()) {
-          Alert.alert('Error', 'Please enter text content');
+        Alert.alert('Error', 'Please enter text content');
           return;
         }
         entry = {
           type: 'text',
           content: textContent.trim(),
         };
-      } else {
-        return;
       }
 
       await addEntryToList(list.id, entry);
@@ -2611,7 +2568,7 @@ export default function HomeScreen() {
                       </View>
                     </View>
                   );
-                } else {
+                
                   // Default render for link and text entries
                   return (
                     <View
@@ -4173,7 +4130,7 @@ export default function HomeScreen() {
                                   setSelectedValuesForList(prev =>
                                     prev.map(sv => sv.id === value.id ? { ...sv, type: 'avoid' } : sv)
                                   );
-                                } else {
+                                
                                   // Avoid -> Not selected
                                   setSelectedValuesForList(prev => prev.filter(sv => sv.id !== value.id));
                                 }
@@ -4408,7 +4365,7 @@ export default function HomeScreen() {
                     setLinkUrl('');
                     setLinkTitle('');
                     setTextContent('');
-                  } else {
+                  
                     setShowAddItemModal(false);
                   }
                 }}
@@ -4831,7 +4788,6 @@ export default function HomeScreen() {
         description={shareData?.description}
         isDarkMode={isDarkMode}
       />
-
     </View>
   );
 }
