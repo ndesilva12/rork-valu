@@ -649,8 +649,8 @@ export default function HomeScreen() {
 
     allSupport.forEach((product) => {
       FOLDER_CATEGORIES.forEach((category) => {
-        const productCategory = product.category.toLowerCase();
-        const productBrand = product.name.toLowerCase();
+        const productCategory = product.category?.toLowerCase() || '';
+        const productBrand = product.name?.toLowerCase() || '';
 
         let match = false;
 
@@ -4648,7 +4648,7 @@ export default function HomeScreen() {
                     autoFocus
                   />
                   <View style={styles.searchResultsContainer}>
-                    {brands?.filter(b => b.name.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(brand => (
+                    {brands?.filter(b => b.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(brand => (
                       <TouchableOpacity
                         key={brand.id}
                         style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
@@ -4677,7 +4677,7 @@ export default function HomeScreen() {
                     autoFocus
                   />
                   <View style={styles.searchResultsContainer}>
-                    {userBusinesses?.filter(b => b.businessInfo.name.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(business => (
+                    {userBusinesses?.filter(b => b.businessInfo?.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(business => (
                       <TouchableOpacity
                         key={business.id}
                         style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
@@ -4706,7 +4706,7 @@ export default function HomeScreen() {
                     autoFocus
                   />
                   <View style={styles.searchResultsContainer}>
-                    {values?.filter(v => v.name.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(value => (
+                    {values?.filter(v => v.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(value => (
                       <View key={value.id}>
                         <TouchableOpacity
                           style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
