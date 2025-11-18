@@ -20,7 +20,7 @@ import BusinessesAcceptingDiscounts from '@/components/BusinessesAcceptingDiscou
 import BusinessPayment from '@/components/BusinessPayment';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
-import { ChevronDown, ChevronRight, Users, Receipt } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, Users, Receipt, TrendingUp, DollarSign, Percent } from 'lucide-react-native';
 import { aggregateBusinessTransactions } from '@/services/firebase/userService';
 
 export default function DiscountScreen() {
@@ -39,7 +39,7 @@ export default function DiscountScreen() {
   });
 
   // Business data state
-  const [expandedDataSection, setExpandedDataSection] = useState<'customers' | 'transactions' | null>(null);
+  const [expandedDataSection, setExpandedDataSection] = useState<'metrics' | 'customers' | 'transactions' | 'discounts' | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [businessMetrics, setBusinessMetrics] = useState({
     totalDiscountGiven: 0,
@@ -132,7 +132,7 @@ export default function DiscountScreen() {
     // Note: loadBusinessData and refreshTransactionTotals are stable callbacks, don't need in deps
   );
 
-  const toggleDataSection = (section: 'customers' | 'transactions') => {
+  const toggleDataSection = (section: 'metrics' | 'customers' | 'transactions' | 'discounts') => {
     setExpandedDataSection(expandedDataSection === section ? null : section);
   };
 
@@ -185,6 +185,73 @@ export default function DiscountScreen() {
               </View>
             ) : (
               <>
+                {/* Customer Metrics Section */}
+                <View style={[styles.section, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                  <TouchableOpacity
+                    style={styles.sectionHeader}
+                    onPress={() => toggleDataSection('metrics')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.sectionHeaderLeft}>
+                      <TrendingUp size={24} color={colors.primary} strokeWidth={2} />
+                      <Text style={[styles.sectionTitle, { color: colors.text }]}>Customer Metrics</Text>
+                    </View>
+                    <View style={styles.sectionHeaderRight}>
+                      {expandedDataSection === 'metrics' ? (
+                        <ChevronDown size={24} color={colors.text} strokeWidth={2} />
+                      ) : (
+                        <ChevronRight size={24} color={colors.text} strokeWidth={2} />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+
+                  {expandedDataSection === 'metrics' && (
+                    <View style={[styles.sectionContent, { borderTopColor: colors.border }]}>
+                      <View style={styles.metricsGrid}>
+                        <View style={[styles.metricCard, { backgroundColor: colors.background }]}>
+                          <DollarSign size={20} color={colors.primary} strokeWidth={2} />
+                          <Text style={[styles.metricValue, { color: colors.text }]}>
+                            {formatCurrency(businessMetrics.totalRevenue)}
+                          </Text>
+                          <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>
+                            Total Revenue
+                          </Text>
+                        </View>
+
+                        <View style={[styles.metricCard, { backgroundColor: colors.background }]}>
+                          <Percent size={20} color={colors.success} strokeWidth={2} />
+                          <Text style={[styles.metricValue, { color: colors.text }]}>
+                            {formatCurrency(businessMetrics.totalDiscountGiven)}
+                          </Text>
+                          <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>
+                            Total Discounts
+                          </Text>
+                        </View>
+
+                        <View style={[styles.metricCard, { backgroundColor: colors.background }]}>
+                          <Receipt size={20} color={colors.primary} strokeWidth={2} />
+                          <Text style={[styles.metricValue, { color: colors.text }]}>
+                            {businessMetrics.transactionCount}
+                          </Text>
+                          <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>
+                            Transactions
+                          </Text>
+                        </View>
+
+                        <View style={[styles.metricCard, { backgroundColor: colors.background }]}>
+                          <Users size={20} color={colors.primary} strokeWidth={2} />
+                          <Text style={[styles.metricValue, { color: colors.text }]}>
+                            {customers.size}
+                          </Text>
+                          <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>
+                            Customers
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  )}
+                </View>
+
                 {/* Customers Section */}
                 <View style={[styles.section, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
                   <TouchableOpacity
@@ -216,9 +283,11 @@ export default function DiscountScreen() {
                         </Text>
                       ) : (
                         customersList.map((customer) => (
-                          <View
+                          <TouchableOpacity
                             key={customer.id}
                             style={[styles.dataRow, { borderBottomColor: colors.border }]}
+                            onPress={() => router.push(`/customer-profile/${customer.id}`)}
+                            activeOpacity={0.7}
                           >
                             <View style={styles.dataRowMain}>
                               <Text style={[styles.dataRowTitle, { color: colors.text }]}>
@@ -236,7 +305,7 @@ export default function DiscountScreen() {
                                 Saved: {formatCurrency(customer.totalSaved)}
                               </Text>
                             </View>
-                          </View>
+                          </TouchableOpacity>
                         ))
                       )}
                     </View>
@@ -313,6 +382,102 @@ export default function DiscountScreen() {
                         <Text style={[styles.moreText, { color: colors.textSecondary }]}>
                           + {transactions.length - 10} more transactions
                         </Text>
+                      )}
+                    </View>
+                  )}
+                </View>
+
+                {/* Discounts Section */}
+                <View style={[styles.section, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                  <TouchableOpacity
+                    style={styles.sectionHeader}
+                    onPress={() => toggleDataSection('discounts')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.sectionHeaderLeft}>
+                      <Percent size={24} color={colors.primary} strokeWidth={2} />
+                      <Text style={[styles.sectionTitle, { color: colors.text }]}>Discounts</Text>
+                    </View>
+                    <View style={styles.sectionHeaderRight}>
+                      {expandedDataSection === 'discounts' ? (
+                        <ChevronDown size={24} color={colors.text} strokeWidth={2} />
+                      ) : (
+                        <ChevronRight size={24} color={colors.text} strokeWidth={2} />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+
+                  {expandedDataSection === 'discounts' && (
+                    <View style={[styles.sectionContent, { borderTopColor: colors.border }]}>
+                      <View style={styles.discountsBreakdown}>
+                        <View style={[styles.discountSummaryCard, { backgroundColor: colors.background }]}>
+                          <Text style={[styles.discountSummaryLabel, { color: colors.textSecondary }]}>
+                            Total Discounts Given
+                          </Text>
+                          <Text style={[styles.discountSummaryValue, { color: colors.success }]}>
+                            {formatCurrency(businessMetrics.totalDiscountGiven)}
+                          </Text>
+                        </View>
+
+                        <View style={[styles.discountSummaryCard, { backgroundColor: colors.background }]}>
+                          <Text style={[styles.discountSummaryLabel, { color: colors.textSecondary }]}>
+                            Average Discount %
+                          </Text>
+                          <Text style={[styles.discountSummaryValue, { color: colors.primary }]}>
+                            {businessMetrics.totalRevenue > 0
+                              ? ((businessMetrics.totalDiscountGiven / businessMetrics.totalRevenue) * 100).toFixed(1)
+                              : '0.0'}%
+                          </Text>
+                        </View>
+                      </View>
+
+                      {transactions.length > 0 && (
+                        <>
+                          <Text style={[styles.discountListHeader, { color: colors.text }]}>
+                            Recent Discounts
+                          </Text>
+                          {transactions
+                            .filter(txn => txn.discountAmount > 0)
+                            .sort((a, b) => {
+                              const aTime = a.createdAt?.toDate?.() || new Date(0);
+                              const bTime = b.createdAt?.toDate?.() || new Date(0);
+                              return bTime.getTime() - aTime.getTime();
+                            })
+                            .slice(0, 10)
+                            .map((txn) => {
+                              const customer = customers.get(txn.customerId);
+                              const displayName = customer?.name || txn.customerEmail || 'Unknown';
+
+                              return (
+                                <View
+                                  key={txn.id}
+                                  style={[styles.dataRow, { borderBottomColor: colors.border }]}
+                                >
+                                  <View style={styles.dataRowMain}>
+                                    <Text style={[styles.dataRowTitle, { color: colors.text }]}>
+                                      {displayName}
+                                    </Text>
+                                    <Text style={[styles.dataRowValue, { color: colors.success }]}>
+                                      -{formatCurrency(txn.discountAmount || 0)}
+                                    </Text>
+                                  </View>
+                                  <View style={styles.dataRowDetails}>
+                                    <Text style={[styles.dataRowDetail, { color: colors.textSecondary }]}>
+                                      {formatDate(txn.createdAt)}
+                                    </Text>
+                                    <Text style={[styles.dataRowDetail, { color: colors.textSecondary }]}>
+                                      {txn.discountPercent}% off {formatCurrency(txn.purchaseAmount || 0)}
+                                    </Text>
+                                  </View>
+                                </View>
+                              );
+                            })}
+                          {transactions.filter(txn => txn.discountAmount > 0).length === 0 && (
+                            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                              No discounts given yet
+                            </Text>
+                          )}
+                        </>
                       )}
                     </View>
                   )}
@@ -653,5 +818,54 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 8,
     textAlign: 'center',
+  },
+  // Metrics Grid Styles
+  metricsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  metricCard: {
+    flex: 1,
+    minWidth: '45%',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    gap: 8,
+  },
+  metricValue: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+  },
+  metricLabel: {
+    fontSize: 12,
+    textAlign: 'center' as const,
+  },
+  // Discounts Section Styles
+  discountsBreakdown: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  discountSummaryCard: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    gap: 8,
+  },
+  discountSummaryLabel: {
+    fontSize: 12,
+    textAlign: 'center' as const,
+    fontWeight: '600' as const,
+  },
+  discountSummaryValue: {
+    fontSize: 28,
+    fontWeight: '700' as const,
+  },
+  discountListHeader: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginBottom: 12,
   },
 });
