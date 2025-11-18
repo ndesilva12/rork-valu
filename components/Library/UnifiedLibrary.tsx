@@ -366,9 +366,13 @@ export default function UnifiedLibrary({
     const myEndorsementList = library.state.endorsementList;
     const myCustomLists = library.state.userLists.filter(list => list.id !== myEndorsementList?.id);
 
+    // Only show lists that the current user owns (created)
+    const ownedEndorsementList = myEndorsementList && myEndorsementList.userId === currentUserId ? myEndorsementList : null;
+    const ownedCustomLists = myCustomLists.filter(list => list.userId === currentUserId);
+
     return [
-      ...(myEndorsementList ? [myEndorsementList] : []),
-      ...myCustomLists,
+      ...(ownedEndorsementList ? [ownedEndorsementList] : []),
+      ...ownedCustomLists,
     ];
   };
 
