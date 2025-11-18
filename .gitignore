@@ -46,3 +46,9 @@ yarn-error.*
 # Google Sheets credentials
 secrets/
 *service-account*.json
+
+# Temporary backup files
+upright-commits.bundle
+upright-patches/
+all-changes.diff
+bundle-base64.txt
