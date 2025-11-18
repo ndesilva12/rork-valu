@@ -1313,8 +1313,8 @@ export default function UnifiedLibrary({
           ? `Created by ${list.creatorName}`
           : undefined;
 
-        // Use original creator's image for copied lists, otherwise current user's image
-        const listProfileImage = list.originalCreatorImage || profileImage;
+        // Use original creator's image for copied lists, otherwise the list creator's image, or fall back to profile image
+        const listProfileImage = list.originalCreatorImage || list.creatorImage || profileImage;
 
         return (
           <React.Fragment key={list.id}>
