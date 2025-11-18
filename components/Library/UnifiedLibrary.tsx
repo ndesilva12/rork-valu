@@ -47,6 +47,7 @@ import AddToLibraryModal from '@/components/AddToLibraryModal';
 import EditListModal from '@/components/EditListModal';
 import ShareOptionsModal from '@/components/ShareOptionsModal';
 import ItemOptionsModal from '@/components/ItemOptionsModal';
+import ConfirmModal from '@/components/ConfirmModal';
 
 // ===== Types =====
 
@@ -109,6 +110,15 @@ export default function UnifiedLibrary({
   // Item Options Modal state
   const [showItemOptionsModal, setShowItemOptionsModal] = useState(false);
   const [selectedItemForOptions, setSelectedItemForOptions] = useState<ListEntry | null>(null);
+
+  // Confirm Modal state (for copying lists)
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalData, setConfirmModalData] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
+  const [isConfirmLoading, setIsConfirmLoading] = useState(false);
 
   // Pagination state for each list
   const [endorsementLoadCount, setEndorsementLoadCount] = useState(10);
@@ -905,26 +915,57 @@ export default function UnifiedLibrary({
                   {canCopyList && currentList && (
                     <TouchableOpacity
                       style={styles.listOptionItem}
-                      onPress={async () => {
+                      onPress={() => {
                         setActiveListOptionsId(null);
                         if (!currentUserId) {
-                          Alert.alert('Error', 'You must be logged in to copy lists');
+                          if (Platform.OS === 'web') {
+                            window.alert('You must be logged in to copy lists');
+                          } else {
+                            Alert.alert('Error', 'You must be logged in to copy lists');
+                          }
                           return;
                         }
-                        try {
-                          // Copy list to current user's library
-                          const newListName = `${currentList.name} (Copy)`;
-                          const newList = await library.createNewList(currentUserId, newListName, currentList.description);
 
-                          // Copy all entries
-                          for (const entry of currentList.entries) {
-                            await library.addEntry(newList.id, entry);
-                          }
+                        // Show confirmation modal
+                        setConfirmModalData({
+                          title: 'Add to Your Library',
+                          message: `Add "${currentList.name}" to your library? All items will be copied.`,
+                          onConfirm: async () => {
+                            setIsConfirmLoading(true);
+                            try {
+                              // Copy list to current user's library WITHOUT "(Copy)" suffix
+                              const newList = await library.createNewList(
+                                currentUserId,
+                                currentList.name, // NO (Copy) suffix
+                                currentList.description,
+                                profile?.userDetails?.name, // Current user as creator
+                                false, // not endorsed
+                                currentList.id, // original list ID
+                                currentList.creatorName || currentList.userId // original creator
+                              );
 
-                          Alert.alert('Success', `Copied "${currentList.name}" to your library`);
-                        } catch (error: any) {
-                          Alert.alert('Error', error.message || 'Failed to copy list');
-                        }
+                              // Copy all entries WITHOUT the id field
+                              for (const entry of currentList.entries) {
+                                const { id, ...entryWithoutId } = entry;
+                                await library.addEntry(newList.id, entryWithoutId);
+                              }
+
+                              setShowConfirmModal(false);
+                              setConfirmModalData(null);
+                              // Success - no alert needed, user can see it in their library
+                            } catch (error: any) {
+                              console.error('Error copying list:', error);
+                              if (Platform.OS === 'web') {
+                                window.alert(error.message || 'Failed to copy list');
+                              } else {
+                                Alert.alert('Error', error.message || 'Failed to copy list');
+                              }
+                            } finally {
+                              setIsConfirmLoading(false);
+                            }
+                          },
+                        });
+                        setShowConfirmModal(true);
                       }}
                       activeOpacity={0.7}
                     >
@@ -1380,6 +1421,26 @@ export default function UnifiedLibrary({
         })()}
         itemName={selectedItemForOptions ? getItemName(selectedItemForOptions) : undefined}
         isDarkMode={isDarkMode}
+      />
+
+      <ConfirmModal
+        visible={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setConfirmModalData(null);
+          setIsConfirmLoading(false);
+        }}
+        onConfirm={() => {
+          if (confirmModalData) {
+            confirmModalData.onConfirm();
+          }
+        }}
+        title={confirmModalData?.title || ''}
+        message={confirmModalData?.message || ''}
+        confirmText="Add to Library"
+        cancelText="Cancel"
+        isDarkMode={isDarkMode}
+        isLoading={isConfirmLoading}
       />
     </View>
   );

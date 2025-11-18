@@ -102,8 +102,10 @@ export const createList = async (
   name: string,
   description?: string,
   creatorName?: string,
-  isEndorsed: boolean = false
-): Promise<string> => {
+  isEndorsed: boolean = false,
+  originalListId?: string,
+  originalCreatorName?: string
+): Promise<UserList> => {
   try {
     // Prevent creating multiple endorsed lists
     if (isEndorsed) {
@@ -114,6 +116,7 @@ export const createList = async (
     }
 
     const listsRef = collection(db, LISTS_COLLECTION);
+    const now = new Date();
     const newList = {
       userId,
       name,
@@ -124,10 +127,27 @@ export const createList = async (
       updatedAt: serverTimestamp(),
       isPublic: true, // Default to public
       isEndorsed,
+      ...(originalListId && { originalListId }),
+      ...(originalCreatorName && { originalCreatorName }),
     };
 
     const docRef = await addDoc(listsRef, newList);
-    return docRef.id;
+
+    // Return the full UserList object
+    return {
+      id: docRef.id,
+      userId,
+      name,
+      description: description || '',
+      creatorName: creatorName || '',
+      entries: [],
+      createdAt: now,
+      updatedAt: now,
+      isPublic: true,
+      isEndorsed,
+      ...(originalListId && { originalListId }),
+      ...(originalCreatorName && { originalCreatorName }),
+    };
   } catch (error) {
     console.error('Error creating list:', error);
     throw error;
