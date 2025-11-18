@@ -145,15 +145,18 @@ export const [DataProvider, useData] = createContextHook(() => {
 
   // Calculate brand relevance to user causes
   const calculateRelevance = (brand: Brand, userCauses: string[]): number => {
-    if (userCauses.length === 0) return Math.abs(brand.alignmentScore);
+    // All brands now have a score of 50
+    const baseScore = 50;
+
+    if (userCauses.length === 0) return baseScore;
 
     const hasMatchingCause = brand.relatedValues.some((v) => userCauses.includes(v));
 
     if (hasMatchingCause) {
-      return Math.abs(brand.alignmentScore) + 100;
+      return baseScore + 100;
     }
 
-    return Math.abs(brand.alignmentScore);
+    return baseScore;
   };
 
   // Get brand by ID (exact match only)
