@@ -38,7 +38,7 @@ import { useLibrary } from '@/contexts/LibraryContext';
 import EndorsedBadge from '@/components/EndorsedBadge';
 import { getLogoUrl } from '@/lib/logo';
 import { Product } from '@/types';
-import { BusinessUser, calculateAlignmentScore } from '@/services/firebase/businessService';
+import { BusinessUser } from '@/services/firebase/businessService';
 import { useUser } from '@/contexts/UserContext';
 import { useRouter } from 'expo-router';
 import { updateListMetadata } from '@/services/firebase/listService';
@@ -467,19 +467,9 @@ export default function UnifiedLibrary({
 
       case 'business':
         if ('businessId' in entry) {
-          // Calculate score only if we have the data
-          const businessData = userBusinesses.find(b => b.id === entry.businessId);
-          const causes = userCauses || profile?.causes || [];
-          let alignmentScore: number | null = null;
-          let scoreColor = colors.textSecondary;
-
-          if (businessData && causes.length > 0) {
-            const rawScore = calculateAlignmentScore(causes, businessData.causes || []);
-            alignmentScore = Math.round(50 + (rawScore * 0.8));
-            alignmentScore = Math.max(10, Math.min(90, alignmentScore));
-            const isAligned = alignmentScore >= 50;
-            scoreColor = isAligned ? colors.primary : colors.danger;
-          }
+          // All businesses set to score of 50
+          const alignmentScore = 50;
+          const scoreColor = colors.textSecondary;
 
           // Get business name from multiple possible fields
           const businessName = (entry as any).businessName || (entry as any).name || 'Unknown Business';

@@ -92,7 +92,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
-import { getAllUserBusinesses, calculateAlignmentScore, normalizeScores, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
+import { getAllUserBusinesses, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 import BusinessMapView from '@/components/BusinessMapView';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
 import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList, updateListMetadata, reorderListEntries, getEndorsementList, ensureEndorsementList } from '@/services/firebase/listService';
@@ -2602,13 +2602,10 @@ export default function HomeScreen() {
                     </View>
                   );
                 } else if (entry.type === 'business' && 'businessId' in entry) {
-                  // Get business score and alignment
-                  const businessData = userBusinesses.find(b => b.id === entry.businessId);
-                  const rawScore = businessData ? calculateAlignmentScore(profile.causes, businessData.causes || []) : 0;
-                  let alignmentScore = Math.round(50 + (rawScore * 0.8)); // Map to 10-90 range
-                  alignmentScore = Math.max(10, Math.min(90, alignmentScore)); // Clamp to 10-90 to prevent negative scores
+                  // All businesses set to score of 50
+                  const alignmentScore = 50;
                   const isAligned = alignmentScore >= 50;
-                  const titleColor = isAligned ? colors.primaryLight : colors.danger;
+                  const titleColor = colors.text;
 
                   return (
                     <View
