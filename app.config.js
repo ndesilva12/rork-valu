@@ -4,7 +4,7 @@ module.exports = {
     slug: "upright",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/endorse1.png",
+    icon: "./assets/images/endorse3.png",
     scheme: "myapp",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
@@ -12,7 +12,7 @@ module.exports = {
       googlePlacesApiKey: process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || '',
     },
     splash: {
-      image: "./assets/images/endorse1.png",
+      image: "./assets/images/endorse3.png",
       resizeMode: "contain",
       backgroundColor: "#ffffff"
     },
@@ -36,7 +36,7 @@ module.exports = {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/images/endorse1.png",
+        foregroundImage: "./assets/images/endorse3.png",
         backgroundColor: "#ffffff"
       },
       package: "app.rork.playbook",
@@ -53,7 +53,7 @@ module.exports = {
     web: {
       bundler: "metro",
       output: "static",
-      favicon: "./assets/images/endorse1.png",
+      favicon: "./assets/images/endorse3.png",
       name: "Upright",
       shortName: "Upright",
       description: "Upright - Vote With Your Money",
