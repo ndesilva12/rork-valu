@@ -244,6 +244,14 @@ export default function UnifiedLibrary({
       if (currentUserId) {
         await library.loadUserLists(currentUserId, true);
       }
+      // Show success feedback
+      const newStatus = !currentStatus ? 'Public' : 'Private';
+      if (Platform.OS === 'web') {
+        // Brief success message on web
+        console.log(`List is now ${newStatus}`);
+      } else {
+        Alert.alert('Success', `List is now ${newStatus}`);
+      }
     } catch (error) {
       console.error('Error toggling privacy:', error);
       if (Platform.OS === 'web') {
@@ -390,21 +398,23 @@ export default function UnifiedLibrary({
     const scoreColor = alignmentScore !== undefined
       ? (alignmentScore >= 50 ? colors.primary : colors.danger)
       : colors.textSecondary;
+    const isMenuOpen = activeItemOptionsId === product.id;
 
     return (
-      <TouchableOpacity
-        style={[
-          styles.brandCard,
-          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
-        ]}
-        onPress={() => {
-          router.push({
-            pathname: '/brand/[id]',
-            params: { id: product.id },
-          });
-        }}
-        activeOpacity={0.7}
-      >
+      <View style={{ position: 'relative', zIndex: isMenuOpen ? 99999 : 1, overflow: 'visible' }}>
+        <TouchableOpacity
+          style={[
+            styles.brandCard,
+            { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+          ]}
+          onPress={() => {
+            router.push({
+              pathname: '/brand/[id]',
+              params: { id: product.id },
+            });
+          }}
+          activeOpacity={0.7}
+        >
         <View style={styles.brandCardInner}>
           <View style={styles.brandLogoContainer}>
             <Image
@@ -445,7 +455,9 @@ export default function UnifiedLibrary({
             </TouchableOpacity>
           )}
         </View>
+        {renderItemOptionsMenu(product.id, { type: 'brand', id: product.id, brandId: product.id } as ListEntry, 'system')}
       </TouchableOpacity>
+      </View>
     );
   };
 
