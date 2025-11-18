@@ -513,6 +513,44 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        {/* Following & Discover Sections */}
+        <View style={styles.socialSections}>
+          {/* Following Section */}
+          <TouchableOpacity
+            style={[styles.socialSection, { backgroundColor: colors.backgroundSecondary }]}
+            onPress={() => {
+              // TODO: Open Following modal
+              console.log('Open Following modal');
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.socialSectionHeader}>
+              <Text style={[styles.socialSectionTitle, { color: colors.text }]}>Following</Text>
+              <Text style={[styles.socialSectionCount, { color: colors.textSecondary }]}>0</Text>
+            </View>
+            <Text style={[styles.socialSectionDescription, { color: colors.textSecondary }]}>
+              Accounts you follow
+            </Text>
+          </TouchableOpacity>
+
+          {/* Discover Section */}
+          <TouchableOpacity
+            style={[styles.socialSection, { backgroundColor: colors.backgroundSecondary }]}
+            onPress={() => {
+              // TODO: Navigate to discover page
+              console.log('Navigate to discover');
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.socialSectionHeader}>
+              <Text style={[styles.socialSectionTitle, { color: colors.text }]}>Discover</Text>
+            </View>
+            <Text style={[styles.socialSectionDescription, { color: colors.textSecondary }]}>
+              Find accounts to follow
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Library Section - Uses Unified Library Component */}
         <View style={styles.librarySection}>
           <Text style={[styles.librarySectionTitle, { color: colors.text }]}>My Library</Text>
@@ -686,6 +724,41 @@ const styles = StyleSheet.create({
   socialButtonText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+
+  // Following & Discover Sections
+  socialSections: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  socialSection: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  socialSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  socialSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  socialSectionCount: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  socialSectionDescription: {
+    fontSize: 13,
   },
 
   // Edit Form

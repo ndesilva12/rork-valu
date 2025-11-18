@@ -31,6 +31,7 @@ import {
   Edit,
   Trash2,
   Share2,
+  UserPlus,
 } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { UserList, ListEntry } from '@/types/library';
@@ -164,6 +165,24 @@ export default function UnifiedLibrary({
   const handleShareItem = (entry: ListEntry) => {
     setSharingItem({ type: 'entry', data: entry });
     setShowShareOptionsModal(true);
+  };
+
+  const handleFollow = async (entry: ListEntry) => {
+    // TODO: Implement follow/unfollow functionality
+    const accountId = entry.type === 'brand' ? entry.brandId : entry.businessId;
+    const accountType = entry.type;
+    const accountName = (entry as any).brandName || (entry as any).businessName || (entry as any).name || 'Account';
+
+    console.log('Follow clicked:', { accountId, accountType, accountName });
+
+    // TODO: Call followService to add/remove follow
+    // TODO: Update UI to show followed state
+
+    if (Platform.OS === 'web') {
+      window.alert(`Follow functionality will be implemented soon!\nAccount: ${accountName}`);
+    } else {
+      Alert.alert('Coming Soon', `Follow functionality will be implemented soon!\nAccount: ${accountName}`);
+    }
   };
 
   const performShareItem = async (entry: ListEntry) => {
@@ -969,6 +988,7 @@ export default function UnifiedLibrary({
     const canRemove = canEdit;
     const canShare = true;
     const canAddToLibrary = true; // ALWAYS show "Add to" - both edit and view modes
+    const canFollow = entry.type === 'brand' || entry.type === 'business'; // Only brands and businesses can be followed
 
     return (
       <View style={[styles.itemOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
@@ -983,6 +1003,19 @@ export default function UnifiedLibrary({
           >
             <Plus size={16} color={colors.text} strokeWidth={2} />
             <Text style={[styles.listOptionText, { color: colors.text }]}>Add to</Text>
+          </TouchableOpacity>
+        )}
+        {canFollow && (
+          <TouchableOpacity
+            style={styles.listOptionItem}
+            onPress={() => {
+              setActiveItemOptionsId(null);
+              handleFollow(entry);
+            }}
+            activeOpacity={0.7}
+          >
+            <UserPlus size={16} color={colors.text} strokeWidth={2} />
+            <Text style={[styles.listOptionText, { color: colors.text }]}>Follow</Text>
           </TouchableOpacity>
         )}
         {canShare && (
