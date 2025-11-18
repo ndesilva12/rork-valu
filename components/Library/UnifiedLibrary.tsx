@@ -43,6 +43,8 @@ import { useUser } from '@/contexts/UserContext';
 import { useRouter } from 'expo-router';
 import { updateListMetadata } from '@/services/firebase/listService';
 import AddToLibraryModal from '@/components/AddToLibraryModal';
+import EditListModal from '@/components/EditListModal';
+import ShareOptionsModal from '@/components/ShareOptionsModal';
 
 // ===== Types =====
 
@@ -93,6 +95,14 @@ export default function UnifiedLibrary({
   const [showAddToLibraryModal, setShowAddToLibraryModal] = useState(false);
   const [selectedItemToAdd, setSelectedItemToAdd] = useState<ListEntry | null>(null);
 
+  // Edit List Modal state
+  const [showEditListModal, setShowEditListModal] = useState(false);
+  const [editingList, setEditingList] = useState<UserList | null>(null);
+
+  // Share Options Modal state
+  const [showShareOptionsModal, setShowShareOptionsModal] = useState(false);
+  const [sharingItem, setSharingItem] = useState<{type: 'list' | 'entry', data: UserList | ListEntry} | null>(null);
+
   // Pagination state for each list
   const [endorsementLoadCount, setEndorsementLoadCount] = useState(10);
   const [alignedLoadCount, setAlignedLoadCount] = useState(10);
@@ -133,8 +143,13 @@ export default function UnifiedLibrary({
   // Filter out endorsement list from custom lists
   const customLists = userLists.filter(list => list.id !== endorsementList?.id);
 
-  // Share handlers
-  const handleShareList = async (list: UserList) => {
+  // Share handlers - Open ShareOptionsModal first
+  const handleShareList = (list: UserList) => {
+    setSharingItem({ type: 'list', data: list });
+    setShowShareOptionsModal(true);
+  };
+
+  const performShareList = async (list: UserList) => {
     try {
       const message = `Check out my list "${list.name}" on Upright Money!\n${list.description || ''}`;
       await Share.share({
@@ -146,7 +161,12 @@ export default function UnifiedLibrary({
     }
   };
 
-  const handleShareItem = async (entry: ListEntry) => {
+  const handleShareItem = (entry: ListEntry) => {
+    setSharingItem({ type: 'entry', data: entry });
+    setShowShareOptionsModal(true);
+  };
+
+  const performShareItem = async (entry: ListEntry) => {
     try {
       let message = '';
       let title = '';
@@ -185,6 +205,34 @@ export default function UnifiedLibrary({
       });
     } catch (error) {
       console.error('Error sharing item:', error);
+    }
+  };
+
+  // Edit List handler - Open EditListModal
+  const handleEditList = (list: UserList) => {
+    setEditingList(list);
+    setShowEditListModal(true);
+  };
+
+  const performEditList = async (name: string, description: string) => {
+    if (!editingList) return;
+
+    try {
+      await updateListMetadata(editingList.id, {
+        name,
+        description,
+      });
+      // Reload lists to reflect the change
+      if (currentUserId) {
+        await library.loadUserLists(currentUserId, true);
+      }
+    } catch (error) {
+      console.error('Error updating list:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Failed to update list. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to update list. Please try again.');
+      }
     }
   };
 
@@ -1320,6 +1368,47 @@ export default function UnifiedLibrary({
           </React.Fragment>
         );
       })}
+
+      {/* Modals */}
+      <AddToLibraryModal
+        visible={showAddToLibraryModal}
+        onClose={() => setShowAddToLibraryModal(false)}
+        availableLists={getAddToLibraryLists()}
+        onSelectList={handleSelectList}
+        onCreateNewList={handleCreateNewList}
+        itemName={selectedItemToAdd ? getItemName(selectedItemToAdd) : ''}
+        isDarkMode={isDarkMode}
+      />
+
+      <EditListModal
+        visible={showEditListModal}
+        onClose={() => {
+          setShowEditListModal(false);
+          setEditingList(null);
+        }}
+        onSave={performEditList}
+        initialName={editingList?.name || ''}
+        initialDescription={editingList?.description || ''}
+        isDarkMode={isDarkMode}
+      />
+
+      <ShareOptionsModal
+        visible={showShareOptionsModal}
+        onClose={() => {
+          setShowShareOptionsModal(false);
+          setSharingItem(null);
+        }}
+        onShare={async () => {
+          if (sharingItem) {
+            if (sharingItem.type === 'list') {
+              await performShareList(sharingItem.data as UserList);
+            } else {
+              await performShareItem(sharingItem.data as ListEntry);
+            }
+          }
+        }}
+        isDarkMode={isDarkMode}
+      />
     </View>
   );
 }
