@@ -3185,7 +3185,8 @@ export default function HomeScreen() {
     );
   }
 
-  if (profile.causes.length === 0) {
+  // Check if profile exists and has causes
+  if (!profile || !profile.causes || profile.causes.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
