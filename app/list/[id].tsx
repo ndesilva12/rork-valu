@@ -11,6 +11,7 @@ import {
   Share,
   Alert,
   Linking,
+  Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -356,6 +357,13 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 32,
+    ...Platform.select({
+      web: {
+        maxWidth: 768,
+        width: '100%',
+        alignSelf: 'center',
+      },
+    }),
   },
   centerContainer: {
     flex: 1,
