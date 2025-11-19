@@ -1062,6 +1062,8 @@ export default function HomeScreen() {
         userBusinesses={userBusinesses}
         scoredBrands={scoredBrands}
         userCauses={profile?.causes || []}
+        alignedListPublic={profile?.alignedListPublic !== false}
+        unalignedListPublic={profile?.unalignedListPublic !== false}
       />
     );
   };

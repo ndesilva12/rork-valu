@@ -615,7 +615,7 @@ export default function ProfileScreen() {
             </View>
           ) : (
             <UnifiedLibrary
-              mode="preview"
+              mode="edit"
               currentUserId={clerkUser?.id}
               alignedItems={allSupportFull}
               unalignedItems={allAvoidFull}
@@ -624,6 +624,8 @@ export default function ProfileScreen() {
               userBusinesses={userBusinesses}
               scoredBrands={scoredBrands}
               userCauses={profile?.causes || []}
+              alignedListPublic={profile.alignedListPublic !== false}
+              unalignedListPublic={profile.unalignedListPublic !== false}
             />
           )}
         </View>

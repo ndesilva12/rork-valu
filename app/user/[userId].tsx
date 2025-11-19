@@ -339,8 +339,7 @@ export default function UserProfileScreen() {
 
             {/* Show alignment score only when viewing another user's profile */}
             {!isOwnProfile && (
-              <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.backgroundSecondary }]}>
-                <AlignmentIcon size={20} color={alignmentColor} strokeWidth={2.5} />
+              <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.background }]}>
                 <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
                   {alignmentData.alignmentStrength}
                 </Text>
@@ -385,13 +384,15 @@ export default function UserProfileScreen() {
                 }
                 return endorsementList || null;
               })()}
-              alignedItems={allSupportFull}
-              unalignedItems={allAvoidFull}
+              alignedItems={isOwnProfile || userProfile?.alignedListPublic !== false ? allSupportFull : []}
+              unalignedItems={isOwnProfile || userProfile?.unalignedListPublic !== false ? allAvoidFull : []}
               isDarkMode={isDarkMode}
               profileImage={profileImageUrl}
               userBusinesses={userBusinesses}
               scoredBrands={scoredBrands}
               userCauses={currentUserProfile?.causes || []}
+              alignedListPublic={userProfile?.alignedListPublic !== false}
+              unalignedListPublic={userProfile?.unalignedListPublic !== false}
             />
           </View>
         </View>
@@ -500,15 +501,14 @@ const styles = StyleSheet.create({
   scoreCircle: {
     width: 64,
     height: 64,
-    borderRadius: 32,
-    borderWidth: 2.5,
+    borderRadius: 10,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   scoreNumber: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700' as const,
-    marginTop: 3,
   },
   privacyBadge: {
     width: 64,

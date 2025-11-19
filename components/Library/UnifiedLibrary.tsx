@@ -51,6 +51,8 @@ import EditListModal from '@/components/EditListModal';
 import ShareOptionsModal from '@/components/ShareOptionsModal';
 import ItemOptionsModal from '@/components/ItemOptionsModal';
 import ConfirmModal from '@/components/ConfirmModal';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/firebase';
 
 // ===== Types =====
 
@@ -72,6 +74,9 @@ interface UnifiedLibraryProps {
   userBusinesses?: BusinessUser[];
   scoredBrands?: Map<string, number>;
   userCauses?: string[];
+  // Privacy settings for aligned/unaligned lists
+  alignedListPublic?: boolean;
+  unalignedListPublic?: boolean;
 }
 
 export default function UnifiedLibrary({
@@ -87,6 +92,8 @@ export default function UnifiedLibrary({
   userBusinesses = [],
   scoredBrands = new Map(),
   userCauses = [],
+  alignedListPublic = true,
+  unalignedListPublic = true,
 }: UnifiedLibraryProps) {
   const colors = isDarkMode ? darkColors : lightColors;
   const library = useLibrary();
@@ -289,11 +296,28 @@ export default function UnifiedLibrary({
   // Privacy toggle handler
   const handleTogglePrivacy = async (listId: string, currentStatus: boolean) => {
     try {
-      await updateListMetadata(listId, { isPublic: !currentStatus });
-      // Reload lists to reflect the change
-      if (currentUserId) {
+      // Handle aligned/unaligned system lists differently
+      if (listId === 'aligned' || listId === 'unaligned') {
+        if (!currentUserId) return;
+
+        // Update user profile field
+        const userRef = doc(db, 'users', currentUserId);
+        const fieldName = listId === 'aligned' ? 'alignedListPublic' : 'unalignedListPublic';
+        await updateDoc(userRef, {
+          [fieldName]: !currentStatus
+        });
+
+        // Reload lists to reflect the change
         await library.loadUserLists(currentUserId, true);
+      } else {
+        // Handle regular user lists
+        await updateListMetadata(listId, { isPublic: !currentStatus });
+        // Reload lists to reflect the change
+        if (currentUserId) {
+          await library.loadUserLists(currentUserId, true);
+        }
       }
+
       // Show success feedback
       const newStatus = !currentStatus ? 'Public' : 'Private';
       if (Platform.OS === 'web') {
@@ -874,7 +898,24 @@ export default function UnifiedLibrary({
             </View>
           </View>
 
-          <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {/* Action Menu Button for aligned/unaligned lists */}
+            {(listId === 'aligned' || listId === 'unaligned') && canEdit && (
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  setActiveListOptionsId(isOptionsOpen ? null : listId);
+                }}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <View style={{ transform: [{ rotate: '90deg' }] }}>
+                  <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                </View>
+              </TouchableOpacity>
+            )}
+            <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+          </View>
         </TouchableOpacity>
 
         {/* Options dropdown - show in edit mode AND view mode */}
@@ -1323,7 +1364,8 @@ export default function UnifiedLibrary({
 
               const canEditMeta = !isSystemList && !isCopiedList && canEdit;
               const canRemove = !isEndorsementList && !isSystemList && canEdit;
-              const canTogglePrivacy = isPublic !== undefined && !isCopiedList && !isSystemList && canEdit;
+              // Allow privacy toggle for aligned/unaligned lists as well
+              const canTogglePrivacy = isPublic !== undefined && !isCopiedList && canEdit;
               const canCopyList = mode === 'view';
 
               return (
@@ -1342,12 +1384,27 @@ export default function UnifiedLibrary({
                     </TouchableOpacity>
                   )}
 
-                  {currentList && (
+                  {(currentList || isSystemList) && (
                     <TouchableOpacity
                       style={styles.listOptionItem}
                       onPress={() => {
                         setActiveListOptionsId(null);
-                        handleShareList(currentList);
+                        if (isSystemList) {
+                          // Create a mock list object for system lists
+                          const systemListName = listId === 'aligned' ? 'Aligned' : 'Unaligned';
+                          const systemListDescription = listId === 'aligned'
+                            ? 'Brands and businesses aligned with your values'
+                            : 'Brands and businesses not aligned with your values';
+                          const mockList = {
+                            id: listId,
+                            name: systemListName,
+                            description: systemListDescription,
+                            isPublic: listId === 'aligned' ? alignedListPublic : unalignedListPublic,
+                          } as UserList;
+                          handleShareList(mockList);
+                        } else if (currentList) {
+                          handleShareList(currentList);
+                        }
                       }}
                       activeOpacity={0.7}
                     >
@@ -1488,7 +1545,7 @@ export default function UnifiedLibrary({
           false,
           undefined,
           'Brands and businesses aligned with your values',
-          false,
+          alignedListPublic,
           undefined,
           true
         )}
@@ -1501,7 +1558,7 @@ export default function UnifiedLibrary({
           false,
           undefined,
           'Brands and businesses not aligned with your values',
-          false,
+          unalignedListPublic,
           undefined,
           true
         )}

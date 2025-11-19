@@ -505,8 +505,7 @@ export default function BusinessDetailScreen() {
               )}
             </View>
             <View style={styles.scoreContainer}>
-              <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.backgroundSecondary }]}>
-                <AlignmentIcon size={14} color={alignmentColor} strokeWidth={2.5} />
+              <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.background }]}>
                 <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
                   {alignmentData.alignmentStrength}
                 </Text>
@@ -516,7 +515,9 @@ export default function BusinessDetailScreen() {
                 onPress={() => setShowActionMenu(true)}
                 activeOpacity={0.7}
               >
-                <MoreVertical size={18} color={colors.text} strokeWidth={2} />
+                <View style={{ transform: [{ rotate: '90deg' }] }}>
+                  <MoreVertical size={18} color={colors.text} strokeWidth={2} />
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -1227,15 +1228,14 @@ const styles = StyleSheet.create({
   scoreCircle: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
+    borderRadius: 8,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   scoreNumber: {
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '700' as const,
-    marginTop: 2,
   },
   actionMenuButton: {
     width: 36,
