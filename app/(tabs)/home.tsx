@@ -571,17 +571,18 @@ export default function HomeScreen() {
     // Create scored brands map
     const scoredMap = new Map(brandsWithScores.map(({ brand, score }) => [brand.id, score]));
 
-    // Separate into aligned (>= 60) and unaligned (< 40) based on scores
-    const alignedBrands = brandsWithScores
-      .filter(({ score }) => score >= 60)
-      .sort((a, b) => b.score - a.score) // Sort by score descending
-      .slice(0, 50) // Cap at 50 brands
+    // Sort all brands by score
+    const sortedByScore = [...brandsWithScores].sort((a, b) => b.score - a.score);
+
+    // Top 50 highest-scoring brands (aligned)
+    const alignedBrands = sortedByScore
+      .slice(0, 50)
       .map(({ brand }) => brand);
 
-    const unalignedBrands = brandsWithScores
-      .filter(({ score }) => score < 40)
-      .sort((a, b) => a.score - b.score) // Sort by score ascending (most opposed first)
-      .slice(0, 50) // Cap at 50 brands
+    // Bottom 50 lowest-scoring brands (unaligned)
+    const unalignedBrands = sortedByScore
+      .slice(-50)
+      .reverse() // Reverse so most opposed is first
       .map(({ brand }) => brand);
 
     // All brands sorted alphabetically
