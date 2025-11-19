@@ -528,6 +528,21 @@ export default function BusinessDetailScreen() {
             </Text>
           )}
 
+          {/* View on Map Button - Placed above social links */}
+          {((business.businessInfo.locations && business.businessInfo.locations.length > 0) ||
+            (business.businessInfo.latitude && business.businessInfo.longitude)) && (
+            <View style={{ alignItems: 'flex-start', marginBottom: 12 }}>
+              <TouchableOpacity
+                style={[styles.mapButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                onPress={handleViewOnMap}
+                activeOpacity={0.7}
+              >
+                <Navigation size={18} color={colors.white} strokeWidth={2} />
+                <Text style={[styles.mapButtonText, { color: colors.white }]}>View on Map</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           <View style={styles.socialLinksContainer}>
             {business.businessInfo.socialMedia?.twitter && (
               <TouchableOpacity
@@ -585,25 +600,12 @@ export default function BusinessDetailScreen() {
             )}
           </View>
 
-          {/* View on Map Button */}
-          {((business.businessInfo.locations && business.businessInfo.locations.length > 0) ||
-            (business.businessInfo.latitude && business.businessInfo.longitude)) && (
-            <TouchableOpacity
-              style={[styles.mapButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
-              onPress={handleViewOnMap}
-              activeOpacity={0.7}
-            >
-              <Navigation size={20} color={colors.white} strokeWidth={2} />
-              <Text style={[styles.mapButtonText, { color: colors.white }]}>View on Map</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Upright Discount Section */}
+          {/* Endorse Discount Section */}
           {business.businessInfo.acceptsStandDiscounts && (
             <View style={[styles.standDiscountSection, { backgroundColor: colors.backgroundSecondary }]}>
               <View style={styles.discountHeader}>
                 <Percent size={20} color={colors.primary} strokeWidth={2} />
-                <Text style={[styles.discountHeaderText, { color: colors.text }]}>Upright Discount</Text>
+                <Text style={[styles.discountHeaderText, { color: colors.text }]}>Endorse Discount</Text>
               </View>
               <View style={[styles.discountCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
                 <View style={styles.discountRow}>
@@ -1175,12 +1177,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
     borderWidth: 2,
-    marginBottom: 16,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1188,7 +1189,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   mapButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700' as const,
   },
   standDiscountSection: {
