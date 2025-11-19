@@ -32,6 +32,7 @@ import { getLogoUrl } from '@/lib/logo';
 import BusinessProfileEditor from '@/components/BusinessProfileEditor';
 
 import { getAllUserBusinesses, BusinessUser } from '@/services/firebase/businessService';
+import { getFollowersCount, getFollowingCount } from '@/services/firebase/followService';
 
 export default function ProfileScreen() {
   const { profile, isDarkMode, clerkUser, setUserDetails } = useUser();
@@ -70,6 +71,8 @@ export default function ProfileScreen() {
   const [profileImage, setProfileImage] = useState(userDetails.profileImage || '');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [isPublicProfile, setIsPublicProfile] = useState(profile.isPublicProfile !== false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
   // Library context
   const library = useLibrary();
@@ -186,6 +189,23 @@ export default function ProfileScreen() {
     };
     fetchBusinesses();
   }, []);
+
+  // Load followers and following counts
+  useEffect(() => {
+    const loadFollowCounts = async () => {
+      if (!clerkUser?.id) return;
+
+      try {
+        const followers = await getFollowersCount(clerkUser.id, 'user');
+        const following = await getFollowingCount(clerkUser.id);
+        setFollowersCount(followers);
+        setFollowingCount(following);
+      } catch (error) {
+        console.error('[ProfileScreen] Error loading follow counts:', error);
+      }
+    };
+    loadFollowCounts();
+  }, [clerkUser?.id]);
 
   // Calculate aligned and unaligned brands based on user's values
   const { allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
@@ -543,27 +563,28 @@ export default function ProfileScreen() {
           >
             <View style={styles.socialSectionHeader}>
               <Text style={[styles.socialSectionTitle, { color: colors.text }]}>Following</Text>
-              <Text style={[styles.socialSectionCount, { color: colors.textSecondary }]}>0</Text>
+              <Text style={[styles.socialSectionCount, { color: colors.textSecondary }]}>{followingCount}</Text>
             </View>
             <Text style={[styles.socialSectionDescription, { color: colors.textSecondary }]}>
               Accounts you follow
             </Text>
           </TouchableOpacity>
 
-          {/* Discover Section */}
+          {/* Followers Section */}
           <TouchableOpacity
             style={[styles.socialSection, { backgroundColor: colors.backgroundSecondary }]}
             onPress={() => {
-              // TODO: Navigate to discover page
-              console.log('Navigate to discover');
+              // TODO: Open Followers modal
+              console.log('Open Followers modal');
             }}
             activeOpacity={0.7}
           >
             <View style={styles.socialSectionHeader}>
-              <Text style={[styles.socialSectionTitle, { color: colors.text }]}>Discover</Text>
+              <Text style={[styles.socialSectionTitle, { color: colors.text }]}>Followers</Text>
+              <Text style={[styles.socialSectionCount, { color: colors.textSecondary }]}>{followersCount}</Text>
             </View>
             <Text style={[styles.socialSectionDescription, { color: colors.textSecondary }]}>
-              Find accounts to follow
+              Accounts following you
             </Text>
           </TouchableOpacity>
         </View>

@@ -1,246 +1,234 @@
-/**
- * Follow Service
- * Handles following/unfollowing accounts and retrieving follow relationships
- */
-import {
-  collection,
-  doc,
-  getDocs,
-  getDoc,
-  setDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy,
-  Timestamp,
-  serverTimestamp,
-  writeBatch,
-} from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, deleteDoc, doc, getDoc, Timestamp, writeBatch } from 'firebase/firestore';
 import { db } from '@/firebase';
 
-export type AccountType = 'person' | 'brand' | 'business';
+export type FollowableType = 'user' | 'brand' | 'business';
 
-export interface FollowRelationship {
-  id: string; // document ID (same as accountId)
-  accountId: string; // ID of the followed account
-  accountType: AccountType;
-  accountName: string;
-  profileImage?: string;
-  followedAt: Date;
+export interface Follow {
+  id: string;
+  followerId: string; // User who is following
+  followedId: string; // ID of the entity being followed (user/brand/business)
+  followedType: FollowableType; // Type of entity being followed
+  createdAt: Date;
 }
 
-const USERS_COLLECTION = 'users';
-const FOLLOWING_SUBCOLLECTION = 'following';
-const FOLLOWERS_SUBCOLLECTION = 'followers';
-
-// Convert Firestore timestamp to Date
-const timestampToDate = (timestamp: any): Date => {
-  if (timestamp?.toDate) {
-    return timestamp.toDate();
-  }
-  return new Date(timestamp);
-};
-
 /**
- * Follow an account
- * Creates a bidirectional relationship: adds to user's following and target's followers
+ * Follow a user, brand, or business
+ * Creates a follow record and updates both follower and followed counts
  */
-export const followAccount = async (
-  userId: string,
-  accountId: string,
-  accountType: AccountType,
-  accountName: string,
-  profileImage?: string
-): Promise<void> => {
-  try {
-    const batch = writeBatch(db);
+export async function followEntity(
+  followerId: string,
+  followedId: string,
+  followedType: FollowableType
+): Promise<void> {
+  if (!followerId || !followedId) {
+    throw new Error('Follower ID and Followed ID are required');
+  }
 
-    // Add to user's following collection
-    const followingRef = doc(
-      db,
-      USERS_COLLECTION,
-      userId,
-      FOLLOWING_SUBCOLLECTION,
-      accountId
-    );
-    batch.set(followingRef, {
-      accountId,
-      accountType,
-      accountName,
-      profileImage: profileImage || null,
-      followedAt: serverTimestamp(),
+  if (followerId === followedId && followedType === 'user') {
+    throw new Error('Cannot follow yourself');
+  }
+
+  try {
+    // Check if already following
+    const existingFollow = await isFollowing(followerId, followedId, followedType);
+    if (existingFollow) {
+      console.log('[followService] Already following this entity');
+      return;
+    }
+
+    // Create follow record
+    const followsRef = collection(db, 'follows');
+    await addDoc(followsRef, {
+      followerId,
+      followedId,
+      followedType,
+      createdAt: Timestamp.now(),
     });
 
-    // Add to target account's followers collection
-    const followerRef = doc(
-      db,
-      USERS_COLLECTION,
-      accountId,
-      FOLLOWERS_SUBCOLLECTION,
-      userId
-    );
-    batch.set(followerRef, {
-      accountId: userId,
-      accountType: 'person', // Followers are always users/people
-      followedAt: serverTimestamp(),
-    });
-
-    await batch.commit();
-    console.log(`[FollowService] User ${userId} followed ${accountType} ${accountId}`);
+    console.log(`[followService] Successfully followed ${followedType} ${followedId}`);
   } catch (error) {
-    console.error('[FollowService] Error following account:', error);
+    console.error('[followService] Error following entity:', error);
     throw error;
   }
-};
+}
 
 /**
- * Unfollow an account
- * Removes the bidirectional relationship
+ * Unfollow a user, brand, or business
+ * Removes the follow record
  */
-export const unfollowAccount = async (
-  userId: string,
-  accountId: string
-): Promise<void> => {
-  try {
-    const batch = writeBatch(db);
-
-    // Remove from user's following collection
-    const followingRef = doc(
-      db,
-      USERS_COLLECTION,
-      userId,
-      FOLLOWING_SUBCOLLECTION,
-      accountId
-    );
-    batch.delete(followingRef);
-
-    // Remove from target account's followers collection
-    const followerRef = doc(
-      db,
-      USERS_COLLECTION,
-      accountId,
-      FOLLOWERS_SUBCOLLECTION,
-      userId
-    );
-    batch.delete(followerRef);
-
-    await batch.commit();
-    console.log(`[FollowService] User ${userId} unfollowed account ${accountId}`);
-  } catch (error) {
-    console.error('[FollowService] Error unfollowing account:', error);
-    throw error;
+export async function unfollowEntity(
+  followerId: string,
+  followedId: string,
+  followedType: FollowableType
+): Promise<void> {
+  if (!followerId || !followedId) {
+    throw new Error('Follower ID and Followed ID are required');
   }
-};
 
-/**
- * Check if user is following an account
- */
-export const isFollowing = async (
-  userId: string,
-  accountId: string
-): Promise<boolean> => {
   try {
-    const followingRef = doc(
-      db,
-      USERS_COLLECTION,
-      userId,
-      FOLLOWING_SUBCOLLECTION,
-      accountId
+    // Find the follow record
+    const followsRef = collection(db, 'follows');
+    const q = query(
+      followsRef,
+      where('followerId', '==', followerId),
+      where('followedId', '==', followedId),
+      where('followedType', '==', followedType)
     );
-    const followingSnap = await getDoc(followingRef);
-    return followingSnap.exists();
-  } catch (error) {
-    console.error('[FollowService] Error checking following status:', error);
-    return false;
-  }
-};
 
-/**
- * Get all accounts a user is following
- */
-export const getFollowing = async (userId: string): Promise<FollowRelationship[]> => {
-  try {
-    const followingRef = collection(
-      db,
-      USERS_COLLECTION,
-      userId,
-      FOLLOWING_SUBCOLLECTION
-    );
-    const q = query(followingRef, orderBy('followedAt', 'desc'));
     const querySnapshot = await getDocs(q);
 
-    const following: FollowRelationship[] = [];
+    if (querySnapshot.empty) {
+      console.log('[followService] No follow record found to delete');
+      return;
+    }
+
+    // Delete all matching records (should only be one)
+    const batch = writeBatch(db);
+    querySnapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    console.log(`[followService] Successfully unfollowed ${followedType} ${followedId}`);
+  } catch (error) {
+    console.error('[followService] Error unfollowing entity:', error);
+    throw error;
+  }
+}
+
+/**
+ * Check if a user is following a specific entity
+ */
+export async function isFollowing(
+  followerId: string,
+  followedId: string,
+  followedType: FollowableType
+): Promise<boolean> {
+  if (!followerId || !followedId) {
+    return false;
+  }
+
+  try {
+    const followsRef = collection(db, 'follows');
+    const q = query(
+      followsRef,
+      where('followerId', '==', followerId),
+      where('followedId', '==', followedId),
+      where('followedType', '==', followedType)
+    );
+
+    const querySnapshot = await getDocs(q);
+    return !querySnapshot.empty;
+  } catch (error) {
+    console.error('[followService] Error checking follow status:', error);
+    return false;
+  }
+}
+
+/**
+ * Get count of entities a user is following
+ */
+export async function getFollowingCount(userId: string): Promise<number> {
+  if (!userId) return 0;
+
+  try {
+    const followsRef = collection(db, 'follows');
+    const q = query(followsRef, where('followerId', '==', userId));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.size;
+  } catch (error) {
+    console.error('[followService] Error getting following count:', error);
+    return 0;
+  }
+}
+
+/**
+ * Get count of followers for an entity (user, brand, or business)
+ */
+export async function getFollowersCount(
+  entityId: string,
+  entityType: FollowableType
+): Promise<number> {
+  if (!entityId) return 0;
+
+  try {
+    const followsRef = collection(db, 'follows');
+    const q = query(
+      followsRef,
+      where('followedId', '==', entityId),
+      where('followedType', '==', entityType)
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.size;
+  } catch (error) {
+    console.error('[followService] Error getting followers count:', error);
+    return 0;
+  }
+}
+
+/**
+ * Get all entities a user is following
+ */
+export async function getFollowing(userId: string): Promise<Follow[]> {
+  if (!userId) return [];
+
+  try {
+    const followsRef = collection(db, 'follows');
+    const q = query(followsRef, where('followerId', '==', userId));
+    const querySnapshot = await getDocs(q);
+
+    const following: Follow[] = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       following.push({
         id: doc.id,
-        accountId: data.accountId,
-        accountType: data.accountType,
-        accountName: data.accountName,
-        profileImage: data.profileImage,
-        followedAt: timestampToDate(data.followedAt),
+        followerId: data.followerId,
+        followedId: data.followedId,
+        followedType: data.followedType,
+        createdAt: data.createdAt?.toDate() || new Date(),
       });
     });
 
     return following;
   } catch (error) {
-    console.error('[FollowService] Error getting following:', error);
+    console.error('[followService] Error getting following:', error);
     return [];
   }
-};
+}
 
 /**
- * Get all followers of an account
+ * Get all followers of an entity
  */
-export const getFollowers = async (accountId: string): Promise<FollowRelationship[]> => {
+export async function getFollowers(
+  entityId: string,
+  entityType: FollowableType
+): Promise<Follow[]> {
+  if (!entityId) return [];
+
   try {
-    const followersRef = collection(
-      db,
-      USERS_COLLECTION,
-      accountId,
-      FOLLOWERS_SUBCOLLECTION
+    const followsRef = collection(db, 'follows');
+    const q = query(
+      followsRef,
+      where('followedId', '==', entityId),
+      where('followedType', '==', entityType)
     );
-    const q = query(followersRef, orderBy('followedAt', 'desc'));
     const querySnapshot = await getDocs(q);
 
-    const followers: FollowRelationship[] = [];
+    const followers: Follow[] = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       followers.push({
         id: doc.id,
-        accountId: data.accountId,
-        accountType: data.accountType,
-        accountName: data.accountName || 'Unknown',
-        profileImage: data.profileImage,
-        followedAt: timestampToDate(data.followedAt),
+        followerId: data.followerId,
+        followedId: data.followedId,
+        followedType: data.followedType,
+        createdAt: data.createdAt?.toDate() || new Date(),
       });
     });
 
     return followers;
   } catch (error) {
-    console.error('[FollowService] Error getting followers:', error);
+    console.error('[followService] Error getting followers:', error);
     return [];
   }
-};
-
-/**
- * Get follow counts for an account
- */
-export const getFollowCounts = async (
-  accountId: string
-): Promise<{ following: number; followers: number }> => {
-  try {
-    const [followingSnapshot, followersSnapshot] = await Promise.all([
-      getDocs(collection(db, USERS_COLLECTION, accountId, FOLLOWING_SUBCOLLECTION)),
-      getDocs(collection(db, USERS_COLLECTION, accountId, FOLLOWERS_SUBCOLLECTION)),
-    ]);
-
-    return {
-      following: followingSnapshot.size,
-      followers: followersSnapshot.size,
-    };
-  } catch (error) {
-    console.error('[FollowService] Error getting follow counts:', error);
-    return { following: 0, followers: 0 };
-  }
-};
+}

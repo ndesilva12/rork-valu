@@ -35,6 +35,7 @@ import { getAllPublicUsers } from '@/services/firebase/userService';
 import { UserProfile } from '@/types';
 import { copyListToLibrary, getEndorsementList } from '@/services/firebase/listService';
 import { useLibrary } from '@/contexts/LibraryContext';
+import { followEntity, unfollowEntity, isFollowing } from '@/services/firebase/followService';
 
 interface Comment {
   id: string;
@@ -805,6 +806,48 @@ export default function SearchScreen() {
     const userLocation = item.profile.userDetails?.location;
     const userBio = item.profile.userDetails?.description;
 
+    const [isFollowingUser, setIsFollowingUser] = useState(false);
+    const [checkingFollowStatus, setCheckingFollowStatus] = useState(true);
+
+    // Check follow status on mount
+    useEffect(() => {
+      const checkFollow = async () => {
+        if (clerkUser?.id && item.id !== clerkUser.id) {
+          const following = await isFollowing(clerkUser.id, item.id, 'user');
+          setIsFollowingUser(following);
+        }
+        setCheckingFollowStatus(false);
+      };
+      checkFollow();
+    }, [item.id, clerkUser?.id]);
+
+    const handleFollowUser = async () => {
+      if (!clerkUser?.id) {
+        Alert.alert('Error', 'You must be logged in to follow users');
+        return;
+      }
+
+      if (item.id === clerkUser.id) {
+        Alert.alert('Info', 'You cannot follow yourself');
+        return;
+      }
+
+      try {
+        if (isFollowingUser) {
+          await unfollowEntity(clerkUser.id, item.id, 'user');
+          setIsFollowingUser(false);
+          Alert.alert('Success', `Unfollowed ${userName}`);
+        } else {
+          await followEntity(clerkUser.id, item.id, 'user');
+          setIsFollowingUser(true);
+          Alert.alert('Success', `Now following ${userName}`);
+        }
+      } catch (error: any) {
+        console.error('Error following/unfollowing user:', error);
+        Alert.alert('Error', error?.message || 'Could not follow user. Please try again.');
+      }
+    };
+
     const handleAddEndorseListToLibrary = async () => {
       if (!clerkUser?.id) {
         Alert.alert('Error', 'You must be logged in to add lists to your library');
@@ -855,8 +898,8 @@ export default function SearchScreen() {
             onPress: handleAddEndorseListToLibrary,
           },
           {
-            text: 'Follow',
-            onPress: () => Alert.alert('Coming Soon', 'Follow functionality will be available soon'),
+            text: isFollowingUser ? 'Unfollow' : 'Follow',
+            onPress: handleFollowUser,
           },
           {
             text: 'Share',
