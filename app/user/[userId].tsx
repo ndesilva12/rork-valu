@@ -355,6 +355,10 @@ export default function UserProfileScreen() {
                       'Choose an action',
                       [
                         {
+                          text: 'Add Endorse List to Library',
+                          onPress: () => Alert.alert('Coming Soon', 'Add to library functionality will be available soon'),
+                        },
+                        {
                           text: 'Follow',
                           onPress: () => Alert.alert('Coming Soon', 'Follow functionality will be available soon'),
                         },

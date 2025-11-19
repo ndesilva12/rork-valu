@@ -728,6 +728,10 @@ export default function SearchScreen() {
         'Choose an action',
         [
           {
+            text: 'Add Endorse List to Library',
+            onPress: () => Alert.alert('Coming Soon', 'Add to library functionality will be available soon'),
+          },
+          {
             text: 'Follow',
             onPress: () => Alert.alert('Coming Soon', 'Follow functionality will be available soon'),
           },
@@ -1263,14 +1267,6 @@ export default function SearchScreen() {
             keyExtractor={item => item.id}
             contentContainerStyle={[styles.userListContainer, { paddingBottom: 100 }]}
             showsVerticalScrollIndicator={false}
-            ListHeaderComponent={
-              <View style={styles.exploreHeader}>
-                <Text style={[styles.exploreTitle, { color: colors.text }]}>Discover Users</Text>
-                <Text style={[styles.exploreSubtitle, { color: colors.textSecondary }]}>
-                  Connect with other Endorse users
-                </Text>
-              </View>
-            }
             ListEmptyComponent={
               <View style={styles.emptyState}>
                 <View style={[styles.emptyIconContainer, { backgroundColor: colors.primaryLight + '10' }]}>
