@@ -319,6 +319,19 @@ export default function UnifiedLibrary({
     }
   };
 
+  // Check if an item is already endorsed
+  const isItemEndorsed = (entry: ListEntry): boolean => {
+    if (!endorsementList?.entries) return false;
+
+    const itemId = entry.brandId || entry.businessId || entry.valueId;
+    if (!itemId) return false;
+
+    return endorsementList.entries.some(e => {
+      const endorsedId = e.brandId || e.businessId || e.valueId;
+      return endorsedId === itemId;
+    });
+  };
+
   // Add to Library handler - directly adds to endorsement list
   const handleAddToLibrary = async (entry: ListEntry) => {
     if (!endorsementList?.id) {
@@ -335,6 +348,37 @@ export default function UnifiedLibrary({
     } catch (error: any) {
       console.error('Error endorsing item:', error);
       Alert.alert('Error', error?.message || 'Failed to endorse item');
+    }
+  };
+
+  // Remove from endorsement list handler
+  const handleRemoveFromLibrary = async (entry: ListEntry) => {
+    if (!endorsementList?.id) {
+      Alert.alert('Error', 'Endorsement list not found');
+      return;
+    }
+
+    try {
+      // Find the entry in the endorsement list
+      const itemId = entry.brandId || entry.businessId || entry.valueId;
+      const endorsedEntry = endorsementList.entries.find(e => {
+        const endorsedId = e.brandId || e.businessId || e.valueId;
+        return endorsedId === itemId;
+      });
+
+      if (!endorsedEntry) {
+        Alert.alert('Error', 'Item not found in endorsement list');
+        return;
+      }
+
+      await library.removeEntry(endorsementList.id, endorsedEntry.id);
+      const itemName = getItemName(entry);
+      Alert.alert('Success', `${itemName} unendorsed!`);
+      setShowItemOptionsModal(false);
+      setSelectedItemForOptions(null);
+    } catch (error: any) {
+      console.error('Error unendorsing item:', error);
+      Alert.alert('Error', error?.message || 'Failed to unendorse item');
     }
   };
 
@@ -1408,15 +1452,24 @@ export default function UnifiedLibrary({
           if (!selectedItemForOptions) return [];
 
           const options = [];
-          const canRemove = canEdit;
           const canFollow = selectedItemForOptions.type === 'brand' || selectedItemForOptions.type === 'business';
+          const isEndorsed = isItemEndorsed(selectedItemForOptions);
 
-          // Endorse option (adds to endorsement list)
-          options.push({
-            icon: UserPlus,
-            label: 'Endorse',
-            onPress: () => handleAddToLibrary(selectedItemForOptions),
-          });
+          // Endorse/Unendorse option (adds to or removes from endorsement list)
+          if (isEndorsed) {
+            options.push({
+              icon: UserPlus,
+              label: 'Unendorse',
+              onPress: () => handleRemoveFromLibrary(selectedItemForOptions),
+              isDanger: true,
+            });
+          } else {
+            options.push({
+              icon: UserPlus,
+              label: 'Endorse',
+              onPress: () => handleAddToLibrary(selectedItemForOptions),
+            });
+          }
 
           // Follow option (for brands and businesses)
           if (canFollow) {
@@ -1433,17 +1486,6 @@ export default function UnifiedLibrary({
             label: 'Share',
             onPress: () => handleShareItem(selectedItemForOptions),
           });
-
-          // TODO: Remove option - functionality not yet implemented
-          // Removing from copied lists (with originalListId) should be disabled
-          // if (canRemove) {
-          //   options.push({
-          //     icon: Trash2,
-          //     label: 'Remove',
-          //     onPress: () => handleRemoveFromLibrary(selectedItemForOptions),
-          //     isDanger: true,
-          //   });
-          // }
 
           return options;
         })()}

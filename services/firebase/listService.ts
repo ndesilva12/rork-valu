@@ -452,7 +452,8 @@ export const ensureEndorsementList = async (
 export const copyListToLibrary = async (
   sourceListId: string,
   targetUserId: string,
-  targetUserName: string
+  targetUserName: string,
+  originalCreatorImage?: string
 ): Promise<string> => {
   try {
     // Get the source list
@@ -485,7 +486,8 @@ export const copyListToLibrary = async (
       isEndorsed: false,
       originalListId: sourceList.id, // Track original
       originalCreatorName: sourceList.creatorName || 'Unknown',
-      originalCreatorImage: sourceList.creatorImage, // Preserve original creator's image
+      // Use the passed image, fallback to source list's image
+      originalCreatorImage: originalCreatorImage || sourceList.creatorImage || sourceList.originalCreatorImage,
     };
 
     const docRef = await addDoc(listsRef, copiedList);

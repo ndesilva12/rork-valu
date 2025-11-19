@@ -118,9 +118,15 @@ export default function UserProfileScreen() {
       const firstName = clerkUser?.firstName;
       const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || 'My Library';
 
-      await copyListToLibrary(listId, clerkUser.id, userName);
+      // Get the original creator's profile image
+      const profileImageUrl = userProfile?.userDetails?.profileImage;
+
+      await copyListToLibrary(listId, clerkUser.id, userName, profileImageUrl);
 
       // Reload library to show the newly copied list with all its entries
+      // Wait a brief moment to ensure Firestore has propagated the changes
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       if (clerkUser?.id) {
         await library.loadUserLists(clerkUser.id, true);
       }

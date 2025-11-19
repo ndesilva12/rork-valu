@@ -1601,6 +1601,20 @@ export default function HomeScreen() {
     setActiveCardMenuId(id);
   };
 
+  // Check if an item is already endorsed
+  const isItemEndorsed = (itemId: string, itemType: 'brand' | 'business'): boolean => {
+    const endorsementList = library.state.endorsementList;
+    if (!endorsementList?.entries) return false;
+
+    return endorsementList.entries.some(e => {
+      if (itemType === 'brand') {
+        return e.brandId === itemId;
+      } else {
+        return e.businessId === itemId;
+      }
+    });
+  };
+
   const handleCardMenuAddTo = async () => {
     if (!cardMenuData) return;
     setActiveCardMenuId(null);
@@ -1612,17 +1626,43 @@ export default function HomeScreen() {
       return;
     }
 
-    try {
-      // Create entry based on type
-      const entry: Omit<ListEntry, 'id' | 'createdAt'> = cardMenuData.type === 'brand'
-        ? { type: 'brand', brandId: cardMenuData.id }
-        : { type: 'business', businessId: cardMenuData.id };
+    const isEndorsed = isItemEndorsed(cardMenuData.id, cardMenuData.type);
 
-      await library.addEntry(endorsementList.id, entry as ListEntry);
-      Alert.alert('Success', `${cardMenuData.name} endorsed!`);
-    } catch (error: any) {
-      console.error('Error endorsing item:', error);
-      Alert.alert('Error', error?.message || 'Failed to endorse item');
+    if (isEndorsed) {
+      // Unendorse - remove from list
+      try {
+        const endorsedEntry = endorsementList.entries.find(e => {
+          if (cardMenuData.type === 'brand') {
+            return e.brandId === cardMenuData.id;
+          } else {
+            return e.businessId === cardMenuData.id;
+          }
+        });
+
+        if (!endorsedEntry) {
+          Alert.alert('Error', 'Item not found in endorsement list');
+          return;
+        }
+
+        await library.removeEntry(endorsementList.id, endorsedEntry.id);
+        Alert.alert('Success', `${cardMenuData.name} unendorsed!`);
+      } catch (error: any) {
+        console.error('Error unendorsing item:', error);
+        Alert.alert('Error', error?.message || 'Failed to unendorse item');
+      }
+    } else {
+      // Endorse - add to list
+      try {
+        const entry: Omit<ListEntry, 'id' | 'createdAt'> = cardMenuData.type === 'brand'
+          ? { type: 'brand', brandId: cardMenuData.id }
+          : { type: 'business', businessId: cardMenuData.id };
+
+        await library.addEntry(endorsementList.id, entry as ListEntry);
+        Alert.alert('Success', `${cardMenuData.name} endorsed!`);
+      } catch (error: any) {
+        console.error('Error endorsing item:', error);
+        Alert.alert('Error', error?.message || 'Failed to endorse item');
+      }
     }
   };
 
@@ -3339,15 +3379,24 @@ export default function HomeScreen() {
         <TouchableWithoutFeedback onPress={() => setActiveCardMenuId(null)}>
           <View style={styles.dropdownModalOverlay}>
             <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              {/* Endorse option */}
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={handleCardMenuAddTo}
-                activeOpacity={0.7}
-              >
-                <UserPlus size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Endorse</Text>
-              </TouchableOpacity>
+              {/* Endorse/Unendorse option */}
+              {(() => {
+                const isEndorsed = cardMenuData ? isItemEndorsed(cardMenuData.id, cardMenuData.type) : false;
+                const endorseColor = isEndorsed ? colors.danger : colors.text;
+
+                return (
+                  <TouchableOpacity
+                    style={styles.listOptionItem}
+                    onPress={handleCardMenuAddTo}
+                    activeOpacity={0.7}
+                  >
+                    <UserPlus size={18} color={endorseColor} strokeWidth={2} />
+                    <Text style={[styles.listOptionText, { color: endorseColor }]}>
+                      {isEndorsed ? 'Unendorse' : 'Endorse'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })()}
               <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
 
               {/* Share option */}
