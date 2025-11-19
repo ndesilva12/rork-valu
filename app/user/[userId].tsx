@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Plus, List as ListIcon, Globe, Lock, MapPin, User, Eye, EyeOff, TrendingUp, TrendingDown, Minus, MoreVertical, ExternalLink } from 'lucide-react-native';
+import { ArrowLeft, Plus, List as ListIcon, Globe, Lock, MapPin, User, TrendingUp, TrendingDown, Minus, MoreVertical, ExternalLink } from 'lucide-react-native';
 import { UnifiedLibrary } from '@/components/Library';
 import {
   View,
@@ -384,17 +384,6 @@ export default function UserProfileScreen() {
                     <MoreVertical size={18} color={colors.text} strokeWidth={2} />
                   </View>
                 </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Show privacy badge when viewing own profile */}
-            {isOwnProfile && (
-              <View style={[styles.privacyBadge, { backgroundColor: userProfile.isPublicProfile ? colors.primary : colors.backgroundSecondary }]}>
-                {userProfile.isPublicProfile ? (
-                  <Eye size={16} color={colors.white} />
-                ) : (
-                  <EyeOff size={16} color={colors.textSecondary} />
-                )}
               </View>
             )}
           </View>
