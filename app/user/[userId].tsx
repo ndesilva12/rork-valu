@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Plus, List as ListIcon, Globe, Lock, MapPin, User, Eye, EyeOff, TrendingUp, TrendingDown, Minus, MoreVertical } from 'lucide-react-native';
+import { ArrowLeft, Plus, List as ListIcon, Globe, Lock, MapPin, User, Eye, EyeOff, TrendingUp, TrendingDown, Minus, MoreVertical, ExternalLink } from 'lucide-react-native';
 import { UnifiedLibrary } from '@/components/Library';
 import {
   View,
@@ -11,6 +11,7 @@ import {
   Platform,
   Alert,
   PanResponder,
+  Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -364,6 +365,58 @@ export default function UserProfileScreen() {
             </Text>
           )}
 
+          {/* Social Links */}
+          {(userDetails?.socialMedia?.twitter || userDetails?.socialMedia?.instagram || userDetails?.socialMedia?.facebook || userDetails?.socialMedia?.linkedin || userDetails?.website) && (
+            <View style={styles.socialLinksContainer}>
+              {userDetails.website && (
+                <TouchableOpacity
+                  style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => Linking.openURL(userDetails.website.startsWith('http') ? userDetails.website : `https://${userDetails.website}`)}
+                  activeOpacity={0.7}
+                >
+                  <ExternalLink size={14} color={colors.primary} strokeWidth={2} />
+                  <Text style={[styles.socialButtonText, { color: colors.text }]}>Website</Text>
+                </TouchableOpacity>
+              )}
+              {userDetails.socialMedia?.twitter && (
+                <TouchableOpacity
+                  style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => Linking.openURL(`https://x.com/${userDetails.socialMedia.twitter}`)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.socialButtonText, { color: colors.text }]}>𝕏</Text>
+                </TouchableOpacity>
+              )}
+              {userDetails.socialMedia?.instagram && (
+                <TouchableOpacity
+                  style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => Linking.openURL(`https://instagram.com/${userDetails.socialMedia.instagram.replace('@', '')}`)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.socialButtonText, { color: colors.text }]}>Instagram</Text>
+                </TouchableOpacity>
+              )}
+              {userDetails.socialMedia?.facebook && (
+                <TouchableOpacity
+                  style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => Linking.openURL(userDetails.socialMedia.facebook.startsWith('http') ? userDetails.socialMedia.facebook : `https://${userDetails.socialMedia.facebook}`)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.socialButtonText, { color: colors.text }]}>Facebook</Text>
+                </TouchableOpacity>
+              )}
+              {userDetails.socialMedia?.linkedin && (
+                <TouchableOpacity
+                  style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => Linking.openURL(userDetails.socialMedia.linkedin.startsWith('http') ? userDetails.socialMedia.linkedin : `https://${userDetails.socialMedia.linkedin}`)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.socialButtonText, { color: colors.text }]}>LinkedIn</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           {/* Library Section - Uses Unified Library Component */}
           <View style={styles.librarySection}>
             <Text style={[styles.librarySectionTitle, { color: colors.text }]}>
@@ -521,6 +574,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     marginBottom: 16,
+  },
+  socialLinksContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 16,
+  },
+  socialButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  socialButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
   librarySection: {
     marginTop: 8,
