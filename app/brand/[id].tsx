@@ -26,6 +26,7 @@ import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { getLogoUrl } from '@/lib/logo';
 import { getUserLists, addEntryToList } from '@/services/firebase/listService';
 import { calculateBrandScore, getBrandScoreLabel, getBrandScoreColor, normalizeBrandScores } from '@/lib/scoring';
+import { followEntity, unfollowEntity, isFollowing as checkIsFollowing } from '@/services/firebase/followService';
 
 export default function BrandDetailScreen() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
@@ -171,6 +172,8 @@ export default function BrandDetailScreen() {
   const [showAddToListModal, setShowAddToListModal] = useState(false);
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [userLists, setUserLists] = useState<any[]>([]);
+  const [isFollowingBrand, setIsFollowingBrand] = useState(false);
+  const [checkingFollowStatus, setCheckingFollowStatus] = useState(true);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -270,6 +273,25 @@ export default function BrandDetailScreen() {
     loadUserLists();
   }, [loadUserLists]);
 
+  // Check follow status when brand loads
+  useEffect(() => {
+    const checkFollow = async () => {
+      if (!clerkUser?.id || !brand?.id) {
+        setCheckingFollowStatus(false);
+        return;
+      }
+      try {
+        const following = await checkIsFollowing(clerkUser.id, brand.id, 'brand');
+        setIsFollowingBrand(following);
+      } catch (error) {
+        console.error('[BrandDetail] Error checking follow status:', error);
+      } finally {
+        setCheckingFollowStatus(false);
+      }
+    };
+    checkFollow();
+  }, [clerkUser?.id, brand?.id]);
+
   const handleShopPress = async () => {
     if (!brand) return;
     try {
@@ -311,18 +333,25 @@ export default function BrandDetailScreen() {
   };
 
   const handleFollow = async () => {
-    if (!brand) return;
+    if (!brand || !clerkUser?.id) {
+      Alert.alert('Error', 'You must be logged in to follow brands');
+      return;
+    }
 
-    // TODO: Implement follow/unfollow functionality
-    console.log('Follow clicked:', { brandId: brand.id, brandName: brand.name });
-
-    // TODO: Call followService to add/remove follow
-    // TODO: Update UI to show followed state
-
-    if (Platform.OS === 'web') {
-      window.alert(`Follow functionality will be implemented soon!\nBrand: ${brand.name}`);
-    } else {
-      Alert.alert('Coming Soon', `Follow functionality will be implemented soon!\nBrand: ${brand.name}`);
+    try {
+      if (isFollowingBrand) {
+        await unfollowEntity(clerkUser.id, brand.id, 'brand');
+        setIsFollowingBrand(false);
+        Alert.alert('Success', `Unfollowed ${brand.name}`);
+      } else {
+        await followEntity(clerkUser.id, brand.id, 'brand');
+        setIsFollowingBrand(true);
+        Alert.alert('Success', `Now following ${brand.name}`);
+      }
+      setShowActionMenu(false);
+    } catch (error: any) {
+      console.error('[BrandDetail] Error following/unfollowing brand:', error);
+      Alert.alert('Error', error?.message || 'Could not follow brand. Please try again.');
     }
   };
 
@@ -934,7 +963,9 @@ export default function BrandDetailScreen() {
               activeOpacity={0.7}
             >
               <UserPlus size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Follow</Text>
+              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>
+                {isFollowingBrand ? 'Unfollow' : 'Follow'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
