@@ -22,6 +22,7 @@ import { Image } from 'expo-image';
 import {
   ChevronDown,
   ChevronRight,
+  ArrowLeft,
   User,
   Globe,
   Lock,
@@ -94,8 +95,7 @@ export default function UnifiedLibrary({
   const { brands } = useData();
 
   // Local state for independent expansion in each location
-  const [localExpandedListId, setLocalExpandedListId] = useState<string | null>(null);
-  const [localSelectedListId, setLocalSelectedListId] = useState<string | null>(null);
+  const [openedListId, setOpenedListId] = useState<string | null>(null);
   const [activeListOptionsId, setActiveListOptionsId] = useState<string | null>(null);
   const [showAddToLibraryModal, setShowAddToLibraryModal] = useState(false);
   const [selectedItemToAdd, setSelectedItemToAdd] = useState<ListEntry | null>(null);
@@ -142,26 +142,15 @@ export default function UnifiedLibrary({
   const endorsementList = propsEndorsementList !== undefined ? propsEndorsementList : library.state.endorsementList;
   const userLists = propsUserLists !== undefined ? propsUserLists : library.state.userLists;
 
-  // Use context state for edit mode, local state for preview/view modes
-  const expandedListId = mode === 'edit' ? library.state.expandedListId : localExpandedListId;
-  const selectedListId = mode === 'edit' ? library.state.selectedListId : localSelectedListId;
-
-  const toggleListExpansion = (listId: string) => {
+  // Navigate into a list (replaces expand/collapse)
+  const handleListClick = (listId: string) => {
     if (!canBrowse) return;
+    setOpenedListId(listId);
+  };
 
-    if (mode === 'edit') {
-      // Home tab uses context
-      library.toggleListExpansion(listId);
-      library.setSelectedList(listId);
-    } else {
-      // Profile/User profile use local state
-      setLocalSelectedListId(listId);
-      if (localExpandedListId === listId) {
-        setLocalExpandedListId(null);
-      } else {
-        setLocalExpandedListId(listId);
-      }
-    }
+  // Navigate back to list overview
+  const handleBackToLibrary = () => {
+    setOpenedListId(null);
   };
 
   // Filter out endorsement list from custom lists
@@ -804,33 +793,28 @@ export default function UnifiedLibrary({
   };
 
   // EXACT copy of Home tab's renderCollapsibleListHeader
-  const renderCollapsibleListHeader = (
+  // Render list card for navigation (overview mode)
+  const renderListCard = (
     listId: string,
     title: string,
     itemCount: number,
-    isExpanded: boolean,
     isEndorsed: boolean = false,
-    isPinned: boolean = false,
     attribution?: string,
     description?: string,
     isPublic?: boolean,
     creatorProfileImage?: string,
     useAppIcon?: boolean
   ) => {
-    const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
     const isOptionsOpen = activeListOptionsId === listId;
-    const isSelected = selectedListId === listId;
 
     return (
       <View style={{ position: 'relative', overflow: 'visible', zIndex: isOptionsOpen ? 9999 : 1 }}>
         <TouchableOpacity
           style={[
             styles.collapsibleListHeader,
-            isPinned && styles.pinnedListHeader,
-            isExpanded && { backgroundColor: colors.backgroundSecondary, borderWidth: 2, borderColor: colors.primary, borderRadius: 12 },
-            !isExpanded && isSelected && { borderWidth: 2, borderColor: colors.primary, borderRadius: 12 },
+            { backgroundColor: colors.backgroundSecondary, borderWidth: 1, borderColor: colors.border, borderRadius: 12 },
           ]}
-          onPress={() => toggleListExpansion(listId)}
+          onPress={() => handleListClick(listId)}
           activeOpacity={0.7}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
@@ -857,101 +841,43 @@ export default function UnifiedLibrary({
             )}
           </View>
 
-          <View
-            style={styles.collapsibleListHeaderContent}
-          >
+          <View style={styles.collapsibleListHeaderContent}>
             <View style={styles.collapsibleListInfo}>
-              {isExpanded ? (
-                // Expanded view - stacked layout
-                <>
-                  <View style={styles.collapsibleListTitleRow}>
-                    <ChevronIcon size={20} color={colors.text} strokeWidth={2} />
-                    <Text style={[styles.collapsibleListTitle, { color: colors.text }]}>
-                      {title}
-                    </Text>
-                    {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" showText={isLargeScreen} />}
-                  </View>
-                  <View style={styles.collapsibleListMeta}>
-                    <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
-                      {itemCount} {itemCount === 1 ? 'item' : 'items'}
-                    </Text>
-                    {isPublic !== undefined && (
-                      <View style={styles.privacyIndicator}>
-                        {isPublic ? (
-                          <>
-                            <Globe size={14} color={colors.primary} strokeWidth={2} />
-                            {isLargeScreen && <Text style={[styles.privacyText, { color: colors.primary }]}>Public</Text>}
-                          </>
-                        ) : (
-                          <>
-                            <Lock size={14} color={colors.textSecondary} strokeWidth={2} />
-                            {isLargeScreen && <Text style={[styles.privacyText, { color: colors.textSecondary }]}>Private</Text>}
-                          </>
-                        )}
-                      </View>
+              <View style={styles.collapsibleListTitleRow}>
+                <Text style={[styles.collapsibleListTitle, { color: colors.text }]} numberOfLines={1}>
+                  {title}
+                </Text>
+                {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" showText={isLargeScreen} />}
+              </View>
+              <View style={styles.collapsibleListMeta}>
+                <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]}>
+                  {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                </Text>
+                {isPublic !== undefined && (
+                  <View style={styles.privacyIndicator}>
+                    {isPublic ? (
+                      <>
+                        <Globe size={14} color={colors.primary} strokeWidth={2} />
+                        {isLargeScreen && <Text style={[styles.privacyText, { color: colors.primary }]}>Public</Text>}
+                      </>
+                    ) : (
+                      <>
+                        <Lock size={14} color={colors.textSecondary} strokeWidth={2} />
+                        {isLargeScreen && <Text style={[styles.privacyText, { color: colors.textSecondary }]}>Private</Text>}
+                      </>
                     )}
                   </View>
-                  {attribution && (
-                    <Text style={[styles.collapsibleListAttribution, { color: colors.textSecondary }]}>
-                      {attribution}
-                    </Text>
-                  )}
-                  {description && (
-                    <Text style={[styles.collapsibleListDescription, { color: colors.text }]} numberOfLines={2}>
-                      {description}
-                    </Text>
-                  )}
-                </>
-              ) : (
-                // Collapsed view - horizontal layout
-                <View style={styles.collapsibleListRowLayout}>
-                  <View style={styles.collapsibleListTitleRow}>
-                    <ChevronIcon size={20} color={colors.text} strokeWidth={2} />
-                    <Text style={[styles.collapsibleListTitle, { color: colors.text }]} numberOfLines={1}>
-                      {title}
-                    </Text>
-                    {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="small" showText={isLargeScreen} />}
-                  </View>
-                  <View style={styles.collapsibleListMetaRow}>
-                    <Text style={[styles.collapsibleListCount, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {itemCount} {itemCount === 1 ? 'item' : 'items'}
-                    </Text>
-                    {isPublic !== undefined && (
-                      <View style={styles.privacyIndicator}>
-                        {isPublic ? (
-                          <>
-                            <Globe size={12} color={colors.primary} strokeWidth={2} />
-                            {isLargeScreen && <Text style={[styles.privacyText, { color: colors.primary }]} numberOfLines={1}>Public</Text>}
-                          </>
-                        ) : (
-                          <>
-                            <Lock size={12} color={colors.textSecondary} strokeWidth={2} />
-                            {isLargeScreen && <Text style={[styles.privacyText, { color: colors.textSecondary }]} numberOfLines={1}>Private</Text>}
-                          </>
-                        )}
-                      </View>
-                    )}
-                  </View>
-                </View>
+                )}
+              </View>
+              {description && (
+                <Text style={[styles.collapsibleListDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                  {description}
+                </Text>
               )}
             </View>
           </View>
 
-          {/* Action Menu - show in edit mode AND view mode (other users' lists) */}
-          {(canEdit || mode === 'view') && (
-            <TouchableOpacity
-              style={styles.listHeaderOptionsButton}
-              onPress={(e) => {
-                e.stopPropagation();
-                setActiveListOptionsId(isOptionsOpen ? null : listId);
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={{ transform: [{ rotate: '90deg' }] }}>
-                <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-              </View>
-            </TouchableOpacity>
-          )}
+          <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
         </TouchableOpacity>
 
         {/* Options dropdown - show in edit mode AND view mode */}
@@ -1283,6 +1209,358 @@ export default function UnifiedLibrary({
     );
   };
 
+  // Render list detail header (when inside a list)
+  const renderListDetailHeader = (
+    listId: string,
+    title: string,
+    itemCount: number,
+    isEndorsed: boolean = false,
+    attribution?: string,
+    description?: string,
+    isPublic?: boolean,
+    creatorProfileImage?: string,
+    useAppIcon?: boolean
+  ) => {
+    const isOptionsOpen = activeListOptionsId === listId;
+
+    return (
+      <View style={{ marginBottom: 20 }}>
+        {/* Back button */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={handleBackToLibrary}
+          activeOpacity={0.7}
+        >
+          <ArrowLeft size={24} color={colors.primary} strokeWidth={2} />
+          <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
+        </TouchableOpacity>
+
+        {/* List header card */}
+        <View style={[styles.listDetailHeader, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+          {/* Profile Image */}
+          <View style={[styles.listDetailImageContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            {useAppIcon ? (
+              <Image
+                source={require('@/assets/images/endo.png')}
+                style={styles.listDetailImage}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+              />
+            ) : creatorProfileImage ? (
+              <Image
+                source={{ uri: creatorProfileImage }}
+                style={styles.listDetailImage}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+              />
+            ) : (
+              <User size={48} color={colors.textSecondary} strokeWidth={2} />
+            )}
+          </View>
+
+          <View style={styles.listDetailInfo}>
+            <View style={styles.listDetailTitleRow}>
+              <Text style={[styles.listDetailTitle, { color: colors.text }]}>
+                {title}
+              </Text>
+              {isEndorsed && <EndorsedBadge isDarkMode={isDarkMode} size="medium" showText={true} />}
+            </View>
+
+            <Text style={[styles.listDetailCount, { color: colors.textSecondary }]}>
+              {itemCount} {itemCount === 1 ? 'item' : 'items'}
+            </Text>
+
+            {isPublic !== undefined && (
+              <View style={[styles.privacyIndicator, { marginTop: 8 }]}>
+                {isPublic ? (
+                  <>
+                    <Globe size={16} color={colors.primary} strokeWidth={2} />
+                    <Text style={[styles.privacyText, { color: colors.primary, fontSize: 14 }]}>Public</Text>
+                  </>
+                ) : (
+                  <>
+                    <Lock size={16} color={colors.textSecondary} strokeWidth={2} />
+                    <Text style={[styles.privacyText, { color: colors.textSecondary, fontSize: 14 }]}>Private</Text>
+                  </>
+                )}
+              </View>
+            )}
+
+            {attribution && (
+              <Text style={[styles.listDetailAttribution, { color: colors.textSecondary }]}>
+                {attribution}
+              </Text>
+            )}
+
+            {description && (
+              <Text style={[styles.listDetailDescription, { color: colors.text }]}>
+                {description}
+              </Text>
+            )}
+          </View>
+
+          {/* Action Menu Button */}
+          {(canEdit || mode === 'view') && (
+            <TouchableOpacity
+              style={styles.listDetailOptionsButton}
+              onPress={() => setActiveListOptionsId(isOptionsOpen ? null : listId)}
+              activeOpacity={0.7}
+            >
+              <View style={{ transform: [{ rotate: '90deg' }] }}>
+                <MoreVertical size={24} color={colors.textSecondary} strokeWidth={2} />
+              </View>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Options dropdown */}
+        {(canEdit || mode === 'view') && isOptionsOpen && (
+          <View style={[styles.listOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, top: 60, right: 16 }]}>
+            {(() => {
+              const isEndorsementList = listId === 'endorsement';
+              const isSystemList = listId === 'aligned' || listId === 'unaligned';
+              const currentList = isEndorsementList ? endorsementList : userLists.find(l => l.id === listId);
+              const isCopiedList = currentList?.originalListId !== undefined;
+
+              const canEditMeta = !isSystemList && !isCopiedList && canEdit;
+              const canRemove = !isEndorsementList && !isSystemList && canEdit;
+              const canTogglePrivacy = isPublic !== undefined && !isCopiedList && !isSystemList && canEdit;
+              const canCopyList = mode === 'view';
+
+              return (
+                <>
+                  {canEditMeta && currentList && (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveListOptionsId(null);
+                        handleEditList(currentList);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Edit size={16} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Edit</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {currentList && (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveListOptionsId(null);
+                        handleShareList(currentList);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Share2 size={16} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {canTogglePrivacy && (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveListOptionsId(null);
+                        handleTogglePrivacy(listId, isPublic || false);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      {isPublic ? (
+                        <>
+                          <Lock size={16} color={colors.text} strokeWidth={2} />
+                          <Text style={[styles.listOptionText, { color: colors.text }]}>Make Private</Text>
+                        </>
+                      ) : (
+                        <>
+                          <Globe size={16} color={colors.text} strokeWidth={2} />
+                          <Text style={[styles.listOptionText, { color: colors.text }]}>Make Public</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
+
+                  {canRemove && currentList && (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveListOptionsId(null);
+                        setConfirmModalData({
+                          title: 'Delete List',
+                          message: `Are you sure you want to delete "${currentList.name}"? This cannot be undone.`,
+                          onConfirm: () => {
+                            library.removeList(currentList.id);
+                            setShowConfirmModal(false);
+                            setConfirmModalData(null);
+                            handleBackToLibrary(); // Go back to library after deleting
+                          },
+                          confirmText: 'Delete',
+                          isDanger: true,
+                        });
+                        setShowConfirmModal(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Trash2 size={16} color="#EF4444" strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: '#EF4444', fontWeight: '700' }]}>Remove</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              );
+            })()}
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  // Render library overview (all list cards)
+  const renderLibraryOverview = () => {
+    return (
+      <>
+        {/* 1. Endorsement List - Always first, pinned */}
+        {endorsementList && renderListCard(
+          'endorsement',
+          endorsementList.name,
+          endorsementList.entries?.length || 0,
+          true,
+          `Endorsed by ${endorsementList.creatorName || 'you'}`,
+          endorsementList.description,
+          endorsementList.isPublic,
+          profileImage
+        )}
+
+        {/* 2. Aligned List */}
+        {alignedItems.length > 0 && renderListCard(
+          'aligned',
+          'Aligned',
+          alignedItems.length,
+          false,
+          undefined,
+          'Brands and businesses aligned with your values',
+          false,
+          undefined,
+          true
+        )}
+
+        {/* 3. Unaligned List */}
+        {unalignedItems.length > 0 && renderListCard(
+          'unaligned',
+          'Unaligned',
+          unalignedItems.length,
+          false,
+          undefined,
+          'Brands and businesses not aligned with your values',
+          false,
+          undefined,
+          true
+        )}
+
+        {/* 4. Custom Lists */}
+        {customLists.map(list => {
+          const attribution = list.originalCreatorName
+            ? `Originally created by ${list.originalCreatorName}`
+            : list.creatorName
+            ? `Created by ${list.creatorName}`
+            : undefined;
+
+          const listProfileImage = list.originalCreatorImage || list.creatorImage || profileImage;
+
+          return (
+            <React.Fragment key={list.id}>
+              {renderListCard(
+                list.id,
+                list.name,
+                list.entries.length,
+                false,
+                attribution,
+                list.description,
+                list.isPublic,
+                listProfileImage
+              )}
+            </React.Fragment>
+          );
+        })}
+      </>
+    );
+  };
+
+  // Render list detail view (single list with items)
+  const renderListDetailView = () => {
+    if (!openedListId) return null;
+
+    // Get list data based on openedListId
+    let title = '';
+    let itemCount = 0;
+    let isEndorsed = false;
+    let attribution = '';
+    let description = '';
+    let isPublic: boolean | undefined = undefined;
+    let creatorImage: string | undefined = undefined;
+    let useAppIcon = false;
+    let renderContent = null;
+
+    if (openedListId === 'endorsement' && endorsementList) {
+      title = endorsementList.name;
+      itemCount = endorsementList.entries?.length || 0;
+      isEndorsed = true;
+      attribution = `Endorsed by ${endorsementList.creatorName || 'you'}`;
+      description = endorsementList.description || '';
+      isPublic = endorsementList.isPublic;
+      creatorImage = profileImage;
+      renderContent = renderEndorsementContent();
+    } else if (openedListId === 'aligned') {
+      title = 'Aligned';
+      itemCount = alignedItems.length;
+      description = 'Brands and businesses aligned with your values';
+      isPublic = false;
+      useAppIcon = true;
+      renderContent = renderAlignedContent();
+    } else if (openedListId === 'unaligned') {
+      title = 'Unaligned';
+      itemCount = unalignedItems.length;
+      description = 'Brands and businesses not aligned with your values';
+      isPublic = false;
+      useAppIcon = true;
+      renderContent = renderUnalignedContent();
+    } else {
+      // Custom list
+      const list = userLists.find(l => l.id === openedListId);
+      if (list) {
+        title = list.name;
+        itemCount = list.entries.length;
+        attribution = list.originalCreatorName
+          ? `Originally created by ${list.originalCreatorName}`
+          : list.creatorName
+          ? `Created by ${list.creatorName}`
+          : '';
+        description = list.description || '';
+        isPublic = list.isPublic;
+        creatorImage = list.originalCreatorImage || list.creatorImage || profileImage;
+        renderContent = renderCustomListContent(list);
+      }
+    }
+
+    return (
+      <>
+        {renderListDetailHeader(
+          openedListId,
+          title,
+          itemCount,
+          isEndorsed,
+          attribution,
+          description,
+          isPublic,
+          creatorImage,
+          useAppIcon
+        )}
+        {renderContent}
+      </>
+    );
+  };
+
   // Check if any menu is open (only list options dropdown now, items use modal)
   const isAnyMenuOpen = activeListOptionsId !== null;
 
@@ -1314,94 +1592,9 @@ export default function UnifiedLibrary({
         itemName={selectedItemToAdd ? getItemName(selectedItemToAdd) : undefined}
         isDarkMode={isDarkMode}
       />
-      {/* 1. Endorsement List - Always first, pinned */}
-      {endorsementList && (
-        <>
-          {renderCollapsibleListHeader(
-            'endorsement',
-            endorsementList.name,
-            endorsementList.entries?.length || 0,
-            expandedListId === 'endorsement',
-            true,
-            true,
-            `Endorsed by ${endorsementList.creatorName || 'you'}`,
-            endorsementList.description,
-            endorsementList.isPublic,
-            profileImage
-          )}
-          {expandedListId === 'endorsement' && renderEndorsementContent()}
-        </>
-      )}
 
-      {/* 2. Aligned List */}
-      {alignedItems.length > 0 && (
-        <>
-          {renderCollapsibleListHeader(
-            'aligned',
-            'Aligned',
-            alignedItems.length,
-            expandedListId === 'aligned',
-            false,
-            false,
-            undefined,
-            'Brands and businesses aligned with your values',
-            false,
-            undefined,
-            true
-          )}
-          {expandedListId === 'aligned' && renderAlignedContent()}
-        </>
-      )}
-
-      {/* 3. Unaligned List */}
-      {unalignedItems.length > 0 && (
-        <>
-          {renderCollapsibleListHeader(
-            'unaligned',
-            'Unaligned',
-            unalignedItems.length,
-            expandedListId === 'unaligned',
-            false,
-            false,
-            undefined,
-            'Brands and businesses not aligned with your values',
-            false,
-            undefined,
-            true
-          )}
-          {expandedListId === 'unaligned' && renderUnalignedContent()}
-        </>
-      )}
-
-      {/* 4. Custom Lists */}
-      {customLists.map(list => {
-        const attribution = list.originalCreatorName
-          ? `Originally created by ${list.originalCreatorName}`
-          : list.creatorName
-          ? `Created by ${list.creatorName}`
-          : undefined;
-
-        // Use original creator's image for copied lists, otherwise the list creator's image, or fall back to profile image
-        const listProfileImage = list.originalCreatorImage || list.creatorImage || profileImage;
-
-        return (
-          <React.Fragment key={list.id}>
-            {renderCollapsibleListHeader(
-              list.id,
-              list.name,
-              list.entries.length,
-              expandedListId === list.id,
-              false,
-              false,
-              attribution,
-              list.description,
-              list.isPublic,
-              listProfileImage
-            )}
-            {expandedListId === list.id && renderCustomListContent(list)}
-          </React.Fragment>
-        );
-      })}
+      {/* Conditional render: overview or detail view */}
+      {openedListId ? renderListDetailView() : renderLibraryOverview()}
 
       {/* Modals */}
       <AddToLibraryModal
@@ -1791,5 +1984,72 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontSize: 15,
     textAlign: 'center',
+  },
+  // List detail view styles
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+    alignSelf: 'flex-start',
+  },
+  backButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  listDetailHeader: {
+    flexDirection: 'row',
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 16,
+    position: 'relative',
+  },
+  listDetailImageContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listDetailImage: {
+    width: '100%',
+    height: '100%',
+  },
+  listDetailInfo: {
+    flex: 1,
+    gap: 6,
+  },
+  listDetailTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  listDetailTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  listDetailCount: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  listDetailAttribution: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  listDetailDescription: {
+    fontSize: 15,
+    lineHeight: 21,
+    marginTop: 4,
+  },
+  listDetailOptionsButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    padding: 4,
   },
 });
