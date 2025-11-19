@@ -1654,8 +1654,20 @@ export default function HomeScreen() {
       // Endorse - add to list
       try {
         const entry: Omit<ListEntry, 'id' | 'createdAt'> = cardMenuData.type === 'brand'
-          ? { type: 'brand', brandId: cardMenuData.id }
-          : { type: 'business', businessId: cardMenuData.id };
+          ? {
+              type: 'brand',
+              brandId: cardMenuData.id,
+              brandName: cardMenuData.name,
+              website: cardMenuData.website,
+              logoUrl: cardMenuData.logoUrl,
+            }
+          : {
+              type: 'business',
+              businessId: cardMenuData.id,
+              businessName: cardMenuData.name,
+              website: cardMenuData.website,
+              logoUrl: cardMenuData.logoUrl,
+            };
 
         await library.addEntry(endorsementList.id, entry as ListEntry);
         Alert.alert('Success', `${cardMenuData.name} endorsed!`);

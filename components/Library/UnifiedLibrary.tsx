@@ -490,7 +490,16 @@ export default function UnifiedLibrary({
               style={[styles.quickAddButton, { backgroundColor: colors.background }]}
               onPress={(e) => {
                 e.stopPropagation();
-                setSelectedItemForOptions({ type: 'brand', id: product.id, brandId: product.id, createdAt: new Date() } as ListEntry);
+                setSelectedItemForOptions({
+                  type: 'brand',
+                  id: product.id,
+                  brandId: product.id,
+                  brandName: product.name || 'Unknown Brand',
+                  brandCategory: product.category,
+                  website: product.website,
+                  logoUrl: getLogoUrl(product.website || ''),
+                  createdAt: new Date()
+                } as ListEntry);
                 setShowItemOptionsModal(true);
               }}
               activeOpacity={0.7}
