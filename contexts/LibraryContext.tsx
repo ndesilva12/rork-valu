@@ -183,7 +183,7 @@ function libraryReducer(state: LibraryState, action: LibraryAction): LibraryStat
           list.id === action.payload.listId
             ? {
                 ...list,
-                entries: list.entries.filter(e => e.id !== action.payload.entryId),
+                entries: list.entries.filter(e => e && e.id !== action.payload.entryId),
               }
             : list
         ),
@@ -192,7 +192,7 @@ function libraryReducer(state: LibraryState, action: LibraryAction): LibraryStat
             ? {
                 ...state.endorsementList,
                 entries: state.endorsementList.entries.filter(
-                  e => e.id !== action.payload.entryId
+                  e => e && e.id !== action.payload.entryId
                 ),
               }
             : state.endorsementList,
