@@ -3050,16 +3050,7 @@ export default function HomeScreen() {
             style={styles.headerLogo}
             resizeMode="contain"
           />
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={[styles.headerCreateButton, { backgroundColor: colors.primary }]}
-              onPress={() => setShowNewListChoiceModal(true)}
-              activeOpacity={0.7}
-            >
-              <Plus size={20} color={colors.white} strokeWidth={2.5} />
-            </TouchableOpacity>
-            <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
-          </View>
+          <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
         </View>
         {renderMainViewSelector()}
       </View>

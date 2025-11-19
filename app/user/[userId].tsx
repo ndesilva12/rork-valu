@@ -148,14 +148,14 @@ export default function UserProfileScreen() {
     fetchBusinesses();
   }, []);
 
-  // Get all brands and set scores to 50
+  // Calculate aligned and unaligned brands based on viewed user's values
   const { allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
     const csvBrands = brands || [];
     const localBizList = userBusinesses || [];
 
     const currentBrands = [...csvBrands, ...localBizList];
 
-    if (!currentBrands || currentBrands.length === 0) {
+    if (!currentBrands || currentBrands.length === 0 || !userProfile || !userProfile.causes || userProfile.causes.length === 0) {
       return {
         allSupportFull: [],
         allAvoidFull: [],
@@ -163,20 +163,41 @@ export default function UserProfileScreen() {
       };
     }
 
-    // Sort alphabetically by name
-    const sortedBrands = [...currentBrands].sort((a, b) =>
-      (a.name || '').localeCompare(b.name || '')
-    );
+    // Import scoring functions
+    const { calculateBrandScore, normalizeBrandScores } = require('@/lib/scoring');
 
-    // Set all scores to 50
-    const scoredBrandsMap = new Map(sortedBrands.map((brand) => [brand.id, 50]));
+    // Calculate scores for all brands using the viewed user's values
+    const brandsWithScores = currentBrands.map(brand => {
+      const score = calculateBrandScore(brand.name, userProfile.causes || [], valuesMatrix);
+      return { brand, score };
+    });
+
+    // Normalize scores to 1-99 range
+    const normalizedBrands = normalizeBrandScores(brandsWithScores);
+
+    // Create scored brands map
+    const scoredMap = new Map(normalizedBrands.map(({ brand, score }) => [brand.id, score]));
+
+    // Sort all brands by score
+    const sortedByScore = [...normalizedBrands].sort((a, b) => b.score - a.score);
+
+    // Top 50 highest-scoring brands (aligned)
+    const alignedBrands = sortedByScore
+      .slice(0, 50)
+      .map(({ brand }) => brand);
+
+    // Bottom 50 lowest-scoring brands (unaligned)
+    const unalignedBrands = sortedByScore
+      .slice(-50)
+      .reverse()
+      .map(({ brand }) => brand);
 
     return {
-      allSupportFull: sortedBrands,
-      allAvoidFull: [],
-      scoredBrands: scoredBrandsMap,
+      allSupportFull: alignedBrands,
+      allAvoidFull: unalignedBrands,
+      scoredBrands: scoredMap,
     };
-  }, [brands, userBusinesses]);
+  }, [brands, userBusinesses, userProfile, valuesMatrix]);
 
   if (isLoading) {
     return (
@@ -284,11 +305,6 @@ export default function UserProfileScreen() {
             <View style={styles.titleContainer}>
               <View style={styles.nameRow}>
                 <Text style={[styles.userName, { color: colors.text }]}>{userName}</Text>
-                {!isOwnProfile && similarityScore > 0 && (
-                  <View style={[styles.scoreBadge, { backgroundColor: alignmentColor + '15', borderColor: alignmentColor }]}>
-                    <Text style={[styles.scoreBadgeText, { color: alignmentColor }]}>{similarityLabel}</Text>
-                  </View>
-                )}
               </View>
               {userDetails?.location && (
                 <View style={styles.locationRow}>

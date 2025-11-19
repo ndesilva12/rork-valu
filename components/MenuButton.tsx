@@ -126,7 +126,7 @@ export default function MenuButton({ onShowExplainers }: MenuButtonProps = {}) {
               styles.menuContainer,
               {
                 backgroundColor: isDarkMode ? '#1F2937' : '#F9FAFB',
-                borderWidth: 3,
+                borderWidth: 1,
                 borderColor: '#FFFFFF',
               }
             ]}
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   menuContainer: {
     width: '90%',
     maxWidth: 500,
-    borderRadius: 24,
+    borderRadius: 12,
     overflow: 'hidden',
     maxHeight: '92%',
   },
