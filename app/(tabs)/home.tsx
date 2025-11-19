@@ -575,11 +575,13 @@ export default function HomeScreen() {
     const alignedBrands = brandsWithScores
       .filter(({ score }) => score >= 60)
       .sort((a, b) => b.score - a.score) // Sort by score descending
+      .slice(0, 50) // Cap at 50 brands
       .map(({ brand }) => brand);
 
     const unalignedBrands = brandsWithScores
       .filter(({ score }) => score < 40)
       .sort((a, b) => a.score - b.score) // Sort by score ascending (most opposed first)
+      .slice(0, 50) // Cap at 50 brands
       .map(({ brand }) => brand);
 
     // All brands sorted alphabetically
@@ -1043,7 +1045,7 @@ export default function HomeScreen() {
       <UnifiedLibrary
         mode="edit"
         currentUserId={clerkUser?.id}
-        alignedItems={allSupportFull}
+        alignedItems={allSupport}
         unalignedItems={allAvoidFull}
         isDarkMode={isDarkMode}
         profileImage={profile?.userDetails?.profileImage || clerkUser?.imageUrl}
@@ -2966,7 +2968,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endorse2.png')}
+            source={require('@/assets/images/endorse1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -2986,7 +2988,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endorse2.png')}
+            source={require('@/assets/images/endorse1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3009,7 +3011,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endorse2.png')}
+            source={require('@/assets/images/endorse1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3037,7 +3039,7 @@ export default function HomeScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endorse2.png')}
+            source={require('@/assets/images/endorse1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />

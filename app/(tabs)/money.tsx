@@ -157,7 +157,7 @@ export default function DiscountScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endorse2.png')}
+            source={require('@/assets/images/endorse1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
