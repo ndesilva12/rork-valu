@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, MapPin, Navigation, Percent, X, Plus, ChevronRight, List, UserPlus } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, MapPin, Navigation, Percent, X, Plus, ChevronRight, List, UserPlus, MoreVertical, Share2 } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -12,12 +12,15 @@ import {
   Modal,
   Alert,
   TouchableWithoutFeedback,
+  Share,
+  Pressable,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
+import { useLibrary } from '@/contexts/LibraryContext';
 import { useEffect, useState, useRef } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
@@ -41,6 +44,7 @@ export default function BusinessDetailScreen() {
   const router = useRouter();
   const { profile, isDarkMode, clerkUser } = useUser();
   const { values } = useData();
+  const library = useLibrary();
   const colors = isDarkMode ? darkColors : lightColors;
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -48,6 +52,7 @@ export default function BusinessDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedGalleryImage, setSelectedGalleryImage] = useState<{ imageUrl: string; caption: string } | null>(null);
   const [showAddToListModal, setShowAddToListModal] = useState(false);
+  const [showActionMenu, setShowActionMenu] = useState(false);
   const [userLists, setUserLists] = useState<any[]>([]);
   const [businessOwnerLists, setBusinessOwnerLists] = useState<any[]>([]);
   const [loadingBusinessLists, setLoadingBusinessLists] = useState(true);
@@ -180,6 +185,47 @@ export default function BusinessDetailScreen() {
     // TODO: Update UI to show followed state
 
     Alert.alert('Coming Soon', `Follow functionality will be implemented soon!\nBusiness: ${business.businessInfo.name}`);
+  };
+
+  const handleEndorse = async () => {
+    if (!business || !library.state.endorsementList?.id) {
+      Alert.alert('Error', 'Endorsement list not found');
+      return;
+    }
+
+    try {
+      await library.addEntry(library.state.endorsementList.id, {
+        type: 'business',
+        businessId: business.id,
+        businessName: business.businessInfo.name,
+        website: business.businessInfo.website || '',
+        logoUrl: business.businessInfo.logoUrl || getLogoUrl(business.businessInfo.website || ''),
+      });
+      Alert.alert('Success', `${business.businessInfo.name} endorsed!`);
+      setShowActionMenu(false);
+    } catch (error: any) {
+      console.error('Error endorsing business:', error);
+      Alert.alert('Error', error?.message || 'Failed to endorse business');
+    }
+  };
+
+  const handleShare = async () => {
+    if (!business) return;
+
+    try {
+      const message = `Check out ${business.businessInfo.name} on Upright Money!`;
+      const url = Platform.OS === 'web'
+        ? `${window.location.origin}/business/${business.id}`
+        : `uprightmoney://business/${business.id}`;
+
+      await Share.share({
+        message: `${message}\n${url}`,
+        title: business.businessInfo.name,
+      });
+      setShowActionMenu(false);
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
   };
 
   useEffect(() => {
@@ -444,23 +490,7 @@ export default function BusinessDetailScreen() {
 
             <View style={styles.titleContainer}>
               <View style={styles.brandNameRow}>
-                <Text style={[styles.brandName, { color: colors.text }]}>{business.businessInfo.name}</Text>
-                <View style={styles.actionButtonsRow}>
-                  <TouchableOpacity
-                    style={[styles.followButton, { backgroundColor: colors.background }]}
-                    onPress={handleFollow}
-                    activeOpacity={0.7}
-                  >
-                    <UserPlus size={22} color={colors.primary} strokeWidth={2.5} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.addToListButton, { backgroundColor: colors.background }]}
-                    onPress={handleOpenAddModal}
-                    activeOpacity={0.7}
-                  >
-                    <Plus size={22} color={colors.primary} strokeWidth={2.5} />
-                  </TouchableOpacity>
-                </View>
+                <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>{business.businessInfo.name}</Text>
               </View>
               <View style={styles.categoryRow}>
                 <Text style={[styles.category, { color: colors.primary }]}>{business.businessInfo.category}</Text>
@@ -474,11 +504,20 @@ export default function BusinessDetailScreen() {
                 </View>
               )}
             </View>
-            <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.backgroundSecondary }]}>
-              <AlignmentIcon size={24} color={alignmentColor} strokeWidth={2.5} />
-              <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
-                {alignmentData.alignmentStrength}
-              </Text>
+            <View style={styles.scoreContainer}>
+              <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.backgroundSecondary }]}>
+                <AlignmentIcon size={14} color={alignmentColor} strokeWidth={2.5} />
+                <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
+                  {alignmentData.alignmentStrength}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.actionMenuButton, { backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => setShowActionMenu(true)}
+                activeOpacity={0.7}
+              >
+                <MoreVertical size={18} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -924,6 +963,61 @@ export default function BusinessDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Action Menu Modal */}
+      <Modal
+        visible={showActionMenu}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowActionMenu(false)}
+      >
+        <Pressable
+          style={styles.actionMenuOverlay}
+          onPress={() => setShowActionMenu(false)}
+        >
+          <Pressable
+            style={[styles.actionMenuContainer, { backgroundColor: colors.background }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={[styles.actionMenuHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.actionMenuTitle, { color: colors.text }]}>Actions</Text>
+              <TouchableOpacity onPress={() => setShowActionMenu(false)}>
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.actionMenuItem, { borderBottomColor: colors.border }]}
+              onPress={handleEndorse}
+              activeOpacity={0.7}
+            >
+              <UserPlus size={20} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Endorse</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionMenuItem, { borderBottomColor: colors.border }]}
+              onPress={() => {
+                setShowActionMenu(false);
+                handleFollow();
+              }}
+              activeOpacity={0.7}
+            >
+              <UserPlus size={20} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Follow</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionMenuItem}
+              onPress={handleShare}
+              activeOpacity={0.7}
+            >
+              <Share2 size={20} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Share</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -1009,27 +1103,13 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   brandName: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700' as const,
     flex: 1,
   },
-  actionButtonsRow: {
-    flexDirection: 'row',
+  scoreContainer: {
+    alignItems: 'center',
     gap: 8,
-  },
-  followButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addToListButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   categoryRow: {
     flexDirection: 'row',
@@ -1145,17 +1225,24 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
   },
   scoreCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 3,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   scoreNumber: {
-    fontSize: 20,
+    fontSize: 13,
     fontWeight: '700' as const,
-    marginTop: 4,
+    marginTop: 2,
+  },
+  actionMenuButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   alignmentCard: {
     padding: 20,
@@ -1416,5 +1503,42 @@ const styles = StyleSheet.create({
   quickAddListCount: {
     fontSize: 13,
     color: '#666',
+  },
+  actionMenuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  actionMenuContainer: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  actionMenuHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  actionMenuTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  actionMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  actionMenuItemText: {
+    fontSize: 16,
+    fontWeight: '500' as const,
   },
 });

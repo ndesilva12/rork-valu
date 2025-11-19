@@ -31,6 +31,7 @@ export default function BrandDetailScreen() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
   const router = useRouter();
   const { profile, isDarkMode, clerkUser } = useUser();
+  const library = useLibrary();
   const colors = isDarkMode ? darkColors : lightColors;
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -321,6 +322,47 @@ export default function BrandDetailScreen() {
     }
   };
 
+  const handleEndorse = async () => {
+    if (!brand || !library.state.endorsementList?.id) {
+      Alert.alert('Error', 'Endorsement list not found');
+      return;
+    }
+
+    try {
+      await library.addEntry(library.state.endorsementList.id, {
+        type: 'brand',
+        brandId: brand.id,
+        brandName: brand.name,
+        website: brand.website,
+        logoUrl: getLogoUrl(brand.website || ''),
+      });
+      Alert.alert('Success', `${brand.name} endorsed!`);
+      setShowActionMenu(false);
+    } catch (error: any) {
+      console.error('Error endorsing brand:', error);
+      Alert.alert('Error', error?.message || 'Failed to endorse brand');
+    }
+  };
+
+  const handleShare = async () => {
+    if (!brand) return;
+
+    try {
+      const message = `Check out ${brand.name} on Upright Money!`;
+      const url = Platform.OS === 'web'
+        ? `${window.location.origin}/brand/${brand.id}`
+        : `uprightmoney://brand/${brand.id}`;
+
+      await Share.share({
+        message: `${message}\n${url}`,
+        title: brand.name,
+      });
+      setShowActionMenu(false);
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
   // Calculate alignment score using new scoring system with normalization
   // Note: valuesMatrix contains brand NAMES not IDs in support/oppose arrays
   // Match the normalization logic from home tab to ensure scores are consistent
@@ -477,23 +519,7 @@ export default function BrandDetailScreen() {
 
             <View style={styles.titleContainer}>
               <View style={styles.brandNameRow}>
-                <Text style={[styles.brandName, { color: colors.text }]}>{brand?.name}</Text>
-                <View style={styles.actionButtonsRow}>
-                  <TouchableOpacity
-                    style={[styles.followButton, { backgroundColor: colors.background }]}
-                    onPress={handleFollow}
-                    activeOpacity={0.7}
-                  >
-                    <UserPlus size={22} color={colors.primary} strokeWidth={2.5} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.addToListButton, { backgroundColor: colors.background }]}
-                    onPress={handleOpenAddModal}
-                    activeOpacity={0.7}
-                  >
-                    <Plus size={22} color={colors.primary} strokeWidth={2.5} />
-                  </TouchableOpacity>
-                </View>
+                <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>{brand?.name}</Text>
               </View>
               <View style={styles.categoryRow}>
                 <Text style={[styles.category, { color: colors.primary }]}>{brand.category}</Text>
@@ -513,11 +539,20 @@ export default function BrandDetailScreen() {
                 </View>
               )}
             </View>
-            <View style={[styles.scoreCircle, { borderColor: scoreColor, backgroundColor: colors.backgroundSecondary }]}>
-              <AlignmentIcon size={20} color={scoreColor} strokeWidth={2.5} />
-              <Text style={[styles.scoreNumber, { color: scoreColor }]}>
-                {Math.round(brandScore)}
-              </Text>
+            <View style={styles.scoreContainer}>
+              <View style={[styles.scoreCircle, { borderColor: scoreColor, backgroundColor: colors.backgroundSecondary }]}>
+                <AlignmentIcon size={14} color={scoreColor} strokeWidth={2.5} />
+                <Text style={[styles.scoreNumber, { color: scoreColor }]}>
+                  {Math.round(brandScore)}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.actionMenuButton, { backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => setShowActionMenu(true)}
+                activeOpacity={0.7}
+              >
+                <MoreVertical size={18} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -853,6 +888,61 @@ export default function BrandDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Action Menu Modal */}
+      <Modal
+        visible={showActionMenu}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowActionMenu(false)}
+      >
+        <Pressable
+          style={styles.actionMenuOverlay}
+          onPress={() => setShowActionMenu(false)}
+        >
+          <Pressable
+            style={[styles.actionMenuContainer, { backgroundColor: colors.background }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={[styles.actionMenuHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.actionMenuTitle, { color: colors.text }]}>Actions</Text>
+              <TouchableOpacity onPress={() => setShowActionMenu(false)}>
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.actionMenuItem, { borderBottomColor: colors.border }]}
+              onPress={handleEndorse}
+              activeOpacity={0.7}
+            >
+              <UserPlus size={20} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Endorse</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionMenuItem, { borderBottomColor: colors.border }]}
+              onPress={() => {
+                setShowActionMenu(false);
+                handleFollow();
+              }}
+              activeOpacity={0.7}
+            >
+              <UserPlus size={20} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Follow</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionMenuItem}
+              onPress={handleShare}
+              activeOpacity={0.7}
+            >
+              <Share2 size={20} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Share</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -942,23 +1032,9 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     flex: 1,
   },
-  actionButtonsRow: {
-    flexDirection: 'row',
+  scoreContainer: {
+    alignItems: 'center',
     gap: 8,
-  },
-  followButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addToListButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   categoryRow: {
     flexDirection: 'row',
@@ -1025,17 +1101,24 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   scoreCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 2.5,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   scoreNumber: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '700' as const,
-    marginTop: 3,
+    marginTop: 2,
+  },
+  actionMenuButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   alignmentCard: {
     padding: 16,
@@ -1394,5 +1477,42 @@ const styles = StyleSheet.create({
   quickAddListCount: {
     fontSize: 13,
     color: '#666',
+  },
+  actionMenuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  actionMenuContainer: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  actionMenuHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  actionMenuTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  actionMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  actionMenuItemText: {
+    fontSize: 16,
+    fontWeight: '500' as const,
   },
 });
