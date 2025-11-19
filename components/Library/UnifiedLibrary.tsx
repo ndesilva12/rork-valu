@@ -45,7 +45,7 @@ import { Product } from '@/types';
 import { BusinessUser } from '@/services/firebase/businessService';
 import { useUser } from '@/contexts/UserContext';
 import { useRouter } from 'expo-router';
-import { updateListMetadata } from '@/services/firebase/listService';
+import { updateListMetadata, copyListToLibrary } from '@/services/firebase/listService';
 import AddToLibraryModal from '@/components/AddToLibraryModal';
 import EditListModal from '@/components/EditListModal';
 import ShareOptionsModal from '@/components/ShareOptionsModal';
@@ -441,7 +441,7 @@ export default function UnifiedLibrary({
         <TouchableOpacity
           style={[
             styles.brandCard,
-            { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+            { backgroundColor: 'transparent' },
           ]}
           onPress={() => {
             router.push({
@@ -462,7 +462,7 @@ export default function UnifiedLibrary({
             />
           </View>
           <View style={styles.brandCardContent}>
-            <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
+            <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
               {product.name || 'Unknown Brand'}
             </Text>
             <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
@@ -531,7 +531,7 @@ export default function UnifiedLibrary({
             <TouchableOpacity
               style={[
                 styles.brandCard,
-                { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                { backgroundColor: 'transparent' },
               ]}
               onPress={() => {
                 router.push({
@@ -552,7 +552,7 @@ export default function UnifiedLibrary({
                   />
                 </View>
                 <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
+                  <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
                     {brandName}
                   </Text>
                   <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
@@ -600,7 +600,7 @@ export default function UnifiedLibrary({
             <TouchableOpacity
               style={[
                 styles.brandCard,
-                { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                { backgroundColor: 'transparent' },
               ]}
               onPress={() => {
                 router.push({
@@ -621,7 +621,7 @@ export default function UnifiedLibrary({
                   />
                 </View>
                 <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
+                  <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
                     {businessName}
                   </Text>
                   {businessCategory && (
@@ -665,7 +665,7 @@ export default function UnifiedLibrary({
           return (
             <View style={[
               styles.brandCard,
-              { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+              { backgroundColor: 'transparent' },
             ]}>
               <View style={styles.brandCardInner}>
                 <View style={[
@@ -679,7 +679,7 @@ export default function UnifiedLibrary({
                   <Target size={32} color={iconColor} strokeWidth={2} />
                 </View>
                 <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
+                  <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
                     {valueName}
                   </Text>
                   <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
@@ -714,7 +714,7 @@ export default function UnifiedLibrary({
             <TouchableOpacity
               style={[
                 styles.brandCard,
-                { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }
+                { backgroundColor: 'transparent', borderColor: 'transparent' }
               ]}
               onPress={() => canInteract && Linking.openURL(entry.url)}
               activeOpacity={0.7}
@@ -722,7 +722,7 @@ export default function UnifiedLibrary({
             >
               <View style={styles.brandCardInner}>
                 <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={1}>
+                  <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={1}>
                     {linkTitle}
                   </Text>
                   {(entry as any).description && (
@@ -759,11 +759,11 @@ export default function UnifiedLibrary({
           return (
             <View style={[
               styles.brandCard,
-              { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }
+              { backgroundColor: 'transparent', borderColor: 'transparent' }
             ]}>
               <View style={styles.brandCardInner}>
                 <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: colors.text }]}>
+                  <Text style={[styles.brandName, { color: colors.white }]}>
                     {textContent}
                   </Text>
                 </View>
@@ -819,7 +819,7 @@ export default function UnifiedLibrary({
           <View style={[styles.listProfileImageContainer, { backgroundColor: '#FFFFFF', borderColor: colors.border }]}>
             {useAppIcon ? (
               <Image
-                source={require('@/assets/images/endo.png')}
+                source={require('@/assets/images/endo12.png')}
                 style={styles.listProfileImage}
                 contentFit="cover"
                 transition={200}
@@ -879,7 +879,7 @@ export default function UnifiedLibrary({
 
         {/* Options dropdown - show in edit mode AND view mode */}
         {(canEdit || mode === 'view') && isOptionsOpen && (
-          <View style={[styles.listOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+          <View style={[styles.listOptionsDropdown, { backgroundColor: 'transparent', borderColor: 'transparent' }]}>
             {(() => {
               // Determine which options to show based on list type
               const isEndorsementList = listId === 'endorsement';
@@ -1238,7 +1238,7 @@ export default function UnifiedLibrary({
           <View style={[styles.listDetailImageContainer, { backgroundColor: '#FFFFFF', borderColor: colors.border }]}>
             {useAppIcon ? (
               <Image
-                source={require('@/assets/images/endo.png')}
+                source={require('@/assets/images/endo12.png')}
                 style={styles.listDetailImage}
                 contentFit="cover"
                 transition={200}
@@ -1353,6 +1353,57 @@ export default function UnifiedLibrary({
                     >
                       <Share2 size={16} color={colors.text} strokeWidth={2} />
                       <Text style={[styles.listOptionText, { color: colors.text }]}>Share</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {canCopyList && currentList && (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveListOptionsId(null);
+                        if (!currentUserId) {
+                          Alert.alert('Error', 'You must be logged in to copy lists');
+                          return;
+                        }
+
+                        // Show confirmation modal
+                        setConfirmModalData({
+                          title: 'Add to Your Library',
+                          message: `Add "${currentList.name}" to your library? This will create a live reference that updates when the original author modifies it.`,
+                          onConfirm: async () => {
+                            setIsConfirmLoading(true);
+                            try {
+                              const userName = profile?.userName || 'User';
+                              const profileImageUrl = profile?.userDetails?.profileImage;
+                              await copyListToLibrary(currentList.id, currentUserId, userName, profileImageUrl);
+
+                              // Wait for Firestore propagation
+                              await new Promise(resolve => setTimeout(resolve, 500));
+
+                              // Reload lists to show the newly copied list
+                              if (currentUserId) {
+                                await library.loadUserLists(currentUserId, true);
+                              }
+
+                              Alert.alert('Success', `"${currentList.name}" added to your library!`);
+                              setShowConfirmModal(false);
+                              setConfirmModalData(null);
+                            } catch (error: any) {
+                              console.error('Error copying list:', error);
+                              Alert.alert('Error', error?.message || 'Failed to copy list');
+                            } finally {
+                              setIsConfirmLoading(false);
+                            }
+                          },
+                          confirmText: 'Add to Library',
+                          isDanger: false,
+                        });
+                        setShowConfirmModal(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <UserPlus size={16} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Add to Library</Text>
                     </TouchableOpacity>
                   )}
 
@@ -1735,13 +1786,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: Platform.OS === 'web' ? 2 : 8,
-    marginHorizontal: Platform.OS === 'web' ? 4 : 16,
+    marginHorizontal: Platform.OS === 'web' ? 2 : 8,
     marginVertical: 6,
     minHeight: 64,
     backgroundColor: 'transparent',
   },
   listContentContainer: {
-    marginHorizontal: Platform.OS === 'web' ? 8 : 16,
+    marginHorizontal: Platform.OS === 'web' ? 2 : 8,
     marginBottom: 8,
   },
   pinnedListHeader: {
@@ -1937,8 +1988,8 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 0,
     borderRadius: 0,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   brandLogo: {
     width: '100%',
@@ -2004,7 +2055,7 @@ const styles = StyleSheet.create({
   },
   listDetailHeader: {
     flexDirection: 'row',
-    padding: 20,
+    padding: Platform.OS === 'web' ? 8 : 20,
     borderRadius: 0,
     borderWidth: 0,
     gap: 16,

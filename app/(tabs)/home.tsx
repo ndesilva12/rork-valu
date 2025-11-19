@@ -786,7 +786,7 @@ export default function HomeScreen() {
 
   const renderBrandCard = (product: Product, type: 'support' | 'avoid') => {
     const isSupport = type === 'support';
-    const titleColor = isSupport ? colors.primaryLight : colors.danger;
+    const titleColor = colors.white;
     const alignmentScore = scoredBrands.get(product.id) || 0;
 
     return (
@@ -794,7 +794,7 @@ export default function HomeScreen() {
         key={product.id}
         style={[
           styles.brandCard,
-          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+          { backgroundColor: 'transparent' },
         ]}
         onPress={() => handleProductPress(product)}
         activeOpacity={0.7}
@@ -847,7 +847,7 @@ export default function HomeScreen() {
     type: 'aligned' | 'unaligned'
   ) => {
     const isAligned = type === 'aligned';
-    const titleColor = isAligned ? colors.primaryLight : colors.danger;
+    const titleColor = colors.white;
     const { business, alignmentScore, distance, closestLocation } = businessData;
 
     return (
@@ -855,7 +855,7 @@ export default function HomeScreen() {
         key={business.id}
         style={[
           styles.brandCard,
-          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+          { backgroundColor: 'transparent' },
         ]}
         onPress={() => handleBusinessPress(business.id)}
         activeOpacity={0.7}
@@ -2411,7 +2411,7 @@ export default function HomeScreen() {
                         const brandScore = scoredBrands.get(entry.brandId) || 0;
                         const brand = allSupportFull.find(b => b.id === entry.brandId) || allAvoidFull.find(b => b.id === entry.brandId);
                         const isAligned = allSupportFull.some(b => b.id === entry.brandId);
-                        const titleColor = isAligned ? colors.primaryLight : colors.danger;
+                        const titleColor = colors.white;
 
                         return (
                           <View
@@ -2426,7 +2426,7 @@ export default function HomeScreen() {
                         <TouchableOpacity
                           style={[
                             styles.brandCard,
-                            { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                            { backgroundColor: 'transparent' },
                           ]}
                           onPress={() => !isEditMode && router.push(`/brand/${entry.brandId}`)}
                           activeOpacity={0.7}
@@ -2510,7 +2510,7 @@ export default function HomeScreen() {
                   // All businesses set to score of 50
                   const alignmentScore = 50;
                   const isAligned = alignmentScore >= 50;
-                  const titleColor = colors.text;
+                  const titleColor = colors.white;
 
                   return (
                     <View
@@ -2525,7 +2525,7 @@ export default function HomeScreen() {
                       <TouchableOpacity
                         style={[
                           styles.brandCard,
-                          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                          { backgroundColor: 'transparent' },
                         ]}
                         onPress={() => !isEditMode && handleBusinessPress(entry.businessId)}
                         activeOpacity={0.7}
@@ -3049,7 +3049,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endo1.png')}
+            source={require('@/assets/images/endo11.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3069,7 +3069,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endo1.png')}
+            source={require('@/assets/images/endo11.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3092,7 +3092,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endo1.png')}
+            source={require('@/assets/images/endo11.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3120,7 +3120,7 @@ export default function HomeScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endo1.png')}
+            source={require('@/assets/images/endo11.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -4300,8 +4300,9 @@ export default function HomeScreen() {
           activeOpacity={1}
           onPress={() => setShowMapModal(false)}
         >
-          <View
+          <Pressable
             style={[styles.mapModalContainer, { backgroundColor: colors.background }]}
+            onPress={(e) => e.stopPropagation()}
           >
             {/* Header with close button */}
             <View style={[styles.mapModalHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
@@ -4356,7 +4357,7 @@ export default function HomeScreen() {
               </View>
             )}
           </View>
-          </View>
+          </Pressable>
         </TouchableOpacity>
       </Modal>
 
@@ -5408,8 +5409,8 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 0,
     borderRadius: 0,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   brandLogo: {
     width: '100%',
@@ -6758,11 +6759,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     paddingHorizontal: Platform.OS === 'web' ? 4 : 8, // Reduce padding on mobile browsers
-    marginHorizontal: Platform.OS === 'web' ? 8 : 16, // Reduce margin on mobile browsers
+    marginHorizontal: Platform.OS === 'web' ? 8 : 8, // Reduced mobile margin to half
     marginVertical: 3,
   },
   listContentContainer: {
-    marginHorizontal: 16,
+    marginHorizontal: 8,
     marginBottom: 8,
   },
   pinnedListHeader: {
