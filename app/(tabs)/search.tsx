@@ -79,6 +79,7 @@ export default function SearchScreen() {
   const [resultsLimit, setResultsLimit] = useState(10);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [categoryDropdownLayout, setCategoryDropdownLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [resultsMode, setResultsMode] = useState<'aligned' | 'unaligned'>('aligned');
 
   // Fetch Firebase businesses and public users on mount
@@ -340,7 +341,8 @@ export default function SearchScreen() {
   }, []);
 
   const handleGenerateResults = useCallback(() => {
-    const allProducts = [...MOCK_PRODUCTS, ...LOCAL_BUSINESSES];
+    // Only use MOCK_PRODUCTS - exclude LOCAL_BUSINESSES as they're mock data without real business accounts
+    const allProducts = [...MOCK_PRODUCTS];
     const allSelectedValues = [...selectedSupportValues, ...selectedRejectValues];
 
     if (allSelectedValues.length === 0) {
@@ -650,9 +652,9 @@ export default function SearchScreen() {
 
   const getAlignmentColor = (score: number | undefined) => {
     const normalizedScore = score ?? 50;
-    if (normalizedScore >= 70) return Colors.success;
-    if (normalizedScore >= 40) return Colors.neutral;
-    return Colors.danger;
+    if (normalizedScore > 55) return colors.primary; // Blue for aligned
+    if (normalizedScore >= 45) return Colors.neutral; // Grey for neutral (45-55)
+    return Colors.danger; // Red/pink for unaligned
   };
 
   const getAlignmentIcon = (score: number | undefined) => {
@@ -1009,7 +1011,12 @@ export default function SearchScreen() {
         <View style={styles.categoryDropdownContainer}>
           <TouchableOpacity
             style={[styles.categoryDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-            onPress={() => setCategoryModalVisible(true)}
+            onPress={(e) => {
+              e.currentTarget.measure((x, y, width, height, pageX, pageY) => {
+                setCategoryDropdownLayout({ x: pageX, y: pageY, width, height });
+                setCategoryModalVisible(true);
+              });
+            }}
             activeOpacity={0.7}
           >
             <Text style={[styles.categoryDropdownText, { color: selectedCategory ? colors.text : colors.textSecondary }]}>
@@ -1576,15 +1583,30 @@ export default function SearchScreen() {
         </View>
       </Modal>
 
-      {/* Category Selection Modal */}
+      {/* Category Dropdown Menu */}
       <Modal
         visible={categoryModalVisible}
-        animationType="slide"
+        animationType="none"
         transparent
         onRequestClose={() => setCategoryModalVisible(false)}
       >
-        <View style={styles.categoryModalOverlay}>
-          <View style={[styles.categoryModalContent, { backgroundColor: colors.background }]}>
+        <TouchableOpacity
+          style={styles.categoryDropdownOverlay}
+          activeOpacity={1}
+          onPress={() => setCategoryModalVisible(false)}
+        >
+          <View
+            style={[
+              styles.categoryDropdownMenu,
+              {
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+                top: categoryDropdownLayout.y + categoryDropdownLayout.height + 4,
+                left: categoryDropdownLayout.x,
+                width: categoryDropdownLayout.width,
+              }
+            ]}
+          >
             {[
               { key: 'ideology', label: 'Ideology' },
               { key: 'person', label: 'Person' },
@@ -1594,20 +1616,20 @@ export default function SearchScreen() {
             ].map(category => (
               <TouchableOpacity
                 key={category.key}
-                style={[styles.categoryModalItem, { borderBottomColor: colors.border }]}
+                style={[styles.categoryDropdownItem, { borderBottomColor: colors.border }]}
                 onPress={() => {
                   setSelectedCategory(category.key);
                   setCategoryModalVisible(false);
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.categoryModalText, { color: selectedCategory === category.key ? colors.primary : colors.text }]}>
+                <Text style={[styles.categoryDropdownItemText, { color: selectedCategory === category.key ? colors.primary : colors.text }]}>
                   {category.label}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
@@ -2442,23 +2464,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700' as const,
   },
-  categoryModalOverlay: {
+  categoryDropdownOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
   },
-  categoryModalContent: {
-    maxHeight: '50%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 20,
+  categoryDropdownMenu: {
+    position: 'absolute',
+    borderWidth: 1,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    overflow: 'hidden',
   },
-  categoryModalItem: {
-    padding: 18,
+  categoryDropdownItem: {
+    padding: 16,
     borderBottomWidth: 1,
   },
-  categoryModalText: {
-    fontSize: 17,
+  categoryDropdownItemText: {
+    fontSize: 16,
     fontWeight: '500' as const,
   },
 });
