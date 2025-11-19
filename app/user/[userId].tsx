@@ -340,10 +340,50 @@ export default function UserProfileScreen() {
 
             {/* Show alignment score only when viewing another user's profile */}
             {!isOwnProfile && (
-              <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.background }]}>
-                <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
-                  {alignmentData.alignmentStrength}
-                </Text>
+              <View style={{ alignItems: 'center', gap: 8 }}>
+                <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.background }]}>
+                  <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
+                    {alignmentData.alignmentStrength}
+                  </Text>
+                </View>
+                {/* Action menu button below score badge */}
+                <TouchableOpacity
+                  style={[styles.profileActionButton, { backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => {
+                    Alert.alert(
+                      userName,
+                      'Choose an action',
+                      [
+                        {
+                          text: 'Follow',
+                          onPress: () => Alert.alert('Coming Soon', 'Follow functionality will be available soon'),
+                        },
+                        {
+                          text: 'Share',
+                          onPress: () => {
+                            const shareUrl = `${Platform.OS === 'web' ? window.location.origin : 'https://upright.money'}/user/${userId}`;
+                            if (Platform.OS === 'web') {
+                              navigator.clipboard.writeText(shareUrl);
+                              Alert.alert('Link Copied', 'Profile link copied to clipboard');
+                            } else {
+                              // Native share
+                              Alert.alert('Share', `Share ${userName}'s profile`);
+                            }
+                          },
+                        },
+                        {
+                          text: 'Cancel',
+                          style: 'cancel',
+                        },
+                      ]
+                    );
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={{ transform: [{ rotate: '90deg' }] }}>
+                    <MoreVertical size={18} color={colors.text} strokeWidth={2} />
+                  </View>
+                </TouchableOpacity>
               </View>
             )}
 
@@ -569,6 +609,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  profileActionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   userDescription: {
     fontSize: 12,
