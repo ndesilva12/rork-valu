@@ -73,11 +73,12 @@ export default function SearchScreen() {
   // Value Machine state
   const [activeTab, setActiveTab] = useState<'value-machine' | 'discover-users'>('discover-users');
   const [selectedSupportValues, setSelectedSupportValues] = useState<string[]>([]);
-  const [selectedAvoidValues, setSelectedAvoidValues] = useState<string[]>([]);
+  const [selectedRejectValues, setSelectedRejectValues] = useState<string[]>([]);
   const [valueMachineResults, setValueMachineResults] = useState<Product[]>([]);
   const [showingResults, setShowingResults] = useState(false);
   const [resultsLimit, setResultsLimit] = useState(10);
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('ideology');
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
 
   // Fetch Firebase businesses and public users on mount
   useEffect(() => {
@@ -314,19 +315,19 @@ export default function SearchScreen() {
   }, []);
 
   // Value Machine handlers
-  const handleValueToggle = useCallback((valueId: string, type: 'support' | 'avoid') => {
+  const handleValueToggle = useCallback((valueId: string, type: 'support' | 'reject') => {
     if (type === 'support') {
       setSelectedSupportValues(prev => {
         if (prev.includes(valueId)) {
           return prev.filter(id => id !== valueId);
         } else {
-          // Remove from avoid if it's there
-          setSelectedAvoidValues(prevAvoid => prevAvoid.filter(id => id !== valueId));
+          // Remove from reject if it's there
+          setSelectedRejectValues(prevReject => prevReject.filter(id => id !== valueId));
           return [...prev, valueId];
         }
       });
     } else {
-      setSelectedAvoidValues(prev => {
+      setSelectedRejectValues(prev => {
         if (prev.includes(valueId)) {
           return prev.filter(id => id !== valueId);
         } else {
@@ -338,27 +339,33 @@ export default function SearchScreen() {
     }
   }, []);
 
+  const handleResetSelections = useCallback(() => {
+    setSelectedSupportValues([]);
+    setSelectedRejectValues([]);
+    setShowingResults(false);
+  }, []);
+
   const handleGenerateResults = useCallback(() => {
     const allProducts = [...MOCK_PRODUCTS, ...LOCAL_BUSINESSES];
-    const allSelectedValues = [...selectedSupportValues, ...selectedAvoidValues];
+    const allSelectedValues = [...selectedSupportValues, ...selectedRejectValues];
 
     if (allSelectedValues.length === 0) {
-      Alert.alert('No Values Selected', 'Please select at least one value to support or avoid.');
+      Alert.alert('No Values Selected', 'Please select at least one value to support or reject.');
       return;
     }
 
     // Score each product based on selected values
     const scored = allProducts.map(product => {
       let totalSupportScore = 0;
-      let totalAvoidScore = 0;
+      let totalRejectScore = 0;
       const matchingValues = new Set<string>();
       const positionSum: number[] = [];
 
       product.valueAlignments.forEach(alignment => {
         const isUserSupporting = selectedSupportValues.includes(alignment.valueId);
-        const isUserAvoiding = selectedAvoidValues.includes(alignment.valueId);
+        const isUserRejecting = selectedRejectValues.includes(alignment.valueId);
 
-        if (!isUserSupporting && !isUserAvoiding) return;
+        if (!isUserSupporting && !isUserRejecting) return;
 
         matchingValues.add(alignment.valueId);
         positionSum.push(alignment.position);
@@ -369,15 +376,15 @@ export default function SearchScreen() {
           if (score > 0) {
             totalSupportScore += score;
           } else {
-            totalAvoidScore += Math.abs(score);
+            totalRejectScore += Math.abs(score);
           }
         }
 
-        if (isUserAvoiding) {
+        if (isUserRejecting) {
           if (score < 0) {
             totalSupportScore += Math.abs(score);
           } else {
-            totalAvoidScore += score;
+            totalRejectScore += score;
           }
         }
       });
@@ -386,7 +393,7 @@ export default function SearchScreen() {
       const totalPositionSum = positionSum.reduce((a, b) => a + b, 0) + (valuesWhereNotAppears * 11);
       const avgPosition = allSelectedValues.length > 0 ? totalPositionSum / allSelectedValues.length : 11;
 
-      const isPositivelyAligned = totalSupportScore > totalAvoidScore && totalSupportScore > 0;
+      const isPositivelyAligned = totalSupportScore > totalRejectScore && totalSupportScore > 0;
 
       let alignmentStrength: number;
       if (isPositivelyAligned) {
@@ -398,7 +405,7 @@ export default function SearchScreen() {
       return {
         product,
         totalSupportScore,
-        totalAvoidScore,
+        totalRejectScore,
         matchingValuesCount: matchingValues.size,
         alignmentStrength,
         isPositivelyAligned
@@ -414,7 +421,7 @@ export default function SearchScreen() {
     setValueMachineResults(alignedSorted);
     setShowingResults(true);
     setResultsLimit(10);
-  }, [selectedSupportValues, selectedAvoidValues]);
+  }, [selectedSupportValues, selectedRejectValues]);
 
   const handleLoadMore = useCallback(() => {
     if (resultsLimit === 10) {
@@ -850,6 +857,40 @@ export default function SearchScreen() {
     );
   };
 
+  const renderResultListItem = ({ item }: { item: Product }) => {
+    const alignmentColor = getAlignmentColor(item.alignmentScore);
+    const normalizedScore = normalizeScore(item.alignmentScore);
+
+    return (
+      <TouchableOpacity
+        style={[styles.resultListItem, { borderBottomColor: colors.border }]}
+        onPress={() => handleProductPress(item)}
+        activeOpacity={0.7}
+      >
+        <Image
+          source={{ uri: getLogoUrl(item.website || '') }}
+          style={styles.resultListImage}
+          contentFit="cover"
+          transition={200}
+          cachePolicy="memory-disk"
+        />
+        <View style={styles.resultListInfo}>
+          <Text style={[styles.resultListBrand, { color: colors.text }]}>
+            {item.brand}
+          </Text>
+          <Text style={[styles.resultListName, { color: colors.textSecondary }]} numberOfLines={1}>
+            {item.name}
+          </Text>
+        </View>
+        <View style={[styles.resultListScore, { borderColor: alignmentColor, backgroundColor: alignmentColor + '15' }]}>
+          <Text style={[styles.resultListScoreText, { color: alignmentColor }]}>
+            {normalizedScore}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   const renderValueMachineSection = () => {
     const categories: Array<{ key: string; label: string }> = [
       { key: 'ideology', label: 'Ideology' },
@@ -859,6 +900,8 @@ export default function SearchScreen() {
       { key: 'nation', label: 'Nation' },
     ];
 
+    const selectedCategoryLabel = categories.find(c => c.key === selectedCategory)?.label || 'Select Category';
+
     if (showingResults) {
       const displayedResults = valueMachineResults.slice(0, resultsLimit);
       const canLoadMore = resultsLimit < 30 && valueMachineResults.length > resultsLimit;
@@ -866,25 +909,23 @@ export default function SearchScreen() {
       return (
         <View style={styles.valueMachineContainer}>
           <View style={styles.valueMachineHeader}>
-            <Text style={[styles.valueMachineTitle, { color: colors.text }]}>
-              Top Results
-            </Text>
-            <TouchableOpacity
-              onPress={() => {
-                setShowingResults(false);
-                setSelectedSupportValues([]);
-                setSelectedAvoidValues([]);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.resetButton, { color: colors.primary }]}>Reset</Text>
-            </TouchableOpacity>
+            <View style={styles.valueMachineHeaderRow}>
+              <Text style={[styles.valueMachineTitle, { color: colors.text }]}>
+                Top Results
+              </Text>
+              <TouchableOpacity
+                onPress={handleResetSelections}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.resetButton, { color: colors.primary }]}>Reset</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           <FlatList
             data={displayedResults}
-            renderItem={renderProduct}
+            renderItem={renderResultListItem}
             keyExtractor={item => item.id}
-            contentContainerStyle={[styles.listContent, { paddingBottom: 100 }]}
+            contentContainerStyle={{ paddingBottom: 100 }}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               <View style={styles.emptyState}>
@@ -912,6 +953,8 @@ export default function SearchScreen() {
       );
     }
 
+    const currentCategoryValues = AVAILABLE_VALUES[selectedCategory as keyof typeof AVAILABLE_VALUES] || [];
+
     return (
       <ScrollView
         style={styles.valueMachineContainer}
@@ -919,86 +962,91 @@ export default function SearchScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.valueMachineHeader}>
-          <Text style={[styles.valueMachineTitle, { color: colors.text }]}>
-            Select Values
-          </Text>
-          <Text style={[styles.valueMachineSubtitle, { color: colors.textSecondary }]}>
-            Choose values to support or avoid
-          </Text>
-        </View>
-
-        {categories.map(category => {
-          const values = AVAILABLE_VALUES[category.key as keyof typeof AVAILABLE_VALUES] || [];
-          const isExpanded = expandedCategory === category.key;
-
-          return (
-            <View key={category.key} style={styles.categoryContainer}>
+          <View style={styles.valueMachineHeaderRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.valueMachineTitle, { color: colors.text }]}>
+                Select Values
+              </Text>
+              <Text style={[styles.valueMachineSubtitle, { color: colors.textSecondary }]}>
+                Generate brands based on specific values
+              </Text>
+            </View>
+            {(selectedSupportValues.length > 0 || selectedRejectValues.length > 0) && (
               <TouchableOpacity
-                style={[styles.categoryHeader, { backgroundColor: colors.backgroundSecondary }]}
-                onPress={() => setExpandedCategory(isExpanded ? null : category.key)}
+                onPress={handleResetSelections}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.categoryLabel, { color: colors.text }]}>
-                  {category.label} ({values.length})
-                </Text>
-                <Text style={[styles.categoryIcon, { color: colors.textSecondary }]}>
-                  {isExpanded ? '−' : '+'}
-                </Text>
+                <Text style={[styles.resetButton, { color: colors.primary }]}>Reset</Text>
               </TouchableOpacity>
+            )}
+          </View>
+        </View>
 
-              {isExpanded && (
-                <View style={styles.valuesContainer}>
-                  {values.map(value => {
-                    const isSupported = selectedSupportValues.includes(value.id);
-                    const isAvoided = selectedAvoidValues.includes(value.id);
+        {/* Category Dropdown */}
+        <View style={styles.categoryDropdownContainer}>
+          <TouchableOpacity
+            style={[styles.categoryDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+            onPress={() => setCategoryModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.categoryDropdownText, { color: colors.text }]}>
+              {selectedCategoryLabel}
+            </Text>
+            <Text style={[styles.categoryDropdownText, { color: colors.textSecondary }]}>
+              ▼
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-                    return (
-                      <View key={value.id} style={[styles.valueRow, { borderBottomColor: colors.border }]}>
-                        <Text style={[styles.valueName, { color: colors.text }]} numberOfLines={1}>
-                          {value.name}
-                        </Text>
-                        <View style={styles.valueActions}>
-                          <TouchableOpacity
-                            style={[
-                              styles.valueButton,
-                              isSupported && { backgroundColor: colors.success + '20', borderColor: colors.success }
-                            ]}
-                            onPress={() => handleValueToggle(value.id, 'support')}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[
-                              styles.valueButtonText,
-                              { color: isSupported ? colors.success : colors.textSecondary }
-                            ]}>
-                              Support
-                            </Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[
-                              styles.valueButton,
-                              isAvoided && { backgroundColor: colors.danger + '20', borderColor: colors.danger }
-                            ]}
-                            onPress={() => handleValueToggle(value.id, 'avoid')}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[
-                              styles.valueButtonText,
-                              { color: isAvoided ? colors.danger : colors.textSecondary }
-                            ]}>
-                              Avoid
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    );
-                  })}
+        {/* Values List */}
+        <View style={styles.categoryContainer}>
+          {currentCategoryValues.map(value => {
+            const isSupported = selectedSupportValues.includes(value.id);
+            const isRejected = selectedRejectValues.includes(value.id);
+
+            return (
+              <View key={value.id} style={[styles.valueRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.valueName, { color: colors.text }]} numberOfLines={1}>
+                  {value.name}
+                </Text>
+                <View style={styles.valueActions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.valueButton,
+                      isSupported && { backgroundColor: colors.success + '20', borderColor: colors.success }
+                    ]}
+                    onPress={() => handleValueToggle(value.id, 'support')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      styles.valueButtonText,
+                      { color: isSupported ? colors.success : colors.textSecondary }
+                    ]}>
+                      Support
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.valueButton,
+                      isRejected && { backgroundColor: colors.danger + '20', borderColor: colors.danger }
+                    ]}
+                    onPress={() => handleValueToggle(value.id, 'reject')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      styles.valueButtonText,
+                      { color: isRejected ? colors.danger : colors.textSecondary }
+                    ]}>
+                      Reject
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-              )}
-            </View>
-          );
-        })}
+              </View>
+            );
+          })}
+        </View>
 
-        {(selectedSupportValues.length > 0 || selectedAvoidValues.length > 0) && (
+        {(selectedSupportValues.length > 0 || selectedRejectValues.length > 0) && (
           <View style={styles.generateContainer}>
             <TouchableOpacity
               style={[styles.generateButton, { backgroundColor: colors.primary }]}
@@ -1010,7 +1058,7 @@ export default function SearchScreen() {
               </Text>
             </TouchableOpacity>
             <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
-              {selectedSupportValues.length} supported • {selectedAvoidValues.length} avoided
+              {selectedSupportValues.length} supported • {selectedRejectValues.length} rejected
             </Text>
           </View>
         )}
@@ -1516,6 +1564,40 @@ export default function SearchScreen() {
               </View>
             </View>
           ) : null}
+        </View>
+      </Modal>
+
+      {/* Category Selection Modal */}
+      <Modal
+        visible={categoryModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setCategoryModalVisible(false)}
+      >
+        <View style={styles.categoryModalOverlay}>
+          <View style={[styles.categoryModalContent, { backgroundColor: colors.background }]}>
+            {[
+              { key: 'ideology', label: 'Ideology' },
+              { key: 'person', label: 'Person' },
+              { key: 'social_issue', label: 'Social Issue' },
+              { key: 'religion', label: 'Religion' },
+              { key: 'nation', label: 'Nation' },
+            ].map(category => (
+              <TouchableOpacity
+                key={category.key}
+                style={[styles.categoryModalItem, { borderBottomColor: colors.border }]}
+                onPress={() => {
+                  setSelectedCategory(category.key);
+                  setCategoryModalVisible(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.categoryModalText, { color: selectedCategory === category.key ? colors.primary : colors.text }]}>
+                  {category.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       </Modal>
     </View>
@@ -2195,7 +2277,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
   },
   tabText: {
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: '600' as const,
   },
   activeTabText: {
@@ -2210,41 +2292,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 16,
+  },
+  valueMachineHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8,
   },
   valueMachineTitle: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '700' as const,
   },
   valueMachineSubtitle: {
-    fontSize: 14,
-    marginTop: 4,
+    fontSize: 13,
+    marginTop: 0,
   },
   resetButton: {
     fontSize: 15,
     fontWeight: '600' as const,
   },
-  categoryContainer: {
+  categoryDropdownContainer: {
     marginHorizontal: 16,
-    marginBottom: 8,
-    borderRadius: 12,
-    overflow: 'hidden',
+    marginBottom: 16,
   },
-  categoryHeader: {
+  categoryDropdown: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
   },
-  categoryLabel: {
+  categoryDropdownText: {
     fontSize: 16,
     fontWeight: '600' as const,
   },
-  categoryIcon: {
-    fontSize: 20,
-    fontWeight: '600' as const,
+  categoryContainer: {
+    marginHorizontal: 16,
+    marginBottom: 8,
   },
   valuesContainer: {
     paddingHorizontal: 16,
@@ -2308,5 +2393,62 @@ const styles = StyleSheet.create({
   loadMoreText: {
     fontSize: 16,
     fontWeight: '600' as const,
+  },
+
+  // List-style results
+  resultListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+  },
+  resultListImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  resultListInfo: {
+    flex: 1,
+  },
+  resultListBrand: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 2,
+  },
+  resultListName: {
+    fontSize: 13,
+  },
+  resultListScore: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resultListScoreText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  categoryModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  categoryModalContent: {
+    maxHeight: '50%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+  },
+  categoryModalItem: {
+    padding: 18,
+    borderBottomWidth: 1,
+  },
+  categoryModalText: {
+    fontSize: 17,
+    fontWeight: '500' as const,
   },
 });
