@@ -25,7 +25,8 @@ import { BusinessInfo, Cause } from '@/types';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateAlignmentScore } from '@/services/firebase/businessService';
 import { getUserLists, addEntryToList } from '@/services/firebase/listService';
-import { calculateSimilarityScore, getSimilarityLabel } from '@/lib/scoring';
+import { calculateSimilarityScore, getSimilarityLabel, normalizeSimilarityScores } from '@/lib/scoring';
+import { getAllUserBusinesses } from '@/services/firebase/businessService';
 
 interface BusinessUser {
   id: string;
@@ -50,6 +51,7 @@ export default function BusinessDetailScreen() {
   const [userLists, setUserLists] = useState<any[]>([]);
   const [businessOwnerLists, setBusinessOwnerLists] = useState<any[]>([]);
   const [loadingBusinessLists, setLoadingBusinessLists] = useState(true);
+  const [allBusinesses, setAllBusinesses] = useState<BusinessUser[]>([]);
 
   useEffect(() => {
     const fetchBusiness = async () => {
@@ -188,6 +190,19 @@ export default function BusinessDetailScreen() {
     loadBusinessOwnerLists();
   }, [id]);
 
+  // Load all businesses for normalization
+  useEffect(() => {
+    const fetchAllBusinesses = async () => {
+      try {
+        const businesses = await getAllUserBusinesses();
+        setAllBusinesses(businesses);
+      } catch (error) {
+        console.error('Error fetching all businesses:', error);
+      }
+    };
+    fetchAllBusinesses();
+  }, []);
+
   const handleShopPress = async () => {
     if (!business?.businessInfo.website) return;
     try {
@@ -295,13 +310,25 @@ export default function BusinessDetailScreen() {
     alignmentStrength: 50
   };
 
-  // Calculate similarity score using new scoring system
+  // Calculate similarity score using new scoring system with normalization
+  // Match the normalization logic from home tab to ensure scores are consistent
   let similarityScore = 0;
   let similarityLabel = 'Different';
   let matchingValues: string[] = [];
 
-  if (business && profile.causes) {
-    similarityScore = calculateSimilarityScore(profile.causes, business.causes || []);
+  if (business && profile.causes && allBusinesses.length > 0) {
+    // Calculate scores for all businesses
+    const businessesWithScores = allBusinesses.map(b => ({
+      ...b,
+      alignmentScore: calculateSimilarityScore(profile.causes || [], b.causes || [])
+    }));
+
+    // Normalize similarity scores to 1-99 range with median at 50 (matching home tab)
+    const normalizedBusinesses = normalizeSimilarityScores(businessesWithScores);
+
+    // Find the score for the current business
+    const currentBusinessScore = normalizedBusinesses.find(b => b.id === business.id);
+    similarityScore = currentBusinessScore?.alignmentScore || 50;
     similarityLabel = getSimilarityLabel(similarityScore);
 
     // Find values that both user and business have
@@ -424,24 +451,19 @@ export default function BusinessDetailScreen() {
                     onPress={handleFollow}
                     activeOpacity={0.7}
                   >
-                    <UserPlus size={18} color={colors.primary} strokeWidth={2.5} />
+                    <UserPlus size={22} color={colors.primary} strokeWidth={2.5} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.addToListButton, { backgroundColor: colors.background }]}
                     onPress={handleOpenAddModal}
                     activeOpacity={0.7}
                   >
-                    <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+                    <Plus size={22} color={colors.primary} strokeWidth={2.5} />
                   </TouchableOpacity>
                 </View>
               </View>
               <View style={styles.categoryRow}>
                 <Text style={[styles.category, { color: colors.primary }]}>{business.businessInfo.category}</Text>
-                {profile.causes && profile.causes.length > 0 && similarityScore > 0 && (
-                  <View style={[styles.scoreBadge, { backgroundColor: alignmentColor + '15', borderColor: alignmentColor }]}>
-                    <Text style={[styles.scoreBadgeText, { color: alignmentColor }]}>{similarityLabel}</Text>
-                  </View>
-                )}
               </View>
               {getPrimaryLocation() && (
                 <View style={styles.locationRow}>
@@ -996,16 +1018,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   followButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addToListButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },

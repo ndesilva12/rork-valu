@@ -22,7 +22,7 @@ import { useData } from '@/contexts/DataContext';
 import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { getLogoUrl } from '@/lib/logo';
 import { getUserLists, addEntryToList } from '@/services/firebase/listService';
-import { calculateBrandScore, getBrandScoreLabel, getBrandScoreColor } from '@/lib/scoring';
+import { calculateBrandScore, getBrandScoreLabel, getBrandScoreColor, normalizeBrandScores } from '@/lib/scoring';
 
 export default function BrandDetailScreen() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
@@ -317,9 +317,26 @@ export default function BrandDetailScreen() {
     }
   };
 
-  // Calculate alignment score using new scoring system
+  // Calculate alignment score using new scoring system with normalization
   // Note: valuesMatrix contains brand NAMES not IDs in support/oppose arrays
-  const brandScore = brand && brand.name ? calculateBrandScore(brand.name, profile.causes || [], valuesMatrix) : 50;
+  // Match the normalization logic from home tab to ensure scores are consistent
+  const brandScore = useMemo(() => {
+    if (!brand || !brand.name || !allBrands || allBrands.length === 0) return 50;
+
+    // Calculate scores for all brands
+    const brandsWithScores = allBrands.map(b => {
+      const score = calculateBrandScore(b.name, profile.causes || [], valuesMatrix);
+      return { brand: b, score };
+    });
+
+    // Normalize scores to 1-99 range (matching home tab)
+    const normalizedBrands = normalizeBrandScores(brandsWithScores);
+
+    // Find the score for the current brand
+    const currentBrandScore = normalizedBrands.find(b => b.brand.id === brand.id);
+    return currentBrandScore?.score || 50;
+  }, [brand, allBrands, profile.causes, valuesMatrix]);
+
   const scoreLabel = getBrandScoreLabel(brandScore);
   const scoreColor = getBrandScoreColor(brandScore, colors);
 
@@ -463,24 +480,19 @@ export default function BrandDetailScreen() {
                     onPress={handleFollow}
                     activeOpacity={0.7}
                   >
-                    <UserPlus size={18} color={colors.primary} strokeWidth={2.5} />
+                    <UserPlus size={22} color={colors.primary} strokeWidth={2.5} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.addToListButton, { backgroundColor: colors.background }]}
                     onPress={handleOpenAddModal}
                     activeOpacity={0.7}
                   >
-                    <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+                    <Plus size={22} color={colors.primary} strokeWidth={2.5} />
                   </TouchableOpacity>
                 </View>
               </View>
               <View style={styles.categoryRow}>
                 <Text style={[styles.category, { color: colors.primary }]}>{brand.category}</Text>
-                {profile.causes && profile.causes.length > 0 && (
-                  <View style={[styles.scoreBadge, { backgroundColor: scoreColor + '15', borderColor: scoreColor }]}>
-                    <Text style={[styles.scoreBadgeText, { color: scoreColor }]}>{scoreLabel}</Text>
-                  </View>
-                )}
               </View>
               {brand.headquarters && (
                 <Text style={[styles.headquarters, { color: colors.textSecondary }]}>{brand.headquarters}</Text>
@@ -931,16 +943,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   followButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addToListButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
