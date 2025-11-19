@@ -1395,7 +1395,7 @@ export default function UnifiedLibrary({
                             id: listId,
                             name: systemListName,
                             description: systemListDescription,
-                            isPublic: listId === 'aligned' ? alignedListPublic : unalignedListPublic,
+                            isPublic: false, // System lists are always private
                           } as UserList;
                           handleShareList(mockList);
                         } else if (currentList) {
