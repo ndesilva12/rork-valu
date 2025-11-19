@@ -610,6 +610,7 @@ const styles = StyleSheet.create({
     maxWidth: 768,
     alignSelf: 'center',
     width: '100%',
+    paddingHorizontal: 8, // Extend content closer to edges on mobile browsers
   },
   stickyHeaderContainer: {
     borderBottomWidth: 1,
