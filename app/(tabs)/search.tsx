@@ -77,8 +77,9 @@ export default function SearchScreen() {
   const [valueMachineResults, setValueMachineResults] = useState<Product[]>([]);
   const [showingResults, setShowingResults] = useState(false);
   const [resultsLimit, setResultsLimit] = useState(10);
-  const [selectedCategory, setSelectedCategory] = useState<string>('ideology');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [resultsMode, setResultsMode] = useState<'aligned' | 'unaligned'>('aligned');
 
   // Fetch Firebase businesses and public users on mount
   useEffect(() => {
@@ -315,29 +316,22 @@ export default function SearchScreen() {
   }, []);
 
   // Value Machine handlers
-  const handleValueToggle = useCallback((valueId: string, type: 'support' | 'reject') => {
-    if (type === 'support') {
-      setSelectedSupportValues(prev => {
-        if (prev.includes(valueId)) {
-          return prev.filter(id => id !== valueId);
-        } else {
-          // Remove from reject if it's there
-          setSelectedRejectValues(prevReject => prevReject.filter(id => id !== valueId));
-          return [...prev, valueId];
-        }
-      });
+  const handleValueToggle = useCallback((valueId: string) => {
+    const isSupported = selectedSupportValues.includes(valueId);
+    const isRejected = selectedRejectValues.includes(valueId);
+
+    if (!isSupported && !isRejected) {
+      // First tap: Support
+      setSelectedSupportValues(prev => [...prev, valueId]);
+    } else if (isSupported) {
+      // Second tap: Reject
+      setSelectedSupportValues(prev => prev.filter(id => id !== valueId));
+      setSelectedRejectValues(prev => [...prev, valueId]);
     } else {
-      setSelectedRejectValues(prev => {
-        if (prev.includes(valueId)) {
-          return prev.filter(id => id !== valueId);
-        } else {
-          // Remove from support if it's there
-          setSelectedSupportValues(prevSupport => prevSupport.filter(id => id !== valueId));
-          return [...prev, valueId];
-        }
-      });
+      // Third tap: Unselect
+      setSelectedRejectValues(prev => prev.filter(id => id !== valueId));
     }
-  }, []);
+  }, [selectedSupportValues, selectedRejectValues]);
 
   const handleResetSelections = useCallback(() => {
     setSelectedSupportValues([]);
@@ -412,15 +406,15 @@ export default function SearchScreen() {
       };
     });
 
-    // Sort by alignment strength and filter positively aligned
-    const alignedSorted = scored
-      .filter(s => s.isPositivelyAligned)
+    // Sort all results by alignment strength
+    const allSorted = scored
       .sort((a, b) => b.alignmentStrength - a.alignmentStrength)
-      .map(s => ({ ...s.product, alignmentScore: s.alignmentStrength }));
+      .map(s => ({ ...s.product, alignmentScore: s.alignmentStrength, isPositivelyAligned: s.isPositivelyAligned }));
 
-    setValueMachineResults(alignedSorted);
+    setValueMachineResults(allSorted);
     setShowingResults(true);
     setResultsLimit(10);
+    setResultsMode('aligned');
   }, [selectedSupportValues, selectedRejectValues]);
 
   const handleLoadMore = useCallback(() => {
@@ -903,16 +897,50 @@ export default function SearchScreen() {
     const selectedCategoryLabel = categories.find(c => c.key === selectedCategory)?.label || 'Select Category';
 
     if (showingResults) {
-      const displayedResults = valueMachineResults.slice(0, resultsLimit);
-      const canLoadMore = resultsLimit < 30 && valueMachineResults.length > resultsLimit;
+      // Filter and sort based on mode
+      const filteredResults = resultsMode === 'aligned'
+        ? valueMachineResults.filter((item: any) => item.isPositivelyAligned !== false)
+        : [...valueMachineResults].filter((item: any) => item.isPositivelyAligned === false).sort((a, b) => a.alignmentScore - b.alignmentScore);
+
+      const displayedResults = filteredResults.slice(0, resultsLimit);
+      const canLoadMore = resultsLimit < 30 && filteredResults.length > resultsLimit;
 
       return (
         <View style={styles.valueMachineContainer}>
           <View style={styles.valueMachineHeader}>
             <View style={styles.valueMachineHeaderRow}>
-              <Text style={[styles.valueMachineTitle, { color: colors.text }]}>
-                Top Results
-              </Text>
+              <View style={styles.resultsModeToggle}>
+                <TouchableOpacity
+                  style={[
+                    styles.resultsModeButton,
+                    resultsMode === 'aligned' && { backgroundColor: colors.primary }
+                  ]}
+                  onPress={() => setResultsMode('aligned')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.resultsModeButtonText,
+                    { color: resultsMode === 'aligned' ? colors.white : colors.textSecondary }
+                  ]}>
+                    Aligned
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.resultsModeButton,
+                    resultsMode === 'unaligned' && { backgroundColor: colors.primary }
+                  ]}
+                  onPress={() => setResultsMode('unaligned')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.resultsModeButtonText,
+                    { color: resultsMode === 'unaligned' ? colors.white : colors.textSecondary }
+                  ]}>
+                    Unaligned
+                  </Text>
+                </TouchableOpacity>
+              </View>
               <TouchableOpacity
                 onPress={handleResetSelections}
                 activeOpacity={0.7}
@@ -963,14 +991,9 @@ export default function SearchScreen() {
       >
         <View style={styles.valueMachineHeader}>
           <View style={styles.valueMachineHeaderRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.valueMachineTitle, { color: colors.text }]}>
-                Select Values
-              </Text>
-              <Text style={[styles.valueMachineSubtitle, { color: colors.textSecondary }]}>
-                Generate brands based on specific values
-              </Text>
-            </View>
+            <Text style={[styles.valueMachineSubtitle, { color: colors.textSecondary }]}>
+              Generate results from specific values
+            </Text>
             {(selectedSupportValues.length > 0 || selectedRejectValues.length > 0) && (
               <TouchableOpacity
                 onPress={handleResetSelections}
@@ -989,7 +1012,7 @@ export default function SearchScreen() {
             onPress={() => setCategoryModalVisible(true)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.categoryDropdownText, { color: colors.text }]}>
+            <Text style={[styles.categoryDropdownText, { color: selectedCategory ? colors.text : colors.textSecondary }]}>
               {selectedCategoryLabel}
             </Text>
             <Text style={[styles.categoryDropdownText, { color: colors.textSecondary }]}>
@@ -998,53 +1021,39 @@ export default function SearchScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Values List */}
-        <View style={styles.categoryContainer}>
-          {currentCategoryValues.map(value => {
-            const isSupported = selectedSupportValues.includes(value.id);
-            const isRejected = selectedRejectValues.includes(value.id);
+        {/* Values Pills */}
+        {selectedCategory && (
+          <View style={styles.valuesPillsContainer}>
+            {currentCategoryValues.map(value => {
+              const isSupported = selectedSupportValues.includes(value.id);
+              const isRejected = selectedRejectValues.includes(value.id);
 
-            return (
-              <View key={value.id} style={[styles.valueRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.valueName, { color: colors.text }]} numberOfLines={1}>
-                  {value.name}
-                </Text>
-                <View style={styles.valueActions}>
-                  <TouchableOpacity
-                    style={[
-                      styles.valueButton,
-                      isSupported && { backgroundColor: colors.success + '20', borderColor: colors.success }
-                    ]}
-                    onPress={() => handleValueToggle(value.id, 'support')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      styles.valueButtonText,
-                      { color: isSupported ? colors.success : colors.textSecondary }
-                    ]}>
-                      Support
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.valueButton,
-                      isRejected && { backgroundColor: colors.danger + '20', borderColor: colors.danger }
-                    ]}
-                    onPress={() => handleValueToggle(value.id, 'reject')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      styles.valueButtonText,
-                      { color: isRejected ? colors.danger : colors.textSecondary }
-                    ]}>
-                      Reject
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            );
-          })}
-        </View>
+              let pillStyle = [styles.valuePill, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }];
+              let textStyle = [styles.valuePillText, { color: colors.text }];
+
+              if (isSupported) {
+                pillStyle = [styles.valuePill, { backgroundColor: colors.success + '20', borderColor: colors.success }];
+                textStyle = [styles.valuePillText, { color: colors.success }];
+              } else if (isRejected) {
+                pillStyle = [styles.valuePill, { backgroundColor: colors.danger + '20', borderColor: colors.danger }];
+                textStyle = [styles.valuePillText, { color: colors.danger }];
+              }
+
+              return (
+                <TouchableOpacity
+                  key={value.id}
+                  style={pillStyle}
+                  onPress={() => handleValueToggle(value.id)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={textStyle}>
+                    {value.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
 
         {(selectedSupportValues.length > 0 || selectedRejectValues.length > 0) && (
           <View style={styles.generateContainer}>
@@ -2331,35 +2340,36 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 8,
   },
-  valuesContainer: {
+  valuesPillsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    gap: 10,
   },
-  valueRow: {
+  valuePill: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  valuePillText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  resultsModeToggle: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  valueName: {
-    flex: 1,
-    fontSize: 15,
-    marginRight: 12,
-  },
-  valueActions: {
-    flexDirection: 'row',
+    backgroundColor: 'transparent',
+    borderRadius: 8,
+    overflow: 'hidden',
     gap: 8,
   },
-  valueButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+  resultsModeButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'transparent',
   },
-  valueButtonText: {
-    fontSize: 13,
+  resultsModeButtonText: {
+    fontSize: 14,
     fontWeight: '600' as const,
   },
   generateContainer: {
