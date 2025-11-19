@@ -23,13 +23,13 @@ import { Image } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import Colors, { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
+import { useData } from '@/contexts/DataContext';
 import { searchProducts } from '@/mocks/products';
 import { MOCK_PRODUCTS } from '@/mocks/products';
 import { LOCAL_BUSINESSES } from '@/mocks/local-businesses';
 import { Product } from '@/types';
 import { lookupBarcode, findBrandInDatabase, getBrandProduct } from '@/mocks/barcode-products';
 import { getLogoUrl } from '@/lib/logo';
-import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { getBusinessesAcceptingDiscounts, getAllUserBusinesses, BusinessUser, calculateAlignmentScore } from '@/services/firebase/businessService';
 import { getAllPublicUsers } from '@/services/firebase/userService';
 import { UserProfile } from '@/types';
@@ -240,8 +240,67 @@ export default function SearchScreen() {
   const router = useRouter();
   const { profile, addToSearchHistory, isDarkMode, clerkUser } = useUser();
   const library = useLibrary();
+  const { values: firebaseValues } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
   const { width } = useWindowDimensions();
+
+  // Helper function to normalize category names to handle variations and synonyms
+  const normalizeCategory = useCallback((category: string): string => {
+    const lower = category.toLowerCase().trim();
+    // Handle synonyms and variations
+    if (lower === 'person' || lower === 'people') return 'person';
+    if (lower === 'social_issue' || lower === 'social issues') return 'social_issue';
+    if (lower === 'nation' || lower === 'nations' || lower === 'places') return 'nation';
+    return lower;
+  }, []);
+
+  // Build available values from Firebase dynamically (same as values tab)
+  const availableValuesByCategory = useMemo(() => {
+    const valuesByCategory: Record<string, any[]> = {};
+
+    firebaseValues.forEach(value => {
+      // Normalize the category to handle case variations and synonyms
+      const normalizedCategory = normalizeCategory(value.category || 'other');
+
+      // Initialize category array if it doesn't exist
+      if (!valuesByCategory[normalizedCategory]) {
+        valuesByCategory[normalizedCategory] = [];
+      }
+
+      valuesByCategory[normalizedCategory].push({
+        id: value.id,
+        name: value.name,
+        category: normalizedCategory,
+      });
+    });
+
+    return valuesByCategory;
+  }, [firebaseValues, normalizeCategory]);
+
+  // Get all categories that have values
+  const availableCategories = useMemo(() => {
+    return Object.keys(availableValuesByCategory).sort();
+  }, [availableValuesByCategory]);
+
+  // Build categories with labels for dropdowns
+  const categoriesWithLabels = useMemo(() => {
+    const categoryLabels: Record<string, string> = {
+      'ideology': 'Ideology',
+      'social_issue': 'Social Issues',
+      'person': 'People',
+      'lifestyle': 'Lifestyle',
+      'nation': 'Places',
+      'religion': 'Religion',
+      'organization': 'Organizations',
+      'sports': 'Sports',
+      'corporation': 'Corporations',
+    };
+
+    return availableCategories.map(key => ({
+      key,
+      label: categoryLabels[key] || key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+    }));
+  }, [availableCategories]);
 
   // Helper function to normalize alignment scores to 0-100 range
   const normalizeScore = useCallback((score: number | undefined): number => {
@@ -499,11 +558,11 @@ export default function SearchScreen() {
 
   const getAlignmentReason = useCallback((matchingValues: string[]) => {
     if (!matchingValues || matchingValues.length === 0) return null;
-    const allValues = Object.values(AVAILABLE_VALUES).flat();
+    const allValues = Object.values(availableValuesByCategory).flat();
     const firstMatchingValue = allValues.find(v => v.id === matchingValues[0]);
     if (!firstMatchingValue) return null;
     return firstMatchingValue.name;
-  }, []);
+  }, [availableValuesByCategory]);
 
   // Value Machine handlers
   const handleValueToggle = useCallback((valueId: string) => {
@@ -1086,18 +1145,7 @@ export default function SearchScreen() {
   };
 
   const renderValueMachineSection = () => {
-    const categories: Array<{ key: string; label: string }> = [
-      { key: 'ideology', label: 'Ideology' },
-      { key: 'social_issue', label: 'Social Issues' },
-      { key: 'person', label: 'People' },
-      { key: 'lifestyle', label: 'Lifestyle' },
-      { key: 'nation', label: 'Places' },
-      { key: 'religion', label: 'Religion' },
-      { key: 'organization', label: 'Organizations' },
-      { key: 'sports', label: 'Sports' },
-    ];
-
-    const selectedCategoryLabel = categories.find(c => c.key === selectedCategory)?.label || 'Select Category';
+    const selectedCategoryLabel = categoriesWithLabels.find(c => c.key === selectedCategory)?.label || 'Select Category';
 
     if (showingResults) {
       // Filter and sort based on mode
@@ -1184,7 +1232,7 @@ export default function SearchScreen() {
       );
     }
 
-    const currentCategoryValues = AVAILABLE_VALUES[selectedCategory as keyof typeof AVAILABLE_VALUES] || [];
+    const currentCategoryValues = availableValuesByCategory[selectedCategory] || [];
 
     return (
       <ScrollView
@@ -1800,13 +1848,7 @@ export default function SearchScreen() {
               }
             ]}
           >
-            {[
-              { key: 'ideology', label: 'Ideology' },
-              { key: 'person', label: 'Person' },
-              { key: 'social_issue', label: 'Social Issue' },
-              { key: 'religion', label: 'Religion' },
-              { key: 'nation', label: 'Nation' },
-            ].map(category => (
+            {categoriesWithLabels.map(category => (
               <TouchableOpacity
                 key={category.key}
                 style={[styles.categoryDropdownItem, { borderBottomColor: colors.border }]}
