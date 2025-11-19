@@ -37,6 +37,7 @@ import {
 import { lightColors, darkColors } from '@/constants/colors';
 import { UserList, ListEntry } from '@/types/library';
 import { useLibrary } from '@/contexts/LibraryContext';
+import { useData } from '@/contexts/DataContext';
 import EndorsedBadge from '@/components/EndorsedBadge';
 import { getLogoUrl } from '@/lib/logo';
 import { Product } from '@/types';
@@ -90,6 +91,7 @@ export default function UnifiedLibrary({
   const library = useLibrary();
   const { profile } = useUser();
   const router = useRouter();
+  const { brands } = useData();
 
   // Local state for independent expansion in each location
   const [localExpandedListId, setLocalExpandedListId] = useState<string | null>(null);
@@ -462,11 +464,14 @@ export default function UnifiedLibrary({
             return renderBrandCard(brand, 'support');
           }
 
-          // Brand not in aligned/unaligned arrays - render using entry data
-          // Get brand name from multiple possible fields
-          const brandName = (entry as any).brandName || (entry as any).name || 'Unknown Brand';
-          const brandCategory = (entry as any).brandCategory || (entry as any).category;
-          const logoUrl = (entry as any).logoUrl || getLogoUrl((entry as any).website || '');
+          // Brand not in aligned/unaligned arrays (middle-scoring brands)
+          // Look up full brand data from Firebase
+          const fullBrand = brands.find(b => b.id === entry.brandId);
+          const brandName = fullBrand?.name || (entry as any).brandName || (entry as any).name || 'Unknown Brand';
+          const brandCategory = fullBrand?.category || (entry as any).brandCategory || (entry as any).category || 'Uncategorized';
+          const logoUrl = getLogoUrl(fullBrand?.website || (entry as any).website || '');
+          const alignmentScore = scoredBrands.get(entry.brandId) || 50;
+          const scoreColor = alignmentScore >= 50 ? colors.primary : colors.danger;
 
           return (
             <TouchableOpacity
@@ -496,11 +501,14 @@ export default function UnifiedLibrary({
                   <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
                     {brandName}
                   </Text>
-                  {brandCategory && (
-                    <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {brandCategory}
-                    </Text>
-                  )}
+                  <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                    {brandCategory}
+                  </Text>
+                </View>
+                <View style={styles.brandScoreContainer}>
+                  <Text style={[styles.brandScore, { color: scoreColor }]}>
+                    {alignmentScore}
+                  </Text>
                 </View>
                 {(mode === 'edit' || mode === 'view') && (
                   <TouchableOpacity
