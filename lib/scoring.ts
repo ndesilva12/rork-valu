@@ -23,16 +23,28 @@ export function calculateBrandScore(
 
   let rawScore = 0;
   let maxPossibleScore = 0;
+  let matchCount = 0; // Track how many matches we find
+
+  const brandNameLower = brandName.toLowerCase();
 
   userCauses.forEach((cause) => {
     const valueData = valuesMatrix[cause.id];
-    if (!valueData) return;
+    if (!valueData) {
+      // DEBUG: Log when a cause is not in the valuesMatrix
+      console.log(`[Scoring] WARNING: Cause "${cause.name}" (ID: ${cause.id}) not found in valuesMatrix`);
+      return;
+    }
 
     const weight = cause.weight || 1.0;
     maxPossibleScore += weight;
 
-    const isInSupport = valueData.support.includes(brandName);
-    const isInOppose = valueData.oppose.includes(brandName);
+    // Case-insensitive comparison
+    const isInSupport = valueData.support.some(name => name.toLowerCase() === brandNameLower);
+    const isInOppose = valueData.oppose.some(name => name.toLowerCase() === brandNameLower);
+
+    if (isInSupport || isInOppose) {
+      matchCount++;
+    }
 
     if (cause.type === 'support') {
       // User supports this value
@@ -51,7 +63,14 @@ export function calculateBrandScore(
   if (maxPossibleScore === 0) return 50;
 
   const normalizedScore = 50 + (rawScore / maxPossibleScore) * 50;
-  return Math.round(Math.max(0, Math.min(100, normalizedScore)));
+  const finalScore = Math.round(Math.max(0, Math.min(100, normalizedScore)));
+
+  // DEBUG: Log scoring details for brands with non-neutral scores or first few brands
+  if (finalScore !== 50 && matchCount > 0) {
+    console.log(`[Scoring] Brand: "${brandName}" | Raw: ${rawScore}/${maxPossibleScore} | Final: ${finalScore} | Matches: ${matchCount}`);
+  }
+
+  return finalScore;
 }
 
 /**
