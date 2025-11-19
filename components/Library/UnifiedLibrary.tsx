@@ -810,16 +810,13 @@ export default function UnifiedLibrary({
     return (
       <View style={{ position: 'relative', overflow: 'visible', zIndex: isOptionsOpen ? 9999 : 1 }}>
         <TouchableOpacity
-          style={[
-            styles.collapsibleListHeader,
-            { backgroundColor: colors.backgroundSecondary, borderWidth: 1, borderColor: colors.border, borderRadius: 12 },
-          ]}
+          style={styles.collapsibleListHeader}
           onPress={() => handleListClick(listId)}
           activeOpacity={0.7}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           {/* Profile Image */}
-          <View style={[styles.listProfileImageContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+          <View style={[styles.listProfileImageContainer, { backgroundColor: '#FFFFFF', borderColor: colors.border }]}>
             {useAppIcon ? (
               <Image
                 source={require('@/assets/images/endo.png')}
@@ -1236,9 +1233,9 @@ export default function UnifiedLibrary({
         </TouchableOpacity>
 
         {/* List header card */}
-        <View style={[styles.listDetailHeader, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+        <View style={styles.listDetailHeader}>
           {/* Profile Image */}
-          <View style={[styles.listDetailImageContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
+          <View style={[styles.listDetailImageContainer, { backgroundColor: '#FFFFFF', borderColor: colors.border }]}>
             {useAppIcon ? (
               <Image
                 source={require('@/assets/images/endo.png')}
@@ -1736,10 +1733,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: Platform.OS === 'web' ? 2 : 8,
     marginHorizontal: Platform.OS === 'web' ? 4 : 16,
-    marginVertical: 3,
+    marginVertical: 6,
+    minHeight: 64,
+    backgroundColor: 'transparent',
   },
   listContentContainer: {
     marginHorizontal: Platform.OS === 'web' ? 8 : 16,
@@ -1750,15 +1749,16 @@ const styles = StyleSheet.create({
   },
   collapsibleListHeaderContent: {
     flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
   },
   listProfileImageContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 6,
+    width: 64,
+    height: 64,
+    borderRadius: 0,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
     overflow: 'hidden',
   },
   listProfileImage: {
@@ -1911,29 +1911,34 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   brandCard: {
-    borderRadius: 10,
-    height: 56,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
+    borderRadius: 0,
+    height: 64,
+    borderWidth: 0,
+    borderColor: 'transparent',
     overflow: 'visible',
     width: '100%',
+    backgroundColor: 'transparent',
   },
   brandCardInner: {
     flexDirection: 'row',
     alignItems: 'center',
     height: '100%',
     overflow: 'visible',
-    borderRadius: 10,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
   },
   brandLogoContainer: {
-    width: 56,
-    height: '100%',
+    width: 64,
+    height: 64,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+    borderRadius: 0,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
   },
   brandLogo: {
     width: '100%',
@@ -2000,16 +2005,17 @@ const styles = StyleSheet.create({
   listDetailHeader: {
     flexDirection: 'row',
     padding: 20,
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 0,
     gap: 16,
     position: 'relative',
+    backgroundColor: 'transparent',
   },
   listDetailImageContainer: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    borderWidth: 2,
+    borderRadius: 0,
+    borderWidth: 1,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
