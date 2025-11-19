@@ -816,7 +816,7 @@ export default function UnifiedLibrary({
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           {/* Profile Image */}
-          <View style={[styles.listProfileImageContainer, { backgroundColor: '#FFFFFF', borderColor: colors.border }]}>
+          <View style={[styles.listProfileImageContainer, { backgroundColor: 'transparent', borderColor: colors.border }]}>
             {useAppIcon ? (
               <Image
                 source={require('@/assets/images/endo12.png')}
@@ -1235,7 +1235,7 @@ export default function UnifiedLibrary({
         {/* List header card */}
         <View style={styles.listDetailHeader}>
           {/* Profile Image */}
-          <View style={[styles.listDetailImageContainer, { backgroundColor: '#FFFFFF', borderColor: colors.border }]}>
+          <View style={[styles.listDetailImageContainer, { backgroundColor: 'transparent', borderColor: colors.border }]}>
             {useAppIcon ? (
               <Image
                 source={require('@/assets/images/endo12.png')}
