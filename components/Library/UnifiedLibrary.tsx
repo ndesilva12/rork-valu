@@ -926,8 +926,8 @@ export default function UnifiedLibrary({
               const canEditMeta = !isSystemList && !isCopiedList && canEdit;
               // Allow removing copied lists - users should be able to remove lists they've added to their library
               const canRemove = !isEndorsementList && !isSystemList && canEdit;
-              // System lists (aligned/unaligned) cannot have privacy toggled
-              const canTogglePrivacy = isPublic !== undefined && !isCopiedList && !isSystemList && canEdit;
+              // REMOVED: Privacy toggle removed from all lists
+              const canTogglePrivacy = false;
               const canCopyList = mode === 'view'; // Only in view mode (other users)
 
               return (
@@ -1359,9 +1359,8 @@ export default function UnifiedLibrary({
 
               const canEditMeta = !isSystemList && !isCopiedList && canEdit;
               const canRemove = !isEndorsementList && !isSystemList && canEdit;
-              // REMOVED: Privacy toggle no longer allowed for endorsement, aligned, or unaligned lists
-              // Endorsement lists are always public, aligned/unaligned are always private
-              const canTogglePrivacy = isPublic !== undefined && !isCopiedList && !isSystemList && !isEndorsementList && canEdit;
+              // REMOVED: Privacy toggle removed from all lists
+              const canTogglePrivacy = false;
               const canCopyList = mode === 'view';
 
               return (
