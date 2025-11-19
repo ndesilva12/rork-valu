@@ -51,6 +51,191 @@ interface ProductInteraction {
   likesCount: number;
 }
 
+// Separate UserCard component to properly use hooks
+const UserCard = ({ item, colors, router, clerkUser, profile, library }: {
+  item: { id: string; profile: UserProfile };
+  colors: any;
+  router: any;
+  clerkUser: any;
+  profile: any;
+  library: any;
+}) => {
+  const userName = item.profile.userDetails?.name || 'User';
+  const userImage = item.profile.userDetails?.profileImage;
+  const userLocation = item.profile.userDetails?.location;
+  const userBio = item.profile.userDetails?.description;
+
+  const [isFollowingUser, setIsFollowingUser] = useState(false);
+  const [checkingFollowStatus, setCheckingFollowStatus] = useState(true);
+
+  // Check follow status on mount
+  useEffect(() => {
+    const checkFollow = async () => {
+      if (clerkUser?.id && item.id !== clerkUser.id) {
+        const following = await isFollowing(clerkUser.id, item.id, 'user');
+        setIsFollowingUser(following);
+      }
+      setCheckingFollowStatus(false);
+    };
+    checkFollow();
+  }, [item.id, clerkUser?.id]);
+
+  const handleFollowUser = async () => {
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'You must be logged in to follow users');
+      return;
+    }
+
+    if (item.id === clerkUser.id) {
+      Alert.alert('Info', 'You cannot follow yourself');
+      return;
+    }
+
+    try {
+      if (isFollowingUser) {
+        await unfollowEntity(clerkUser.id, item.id, 'user');
+        setIsFollowingUser(false);
+        Alert.alert('Success', `Unfollowed ${userName}`);
+      } else {
+        await followEntity(clerkUser.id, item.id, 'user');
+        setIsFollowingUser(true);
+        Alert.alert('Success', `Now following ${userName}`);
+      }
+    } catch (error: any) {
+      console.error('Error following/unfollowing user:', error);
+      Alert.alert('Error', error?.message || 'Could not follow user. Please try again.');
+    }
+  };
+
+  const handleAddEndorseListToLibrary = async () => {
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'You must be logged in to add lists to your library');
+      return;
+    }
+
+    if (item.id === clerkUser.id) {
+      Alert.alert('Info', 'This is already in your library');
+      return;
+    }
+
+    try {
+      // Get the user's endorsement list
+      const endorsementList = await getEndorsementList(item.id);
+
+      if (!endorsementList) {
+        Alert.alert('Error', 'This user does not have an endorsement list');
+        return;
+      }
+
+      // Get current user's name
+      const currentUserName = profile?.userDetails?.name || clerkUser?.firstName || 'My Library';
+
+      // Copy the list to the current user's library
+      await copyListToLibrary(endorsementList.id, clerkUser.id, currentUserName, userImage);
+
+      // Refresh library to show the new list
+      await new Promise(resolve => setTimeout(resolve, 500));
+      if (clerkUser?.id) {
+        await library.loadUserLists(clerkUser.id, true);
+      }
+
+      Alert.alert('Success', `${userName}'s endorsement list added to your library!`);
+    } catch (error: any) {
+      console.error('Error adding endorsement list:', error);
+      Alert.alert('Error', error?.message || 'Could not add list to library. Please try again.');
+    }
+  };
+
+  const handleActionMenu = (e: any) => {
+    e.stopPropagation();
+    Alert.alert(
+      userName,
+      'Choose an action',
+      [
+        {
+          text: 'Add Endorse List to Library',
+          onPress: handleAddEndorseListToLibrary,
+        },
+        {
+          text: isFollowingUser ? 'Unfollow' : 'Follow',
+          onPress: handleFollowUser,
+        },
+        {
+          text: 'Share',
+          onPress: () => {
+            const shareUrl = `${Platform.OS === 'web' ? window.location.origin : 'https://upright.money'}/user/${item.id}`;
+            if (Platform.OS === 'web') {
+              navigator.clipboard.writeText(shareUrl);
+              Alert.alert('Link Copied', 'Profile link copied to clipboard');
+            } else {
+              RNShare.share({
+                message: `Check out ${userName}'s profile on Endorse: ${shareUrl}`,
+              });
+            }
+          },
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ]
+    );
+  };
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.userCard,
+        { backgroundColor: 'transparent', borderColor: 'transparent' }
+      ]}
+      onPress={() => router.push(`/user/${item.id}`)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.userCardContent}>
+        {userImage ? (
+          <Image
+            source={{ uri: userImage }}
+            style={styles.userCardImage}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
+          />
+        ) : (
+          <View style={[styles.userCardImagePlaceholder, { backgroundColor: colors.primary }]}>
+            <Text style={[styles.userCardImageText, { color: colors.white }]}>
+              {userName.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+        )}
+        <View style={styles.userCardInfo}>
+          <Text style={[styles.userCardName, { color: colors.text }]} numberOfLines={1}>
+            {userName}
+          </Text>
+          {userLocation && (
+            <Text style={[styles.userCardLocation, { color: colors.textSecondary }]} numberOfLines={1}>
+              {userLocation}
+            </Text>
+          )}
+          {userBio && (
+            <Text style={[styles.userCardBio, { color: colors.textSecondary }]} numberOfLines={2}>
+              {userBio}
+            </Text>
+          )}
+        </View>
+        <TouchableOpacity
+          style={[styles.userCardActionButton, { backgroundColor: colors.backgroundSecondary }]}
+          onPress={handleActionMenu}
+          activeOpacity={0.7}
+        >
+          <View style={{ transform: [{ rotate: '90deg' }] }}>
+            <MoreVertical size={18} color={colors.text} strokeWidth={2} />
+          </View>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
 export default function SearchScreen() {
   const router = useRouter();
   const { profile, addToSearchHistory, isDarkMode, clerkUser } = useUser();
@@ -802,179 +987,15 @@ export default function SearchScreen() {
   };
 
   const renderUserCard = ({ item }: { item: { id: string; profile: UserProfile } }) => {
-    const userName = item.profile.userDetails?.name || 'User';
-    const userImage = item.profile.userDetails?.profileImage;
-    const userLocation = item.profile.userDetails?.location;
-    const userBio = item.profile.userDetails?.description;
-
-    const [isFollowingUser, setIsFollowingUser] = useState(false);
-    const [checkingFollowStatus, setCheckingFollowStatus] = useState(true);
-
-    // Check follow status on mount
-    useEffect(() => {
-      const checkFollow = async () => {
-        if (clerkUser?.id && item.id !== clerkUser.id) {
-          const following = await isFollowing(clerkUser.id, item.id, 'user');
-          setIsFollowingUser(following);
-        }
-        setCheckingFollowStatus(false);
-      };
-      checkFollow();
-    }, [item.id, clerkUser?.id]);
-
-    const handleFollowUser = async () => {
-      if (!clerkUser?.id) {
-        Alert.alert('Error', 'You must be logged in to follow users');
-        return;
-      }
-
-      if (item.id === clerkUser.id) {
-        Alert.alert('Info', 'You cannot follow yourself');
-        return;
-      }
-
-      try {
-        if (isFollowingUser) {
-          await unfollowEntity(clerkUser.id, item.id, 'user');
-          setIsFollowingUser(false);
-          Alert.alert('Success', `Unfollowed ${userName}`);
-        } else {
-          await followEntity(clerkUser.id, item.id, 'user');
-          setIsFollowingUser(true);
-          Alert.alert('Success', `Now following ${userName}`);
-        }
-      } catch (error: any) {
-        console.error('Error following/unfollowing user:', error);
-        Alert.alert('Error', error?.message || 'Could not follow user. Please try again.');
-      }
-    };
-
-    const handleAddEndorseListToLibrary = async () => {
-      if (!clerkUser?.id) {
-        Alert.alert('Error', 'You must be logged in to add lists to your library');
-        return;
-      }
-
-      if (item.id === clerkUser.id) {
-        Alert.alert('Info', 'This is already in your library');
-        return;
-      }
-
-      try {
-        // Get the user's endorsement list
-        const endorsementList = await getEndorsementList(item.id);
-
-        if (!endorsementList) {
-          Alert.alert('Error', 'This user does not have an endorsement list');
-          return;
-        }
-
-        // Get current user's name
-        const currentUserName = profile?.userDetails?.name || clerkUser?.firstName || 'My Library';
-
-        // Copy the list to the current user's library
-        await copyListToLibrary(endorsementList.id, clerkUser.id, currentUserName, userImage);
-
-        // Refresh library to show the new list
-        await new Promise(resolve => setTimeout(resolve, 500));
-        if (clerkUser?.id) {
-          await library.loadUserLists(clerkUser.id, true);
-        }
-
-        Alert.alert('Success', `${userName}'s endorsement list added to your library!`);
-      } catch (error: any) {
-        console.error('Error adding endorsement list:', error);
-        Alert.alert('Error', error?.message || 'Could not add list to library. Please try again.');
-      }
-    };
-
-    const handleActionMenu = (e: any) => {
-      e.stopPropagation();
-      Alert.alert(
-        userName,
-        'Choose an action',
-        [
-          {
-            text: 'Add Endorse List to Library',
-            onPress: handleAddEndorseListToLibrary,
-          },
-          {
-            text: isFollowingUser ? 'Unfollow' : 'Follow',
-            onPress: handleFollowUser,
-          },
-          {
-            text: 'Share',
-            onPress: () => {
-              const shareUrl = `${window.location.origin}/user/${item.id}`;
-              if (Platform.OS === 'web') {
-                navigator.clipboard.writeText(shareUrl);
-                Alert.alert('Link Copied', 'Profile link copied to clipboard');
-              } else {
-                RNShare.share({
-                  message: `Check out ${userName}'s profile on Endorse: ${shareUrl}`,
-                });
-              }
-            },
-          },
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-        ]
-      );
-    };
-
     return (
-      <TouchableOpacity
-        style={[
-          styles.userCard,
-          { backgroundColor: 'transparent', borderColor: 'transparent' }
-        ]}
-        onPress={() => router.push(`/user/${item.id}`)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.userCardContent}>
-          {userImage ? (
-            <Image
-              source={{ uri: userImage }}
-              style={styles.userCardImage}
-              contentFit="cover"
-              transition={200}
-              cachePolicy="memory-disk"
-            />
-          ) : (
-            <View style={[styles.userCardImagePlaceholder, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.userCardImageText, { color: colors.white }]}>
-                {userName.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-          )}
-          <View style={styles.userCardInfo}>
-            <Text style={[styles.userCardName, { color: colors.text }]} numberOfLines={1}>
-              {userName}
-            </Text>
-            {userLocation && (
-              <Text style={[styles.userCardLocation, { color: colors.textSecondary }]} numberOfLines={1}>
-                {userLocation}
-              </Text>
-            )}
-            {userBio && (
-              <Text style={[styles.userCardBio, { color: colors.textSecondary }]} numberOfLines={2}>
-                {userBio}
-              </Text>
-            )}
-          </View>
-          <TouchableOpacity
-            style={[styles.userCardActionButton, { backgroundColor: colors.backgroundSecondary }]}
-            onPress={handleActionMenu}
-            activeOpacity={0.7}
-          >
-            <View style={{ transform: [{ rotate: '90deg' }] }}>
-              <MoreVertical size={18} color={colors.text} strokeWidth={2} />
-            </View>
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
+      <UserCard
+        item={item}
+        colors={colors}
+        router={router}
+        clerkUser={clerkUser}
+        profile={profile}
+        library={library}
+      />
     );
   };
 
