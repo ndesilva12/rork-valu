@@ -894,7 +894,8 @@ export default function UnifiedLibrary({
               const isCopiedList = currentList?.originalListId !== undefined; // List was copied from another user
 
               const canEditMeta = !isSystemList && !isCopiedList && canEdit;
-              const canRemove = !isEndorsementList && !isSystemList && !isCopiedList && canEdit;
+              // Allow removing copied lists - users should be able to remove lists they've added to their library
+              const canRemove = !isEndorsementList && !isSystemList && canEdit;
               const canTogglePrivacy = isPublic !== undefined && !isCopiedList && canEdit;
               const canCopyList = mode === 'view'; // Only in view mode (other users)
 
