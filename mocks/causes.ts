@@ -52,6 +52,7 @@ export const AVAILABLE_VALUES: Record<CauseCategory, ValueItem[]> = {
     { id: 'vladimir-putin', name: 'Vladimir Putin', category: 'person' },
     { id: 'xi-jinping', name: 'Xi Jinping', category: 'person' },
   ],
+  lifestyle: [],
   social_issue: [
     { id: 'abortion', name: 'Abortion', category: 'social_issue' },
     { id: 'gun-rights', name: 'Gun Rights', category: 'social_issue' },

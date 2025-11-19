@@ -696,6 +696,30 @@ export default function HomeScreen() {
     };
   }, [mainView, userLocation, userBusinesses, localDistance, profile.causes, localSortDirection]);
 
+  // Normalize all business scores for library display (matching business details page approach)
+  const businessScoresMap = useMemo(() => {
+    if (!profile.causes || userBusinesses.length === 0) {
+      return new Map<string, number>();
+    }
+
+    // Calculate scores for all businesses
+    const businessesWithScores = userBusinesses.map(b => ({
+      ...b,
+      alignmentScore: calculateSimilarityScore(profile.causes || [], b.causes || [])
+    }));
+
+    // Normalize similarity scores to 1-99 range with median at 50 (matching business details page)
+    const normalizedBusinesses = normalizeSimilarityScores(businessesWithScores);
+
+    // Create map of business ID to normalized score for quick lookup
+    const scoresMap = new Map<string, number>();
+    normalizedBusinesses.forEach(b => {
+      scoresMap.set(b.id, b.alignmentScore);
+    });
+
+    return scoresMap;
+  }, [userBusinesses, profile.causes]);
+
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
 
@@ -2566,8 +2590,8 @@ export default function HomeScreen() {
                     </View>
                   );
                 } else if (entry.type === 'business' && 'businessId' in entry) {
-                  // All businesses set to score of 50
-                  const alignmentScore = 50;
+                  // Get normalized business score (matching business details page)
+                  const alignmentScore = businessScoresMap.get(entry.businessId) || 50;
                   const isAligned = alignmentScore >= 50;
                   const titleColor = colors.white;
 
