@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Search as SearchIcon, TrendingUp, TrendingDown, Minus, ScanBarcode, X, Heart, MessageCircle, Share2, ExternalLink } from 'lucide-react-native';
+import { Search as SearchIcon, TrendingUp, TrendingDown, Minus, ScanBarcode, X, Heart, MessageCircle, Share2, ExternalLink, MoreVertical } from 'lucide-react-native';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
 import {
@@ -598,11 +598,43 @@ export default function SearchScreen() {
     const userLocation = item.profile.userDetails?.location;
     const userBio = item.profile.userDetails?.description;
 
+    const handleActionMenu = (e: any) => {
+      e.stopPropagation();
+      Alert.alert(
+        userName,
+        'Choose an action',
+        [
+          {
+            text: 'Follow',
+            onPress: () => Alert.alert('Coming Soon', 'Follow functionality will be available soon'),
+          },
+          {
+            text: 'Share',
+            onPress: () => {
+              const shareUrl = `${window.location.origin}/user/${item.id}`;
+              if (Platform.OS === 'web') {
+                navigator.clipboard.writeText(shareUrl);
+                Alert.alert('Link Copied', 'Profile link copied to clipboard');
+              } else {
+                RNShare.share({
+                  message: `Check out ${userName}'s profile on Upright: ${shareUrl}`,
+                });
+              }
+            },
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
+    };
+
     return (
       <TouchableOpacity
         style={[
           styles.userCard,
-          { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }
+          { backgroundColor: 'transparent', borderColor: 'transparent' }
         ]}
         onPress={() => router.push(`/user/${item.id}`)}
         activeOpacity={0.7}
@@ -638,6 +670,15 @@ export default function SearchScreen() {
               </Text>
             )}
           </View>
+          <TouchableOpacity
+            style={[styles.userCardActionButton, { backgroundColor: colors.backgroundSecondary }]}
+            onPress={handleActionMenu}
+            activeOpacity={0.7}
+          >
+            <View style={{ transform: [{ rotate: '90deg' }] }}>
+              <MoreVertical size={18} color={colors.text} strokeWidth={2} />
+            </View>
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
@@ -1775,6 +1816,13 @@ const styles = StyleSheet.create({
   userCardBio: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  userCardActionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   userScoreCircle: {
     width: 52,
