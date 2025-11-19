@@ -344,7 +344,7 @@ export default function SearchScreen() {
   }, []);
 
   const handleGenerateResults = useCallback(() => {
-    // Only use MOCK_PRODUCTS - exclude LOCAL_BUSINESSES as they're mock data without real business accounts
+    // Include both MOCK_PRODUCTS and Firebase businesses
     const allProducts = [...MOCK_PRODUCTS];
     const allSelectedValues = [...selectedSupportValues, ...selectedRejectValues];
 
@@ -352,6 +352,12 @@ export default function SearchScreen() {
       Alert.alert('No Values Selected', 'Please select at least one value to support or reject.');
       return;
     }
+
+    // Convert selected values to Cause format for business scoring
+    const userCauses = [
+      ...selectedSupportValues.map(id => ({ id, type: 'support' as const })),
+      ...selectedRejectValues.map(id => ({ id, type: 'avoid' as const }))
+    ];
 
     // Score each product based on selected values
     const scored = allProducts.map(product => {
@@ -411,8 +417,83 @@ export default function SearchScreen() {
       };
     });
 
+    // Score Firebase businesses based on their causes
+    const businessScored = firebaseBusinesses.map(business => {
+      if (!business.causes || business.causes.length === 0) {
+        // Business has no values - assign neutral score
+        return {
+          product: {
+            id: `firebase-business-${business.id}`,
+            firebaseId: business.id,
+            name: business.businessInfo.name,
+            brand: business.businessInfo.name,
+            category: business.businessInfo.category,
+            description: business.businessInfo.description || '',
+            exampleImageUrl: business.businessInfo.logoUrl,
+            website: business.businessInfo.website,
+            location: business.businessInfo.location,
+            valueAlignments: [],
+            keyReasons: [
+              business.businessInfo.acceptsStandDiscounts
+                ? `Accepts Endorse Discounts`
+                : `Local business`
+            ],
+            moneyFlow: { company: business.businessInfo.name, shareholders: [], overallAlignment: 0 },
+            relatedValues: [],
+            isFirebaseBusiness: true,
+          } as Product & { firebaseId: string; isFirebaseBusiness: boolean },
+          totalSupportScore: 0,
+          totalRejectScore: 0,
+          matchingValuesCount: 0,
+          alignmentStrength: 50,
+          isPositivelyAligned: false
+        };
+      }
+
+      // Calculate raw alignment score
+      const rawScore = calculateAlignmentScore(userCauses, business.causes);
+
+      // Determine if positively or negatively aligned based on raw score
+      const isPositivelyAligned = rawScore > 0;
+
+      // Map to 1-99 range with better spread
+      // Positive scores: 50-99, Negative scores: 1-49
+      const alignmentStrength = Math.round(50 + (rawScore * 0.8));
+
+      return {
+        product: {
+          id: `firebase-business-${business.id}`,
+          firebaseId: business.id,
+          name: business.businessInfo.name,
+          brand: business.businessInfo.name,
+          category: business.businessInfo.category,
+          description: business.businessInfo.description || '',
+          exampleImageUrl: business.businessInfo.logoUrl,
+          website: business.businessInfo.website,
+          location: business.businessInfo.location,
+          valueAlignments: [],
+          keyReasons: [
+            business.businessInfo.acceptsStandDiscounts
+              ? `Accepts Endorse Discounts`
+              : `Local business`
+          ],
+          moneyFlow: { company: business.businessInfo.name, shareholders: [], overallAlignment: 0 },
+          relatedValues: [],
+          isFirebaseBusiness: true,
+        } as Product & { firebaseId: string; isFirebaseBusiness: boolean },
+        totalSupportScore: isPositivelyAligned ? rawScore : 0,
+        totalRejectScore: isPositivelyAligned ? 0 : Math.abs(rawScore),
+        matchingValuesCount: business.causes.length,
+        alignmentStrength,
+        isPositivelyAligned
+      };
+    });
+
+    // Combine products and businesses
+    const allScored = [...scored, ...businessScored];
+
     // Sort all results by alignment strength
-    const allSorted = scored
+    const allSorted = allScored
       .sort((a, b) => b.alignmentStrength - a.alignmentStrength)
       .map(s => ({ ...s.product, alignmentScore: s.alignmentStrength, isPositivelyAligned: s.isPositivelyAligned }));
 
@@ -420,7 +501,7 @@ export default function SearchScreen() {
     setShowingResults(true);
     setResultsLimit(10);
     setResultsMode('aligned');
-  }, [selectedSupportValues, selectedRejectValues]);
+  }, [selectedSupportValues, selectedRejectValues, firebaseBusinesses]);
 
   const handleLoadMore = useCallback(() => {
     if (resultsLimit === 10) {
@@ -903,19 +984,25 @@ export default function SearchScreen() {
     const alignmentColor = getAlignmentColor(item.alignmentScore);
     const normalizedScore = normalizeScore(item.alignmentScore);
 
+    // Aligned items (blue) should be outlined only, unaligned (red) should have fill
+    const isAligned = (item.alignmentScore ?? 50) > 55;
+    const scoreBackgroundColor = isAligned ? 'transparent' : alignmentColor + '15';
+
     return (
       <TouchableOpacity
         style={[styles.resultListItem, { borderBottomColor: colors.border }]}
         onPress={() => handleProductPress(item)}
         activeOpacity={0.7}
       >
-        <Image
-          source={{ uri: getLogoUrl(item.website || '') }}
-          style={styles.resultListImage}
-          contentFit="cover"
-          transition={200}
-          cachePolicy="memory-disk"
-        />
+        <View style={styles.resultListImageContainer}>
+          <Image
+            source={{ uri: getLogoUrl(item.website || '') }}
+            style={styles.resultListImage}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
+          />
+        </View>
         <View style={styles.resultListInfo}>
           <Text style={[styles.resultListBrand, { color: colors.text }]}>
             {item.brand}
@@ -924,7 +1011,7 @@ export default function SearchScreen() {
             {item.name}
           </Text>
         </View>
-        <View style={[styles.resultListScore, { borderColor: alignmentColor, backgroundColor: alignmentColor + '15' }]}>
+        <View style={[styles.resultListScore, { borderColor: alignmentColor, backgroundColor: scoreBackgroundColor }]}>
           <Text style={[styles.resultListScoreText, { color: alignmentColor }]}>
             {normalizedScore}
           </Text>
@@ -2473,11 +2560,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderBottomWidth: 1,
   },
-  resultListImage: {
+  resultListImageContainer: {
     width: 48,
     height: 48,
     borderRadius: 8,
     marginRight: 12,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  resultListImage: {
+    width: '100%',
+    height: '100%',
   },
   resultListInfo: {
     flex: 1,
