@@ -485,6 +485,7 @@ export const copyListToLibrary = async (
       isEndorsed: false,
       originalListId: sourceList.id, // Track original
       originalCreatorName: sourceList.creatorName || 'Unknown',
+      originalCreatorImage: sourceList.creatorImage, // Preserve original creator's image
     };
 
     const docRef = await addDoc(listsRef, copiedList);

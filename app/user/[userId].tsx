@@ -15,6 +15,7 @@ import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
+import { useLibrary } from '@/contexts/LibraryContext';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
@@ -30,6 +31,7 @@ export default function UserProfileScreen() {
   const router = useRouter();
   const { isDarkMode, clerkUser, profile: currentUserProfile } = useUser();
   const { brands, valuesMatrix } = useData();
+  const library = useLibrary();
   const colors = isDarkMode ? darkColors : lightColors;
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -117,6 +119,11 @@ export default function UserProfileScreen() {
       const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || 'My Library';
 
       await copyListToLibrary(listId, clerkUser.id, userName);
+
+      // Reload library to show the newly copied list with all its entries
+      if (clerkUser?.id) {
+        await library.loadUserLists(clerkUser.id, true);
+      }
 
       Alert.alert('Success', 'List copied to your library!');
     } catch (error: any) {

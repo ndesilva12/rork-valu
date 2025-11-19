@@ -902,7 +902,8 @@ export default function UnifiedLibrary({
               const canEditMeta = !isSystemList && !isCopiedList && canEdit;
               // Allow removing copied lists - users should be able to remove lists they've added to their library
               const canRemove = !isEndorsementList && !isSystemList && canEdit;
-              const canTogglePrivacy = isPublic !== undefined && !isCopiedList && canEdit;
+              // System lists (aligned/unaligned) cannot have privacy toggled
+              const canTogglePrivacy = isPublic !== undefined && !isCopiedList && !isSystemList && canEdit;
               const canCopyList = mode === 'view'; // Only in view mode (other users)
 
               return (
@@ -1279,7 +1280,7 @@ export default function UnifiedLibrary({
             false,
             undefined,
             'Brands and businesses aligned with your values',
-            true,
+            false,
             undefined,
             true
           )}
