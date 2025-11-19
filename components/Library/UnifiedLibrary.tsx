@@ -462,7 +462,7 @@ export default function UnifiedLibrary({
             />
           </View>
           <View style={styles.brandCardContent}>
-            <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
+            <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
               {product.name || 'Unknown Brand'}
             </Text>
             <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
@@ -552,7 +552,7 @@ export default function UnifiedLibrary({
                   />
                 </View>
                 <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
+                  <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
                     {brandName}
                   </Text>
                   <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
@@ -621,7 +621,7 @@ export default function UnifiedLibrary({
                   />
                 </View>
                 <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
+                  <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
                     {businessName}
                   </Text>
                   {businessCategory && (
@@ -679,7 +679,7 @@ export default function UnifiedLibrary({
                   <Target size={32} color={iconColor} strokeWidth={2} />
                 </View>
                 <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
+                  <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
                     {valueName}
                   </Text>
                   <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
@@ -722,7 +722,7 @@ export default function UnifiedLibrary({
             >
               <View style={styles.brandCardInner}>
                 <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={1}>
+                  <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={1}>
                     {linkTitle}
                   </Text>
                   {(entry as any).description && (
@@ -763,7 +763,7 @@ export default function UnifiedLibrary({
             ]}>
               <View style={styles.brandCardInner}>
                 <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: colors.text }]}>
+                  <Text style={[styles.brandName, { color: colors.white }]}>
                     {textContent}
                   </Text>
                 </View>
@@ -1930,15 +1930,15 @@ const styles = StyleSheet.create({
   brandLogoContainer: {
     width: 64,
     height: 64,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     borderTopLeftRadius: 0,
     borderBottomLeftRadius: 0,
     borderRadius: 0,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   brandLogo: {
     width: '100%',

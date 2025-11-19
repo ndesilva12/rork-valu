@@ -786,7 +786,7 @@ export default function HomeScreen() {
 
   const renderBrandCard = (product: Product, type: 'support' | 'avoid') => {
     const isSupport = type === 'support';
-    const titleColor = isSupport ? colors.primaryLight : colors.danger;
+    const titleColor = colors.white;
     const alignmentScore = scoredBrands.get(product.id) || 0;
 
     return (
@@ -847,7 +847,7 @@ export default function HomeScreen() {
     type: 'aligned' | 'unaligned'
   ) => {
     const isAligned = type === 'aligned';
-    const titleColor = isAligned ? colors.primaryLight : colors.danger;
+    const titleColor = colors.white;
     const { business, alignmentScore, distance, closestLocation } = businessData;
 
     return (
@@ -2411,7 +2411,7 @@ export default function HomeScreen() {
                         const brandScore = scoredBrands.get(entry.brandId) || 0;
                         const brand = allSupportFull.find(b => b.id === entry.brandId) || allAvoidFull.find(b => b.id === entry.brandId);
                         const isAligned = allSupportFull.some(b => b.id === entry.brandId);
-                        const titleColor = isAligned ? colors.primaryLight : colors.danger;
+                        const titleColor = colors.white;
 
                         return (
                           <View
@@ -2510,7 +2510,7 @@ export default function HomeScreen() {
                   // All businesses set to score of 50
                   const alignmentScore = 50;
                   const isAligned = alignmentScore >= 50;
-                  const titleColor = colors.text;
+                  const titleColor = colors.white;
 
                   return (
                     <View
@@ -5401,15 +5401,15 @@ const styles = StyleSheet.create({
   brandLogoContainer: {
     width: 64,
     height: 64,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     borderTopLeftRadius: 0,
     borderBottomLeftRadius: 0,
     borderRadius: 0,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   brandLogo: {
     width: '100%',
