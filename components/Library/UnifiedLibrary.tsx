@@ -1826,7 +1826,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   menuBackdrop: {
-    position: 'absolute',
+    position: Platform.OS === 'web' ? 'fixed' as any : 'absolute',
     top: 0,
     left: 0,
     right: 0,
