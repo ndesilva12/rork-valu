@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, ThumbsUp, MapPin, Plus, X, ChevronRight, List, UserPlus } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, ThumbsUp, MapPin, Plus, X, ChevronRight, List, UserPlus, MoreVertical, Share2 } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -13,12 +13,15 @@ import {
   Modal,
   Alert,
   TouchableWithoutFeedback,
+  Share,
+  Pressable,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
+import { useLibrary } from '@/contexts/LibraryContext';
 import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { getLogoUrl } from '@/lib/logo';
 import { getUserLists, addEntryToList } from '@/services/firebase/listService';
@@ -165,6 +168,7 @@ export default function BrandDetailScreen() {
   const [reviewText, setReviewText] = useState('');
   const [userRating, setUserRating] = useState(0);
   const [showAddToListModal, setShowAddToListModal] = useState(false);
+  const [showActionMenu, setShowActionMenu] = useState(false);
   const [userLists, setUserLists] = useState<any[]>([]);
 
   const panResponder = useRef(

@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  PanResponder,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -43,6 +44,19 @@ export default function UserProfileScreen() {
   const [expandedListId, setExpandedListId] = useState<string | null>(null);
   const [activeListMenuId, setActiveListMenuId] = useState<string | null>(null);
   const [userBusinesses, setUserBusinesses] = useState<BusinessUser[]>([]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return Math.abs(gestureState.dx) > 30 && Math.abs(gestureState.dy) < 50;
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        if (gestureState.dx > 100) {
+          router.back();
+        }
+      },
+    })
+  ).current;
 
   useEffect(() => {
     loadUserProfile();
@@ -268,6 +282,7 @@ export default function UserProfileScreen() {
         style={styles.scrollView}
         contentContainerStyle={Platform.OS === 'web' ? styles.webContent : undefined}
         showsVerticalScrollIndicator={false}
+        {...panResponder.panHandlers}
       >
         {/* Hero Image Container */}
         <View style={styles.heroImageContainer}>
