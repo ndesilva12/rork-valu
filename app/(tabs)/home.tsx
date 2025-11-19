@@ -896,7 +896,9 @@ export default function HomeScreen() {
             }}
             activeOpacity={0.7}
           >
-            <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+            <View style={{ transform: [{ rotate: '90deg' }] }}>
+              <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+            </View>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -1598,10 +1600,29 @@ export default function HomeScreen() {
     setActiveCardMenuId(id);
   };
 
-  const handleCardMenuAddTo = () => {
+  const handleCardMenuAddTo = async () => {
     if (!cardMenuData) return;
     setActiveCardMenuId(null);
-    handleQuickAdd(cardMenuData.type, cardMenuData.id, cardMenuData.name, cardMenuData.website, cardMenuData.logoUrl);
+
+    // Get endorsement list
+    const endorsementList = await library.getEndorsementList();
+    if (!endorsementList) {
+      Alert.alert('Error', 'Endorsement list not found');
+      return;
+    }
+
+    try {
+      // Create entry based on type
+      const entry: Omit<ListEntry, 'id' | 'createdAt'> = cardMenuData.type === 'brand'
+        ? { type: 'brand', brandId: cardMenuData.id }
+        : { type: 'business', businessId: cardMenuData.id };
+
+      await library.addEntry(endorsementList.id, entry as ListEntry);
+      Alert.alert('Success', `${cardMenuData.name} endorsed!`);
+    } catch (error: any) {
+      console.error('Error endorsing item:', error);
+      Alert.alert('Error', error?.message || 'Failed to endorse item');
+    }
   };
 
   const handleCardMenuRemove = async () => {
@@ -3317,14 +3338,14 @@ export default function HomeScreen() {
         <TouchableWithoutFeedback onPress={() => setActiveCardMenuId(null)}>
           <View style={styles.dropdownModalOverlay}>
             <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              {/* Add to option */}
+              {/* Endorse option */}
               <TouchableOpacity
                 style={styles.listOptionItem}
                 onPress={handleCardMenuAddTo}
                 activeOpacity={0.7}
               >
-                <Plus size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Add to</Text>
+                <UserPlus size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>Endorse</Text>
               </TouchableOpacity>
               <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
 

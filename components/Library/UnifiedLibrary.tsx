@@ -319,11 +319,23 @@ export default function UnifiedLibrary({
     }
   };
 
-  // Add to Library handler - uses CURRENT user's lists from context
+  // Add to Library handler - directly adds to endorsement list
   const handleAddToLibrary = async (entry: ListEntry) => {
-    // Show the modal with the item
-    setSelectedItemToAdd(entry);
-    setShowAddToLibraryModal(true);
+    if (!endorsementList?.id) {
+      Alert.alert('Error', 'Endorsement list not found');
+      return;
+    }
+
+    try {
+      await library.addEntry(endorsementList.id, entry);
+      const itemName = getItemName(entry);
+      Alert.alert('Success', `${itemName} endorsed!`);
+      setShowItemOptionsModal(false);
+      setSelectedItemForOptions(null);
+    } catch (error: any) {
+      console.error('Error endorsing item:', error);
+      Alert.alert('Error', error?.message || 'Failed to endorse item');
+    }
   };
 
   const handleSelectList = async (listId: string) => {
@@ -1399,10 +1411,10 @@ export default function UnifiedLibrary({
           const canRemove = canEdit;
           const canFollow = selectedItemForOptions.type === 'brand' || selectedItemForOptions.type === 'business';
 
-          // Add to library option (always available)
+          // Endorse option (adds to endorsement list)
           options.push({
-            icon: Plus,
-            label: 'Add to',
+            icon: UserPlus,
+            label: 'Endorse',
             onPress: () => handleAddToLibrary(selectedItemForOptions),
           });
 
