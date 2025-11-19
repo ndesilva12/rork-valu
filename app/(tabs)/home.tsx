@@ -1706,7 +1706,7 @@ export default function HomeScreen() {
     setShareData({
       url: shareLink,
       title: cardMenuData.name,
-      description: `Check out ${cardMenuData.name} on Upright Money`
+      description: `Check out ${cardMenuData.name} on Endorse Money`
     });
     setShowShareModal(true);
   };
@@ -3362,7 +3362,7 @@ export default function HomeScreen() {
                             setShareData({
                               url: shareLink,
                               title: itemName,
-                              description: `Check out ${itemName} on Upright Money`
+                              description: `Check out ${itemName} on Endorse Money`
                             });
                             setShowShareModal(true);
                           }}
@@ -3410,6 +3410,24 @@ export default function HomeScreen() {
                 );
               })()}
               <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+
+              {/* Follow option - only for businesses */}
+              {cardMenuData?.type === 'business' && (
+                <>
+                  <TouchableOpacity
+                    style={styles.listOptionItem}
+                    onPress={() => {
+                      setActiveCardMenuId(null);
+                      Alert.alert('Coming Soon', 'Follow functionality will be available soon');
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <UserPlus size={18} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.listOptionText, { color: colors.text }]}>Follow</Text>
+                  </TouchableOpacity>
+                  <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
+                </>
+              )}
 
               {/* Share option */}
               <TouchableOpacity

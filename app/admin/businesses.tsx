@@ -646,7 +646,7 @@ export default function BusinessesManagement() {
               <Text style={styles.sectionTitle}>💳 Discounts & Value Codes</Text>
 
               <View style={styles.switchRow}>
-                <Text style={styles.switchLabel}>Accepts Upright Discounts</Text>
+                <Text style={styles.switchLabel}>Accepts Endorse Discounts</Text>
                 <Switch
                   value={formAcceptsStandDiscounts}
                   onValueChange={setFormAcceptsStandDiscounts}

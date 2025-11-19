@@ -12,6 +12,7 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { darkColors, lightColors } from "@/constants/colors";
+import { useFonts, Poppins_400Regular, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 
 // Platform-specific Stripe imports
 let Elements: any;
@@ -126,9 +127,21 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Poppins_400Regular,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+  });
+
   useEffect(() => {
-    SplashScreen.hideAsync();
-  }, []);
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   // Platform-specific Stripe wrapper
   const StripeWrapper = ({ children }: { children: React.ReactNode }) => {

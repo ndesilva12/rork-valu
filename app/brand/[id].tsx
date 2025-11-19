@@ -348,7 +348,7 @@ export default function BrandDetailScreen() {
     if (!brand) return;
 
     try {
-      const message = `Check out ${brand.name} on Upright Money!`;
+      const message = `Check out ${brand.name} on Endorse Money!`;
       const url = Platform.OS === 'web'
         ? `${window.location.origin}/brand/${brand.id}`
         : `uprightmoney://brand/${brand.id}`;
@@ -540,8 +540,7 @@ export default function BrandDetailScreen() {
               )}
             </View>
             <View style={styles.scoreContainer}>
-              <View style={[styles.scoreCircle, { borderColor: scoreColor, backgroundColor: colors.backgroundSecondary }]}>
-                <AlignmentIcon size={14} color={scoreColor} strokeWidth={2.5} />
+              <View style={[styles.scoreCircle, { borderColor: scoreColor, backgroundColor: colors.background }]}>
                 <Text style={[styles.scoreNumber, { color: scoreColor }]}>
                   {Math.round(brandScore)}
                 </Text>
@@ -551,7 +550,9 @@ export default function BrandDetailScreen() {
                 onPress={() => setShowActionMenu(true)}
                 activeOpacity={0.7}
               >
-                <MoreVertical size={18} color={colors.text} strokeWidth={2} />
+                <View style={{ transform: [{ rotate: '90deg' }] }}>
+                  <MoreVertical size={18} color={colors.text} strokeWidth={2} />
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -1103,15 +1104,14 @@ const styles = StyleSheet.create({
   scoreCircle: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
+    borderRadius: 8,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   scoreNumber: {
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '700' as const,
-    marginTop: 2,
   },
   actionMenuButton: {
     width: 36,

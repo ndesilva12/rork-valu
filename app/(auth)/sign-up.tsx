@@ -534,15 +534,16 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   logo: {
-    width: 180,
-    height: 180,
+    width: 220,
+    height: 220,
     tintColor: undefined,
   },
   tagline: {
     fontSize: 18,
+    fontFamily: 'Poppins_600SemiBold',
     fontWeight: '600',
     letterSpacing: 0.5,
-    marginTop: -12,
+    marginTop: -55,
   },
   title: {
     fontSize: 28,

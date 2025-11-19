@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Search as SearchIcon, TrendingUp, TrendingDown, Minus, ScanBarcode, X, Heart, MessageCircle, Share2, ExternalLink } from 'lucide-react-native';
+import { Search as SearchIcon, TrendingUp, TrendingDown, Minus, ScanBarcode, X, Heart, MessageCircle, Share2, ExternalLink, MoreVertical } from 'lucide-react-native';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
 import {
@@ -69,6 +69,16 @@ export default function SearchScreen() {
   const [scanning, setScanning] = useState(true);
   const [lookingUp, setLookingUp] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
+
+  // Value Machine state
+  const [activeTab, setActiveTab] = useState<'value-machine' | 'discover-users'>('discover-users');
+  const [selectedSupportValues, setSelectedSupportValues] = useState<string[]>([]);
+  const [selectedRejectValues, setSelectedRejectValues] = useState<string[]>([]);
+  const [valueMachineResults, setValueMachineResults] = useState<Product[]>([]);
+  const [showingResults, setShowingResults] = useState(false);
+  const [resultsLimit, setResultsLimit] = useState(10);
+  const [selectedCategory, setSelectedCategory] = useState<string>('ideology');
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
 
   // Fetch Firebase businesses and public users on mount
   useEffect(() => {
@@ -304,6 +314,123 @@ export default function SearchScreen() {
     return firstMatchingValue.name;
   }, []);
 
+  // Value Machine handlers
+  const handleValueToggle = useCallback((valueId: string, type: 'support' | 'reject') => {
+    if (type === 'support') {
+      setSelectedSupportValues(prev => {
+        if (prev.includes(valueId)) {
+          return prev.filter(id => id !== valueId);
+        } else {
+          // Remove from reject if it's there
+          setSelectedRejectValues(prevReject => prevReject.filter(id => id !== valueId));
+          return [...prev, valueId];
+        }
+      });
+    } else {
+      setSelectedRejectValues(prev => {
+        if (prev.includes(valueId)) {
+          return prev.filter(id => id !== valueId);
+        } else {
+          // Remove from support if it's there
+          setSelectedSupportValues(prevSupport => prevSupport.filter(id => id !== valueId));
+          return [...prev, valueId];
+        }
+      });
+    }
+  }, []);
+
+  const handleResetSelections = useCallback(() => {
+    setSelectedSupportValues([]);
+    setSelectedRejectValues([]);
+    setShowingResults(false);
+  }, []);
+
+  const handleGenerateResults = useCallback(() => {
+    const allProducts = [...MOCK_PRODUCTS, ...LOCAL_BUSINESSES];
+    const allSelectedValues = [...selectedSupportValues, ...selectedRejectValues];
+
+    if (allSelectedValues.length === 0) {
+      Alert.alert('No Values Selected', 'Please select at least one value to support or reject.');
+      return;
+    }
+
+    // Score each product based on selected values
+    const scored = allProducts.map(product => {
+      let totalSupportScore = 0;
+      let totalRejectScore = 0;
+      const matchingValues = new Set<string>();
+      const positionSum: number[] = [];
+
+      product.valueAlignments.forEach(alignment => {
+        const isUserSupporting = selectedSupportValues.includes(alignment.valueId);
+        const isUserRejecting = selectedRejectValues.includes(alignment.valueId);
+
+        if (!isUserSupporting && !isUserRejecting) return;
+
+        matchingValues.add(alignment.valueId);
+        positionSum.push(alignment.position);
+
+        const score = alignment.isSupport ? (100 - alignment.position * 5) : -(100 - alignment.position * 5);
+
+        if (isUserSupporting) {
+          if (score > 0) {
+            totalSupportScore += score;
+          } else {
+            totalRejectScore += Math.abs(score);
+          }
+        }
+
+        if (isUserRejecting) {
+          if (score < 0) {
+            totalSupportScore += Math.abs(score);
+          } else {
+            totalRejectScore += score;
+          }
+        }
+      });
+
+      const valuesWhereNotAppears = allSelectedValues.length - matchingValues.size;
+      const totalPositionSum = positionSum.reduce((a, b) => a + b, 0) + (valuesWhereNotAppears * 11);
+      const avgPosition = allSelectedValues.length > 0 ? totalPositionSum / allSelectedValues.length : 11;
+
+      const isPositivelyAligned = totalSupportScore > totalRejectScore && totalSupportScore > 0;
+
+      let alignmentStrength: number;
+      if (isPositivelyAligned) {
+        alignmentStrength = Math.round((1 - ((avgPosition - 1) / 10)) * 50 + 50);
+      } else {
+        alignmentStrength = Math.round(((avgPosition - 1) / 10) * 50);
+      }
+
+      return {
+        product,
+        totalSupportScore,
+        totalRejectScore,
+        matchingValuesCount: matchingValues.size,
+        alignmentStrength,
+        isPositivelyAligned
+      };
+    });
+
+    // Sort by alignment strength and filter positively aligned
+    const alignedSorted = scored
+      .filter(s => s.isPositivelyAligned)
+      .sort((a, b) => b.alignmentStrength - a.alignmentStrength)
+      .map(s => ({ ...s.product, alignmentScore: s.alignmentStrength }));
+
+    setValueMachineResults(alignedSorted);
+    setShowingResults(true);
+    setResultsLimit(10);
+  }, [selectedSupportValues, selectedRejectValues]);
+
+  const handleLoadMore = useCallback(() => {
+    if (resultsLimit === 10) {
+      setResultsLimit(20);
+    } else if (resultsLimit === 20) {
+      setResultsLimit(30);
+    }
+  }, [resultsLimit]);
+
   const handleSearch = (text: string) => {
     try {
       setQuery(text);
@@ -343,7 +470,7 @@ export default function SearchScreen() {
               valueAlignments: [],
               keyReasons: [
                 business.businessInfo.acceptsStandDiscounts
-                  ? `Accepts Upright Discounts at ${business.businessInfo.name}`
+                  ? `Accepts Endorse Discounts at ${business.businessInfo.name}`
                   : `Local business: ${business.businessInfo.name}`
               ],
               moneyFlow: { company: business.businessInfo.name, shareholders: [], overallAlignment: 0 },
@@ -598,11 +725,43 @@ export default function SearchScreen() {
     const userLocation = item.profile.userDetails?.location;
     const userBio = item.profile.userDetails?.description;
 
+    const handleActionMenu = (e: any) => {
+      e.stopPropagation();
+      Alert.alert(
+        userName,
+        'Choose an action',
+        [
+          {
+            text: 'Follow',
+            onPress: () => Alert.alert('Coming Soon', 'Follow functionality will be available soon'),
+          },
+          {
+            text: 'Share',
+            onPress: () => {
+              const shareUrl = `${window.location.origin}/user/${item.id}`;
+              if (Platform.OS === 'web') {
+                navigator.clipboard.writeText(shareUrl);
+                Alert.alert('Link Copied', 'Profile link copied to clipboard');
+              } else {
+                RNShare.share({
+                  message: `Check out ${userName}'s profile on Endorse: ${shareUrl}`,
+                });
+              }
+            },
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
+    };
+
     return (
       <TouchableOpacity
         style={[
           styles.userCard,
-          { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }
+          { backgroundColor: 'transparent', borderColor: 'transparent' }
         ]}
         onPress={() => router.push(`/user/${item.id}`)}
         activeOpacity={0.7}
@@ -638,8 +797,272 @@ export default function SearchScreen() {
               </Text>
             )}
           </View>
+          <TouchableOpacity
+            style={[styles.userCardActionButton, { backgroundColor: colors.backgroundSecondary }]}
+            onPress={handleActionMenu}
+            activeOpacity={0.7}
+          >
+            <View style={{ transform: [{ rotate: '90deg' }] }}>
+              <MoreVertical size={18} color={colors.text} strokeWidth={2} />
+            </View>
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
+    );
+  };
+
+  const renderTabSelector = () => {
+    if (query.trim().length > 0) return null;
+
+    return (
+      <View style={[styles.tabSelector, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            activeTab === 'value-machine' && styles.activeTab,
+            { borderBottomColor: colors.primary }
+          ]}
+          onPress={() => {
+            setActiveTab('value-machine');
+            setShowingResults(false);
+          }}
+          activeOpacity={0.7}
+        >
+          <Text style={[
+            styles.tabText,
+            { color: activeTab === 'value-machine' ? colors.primary : colors.textSecondary },
+            activeTab === 'value-machine' && styles.activeTabText
+          ]}>
+            Value Machine
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            activeTab === 'discover-users' && styles.activeTab,
+            { borderBottomColor: colors.primary }
+          ]}
+          onPress={() => setActiveTab('discover-users')}
+          activeOpacity={0.7}
+        >
+          <Text style={[
+            styles.tabText,
+            { color: activeTab === 'discover-users' ? colors.primary : colors.textSecondary },
+            activeTab === 'discover-users' && styles.activeTabText
+          ]}>
+            Discover Users
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const renderResultListItem = ({ item }: { item: Product }) => {
+    const alignmentColor = getAlignmentColor(item.alignmentScore);
+    const normalizedScore = normalizeScore(item.alignmentScore);
+
+    return (
+      <TouchableOpacity
+        style={[styles.resultListItem, { borderBottomColor: colors.border }]}
+        onPress={() => handleProductPress(item)}
+        activeOpacity={0.7}
+      >
+        <Image
+          source={{ uri: getLogoUrl(item.website || '') }}
+          style={styles.resultListImage}
+          contentFit="cover"
+          transition={200}
+          cachePolicy="memory-disk"
+        />
+        <View style={styles.resultListInfo}>
+          <Text style={[styles.resultListBrand, { color: colors.text }]}>
+            {item.brand}
+          </Text>
+          <Text style={[styles.resultListName, { color: colors.textSecondary }]} numberOfLines={1}>
+            {item.name}
+          </Text>
+        </View>
+        <View style={[styles.resultListScore, { borderColor: alignmentColor, backgroundColor: alignmentColor + '15' }]}>
+          <Text style={[styles.resultListScoreText, { color: alignmentColor }]}>
+            {normalizedScore}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderValueMachineSection = () => {
+    const categories: Array<{ key: string; label: string }> = [
+      { key: 'ideology', label: 'Ideology' },
+      { key: 'person', label: 'Person' },
+      { key: 'social_issue', label: 'Social Issue' },
+      { key: 'religion', label: 'Religion' },
+      { key: 'nation', label: 'Nation' },
+    ];
+
+    const selectedCategoryLabel = categories.find(c => c.key === selectedCategory)?.label || 'Select Category';
+
+    if (showingResults) {
+      const displayedResults = valueMachineResults.slice(0, resultsLimit);
+      const canLoadMore = resultsLimit < 30 && valueMachineResults.length > resultsLimit;
+
+      return (
+        <View style={styles.valueMachineContainer}>
+          <View style={styles.valueMachineHeader}>
+            <View style={styles.valueMachineHeaderRow}>
+              <Text style={[styles.valueMachineTitle, { color: colors.text }]}>
+                Top Results
+              </Text>
+              <TouchableOpacity
+                onPress={handleResetSelections}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.resetButton, { color: colors.primary }]}>Reset</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <FlatList
+            data={displayedResults}
+            renderItem={renderResultListItem}
+            keyExtractor={item => item.id}
+            contentContainerStyle={{ paddingBottom: 100 }}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>No Results Found</Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                  Try selecting different values
+                </Text>
+              </View>
+            }
+            ListFooterComponent={
+              canLoadMore ? (
+                <TouchableOpacity
+                  style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                  onPress={handleLoadMore}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                    Load More ({resultsLimit === 10 ? '10 more' : '10 more'})
+                  </Text>
+                </TouchableOpacity>
+              ) : null
+            }
+          />
+        </View>
+      );
+    }
+
+    const currentCategoryValues = AVAILABLE_VALUES[selectedCategory as keyof typeof AVAILABLE_VALUES] || [];
+
+    return (
+      <ScrollView
+        style={styles.valueMachineContainer}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.valueMachineHeader}>
+          <View style={styles.valueMachineHeaderRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.valueMachineTitle, { color: colors.text }]}>
+                Select Values
+              </Text>
+              <Text style={[styles.valueMachineSubtitle, { color: colors.textSecondary }]}>
+                Generate brands based on specific values
+              </Text>
+            </View>
+            {(selectedSupportValues.length > 0 || selectedRejectValues.length > 0) && (
+              <TouchableOpacity
+                onPress={handleResetSelections}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.resetButton, { color: colors.primary }]}>Reset</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Category Dropdown */}
+        <View style={styles.categoryDropdownContainer}>
+          <TouchableOpacity
+            style={[styles.categoryDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+            onPress={() => setCategoryModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.categoryDropdownText, { color: colors.text }]}>
+              {selectedCategoryLabel}
+            </Text>
+            <Text style={[styles.categoryDropdownText, { color: colors.textSecondary }]}>
+              ▼
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Values List */}
+        <View style={styles.categoryContainer}>
+          {currentCategoryValues.map(value => {
+            const isSupported = selectedSupportValues.includes(value.id);
+            const isRejected = selectedRejectValues.includes(value.id);
+
+            return (
+              <View key={value.id} style={[styles.valueRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.valueName, { color: colors.text }]} numberOfLines={1}>
+                  {value.name}
+                </Text>
+                <View style={styles.valueActions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.valueButton,
+                      isSupported && { backgroundColor: colors.success + '20', borderColor: colors.success }
+                    ]}
+                    onPress={() => handleValueToggle(value.id, 'support')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      styles.valueButtonText,
+                      { color: isSupported ? colors.success : colors.textSecondary }
+                    ]}>
+                      Support
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.valueButton,
+                      isRejected && { backgroundColor: colors.danger + '20', borderColor: colors.danger }
+                    ]}
+                    onPress={() => handleValueToggle(value.id, 'reject')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      styles.valueButtonText,
+                      { color: isRejected ? colors.danger : colors.textSecondary }
+                    ]}>
+                      Reject
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+
+        {(selectedSupportValues.length > 0 || selectedRejectValues.length > 0) && (
+          <View style={styles.generateContainer}>
+            <TouchableOpacity
+              style={[styles.generateButton, { backgroundColor: colors.primary }]}
+              onPress={handleGenerateResults}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.generateButtonText, { color: colors.white }]}>
+                Generate Results
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
+              {selectedSupportValues.length} supported • {selectedRejectValues.length} rejected
+            </Text>
+          </View>
+        )}
+      </ScrollView>
     );
   };
 
@@ -813,34 +1236,40 @@ export default function SearchScreen() {
         </View>
       </View>
 
+      {renderTabSelector()}
+
       {query.trim().length === 0 ? (
-        <FlatList
-          key="user-list"
-          data={publicUsers}
-          renderItem={renderUserCard}
-          keyExtractor={item => item.id}
-          contentContainerStyle={[styles.userListContainer, { paddingBottom: 100 }]}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <View style={styles.exploreHeader}>
-              <Text style={[styles.exploreTitle, { color: colors.text }]}>Discover Users</Text>
-              <Text style={[styles.exploreSubtitle, { color: colors.textSecondary }]}>
-                Connect with other Upright users
-              </Text>
-            </View>
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <View style={[styles.emptyIconContainer, { backgroundColor: colors.primaryLight + '10' }]}>
-                <SearchIcon size={48} color={colors.primaryLight} strokeWidth={1.5} />
+        activeTab === 'discover-users' ? (
+          <FlatList
+            key="user-list"
+            data={publicUsers}
+            renderItem={renderUserCard}
+            keyExtractor={item => item.id}
+            contentContainerStyle={[styles.userListContainer, { paddingBottom: 100 }]}
+            showsVerticalScrollIndicator={false}
+            ListHeaderComponent={
+              <View style={styles.exploreHeader}>
+                <Text style={[styles.exploreTitle, { color: colors.text }]}>Discover Users</Text>
+                <Text style={[styles.exploreSubtitle, { color: colors.textSecondary }]}>
+                  Connect with other Endorse users
+                </Text>
               </View>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>No Users Yet</Text>
-              <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                Be one of the first to make your profile public!
-              </Text>
-            </View>
-          }
-        />
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <View style={[styles.emptyIconContainer, { backgroundColor: colors.primaryLight + '10' }]}>
+                  <SearchIcon size={48} color={colors.primaryLight} strokeWidth={1.5} />
+                </View>
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>No Users Yet</Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                  Be one of the first to make your profile public!
+                </Text>
+              </View>
+            }
+          />
+        ) : (
+          renderValueMachineSection()
+        )
       ) : results.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>No results found</Text>
@@ -1135,6 +1564,40 @@ export default function SearchScreen() {
               </View>
             </View>
           ) : null}
+        </View>
+      </Modal>
+
+      {/* Category Selection Modal */}
+      <Modal
+        visible={categoryModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setCategoryModalVisible(false)}
+      >
+        <View style={styles.categoryModalOverlay}>
+          <View style={[styles.categoryModalContent, { backgroundColor: colors.background }]}>
+            {[
+              { key: 'ideology', label: 'Ideology' },
+              { key: 'person', label: 'Person' },
+              { key: 'social_issue', label: 'Social Issue' },
+              { key: 'religion', label: 'Religion' },
+              { key: 'nation', label: 'Nation' },
+            ].map(category => (
+              <TouchableOpacity
+                key={category.key}
+                style={[styles.categoryModalItem, { borderBottomColor: colors.border }]}
+                onPress={() => {
+                  setSelectedCategory(category.key);
+                  setCategoryModalVisible(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.categoryModalText, { color: selectedCategory === category.key ? colors.primary : colors.text }]}>
+                  {category.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       </Modal>
     </View>
@@ -1776,6 +2239,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
+  userCardActionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   userScoreCircle: {
     width: 52,
     height: 52,
@@ -1788,5 +2258,197 @@ const styles = StyleSheet.create({
   userScoreNumber: {
     fontSize: 12,
     fontWeight: '700' as const,
+  },
+
+  // Tab Selector
+  tabSelector: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+  },
+  tabText: {
+    fontSize: 24,
+    fontWeight: '600' as const,
+  },
+  activeTabText: {
+    fontWeight: '700' as const,
+  },
+
+  // Value Machine
+  valueMachineContainer: {
+    flex: 1,
+  },
+  valueMachineHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 16,
+  },
+  valueMachineHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  valueMachineTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  valueMachineSubtitle: {
+    fontSize: 13,
+    marginTop: 0,
+  },
+  resetButton: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  categoryDropdownContainer: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  categoryDropdown: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  categoryDropdownText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  categoryContainer: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+  },
+  valuesContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  valueRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  valueName: {
+    flex: 1,
+    fontSize: 15,
+    marginRight: 12,
+  },
+  valueActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  valueButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  valueButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  generateContainer: {
+    padding: 16,
+    paddingTop: 24,
+    alignItems: 'center',
+  },
+  generateButton: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  generateButtonText: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+  },
+  selectedCount: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  loadMoreButton: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  loadMoreText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+
+  // List-style results
+  resultListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+  },
+  resultListImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  resultListInfo: {
+    flex: 1,
+  },
+  resultListBrand: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 2,
+  },
+  resultListName: {
+    fontSize: 13,
+  },
+  resultListScore: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resultListScoreText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  categoryModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  categoryModalContent: {
+    maxHeight: '50%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+  },
+  categoryModalItem: {
+    padding: 18,
+    borderBottomWidth: 1,
+  },
+  categoryModalText: {
+    fontSize: 17,
+    fontWeight: '500' as const,
   },
 });

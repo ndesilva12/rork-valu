@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Plus, List as ListIcon, Globe, Lock, MapPin, User, Eye, EyeOff, TrendingUp, TrendingDown, Minus, MoreVertical } from 'lucide-react-native';
+import { ArrowLeft, Plus, List as ListIcon, Globe, Lock, MapPin, User, TrendingUp, TrendingDown, Minus, MoreVertical, ExternalLink } from 'lucide-react-native';
 import { UnifiedLibrary } from '@/components/Library';
 import {
   View,
@@ -11,6 +11,7 @@ import {
   Platform,
   Alert,
   PanResponder,
+  Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -339,22 +340,50 @@ export default function UserProfileScreen() {
 
             {/* Show alignment score only when viewing another user's profile */}
             {!isOwnProfile && (
-              <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.backgroundSecondary }]}>
-                <AlignmentIcon size={20} color={alignmentColor} strokeWidth={2.5} />
-                <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
-                  {alignmentData.alignmentStrength}
-                </Text>
-              </View>
-            )}
-
-            {/* Show privacy badge when viewing own profile */}
-            {isOwnProfile && (
-              <View style={[styles.privacyBadge, { backgroundColor: userProfile.isPublicProfile ? colors.primary : colors.backgroundSecondary }]}>
-                {userProfile.isPublicProfile ? (
-                  <Eye size={16} color={colors.white} />
-                ) : (
-                  <EyeOff size={16} color={colors.textSecondary} />
-                )}
+              <View style={{ alignItems: 'center', gap: 8 }}>
+                <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.background }]}>
+                  <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
+                    {alignmentData.alignmentStrength}
+                  </Text>
+                </View>
+                {/* Action menu button below score badge */}
+                <TouchableOpacity
+                  style={[styles.profileActionButton, { backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => {
+                    Alert.alert(
+                      userName,
+                      'Choose an action',
+                      [
+                        {
+                          text: 'Follow',
+                          onPress: () => Alert.alert('Coming Soon', 'Follow functionality will be available soon'),
+                        },
+                        {
+                          text: 'Share',
+                          onPress: () => {
+                            const shareUrl = `${Platform.OS === 'web' ? window.location.origin : 'https://upright.money'}/user/${userId}`;
+                            if (Platform.OS === 'web') {
+                              navigator.clipboard.writeText(shareUrl);
+                              Alert.alert('Link Copied', 'Profile link copied to clipboard');
+                            } else {
+                              // Native share
+                              Alert.alert('Share', `Share ${userName}'s profile`);
+                            }
+                          },
+                        },
+                        {
+                          text: 'Cancel',
+                          style: 'cancel',
+                        },
+                      ]
+                    );
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={{ transform: [{ rotate: '90deg' }] }}>
+                    <MoreVertical size={18} color={colors.text} strokeWidth={2} />
+                  </View>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -363,6 +392,58 @@ export default function UserProfileScreen() {
             <Text style={[styles.userDescription, { color: colors.textSecondary }]}>
               {userDetails.description}
             </Text>
+          )}
+
+          {/* Social Links */}
+          {(userDetails?.socialMedia?.twitter || userDetails?.socialMedia?.instagram || userDetails?.socialMedia?.facebook || userDetails?.socialMedia?.linkedin || userDetails?.website) && (
+            <View style={styles.socialLinksContainer}>
+              {userDetails.website && (
+                <TouchableOpacity
+                  style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => Linking.openURL(userDetails.website.startsWith('http') ? userDetails.website : `https://${userDetails.website}`)}
+                  activeOpacity={0.7}
+                >
+                  <ExternalLink size={14} color={colors.primary} strokeWidth={2} />
+                  <Text style={[styles.socialButtonText, { color: colors.text }]}>Website</Text>
+                </TouchableOpacity>
+              )}
+              {userDetails.socialMedia?.twitter && (
+                <TouchableOpacity
+                  style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => Linking.openURL(`https://x.com/${userDetails.socialMedia.twitter}`)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.socialButtonText, { color: colors.text }]}>𝕏</Text>
+                </TouchableOpacity>
+              )}
+              {userDetails.socialMedia?.instagram && (
+                <TouchableOpacity
+                  style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => Linking.openURL(`https://instagram.com/${userDetails.socialMedia.instagram.replace('@', '')}`)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.socialButtonText, { color: colors.text }]}>Instagram</Text>
+                </TouchableOpacity>
+              )}
+              {userDetails.socialMedia?.facebook && (
+                <TouchableOpacity
+                  style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => Linking.openURL(userDetails.socialMedia.facebook.startsWith('http') ? userDetails.socialMedia.facebook : `https://${userDetails.socialMedia.facebook}`)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.socialButtonText, { color: colors.text }]}>Facebook</Text>
+                </TouchableOpacity>
+              )}
+              {userDetails.socialMedia?.linkedin && (
+                <TouchableOpacity
+                  style={[styles.socialButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => Linking.openURL(userDetails.socialMedia.linkedin.startsWith('http') ? userDetails.socialMedia.linkedin : `https://${userDetails.socialMedia.linkedin}`)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.socialButtonText, { color: colors.text }]}>LinkedIn</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           )}
 
           {/* Library Section - Uses Unified Library Component */}
@@ -385,8 +466,8 @@ export default function UserProfileScreen() {
                 }
                 return endorsementList || null;
               })()}
-              alignedItems={allSupportFull}
-              unalignedItems={allAvoidFull}
+              alignedItems={isOwnProfile ? allSupportFull : []}
+              unalignedItems={isOwnProfile ? allAvoidFull : []}
               isDarkMode={isDarkMode}
               profileImage={profileImageUrl}
               userBusinesses={userBusinesses}
@@ -500,15 +581,14 @@ const styles = StyleSheet.create({
   scoreCircle: {
     width: 64,
     height: 64,
-    borderRadius: 32,
-    borderWidth: 2.5,
+    borderRadius: 10,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   scoreNumber: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700' as const,
-    marginTop: 3,
   },
   privacyBadge: {
     width: 64,
@@ -519,10 +599,41 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(0, 0, 0, 0.1)',
   },
+  profileActionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   userDescription: {
     fontSize: 12,
     lineHeight: 17,
     marginBottom: 16,
+  },
+  socialLinksContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 16,
+  },
+  socialButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  socialButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
   librarySection: {
     marginTop: 8,

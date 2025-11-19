@@ -342,15 +342,6 @@ export default function ProfileScreen() {
                 </View>
               )}
             </View>
-
-            {/* Privacy Badge */}
-            <View style={[styles.privacyBadge, { backgroundColor: isPublicProfile ? colors.primary : colors.backgroundSecondary, borderColor: colors.border }]}>
-              {isPublicProfile ? (
-                <Eye size={16} color={colors.white} strokeWidth={2} />
-              ) : (
-                <EyeOff size={16} color={colors.textSecondary} strokeWidth={2} />
-              )}
-            </View>
           </View>
 
           {/* Description */}
@@ -518,33 +509,6 @@ export default function ProfileScreen() {
                 />
               </View>
 
-              {/* Privacy Toggle */}
-              <View style={styles.privacySection}>
-                <View style={styles.privacyHeader}>
-                  <View style={styles.privacyIconRow}>
-                    {isPublicProfile ? (
-                      <Eye size={16} color={colors.primary} strokeWidth={2} />
-                    ) : (
-                      <EyeOff size={16} color={colors.textSecondary} strokeWidth={2} />
-                    )}
-                    <View style={styles.privacyTextContainer}>
-                      <Text style={[styles.privacyTitle, { color: colors.text }]}>Public Profile</Text>
-                      <Text style={[styles.privacyDescription, { color: colors.textSecondary }]}>
-                        {isPublicProfile
-                          ? 'Your profile and public lists are visible to others'
-                          : 'Your profile is private and only visible to you'}
-                      </Text>
-                    </View>
-                  </View>
-                  <Switch
-                    value={isPublicProfile}
-                    onValueChange={setIsPublicProfile}
-                    trackColor={{ false: colors.border, true: colors.primaryLight }}
-                    thumbColor={isPublicProfile ? colors.primary : colors.textSecondary}
-                  />
-                </View>
-              </View>
-
               {/* Action Buttons */}
               <View style={styles.editActions}>
                 <TouchableOpacity
@@ -615,7 +579,7 @@ export default function ProfileScreen() {
             </View>
           ) : (
             <UnifiedLibrary
-              mode="preview"
+              mode="edit"
               currentUserId={clerkUser?.id}
               alignedItems={allSupportFull}
               unalignedItems={allAvoidFull}
@@ -646,6 +610,7 @@ const styles = StyleSheet.create({
     maxWidth: 768,
     alignSelf: 'center',
     width: '100%',
+    paddingHorizontal: 8, // Extend content closer to edges on mobile browsers
   },
   stickyHeaderContainer: {
     borderBottomWidth: 1,

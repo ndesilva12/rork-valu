@@ -1,6 +1,6 @@
 module.exports = {
   expo: {
-    name: "Upright",
+    name: "Endorse",
     slug: "upright",
     version: "1.0.0",
     orientation: "portrait",
@@ -54,9 +54,9 @@ module.exports = {
       bundler: "metro",
       output: "static",
       favicon: "./assets/images/endo12.png",
-      name: "Upright",
-      shortName: "Upright",
-      description: "Upright - Vote With Your Money",
+      name: "Endorse",
+      shortName: "Endorse",
+      description: "Endorse - Vote With Your Money",
       themeColor: "#ffffff",
       backgroundColor: "#ffffff",
       display: "standalone",

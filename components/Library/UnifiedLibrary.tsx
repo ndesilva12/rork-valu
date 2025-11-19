@@ -51,6 +51,8 @@ import EditListModal from '@/components/EditListModal';
 import ShareOptionsModal from '@/components/ShareOptionsModal';
 import ItemOptionsModal from '@/components/ItemOptionsModal';
 import ConfirmModal from '@/components/ConfirmModal';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/firebase';
 
 // ===== Types =====
 
@@ -191,7 +193,7 @@ export default function UnifiedLibrary({
 
   const performShareList = async (list: UserList) => {
     try {
-      const message = `Check out my list "${list.name}" on Upright Money!\n${list.description || ''}`;
+      const message = `Check out my list "${list.name}" on Endorse Money!\n${list.description || ''}`;
       await Share.share({
         message,
         title: list.name,
@@ -229,12 +231,12 @@ export default function UnifiedLibrary({
         case 'brand':
           const brandName = (entry as any).brandName || (entry as any).name || 'Brand';
           title = brandName;
-          message = `Check out ${brandName} on Upright Money!`;
+          message = `Check out ${brandName} on Endorse Money!`;
           break;
         case 'business':
           const businessName = (entry as any).businessName || (entry as any).name || 'Business';
           title = businessName;
-          message = `Check out ${businessName} on Upright Money!`;
+          message = `Check out ${businessName} on Endorse Money!`;
           break;
         case 'value':
           const valueName = (entry as any).valueName || (entry as any).name || 'Value';
@@ -289,11 +291,28 @@ export default function UnifiedLibrary({
   // Privacy toggle handler
   const handleTogglePrivacy = async (listId: string, currentStatus: boolean) => {
     try {
-      await updateListMetadata(listId, { isPublic: !currentStatus });
-      // Reload lists to reflect the change
-      if (currentUserId) {
+      // Handle aligned/unaligned system lists differently
+      if (listId === 'aligned' || listId === 'unaligned') {
+        if (!currentUserId) return;
+
+        // Update user profile field
+        const userRef = doc(db, 'users', currentUserId);
+        const fieldName = listId === 'aligned' ? 'alignedListPublic' : 'unalignedListPublic';
+        await updateDoc(userRef, {
+          [fieldName]: !currentStatus
+        });
+
+        // Reload lists to reflect the change
         await library.loadUserLists(currentUserId, true);
+      } else {
+        // Handle regular user lists
+        await updateListMetadata(listId, { isPublic: !currentStatus });
+        // Reload lists to reflect the change
+        if (currentUserId) {
+          await library.loadUserLists(currentUserId, true);
+        }
       }
+
       // Show success feedback
       const newStatus = !currentStatus ? 'Public' : 'Private';
       if (Platform.OS === 'web') {
@@ -874,7 +893,24 @@ export default function UnifiedLibrary({
             </View>
           </View>
 
-          <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {/* Action Menu Button for endorsement, aligned, and unaligned lists */}
+            {(listId === 'endorsement' || listId === 'aligned' || listId === 'unaligned') && canEdit && (
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  setActiveListOptionsId(isOptionsOpen ? null : listId);
+                }}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <View style={{ transform: [{ rotate: '90deg' }] }}>
+                  <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                </View>
+              </TouchableOpacity>
+            )}
+            <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+          </View>
         </TouchableOpacity>
 
         {/* Options dropdown - show in edit mode AND view mode */}
@@ -890,8 +926,8 @@ export default function UnifiedLibrary({
               const canEditMeta = !isSystemList && !isCopiedList && canEdit;
               // Allow removing copied lists - users should be able to remove lists they've added to their library
               const canRemove = !isEndorsementList && !isSystemList && canEdit;
-              // System lists (aligned/unaligned) cannot have privacy toggled
-              const canTogglePrivacy = isPublic !== undefined && !isCopiedList && !isSystemList && canEdit;
+              // REMOVED: Privacy toggle removed from all lists
+              const canTogglePrivacy = false;
               const canCopyList = mode === 'view'; // Only in view mode (other users)
 
               return (
@@ -1323,7 +1359,8 @@ export default function UnifiedLibrary({
 
               const canEditMeta = !isSystemList && !isCopiedList && canEdit;
               const canRemove = !isEndorsementList && !isSystemList && canEdit;
-              const canTogglePrivacy = isPublic !== undefined && !isCopiedList && !isSystemList && canEdit;
+              // REMOVED: Privacy toggle removed from all lists
+              const canTogglePrivacy = false;
               const canCopyList = mode === 'view';
 
               return (
@@ -1342,12 +1379,27 @@ export default function UnifiedLibrary({
                     </TouchableOpacity>
                   )}
 
-                  {currentList && (
+                  {(currentList || isSystemList) && (
                     <TouchableOpacity
                       style={styles.listOptionItem}
                       onPress={() => {
                         setActiveListOptionsId(null);
-                        handleShareList(currentList);
+                        if (isSystemList) {
+                          // Create a mock list object for system lists
+                          const systemListName = listId === 'aligned' ? 'Aligned' : 'Unaligned';
+                          const systemListDescription = listId === 'aligned'
+                            ? 'Brands and businesses aligned with your values'
+                            : 'Brands and businesses not aligned with your values';
+                          const mockList = {
+                            id: listId,
+                            name: systemListName,
+                            description: systemListDescription,
+                            isPublic: false, // System lists are always private
+                          } as UserList;
+                          handleShareList(mockList);
+                        } else if (currentList) {
+                          handleShareList(currentList);
+                        }
                       }}
                       activeOpacity={0.7}
                     >
@@ -1466,17 +1518,22 @@ export default function UnifiedLibrary({
 
   // Render library overview (all list cards)
   const renderLibraryOverview = () => {
+    // Determine if viewing own profile
+    const isOwnProfile = !viewingUserId || currentUserId === viewingUserId;
+    // Use "Endorsements" for own profile, user name for others
+    const endorsementTitle = isOwnProfile ? 'Endorsements' : (endorsementList?.name || 'Endorsements');
+
     return (
       <>
         {/* 1. Endorsement List - Always first, pinned */}
         {endorsementList && renderListCard(
           'endorsement',
-          endorsementList.name,
+          endorsementTitle,
           endorsementList.entries?.length || 0,
           true,
           `Endorsed by ${endorsementList.creatorName || 'you'}`,
           endorsementList.description,
-          endorsementList.isPublic,
+          true, // Always public
           profileImage
         )}
 
@@ -1488,7 +1545,7 @@ export default function UnifiedLibrary({
           false,
           undefined,
           'Brands and businesses aligned with your values',
-          false,
+          false, // Always private
           undefined,
           true
         )}
@@ -1501,7 +1558,7 @@ export default function UnifiedLibrary({
           false,
           undefined,
           'Brands and businesses not aligned with your values',
-          false,
+          false, // Always private
           undefined,
           true
         )}
@@ -1551,7 +1608,10 @@ export default function UnifiedLibrary({
     let renderContent = null;
 
     if (openedListId === 'endorsement' && endorsementList) {
-      title = endorsementList.name;
+      // Determine if viewing own profile
+      const isOwnProfile = !viewingUserId || currentUserId === viewingUserId;
+      // Use "Endorsements" for own profile, user name for others
+      title = isOwnProfile ? 'Endorsements' : endorsementList.name;
       itemCount = endorsementList.entries?.length || 0;
       isEndorsed = true;
       attribution = `Endorsed by ${endorsementList.creatorName || 'you'}`;
@@ -1773,7 +1833,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   menuBackdrop: {
-    position: 'absolute',
+    position: Platform.OS === 'web' ? 'fixed' as any : 'absolute',
     top: 0,
     left: 0,
     right: 0,

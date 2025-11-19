@@ -63,7 +63,7 @@ export default function SharedListScreen() {
   const handleShare = async () => {
     if (!list) return;
 
-    const shareMessage = `Check out "${list.name}" on Upright Money!\n\n` +
+    const shareMessage = `Check out "${list.name}" on Endorse Money!\n\n` +
       (list.creatorName ? `Created by: ${list.creatorName}\n` : '') +
       (list.description ? `${list.description}\n\n` : '') +
       `${list.entries.length} ${list.entries.length === 1 ? 'item' : 'items'}`;
