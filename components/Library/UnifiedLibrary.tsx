@@ -418,17 +418,15 @@ export default function UnifiedLibrary({
             <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
               {product.name || 'Unknown Brand'}
             </Text>
-            {product.category && (
-              <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                {product.category}
-              </Text>
-            )}
+            <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+              {product.category || 'Uncategorized'}
+            </Text>
           </View>
-          {alignmentScore !== undefined && (
-            <View style={styles.brandScoreContainer}>
-              <Text style={[styles.brandScore, { color: scoreColor }]}>{alignmentScore}</Text>
-            </View>
-          )}
+          <View style={styles.brandScoreContainer}>
+            <Text style={[styles.brandScore, { color: scoreColor }]}>
+              {alignmentScore !== undefined ? alignmentScore : 50}
+            </Text>
+          </View>
           {(mode === 'edit' || mode === 'view') && (
             <TouchableOpacity
               style={[styles.quickAddButton, { backgroundColor: colors.background }]}

@@ -92,7 +92,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
-import { calculateBrandScore, calculateSimilarityScore } from '@/lib/scoring';
+import { calculateBrandScore, calculateSimilarityScore, normalizeBrandScores } from '@/lib/scoring';
 import { getAllUserBusinesses, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 import BusinessMapView from '@/components/BusinessMapView';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
@@ -568,11 +568,14 @@ export default function HomeScreen() {
       return { brand, score };
     });
 
+    // Normalize scores to 1-99 range for better visual separation
+    const normalizedBrands = normalizeBrandScores(brandsWithScores);
+
     // Create scored brands map
-    const scoredMap = new Map(brandsWithScores.map(({ brand, score }) => [brand.id, score]));
+    const scoredMap = new Map(normalizedBrands.map(({ brand, score }) => [brand.id, score]));
 
     // Sort all brands by score
-    const sortedByScore = [...brandsWithScores].sort((a, b) => b.score - a.score);
+    const sortedByScore = [...normalizedBrands].sort((a, b) => b.score - a.score);
 
     // Top 50 highest-scoring brands (aligned)
     const alignedBrands = sortedByScore

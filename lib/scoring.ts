@@ -36,20 +36,51 @@ export function calculateBrandScore(
     if (!valueData) return;
 
     const weight = cause.weight || 1.0;
-    maxPossibleScore += weight;
 
-    // Case-insensitive comparison
-    const isInSupport = valueData.support.some(name => name.toLowerCase() === brandNameLower);
-    const isInOppose = valueData.oppose.some(name => name.toLowerCase() === brandNameLower);
+    // Find brand position in support/oppose arrays (position matters!)
+    // Earlier in array = stronger alignment/opposition
+    const supportIndex = valueData.support.findIndex(name => name.toLowerCase() === brandNameLower);
+    const opposeIndex = valueData.oppose.findIndex(name => name.toLowerCase() === brandNameLower);
+
+    const isInSupport = supportIndex !== -1;
+    const isInOppose = opposeIndex !== -1;
+
+    if (!isInSupport && !isInOppose) {
+      // Brand not mentioned for this value - neutral contribution
+      maxPossibleScore += weight;
+      return;
+    }
+
+    // Calculate position-based score (earlier position = higher score)
+    // Position 0 (first) = 100% of weight
+    // Position 49 (last in top 50) = 51% of weight
+    // This creates separation while maintaining relative importance
+    let positionScore = 0;
+
+    if (isInSupport) {
+      const totalSupport = valueData.support.length;
+      const positionWeight = totalSupport > 1
+        ? 1.0 - (supportIndex / totalSupport) * 0.49  // Range: 1.0 to 0.51
+        : 1.0;
+      positionScore = weight * positionWeight;
+    } else if (isInOppose) {
+      const totalOppose = valueData.oppose.length;
+      const positionWeight = totalOppose > 1
+        ? 1.0 - (opposeIndex / totalOppose) * 0.49  // Range: 1.0 to 0.51
+        : 1.0;
+      positionScore = weight * positionWeight;
+    }
+
+    maxPossibleScore += weight;
 
     if (cause.type === 'support') {
       // User supports this value
-      if (isInSupport) rawScore += weight;      // Brand aligns with value: +1
-      if (isInOppose) rawScore -= weight;       // Brand opposes value: -1
+      if (isInSupport) rawScore += positionScore;      // Brand aligns: positive
+      if (isInOppose) rawScore -= positionScore;       // Brand opposes: negative
     } else if (cause.type === 'avoid') {
       // User avoids this value
-      if (isInSupport) rawScore -= weight;      // Brand aligns with value: -1
-      if (isInOppose) rawScore += weight;       // Brand opposes value: +1
+      if (isInSupport) rawScore -= positionScore;      // Brand aligns: negative
+      if (isInOppose) rawScore += positionScore;       // Brand opposes: positive
     }
   });
 
@@ -60,6 +91,41 @@ export function calculateBrandScore(
 
   const normalizedScore = 50 + (rawScore / maxPossibleScore) * 50;
   return Math.round(Math.max(0, Math.min(100, normalizedScore)));
+}
+
+/**
+ * Normalize an array of brand scores to 1-99 range for better visual separation
+ * The highest score becomes 99, lowest becomes 1, others distributed proportionally
+ *
+ * @param brandsWithScores - Array of {brand, score} objects
+ * @returns Array with normalized scores (1-99)
+ */
+export function normalizeBrandScores(
+  brandsWithScores: Array<{ brand: any; score: number }>
+): Array<{ brand: any; score: number }> {
+  if (brandsWithScores.length === 0) return brandsWithScores;
+  if (brandsWithScores.length === 1) {
+    return [{ ...brandsWithScores[0], score: 50 }]; // Single brand = neutral
+  }
+
+  // Find min and max scores
+  const scores = brandsWithScores.map(b => b.score);
+  const minScore = Math.min(...scores);
+  const maxScore = Math.max(...scores);
+
+  // If all scores are the same, return 50 for all
+  if (minScore === maxScore) {
+    return brandsWithScores.map(b => ({ ...b, score: 50 }));
+  }
+
+  // Normalize to 1-99 range
+  return brandsWithScores.map(({ brand, score }) => {
+    const normalized = 1 + ((score - minScore) / (maxScore - minScore)) * 98;
+    return {
+      brand,
+      score: Math.round(normalized)
+    };
+  });
 }
 
 /**
