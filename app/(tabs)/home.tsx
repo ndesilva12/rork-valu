@@ -92,6 +92,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
+import { calculateBrandScore, calculateSimilarityScore } from '@/lib/scoring';
 import { getAllUserBusinesses, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 import BusinessMapView from '@/components/BusinessMapView';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
@@ -561,24 +562,41 @@ export default function HomeScreen() {
       };
     }
 
-    // Sort alphabetically by name
+    // Calculate scores for all brands using the new scoring system
+    const brandsWithScores = currentBrands.map(brand => {
+      const score = calculateBrandScore(brand.name, profile.causes || [], valuesMatrix);
+      return { brand, score };
+    });
+
+    // Create scored brands map
+    const scoredMap = new Map(brandsWithScores.map(({ brand, score }) => [brand.id, score]));
+
+    // Separate into aligned (>= 60) and unaligned (< 40) based on scores
+    const alignedBrands = brandsWithScores
+      .filter(({ score }) => score >= 60)
+      .sort((a, b) => b.score - a.score) // Sort by score descending
+      .map(({ brand }) => brand);
+
+    const unalignedBrands = brandsWithScores
+      .filter(({ score }) => score < 40)
+      .sort((a, b) => a.score - b.score) // Sort by score ascending (most opposed first)
+      .map(({ brand }) => brand);
+
+    // All brands sorted alphabetically
     const sortedBrands = [...currentBrands].sort((a, b) =>
       (a.name || '').localeCompare(b.name || '')
     );
 
-    // Set all scores to 50
-    const scoredMap = new Map(sortedBrands.map((brand) => [brand.id, 50]));
-
     return {
-      topSupport: sortedBrands.slice(0, 10),
-      topAvoid: [],
-      allSupport: sortedBrands,
+      topSupport: alignedBrands.slice(0, 10),
+      topAvoid: unalignedBrands.slice(0, 10),
+      allSupport: alignedBrands,
       allSupportFull: sortedBrands,
-      allAvoidFull: [],
+      allAvoidFull: unalignedBrands,
       scoredBrands: scoredMap,
       brandDistances: new Map(),
     };
-  }, [brands, userBusinesses]);
+  }, [brands, userBusinesses, profile.causes, valuesMatrix]);
 
   // Compute local businesses when "local" view is active
   const localBusinessData = useMemo(() => {
@@ -590,7 +608,7 @@ export default function HomeScreen() {
       };
     }
 
-    // Filter businesses by distance and set all scores to 50
+    // Filter businesses by distance and calculate similarity scores
     const businessesWithScores = userBusinesses.map((business) => {
       // Only check distance if a filter is selected, otherwise show all
       let rangeResult;
@@ -605,9 +623,12 @@ export default function HomeScreen() {
         rangeResult = isBusinessWithinRange(business, userLocation.latitude, userLocation.longitude, localDistance);
       }
 
+      // Calculate similarity score with the business
+      const similarityScore = calculateSimilarityScore(profile.causes || [], business.causes || []);
+
       return {
         business,
-        alignmentScore: 50,
+        alignmentScore: similarityScore,
         distance: rangeResult.closestDistance,
         closestLocation: rangeResult.closestLocation,
         isWithinRange: rangeResult.isWithinRange,
@@ -617,17 +638,26 @@ export default function HomeScreen() {
     // Filter by distance
     const businessesInRange = businessesWithScores.filter((b) => b.isWithinRange);
 
-    // Sort alphabetically by name
+    // Separate into aligned (>= 60) and unaligned (< 40)
+    const alignedBusinesses = businessesInRange
+      .filter((b) => b.alignmentScore >= 60)
+      .sort((a, b) => b.alignmentScore - a.alignmentScore); // Sort by score descending
+
+    const unalignedBusinesses = businessesInRange
+      .filter((b) => b.alignmentScore < 40)
+      .sort((a, b) => a.alignmentScore - b.alignmentScore); // Sort by score ascending
+
+    // Sort all alphabetically by name
     const allBusinessesSorted = [...businessesInRange].sort((a, b) =>
       (a.business.businessInfo.name || '').localeCompare(b.business.businessInfo.name || '')
     );
 
     return {
       allBusinesses: allBusinessesSorted,
-      alignedBusinesses: allBusinessesSorted,
-      unalignedBusinesses: [],
+      alignedBusinesses,
+      unalignedBusinesses,
     };
-  }, [mainView, userLocation, userBusinesses, localDistance]);
+  }, [mainView, userLocation, userBusinesses, localDistance, profile.causes]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();

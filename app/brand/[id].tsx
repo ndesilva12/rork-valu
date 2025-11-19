@@ -22,6 +22,7 @@ import { useData } from '@/contexts/DataContext';
 import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { getLogoUrl } from '@/lib/logo';
 import { getUserLists, addEntryToList } from '@/services/firebase/listService';
+import { calculateBrandScore, getBrandScoreLabel, getBrandScoreColor } from '@/lib/scoring';
 
 export default function BrandDetailScreen() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
@@ -316,116 +317,31 @@ export default function BrandDetailScreen() {
     }
   };
 
-  // Calculate alignment score based on user causes and brand's valueAlignments
-  let alignmentData = {
-    isAligned: false,
-    matchingValues: [] as string[],
-    alignmentStrength: 50
-  };
+  // Calculate alignment score using new scoring system
+  // Note: valuesMatrix contains brand NAMES not IDs in support/oppose arrays
+  const brandScore = brand && brand.name ? calculateBrandScore(brand.name, profile.causes || [], valuesMatrix) : 50;
+  const scoreLabel = getBrandScoreLabel(brandScore);
+  const scoreColor = getBrandScoreColor(brandScore, colors);
 
-  if (brand && profile.causes && profile.causes.length > 0 && valuesMatrix) {
-    const userSupportedCauses = profile.causes.filter(c => c.type === 'support').map(c => c.id);
-    const userAvoidedCauses = profile.causes.filter(c => c.type === 'avoid').map(c => c.id);
-    const allUserCauses = [...userSupportedCauses, ...userAvoidedCauses];
+  const alignmentColor = brandScore >= 60 ? colors.success : brandScore < 40 ? colors.danger : colors.textSecondary;
+  const AlignmentIcon = brandScore >= 60 ? TrendingUp : TrendingDown;
+  const alignmentLabel = brandScore >= 60 ? 'Aligned' : brandScore < 40 ? 'Not Aligned' : 'Neutral';
 
-    let totalSupportScore = 0;
-    let totalAvoidScore = 0;
-    const matchingValues: string[] = [];
-    const alignedScores: number[] = [];
-    const unalignedScores: number[] = [];
+  // Calculate which values match with this brand
+  const matchingValues: string[] = [];
+  if (brand && brand.name && profile.causes && valuesMatrix) {
+    profile.causes.forEach(cause => {
+      const valueData = valuesMatrix[cause.id];
+      if (!valueData) return;
 
-    // Check each user cause against the brand's position in the valuesMatrix
-    allUserCauses.forEach((causeId) => {
-      const causeData = valuesMatrix[causeId];
-      if (!causeData) {
-        alignedScores.push(50);
-        unalignedScores.push(50);
-        return;
-      }
+      const isInSupport = valueData.support.includes(brand.name);
+      const isInOppose = valueData.oppose.includes(brand.name);
 
-      const supportArrayLength = causeData.support?.length || 0;
-      const opposeArrayLength = causeData.oppose?.length || 0;
-
-      // Find brand's position in support/oppose lists
-      const supportIndex = causeData.support?.indexOf(brand.name);
-      const supportPosition = supportIndex !== undefined && supportIndex >= 0
-        ? supportIndex + 1
-        : supportArrayLength + 1;
-
-      const opposeIndex = causeData.oppose?.indexOf(brand.name);
-      const opposePosition = opposeIndex !== undefined && opposeIndex >= 0
-        ? opposeIndex + 1
-        : opposeArrayLength + 1;
-
-      // If user supports this cause
-      if (userSupportedCauses.includes(causeId)) {
-        if (supportIndex !== undefined && supportIndex >= 0) {
-          matchingValues.push(causeId);
-          const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
-          const score = Math.round(100 - ((supportPosition - 1) / maxPosition) * 50);
-          alignedScores.push(score);
-          totalSupportScore += 100;
-          unalignedScores.push(50);
-        } else if (opposeIndex !== undefined && opposeIndex >= 0) {
-          matchingValues.push(causeId);
-          const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
-          const score = Math.round(((opposePosition - 1) / maxPosition) * 50);
-          unalignedScores.push(score);
-          totalAvoidScore += 100;
-          alignedScores.push(50);
-        } else {
-          alignedScores.push(50);
-          unalignedScores.push(50);
-        }
-      }
-
-      // If user avoids this cause
-      if (userAvoidedCauses.includes(causeId)) {
-        if (opposeIndex !== undefined && opposeIndex >= 0) {
-          matchingValues.push(causeId);
-          const maxPosition = opposeArrayLength > 0 ? opposeArrayLength : 1;
-          const score = Math.round(100 - ((opposePosition - 1) / maxPosition) * 50);
-          alignedScores.push(score);
-          totalSupportScore += 100;
-          unalignedScores.push(50);
-        } else if (supportIndex !== undefined && supportIndex >= 0) {
-          matchingValues.push(causeId);
-          const maxPosition = supportArrayLength > 0 ? supportArrayLength : 1;
-          const score = Math.round(((supportPosition - 1) / maxPosition) * 50);
-          unalignedScores.push(score);
-          totalAvoidScore += 100;
-          alignedScores.push(50);
-        } else {
-          alignedScores.push(50);
-          unalignedScores.push(50);
-        }
+      if (isInSupport || isInOppose) {
+        matchingValues.push(cause.id);
       }
     });
-
-    // Calculate alignment strength based on average score
-    let alignmentStrength = 50;
-    if (totalSupportScore > totalAvoidScore && totalSupportScore > 0) {
-      alignmentStrength = Math.round(
-        alignedScores.reduce((sum, score) => sum + score, 0) / alignedScores.length
-      );
-    } else if (totalAvoidScore > totalSupportScore && totalAvoidScore > 0) {
-      alignmentStrength = Math.round(
-        unalignedScores.reduce((sum, score) => sum + score, 0) / unalignedScores.length
-      );
-    }
-
-    const isAligned = totalSupportScore > totalAvoidScore && totalSupportScore > 0;
-
-    alignmentData = {
-      isAligned,
-      matchingValues,
-      alignmentStrength
-    };
   }
-
-  const alignmentColor = alignmentData.isAligned ? colors.success : colors.danger;
-  const AlignmentIcon = alignmentData.isAligned ? TrendingUp : TrendingDown;
-  const alignmentLabel = alignmentData.isAligned ? 'Aligned' : 'Not Aligned';
 
   // Show loading state
   if (isLoading) {
@@ -558,7 +474,14 @@ export default function BrandDetailScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-              <Text style={[styles.category, { color: colors.primary }]}>{brand.category}</Text>
+              <View style={styles.categoryRow}>
+                <Text style={[styles.category, { color: colors.primary }]}>{brand.category}</Text>
+                {profile.causes && profile.causes.length > 0 && (
+                  <View style={[styles.scoreBadge, { backgroundColor: scoreColor + '15', borderColor: scoreColor }]}>
+                    <Text style={[styles.scoreBadgeText, { color: scoreColor }]}>{scoreLabel}</Text>
+                  </View>
+                )}
+              </View>
               {brand.headquarters && (
                 <Text style={[styles.headquarters, { color: colors.textSecondary }]}>{brand.headquarters}</Text>
               )}
@@ -574,10 +497,10 @@ export default function BrandDetailScreen() {
                 </View>
               )}
             </View>
-            <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.backgroundSecondary }]}>
-              <AlignmentIcon size={20} color={alignmentColor} strokeWidth={2.5} />
-              <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
-                {alignmentData.alignmentStrength}
+            <View style={[styles.scoreCircle, { borderColor: scoreColor, backgroundColor: colors.backgroundSecondary }]}>
+              <AlignmentIcon size={20} color={scoreColor} strokeWidth={2.5} />
+              <Text style={[styles.scoreNumber, { color: scoreColor }]}>
+                {Math.round(brandScore)}
               </Text>
             </View>
           </View>
@@ -612,9 +535,9 @@ export default function BrandDetailScreen() {
                 Why
               </Text>
             </View>
-            {alignmentData.matchingValues.length > 0 && (
+            {matchingValues.length > 0 && (
               <View style={styles.valueTagsContainer}>
-                {alignmentData.matchingValues.map((valueId) => {
+                {matchingValues.map((valueId) => {
                     const allValues = Object.values(AVAILABLE_VALUES).flat();
                     const value = allValues.find(v => v.id === valueId);
                     if (!value) return null;
@@ -1021,10 +944,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  categoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 3,
+    flexWrap: 'wrap',
+  },
   category: {
     fontSize: 13,
     fontWeight: '600' as const,
-    marginBottom: 3,
+  },
+  scoreBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  scoreBadgeText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase',
   },
   headquarters: {
     fontSize: 12,
