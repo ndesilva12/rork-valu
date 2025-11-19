@@ -618,6 +618,32 @@ export default function BusinessDetailScreen() {
                     {(business.businessInfo.customerDiscountPercent || 0).toFixed(1)}%
                   </Text>
                 </View>
+
+                {/* Display requirements if any are set */}
+                {(business.businessInfo.requireFollow || business.businessInfo.requireEndorse) && (
+                  <>
+                    <View style={[styles.discountDivider, { backgroundColor: colors.border }]} />
+                    <Text style={[styles.requirementsHeader, { color: colors.textSecondary }]}>
+                      Requirements:
+                    </Text>
+                    {business.businessInfo.requireFollow && (
+                      <View style={styles.requirementItem}>
+                        <UserPlus size={16} color={colors.text} strokeWidth={2} />
+                        <Text style={[styles.requirementText, { color: colors.text }]}>
+                          Must follow this business
+                        </Text>
+                      </View>
+                    )}
+                    {business.businessInfo.requireEndorse && (
+                      <View style={styles.requirementItem}>
+                        <List size={16} color={colors.text} strokeWidth={2} />
+                        <Text style={[styles.requirementText, { color: colors.text }]}>
+                          Must endorse this business
+                        </Text>
+                      </View>
+                    )}
+                  </>
+                )}
               </View>
             </View>
           )}
@@ -1229,6 +1255,27 @@ const styles = StyleSheet.create({
   discountValue: {
     fontSize: 16,
     fontWeight: '700' as const,
+  },
+  discountDivider: {
+    height: 1,
+    marginVertical: 12,
+  },
+  requirementsHeader: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  requirementItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  requirementText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
   },
   scoreCircle: {
     width: 48,

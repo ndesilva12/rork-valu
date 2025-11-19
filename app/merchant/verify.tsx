@@ -19,8 +19,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useUser } from '@/contexts/UserContext';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { lightColors, darkColors } from '@/constants/colors';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
+import { isFollowing } from '@/services/firebase/followService';
+import { getUserLists } from '@/services/firebase/listService';
 
 export default function MerchantVerify() {
   const { profile, isDarkMode, getBusinessId, isTeamMember } = useUser();
@@ -41,6 +43,7 @@ export default function MerchantVerify() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+  const [requirementError, setRequirementError] = useState<string | null>(null);
 
   // Check if merchant is logged in as business account
   const isBusiness = profile.accountType === 'business';
@@ -146,13 +149,58 @@ export default function MerchantVerify() {
     }
 
     setIsProcessing(true);
+    setRequirementError(null);
 
     try {
-      // Record transaction in Firebase
-      const transactionRef = doc(db, 'transactions', transactionCode as string);
-
       // Get business ID (works for both owners and team members - Phase 0)
       const businessId = getBusinessId() || clerkUser.id;
+
+      // Check discount requirements before proceeding
+      // Get business profile to check requirements
+      const businessDocRef = doc(db, 'users', businessId);
+      const businessDoc = await getDoc(businessDocRef);
+      const businessData = businessDoc.data();
+      const businessInfo = businessData?.businessInfo;
+
+      if (businessInfo?.requireFollow || businessInfo?.requireEndorse) {
+        // Check if customer is following the business
+        if (businessInfo.requireFollow) {
+          const customerIsFollowing = await isFollowing(customerUserId as string, businessId, 'business');
+          if (!customerIsFollowing) {
+            setRequirementError('User must follow this business to receive the discount');
+            Alert.alert('Requirement Not Met', 'User must follow this business to receive the discount');
+            setIsProcessing(false);
+            return;
+          }
+        }
+
+        // Check if customer has endorsed the business (added to endorsement list)
+        if (businessInfo.requireEndorse) {
+          const customerLists = await getUserLists(customerUserId as string);
+          const endorsementList = customerLists.find(list => list.mode === 'endorsement' || list.name === 'Endorsements');
+
+          if (!endorsementList) {
+            setRequirementError('User must endorse this business to receive the discount');
+            Alert.alert('Requirement Not Met', 'User must endorse this business to receive the discount');
+            setIsProcessing(false);
+            return;
+          }
+
+          const hasEndorsed = endorsementList.entries.some(entry =>
+            entry.type === 'business' && entry.businessId === businessId
+          );
+
+          if (!hasEndorsed) {
+            setRequirementError('User must endorse this business to receive the discount');
+            Alert.alert('Requirement Not Met', 'User must endorse this business to receive the discount');
+            setIsProcessing(false);
+            return;
+          }
+        }
+      }
+
+      // Record transaction in Firebase
+      const transactionRef = doc(db, 'transactions', transactionCode as string);
 
       // Get merchant business info (for team members, need to fetch from business owner)
       let merchantName = profile.businessInfo?.name || '';
@@ -290,6 +338,15 @@ export default function MerchantVerify() {
             </>
           )}
         </View>
+
+        {/* Requirement Error Message */}
+        {requirementError && (
+          <View style={[styles.errorCard, { backgroundColor: '#FEE2E2', borderColor: '#DC2626' }]}>
+            <Text style={[styles.errorText, { color: '#991B1B' }]}>
+              ⚠️ {requirementError}
+            </Text>
+          </View>
+        )}
 
         {/* Confirm Button */}
         <TouchableOpacity
@@ -465,5 +522,17 @@ const styles = StyleSheet.create({
   amountText: {
     fontSize: 20,
     fontWeight: '600',
+  },
+  errorCard: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
