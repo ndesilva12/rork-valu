@@ -95,6 +95,7 @@ import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
 import { calculateBrandScore, calculateSimilarityScore, normalizeBrandScores, normalizeSimilarityScores } from '@/lib/scoring';
 import { getAllUserBusinesses, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
+import { followEntity, unfollowEntity, isFollowing } from '@/services/firebase/followService';
 import BusinessMapView from '@/components/BusinessMapView';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
 import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList, updateListMetadata, reorderListEntries, getEndorsementList, ensureEndorsementList } from '@/services/firebase/listService';
@@ -213,6 +214,7 @@ export default function HomeScreen() {
   // Card Action Menu state
   const [activeCardMenuId, setActiveCardMenuId] = useState<string | null>(null);
   const [cardMenuData, setCardMenuData] = useState<{ type: 'brand' | 'business', id: string, name: string, website?: string, logoUrl?: string, listId?: string } | null>(null);
+  const [isFollowingCard, setIsFollowingCard] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -544,6 +546,27 @@ export default function HomeScreen() {
     handleDefaultLibraryState();
   }, [mainView, userPersonalList, hasSetDefaultExpansion, clerkUser?.id]);
 
+  // Check follow status when card menu opens
+  useEffect(() => {
+    const checkFollowStatus = async () => {
+      if (!cardMenuData || !clerkUser?.id) {
+        setIsFollowingCard(false);
+        return;
+      }
+
+      try {
+        const entityType = cardMenuData.type === 'brand' ? 'brand' : 'business';
+        const following = await isFollowing(clerkUser.id, cardMenuData.id, entityType);
+        setIsFollowingCard(following);
+      } catch (error) {
+        console.error('[Home] Error checking follow status:', error);
+        setIsFollowingCard(false);
+      }
+    };
+
+    checkFollowStatus();
+  }, [cardMenuData, clerkUser?.id]);
+
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands, brandDistances } = useMemo(() => {
     // Combine brands from CSV and user businesses
     const csvBrands = brands || [];
@@ -657,17 +680,45 @@ export default function HomeScreen() {
       .filter((b) => b.alignmentScore < 40)
       .sort((a, b) => a.alignmentScore - b.alignmentScore); // Sort by score ascending
 
-    // Sort all alphabetically by name
-    const allBusinessesSorted = [...normalizedBusinesses].sort((a, b) =>
-      (a.business.businessInfo.name || '').localeCompare(b.business.businessInfo.name || '')
-    );
+    // Sort all by similarity score based on direction
+    const allBusinessesSorted = [...normalizedBusinesses].sort((a, b) => {
+      if (localSortDirection === 'highToLow') {
+        return b.alignmentScore - a.alignmentScore; // High to low
+      } else {
+        return a.alignmentScore - b.alignmentScore; // Low to high
+      }
+    });
 
     return {
       allBusinesses: allBusinessesSorted,
       alignedBusinesses,
       unalignedBusinesses,
     };
-  }, [mainView, userLocation, userBusinesses, localDistance, profile.causes]);
+  }, [mainView, userLocation, userBusinesses, localDistance, profile.causes, localSortDirection]);
+
+  // Normalize all business scores for library display (matching business details page approach)
+  const businessScoresMap = useMemo(() => {
+    if (!profile.causes || userBusinesses.length === 0) {
+      return new Map<string, number>();
+    }
+
+    // Calculate scores for all businesses
+    const businessesWithScores = userBusinesses.map(b => ({
+      ...b,
+      alignmentScore: calculateSimilarityScore(profile.causes || [], b.causes || [])
+    }));
+
+    // Normalize similarity scores to 1-99 range with median at 50 (matching business details page)
+    const normalizedBusinesses = normalizeSimilarityScores(businessesWithScores);
+
+    // Create map of business ID to normalized score for quick lookup
+    const scoresMap = new Map<string, number>();
+    normalizedBusinesses.forEach(b => {
+      scoresMap.set(b.id, b.alignmentScore);
+    });
+
+    return scoresMap;
+  }, [userBusinesses, profile.causes]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
@@ -850,6 +901,14 @@ export default function HomeScreen() {
     const titleColor = colors.white;
     const { business, alignmentScore, distance, closestLocation } = businessData;
 
+    // Determine score color based on alignment score
+    // Neutral (gray) only for 45-55 range
+    const scoreColor = alignmentScore >= 56
+      ? colors.success
+      : alignmentScore <= 44
+      ? colors.danger
+      : colors.textSecondary;
+
     return (
       <TouchableOpacity
         key={business.id}
@@ -887,7 +946,7 @@ export default function HomeScreen() {
             )}
           </View>
           <View style={styles.brandScoreContainer}>
-            <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
+            <Text style={[styles.brandScore, { color: scoreColor }]}>{alignmentScore}</Text>
           </View>
           <TouchableOpacity
             style={[styles.quickAddButton, { backgroundColor: colors.background }]}
@@ -1711,6 +1770,30 @@ export default function HomeScreen() {
     setShowShareModal(true);
   };
 
+  const handleCardMenuFollow = async () => {
+    if (!cardMenuData || !clerkUser?.id) return;
+    setActiveCardMenuId(null);
+
+    try {
+      const entityType = cardMenuData.type === 'brand' ? 'brand' : 'business';
+
+      if (isFollowingCard) {
+        // Unfollow
+        await unfollowEntity(clerkUser.id, cardMenuData.id, entityType);
+        setIsFollowingCard(false);
+        Alert.alert('Success', `Unfollowed ${cardMenuData.name}`);
+      } else {
+        // Follow
+        await followEntity(clerkUser.id, cardMenuData.id, entityType);
+        setIsFollowingCard(true);
+        Alert.alert('Success', `Now following ${cardMenuData.name}`);
+      }
+    } catch (error: any) {
+      console.error('[Home] Error following/unfollowing:', error);
+      Alert.alert('Error', error?.message || 'Could not update follow status. Please try again.');
+    }
+  };
+
   const handleValueModeSelected = (mode: ValueListMode) => {
     setSelectedValueMode(mode);
     setShowValueModeModal(false);
@@ -2507,8 +2590,8 @@ export default function HomeScreen() {
                     </View>
                   );
                 } else if (entry.type === 'business' && 'businessId' in entry) {
-                  // All businesses set to score of 50
-                  const alignmentScore = 50;
+                  // Get normalized business score (matching business details page)
+                  const alignmentScore = businessScoresMap.get(entry.businessId) || 50;
                   const isAligned = alignmentScore >= 50;
                   const titleColor = colors.white;
 
@@ -3411,23 +3494,18 @@ export default function HomeScreen() {
               })()}
               <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
 
-              {/* Follow option - only for businesses */}
-              {cardMenuData?.type === 'business' && (
-                <>
-                  <TouchableOpacity
-                    style={styles.listOptionItem}
-                    onPress={() => {
-                      setActiveCardMenuId(null);
-                      Alert.alert('Coming Soon', 'Follow functionality will be available soon');
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <UserPlus size={18} color={colors.text} strokeWidth={2} />
-                    <Text style={[styles.listOptionText, { color: colors.text }]}>Follow</Text>
-                  </TouchableOpacity>
-                  <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
-                </>
-              )}
+              {/* Follow option - for both brands and businesses */}
+              <TouchableOpacity
+                style={styles.listOptionItem}
+                onPress={handleCardMenuFollow}
+                activeOpacity={0.7}
+              >
+                <UserPlus size={18} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.listOptionText, { color: colors.text }]}>
+                  {isFollowingCard ? 'Unfollow' : 'Follow'}
+                </Text>
+              </TouchableOpacity>
+              <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
 
               {/* Share option */}
               <TouchableOpacity

@@ -149,6 +149,8 @@ export interface BusinessInfo {
   donationPercent?: number; // Donation portion
   totalDonated?: number; // Track total donations facilitated
   customDiscount?: string; // Custom discount text (requires admin approval)
+  requireFollow?: boolean; // Require customer to follow business to receive discount
+  requireEndorse?: boolean; // Require customer to endorse business to receive discount
   socialMedia?: SocialMedia;
   affiliates?: Affiliate[]; // Celebrity/influencer affiliates and their relationships
   partnerships?: Partnership[]; // Business partnerships and collaborations

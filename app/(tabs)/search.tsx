@@ -33,6 +33,9 @@ import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { getBusinessesAcceptingDiscounts, getAllUserBusinesses, BusinessUser, calculateAlignmentScore } from '@/services/firebase/businessService';
 import { getAllPublicUsers } from '@/services/firebase/userService';
 import { UserProfile } from '@/types';
+import { copyListToLibrary, getEndorsementList } from '@/services/firebase/listService';
+import { useLibrary } from '@/contexts/LibraryContext';
+import { followEntity, unfollowEntity, isFollowing } from '@/services/firebase/followService';
 
 interface Comment {
   id: string;
@@ -48,9 +51,195 @@ interface ProductInteraction {
   likesCount: number;
 }
 
+// Separate UserCard component to properly use hooks
+const UserCard = ({ item, colors, router, clerkUser, profile, library }: {
+  item: { id: string; profile: UserProfile };
+  colors: any;
+  router: any;
+  clerkUser: any;
+  profile: any;
+  library: any;
+}) => {
+  const userName = item.profile.userDetails?.name || 'User';
+  const userImage = item.profile.userDetails?.profileImage;
+  const userLocation = item.profile.userDetails?.location;
+  const userBio = item.profile.userDetails?.description;
+
+  const [isFollowingUser, setIsFollowingUser] = useState(false);
+  const [checkingFollowStatus, setCheckingFollowStatus] = useState(true);
+
+  // Check follow status on mount
+  useEffect(() => {
+    const checkFollow = async () => {
+      if (clerkUser?.id && item.id !== clerkUser.id) {
+        const following = await isFollowing(clerkUser.id, item.id, 'user');
+        setIsFollowingUser(following);
+      }
+      setCheckingFollowStatus(false);
+    };
+    checkFollow();
+  }, [item.id, clerkUser?.id]);
+
+  const handleFollowUser = async () => {
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'You must be logged in to follow users');
+      return;
+    }
+
+    if (item.id === clerkUser.id) {
+      Alert.alert('Info', 'You cannot follow yourself');
+      return;
+    }
+
+    try {
+      if (isFollowingUser) {
+        await unfollowEntity(clerkUser.id, item.id, 'user');
+        setIsFollowingUser(false);
+        Alert.alert('Success', `Unfollowed ${userName}`);
+      } else {
+        await followEntity(clerkUser.id, item.id, 'user');
+        setIsFollowingUser(true);
+        Alert.alert('Success', `Now following ${userName}`);
+      }
+    } catch (error: any) {
+      console.error('Error following/unfollowing user:', error);
+      Alert.alert('Error', error?.message || 'Could not follow user. Please try again.');
+    }
+  };
+
+  const handleAddEndorseListToLibrary = async () => {
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'You must be logged in to add lists to your library');
+      return;
+    }
+
+    if (item.id === clerkUser.id) {
+      Alert.alert('Info', 'This is already in your library');
+      return;
+    }
+
+    try {
+      // Get the user's endorsement list
+      const endorsementList = await getEndorsementList(item.id);
+
+      if (!endorsementList) {
+        Alert.alert('Error', 'This user does not have an endorsement list');
+        return;
+      }
+
+      // Get current user's name
+      const currentUserName = profile?.userDetails?.name || clerkUser?.firstName || 'My Library';
+
+      // Copy the list to the current user's library
+      await copyListToLibrary(endorsementList.id, clerkUser.id, currentUserName, userImage);
+
+      // Refresh library to show the new list
+      await new Promise(resolve => setTimeout(resolve, 500));
+      if (clerkUser?.id) {
+        await library.loadUserLists(clerkUser.id, true);
+      }
+
+      Alert.alert('Success', `${userName}'s endorsement list added to your library!`);
+    } catch (error: any) {
+      console.error('Error adding endorsement list:', error);
+      Alert.alert('Error', error?.message || 'Could not add list to library. Please try again.');
+    }
+  };
+
+  const handleActionMenu = (e: any) => {
+    e.stopPropagation();
+    Alert.alert(
+      userName,
+      'Choose an action',
+      [
+        {
+          text: 'Add Endorse List to Library',
+          onPress: handleAddEndorseListToLibrary,
+        },
+        {
+          text: isFollowingUser ? 'Unfollow' : 'Follow',
+          onPress: handleFollowUser,
+        },
+        {
+          text: 'Share',
+          onPress: () => {
+            const shareUrl = `${Platform.OS === 'web' ? window.location.origin : 'https://upright.money'}/user/${item.id}`;
+            if (Platform.OS === 'web') {
+              navigator.clipboard.writeText(shareUrl);
+              Alert.alert('Link Copied', 'Profile link copied to clipboard');
+            } else {
+              RNShare.share({
+                message: `Check out ${userName}'s profile on Endorse: ${shareUrl}`,
+              });
+            }
+          },
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ]
+    );
+  };
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.userCard,
+        { backgroundColor: 'transparent', borderColor: 'transparent' }
+      ]}
+      onPress={() => router.push(`/user/${item.id}`)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.userCardContent}>
+        {userImage ? (
+          <Image
+            source={{ uri: userImage }}
+            style={styles.userCardImage}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
+          />
+        ) : (
+          <View style={[styles.userCardImagePlaceholder, { backgroundColor: colors.primary }]}>
+            <Text style={[styles.userCardImageText, { color: colors.white }]}>
+              {userName.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+        )}
+        <View style={styles.userCardInfo}>
+          <Text style={[styles.userCardName, { color: colors.text }]} numberOfLines={1}>
+            {userName}
+          </Text>
+          {userLocation && (
+            <Text style={[styles.userCardLocation, { color: colors.textSecondary }]} numberOfLines={1}>
+              {userLocation}
+            </Text>
+          )}
+          {userBio && (
+            <Text style={[styles.userCardBio, { color: colors.textSecondary }]} numberOfLines={2}>
+              {userBio}
+            </Text>
+          )}
+        </View>
+        <TouchableOpacity
+          style={[styles.userCardActionButton, { backgroundColor: colors.backgroundSecondary }]}
+          onPress={handleActionMenu}
+          activeOpacity={0.7}
+        >
+          <View style={{ transform: [{ rotate: '90deg' }] }}>
+            <MoreVertical size={18} color={colors.text} strokeWidth={2} />
+          </View>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
 export default function SearchScreen() {
   const router = useRouter();
   const { profile, addToSearchHistory, isDarkMode, clerkUser } = useUser();
+  const library = useLibrary();
   const colors = isDarkMode ? darkColors : lightColors;
   const { width } = useWindowDimensions();
 
@@ -71,14 +260,16 @@ export default function SearchScreen() {
   const [permission, requestPermission] = useCameraPermissions();
 
   // Value Machine state
-  const [activeTab, setActiveTab] = useState<'value-machine' | 'discover-users'>('discover-users');
+  const [activeTab, setActiveTab] = useState<'value-machine' | 'discover-users'>('value-machine');
   const [selectedSupportValues, setSelectedSupportValues] = useState<string[]>([]);
   const [selectedRejectValues, setSelectedRejectValues] = useState<string[]>([]);
   const [valueMachineResults, setValueMachineResults] = useState<Product[]>([]);
   const [showingResults, setShowingResults] = useState(false);
   const [resultsLimit, setResultsLimit] = useState(10);
-  const [selectedCategory, setSelectedCategory] = useState<string>('ideology');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [categoryDropdownLayout, setCategoryDropdownLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [resultsMode, setResultsMode] = useState<'aligned' | 'unaligned'>('aligned');
 
   // Fetch Firebase businesses and public users on mount
   useEffect(() => {
@@ -315,29 +506,22 @@ export default function SearchScreen() {
   }, []);
 
   // Value Machine handlers
-  const handleValueToggle = useCallback((valueId: string, type: 'support' | 'reject') => {
-    if (type === 'support') {
-      setSelectedSupportValues(prev => {
-        if (prev.includes(valueId)) {
-          return prev.filter(id => id !== valueId);
-        } else {
-          // Remove from reject if it's there
-          setSelectedRejectValues(prevReject => prevReject.filter(id => id !== valueId));
-          return [...prev, valueId];
-        }
-      });
+  const handleValueToggle = useCallback((valueId: string) => {
+    const isSupported = selectedSupportValues.includes(valueId);
+    const isRejected = selectedRejectValues.includes(valueId);
+
+    if (!isSupported && !isRejected) {
+      // First tap: Support
+      setSelectedSupportValues(prev => [...prev, valueId]);
+    } else if (isSupported) {
+      // Second tap: Reject
+      setSelectedSupportValues(prev => prev.filter(id => id !== valueId));
+      setSelectedRejectValues(prev => [...prev, valueId]);
     } else {
-      setSelectedRejectValues(prev => {
-        if (prev.includes(valueId)) {
-          return prev.filter(id => id !== valueId);
-        } else {
-          // Remove from support if it's there
-          setSelectedSupportValues(prevSupport => prevSupport.filter(id => id !== valueId));
-          return [...prev, valueId];
-        }
-      });
+      // Third tap: Unselect
+      setSelectedRejectValues(prev => prev.filter(id => id !== valueId));
     }
-  }, []);
+  }, [selectedSupportValues, selectedRejectValues]);
 
   const handleResetSelections = useCallback(() => {
     setSelectedSupportValues([]);
@@ -346,13 +530,20 @@ export default function SearchScreen() {
   }, []);
 
   const handleGenerateResults = useCallback(() => {
-    const allProducts = [...MOCK_PRODUCTS, ...LOCAL_BUSINESSES];
+    // Include both MOCK_PRODUCTS and Firebase businesses
+    const allProducts = [...MOCK_PRODUCTS];
     const allSelectedValues = [...selectedSupportValues, ...selectedRejectValues];
 
     if (allSelectedValues.length === 0) {
       Alert.alert('No Values Selected', 'Please select at least one value to support or reject.');
       return;
     }
+
+    // Convert selected values to Cause format for business scoring
+    const userCauses = [
+      ...selectedSupportValues.map(id => ({ id, type: 'support' as const })),
+      ...selectedRejectValues.map(id => ({ id, type: 'avoid' as const }))
+    ];
 
     // Score each product based on selected values
     const scored = allProducts.map(product => {
@@ -412,16 +603,92 @@ export default function SearchScreen() {
       };
     });
 
-    // Sort by alignment strength and filter positively aligned
-    const alignedSorted = scored
-      .filter(s => s.isPositivelyAligned)
-      .sort((a, b) => b.alignmentStrength - a.alignmentStrength)
-      .map(s => ({ ...s.product, alignmentScore: s.alignmentStrength }));
+    // Score Firebase businesses based on their causes
+    const businessScored = firebaseBusinesses.map(business => {
+      if (!business.causes || business.causes.length === 0) {
+        // Business has no values - assign neutral score
+        return {
+          product: {
+            id: `firebase-business-${business.id}`,
+            firebaseId: business.id,
+            name: business.businessInfo.name,
+            brand: business.businessInfo.name,
+            category: business.businessInfo.category,
+            description: business.businessInfo.description || '',
+            exampleImageUrl: business.businessInfo.logoUrl,
+            website: business.businessInfo.website,
+            location: business.businessInfo.location,
+            valueAlignments: [],
+            keyReasons: [
+              business.businessInfo.acceptsStandDiscounts
+                ? `Accepts Endorse Discounts`
+                : `Local business`
+            ],
+            moneyFlow: { company: business.businessInfo.name, shareholders: [], overallAlignment: 0 },
+            relatedValues: [],
+            isFirebaseBusiness: true,
+          } as Product & { firebaseId: string; isFirebaseBusiness: boolean },
+          totalSupportScore: 0,
+          totalRejectScore: 0,
+          matchingValuesCount: 0,
+          alignmentStrength: 50,
+          isPositivelyAligned: false
+        };
+      }
 
-    setValueMachineResults(alignedSorted);
+      // Calculate raw alignment score
+      const rawScore = calculateAlignmentScore(userCauses, business.causes);
+
+      // Determine if positively or negatively aligned based on raw score
+      const isPositivelyAligned = rawScore > 0;
+
+      // Map to 0-100 range with proper clamping
+      // Raw scores typically range from -100 to +100
+      // Map: -100 -> 0, 0 -> 50, +100 -> 100
+      const alignmentStrength = Math.max(0, Math.min(100, Math.round(50 + (rawScore * 0.5))));
+
+      return {
+        product: {
+          id: `firebase-business-${business.id}`,
+          firebaseId: business.id,
+          name: business.businessInfo.name,
+          brand: business.businessInfo.name,
+          category: business.businessInfo.category,
+          description: business.businessInfo.description || '',
+          exampleImageUrl: business.businessInfo.logoUrl,
+          website: business.businessInfo.website,
+          location: business.businessInfo.location,
+          valueAlignments: [],
+          keyReasons: [
+            business.businessInfo.acceptsStandDiscounts
+              ? `Accepts Endorse Discounts`
+              : `Local business`
+          ],
+          moneyFlow: { company: business.businessInfo.name, shareholders: [], overallAlignment: 0 },
+          relatedValues: [],
+          isFirebaseBusiness: true,
+        } as Product & { firebaseId: string; isFirebaseBusiness: boolean },
+        totalSupportScore: isPositivelyAligned ? rawScore : 0,
+        totalRejectScore: isPositivelyAligned ? 0 : Math.abs(rawScore),
+        matchingValuesCount: business.causes.length,
+        alignmentStrength,
+        isPositivelyAligned
+      };
+    });
+
+    // Combine products and businesses
+    const allScored = [...scored, ...businessScored];
+
+    // Sort all results by alignment strength
+    const allSorted = allScored
+      .sort((a, b) => b.alignmentStrength - a.alignmentStrength)
+      .map(s => ({ ...s.product, alignmentScore: s.alignmentStrength, isPositivelyAligned: s.isPositivelyAligned }));
+
+    setValueMachineResults(allSorted);
     setShowingResults(true);
     setResultsLimit(10);
-  }, [selectedSupportValues, selectedRejectValues]);
+    setResultsMode('aligned');
+  }, [selectedSupportValues, selectedRejectValues, firebaseBusinesses]);
 
   const handleLoadMore = useCallback(() => {
     if (resultsLimit === 10) {
@@ -656,9 +923,9 @@ export default function SearchScreen() {
 
   const getAlignmentColor = (score: number | undefined) => {
     const normalizedScore = score ?? 50;
-    if (normalizedScore >= 70) return Colors.success;
-    if (normalizedScore >= 40) return Colors.neutral;
-    return Colors.danger;
+    if (normalizedScore > 55) return colors.primary; // Blue for aligned
+    if (normalizedScore >= 45) return Colors.neutral; // Grey for neutral (45-55)
+    return Colors.danger; // Red/pink for unaligned
   };
 
   const getAlignmentIcon = (score: number | undefined) => {
@@ -720,94 +987,15 @@ export default function SearchScreen() {
   };
 
   const renderUserCard = ({ item }: { item: { id: string; profile: UserProfile } }) => {
-    const userName = item.profile.userDetails?.name || 'User';
-    const userImage = item.profile.userDetails?.profileImage;
-    const userLocation = item.profile.userDetails?.location;
-    const userBio = item.profile.userDetails?.description;
-
-    const handleActionMenu = (e: any) => {
-      e.stopPropagation();
-      Alert.alert(
-        userName,
-        'Choose an action',
-        [
-          {
-            text: 'Follow',
-            onPress: () => Alert.alert('Coming Soon', 'Follow functionality will be available soon'),
-          },
-          {
-            text: 'Share',
-            onPress: () => {
-              const shareUrl = `${window.location.origin}/user/${item.id}`;
-              if (Platform.OS === 'web') {
-                navigator.clipboard.writeText(shareUrl);
-                Alert.alert('Link Copied', 'Profile link copied to clipboard');
-              } else {
-                RNShare.share({
-                  message: `Check out ${userName}'s profile on Endorse: ${shareUrl}`,
-                });
-              }
-            },
-          },
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-        ]
-      );
-    };
-
     return (
-      <TouchableOpacity
-        style={[
-          styles.userCard,
-          { backgroundColor: 'transparent', borderColor: 'transparent' }
-        ]}
-        onPress={() => router.push(`/user/${item.id}`)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.userCardContent}>
-          {userImage ? (
-            <Image
-              source={{ uri: userImage }}
-              style={styles.userCardImage}
-              contentFit="cover"
-              transition={200}
-              cachePolicy="memory-disk"
-            />
-          ) : (
-            <View style={[styles.userCardImagePlaceholder, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.userCardImageText, { color: colors.white }]}>
-                {userName.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-          )}
-          <View style={styles.userCardInfo}>
-            <Text style={[styles.userCardName, { color: colors.text }]} numberOfLines={1}>
-              {userName}
-            </Text>
-            {userLocation && (
-              <Text style={[styles.userCardLocation, { color: colors.textSecondary }]} numberOfLines={1}>
-                {userLocation}
-              </Text>
-            )}
-            {userBio && (
-              <Text style={[styles.userCardBio, { color: colors.textSecondary }]} numberOfLines={2}>
-                {userBio}
-              </Text>
-            )}
-          </View>
-          <TouchableOpacity
-            style={[styles.userCardActionButton, { backgroundColor: colors.backgroundSecondary }]}
-            onPress={handleActionMenu}
-            activeOpacity={0.7}
-          >
-            <View style={{ transform: [{ rotate: '90deg' }] }}>
-              <MoreVertical size={18} color={colors.text} strokeWidth={2} />
-            </View>
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
+      <UserCard
+        item={item}
+        colors={colors}
+        router={router}
+        clerkUser={clerkUser}
+        profile={profile}
+        library={library}
+      />
     );
   };
 
@@ -861,19 +1049,25 @@ export default function SearchScreen() {
     const alignmentColor = getAlignmentColor(item.alignmentScore);
     const normalizedScore = normalizeScore(item.alignmentScore);
 
+    // Aligned items (blue) should be outlined only, unaligned (red) should have fill
+    const isAligned = (item.alignmentScore ?? 50) > 55;
+    const scoreBackgroundColor = isAligned ? 'transparent' : alignmentColor + '15';
+
     return (
       <TouchableOpacity
         style={[styles.resultListItem, { borderBottomColor: colors.border }]}
         onPress={() => handleProductPress(item)}
         activeOpacity={0.7}
       >
-        <Image
-          source={{ uri: getLogoUrl(item.website || '') }}
-          style={styles.resultListImage}
-          contentFit="cover"
-          transition={200}
-          cachePolicy="memory-disk"
-        />
+        <View style={styles.resultListImageContainer}>
+          <Image
+            source={{ uri: getLogoUrl(item.website || '') }}
+            style={styles.resultListImage}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
+          />
+        </View>
         <View style={styles.resultListInfo}>
           <Text style={[styles.resultListBrand, { color: colors.text }]}>
             {item.brand}
@@ -882,7 +1076,7 @@ export default function SearchScreen() {
             {item.name}
           </Text>
         </View>
-        <View style={[styles.resultListScore, { borderColor: alignmentColor, backgroundColor: alignmentColor + '15' }]}>
+        <View style={[styles.resultListScore, { borderColor: alignmentColor, backgroundColor: scoreBackgroundColor }]}>
           <Text style={[styles.resultListScoreText, { color: alignmentColor }]}>
             {normalizedScore}
           </Text>
@@ -894,25 +1088,62 @@ export default function SearchScreen() {
   const renderValueMachineSection = () => {
     const categories: Array<{ key: string; label: string }> = [
       { key: 'ideology', label: 'Ideology' },
-      { key: 'person', label: 'Person' },
-      { key: 'social_issue', label: 'Social Issue' },
+      { key: 'social_issue', label: 'Social Issues' },
+      { key: 'person', label: 'People' },
+      { key: 'lifestyle', label: 'Lifestyle' },
+      { key: 'nation', label: 'Places' },
       { key: 'religion', label: 'Religion' },
-      { key: 'nation', label: 'Nation' },
+      { key: 'organization', label: 'Organizations' },
+      { key: 'sports', label: 'Sports' },
     ];
 
     const selectedCategoryLabel = categories.find(c => c.key === selectedCategory)?.label || 'Select Category';
 
     if (showingResults) {
-      const displayedResults = valueMachineResults.slice(0, resultsLimit);
-      const canLoadMore = resultsLimit < 30 && valueMachineResults.length > resultsLimit;
+      // Filter and sort based on mode
+      const filteredResults = resultsMode === 'aligned'
+        ? valueMachineResults.filter((item: any) => item.isPositivelyAligned !== false)
+        : [...valueMachineResults].filter((item: any) => item.isPositivelyAligned === false).sort((a, b) => a.alignmentScore - b.alignmentScore);
+
+      const displayedResults = filteredResults.slice(0, resultsLimit);
+      const canLoadMore = resultsLimit < 30 && filteredResults.length > resultsLimit;
 
       return (
         <View style={styles.valueMachineContainer}>
           <View style={styles.valueMachineHeader}>
             <View style={styles.valueMachineHeaderRow}>
-              <Text style={[styles.valueMachineTitle, { color: colors.text }]}>
-                Top Results
-              </Text>
+              <View style={styles.resultsModeToggle}>
+                <TouchableOpacity
+                  style={[
+                    styles.resultsModeButton,
+                    resultsMode === 'aligned' && { backgroundColor: colors.primary }
+                  ]}
+                  onPress={() => setResultsMode('aligned')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.resultsModeButtonText,
+                    { color: resultsMode === 'aligned' ? colors.white : colors.textSecondary }
+                  ]}>
+                    Aligned
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.resultsModeButton,
+                    resultsMode === 'unaligned' && { backgroundColor: colors.primary }
+                  ]}
+                  onPress={() => setResultsMode('unaligned')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.resultsModeButtonText,
+                    { color: resultsMode === 'unaligned' ? colors.white : colors.textSecondary }
+                  ]}>
+                    Unaligned
+                  </Text>
+                </TouchableOpacity>
+              </View>
               <TouchableOpacity
                 onPress={handleResetSelections}
                 activeOpacity={0.7}
@@ -963,14 +1194,9 @@ export default function SearchScreen() {
       >
         <View style={styles.valueMachineHeader}>
           <View style={styles.valueMachineHeaderRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.valueMachineTitle, { color: colors.text }]}>
-                Select Values
-              </Text>
-              <Text style={[styles.valueMachineSubtitle, { color: colors.textSecondary }]}>
-                Generate brands based on specific values
-              </Text>
-            </View>
+            <Text style={[styles.valueMachineSubtitle, { color: colors.textSecondary }]}>
+              Generate results from specific values
+            </Text>
             {(selectedSupportValues.length > 0 || selectedRejectValues.length > 0) && (
               <TouchableOpacity
                 onPress={handleResetSelections}
@@ -986,10 +1212,15 @@ export default function SearchScreen() {
         <View style={styles.categoryDropdownContainer}>
           <TouchableOpacity
             style={[styles.categoryDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-            onPress={() => setCategoryModalVisible(true)}
+            onPress={(e) => {
+              e.currentTarget.measure((x, y, width, height, pageX, pageY) => {
+                setCategoryDropdownLayout({ x: pageX, y: pageY, width, height });
+                setCategoryModalVisible(true);
+              });
+            }}
             activeOpacity={0.7}
           >
-            <Text style={[styles.categoryDropdownText, { color: colors.text }]}>
+            <Text style={[styles.categoryDropdownText, { color: selectedCategory ? colors.text : colors.textSecondary }]}>
               {selectedCategoryLabel}
             </Text>
             <Text style={[styles.categoryDropdownText, { color: colors.textSecondary }]}>
@@ -998,53 +1229,39 @@ export default function SearchScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Values List */}
-        <View style={styles.categoryContainer}>
-          {currentCategoryValues.map(value => {
-            const isSupported = selectedSupportValues.includes(value.id);
-            const isRejected = selectedRejectValues.includes(value.id);
+        {/* Values Pills */}
+        {selectedCategory && (
+          <View style={styles.valuesPillsContainer}>
+            {currentCategoryValues.map(value => {
+              const isSupported = selectedSupportValues.includes(value.id);
+              const isRejected = selectedRejectValues.includes(value.id);
 
-            return (
-              <View key={value.id} style={[styles.valueRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.valueName, { color: colors.text }]} numberOfLines={1}>
-                  {value.name}
-                </Text>
-                <View style={styles.valueActions}>
-                  <TouchableOpacity
-                    style={[
-                      styles.valueButton,
-                      isSupported && { backgroundColor: colors.success + '20', borderColor: colors.success }
-                    ]}
-                    onPress={() => handleValueToggle(value.id, 'support')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      styles.valueButtonText,
-                      { color: isSupported ? colors.success : colors.textSecondary }
-                    ]}>
-                      Support
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.valueButton,
-                      isRejected && { backgroundColor: colors.danger + '20', borderColor: colors.danger }
-                    ]}
-                    onPress={() => handleValueToggle(value.id, 'reject')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      styles.valueButtonText,
-                      { color: isRejected ? colors.danger : colors.textSecondary }
-                    ]}>
-                      Reject
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            );
-          })}
-        </View>
+              let pillStyle = [styles.valuePill, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }];
+              let textStyle = [styles.valuePillText, { color: colors.text }];
+
+              if (isSupported) {
+                pillStyle = [styles.valuePill, { backgroundColor: colors.success + '20', borderColor: colors.success }];
+                textStyle = [styles.valuePillText, { color: colors.success }];
+              } else if (isRejected) {
+                pillStyle = [styles.valuePill, { backgroundColor: colors.danger + '20', borderColor: colors.danger }];
+                textStyle = [styles.valuePillText, { color: colors.danger }];
+              }
+
+              return (
+                <TouchableOpacity
+                  key={value.id}
+                  style={pillStyle}
+                  onPress={() => handleValueToggle(value.id)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={textStyle}>
+                    {value.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
 
         {(selectedSupportValues.length > 0 || selectedRejectValues.length > 0) && (
           <View style={styles.generateContainer}>
@@ -1247,14 +1464,6 @@ export default function SearchScreen() {
             keyExtractor={item => item.id}
             contentContainerStyle={[styles.userListContainer, { paddingBottom: 100 }]}
             showsVerticalScrollIndicator={false}
-            ListHeaderComponent={
-              <View style={styles.exploreHeader}>
-                <Text style={[styles.exploreTitle, { color: colors.text }]}>Discover Users</Text>
-                <Text style={[styles.exploreSubtitle, { color: colors.textSecondary }]}>
-                  Connect with other Endorse users
-                </Text>
-              </View>
-            }
             ListEmptyComponent={
               <View style={styles.emptyState}>
                 <View style={[styles.emptyIconContainer, { backgroundColor: colors.primaryLight + '10' }]}>
@@ -1567,15 +1776,30 @@ export default function SearchScreen() {
         </View>
       </Modal>
 
-      {/* Category Selection Modal */}
+      {/* Category Dropdown Menu */}
       <Modal
         visible={categoryModalVisible}
-        animationType="slide"
+        animationType="none"
         transparent
         onRequestClose={() => setCategoryModalVisible(false)}
       >
-        <View style={styles.categoryModalOverlay}>
-          <View style={[styles.categoryModalContent, { backgroundColor: colors.background }]}>
+        <TouchableOpacity
+          style={styles.categoryDropdownOverlay}
+          activeOpacity={1}
+          onPress={() => setCategoryModalVisible(false)}
+        >
+          <View
+            style={[
+              styles.categoryDropdownMenu,
+              {
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+                top: categoryDropdownLayout.y + categoryDropdownLayout.height + 4,
+                left: categoryDropdownLayout.x,
+                width: categoryDropdownLayout.width,
+              }
+            ]}
+          >
             {[
               { key: 'ideology', label: 'Ideology' },
               { key: 'person', label: 'Person' },
@@ -1585,20 +1809,20 @@ export default function SearchScreen() {
             ].map(category => (
               <TouchableOpacity
                 key={category.key}
-                style={[styles.categoryModalItem, { borderBottomColor: colors.border }]}
+                style={[styles.categoryDropdownItem, { borderBottomColor: colors.border }]}
                 onPress={() => {
                   setSelectedCategory(category.key);
                   setCategoryModalVisible(false);
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.categoryModalText, { color: selectedCategory === category.key ? colors.primary : colors.text }]}>
+                <Text style={[styles.categoryDropdownItemText, { color: selectedCategory === category.key ? colors.primary : colors.text }]}>
                   {category.label}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
@@ -2331,35 +2555,36 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 8,
   },
-  valuesContainer: {
+  valuesPillsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    gap: 10,
   },
-  valueRow: {
+  valuePill: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  valuePillText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  resultsModeToggle: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  valueName: {
-    flex: 1,
-    fontSize: 15,
-    marginRight: 12,
-  },
-  valueActions: {
-    flexDirection: 'row',
+    backgroundColor: 'transparent',
+    borderRadius: 8,
+    overflow: 'hidden',
     gap: 8,
   },
-  valueButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+  resultsModeButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'transparent',
   },
-  valueButtonText: {
-    fontSize: 13,
+  resultsModeButtonText: {
+    fontSize: 14,
     fontWeight: '600' as const,
   },
   generateContainer: {
@@ -2403,11 +2628,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderBottomWidth: 1,
   },
-  resultListImage: {
+  resultListImageContainer: {
     width: 48,
     height: 48,
     borderRadius: 8,
     marginRight: 12,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  resultListImage: {
+    width: '100%',
+    height: '100%',
   },
   resultListInfo: {
     flex: 1,
@@ -2432,23 +2665,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700' as const,
   },
-  categoryModalOverlay: {
+  categoryDropdownOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
   },
-  categoryModalContent: {
-    maxHeight: '50%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 20,
+  categoryDropdownMenu: {
+    position: 'absolute',
+    borderWidth: 1,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    overflow: 'hidden',
   },
-  categoryModalItem: {
-    padding: 18,
+  categoryDropdownItem: {
+    padding: 16,
     borderBottomWidth: 1,
   },
-  categoryModalText: {
-    fontSize: 17,
+  categoryDropdownItemText: {
+    fontSize: 16,
     fontWeight: '500' as const,
   },
 });

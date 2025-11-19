@@ -22,11 +22,12 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { UserProfile } from '@/types';
-import { getUserLists, resolveList } from '@/services/firebase/listService';
+import { getUserLists, resolveList, copyListToLibrary, getEndorsementList } from '@/services/firebase/listService';
 import { UserList } from '@/types/library';
 import EndorsedBadge from '@/components/EndorsedBadge';
 import { getAllUserBusinesses, BusinessUser } from '@/services/firebase/businessService';
 import { calculateSimilarityScore, getSimilarityLabel } from '@/lib/scoring';
+import { followEntity, unfollowEntity, isFollowing, getFollowersCount, getFollowingCount } from '@/services/firebase/followService';
 
 export default function UserProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
@@ -45,6 +46,9 @@ export default function UserProfileScreen() {
   const [expandedListId, setExpandedListId] = useState<string | null>(null);
   const [activeListMenuId, setActiveListMenuId] = useState<string | null>(null);
   const [userBusinesses, setUserBusinesses] = useState<BusinessUser[]>([]);
+  const [isFollowingUser, setIsFollowingUser] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -103,6 +107,17 @@ export default function UserProfileScreen() {
       );
 
       setUserLists(resolvedLists);
+
+      // Load follow status and counts
+      if (clerkUser?.id && userId !== clerkUser.id) {
+        const following = await isFollowing(clerkUser.id, userId, 'user');
+        setIsFollowingUser(following);
+      }
+
+      const followers = await getFollowersCount(userId, 'user');
+      const following = await getFollowingCount(userId);
+      setFollowersCount(followers);
+      setFollowingCount(following);
     } catch (err) {
       console.error('Error loading user profile:', err);
       setError('Failed to load profile');
@@ -274,6 +289,74 @@ export default function UserProfileScreen() {
   const alignmentColor = similarityScore >= 60 ? colors.success : similarityScore < 40 ? colors.danger : colors.textSecondary;
   const AlignmentIcon = similarityScore >= 60 ? TrendingUp : TrendingDown;
 
+  const handleFollowUser = async () => {
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'You must be logged in to follow users');
+      return;
+    }
+
+    if (userId === clerkUser.id) {
+      Alert.alert('Info', 'You cannot follow yourself');
+      return;
+    }
+
+    try {
+      if (isFollowingUser) {
+        await unfollowEntity(clerkUser.id, userId, 'user');
+        setIsFollowingUser(false);
+        setFollowersCount(prev => Math.max(0, prev - 1));
+        Alert.alert('Success', `Unfollowed ${userName}`);
+      } else {
+        await followEntity(clerkUser.id, userId, 'user');
+        setIsFollowingUser(true);
+        setFollowersCount(prev => prev + 1);
+        Alert.alert('Success', `Now following ${userName}`);
+      }
+    } catch (error: any) {
+      console.error('Error following/unfollowing user:', error);
+      Alert.alert('Error', error?.message || 'Could not follow user. Please try again.');
+    }
+  };
+
+  const handleAddEndorseListToLibrary = async () => {
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'You must be logged in to add lists to your library');
+      return;
+    }
+
+    if (userId === clerkUser.id) {
+      Alert.alert('Info', 'This is already in your library');
+      return;
+    }
+
+    try {
+      // Get the user's endorsement list
+      const endorsementList = await getEndorsementList(userId);
+
+      if (!endorsementList) {
+        Alert.alert('Error', 'This user does not have an endorsement list');
+        return;
+      }
+
+      // Get current user's name
+      const currentUserName = currentUserProfile?.userDetails?.name || clerkUser?.firstName || 'My Library';
+
+      // Copy the list to the current user's library
+      await copyListToLibrary(endorsementList.id, clerkUser.id, currentUserName, profileImageUrl);
+
+      // Refresh library to show the new list
+      await new Promise(resolve => setTimeout(resolve, 500));
+      if (clerkUser?.id) {
+        await library.loadUserLists(clerkUser.id, true);
+      }
+
+      Alert.alert('Success', `${userName}'s endorsement list added to your library!`);
+    } catch (error: any) {
+      console.error('Error adding endorsement list:', error);
+      Alert.alert('Error', error?.message || 'Could not add list to library. Please try again.');
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -355,8 +438,12 @@ export default function UserProfileScreen() {
                       'Choose an action',
                       [
                         {
-                          text: 'Follow',
-                          onPress: () => Alert.alert('Coming Soon', 'Follow functionality will be available soon'),
+                          text: 'Add Endorse List to Library',
+                          onPress: handleAddEndorseListToLibrary,
+                        },
+                        {
+                          text: isFollowingUser ? 'Unfollow' : 'Follow',
+                          onPress: handleFollowUser,
                         },
                         {
                           text: 'Share',
@@ -393,6 +480,18 @@ export default function UserProfileScreen() {
               {userDetails.description}
             </Text>
           )}
+
+          {/* Follower/Following Counts */}
+          <View style={styles.followStatsContainer}>
+            <View style={styles.followStat}>
+              <Text style={[styles.followStatNumber, { color: colors.text }]}>{followersCount}</Text>
+              <Text style={[styles.followStatLabel, { color: colors.textSecondary }]}>Followers</Text>
+            </View>
+            <View style={styles.followStat}>
+              <Text style={[styles.followStatNumber, { color: colors.text }]}>{followingCount}</Text>
+              <Text style={[styles.followStatLabel, { color: colors.textSecondary }]}>Following</Text>
+            </View>
+          </View>
 
           {/* Social Links */}
           {(userDetails?.socialMedia?.twitter || userDetails?.socialMedia?.instagram || userDetails?.socialMedia?.facebook || userDetails?.socialMedia?.linkedin || userDetails?.website) && (
@@ -610,6 +709,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     marginBottom: 16,
+  },
+  followStatsContainer: {
+    flexDirection: 'row',
+    gap: 32,
+    marginTop: 16,
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  followStat: {
+    alignItems: 'center',
+  },
+  followStatNumber: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    marginBottom: 2,
+  },
+  followStatLabel: {
+    fontSize: 13,
   },
   socialLinksContainer: {
     flexDirection: 'row',

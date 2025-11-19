@@ -36,6 +36,8 @@ export default function ValueCodeSettings() {
   const [discountType, setDiscountType] = useState<'preset' | 'custom'>('preset');
   const [customerDiscount, setCustomerDiscount] = useState(businessInfo.customerDiscountPercent || 5);
   const [customDiscountText, setCustomDiscountText] = useState(businessInfo.customDiscount || '');
+  const [requireFollow, setRequireFollow] = useState(businessInfo.requireFollow || false);
+  const [requireEndorse, setRequireEndorse] = useState(businessInfo.requireEndorse || false);
 
   const handleToggleDiscounts = async (value: boolean) => {
     setAcceptsDiscounts(value);
@@ -75,6 +77,20 @@ export default function ValueCodeSettings() {
       'Thank you! We will reach out to confirm and approve your custom discount.',
       [{ text: 'OK' }]
     );
+  };
+
+  const handleToggleRequireFollow = async (value: boolean) => {
+    setRequireFollow(value);
+    await setBusinessInfo({
+      requireFollow: value,
+    });
+  };
+
+  const handleToggleRequireEndorse = async (value: boolean) => {
+    setRequireEndorse(value);
+    await setBusinessInfo({
+      requireEndorse: value,
+    });
   };
 
   return (
@@ -184,6 +200,48 @@ export default function ValueCodeSettings() {
                   <Text style={[styles.standFeeText, { color: colors.textSecondary }]}>
                     Upright Fee: 2.5% Fixed
                   </Text>
+                </View>
+
+                {/* Discount Requirements */}
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+                <Text style={[styles.subsectionTitle, { color: colors.text }]}>Discount Requirements</Text>
+                <Text style={[styles.requirementsHelpText, { color: colors.textSecondary }]}>
+                  Choose which actions customers must take to receive the discount
+                </Text>
+
+                {/* Require Follow Toggle */}
+                <View style={styles.requirementRow}>
+                  <View style={styles.requirementText}>
+                    <Text style={[styles.requirementLabel, { color: colors.text }]}>Require Follow</Text>
+                    <Text style={[styles.requirementDescription, { color: colors.textSecondary }]}>
+                      Customer must follow your business
+                    </Text>
+                  </View>
+                  <Switch
+                    value={requireFollow}
+                    onValueChange={handleToggleRequireFollow}
+                    trackColor={{ false: '#D1D5DB', true: '#000000' }}
+                    thumbColor='#FFFFFF'
+                    ios_backgroundColor='#E5E7EB'
+                  />
+                </View>
+
+                {/* Require Endorse Toggle */}
+                <View style={styles.requirementRow}>
+                  <View style={styles.requirementText}>
+                    <Text style={[styles.requirementLabel, { color: colors.text }]}>Require Endorse</Text>
+                    <Text style={[styles.requirementDescription, { color: colors.textSecondary }]}>
+                      Customer must endorse your business
+                    </Text>
+                  </View>
+                  <Switch
+                    value={requireEndorse}
+                    onValueChange={handleToggleRequireEndorse}
+                    trackColor={{ false: '#D1D5DB', true: '#000000' }}
+                    thumbColor='#FFFFFF'
+                    ios_backgroundColor='#E5E7EB'
+                  />
                 </View>
               </>
             ) : (
@@ -405,5 +463,30 @@ const styles = StyleSheet.create({
   },
   underlinedText: {
     textDecorationLine: 'underline' as const,
+  },
+  // Requirement Toggles
+  requirementsHelpText: {
+    fontSize: 12,
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  requirementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    gap: 12,
+  },
+  requirementText: {
+    flex: 1,
+  },
+  requirementLabel: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 4,
+  },
+  requirementDescription: {
+    fontSize: 12,
+    lineHeight: 16,
   },
 });
