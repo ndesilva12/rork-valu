@@ -92,7 +92,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
-import { calculateBrandScore, calculateSimilarityScore, normalizeBrandScores } from '@/lib/scoring';
+import { calculateBrandScore, calculateSimilarityScore, normalizeBrandScores, normalizeSimilarityScores } from '@/lib/scoring';
 import { getAllUserBusinesses, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 import BusinessMapView from '@/components/BusinessMapView';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
@@ -644,17 +644,20 @@ export default function HomeScreen() {
     // Filter by distance
     const businessesInRange = businessesWithScores.filter((b) => b.isWithinRange);
 
+    // Normalize similarity scores to 1-99 range with median at 50
+    const normalizedBusinesses = normalizeSimilarityScores(businessesInRange);
+
     // Separate into aligned (>= 60) and unaligned (< 40)
-    const alignedBusinesses = businessesInRange
+    const alignedBusinesses = normalizedBusinesses
       .filter((b) => b.alignmentScore >= 60)
       .sort((a, b) => b.alignmentScore - a.alignmentScore); // Sort by score descending
 
-    const unalignedBusinesses = businessesInRange
+    const unalignedBusinesses = normalizedBusinesses
       .filter((b) => b.alignmentScore < 40)
       .sort((a, b) => a.alignmentScore - b.alignmentScore); // Sort by score ascending
 
     // Sort all alphabetically by name
-    const allBusinessesSorted = [...businessesInRange].sort((a, b) =>
+    const allBusinessesSorted = [...normalizedBusinesses].sort((a, b) =>
       (a.business.businessInfo.name || '').localeCompare(b.business.businessInfo.name || '')
     );
 

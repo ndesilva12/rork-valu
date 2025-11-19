@@ -165,6 +165,64 @@ export function calculateSimilarityScore(
 }
 
 /**
+ * Normalize similarity scores to 1-99 range with median at 50
+ *
+ * @param businessesWithScores - Array of businesses with similarity scores
+ * @returns Array with normalized scores (1-99, median = 50)
+ */
+export function normalizeSimilarityScores<T extends { alignmentScore: number }>(
+  businessesWithScores: T[]
+): T[] {
+  if (businessesWithScores.length === 0) return businessesWithScores;
+  if (businessesWithScores.length === 1) {
+    return businessesWithScores.map(b => ({ ...b, alignmentScore: 50 }));
+  }
+
+  // Get all scores and sort them
+  const scores = businessesWithScores.map(b => b.alignmentScore).sort((a, b) => a - b);
+  const minScore = scores[0];
+  const maxScore = scores[scores.length - 1];
+
+  // If all scores are the same, return 50 for all
+  if (minScore === maxScore) {
+    return businessesWithScores.map(b => ({ ...b, alignmentScore: 50 }));
+  }
+
+  // Find the median score
+  const medianIndex = Math.floor(scores.length / 2);
+  const medianScore = scores.length % 2 === 0
+    ? (scores[medianIndex - 1] + scores[medianIndex]) / 2
+    : scores[medianIndex];
+
+  // Normalize with median at 50
+  return businessesWithScores.map(business => {
+    const score = business.alignmentScore;
+    let normalized: number;
+
+    if (score <= medianScore) {
+      // Below median: map to 1-50 range
+      if (medianScore === minScore) {
+        normalized = 50;
+      } else {
+        normalized = 1 + ((score - minScore) / (medianScore - minScore)) * 49;
+      }
+    } else {
+      // Above median: map to 50-99 range
+      if (maxScore === medianScore) {
+        normalized = 50;
+      } else {
+        normalized = 50 + ((score - medianScore) / (maxScore - medianScore)) * 49;
+      }
+    }
+
+    return {
+      ...business,
+      alignmentScore: Math.round(normalized)
+    };
+  });
+}
+
+/**
  * Get a text label for a brand score
  */
 export function getBrandScoreLabel(score: number): string {
