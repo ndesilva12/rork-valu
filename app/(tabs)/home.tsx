@@ -4300,8 +4300,9 @@ export default function HomeScreen() {
           activeOpacity={1}
           onPress={() => setShowMapModal(false)}
         >
-          <View
+          <Pressable
             style={[styles.mapModalContainer, { backgroundColor: colors.background }]}
+            onPress={(e) => e.stopPropagation()}
           >
             {/* Header with close button */}
             <View style={[styles.mapModalHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
@@ -4356,7 +4357,7 @@ export default function HomeScreen() {
               </View>
             )}
           </View>
-          </View>
+          </Pressable>
         </TouchableOpacity>
       </Modal>
 
