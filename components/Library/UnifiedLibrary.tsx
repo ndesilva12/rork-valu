@@ -624,9 +624,9 @@ export default function UnifiedLibrary({
 
       case 'business':
         if ('businessId' in entry) {
-          // All businesses set to score of 50
-          const alignmentScore = 50;
-          const scoreColor = colors.textSecondary;
+          // Get business score from scoredBrands map
+          const alignmentScore = scoredBrands.get(entry.businessId) || 50;
+          const scoreColor = alignmentScore >= 50 ? colors.primary : colors.danger;
 
           // Get business name from multiple possible fields
           const businessName = (entry as any).businessName || (entry as any).name || 'Unknown Business';
@@ -1885,7 +1885,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 0,
-    borderWidth: 1,
+    borderWidth: 0,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -2144,7 +2144,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 0,
-    borderWidth: 1,
+    borderWidth: 0,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',

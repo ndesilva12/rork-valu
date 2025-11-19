@@ -33,6 +33,8 @@ import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { getBusinessesAcceptingDiscounts, getAllUserBusinesses, BusinessUser, calculateAlignmentScore } from '@/services/firebase/businessService';
 import { getAllPublicUsers } from '@/services/firebase/userService';
 import { UserProfile } from '@/types';
+import { copyListToLibrary, getEndorsementList } from '@/services/firebase/listService';
+import { useLibrary } from '@/contexts/LibraryContext';
 
 interface Comment {
   id: string;
@@ -51,6 +53,7 @@ interface ProductInteraction {
 export default function SearchScreen() {
   const router = useRouter();
   const { profile, addToSearchHistory, isDarkMode, clerkUser } = useUser();
+  const library = useLibrary();
   const colors = isDarkMode ? darkColors : lightColors;
   const { width } = useWindowDimensions();
 
@@ -71,7 +74,7 @@ export default function SearchScreen() {
   const [permission, requestPermission] = useCameraPermissions();
 
   // Value Machine state
-  const [activeTab, setActiveTab] = useState<'value-machine' | 'discover-users'>('discover-users');
+  const [activeTab, setActiveTab] = useState<'value-machine' | 'discover-users'>('value-machine');
   const [selectedSupportValues, setSelectedSupportValues] = useState<string[]>([]);
   const [selectedRejectValues, setSelectedRejectValues] = useState<string[]>([]);
   const [valueMachineResults, setValueMachineResults] = useState<Product[]>([]);
@@ -721,6 +724,45 @@ export default function SearchScreen() {
     const userLocation = item.profile.userDetails?.location;
     const userBio = item.profile.userDetails?.description;
 
+    const handleAddEndorseListToLibrary = async () => {
+      if (!clerkUser?.id) {
+        Alert.alert('Error', 'You must be logged in to add lists to your library');
+        return;
+      }
+
+      if (item.id === clerkUser.id) {
+        Alert.alert('Info', 'This is already in your library');
+        return;
+      }
+
+      try {
+        // Get the user's endorsement list
+        const endorsementList = await getEndorsementList(item.id);
+
+        if (!endorsementList) {
+          Alert.alert('Error', 'This user does not have an endorsement list');
+          return;
+        }
+
+        // Get current user's name
+        const currentUserName = profile?.userDetails?.name || clerkUser?.firstName || 'My Library';
+
+        // Copy the list to the current user's library
+        await copyListToLibrary(endorsementList.id, clerkUser.id, currentUserName, userImage);
+
+        // Refresh library to show the new list
+        await new Promise(resolve => setTimeout(resolve, 500));
+        if (clerkUser?.id) {
+          await library.loadUserLists(clerkUser.id, true);
+        }
+
+        Alert.alert('Success', `${userName}'s endorsement list added to your library!`);
+      } catch (error: any) {
+        console.error('Error adding endorsement list:', error);
+        Alert.alert('Error', error?.message || 'Could not add list to library. Please try again.');
+      }
+    };
+
     const handleActionMenu = (e: any) => {
       e.stopPropagation();
       Alert.alert(
@@ -729,7 +771,7 @@ export default function SearchScreen() {
         [
           {
             text: 'Add Endorse List to Library',
-            onPress: () => Alert.alert('Coming Soon', 'Add to library functionality will be available soon'),
+            onPress: handleAddEndorseListToLibrary,
           },
           {
             text: 'Follow',

@@ -22,7 +22,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { UserProfile } from '@/types';
-import { getUserLists, resolveList } from '@/services/firebase/listService';
+import { getUserLists, resolveList, copyListToLibrary, getEndorsementList } from '@/services/firebase/listService';
 import { UserList } from '@/types/library';
 import EndorsedBadge from '@/components/EndorsedBadge';
 import { getAllUserBusinesses, BusinessUser } from '@/services/firebase/businessService';
@@ -274,6 +274,45 @@ export default function UserProfileScreen() {
   const alignmentColor = similarityScore >= 60 ? colors.success : similarityScore < 40 ? colors.danger : colors.textSecondary;
   const AlignmentIcon = similarityScore >= 60 ? TrendingUp : TrendingDown;
 
+  const handleAddEndorseListToLibrary = async () => {
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'You must be logged in to add lists to your library');
+      return;
+    }
+
+    if (userId === clerkUser.id) {
+      Alert.alert('Info', 'This is already in your library');
+      return;
+    }
+
+    try {
+      // Get the user's endorsement list
+      const endorsementList = await getEndorsementList(userId);
+
+      if (!endorsementList) {
+        Alert.alert('Error', 'This user does not have an endorsement list');
+        return;
+      }
+
+      // Get current user's name
+      const currentUserName = currentUserProfile?.userDetails?.name || clerkUser?.firstName || 'My Library';
+
+      // Copy the list to the current user's library
+      await copyListToLibrary(endorsementList.id, clerkUser.id, currentUserName, profileImageUrl);
+
+      // Refresh library to show the new list
+      await new Promise(resolve => setTimeout(resolve, 500));
+      if (clerkUser?.id) {
+        await library.loadUserLists(clerkUser.id, true);
+      }
+
+      Alert.alert('Success', `${userName}'s endorsement list added to your library!`);
+    } catch (error: any) {
+      console.error('Error adding endorsement list:', error);
+      Alert.alert('Error', error?.message || 'Could not add list to library. Please try again.');
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -356,7 +395,7 @@ export default function UserProfileScreen() {
                       [
                         {
                           text: 'Add Endorse List to Library',
-                          onPress: () => Alert.alert('Coming Soon', 'Add to library functionality will be available soon'),
+                          onPress: handleAddEndorseListToLibrary,
                         },
                         {
                           text: 'Follow',
