@@ -36,6 +36,7 @@ import {
   Globe,
   Lock,
   User,
+  UserPlus,
 } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import {
