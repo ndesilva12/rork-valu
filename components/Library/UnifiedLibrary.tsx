@@ -74,9 +74,6 @@ interface UnifiedLibraryProps {
   userBusinesses?: BusinessUser[];
   scoredBrands?: Map<string, number>;
   userCauses?: string[];
-  // Privacy settings for aligned/unaligned lists
-  alignedListPublic?: boolean;
-  unalignedListPublic?: boolean;
 }
 
 export default function UnifiedLibrary({
@@ -92,8 +89,6 @@ export default function UnifiedLibrary({
   userBusinesses = [],
   scoredBrands = new Map(),
   userCauses = [],
-  alignedListPublic = true,
-  unalignedListPublic = true,
 }: UnifiedLibraryProps) {
   const colors = isDarkMode ? darkColors : lightColors;
   const library = useLibrary();
@@ -899,8 +894,8 @@ export default function UnifiedLibrary({
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            {/* Action Menu Button for aligned/unaligned lists */}
-            {(listId === 'aligned' || listId === 'unaligned') && canEdit && (
+            {/* Action Menu Button for endorsement, aligned, and unaligned lists */}
+            {(listId === 'endorsement' || listId === 'aligned' || listId === 'unaligned') && canEdit && (
               <TouchableOpacity
                 onPress={(e) => {
                   e.stopPropagation();
@@ -1364,8 +1359,9 @@ export default function UnifiedLibrary({
 
               const canEditMeta = !isSystemList && !isCopiedList && canEdit;
               const canRemove = !isEndorsementList && !isSystemList && canEdit;
-              // Allow privacy toggle for aligned/unaligned lists as well
-              const canTogglePrivacy = isPublic !== undefined && !isCopiedList && canEdit;
+              // REMOVED: Privacy toggle no longer allowed for endorsement, aligned, or unaligned lists
+              // Endorsement lists are always public, aligned/unaligned are always private
+              const canTogglePrivacy = isPublic !== undefined && !isCopiedList && !isSystemList && !isEndorsementList && canEdit;
               const canCopyList = mode === 'view';
 
               return (
@@ -1533,7 +1529,7 @@ export default function UnifiedLibrary({
           true,
           `Endorsed by ${endorsementList.creatorName || 'you'}`,
           endorsementList.description,
-          endorsementList.isPublic,
+          true, // Always public
           profileImage
         )}
 
@@ -1545,7 +1541,7 @@ export default function UnifiedLibrary({
           false,
           undefined,
           'Brands and businesses aligned with your values',
-          alignedListPublic,
+          false, // Always private
           undefined,
           true
         )}
@@ -1558,7 +1554,7 @@ export default function UnifiedLibrary({
           false,
           undefined,
           'Brands and businesses not aligned with your values',
-          unalignedListPublic,
+          false, // Always private
           undefined,
           true
         )}

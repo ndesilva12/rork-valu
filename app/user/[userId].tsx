@@ -384,15 +384,13 @@ export default function UserProfileScreen() {
                 }
                 return endorsementList || null;
               })()}
-              alignedItems={isOwnProfile || userProfile?.alignedListPublic !== false ? allSupportFull : []}
-              unalignedItems={isOwnProfile || userProfile?.unalignedListPublic !== false ? allAvoidFull : []}
+              alignedItems={isOwnProfile ? allSupportFull : []}
+              unalignedItems={isOwnProfile ? allAvoidFull : []}
               isDarkMode={isDarkMode}
               profileImage={profileImageUrl}
               userBusinesses={userBusinesses}
               scoredBrands={scoredBrands}
               userCauses={currentUserProfile?.causes || []}
-              alignedListPublic={userProfile?.alignedListPublic !== false}
-              unalignedListPublic={userProfile?.unalignedListPublic !== false}
             />
           </View>
         </View>
