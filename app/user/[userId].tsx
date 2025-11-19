@@ -15,6 +15,7 @@ import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
+import { useLibrary } from '@/contexts/LibraryContext';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
@@ -30,6 +31,7 @@ export default function UserProfileScreen() {
   const router = useRouter();
   const { isDarkMode, clerkUser, profile: currentUserProfile } = useUser();
   const { brands, valuesMatrix } = useData();
+  const library = useLibrary();
   const colors = isDarkMode ? darkColors : lightColors;
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -116,7 +118,18 @@ export default function UserProfileScreen() {
       const firstName = clerkUser?.firstName;
       const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || 'My Library';
 
-      await copyListToLibrary(listId, clerkUser.id, userName);
+      // Get the original creator's profile image
+      const profileImageUrl = userProfile?.userDetails?.profileImage;
+
+      await copyListToLibrary(listId, clerkUser.id, userName, profileImageUrl);
+
+      // Reload library to show the newly copied list with all its entries
+      // Wait a brief moment to ensure Firestore has propagated the changes
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      if (clerkUser?.id) {
+        await library.loadUserLists(clerkUser.id, true);
+      }
 
       Alert.alert('Success', 'List copied to your library!');
     } catch (error: any) {
@@ -141,14 +154,14 @@ export default function UserProfileScreen() {
     fetchBusinesses();
   }, []);
 
-  // Get all brands and set scores to 50
+  // Calculate aligned and unaligned brands based on viewed user's values
   const { allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
     const csvBrands = brands || [];
     const localBizList = userBusinesses || [];
 
     const currentBrands = [...csvBrands, ...localBizList];
 
-    if (!currentBrands || currentBrands.length === 0) {
+    if (!currentBrands || currentBrands.length === 0 || !userProfile || !userProfile.causes || userProfile.causes.length === 0) {
       return {
         allSupportFull: [],
         allAvoidFull: [],
@@ -156,20 +169,41 @@ export default function UserProfileScreen() {
       };
     }
 
-    // Sort alphabetically by name
-    const sortedBrands = [...currentBrands].sort((a, b) =>
-      (a.name || '').localeCompare(b.name || '')
-    );
+    // Import scoring functions
+    const { calculateBrandScore, normalizeBrandScores } = require('@/lib/scoring');
 
-    // Set all scores to 50
-    const scoredBrandsMap = new Map(sortedBrands.map((brand) => [brand.id, 50]));
+    // Calculate scores for all brands using the viewed user's values
+    const brandsWithScores = currentBrands.map(brand => {
+      const score = calculateBrandScore(brand.name, userProfile.causes || [], valuesMatrix);
+      return { brand, score };
+    });
+
+    // Normalize scores to 1-99 range
+    const normalizedBrands = normalizeBrandScores(brandsWithScores);
+
+    // Create scored brands map
+    const scoredMap = new Map(normalizedBrands.map(({ brand, score }) => [brand.id, score]));
+
+    // Sort all brands by score
+    const sortedByScore = [...normalizedBrands].sort((a, b) => b.score - a.score);
+
+    // Top 50 highest-scoring brands (aligned)
+    const alignedBrands = sortedByScore
+      .slice(0, 50)
+      .map(({ brand }) => brand);
+
+    // Bottom 50 lowest-scoring brands (unaligned)
+    const unalignedBrands = sortedByScore
+      .slice(-50)
+      .reverse()
+      .map(({ brand }) => brand);
 
     return {
-      allSupportFull: sortedBrands,
-      allAvoidFull: [],
-      scoredBrands: scoredBrandsMap,
+      allSupportFull: alignedBrands,
+      allAvoidFull: unalignedBrands,
+      scoredBrands: scoredMap,
     };
-  }, [brands, userBusinesses]);
+  }, [brands, userBusinesses, userProfile, valuesMatrix]);
 
   if (isLoading) {
     return (
@@ -277,11 +311,6 @@ export default function UserProfileScreen() {
             <View style={styles.titleContainer}>
               <View style={styles.nameRow}>
                 <Text style={[styles.userName, { color: colors.text }]}>{userName}</Text>
-                {!isOwnProfile && similarityScore > 0 && (
-                  <View style={[styles.scoreBadge, { backgroundColor: alignmentColor + '15', borderColor: alignmentColor }]}>
-                    <Text style={[styles.scoreBadgeText, { color: alignmentColor }]}>{similarityLabel}</Text>
-                  </View>
-                )}
               </View>
               {userDetails?.location && (
                 <View style={styles.locationRow}>

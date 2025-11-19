@@ -126,7 +126,7 @@ export default function MenuButton({ onShowExplainers }: MenuButtonProps = {}) {
               styles.menuContainer,
               {
                 backgroundColor: isDarkMode ? '#1F2937' : '#F9FAFB',
-                borderWidth: 3,
+                borderWidth: 1,
                 borderColor: '#FFFFFF',
               }
             ]}
@@ -135,7 +135,7 @@ export default function MenuButton({ onShowExplainers }: MenuButtonProps = {}) {
           >
             <View style={styles.logoContainer}>
               <Image
-                source={require('@/assets/images/endorse1.png')}
+                source={require('@/assets/images/endo1.png')}
                 style={styles.menuLogo}
                 resizeMode="contain"
               />
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   menuContainer: {
     width: '90%',
     maxWidth: 500,
-    borderRadius: 24,
+    borderRadius: 12,
     overflow: 'hidden',
     maxHeight: '92%',
   },

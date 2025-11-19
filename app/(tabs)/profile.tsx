@@ -187,14 +187,14 @@ export default function ProfileScreen() {
     fetchBusinesses();
   }, []);
 
-  // Get all brands and set scores to 50
+  // Calculate aligned and unaligned brands based on user's values
   const { allSupportFull, allAvoidFull, scoredBrands } = useMemo(() => {
     const csvBrands = brands || [];
     const localBizList = userBusinesses || [];
 
     const currentBrands = [...csvBrands, ...localBizList];
 
-    if (!currentBrands || currentBrands.length === 0) {
+    if (!currentBrands || currentBrands.length === 0 || !profile.causes || profile.causes.length === 0) {
       return {
         allSupportFull: [],
         allAvoidFull: [],
@@ -202,20 +202,41 @@ export default function ProfileScreen() {
       };
     }
 
-    // Sort alphabetically by name
-    const sortedBrands = [...currentBrands].sort((a, b) =>
-      (a.name || '').localeCompare(b.name || '')
-    );
+    // Import scoring functions - need to add at top of file
+    const { calculateBrandScore, normalizeBrandScores } = require('@/lib/scoring');
 
-    // Set all scores to 50
-    const scoredBrandsMap = new Map(sortedBrands.map((brand) => [brand.id, 50]));
+    // Calculate scores for all brands
+    const brandsWithScores = currentBrands.map(brand => {
+      const score = calculateBrandScore(brand.name, profile.causes || [], valuesMatrix);
+      return { brand, score };
+    });
+
+    // Normalize scores to 1-99 range
+    const normalizedBrands = normalizeBrandScores(brandsWithScores);
+
+    // Create scored brands map
+    const scoredMap = new Map(normalizedBrands.map(({ brand, score }) => [brand.id, score]));
+
+    // Sort all brands by score
+    const sortedByScore = [...normalizedBrands].sort((a, b) => b.score - a.score);
+
+    // Top 50 highest-scoring brands (aligned)
+    const alignedBrands = sortedByScore
+      .slice(0, 50)
+      .map(({ brand }) => brand);
+
+    // Bottom 50 lowest-scoring brands (unaligned)
+    const unalignedBrands = sortedByScore
+      .slice(-50)
+      .reverse()
+      .map(({ brand }) => brand);
 
     return {
-      allSupportFull: sortedBrands,
-      allAvoidFull: [],
-      scoredBrands: scoredBrandsMap,
+      allSupportFull: alignedBrands,
+      allAvoidFull: unalignedBrands,
+      scoredBrands: scoredMap,
     };
-  }, [brands, userBusinesses]);
+  }, [brands, userBusinesses, profile.causes, valuesMatrix]);
 
   // If this is a business account, show the business profile editor instead
   if (profile.accountType === 'business') {
@@ -228,7 +249,7 @@ export default function ProfileScreen() {
         <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
           <View style={[styles.header, { backgroundColor: colors.background }]}>
             <Image
-              source={require('@/assets/images/endorse1.png')}
+              source={require('@/assets/images/endo1.png')}
               style={styles.headerLogo}
               resizeMode="contain"
             />
@@ -257,7 +278,7 @@ export default function ProfileScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endorse1.png')}
+            source={require('@/assets/images/endo1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />

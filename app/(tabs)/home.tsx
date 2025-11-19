@@ -36,6 +36,7 @@ import {
   Globe,
   Lock,
   User,
+  UserPlus,
 } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import {
@@ -92,7 +93,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
-import { calculateBrandScore, calculateSimilarityScore } from '@/lib/scoring';
+import { calculateBrandScore, calculateSimilarityScore, normalizeBrandScores, normalizeSimilarityScores } from '@/lib/scoring';
 import { getAllUserBusinesses, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 import BusinessMapView from '@/components/BusinessMapView';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
@@ -568,20 +569,24 @@ export default function HomeScreen() {
       return { brand, score };
     });
 
-    // Create scored brands map
-    const scoredMap = new Map(brandsWithScores.map(({ brand, score }) => [brand.id, score]));
+    // Normalize scores to 1-99 range for better visual separation
+    const normalizedBrands = normalizeBrandScores(brandsWithScores);
 
-    // Separate into aligned (>= 60) and unaligned (< 40) based on scores
-    const alignedBrands = brandsWithScores
-      .filter(({ score }) => score >= 60)
-      .sort((a, b) => b.score - a.score) // Sort by score descending
-      .slice(0, 50) // Cap at 50 brands
+    // Create scored brands map
+    const scoredMap = new Map(normalizedBrands.map(({ brand, score }) => [brand.id, score]));
+
+    // Sort all brands by score
+    const sortedByScore = [...normalizedBrands].sort((a, b) => b.score - a.score);
+
+    // Top 50 highest-scoring brands (aligned)
+    const alignedBrands = sortedByScore
+      .slice(0, 50)
       .map(({ brand }) => brand);
 
-    const unalignedBrands = brandsWithScores
-      .filter(({ score }) => score < 40)
-      .sort((a, b) => a.score - b.score) // Sort by score ascending (most opposed first)
-      .slice(0, 50) // Cap at 50 brands
+    // Bottom 50 lowest-scoring brands (unaligned)
+    const unalignedBrands = sortedByScore
+      .slice(-50)
+      .reverse() // Reverse so most opposed is first
       .map(({ brand }) => brand);
 
     // All brands sorted alphabetically
@@ -640,17 +645,20 @@ export default function HomeScreen() {
     // Filter by distance
     const businessesInRange = businessesWithScores.filter((b) => b.isWithinRange);
 
+    // Normalize similarity scores to 1-99 range with median at 50
+    const normalizedBusinesses = normalizeSimilarityScores(businessesInRange);
+
     // Separate into aligned (>= 60) and unaligned (< 40)
-    const alignedBusinesses = businessesInRange
+    const alignedBusinesses = normalizedBusinesses
       .filter((b) => b.alignmentScore >= 60)
       .sort((a, b) => b.alignmentScore - a.alignmentScore); // Sort by score descending
 
-    const unalignedBusinesses = businessesInRange
+    const unalignedBusinesses = normalizedBusinesses
       .filter((b) => b.alignmentScore < 40)
       .sort((a, b) => a.alignmentScore - b.alignmentScore); // Sort by score ascending
 
     // Sort all alphabetically by name
-    const allBusinessesSorted = [...businessesInRange].sort((a, b) =>
+    const allBusinessesSorted = [...normalizedBusinesses].sort((a, b) =>
       (a.business.businessInfo.name || '').localeCompare(b.business.businessInfo.name || '')
     );
 
@@ -889,7 +897,9 @@ export default function HomeScreen() {
             }}
             activeOpacity={0.7}
           >
-            <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+            <View style={{ transform: [{ rotate: '90deg' }] }}>
+              <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+            </View>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -1591,10 +1601,81 @@ export default function HomeScreen() {
     setActiveCardMenuId(id);
   };
 
-  const handleCardMenuAddTo = () => {
+  // Check if an item is already endorsed
+  const isItemEndorsed = (itemId: string, itemType: 'brand' | 'business'): boolean => {
+    const endorsementList = library.state.endorsementList;
+    if (!endorsementList?.entries) return false;
+
+    return endorsementList.entries.some(e => {
+      if (itemType === 'brand') {
+        return e.brandId === itemId;
+      } else {
+        return e.businessId === itemId;
+      }
+    });
+  };
+
+  const handleCardMenuAddTo = async () => {
     if (!cardMenuData) return;
     setActiveCardMenuId(null);
-    handleQuickAdd(cardMenuData.type, cardMenuData.id, cardMenuData.name, cardMenuData.website, cardMenuData.logoUrl);
+
+    // Get endorsement list
+    const endorsementList = await library.getEndorsementList();
+    if (!endorsementList) {
+      Alert.alert('Error', 'Endorsement list not found');
+      return;
+    }
+
+    const isEndorsed = isItemEndorsed(cardMenuData.id, cardMenuData.type);
+
+    if (isEndorsed) {
+      // Unendorse - remove from list
+      try {
+        const endorsedEntry = endorsementList.entries.find(e => {
+          if (cardMenuData.type === 'brand') {
+            return e.brandId === cardMenuData.id;
+          } else {
+            return e.businessId === cardMenuData.id;
+          }
+        });
+
+        if (!endorsedEntry) {
+          Alert.alert('Error', 'Item not found in endorsement list');
+          return;
+        }
+
+        await library.removeEntry(endorsementList.id, endorsedEntry.id);
+        Alert.alert('Success', `${cardMenuData.name} unendorsed!`);
+      } catch (error: any) {
+        console.error('Error unendorsing item:', error);
+        Alert.alert('Error', error?.message || 'Failed to unendorse item');
+      }
+    } else {
+      // Endorse - add to list
+      try {
+        const entry: Omit<ListEntry, 'id' | 'createdAt'> = cardMenuData.type === 'brand'
+          ? {
+              type: 'brand',
+              brandId: cardMenuData.id,
+              brandName: cardMenuData.name,
+              website: cardMenuData.website,
+              logoUrl: cardMenuData.logoUrl,
+            }
+          : {
+              type: 'business',
+              businessId: cardMenuData.id,
+              businessName: cardMenuData.name,
+              website: cardMenuData.website,
+              logoUrl: cardMenuData.logoUrl,
+            };
+
+        await library.addEntry(endorsementList.id, entry as ListEntry);
+        Alert.alert('Success', `${cardMenuData.name} endorsed!`);
+      } catch (error: any) {
+        console.error('Error endorsing item:', error);
+        Alert.alert('Error', error?.message || 'Failed to endorse item');
+      }
+    }
   };
 
   const handleCardMenuRemove = async () => {
@@ -2968,7 +3049,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endorse1.png')}
+            source={require('@/assets/images/endo1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -2988,7 +3069,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endorse1.png')}
+            source={require('@/assets/images/endo1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3011,7 +3092,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endorse1.png')}
+            source={require('@/assets/images/endo1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3039,20 +3120,11 @@ export default function HomeScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endorse1.png')}
+            source={require('@/assets/images/endo1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={[styles.headerCreateButton, { backgroundColor: colors.primary }]}
-              onPress={() => setShowNewListChoiceModal(true)}
-              activeOpacity={0.7}
-            >
-              <Plus size={20} color={colors.white} strokeWidth={2.5} />
-            </TouchableOpacity>
-            <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
-          </View>
+          <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
         </View>
         {renderMainViewSelector()}
       </View>
@@ -3319,15 +3391,24 @@ export default function HomeScreen() {
         <TouchableWithoutFeedback onPress={() => setActiveCardMenuId(null)}>
           <View style={styles.dropdownModalOverlay}>
             <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              {/* Add to option */}
-              <TouchableOpacity
-                style={styles.listOptionItem}
-                onPress={handleCardMenuAddTo}
-                activeOpacity={0.7}
-              >
-                <Plus size={18} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.listOptionText, { color: colors.text }]}>Add to</Text>
-              </TouchableOpacity>
+              {/* Endorse/Unendorse option */}
+              {(() => {
+                const isEndorsed = cardMenuData ? isItemEndorsed(cardMenuData.id, cardMenuData.type) : false;
+                const endorseColor = isEndorsed ? colors.danger : colors.text;
+
+                return (
+                  <TouchableOpacity
+                    style={styles.listOptionItem}
+                    onPress={handleCardMenuAddTo}
+                    activeOpacity={0.7}
+                  >
+                    <UserPlus size={18} color={endorseColor} strokeWidth={2} />
+                    <Text style={[styles.listOptionText, { color: endorseColor }]}>
+                      {isEndorsed ? 'Unendorse' : 'Endorse'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })()}
               <View style={[styles.listOptionDivider, { backgroundColor: colors.border }]} />
 
               {/* Share option */}
@@ -5301,29 +5382,34 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   brandCard: {
-    borderRadius: 10,
-    height: 56,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
+    borderRadius: 0,
+    height: 64,
+    borderWidth: 0,
+    borderColor: 'transparent',
     overflow: 'visible',
     width: '100%',
+    backgroundColor: 'transparent',
   },
   brandCardInner: {
     flexDirection: 'row',
     alignItems: 'center',
     height: '100%',
     overflow: 'visible',
-    borderRadius: 10,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
   },
   brandLogoContainer: {
-    width: 56,
-    height: '100%',
+    width: 64,
+    height: 64,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+    borderRadius: 0,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
   },
   brandLogo: {
     width: '100%',
