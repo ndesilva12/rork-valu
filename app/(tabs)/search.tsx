@@ -1805,7 +1805,7 @@ export default function SearchScreen() {
               { key: 'person', label: 'Person' },
               { key: 'social_issue', label: 'Social Issue' },
               { key: 'religion', label: 'Religion' },
-              { key: 'nation', label: 'Nation' },
+              { key: 'nation', label: 'Places' },
             ].map(category => (
               <TouchableOpacity
                 key={category.key}

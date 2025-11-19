@@ -222,13 +222,24 @@ export default function ProfileScreen() {
       };
     }
 
-    // Import scoring functions - need to add at top of file
-    const { calculateBrandScore, normalizeBrandScores } = require('@/lib/scoring');
+    // Import scoring functions
+    const { calculateBrandScore, calculateSimilarityScore, normalizeBrandScores } = require('@/lib/scoring');
 
-    // Calculate scores for all brands
-    const brandsWithScores = currentBrands.map(brand => {
-      const score = calculateBrandScore(brand.name, profile.causes || [], valuesMatrix);
-      return { brand, score };
+    // Calculate scores for all entities (brands AND businesses)
+    // Use the appropriate scoring function based on entity type
+    const brandsWithScores = currentBrands.map(entity => {
+      let score;
+
+      // Check if this is a business (has businessInfo field)
+      if ('businessInfo' in entity) {
+        // For businesses, use similarity scoring based on shared causes
+        score = calculateSimilarityScore(profile.causes || [], entity.causes || []);
+      } else {
+        // For brands, use brand scoring based on values matrix
+        score = calculateBrandScore(entity.name, profile.causes || [], valuesMatrix);
+      }
+
+      return { brand: entity, score };
     });
 
     // Normalize scores to 1-99 range
@@ -237,15 +248,15 @@ export default function ProfileScreen() {
     // Create scored brands map
     const scoredMap = new Map(normalizedBrands.map(({ brand, score }) => [brand.id, score]));
 
-    // Sort all brands by score
+    // Sort all entities by score
     const sortedByScore = [...normalizedBrands].sort((a, b) => b.score - a.score);
 
-    // Top 50 highest-scoring brands (aligned)
+    // Top 50 highest-scoring entities (aligned)
     const alignedBrands = sortedByScore
       .slice(0, 50)
       .map(({ brand }) => brand);
 
-    // Bottom 50 lowest-scoring brands (unaligned)
+    // Bottom 50 lowest-scoring entities (unaligned)
     const unalignedBrands = sortedByScore
       .slice(-50)
       .reverse()

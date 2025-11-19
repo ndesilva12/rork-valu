@@ -586,10 +586,20 @@ export default function HomeScreen() {
       };
     }
 
-    // Calculate scores for all brands using the new scoring system
-    const brandsWithScores = currentBrands.map(brand => {
-      const score = calculateBrandScore(brand.name, profile.causes || [], valuesMatrix);
-      return { brand, score };
+    // Calculate scores for all entities (brands AND businesses) using the appropriate scoring system
+    const brandsWithScores = currentBrands.map(entity => {
+      let score;
+
+      // Check if this is a business (has businessInfo field)
+      if ('businessInfo' in entity) {
+        // For businesses, use similarity scoring based on shared causes
+        score = calculateSimilarityScore(profile.causes || [], entity.causes || []);
+      } else {
+        // For brands, use brand scoring based on values matrix
+        score = calculateBrandScore(entity.name, profile.causes || [], valuesMatrix);
+      }
+
+      return { brand: entity, score };
     });
 
     // Normalize scores to 1-99 range for better visual separation
