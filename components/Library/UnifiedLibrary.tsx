@@ -879,7 +879,7 @@ export default function UnifiedLibrary({
 
         {/* Options dropdown - show in edit mode AND view mode */}
         {(canEdit || mode === 'view') && isOptionsOpen && (
-          <View style={[styles.listOptionsDropdown, { backgroundColor: 'transparent', borderColor: 'transparent' }]}>
+          <View style={[styles.listOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
             {(() => {
               // Determine which options to show based on list type
               const isEndorsementList = listId === 'endorsement';
