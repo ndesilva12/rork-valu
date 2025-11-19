@@ -441,7 +441,7 @@ export default function UnifiedLibrary({
         <TouchableOpacity
           style={[
             styles.brandCard,
-            { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+            { backgroundColor: 'transparent' },
           ]}
           onPress={() => {
             router.push({
@@ -531,7 +531,7 @@ export default function UnifiedLibrary({
             <TouchableOpacity
               style={[
                 styles.brandCard,
-                { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                { backgroundColor: 'transparent' },
               ]}
               onPress={() => {
                 router.push({
@@ -600,7 +600,7 @@ export default function UnifiedLibrary({
             <TouchableOpacity
               style={[
                 styles.brandCard,
-                { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                { backgroundColor: 'transparent' },
               ]}
               onPress={() => {
                 router.push({
@@ -665,7 +665,7 @@ export default function UnifiedLibrary({
           return (
             <View style={[
               styles.brandCard,
-              { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+              { backgroundColor: 'transparent' },
             ]}>
               <View style={styles.brandCardInner}>
                 <View style={[
@@ -714,7 +714,7 @@ export default function UnifiedLibrary({
             <TouchableOpacity
               style={[
                 styles.brandCard,
-                { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }
+                { backgroundColor: 'transparent', borderColor: 'transparent' }
               ]}
               onPress={() => canInteract && Linking.openURL(entry.url)}
               activeOpacity={0.7}
@@ -759,7 +759,7 @@ export default function UnifiedLibrary({
           return (
             <View style={[
               styles.brandCard,
-              { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }
+              { backgroundColor: 'transparent', borderColor: 'transparent' }
             ]}>
               <View style={styles.brandCardInner}>
                 <View style={styles.brandCardContent}>
@@ -879,7 +879,7 @@ export default function UnifiedLibrary({
 
         {/* Options dropdown - show in edit mode AND view mode */}
         {(canEdit || mode === 'view') && isOptionsOpen && (
-          <View style={[styles.listOptionsDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+          <View style={[styles.listOptionsDropdown, { backgroundColor: 'transparent', borderColor: 'transparent' }]}>
             {(() => {
               // Determine which options to show based on list type
               const isEndorsementList = listId === 'endorsement';
@@ -1786,13 +1786,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: Platform.OS === 'web' ? 2 : 8,
-    marginHorizontal: Platform.OS === 'web' ? 2 : 16,
+    marginHorizontal: Platform.OS === 'web' ? 2 : 8,
     marginVertical: 6,
     minHeight: 64,
     backgroundColor: 'transparent',
   },
   listContentContainer: {
-    marginHorizontal: Platform.OS === 'web' ? 2 : 16,
+    marginHorizontal: Platform.OS === 'web' ? 2 : 8,
     marginBottom: 8,
   },
   pinnedListHeader: {

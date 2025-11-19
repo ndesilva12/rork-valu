@@ -794,7 +794,7 @@ export default function HomeScreen() {
         key={product.id}
         style={[
           styles.brandCard,
-          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+          { backgroundColor: 'transparent' },
         ]}
         onPress={() => handleProductPress(product)}
         activeOpacity={0.7}
@@ -855,7 +855,7 @@ export default function HomeScreen() {
         key={business.id}
         style={[
           styles.brandCard,
-          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+          { backgroundColor: 'transparent' },
         ]}
         onPress={() => handleBusinessPress(business.id)}
         activeOpacity={0.7}
@@ -2426,7 +2426,7 @@ export default function HomeScreen() {
                         <TouchableOpacity
                           style={[
                             styles.brandCard,
-                            { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                            { backgroundColor: 'transparent' },
                           ]}
                           onPress={() => !isEditMode && router.push(`/brand/${entry.brandId}`)}
                           activeOpacity={0.7}
@@ -2525,7 +2525,7 @@ export default function HomeScreen() {
                       <TouchableOpacity
                         style={[
                           styles.brandCard,
-                          { backgroundColor: isDarkMode ? colors.backgroundSecondary : 'rgba(0, 0, 0, 0.06)' },
+                          { backgroundColor: 'transparent' },
                         ]}
                         onPress={() => !isEditMode && handleBusinessPress(entry.businessId)}
                         activeOpacity={0.7}
@@ -6758,11 +6758,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     paddingHorizontal: Platform.OS === 'web' ? 4 : 8, // Reduce padding on mobile browsers
-    marginHorizontal: Platform.OS === 'web' ? 8 : 16, // Reduce margin on mobile browsers
+    marginHorizontal: Platform.OS === 'web' ? 8 : 8, // Reduced mobile margin to half
     marginVertical: 3,
   },
   listContentContainer: {
-    marginHorizontal: 16,
+    marginHorizontal: 8,
     marginBottom: 8,
   },
   pinnedListHeader: {
