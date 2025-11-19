@@ -70,6 +70,15 @@ export default function SearchScreen() {
   const [lookingUp, setLookingUp] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
 
+  // Value Machine state
+  const [activeTab, setActiveTab] = useState<'value-machine' | 'discover-users'>('discover-users');
+  const [selectedSupportValues, setSelectedSupportValues] = useState<string[]>([]);
+  const [selectedAvoidValues, setSelectedAvoidValues] = useState<string[]>([]);
+  const [valueMachineResults, setValueMachineResults] = useState<Product[]>([]);
+  const [showingResults, setShowingResults] = useState(false);
+  const [resultsLimit, setResultsLimit] = useState(10);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+
   // Fetch Firebase businesses and public users on mount
   useEffect(() => {
     const fetchData = async () => {
@@ -303,6 +312,117 @@ export default function SearchScreen() {
     if (!firstMatchingValue) return null;
     return firstMatchingValue.name;
   }, []);
+
+  // Value Machine handlers
+  const handleValueToggle = useCallback((valueId: string, type: 'support' | 'avoid') => {
+    if (type === 'support') {
+      setSelectedSupportValues(prev => {
+        if (prev.includes(valueId)) {
+          return prev.filter(id => id !== valueId);
+        } else {
+          // Remove from avoid if it's there
+          setSelectedAvoidValues(prevAvoid => prevAvoid.filter(id => id !== valueId));
+          return [...prev, valueId];
+        }
+      });
+    } else {
+      setSelectedAvoidValues(prev => {
+        if (prev.includes(valueId)) {
+          return prev.filter(id => id !== valueId);
+        } else {
+          // Remove from support if it's there
+          setSelectedSupportValues(prevSupport => prevSupport.filter(id => id !== valueId));
+          return [...prev, valueId];
+        }
+      });
+    }
+  }, []);
+
+  const handleGenerateResults = useCallback(() => {
+    const allProducts = [...MOCK_PRODUCTS, ...LOCAL_BUSINESSES];
+    const allSelectedValues = [...selectedSupportValues, ...selectedAvoidValues];
+
+    if (allSelectedValues.length === 0) {
+      Alert.alert('No Values Selected', 'Please select at least one value to support or avoid.');
+      return;
+    }
+
+    // Score each product based on selected values
+    const scored = allProducts.map(product => {
+      let totalSupportScore = 0;
+      let totalAvoidScore = 0;
+      const matchingValues = new Set<string>();
+      const positionSum: number[] = [];
+
+      product.valueAlignments.forEach(alignment => {
+        const isUserSupporting = selectedSupportValues.includes(alignment.valueId);
+        const isUserAvoiding = selectedAvoidValues.includes(alignment.valueId);
+
+        if (!isUserSupporting && !isUserAvoiding) return;
+
+        matchingValues.add(alignment.valueId);
+        positionSum.push(alignment.position);
+
+        const score = alignment.isSupport ? (100 - alignment.position * 5) : -(100 - alignment.position * 5);
+
+        if (isUserSupporting) {
+          if (score > 0) {
+            totalSupportScore += score;
+          } else {
+            totalAvoidScore += Math.abs(score);
+          }
+        }
+
+        if (isUserAvoiding) {
+          if (score < 0) {
+            totalSupportScore += Math.abs(score);
+          } else {
+            totalAvoidScore += score;
+          }
+        }
+      });
+
+      const valuesWhereNotAppears = allSelectedValues.length - matchingValues.size;
+      const totalPositionSum = positionSum.reduce((a, b) => a + b, 0) + (valuesWhereNotAppears * 11);
+      const avgPosition = allSelectedValues.length > 0 ? totalPositionSum / allSelectedValues.length : 11;
+
+      const isPositivelyAligned = totalSupportScore > totalAvoidScore && totalSupportScore > 0;
+
+      let alignmentStrength: number;
+      if (isPositivelyAligned) {
+        alignmentStrength = Math.round((1 - ((avgPosition - 1) / 10)) * 50 + 50);
+      } else {
+        alignmentStrength = Math.round(((avgPosition - 1) / 10) * 50);
+      }
+
+      return {
+        product,
+        totalSupportScore,
+        totalAvoidScore,
+        matchingValuesCount: matchingValues.size,
+        alignmentStrength,
+        isPositivelyAligned
+      };
+    });
+
+    // Sort by alignment strength and filter positively aligned
+    const alignedSorted = scored
+      .filter(s => s.isPositivelyAligned)
+      .sort((a, b) => b.alignmentStrength - a.alignmentStrength)
+      .map(s => ({ ...s.product, alignmentScore: s.alignmentStrength }));
+
+    setValueMachineResults(alignedSorted);
+    setShowingResults(true);
+    setResultsLimit(10);
+  }, [selectedSupportValues, selectedAvoidValues]);
+
+  const handleLoadMore = useCallback(() => {
+    if (resultsLimit === 10) {
+      setResultsLimit(20);
+    } else if (resultsLimit === 20) {
+      setResultsLimit(30);
+    }
+  }, [resultsLimit]);
 
   const handleSearch = (text: string) => {
     try {
@@ -684,6 +804,220 @@ export default function SearchScreen() {
     );
   };
 
+  const renderTabSelector = () => {
+    if (query.trim().length > 0) return null;
+
+    return (
+      <View style={[styles.tabSelector, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            activeTab === 'value-machine' && styles.activeTab,
+            { borderBottomColor: colors.primary }
+          ]}
+          onPress={() => {
+            setActiveTab('value-machine');
+            setShowingResults(false);
+          }}
+          activeOpacity={0.7}
+        >
+          <Text style={[
+            styles.tabText,
+            { color: activeTab === 'value-machine' ? colors.primary : colors.textSecondary },
+            activeTab === 'value-machine' && styles.activeTabText
+          ]}>
+            Value Machine
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            activeTab === 'discover-users' && styles.activeTab,
+            { borderBottomColor: colors.primary }
+          ]}
+          onPress={() => setActiveTab('discover-users')}
+          activeOpacity={0.7}
+        >
+          <Text style={[
+            styles.tabText,
+            { color: activeTab === 'discover-users' ? colors.primary : colors.textSecondary },
+            activeTab === 'discover-users' && styles.activeTabText
+          ]}>
+            Discover Users
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const renderValueMachineSection = () => {
+    const categories: Array<{ key: string; label: string }> = [
+      { key: 'ideology', label: 'Ideology' },
+      { key: 'person', label: 'Person' },
+      { key: 'social_issue', label: 'Social Issue' },
+      { key: 'religion', label: 'Religion' },
+      { key: 'nation', label: 'Nation' },
+    ];
+
+    if (showingResults) {
+      const displayedResults = valueMachineResults.slice(0, resultsLimit);
+      const canLoadMore = resultsLimit < 30 && valueMachineResults.length > resultsLimit;
+
+      return (
+        <View style={styles.valueMachineContainer}>
+          <View style={styles.valueMachineHeader}>
+            <Text style={[styles.valueMachineTitle, { color: colors.text }]}>
+              Top Results
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setShowingResults(false);
+                setSelectedSupportValues([]);
+                setSelectedAvoidValues([]);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.resetButton, { color: colors.primary }]}>Reset</Text>
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={displayedResults}
+            renderItem={renderProduct}
+            keyExtractor={item => item.id}
+            contentContainerStyle={[styles.listContent, { paddingBottom: 100 }]}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>No Results Found</Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                  Try selecting different values
+                </Text>
+              </View>
+            }
+            ListFooterComponent={
+              canLoadMore ? (
+                <TouchableOpacity
+                  style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                  onPress={handleLoadMore}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                    Load More ({resultsLimit === 10 ? '10 more' : '10 more'})
+                  </Text>
+                </TouchableOpacity>
+              ) : null
+            }
+          />
+        </View>
+      );
+    }
+
+    return (
+      <ScrollView
+        style={styles.valueMachineContainer}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.valueMachineHeader}>
+          <Text style={[styles.valueMachineTitle, { color: colors.text }]}>
+            Select Values
+          </Text>
+          <Text style={[styles.valueMachineSubtitle, { color: colors.textSecondary }]}>
+            Choose values to support or avoid
+          </Text>
+        </View>
+
+        {categories.map(category => {
+          const values = AVAILABLE_VALUES[category.key as keyof typeof AVAILABLE_VALUES] || [];
+          const isExpanded = expandedCategory === category.key;
+
+          return (
+            <View key={category.key} style={styles.categoryContainer}>
+              <TouchableOpacity
+                style={[styles.categoryHeader, { backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => setExpandedCategory(isExpanded ? null : category.key)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.categoryLabel, { color: colors.text }]}>
+                  {category.label} ({values.length})
+                </Text>
+                <Text style={[styles.categoryIcon, { color: colors.textSecondary }]}>
+                  {isExpanded ? '−' : '+'}
+                </Text>
+              </TouchableOpacity>
+
+              {isExpanded && (
+                <View style={styles.valuesContainer}>
+                  {values.map(value => {
+                    const isSupported = selectedSupportValues.includes(value.id);
+                    const isAvoided = selectedAvoidValues.includes(value.id);
+
+                    return (
+                      <View key={value.id} style={[styles.valueRow, { borderBottomColor: colors.border }]}>
+                        <Text style={[styles.valueName, { color: colors.text }]} numberOfLines={1}>
+                          {value.name}
+                        </Text>
+                        <View style={styles.valueActions}>
+                          <TouchableOpacity
+                            style={[
+                              styles.valueButton,
+                              isSupported && { backgroundColor: colors.success + '20', borderColor: colors.success }
+                            ]}
+                            onPress={() => handleValueToggle(value.id, 'support')}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[
+                              styles.valueButtonText,
+                              { color: isSupported ? colors.success : colors.textSecondary }
+                            ]}>
+                              Support
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.valueButton,
+                              isAvoided && { backgroundColor: colors.danger + '20', borderColor: colors.danger }
+                            ]}
+                            onPress={() => handleValueToggle(value.id, 'avoid')}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[
+                              styles.valueButtonText,
+                              { color: isAvoided ? colors.danger : colors.textSecondary }
+                            ]}>
+                              Avoid
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          );
+        })}
+
+        {(selectedSupportValues.length > 0 || selectedAvoidValues.length > 0) && (
+          <View style={styles.generateContainer}>
+            <TouchableOpacity
+              style={[styles.generateButton, { backgroundColor: colors.primary }]}
+              onPress={handleGenerateResults}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.generateButtonText, { color: colors.white }]}>
+                Generate Results
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
+              {selectedSupportValues.length} supported • {selectedAvoidValues.length} avoided
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+    );
+  };
+
   const renderFullPost = () => {
     if (!selectedPostProduct) return null;
 
@@ -854,34 +1188,40 @@ export default function SearchScreen() {
         </View>
       </View>
 
+      {renderTabSelector()}
+
       {query.trim().length === 0 ? (
-        <FlatList
-          key="user-list"
-          data={publicUsers}
-          renderItem={renderUserCard}
-          keyExtractor={item => item.id}
-          contentContainerStyle={[styles.userListContainer, { paddingBottom: 100 }]}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <View style={styles.exploreHeader}>
-              <Text style={[styles.exploreTitle, { color: colors.text }]}>Discover Users</Text>
-              <Text style={[styles.exploreSubtitle, { color: colors.textSecondary }]}>
-                Connect with other Endorse users
-              </Text>
-            </View>
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <View style={[styles.emptyIconContainer, { backgroundColor: colors.primaryLight + '10' }]}>
-                <SearchIcon size={48} color={colors.primaryLight} strokeWidth={1.5} />
+        activeTab === 'discover-users' ? (
+          <FlatList
+            key="user-list"
+            data={publicUsers}
+            renderItem={renderUserCard}
+            keyExtractor={item => item.id}
+            contentContainerStyle={[styles.userListContainer, { paddingBottom: 100 }]}
+            showsVerticalScrollIndicator={false}
+            ListHeaderComponent={
+              <View style={styles.exploreHeader}>
+                <Text style={[styles.exploreTitle, { color: colors.text }]}>Discover Users</Text>
+                <Text style={[styles.exploreSubtitle, { color: colors.textSecondary }]}>
+                  Connect with other Endorse users
+                </Text>
               </View>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>No Users Yet</Text>
-              <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                Be one of the first to make your profile public!
-              </Text>
-            </View>
-          }
-        />
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <View style={[styles.emptyIconContainer, { backgroundColor: colors.primaryLight + '10' }]}>
+                  <SearchIcon size={48} color={colors.primaryLight} strokeWidth={1.5} />
+                </View>
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>No Users Yet</Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                  Be one of the first to make your profile public!
+                </Text>
+              </View>
+            }
+          />
+        ) : (
+          renderValueMachineSection()
+        )
       ) : results.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>No results found</Text>
@@ -1836,5 +2176,137 @@ const styles = StyleSheet.create({
   userScoreNumber: {
     fontSize: 12,
     fontWeight: '700' as const,
+  },
+
+  // Tab Selector
+  tabSelector: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  activeTabText: {
+    fontWeight: '700' as const,
+  },
+
+  // Value Machine
+  valueMachineContainer: {
+    flex: 1,
+  },
+  valueMachineHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  valueMachineTitle: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+  },
+  valueMachineSubtitle: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  resetButton: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  categoryContainer: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+  },
+  categoryLabel: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  categoryIcon: {
+    fontSize: 20,
+    fontWeight: '600' as const,
+  },
+  valuesContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  valueRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  valueName: {
+    flex: 1,
+    fontSize: 15,
+    marginRight: 12,
+  },
+  valueActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  valueButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  valueButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  generateContainer: {
+    padding: 16,
+    paddingTop: 24,
+    alignItems: 'center',
+  },
+  generateButton: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  generateButtonText: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+  },
+  selectedCount: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  loadMoreButton: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  loadMoreText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
 });
