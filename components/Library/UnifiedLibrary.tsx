@@ -819,7 +819,7 @@ export default function UnifiedLibrary({
           <View style={[styles.listProfileImageContainer, { backgroundColor: '#FFFFFF', borderColor: colors.border }]}>
             {useAppIcon ? (
               <Image
-                source={require('@/assets/images/endo.png')}
+                source={require('@/assets/images/endo12.png')}
                 style={styles.listProfileImage}
                 contentFit="cover"
                 transition={200}
@@ -1238,7 +1238,7 @@ export default function UnifiedLibrary({
           <View style={[styles.listDetailImageContainer, { backgroundColor: '#FFFFFF', borderColor: colors.border }]}>
             {useAppIcon ? (
               <Image
-                source={require('@/assets/images/endo.png')}
+                source={require('@/assets/images/endo12.png')}
                 style={styles.listDetailImage}
                 contentFit="cover"
                 transition={200}

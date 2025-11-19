@@ -249,7 +249,7 @@ export default function ProfileScreen() {
         <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
           <View style={[styles.header, { backgroundColor: colors.background }]}>
             <Image
-              source={require('@/assets/images/endo1.png')}
+              source={require('@/assets/images/endo11.png')}
               style={styles.headerLogo}
               resizeMode="contain"
             />
@@ -278,7 +278,7 @@ export default function ProfileScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endo1.png')}
+            source={require('@/assets/images/endo11.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
