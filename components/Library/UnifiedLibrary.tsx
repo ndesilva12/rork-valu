@@ -1518,12 +1518,17 @@ export default function UnifiedLibrary({
 
   // Render library overview (all list cards)
   const renderLibraryOverview = () => {
+    // Determine if viewing own profile
+    const isOwnProfile = !viewingUserId || currentUserId === viewingUserId;
+    // Use "Endorsements" for own profile, user name for others
+    const endorsementTitle = isOwnProfile ? 'Endorsements' : (endorsementList?.name || 'Endorsements');
+
     return (
       <>
         {/* 1. Endorsement List - Always first, pinned */}
         {endorsementList && renderListCard(
           'endorsement',
-          endorsementList.name,
+          endorsementTitle,
           endorsementList.entries?.length || 0,
           true,
           `Endorsed by ${endorsementList.creatorName || 'you'}`,
@@ -1603,7 +1608,10 @@ export default function UnifiedLibrary({
     let renderContent = null;
 
     if (openedListId === 'endorsement' && endorsementList) {
-      title = endorsementList.name;
+      // Determine if viewing own profile
+      const isOwnProfile = !viewingUserId || currentUserId === viewingUserId;
+      // Use "Endorsements" for own profile, user name for others
+      title = isOwnProfile ? 'Endorsements' : endorsementList.name;
       itemCount = endorsementList.entries?.length || 0;
       isEndorsed = true;
       attribution = `Endorsed by ${endorsementList.creatorName || 'you'}`;
