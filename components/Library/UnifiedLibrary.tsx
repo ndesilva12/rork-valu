@@ -894,7 +894,9 @@ export default function UnifiedLibrary({
               const isCopiedList = currentList?.originalListId !== undefined; // List was copied from another user
 
               const canEditMeta = !isSystemList && !isCopiedList && canEdit;
-              const canRemove = !isEndorsementList && !isSystemList && !isCopiedList && canEdit;
+              // Users can remove any list from their library (except system lists like aligned/unaligned)
+              // This includes copied lists from other users
+              const canRemove = !isEndorsementList && !isSystemList && canEdit;
               const canTogglePrivacy = isPublic !== undefined && !isCopiedList && canEdit;
               const canCopyList = mode === 'view'; // Only in view mode (other users)
 
@@ -1010,15 +1012,19 @@ export default function UnifiedLibrary({
                       style={styles.listOptionItem}
                       onPress={() => {
                         setActiveListOptionsId(null);
+                        // Different messaging for copied lists vs owned lists
+                        const isCopied = currentList.originalListId !== undefined;
                         setConfirmModalData({
-                          title: 'Delete List',
-                          message: `Are you sure you want to delete "${currentList.name}"? This cannot be undone.`,
+                          title: isCopied ? 'Remove from Library' : 'Delete List',
+                          message: isCopied
+                            ? `Are you sure you want to remove "${currentList.name}" from your library? The original list will remain with its owner.`
+                            : `Are you sure you want to delete "${currentList.name}"? This cannot be undone.`,
                           onConfirm: () => {
                             library.removeList(currentList.id);
                             setShowConfirmModal(false);
                             setConfirmModalData(null);
                           },
-                          confirmText: 'Delete',
+                          confirmText: isCopied ? 'Remove' : 'Delete',
                           isDanger: true,
                         });
                         setShowConfirmModal(true);

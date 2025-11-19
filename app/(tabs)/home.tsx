@@ -550,6 +550,11 @@ export default function HomeScreen() {
 
     const currentBrands = [...csvBrands, ...localBizList];
 
+    console.log('[Home] Scoring Brands Debug:');
+    console.log('  - Total brands:', currentBrands.length);
+    console.log('  - User causes:', profile.causes?.length || 0);
+    console.log('  - ValuesMatrix keys:', Object.keys(valuesMatrix).length);
+
     if (!currentBrands || currentBrands.length === 0) {
       return {
         topSupport: [],
@@ -568,6 +573,17 @@ export default function HomeScreen() {
       return { brand, score };
     });
 
+    // Debug: Log score distribution
+    const scoreDistribution = brandsWithScores.reduce((acc, { score }) => {
+      if (score >= 60) acc.aligned++;
+      else if (score < 40) acc.unaligned++;
+      else acc.neutral++;
+      return acc;
+    }, { aligned: 0, unaligned: 0, neutral: 0 });
+
+    console.log('  - Score distribution:', scoreDistribution);
+    console.log('  - Sample scores:', brandsWithScores.slice(0, 5).map(({ brand, score }) => ({ name: brand.name, score })));
+
     // Create scored brands map
     const scoredMap = new Map(brandsWithScores.map(({ brand, score }) => [brand.id, score]));
 
@@ -583,6 +599,9 @@ export default function HomeScreen() {
       .sort((a, b) => a.score - b.score) // Sort by score ascending (most opposed first)
       .slice(0, 50) // Cap at 50 brands
       .map(({ brand }) => brand);
+
+    console.log('  - Final aligned brands:', alignedBrands.length);
+    console.log('  - Final unaligned brands:', unalignedBrands.length);
 
     // All brands sorted alphabetically
     const sortedBrands = [...currentBrands].sort((a, b) =>
