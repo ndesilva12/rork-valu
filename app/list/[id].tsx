@@ -12,12 +12,13 @@ import {
   Alert,
   Linking,
   Dimensions,
+  PanResponder,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getLogoUrl } from '@/lib/logo';
 import { getList } from '@/services/firebase/listService';
 import { UserList, ListEntry } from '@/types/library';
@@ -34,6 +35,19 @@ export default function SharedListScreen() {
   const [list, setList] = useState<UserList | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return Math.abs(gestureState.dx) > 30 && Math.abs(gestureState.dy) < 50;
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        if (gestureState.dx > 100) {
+          router.back();
+        }
+      },
+    })
+  ).current;
 
   useEffect(() => {
     loadList();
@@ -283,6 +297,7 @@ export default function SharedListScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        {...panResponder.panHandlers}
       >
         {/* Branding Header */}
         <TouchableOpacity

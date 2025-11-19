@@ -334,7 +334,7 @@ export default function UnifiedLibrary({
     const itemId = entry.brandId || entry.businessId || entry.valueId;
     if (!itemId) return false;
 
-    return endorsementList.entries.some(e => {
+    return endorsementList.entries.filter(e => e).some(e => {
       const endorsedId = e.brandId || e.businessId || e.valueId;
       return endorsedId === itemId;
     });
@@ -349,6 +349,12 @@ export default function UnifiedLibrary({
 
     try {
       await library.addEntry(endorsementList.id, entry);
+
+      // Force refresh library to show the new entry immediately
+      if (currentUserId) {
+        await library.loadUserLists(currentUserId, true);
+      }
+
       const itemName = getItemName(entry);
       Alert.alert('Success', `${itemName} endorsed!`);
       setShowItemOptionsModal(false);
@@ -369,7 +375,7 @@ export default function UnifiedLibrary({
     try {
       // Find the entry in the endorsement list
       const itemId = entry.brandId || entry.businessId || entry.valueId;
-      const endorsedEntry = endorsementList.entries.find(e => {
+      const endorsedEntry = endorsementList.entries.filter(e => e).find(e => {
         const endorsedId = e.brandId || e.businessId || e.valueId;
         return endorsedId === itemId;
       });
@@ -380,6 +386,12 @@ export default function UnifiedLibrary({
       }
 
       await library.removeEntry(endorsementList.id, endorsedEntry.id);
+
+      // Force refresh library to show the removal immediately
+      if (currentUserId) {
+        await library.loadUserLists(currentUserId, true);
+      }
+
       const itemName = getItemName(entry);
       Alert.alert('Success', `${itemName} unendorsed!`);
       setShowItemOptionsModal(false);
@@ -395,6 +407,12 @@ export default function UnifiedLibrary({
 
     try {
       await library.addEntry(listId, selectedItemToAdd);
+
+      // Force refresh library to show the new entry immediately
+      if (currentUserId) {
+        await library.loadUserLists(currentUserId, true);
+      }
+
       const listName = library.state.userLists.find(l => l.id === listId)?.name ||
                        library.state.endorsementList?.name || 'list';
       Alert.alert('Success', `Added to "${listName}"`);
