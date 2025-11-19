@@ -1706,7 +1706,7 @@ export default function HomeScreen() {
     setShareData({
       url: shareLink,
       title: cardMenuData.name,
-      description: `Check out ${cardMenuData.name} on Upright Money`
+      description: `Check out ${cardMenuData.name} on Endorse Money`
     });
     setShowShareModal(true);
   };
@@ -3362,7 +3362,7 @@ export default function HomeScreen() {
                             setShareData({
                               url: shareLink,
                               title: itemName,
-                              description: `Check out ${itemName} on Upright Money`
+                              description: `Check out ${itemName} on Endorse Money`
                             });
                             setShowShareModal(true);
                           }}

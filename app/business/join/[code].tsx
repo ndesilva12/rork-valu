@@ -185,7 +185,7 @@ export default function JoinTeamPage() {
           </View>
           <Text style={[styles.title, { color: colors.text }]}>Join Team</Text>
           <Text style={[styles.message, { color: colors.textSecondary }]}>
-            You've been invited to join a business team on Upright Money!
+            You've been invited to join a business team on Endorse Money!
           </Text>
           <Text style={[styles.businessName, { color: colors.text }]}>
             {invitation?.email}

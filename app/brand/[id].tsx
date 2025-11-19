@@ -348,7 +348,7 @@ export default function BrandDetailScreen() {
     if (!brand) return;
 
     try {
-      const message = `Check out ${brand.name} on Upright Money!`;
+      const message = `Check out ${brand.name} on Endorse Money!`;
       const url = Platform.OS === 'web'
         ? `${window.location.origin}/brand/${brand.id}`
         : `uprightmoney://brand/${brand.id}`;

@@ -213,7 +213,7 @@ export default function BusinessDetailScreen() {
     if (!business) return;
 
     try {
-      const message = `Check out ${business.businessInfo.name} on Upright Money!`;
+      const message = `Check out ${business.businessInfo.name} on Endorse Money!`;
       const url = Platform.OS === 'web'
         ? `${window.location.origin}/business/${business.id}`
         : `uprightmoney://business/${business.id}`;

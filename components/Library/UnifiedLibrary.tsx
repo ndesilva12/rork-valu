@@ -193,7 +193,7 @@ export default function UnifiedLibrary({
 
   const performShareList = async (list: UserList) => {
     try {
-      const message = `Check out my list "${list.name}" on Upright Money!\n${list.description || ''}`;
+      const message = `Check out my list "${list.name}" on Endorse Money!\n${list.description || ''}`;
       await Share.share({
         message,
         title: list.name,
@@ -231,12 +231,12 @@ export default function UnifiedLibrary({
         case 'brand':
           const brandName = (entry as any).brandName || (entry as any).name || 'Brand';
           title = brandName;
-          message = `Check out ${brandName} on Upright Money!`;
+          message = `Check out ${brandName} on Endorse Money!`;
           break;
         case 'business':
           const businessName = (entry as any).businessName || (entry as any).name || 'Business';
           title = businessName;
-          message = `Check out ${businessName} on Upright Money!`;
+          message = `Check out ${businessName} on Endorse Money!`;
           break;
         case 'value':
           const valueName = (entry as any).valueName || (entry as any).name || 'Value';

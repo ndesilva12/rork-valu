@@ -76,7 +76,7 @@ export default function ForBusinessesScreen() {
               Connect with customers who share your values
             </Text>
             <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
-              Join Upright Money and attract value-aligned customers who want to support businesses like yours.
+              Join Endorse Money and attract value-aligned customers who want to support businesses like yours.
             </Text>
             <TouchableOpacity
               style={[styles.primaryButton, { backgroundColor: colors.primary }]}
@@ -149,12 +149,12 @@ export default function ForBusinessesScreen() {
             Real Stories from Real Businesses
           </Text>
           <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-            See how businesses are growing with Upright Money
+            See how businesses are growing with Endorse Money
           </Text>
 
           <View style={styles.testimonialsGrid}>
             <TestimonialCard
-              quote="Upright Money helped us connect with customers who truly care about our mission. Our customer retention has never been better."
+              quote="Endorse Money helped us connect with customers who truly care about our mission. Our customer retention has never been better."
               author="Sarah Johnson"
               role="Owner, Green Earth Cafe"
               colors={colors}
@@ -257,7 +257,7 @@ export default function ForBusinessesScreen() {
             Ready to grow your business?
           </Text>
           <Text style={[styles.ctaSubtitle, { color: colors.white }]}>
-            Join Upright Money today and start connecting with customers who share your values
+            Join Endorse Money today and start connecting with customers who share your values
           </Text>
           <TouchableOpacity
             style={[styles.ctaButton, { backgroundColor: colors.white }]}
@@ -294,7 +294,7 @@ export default function ForBusinessesScreen() {
             </TouchableOpacity>
           </View>
           <Text style={[styles.footerCopyright, { color: colors.textSecondary }]}>
-            © 2024 Upright Money. All rights reserved.
+            © 2024 Endorse Money. All rights reserved.
           </Text>
         </View>
       </ScrollView>

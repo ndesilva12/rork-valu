@@ -257,7 +257,7 @@ export default function BusinessesAcceptingDiscounts() {
 
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Businesses Accepting Upright Discounts</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Businesses Accepting Endorse Discounts</Text>
 
       {/* Search Bar with Location Icon */}
       <View style={[styles.searchContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>

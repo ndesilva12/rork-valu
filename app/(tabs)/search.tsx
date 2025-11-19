@@ -343,7 +343,7 @@ export default function SearchScreen() {
               valueAlignments: [],
               keyReasons: [
                 business.businessInfo.acceptsStandDiscounts
-                  ? `Accepts Upright Discounts at ${business.businessInfo.name}`
+                  ? `Accepts Endorse Discounts at ${business.businessInfo.name}`
                   : `Local business: ${business.businessInfo.name}`
               ],
               moneyFlow: { company: business.businessInfo.name, shareholders: [], overallAlignment: 0 },
@@ -617,7 +617,7 @@ export default function SearchScreen() {
                 Alert.alert('Link Copied', 'Profile link copied to clipboard');
               } else {
                 RNShare.share({
-                  message: `Check out ${userName}'s profile on Upright: ${shareUrl}`,
+                  message: `Check out ${userName}'s profile on Endorse: ${shareUrl}`,
                 });
               }
             },
@@ -866,7 +866,7 @@ export default function SearchScreen() {
             <View style={styles.exploreHeader}>
               <Text style={[styles.exploreTitle, { color: colors.text }]}>Discover Users</Text>
               <Text style={[styles.exploreSubtitle, { color: colors.textSecondary }]}>
-                Connect with other Upright users
+                Connect with other Endorse users
               </Text>
             </View>
           }

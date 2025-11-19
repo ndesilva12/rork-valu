@@ -532,7 +532,7 @@ export default function DiscountScreen() {
               </View>
             </View>
 
-            {/* Businesses Accepting Upright Discounts */}
+            {/* Businesses Accepting Endorse Discounts */}
             <BusinessesAcceptingDiscounts />
           </>
         )}
