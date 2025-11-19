@@ -2968,7 +2968,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endorse2.png')}
+            source={require('@/assets/images/endorse1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -2988,7 +2988,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endorse2.png')}
+            source={require('@/assets/images/endorse1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3011,7 +3011,7 @@ export default function HomeScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endorse2.png')}
+            source={require('@/assets/images/endorse1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -3039,7 +3039,7 @@ export default function HomeScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endorse2.png')}
+            source={require('@/assets/images/endorse1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
