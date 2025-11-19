@@ -1356,6 +1356,57 @@ export default function UnifiedLibrary({
                     </TouchableOpacity>
                   )}
 
+                  {canCopyList && currentList && (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveListOptionsId(null);
+                        if (!currentUserId) {
+                          Alert.alert('Error', 'You must be logged in to copy lists');
+                          return;
+                        }
+
+                        // Show confirmation modal
+                        setConfirmModalData({
+                          title: 'Add to Your Library',
+                          message: `Add "${currentList.name}" to your library? This will create a live reference that updates when the original author modifies it.`,
+                          onConfirm: async () => {
+                            setIsConfirmLoading(true);
+                            try {
+                              const userName = profile?.userName || 'User';
+                              const profileImageUrl = profile?.userDetails?.profileImage;
+                              await copyListToLibrary(currentList.id, currentUserId, userName, profileImageUrl);
+
+                              // Wait for Firestore propagation
+                              await new Promise(resolve => setTimeout(resolve, 500));
+
+                              // Reload lists to show the newly copied list
+                              if (currentUserId) {
+                                await library.loadUserLists(currentUserId, true);
+                              }
+
+                              Alert.alert('Success', `"${currentList.name}" added to your library!`);
+                              setShowConfirmModal(false);
+                              setConfirmModalData(null);
+                            } catch (error: any) {
+                              console.error('Error copying list:', error);
+                              Alert.alert('Error', error?.message || 'Failed to copy list');
+                            } finally {
+                              setIsConfirmLoading(false);
+                            }
+                          },
+                          confirmText: 'Add to Library',
+                          isDanger: false,
+                        });
+                        setShowConfirmModal(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <UserPlus size={16} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Add to Library</Text>
+                    </TouchableOpacity>
+                  )}
+
                   {canTogglePrivacy && (
                     <TouchableOpacity
                       style={styles.listOptionItem}
@@ -1735,13 +1786,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: Platform.OS === 'web' ? 2 : 8,
-    marginHorizontal: Platform.OS === 'web' ? 4 : 16,
+    marginHorizontal: Platform.OS === 'web' ? 2 : 16,
     marginVertical: 6,
     minHeight: 64,
     backgroundColor: 'transparent',
   },
   listContentContainer: {
-    marginHorizontal: Platform.OS === 'web' ? 8 : 16,
+    marginHorizontal: Platform.OS === 'web' ? 2 : 16,
     marginBottom: 8,
   },
   pinnedListHeader: {
@@ -1930,7 +1981,7 @@ const styles = StyleSheet.create({
   brandLogoContainer: {
     width: 64,
     height: 64,
-    backgroundColor: 'transparent',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     borderTopLeftRadius: 0,
@@ -2004,7 +2055,7 @@ const styles = StyleSheet.create({
   },
   listDetailHeader: {
     flexDirection: 'row',
-    padding: 20,
+    padding: Platform.OS === 'web' ? 8 : 20,
     borderRadius: 0,
     borderWidth: 0,
     gap: 16,

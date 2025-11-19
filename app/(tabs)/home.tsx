@@ -5401,7 +5401,7 @@ const styles = StyleSheet.create({
   brandLogoContainer: {
     width: 64,
     height: 64,
-    backgroundColor: 'transparent',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     borderTopLeftRadius: 0,
