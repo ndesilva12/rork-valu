@@ -568,33 +568,6 @@ export default function HomeScreen() {
       return { brand, score };
     });
 
-    // DEBUG: Log scoring statistics
-    console.log('[Home] === SCORING DEBUG ===');
-    console.log('[Home] Total brands:', currentBrands.length);
-    console.log('[Home] User causes:', profile.causes?.length || 0, profile.causes?.map(c => c.name).join(', '));
-    console.log('[Home] Values matrix keys:', Object.keys(valuesMatrix).length);
-
-    const alignedCount = brandsWithScores.filter(({ score }) => score >= 60).length;
-    const unalignedCount = brandsWithScores.filter(({ score }) => score < 40).length;
-    const neutralCount = brandsWithScores.filter(({ score }) => score >= 40 && score < 60).length;
-
-    console.log('[Home] Score distribution:');
-    console.log('[Home]   - Aligned (>=60):', alignedCount);
-    console.log('[Home]   - Neutral (40-59):', neutralCount);
-    console.log('[Home]   - Unaligned (<40):', unalignedCount);
-
-    // Sample first 10 brands with their scores
-    console.log('[Home] Sample brand scores (first 10):');
-    brandsWithScores.slice(0, 10).forEach(({ brand, score }) => {
-      console.log(`[Home]   - ${brand.name}: ${score} (category: ${brand.category || 'N/A'})`);
-    });
-
-    // Check for brands with no scores (should be none with current logic)
-    const brandsWithNoScore = currentBrands.filter(brand => !brand.name || brand.name.trim() === '');
-    if (brandsWithNoScore.length > 0) {
-      console.log('[Home] WARNING: Brands without names:', brandsWithNoScore.length);
-    }
-
     // Create scored brands map
     const scoredMap = new Map(brandsWithScores.map(({ brand, score }) => [brand.id, score]));
 
