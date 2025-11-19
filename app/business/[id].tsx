@@ -160,6 +160,10 @@ export default function BusinessDetailScreen() {
         website: business.businessInfo.website || '',
         logoUrl: getLogoUrl(business.businessInfo.website || ''),
       });
+
+      // Refresh library to show the new entry immediately
+      await library.loadUserLists(clerkUser.id, true);
+
       setShowAddToListModal(false);
       Alert.alert('Success', `Added ${business.businessInfo.name} to your list`);
     } catch (error) {

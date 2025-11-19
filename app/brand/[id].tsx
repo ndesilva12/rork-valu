@@ -247,13 +247,17 @@ export default function BrandDetailScreen() {
         website: brand.website,
         logoUrl: getLogoUrl(brand.website || ''),
       });
+
+      // Refresh library to show the new entry immediately
+      await library.loadUserLists(clerkUser.id, true);
+
       setShowAddToListModal(false);
       Alert.alert('Success', `Added ${brand.name} to your list`);
     } catch (error) {
       console.error('[BrandDetail] Error adding to list:', error);
       Alert.alert('Error', 'Could not add to list. Please try again.');
     }
-  }, [brand, clerkUser?.id]);
+  }, [brand, clerkUser?.id, library]);
 
   const handleOpenAddModal = useCallback(async () => {
     if (userLists.length === 0) {
