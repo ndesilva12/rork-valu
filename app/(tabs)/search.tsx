@@ -457,9 +457,10 @@ export default function SearchScreen() {
       // Determine if positively or negatively aligned based on raw score
       const isPositivelyAligned = rawScore > 0;
 
-      // Map to 1-99 range with better spread
-      // Positive scores: 50-99, Negative scores: 1-49
-      const alignmentStrength = Math.round(50 + (rawScore * 0.8));
+      // Map to 0-100 range with proper clamping
+      // Raw scores typically range from -100 to +100
+      // Map: -100 -> 0, 0 -> 50, +100 -> 100
+      const alignmentStrength = Math.max(0, Math.min(100, Math.round(50 + (rawScore * 0.5))));
 
       return {
         product: {
@@ -1066,10 +1067,13 @@ export default function SearchScreen() {
   const renderValueMachineSection = () => {
     const categories: Array<{ key: string; label: string }> = [
       { key: 'ideology', label: 'Ideology' },
-      { key: 'person', label: 'Person' },
-      { key: 'social_issue', label: 'Social Issue' },
+      { key: 'social_issue', label: 'Social Issues' },
+      { key: 'person', label: 'People' },
+      { key: 'lifestyle', label: 'Lifestyle' },
+      { key: 'nation', label: 'Places' },
       { key: 'religion', label: 'Religion' },
-      { key: 'nation', label: 'Nation' },
+      { key: 'organization', label: 'Organizations' },
+      { key: 'sports', label: 'Sports' },
     ];
 
     const selectedCategoryLabel = categories.find(c => c.key === selectedCategory)?.label || 'Select Category';
