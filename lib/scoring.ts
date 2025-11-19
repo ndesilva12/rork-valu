@@ -130,6 +130,7 @@ export function normalizeBrandScores(
 
 /**
  * Calculate similarity between two sets of causes using Jaccard similarity
+ * with confidence weighting based on overlap size
  *
  * @param causesA - First set of causes
  * @param causesB - Second set of causes
@@ -160,8 +161,36 @@ export function calculateSimilarityScore(
   // Jaccard similarity: intersection / union
   const similarity = intersection.size / union.size;
 
+  // Apply confidence weighting based on number of overlapping values
+  // More overlaps = higher confidence = score can be further from 50
+  // Fewer overlaps = lower confidence = score pulled toward 50
+  const overlapCount = intersection.size;
+
+  // Confidence factor: scales from 0.2 (1 overlap) to 1.0 (5+ overlaps)
+  // This makes scores with few overlaps more neutral
+  let confidence: number;
+  if (overlapCount === 0) {
+    confidence = 0;
+  } else if (overlapCount === 1) {
+    confidence = 0.3;
+  } else if (overlapCount === 2) {
+    confidence = 0.5;
+  } else if (overlapCount === 3) {
+    confidence = 0.7;
+  } else if (overlapCount === 4) {
+    confidence = 0.85;
+  } else {
+    confidence = 1.0; // 5+ overlaps = full confidence
+  }
+
   // Convert to 0-100 scale
-  return Math.round(similarity * 100);
+  const baseScore = Math.round(similarity * 100);
+
+  // Apply confidence: pull score toward 50 based on confidence
+  // score = 50 + (score - 50) * confidence
+  const adjustedScore = 50 + (baseScore - 50) * confidence;
+
+  return Math.round(adjustedScore);
 }
 
 /**

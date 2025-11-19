@@ -773,7 +773,7 @@ export default function UnifiedLibrary({
           <View style={[styles.listProfileImageContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
             {useAppIcon ? (
               <Image
-                source={require('@/assets/images/endorse3.png')}
+                source={require('@/assets/images/endorse.png')}
                 style={styles.listProfileImage}
                 contentFit="cover"
                 transition={200}
