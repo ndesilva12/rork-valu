@@ -45,7 +45,7 @@ import { Product } from '@/types';
 import { BusinessUser } from '@/services/firebase/businessService';
 import { useUser } from '@/contexts/UserContext';
 import { useRouter } from 'expo-router';
-import { updateListMetadata } from '@/services/firebase/listService';
+import { updateListMetadata, copyListToLibrary } from '@/services/firebase/listService';
 import AddToLibraryModal from '@/components/AddToLibraryModal';
 import EditListModal from '@/components/EditListModal';
 import ShareOptionsModal from '@/components/ShareOptionsModal';
