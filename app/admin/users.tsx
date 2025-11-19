@@ -21,6 +21,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { collection, getDocs, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getCustomFields, CustomField } from '@/services/firebase/customFieldsService';
+import { getUserLists, deleteList, removeEntryFromList, addEntryToList } from '@/services/firebase/listService';
+import { UserList, ListEntry } from '@/types/library';
 import { Picker } from '@react-native-picker/picker';
 
 interface SocialMedia {
@@ -112,6 +114,14 @@ export default function UsersManagement() {
   const [formSelectedCharities, setFormSelectedCharities] = useState('');
   const [formConsentGivenAt, setFormConsentGivenAt] = useState('');
   const [formConsentVersion, setFormConsentVersion] = useState('');
+
+  // List management state
+  const [userLists, setUserLists] = useState<UserList[]>([]);
+  const [loadingLists, setLoadingLists] = useState(false);
+  const [expandedListId, setExpandedListId] = useState<string | null>(null);
+  const [editingListId, setEditingListId] = useState<string | null>(null);
+  const [newEntryBrandId, setNewEntryBrandId] = useState('');
+  const [newEntryBusinessId, setNewEntryBusinessId] = useState('');
 
   useEffect(() => {
     loadUsers();
@@ -219,6 +229,146 @@ export default function UsersManagement() {
     setCustomFieldValues(customValues);
 
     setShowModal(true);
+
+    // Load user's lists
+    if (user.userId) {
+      loadUserLists(user.userId);
+    }
+  };
+
+  const loadUserLists = async (userId: string) => {
+    setLoadingLists(true);
+    try {
+      const lists = await getUserLists(userId);
+      setUserLists(lists);
+    } catch (error) {
+      console.error('[Admin] Error loading user lists:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Error loading user lists');
+      } else {
+        Alert.alert('Error', 'Could not load user lists');
+      }
+    } finally {
+      setLoadingLists(false);
+    }
+  };
+
+  const handleDeleteList = async (listId: string, listName: string) => {
+    if (!editingUser) return;
+
+    const confirmDelete = Platform.OS === 'web'
+      ? window.confirm(`Are you sure you want to delete the list "${listName}"? This action cannot be undone.`)
+      : await new Promise((resolve) => {
+          Alert.alert(
+            'Delete List',
+            `Are you sure you want to delete "${listName}"? This action cannot be undone.`,
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Delete', style: 'destructive', onPress: () => resolve(true) },
+            ]
+          );
+        });
+
+    if (!confirmDelete) return;
+
+    try {
+      await deleteList(listId);
+      await loadUserLists(editingUser.userId);
+      if (Platform.OS === 'web') {
+        window.alert(`List "${listName}" deleted successfully`);
+      } else {
+        Alert.alert('Success', `List "${listName}" deleted successfully`);
+      }
+    } catch (error) {
+      console.error('[Admin] Error deleting list:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Error deleting list');
+      } else {
+        Alert.alert('Error', 'Could not delete list');
+      }
+    }
+  };
+
+  const handleRemoveEntry = async (listId: string, entryId: string, entryName: string) => {
+    if (!editingUser) return;
+
+    try {
+      await removeEntryFromList(listId, entryId);
+      await loadUserLists(editingUser.userId);
+      if (Platform.OS === 'web') {
+        window.alert(`Removed "${entryName}" from list`);
+      } else {
+        Alert.alert('Success', `Removed "${entryName}" from list`);
+      }
+    } catch (error) {
+      console.error('[Admin] Error removing entry:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Error removing entry');
+      } else {
+        Alert.alert('Error', 'Could not remove entry');
+      }
+    }
+  };
+
+  const handleAddEntry = async (listId: string) => {
+    if (!newEntryBrandId && !newEntryBusinessId) {
+      if (Platform.OS === 'web') {
+        window.alert('Please enter a Brand ID or Business ID');
+      } else {
+        Alert.alert('Error', 'Please enter a Brand ID or Business ID');
+      }
+      return;
+    }
+
+    if (newEntryBrandId && newEntryBusinessId) {
+      if (Platform.OS === 'web') {
+        window.alert('Please enter either a Brand ID OR a Business ID, not both');
+      } else {
+        Alert.alert('Error', 'Please enter either a Brand ID OR a Business ID, not both');
+      }
+      return;
+    }
+
+    try {
+      const entry: ListEntry = newEntryBrandId
+        ? {
+            type: 'brand',
+            brandId: newEntryBrandId,
+            name: newEntryBrandId, // Admin should use actual brand name
+            website: '',
+            logoUrl: '',
+          }
+        : {
+            type: 'business',
+            businessId: newEntryBusinessId,
+            name: newEntryBusinessId, // Admin should use actual business name
+            website: '',
+            logoUrl: '',
+          };
+
+      await addEntryToList(listId, entry);
+
+      if (editingUser) {
+        await loadUserLists(editingUser.userId);
+      }
+
+      setNewEntryBrandId('');
+      setNewEntryBusinessId('');
+      setEditingListId(null);
+
+      if (Platform.OS === 'web') {
+        window.alert('Entry added successfully');
+      } else {
+        Alert.alert('Success', 'Entry added successfully');
+      }
+    } catch (error) {
+      console.error('[Admin] Error adding entry:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Error adding entry');
+      } else {
+        Alert.alert('Error', 'Could not add entry');
+      }
+    }
   };
 
   const closeModal = () => {
@@ -920,6 +1070,123 @@ export default function UsersManagement() {
                 </>
               )}
 
+              {/* LIBRARY / LIST MANAGEMENT */}
+              <Text style={styles.sectionTitle}>📚 Library / List Management</Text>
+              <Text style={styles.helpText}>
+                Manage this user's lists. Note: Endorsement lists, aligned/unaligned lists cannot be deleted.
+              </Text>
+
+              {loadingLists ? (
+                <ActivityIndicator size="large" color="#007AFF" style={{ marginVertical: 20 }} />
+              ) : userLists.length === 0 ? (
+                <Text style={styles.helpText}>No lists found for this user.</Text>
+              ) : (
+                userLists.map((list) => {
+                  const isProtected = list.name === 'Endorsements' ||
+                                    list.name === 'Aligned' ||
+                                    list.name === 'Unaligned' ||
+                                    list.mode === 'endorsement' ||
+                                    list.mode === 'aligned' ||
+                                    list.mode === 'unaligned';
+                  const isExpanded = expandedListId === list.id;
+                  const isEditing = editingListId === list.id;
+
+                  return (
+                    <View key={list.id} style={styles.listCard}>
+                      <View style={styles.listHeader}>
+                        <TouchableOpacity
+                          style={styles.listTitleRow}
+                          onPress={() => setExpandedListId(isExpanded ? null : list.id)}
+                        >
+                          <Text style={styles.listName}>{list.name}</Text>
+                          <Text style={styles.listCount}>({list.entries?.length || 0} items)</Text>
+                        </TouchableOpacity>
+
+                        {!isProtected && (
+                          <TouchableOpacity
+                            style={styles.deleteListButton}
+                            onPress={() => handleDeleteList(list.id, list.name)}
+                          >
+                            <Text style={styles.deleteListButtonText}>Delete List</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+
+                      {isProtected && (
+                        <Text style={styles.protectedText}>
+                          🔒 Protected list - cannot be deleted
+                        </Text>
+                      )}
+
+                      {isExpanded && (
+                        <View style={styles.listEntries}>
+                          <TouchableOpacity
+                            style={styles.addEntryButton}
+                            onPress={() => setEditingListId(isEditing ? null : list.id)}
+                          >
+                            <Text style={styles.addEntryButtonText}>
+                              {isEditing ? 'Cancel' : '+ Add Brand/Business'}
+                            </Text>
+                          </TouchableOpacity>
+
+                          {isEditing && (
+                            <View style={styles.addEntryForm}>
+                              <Text style={styles.label}>Brand ID</Text>
+                              <TextInput
+                                style={styles.input}
+                                placeholder="e.g., nike, starbucks"
+                                value={newEntryBrandId}
+                                onChangeText={setNewEntryBrandId}
+                              />
+
+                              <Text style={styles.label}>OR Business ID (Firebase ID)</Text>
+                              <TextInput
+                                style={styles.input}
+                                placeholder="e.g., abc123xyz"
+                                value={newEntryBusinessId}
+                                onChangeText={setNewEntryBusinessId}
+                              />
+
+                              <TouchableOpacity
+                                style={styles.submitEntryButton}
+                                onPress={() => handleAddEntry(list.id)}
+                              >
+                                <Text style={styles.submitEntryButtonText}>Add to List</Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+
+                          {list.entries && list.entries.length > 0 ? (
+                            list.entries.map((entry) => {
+                              const entryId = entry.id || '';
+                              const entryName = entry.name || entry.brandId || entry.businessId || 'Unknown';
+                              const entryType = entry.type || 'unknown';
+
+                              return (
+                                <View key={entryId} style={styles.entryRow}>
+                                  <View style={styles.entryInfo}>
+                                    <Text style={styles.entryName}>{entryName}</Text>
+                                    <Text style={styles.entryType}>({entryType})</Text>
+                                  </View>
+                                  <TouchableOpacity
+                                    style={styles.removeEntryButton}
+                                    onPress={() => handleRemoveEntry(list.id, entryId, entryName)}
+                                  >
+                                    <Text style={styles.removeEntryButtonText}>Remove</Text>
+                                  </TouchableOpacity>
+                                </View>
+                              );
+                            })
+                          ) : (
+                            <Text style={styles.emptyListText}>No entries in this list</Text>
+                          )}
+                        </View>
+                      )}
+                    </View>
+                  );
+                })
+              )}
+
               <View style={styles.modalActions}>
                 <TouchableOpacity style={styles.cancelButton} onPress={closeModal}>
                   <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -1269,5 +1536,135 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // List management styles
+  listCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+  },
+  listHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  listTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  listName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginRight: 8,
+  },
+  listCount: {
+    fontSize: 14,
+    color: '#6c757d',
+  },
+  protectedText: {
+    fontSize: 12,
+    color: '#6c757d',
+    fontStyle: 'italic',
+    marginBottom: 8,
+  },
+  deleteListButton: {
+    backgroundColor: '#dc3545',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  deleteListButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  listEntries: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#dee2e6',
+  },
+  addEntryButton: {
+    backgroundColor: '#28a745',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 4,
+    marginBottom: 12,
+  },
+  addEntryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  addEntryForm: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 4,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+  },
+  submitEntryButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 10,
+    borderRadius: 4,
+    marginTop: 8,
+  },
+  submitEntryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  entryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+    borderRadius: 4,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  entryInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  entryName: {
+    fontSize: 14,
+    color: '#000',
+    marginRight: 8,
+  },
+  entryType: {
+    fontSize: 12,
+    color: '#6c757d',
+  },
+  removeEntryButton: {
+    backgroundColor: '#ffc107',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  removeEntryButtonText: {
+    color: '#000',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  emptyListText: {
+    fontSize: 14,
+    color: '#6c757d',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 12,
   },
 });
