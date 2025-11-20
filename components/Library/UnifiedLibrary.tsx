@@ -977,21 +977,6 @@ export default function UnifiedLibrary({
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            {/* Action Menu Button for endorsement, aligned, and unaligned lists */}
-            {(listId === 'endorsement' || listId === 'aligned' || listId === 'unaligned') && canEdit && (
-              <TouchableOpacity
-                onPress={(e) => {
-                  e.stopPropagation();
-                  setActiveListOptionsId(isOptionsOpen ? null : listId);
-                }}
-                activeOpacity={0.7}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <View style={{ transform: [{ rotate: '90deg' }] }}>
-                  <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                </View>
-              </TouchableOpacity>
-            )}
             <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
           </View>
         </TouchableOpacity>
@@ -1608,43 +1593,49 @@ export default function UnifiedLibrary({
 
     return (
       <>
-        {/* 1. Endorsement List - Always first, pinned */}
-        {endorsementList && renderListCard(
-          'endorsement',
-          endorsementTitle,
-          endorsementList.entries?.length || 0,
-          true,
-          `Endorsed by ${endorsementList.creatorName || 'you'}`,
-          endorsementList.description,
-          true, // Always public
-          profileImage
-        )}
+        {/* System Lists Container */}
+        <View style={[styles.systemListsContainer, {
+          backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+        }]}>
+          {/* 1. Endorsement List - Always first, pinned */}
+          {endorsementList && renderListCard(
+            'endorsement',
+            endorsementTitle,
+            endorsementList.entries?.length || 0,
+            true,
+            `Endorsed by ${endorsementList.creatorName || 'you'}`,
+            endorsementList.description,
+            true, // Always public
+            profileImage
+          )}
 
-        {/* 2. Aligned List */}
-        {alignedItems.length > 0 && renderListCard(
-          'aligned',
-          'Aligned',
-          alignedItems.length,
-          false,
-          undefined,
-          'Brands and businesses aligned with your values',
-          false, // Always private
-          undefined,
-          true
-        )}
+          {/* 2. Aligned List */}
+          {alignedItems.length > 0 && renderListCard(
+            'aligned',
+            'Aligned',
+            alignedItems.length,
+            false,
+            undefined,
+            'Brands and businesses aligned with your values',
+            false, // Always private
+            undefined,
+            true
+          )}
 
-        {/* 3. Unaligned List */}
-        {unalignedItems.length > 0 && renderListCard(
-          'unaligned',
-          'Unaligned',
-          unalignedItems.length,
-          false,
-          undefined,
-          'Brands and businesses not aligned with your values',
-          false, // Always private
-          undefined,
-          true
-        )}
+          {/* 3. Unaligned List */}
+          {unalignedItems.length > 0 && renderListCard(
+            'unaligned',
+            'Unaligned',
+            unalignedItems.length,
+            false,
+            undefined,
+            'Brands and businesses not aligned with your values',
+            false, // Always private
+            undefined,
+            true
+          )}
+        </View>
 
         {/* 4. Custom Lists */}
         {customLists.map(list => {
@@ -1914,6 +1905,14 @@ export default function UnifiedLibrary({
 const styles = StyleSheet.create({
   libraryDirectory: {
     flex: 1,
+  },
+  systemListsContainer: {
+    marginHorizontal: 12,
+    marginBottom: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 8,
+    overflow: 'hidden',
   },
   menuBackdrop: {
     position: Platform.OS === 'web' ? 'fixed' as any : 'absolute',
