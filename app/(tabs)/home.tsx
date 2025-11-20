@@ -3208,33 +3208,40 @@ export default function HomeScreen() {
     );
   }
 
-  // Check if profile exists and has causes
-  if (!profile || !profile.causes || profile.causes.length === 0) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-        <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <Image
-            source={require('@/assets/images/endo11.png')}
-            style={styles.headerLogo}
-            resizeMode="contain"
-          />
-          <MenuButton onShowExplainers={() => setShowWelcomeCarousel(true)} />
-        </View>
-        <View style={styles.emptyContainer}>
-          <View style={[styles.emptyIconContainer, { backgroundColor: colors.neutralLight }]}>
-            <Target size={48} color={colors.textLight} strokeWidth={1.5} />
+  // Check if profile exists and has causes - BUT still show library if they have an endorsement list
+  if (!profile || (!profile.causes || profile.causes.length === 0)) {
+    // Check if user has an endorsement list - if so, still show the library
+    if (userPersonalList && userPersonalList.entries && userPersonalList.entries.length > 0) {
+      // User has endorsements but no causes set - show library with just endorsements
+      // The aligned/unaligned lists will be empty but endorsements will show
+    } else {
+      // No endorsements and no causes - show onboarding screen
+      return (
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+          <View style={[styles.header, { backgroundColor: colors.background }]}>
+            <Image
+              source={require('@/assets/images/endo11.png')}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
+            <MenuButton onShowExplainers={() => setShowWelcomeCarousel(true)} />
           </View>
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>Set Your Values First</Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-            Complete your profile to see personalized brand recommendations
-          </Text>
-          <TouchableOpacity style={[styles.emptyButton, { backgroundColor: colors.primary }]} onPress={() => router.push('/onboarding')} activeOpacity={0.7}>
-            <Text style={[styles.emptyButtonText, { color: colors.white }]}>Get Started</Text>
-          </TouchableOpacity>
+          <View style={styles.emptyContainer}>
+            <View style={[styles.emptyIconContainer, { backgroundColor: colors.neutralLight }]}>
+              <Target size={48} color={colors.textLight} strokeWidth={1.5} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>Set Your Values First</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+              Complete your profile to see personalized brand recommendations
+            </Text>
+            <TouchableOpacity style={[styles.emptyButton, { backgroundColor: colors.primary }]} onPress={() => router.push('/onboarding')} activeOpacity={0.7}>
+              <Text style={[styles.emptyButtonText, { color: colors.white }]}>Get Started</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    );
+      );
+    }
   }
 
   return (
