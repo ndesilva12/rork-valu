@@ -174,6 +174,7 @@ export default function BrandDetailScreen() {
   const [userLists, setUserLists] = useState<any[]>([]);
   const [isFollowingBrand, setIsFollowingBrand] = useState(false);
   const [checkingFollowStatus, setCheckingFollowStatus] = useState(true);
+  const [isEndorsingBrand, setIsEndorsingBrand] = useState(false);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -292,6 +293,19 @@ export default function BrandDetailScreen() {
     checkFollow();
   }, [clerkUser?.id, brand?.id]);
 
+  // Check if brand is endorsed when brand or library loads
+  useEffect(() => {
+    if (!brand?.id || !library.state.endorsementList) {
+      setIsEndorsingBrand(false);
+      return;
+    }
+
+    const brandIsEndorsed = library.state.endorsementList.entries.some(entry =>
+      entry.type === 'brand' && (entry as any).brandId === brand.id
+    );
+    setIsEndorsingBrand(brandIsEndorsed);
+  }, [brand?.id, library.state.endorsementList]);
+
   const handleShopPress = async () => {
     if (!brand) return;
     try {
@@ -362,18 +376,39 @@ export default function BrandDetailScreen() {
     }
 
     try {
-      await library.addEntry(library.state.endorsementList.id, {
-        type: 'brand',
-        brandId: brand.id,
-        brandName: brand.name,
-        website: brand.website,
-        logoUrl: getLogoUrl(brand.website || ''),
-      });
-      Alert.alert('Success', `${brand.name} endorsed!`);
+      if (isEndorsingBrand) {
+        // Find the entry in the endorsement list and remove it
+        const entryToRemove = library.state.endorsementList.entries.find(entry =>
+          entry.type === 'brand' && (entry as any).brandId === brand.id
+        );
+
+        if (entryToRemove) {
+          await library.removeEntry(library.state.endorsementList.id, entryToRemove.id);
+          setIsEndorsingBrand(false);
+          Alert.alert('Success', `Unendorsed ${brand.name}`);
+        }
+      } else {
+        // Add to endorsement list
+        await library.addEntry(library.state.endorsementList.id, {
+          type: 'brand',
+          brandId: brand.id,
+          brandName: brand.name,
+          website: brand.website,
+          logoUrl: getLogoUrl(brand.website || ''),
+        });
+        setIsEndorsingBrand(true);
+        Alert.alert('Success', `${brand.name} endorsed!`);
+      }
+
       setShowActionMenu(false);
+
+      // Refresh library to update UI
+      if (clerkUser?.id) {
+        await library.loadUserLists(clerkUser.id, true);
+      }
     } catch (error: any) {
-      console.error('Error endorsing brand:', error);
-      Alert.alert('Error', error?.message || 'Failed to endorse brand');
+      console.error('Error toggling endorse:', error);
+      Alert.alert('Error', error?.message || 'Failed to update endorsement');
     }
   };
 
@@ -951,7 +986,9 @@ export default function BrandDetailScreen() {
               activeOpacity={0.7}
             >
               <UserPlus size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Endorse</Text>
+              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>
+                {isEndorsingBrand ? 'Unendorse' : 'Endorse'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
