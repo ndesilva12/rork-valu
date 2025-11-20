@@ -81,6 +81,7 @@ import * as Clipboard from 'expo-clipboard';
 import MenuButton from '@/components/MenuButton';
 import EndorsedBadge from '@/components/EndorsedBadge';
 import ShareModal from '@/components/ShareModal';
+import WelcomeCarousel from '@/components/WelcomeCarousel';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
@@ -132,11 +133,12 @@ const FOLDER_CATEGORIES: FolderCategory[] = [
 export default function HomeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { profile, isDarkMode, clerkUser } = useUser();
+  const { profile, isDarkMode, clerkUser, markIntroAsSeen } = useUser();
   const library = useLibrary();
   const colors = isDarkMode ? darkColors : lightColors;
   const [mainView, setMainView] = useState<MainView>('forYou');
   const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
+  const [showWelcomeCarousel, setShowWelcomeCarousel] = useState(false);
   const [userPersonalList, setUserPersonalList] = useState<UserList | null>(null);
   const [activeExplainerStep, setActiveExplainerStep] = useState<0 | 1 | 2 | 3 | 4>(0); // 0 = none, 1-4 = explainer steps
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
@@ -217,6 +219,27 @@ export default function HomeScreen() {
   const [isFollowingCard, setIsFollowingCard] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Check if user should see welcome carousel
+  useEffect(() => {
+    // Only show carousel if:
+    // 1. User has completed values selection (has causes)
+    // 2. User hasn't seen the intro before
+    // 3. User is logged in
+    if (clerkUser && profile.causes && profile.causes.length > 0 && !profile.hasSeenIntro) {
+      console.log('[HomeScreen] First time user, showing welcome carousel');
+      setShowWelcomeCarousel(true);
+      // Navigate to aligned list view
+      setMainView('myLibrary');
+      setExpandedListId('aligned');
+      setSelectedListId('aligned');
+    }
+  }, [clerkUser, profile.causes, profile.hasSeenIntro]);
+
+  const handleWelcomeComplete = async () => {
+    setShowWelcomeCarousel(false);
+    await markIntroAsSeen();
+  };
 
   // Fetch brands and values from Firebase via DataContext
   const { brands, values, valuesMatrix, isLoading, error } = useData();
@@ -5006,6 +5029,13 @@ export default function HomeScreen() {
         shareUrl={shareData?.url || ''}
         title={shareData?.title || ''}
         description={shareData?.description}
+        isDarkMode={isDarkMode}
+      />
+
+      {/* Welcome Carousel for first-time users */}
+      <WelcomeCarousel
+        visible={showWelcomeCarousel}
+        onComplete={handleWelcomeComplete}
         isDarkMode={isDarkMode}
       />
     </View>
