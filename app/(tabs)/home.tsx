@@ -238,9 +238,11 @@ export default function HomeScreen() {
         setShowWelcomeCarousel(true);
       }, 100);
     } else if (clerkUser && profile.hasSeenIntro === undefined) {
-      // For existing users without this flag, mark as seen immediately
-      console.log('[HomeScreen] Existing user, marking intro as seen');
+      // For existing users without this flag, mark as seen immediately and ensure library view
+      console.log('[HomeScreen] Existing user, marking intro as seen and ensuring library view');
       markIntroAsSeen();
+      // Make sure existing users also land on library view
+      setMainView('myLibrary');
     }
   }, [clerkUser, profile.causes, profile.hasSeenIntro, markIntroAsSeen]);
 
