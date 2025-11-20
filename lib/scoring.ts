@@ -105,11 +105,11 @@ export function calculateBrandScore(
 }
 
 /**
- * Normalize an array of brand scores to 1-99 range for better visual separation
- * The highest score becomes 99, lowest becomes 1, others distributed proportionally
+ * Normalize an array of brand scores to 1-99 range with median at 50
+ * This preserves the midpoint: half of brands score below 50, half above
  *
  * @param brandsWithScores - Array of {brand, score} objects
- * @returns Array with normalized scores (1-99)
+ * @returns Array with normalized scores (1-99, median = 50)
  */
 export function normalizeBrandScores(
   brandsWithScores: Array<{ brand: any; score: number }>
@@ -119,19 +119,42 @@ export function normalizeBrandScores(
     return [{ ...brandsWithScores[0], score: 50 }]; // Single brand = neutral
   }
 
-  // Find min and max scores
-  const scores = brandsWithScores.map(b => b.score);
-  const minScore = Math.min(...scores);
-  const maxScore = Math.max(...scores);
+  // Get all scores and sort them
+  const scores = brandsWithScores.map(b => b.score).sort((a, b) => a - b);
+  const minScore = scores[0];
+  const maxScore = scores[scores.length - 1];
 
   // If all scores are the same, return 50 for all
   if (minScore === maxScore) {
     return brandsWithScores.map(b => ({ ...b, score: 50 }));
   }
 
-  // Normalize to 1-99 range
+  // Find the median score
+  const medianIndex = Math.floor(scores.length / 2);
+  const medianScore = scores.length % 2 === 0
+    ? (scores[medianIndex - 1] + scores[medianIndex]) / 2
+    : scores[medianIndex];
+
+  // Normalize with median at 50
   return brandsWithScores.map(({ brand, score }) => {
-    const normalized = 1 + ((score - minScore) / (maxScore - minScore)) * 98;
+    let normalized: number;
+
+    if (score <= medianScore) {
+      // Below median: map to 1-50 range
+      if (medianScore === minScore) {
+        normalized = 50;
+      } else {
+        normalized = 1 + ((score - minScore) / (medianScore - minScore)) * 49;
+      }
+    } else {
+      // Above median: map to 50-99 range
+      if (maxScore === medianScore) {
+        normalized = 50;
+      } else {
+        normalized = 50 + ((score - medianScore) / (maxScore - medianScore)) * 49;
+      }
+    }
+
     return {
       brand,
       score: Math.round(normalized)
