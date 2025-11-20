@@ -71,6 +71,12 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Follows collection - OPEN ACCESS
+    // Users can follow brands, businesses, and other users (Clerk handles authentication)
+    match /follows/{followId} {
+      allow read, write: if true;
+    }
+
     // Deny all other collections
     match /{document=**} {
       allow read, write: if false;
