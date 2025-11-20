@@ -225,12 +225,18 @@ export default function HomeScreen() {
     // Only show carousel if hasSeenIntro is EXPLICITLY false (new users from onboarding)
     // If it's undefined (existing users), treat as already seen
     if (clerkUser && profile.causes && profile.causes.length > 0 && profile.hasSeenIntro === false) {
-      console.log('[HomeScreen] First time user, showing welcome carousel');
-      setShowWelcomeCarousel(true);
-      // Navigate to aligned list view
+      console.log('[HomeScreen] First time user, setting up aligned list view and showing carousel');
+      // FIRST set the view states to library with aligned list expanded
+      // This ensures when carousel shows (and later dismisses), we're already on the right view
       setMainView('myLibrary');
       setExpandedListId('aligned');
       setSelectedListId('aligned');
+      setLibraryView('detail');
+
+      // Small delay to ensure state is set before showing carousel
+      setTimeout(() => {
+        setShowWelcomeCarousel(true);
+      }, 100);
     } else if (clerkUser && profile.hasSeenIntro === undefined) {
       // For existing users without this flag, mark as seen immediately
       console.log('[HomeScreen] Existing user, marking intro as seen');
@@ -239,7 +245,13 @@ export default function HomeScreen() {
   }, [clerkUser, profile.causes, profile.hasSeenIntro, markIntroAsSeen]);
 
   const handleWelcomeComplete = async () => {
+    console.log('[HomeScreen] Welcome carousel completed, ensuring we stay on library view');
     setShowWelcomeCarousel(false);
+    // Make absolutely sure we're on the library view with aligned list expanded
+    setMainView('myLibrary');
+    setExpandedListId('aligned');
+    setSelectedListId('aligned');
+    setLibraryView('detail');
     await markIntroAsSeen();
   };
 
