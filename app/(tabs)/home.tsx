@@ -220,24 +220,46 @@ export default function HomeScreen() {
 
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // CRITICAL: Force mainView to myLibrary immediately on mount
+  useEffect(() => {
+    console.log('[HomeScreen] Forcing mainView to myLibrary on mount');
+    setMainView('myLibrary');
+  }, []);
+
   // Check if user should see welcome carousel
   useEffect(() => {
-    // Only show carousel if:
-    // 1. User has completed values selection (has causes)
-    // 2. User hasn't seen the intro before
-    // 3. User is logged in
-    if (clerkUser && profile.causes && profile.causes.length > 0 && !profile.hasSeenIntro) {
-      console.log('[HomeScreen] First time user, showing welcome carousel');
-      setShowWelcomeCarousel(true);
-      // Navigate to aligned list view
+    // Only show carousel if hasSeenIntro is EXPLICITLY false (new users from onboarding)
+    // If it's undefined (existing users), treat as already seen
+    if (clerkUser && profile.causes && profile.causes.length > 0 && profile.hasSeenIntro === false) {
+      console.log('[HomeScreen] First time user, setting up aligned list view and showing carousel');
+      // FIRST set the view states to library with aligned list expanded
+      // This ensures when carousel shows (and later dismisses), we're already on the right view
       setMainView('myLibrary');
       setExpandedListId('aligned');
       setSelectedListId('aligned');
+      setLibraryView('detail');
+
+      // Small delay to ensure state is set before showing carousel
+      setTimeout(() => {
+        setShowWelcomeCarousel(true);
+      }, 100);
+    } else if (clerkUser && profile.hasSeenIntro === undefined) {
+      // For existing users without this flag, mark as seen immediately and ensure library view
+      console.log('[HomeScreen] Existing user, marking intro as seen and ensuring library view');
+      markIntroAsSeen();
+      // Make sure existing users also land on library view
+      setMainView('myLibrary');
     }
-  }, [clerkUser, profile.causes, profile.hasSeenIntro]);
+  }, [clerkUser, profile.causes, profile.hasSeenIntro, markIntroAsSeen]);
 
   const handleWelcomeComplete = async () => {
+    console.log('[HomeScreen] Welcome carousel completed, ensuring we stay on library view');
     setShowWelcomeCarousel(false);
+    // Make absolutely sure we're on the library view with aligned list expanded
+    setMainView('myLibrary');
+    setExpandedListId('aligned');
+    setSelectedListId('aligned');
+    setLibraryView('detail');
     await markIntroAsSeen();
   };
 
@@ -549,7 +571,7 @@ export default function HomeScreen() {
   // Set default expanded/selected list when library loads (only once)
   useEffect(() => {
     const handleDefaultLibraryState = async () => {
-      if (mainView === 'forYou' && !hasSetDefaultExpansion && userPersonalList && clerkUser?.id) {
+      if (mainView === 'myLibrary' && !hasSetDefaultExpansion && userPersonalList && clerkUser?.id) {
         const firstTimeKey = `firstTimeLibraryVisit_${clerkUser.id}`;
         const isFirstTime = await AsyncStorage.getItem(firstTimeKey);
 
@@ -1043,11 +1065,11 @@ export default function HomeScreen() {
       <View style={styles.mainViewRow}>
         <View style={[styles.mainViewSelector, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
           <TouchableOpacity
-            style={[styles.mainViewButton, mainView === 'forYou' && { backgroundColor: colors.primary }]}
-            onPress={() => setMainView('forYou')}
+            style={[styles.mainViewButton, mainView === 'myLibrary' && { backgroundColor: colors.primary }]}
+            onPress={() => setMainView('myLibrary')}
             activeOpacity={0.7}
           >
-            <Text style={[styles.mainViewText, { color: mainView === 'forYou' ? colors.white : colors.textSecondary }]}>
+            <Text style={[styles.mainViewText, { color: mainView === 'myLibrary' ? colors.white : colors.textSecondary }]}>
               Library
             </Text>
           </TouchableOpacity>

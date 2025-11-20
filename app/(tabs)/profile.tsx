@@ -569,7 +569,10 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={[
               styles.tab,
-              selectedTab === 'library' && { borderBottomWidth: 3, borderBottomColor: colors.primary }
+              {
+                backgroundColor: selectedTab === 'library' ? colors.backgroundSecondary : 'transparent',
+                borderColor: selectedTab === 'library' ? colors.primary : colors.border,
+              }
             ]}
             onPress={() => setSelectedTab('library')}
             activeOpacity={0.7}
@@ -586,7 +589,10 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={[
               styles.tab,
-              selectedTab === 'following' && { borderBottomWidth: 3, borderBottomColor: colors.primary }
+              {
+                backgroundColor: selectedTab === 'following' ? colors.backgroundSecondary : 'transparent',
+                borderColor: selectedTab === 'following' ? colors.primary : colors.border,
+              }
             ]}
             onPress={() => setSelectedTab('following')}
             activeOpacity={0.7}
@@ -603,7 +609,10 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={[
               styles.tab,
-              selectedTab === 'followers' && { borderBottomWidth: 3, borderBottomColor: colors.primary }
+              {
+                backgroundColor: selectedTab === 'followers' ? colors.backgroundSecondary : 'transparent',
+                borderColor: selectedTab === 'followers' ? colors.primary : colors.border,
+              }
             ]}
             onPress={() => setSelectedTab('followers')}
             activeOpacity={0.7}
@@ -818,25 +827,24 @@ const styles = StyleSheet.create({
   tabSelector: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    marginBottom: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    paddingVertical: 12,
+    gap: 8,
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 8,
     alignItems: 'center',
-    borderBottomWidth: 3,
-    borderBottomColor: 'transparent',
+    borderRadius: 8,
+    borderWidth: 2,
   },
   tabTitle: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600',
     marginBottom: 2,
   },
   tabCount: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '500',
   },
 
