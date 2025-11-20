@@ -569,8 +569,10 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={[
               styles.tab,
-              { borderColor: selectedTab === 'library' ? colors.primary : colors.border },
-              selectedTab === 'library' && styles.tabSelected
+              {
+                backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                borderColor: selectedTab === 'library' ? colors.primary : (isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'),
+              }
             ]}
             onPress={() => setSelectedTab('library')}
             activeOpacity={0.7}
@@ -587,8 +589,10 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={[
               styles.tab,
-              { borderColor: selectedTab === 'following' ? colors.primary : colors.border },
-              selectedTab === 'following' && styles.tabSelected
+              {
+                backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                borderColor: selectedTab === 'following' ? colors.primary : (isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'),
+              }
             ]}
             onPress={() => setSelectedTab('following')}
             activeOpacity={0.7}
@@ -605,8 +609,10 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={[
               styles.tab,
-              { borderColor: selectedTab === 'followers' ? colors.primary : colors.border },
-              selectedTab === 'followers' && styles.tabSelected
+              {
+                backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                borderColor: selectedTab === 'followers' ? colors.primary : (isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'),
+              }
             ]}
             onPress={() => setSelectedTab('followers')}
             activeOpacity={0.7}
@@ -831,10 +837,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderRadius: 8,
-    backgroundColor: 'transparent',
-  },
-  tabSelected: {
-    // Selected tab styling - border color is applied dynamically
   },
   tabTitle: {
     fontSize: 13,

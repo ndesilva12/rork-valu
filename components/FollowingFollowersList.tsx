@@ -137,23 +137,27 @@ export default function FollowingFollowersList({
               }
             }
           } else if (type === 'business') {
-            // Fetch business details from users collection
-            const businessRef = doc(db, 'users', entityId);
-            const businessSnap = await getDoc(businessRef);
-            if (businessSnap.exists()) {
-              const businessData = businessSnap.data();
-              enriched.name = businessData.businessInfo?.name || businessData.name || 'Unknown Business';
-              enriched.category = businessData.businessInfo?.category || businessData.category;
-              enriched.website = businessData.businessInfo?.website || businessData.website;
-              enriched.logoUrl = businessData.businessInfo?.logoUrl || getLogoUrl(businessData.businessInfo?.website || businessData.website || '');
+            // Fetch business details from users collection (where businesses are stored)
+            const userRef = doc(db, 'users', entityId);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+              const userData = userSnap.data();
+              const businessInfo = userData.businessInfo;
 
-              // Calculate similarity score based on causes
-              if (userCauses.length > 0 && businessData.causes && Array.isArray(businessData.causes)) {
-                const businessCauses: Cause[] = businessData.causes;
-                const userCausesObj: Cause[] = userCauses.map(id => ({ id, name: id, category: 'social_issue', type: 'support' }));
-                const similarity = calculateSimilarityScore(userCausesObj, businessCauses);
-                enriched.similarityScore = similarity;
-                enriched.scoreType = 'similarity';
+              if (businessInfo) {
+                enriched.name = businessInfo.name || 'Unknown Business';
+                enriched.category = businessInfo.category;
+                enriched.website = businessInfo.website;
+                enriched.logoUrl = businessInfo.logoUrl || getLogoUrl(businessInfo.website || '');
+                enriched.profileImage = businessInfo.logoUrl;
+
+                // Calculate similarity score based on shared causes
+                if (userCauses.length > 0 && userData.causes && Array.isArray(userData.causes)) {
+                  const businessCauses = userData.causes;
+                  const similarity = calculateSimilarityScore(userCauses, businessCauses);
+                  enriched.similarityScore = similarity;
+                  enriched.scoreType = 'similarity';
+                }
               }
             }
           } else if (type === 'user') {
@@ -176,7 +180,7 @@ export default function FollowingFollowersList({
 
       const enrichedFollows = await Promise.all(enrichedPromises);
 
-      // Sort by score (alignment or similarity, highest first), then by name
+      // Sort by score (alignment or similarity) - highest first, then by name
       enrichedFollows.sort((a, b) => {
         const scoreA = a.alignmentScore ?? a.similarityScore;
         const scoreB = b.alignmentScore ?? b.similarityScore;
