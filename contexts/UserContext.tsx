@@ -671,6 +671,19 @@ export const [UserProvider, useUser] = createContextHook(() => {
     return !!profile.businessMembership && profile.businessMembership.role === 'team';
   }, [profile]);
 
+  const markIntroAsSeen = useCallback(async () => {
+    if (!clerkUser) return;
+
+    try {
+      const newProfile = { ...profile, hasSeenIntro: true };
+      setProfile(newProfile);
+      await saveUserProfile(clerkUser.id, newProfile);
+      console.log('[UserContext] ✅ Marked intro as seen');
+    } catch (error) {
+      console.error('[UserContext] ❌ Failed to mark intro as seen:', error);
+    }
+  }, [clerkUser, profile]);
+
   return useMemo(() => ({
     profile,
     isLoading: isLoading || !isClerkLoaded,
@@ -694,5 +707,6 @@ export const [UserProvider, useUser] = createContextHook(() => {
     getBusinessId,
     isBusinessOwner,
     isTeamMember,
-  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, removeCauses, toggleCauseType, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, clerkUser, setAccountType, setBusinessInfo, setUserDetails, refreshTransactionTotals, hasPermission, getBusinessId, isBusinessOwner, isTeamMember]);
+    markIntroAsSeen,
+  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, removeCauses, toggleCauseType, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, clerkUser, setAccountType, setBusinessInfo, setUserDetails, refreshTransactionTotals, hasPermission, getBusinessId, isBusinessOwner, isTeamMember, markIntroAsSeen]);
 });
