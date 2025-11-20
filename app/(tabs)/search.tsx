@@ -31,6 +31,7 @@ import { Product } from '@/types';
 import { lookupBarcode, findBrandInDatabase, getBrandProduct } from '@/mocks/barcode-products';
 import { getLogoUrl } from '@/lib/logo';
 import { getBusinessesAcceptingDiscounts, getAllUserBusinesses, BusinessUser, calculateAlignmentScore } from '@/services/firebase/businessService';
+import { calculateBrandScore, normalizeBrandScores } from '@/lib/scoring';
 import { getAllPublicUsers } from '@/services/firebase/userService';
 import { UserProfile } from '@/types';
 import { copyListToLibrary, getEndorsementList } from '@/services/firebase/listService';
@@ -240,7 +241,7 @@ export default function SearchScreen() {
   const router = useRouter();
   const { profile, addToSearchHistory, isDarkMode, clerkUser } = useUser();
   const library = useLibrary();
-  const { values: firebaseValues } = useData();
+  const { values: firebaseValues, brands: firebaseBrands, valuesMatrix } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
   const { width } = useWindowDimensions();
 
@@ -589,8 +590,8 @@ export default function SearchScreen() {
   }, []);
 
   const handleGenerateResults = useCallback(() => {
-    // Include both MOCK_PRODUCTS and Firebase businesses
-    const allProducts = [...MOCK_PRODUCTS];
+    // Use Firebase brands instead of MOCK_PRODUCTS
+    const allProducts = firebaseBrands || [];
     const allSelectedValues = [...selectedSupportValues, ...selectedRejectValues];
 
     if (allSelectedValues.length === 0) {
@@ -598,66 +599,49 @@ export default function SearchScreen() {
       return;
     }
 
-    // Convert selected values to Cause format for business scoring
+    // Convert selected values to Cause format for scoring
     const userCauses = [
-      ...selectedSupportValues.map(id => ({ id, type: 'support' as const })),
-      ...selectedRejectValues.map(id => ({ id, type: 'avoid' as const }))
+      ...selectedSupportValues.map(id => ({ id, type: 'support' as const, weight: 1.0 })),
+      ...selectedRejectValues.map(id => ({ id, type: 'avoid' as const, weight: 1.0 }))
     ];
 
-    // Score each product based on selected values
-    const scored = allProducts.map(product => {
-      let totalSupportScore = 0;
-      let totalRejectScore = 0;
-      const matchingValues = new Set<string>();
-      const positionSum: number[] = [];
+    // Debug: Check which selected values have no data in valuesMatrix
+    const missingValues = userCauses.filter(cause => {
+      const valueData = valuesMatrix[cause.id];
+      return !valueData || (valueData.support.length === 0 && valueData.oppose.length === 0);
+    });
 
-      product.valueAlignments.forEach(alignment => {
-        const isUserSupporting = selectedSupportValues.includes(alignment.valueId);
-        const isUserRejecting = selectedRejectValues.includes(alignment.valueId);
+    if (missingValues.length > 0) {
+      console.log('[Search] ⚠️ Value Machine - Selected values with NO brand data in valuesMatrix:',
+        missingValues.map(c => ({ id: c.id, type: c.type }))
+      );
+    }
 
-        if (!isUserSupporting && !isUserRejecting) return;
+    console.log('[Search] Value Machine - Selected values:', {
+      support: selectedSupportValues.length,
+      reject: selectedRejectValues.length,
+      brands: allProducts.length,
+      missingData: missingValues.length
+    });
 
-        matchingValues.add(alignment.valueId);
-        positionSum.push(alignment.position);
+    // Score each brand using calculateBrandScore (same as home tab)
+    const brandsWithScores = allProducts.map(brand => {
+      const score = calculateBrandScore(brand.name, userCauses, valuesMatrix);
+      return { brand, score };
+    });
 
-        const score = alignment.isSupport ? (100 - alignment.position * 5) : -(100 - alignment.position * 5);
+    // Normalize scores (same as home tab)
+    const normalizedBrands = normalizeBrandScores(brandsWithScores);
 
-        if (isUserSupporting) {
-          if (score > 0) {
-            totalSupportScore += score;
-          } else {
-            totalRejectScore += Math.abs(score);
-          }
-        }
-
-        if (isUserRejecting) {
-          if (score < 0) {
-            totalSupportScore += Math.abs(score);
-          } else {
-            totalRejectScore += score;
-          }
-        }
-      });
-
-      const valuesWhereNotAppears = allSelectedValues.length - matchingValues.size;
-      const totalPositionSum = positionSum.reduce((a, b) => a + b, 0) + (valuesWhereNotAppears * 11);
-      const avgPosition = allSelectedValues.length > 0 ? totalPositionSum / allSelectedValues.length : 11;
-
-      const isPositivelyAligned = totalSupportScore > totalRejectScore && totalSupportScore > 0;
-
-      let alignmentStrength: number;
-      if (isPositivelyAligned) {
-        alignmentStrength = Math.round((1 - ((avgPosition - 1) / 10)) * 50 + 50);
-      } else {
-        alignmentStrength = Math.round(((avgPosition - 1) / 10) * 50);
-      }
-
+    // Convert to product format with alignment data
+    const scored = normalizedBrands.map(({ brand, score }) => {
+      const isPositivelyAligned = score >= 50;
       return {
-        product,
-        totalSupportScore,
-        totalRejectScore,
-        matchingValuesCount: matchingValues.size,
-        alignmentStrength,
+        product: brand as Product,
+        totalSupportScore: isPositivelyAligned ? score : 0,
+        totalRejectScore: isPositivelyAligned ? 0 : (100 - score),
+        matchingValuesCount: userCauses.length,
+        alignmentStrength: score,
         isPositivelyAligned
       };
     });
@@ -747,7 +731,7 @@ export default function SearchScreen() {
     setShowingResults(true);
     setResultsLimit(10);
     setResultsMode('aligned');
-  }, [selectedSupportValues, selectedRejectValues, firebaseBusinesses]);
+  }, [selectedSupportValues, selectedRejectValues, firebaseBusinesses, firebaseBrands, valuesMatrix]);
 
   const handleLoadMore = useCallback(() => {
     if (resultsLimit === 10) {
