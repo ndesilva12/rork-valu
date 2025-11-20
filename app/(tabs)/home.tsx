@@ -213,9 +213,6 @@ export default function HomeScreen() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareData, setShareData] = useState<{ url: string; title: string; description?: string } | null>(null);
 
-  // Welcome carousel state
-  const [showWelcomeCarousel, setShowWelcomeCarousel] = useState(false);
-
   // Card Action Menu state
   const [activeCardMenuId, setActiveCardMenuId] = useState<string | null>(null);
   const [cardMenuData, setCardMenuData] = useState<{ type: 'brand' | 'business', id: string, name: string, website?: string, logoUrl?: string, listId?: string } | null>(null);
