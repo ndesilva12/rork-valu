@@ -213,6 +213,9 @@ export default function HomeScreen() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareData, setShareData] = useState<{ url: string; title: string; description?: string } | null>(null);
 
+  // Welcome carousel state
+  const [showWelcomeCarousel, setShowWelcomeCarousel] = useState(false);
+
   // Card Action Menu state
   const [activeCardMenuId, setActiveCardMenuId] = useState<string | null>(null);
   const [cardMenuData, setCardMenuData] = useState<{ type: 'brand' | 'business', id: string, name: string, website?: string, logoUrl?: string, listId?: string } | null>(null);
@@ -455,6 +458,32 @@ export default function HomeScreen() {
 
     loadPersonalList();
   }, [clerkUser?.id, clerkUser?.unsafeMetadata?.fullName, clerkUser?.firstName, clerkUser?.lastName, profile?.userDetails?.name]);
+
+  // Check if we should show the welcome carousel (only once for new users)
+  useEffect(() => {
+    const checkWelcomeCarousel = async () => {
+      if (!clerkUser?.id) return;
+
+      const welcomeCarouselKey = `welcomeCarouselShown_${clerkUser.id}`;
+      const hasSeenCarousel = await AsyncStorage.getItem(welcomeCarouselKey);
+
+      // Show carousel only if user has never seen it
+      if (hasSeenCarousel === null) {
+        setShowWelcomeCarousel(true);
+      }
+    };
+
+    checkWelcomeCarousel();
+  }, [clerkUser?.id]);
+
+  // Handle carousel completion
+  const handleCarouselComplete = async () => {
+    if (clerkUser?.id) {
+      const welcomeCarouselKey = `welcomeCarouselShown_${clerkUser.id}`;
+      await AsyncStorage.setItem(welcomeCarouselKey, 'true');
+      setShowWelcomeCarousel(false);
+    }
+  };
 
   // Function to fetch user businesses
   const fetchUserBusinesses = useCallback(async () => {
@@ -3223,33 +3252,40 @@ export default function HomeScreen() {
     );
   }
 
-  // Check if profile exists and has causes
-  if (!profile || !profile.causes || profile.causes.length === 0) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-        <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <Image
-            source={require('@/assets/images/endo11.png')}
-            style={styles.headerLogo}
-            resizeMode="contain"
-          />
-          <MenuButton onShowExplainers={() => setShowWelcomeCarousel(true)} />
-        </View>
-        <View style={styles.emptyContainer}>
-          <View style={[styles.emptyIconContainer, { backgroundColor: colors.neutralLight }]}>
-            <Target size={48} color={colors.textLight} strokeWidth={1.5} />
+  // Check if profile exists and has causes - BUT still show library if they have an endorsement list
+  if (!profile || (!profile.causes || profile.causes.length === 0)) {
+    // Check if user has an endorsement list - if so, still show the library
+    if (userPersonalList && userPersonalList.entries && userPersonalList.entries.length > 0) {
+      // User has endorsements but no causes set - show library with just endorsements
+      // The aligned/unaligned lists will be empty but endorsements will show
+    } else {
+      // No endorsements and no causes - show onboarding screen
+      return (
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+          <View style={[styles.header, { backgroundColor: colors.background }]}>
+            <Image
+              source={require('@/assets/images/endo11.png')}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
+            <MenuButton onShowExplainers={() => setShowWelcomeCarousel(true)} />
           </View>
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>Set Your Values First</Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-            Complete your profile to see personalized brand recommendations
-          </Text>
-          <TouchableOpacity style={[styles.emptyButton, { backgroundColor: colors.primary }]} onPress={() => router.push('/onboarding')} activeOpacity={0.7}>
-            <Text style={[styles.emptyButtonText, { color: colors.white }]}>Get Started</Text>
-          </TouchableOpacity>
+          <View style={styles.emptyContainer}>
+            <View style={[styles.emptyIconContainer, { backgroundColor: colors.neutralLight }]}>
+              <Target size={48} color={colors.textLight} strokeWidth={1.5} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>Set Your Values First</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+              Complete your profile to see personalized brand recommendations
+            </Text>
+            <TouchableOpacity style={[styles.emptyButton, { backgroundColor: colors.primary }]} onPress={() => router.push('/onboarding')} activeOpacity={0.7}>
+              <Text style={[styles.emptyButtonText, { color: colors.white }]}>Get Started</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    );
+      );
+    }
   }
 
   return (
@@ -4869,7 +4905,7 @@ export default function HomeScreen() {
             </View>
 
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
-              We generate brands that align or don't align based on your selections.
+              We give you the best ways to vote with your money based on your values.
             </Text>
 
             <TouchableOpacity
@@ -4915,7 +4951,7 @@ export default function HomeScreen() {
             </View>
 
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
-              Add brands or local businesses to your personal collection and build your identity.
+              Build your list of endorsements of brands and local businesses you support.
             </Text>
 
             <TouchableOpacity
@@ -4961,7 +4997,7 @@ export default function HomeScreen() {
             </View>
 
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
-              Create lists from ANY value inputs. Great for generating gift ideas for friends & family.
+              Use the Value Machine or find your friends in order to discover new brands or gift ideas.
             </Text>
 
             <TouchableOpacity
@@ -5022,7 +5058,7 @@ export default function HomeScreen() {
             </View>
 
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
-              Use your code for discounts at participating businesses.
+              Collect discounts at businesses in exchange for your endorsement, following or simply being on our app!
             </Text>
 
             <TouchableOpacity
@@ -5054,10 +5090,10 @@ export default function HomeScreen() {
         isDarkMode={isDarkMode}
       />
 
-      {/* Welcome Carousel for first-time users */}
+      {/* Welcome Carousel - Show only once for new users */}
       <WelcomeCarousel
         visible={showWelcomeCarousel}
-        onComplete={handleWelcomeComplete}
+        onComplete={handleCarouselComplete}
         isDarkMode={isDarkMode}
       />
     </View>

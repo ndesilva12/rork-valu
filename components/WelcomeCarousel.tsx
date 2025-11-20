@@ -1,77 +1,66 @@
-/**
- * WelcomeCarousel Component
- * Shows a 4-slide intro to the app for first-time users
- */
 import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Modal,
+  TouchableOpacity,
   Dimensions,
   ScrollView,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
   Platform,
 } from 'react-native';
-import { TrendingUp, List, Percent, X, Search } from 'lucide-react-native';
+import { DollarSign, Heart, Sparkles, Gift } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const CARD_WIDTH = Math.min(SCREEN_WIDTH - 40, 500);
+const SLIDE_WIDTH = CARD_WIDTH - 48; // Card padding is 24 on each side
 
 interface WelcomeCarouselProps {
   visible: boolean;
   onComplete: () => void;
-  isDarkMode?: boolean;
+  isDarkMode: boolean;
 }
 
-interface Slide {
-  icon: any;
-  title: string;
-  description: string;
-  color: string;
-}
-
-const slides: Slide[] = [
+const slides = [
   {
-    icon: TrendingUp,
+    icon: DollarSign,
     title: 'Vote With Your Money',
     description: 'We give you the best ways to vote with your money based on your values.',
     color: '#10B981', // green
   },
   {
-    icon: List,
-    title: 'Build Your Endorsements',
+    icon: Heart,
+    title: 'Endorse Businesses',
     description: 'Build your list of endorsements of brands and local businesses you support.',
-    color: '#3B82F6', // blue
+    color: '#EF4444', // red
   },
   {
-    icon: Search,
+    icon: Sparkles,
     title: 'Discover & Connect',
     description: 'Use the Value Machine or find your friends in order to discover new brands or gift ideas.',
-    color: '#F59E0B', // orange
+    color: '#8B5CF6', // purple
   },
   {
-    icon: Percent,
-    title: 'Collect Discounts',
+    icon: Gift,
+    title: 'Earn Rewards',
     description: 'Collect discounts at businesses in exchange for your endorsement, following or simply being on our app!',
-    color: '#8B5CF6', // purple
+    color: '#F59E0B', // orange
   },
 ];
 
-export default function WelcomeCarousel({ visible, onComplete, isDarkMode = false }: WelcomeCarouselProps) {
-  const colors = isDarkMode ? darkColors : lightColors;
+export default function WelcomeCarousel({ visible, onComplete, isDarkMode }: WelcomeCarouselProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
+  const colors = isDarkMode ? darkColors : lightColors;
 
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const slideIndex = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+  const handleScroll = (event: any) => {
+    const slideIndex = Math.round(event.nativeEvent.contentOffset.x / SLIDE_WIDTH);
     setCurrentSlide(slideIndex);
   };
 
   const goToSlide = (index: number) => {
-    scrollViewRef.current?.scrollTo({ x: index * SCREEN_WIDTH, animated: true });
+    scrollViewRef.current?.scrollTo({ x: index * SLIDE_WIDTH, animated: true });
     setCurrentSlide(index);
   };
 
@@ -87,86 +76,86 @@ export default function WelcomeCarousel({ visible, onComplete, isDarkMode = fals
     onComplete();
   };
 
+  if (!visible) return null;
+
   return (
     <Modal
       visible={visible}
       animationType="fade"
       transparent={true}
-      onRequestClose={handleSkip}
+      onRequestClose={onComplete}
     >
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        {/* Skip button */}
-        <TouchableOpacity
-          style={styles.skipButton}
-          onPress={handleSkip}
-          activeOpacity={0.7}
-        >
-          <X size={24} color={colors.textSecondary} strokeWidth={2} />
-        </TouchableOpacity>
+      <View style={styles.overlay}>
+        <View style={[styles.carouselCard, { backgroundColor: colors.background }]}>
+          {/* Skip Button */}
+          <TouchableOpacity
+            style={styles.skipButton}
+            onPress={handleSkip}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.skipText, { color: colors.textSecondary }]}>Skip</Text>
+          </TouchableOpacity>
 
-        {/* Slides */}
-        <ScrollView
-          ref={scrollViewRef}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          style={styles.scrollView}
-        >
-          {slides.map((slide, index) => {
-            const Icon = slide.icon;
-            return (
-              <View key={index} style={[styles.slide, { width: SCREEN_WIDTH }]}>
-                <View style={styles.slideContent}>
-                  {/* Icon */}
-                  <View style={[styles.iconContainer, { backgroundColor: slide.color + '20' }]}>
-                    <Icon size={64} color={slide.color} strokeWidth={1.5} />
+          {/* Slides Container */}
+          <View style={styles.slidesContainer}>
+            <ScrollView
+              ref={scrollViewRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
+              style={styles.scrollView}
+            >
+              {slides.map((slide, index) => {
+                const Icon = slide.icon;
+                return (
+                  <View key={index} style={[styles.slide, { width: SLIDE_WIDTH }]}>
+                    <View style={[styles.iconCircle, { backgroundColor: `${slide.color}20` }]}>
+                      <Icon size={64} color={slide.color} strokeWidth={2} />
+                    </View>
+                    <Text style={[styles.slideTitle, { color: colors.text }]}>
+                      {slide.title}
+                    </Text>
+                    <Text style={[styles.slideDescription, { color: colors.textSecondary }]}>
+                      {slide.description}
+                    </Text>
                   </View>
+                );
+              })}
+            </ScrollView>
+          </View>
 
-                  {/* Title */}
-                  <Text style={[styles.title, { color: colors.text }]}>
-                    {slide.title}
-                  </Text>
-
-                  {/* Description */}
-                  <Text style={[styles.description, { color: colors.textSecondary }]}>
-                    {slide.description}
-                  </Text>
-                </View>
-              </View>
-            );
-          })}
-        </ScrollView>
-
-        {/* Bottom section with dots and button */}
-        <View style={styles.bottomSection}>
-          {/* Pagination dots */}
+          {/* Pagination Dots */}
           <View style={styles.pagination}>
             {slides.map((_, index) => (
               <TouchableOpacity
                 key={index}
-                style={[
-                  styles.dot,
-                  {
-                    backgroundColor: currentSlide === index ? colors.primary : colors.border,
-                    width: currentSlide === index ? 24 : 8,
-                  },
-                ]}
                 onPress={() => goToSlide(index)}
                 activeOpacity={0.7}
-              />
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <View
+                  style={[
+                    styles.dot,
+                    {
+                      backgroundColor: currentSlide === index ? colors.primary : colors.neutral,
+                      width: currentSlide === index ? 24 : 8,
+                    },
+                  ]}
+                />
+              </TouchableOpacity>
             ))}
           </View>
 
-          {/* Next/Get Started button */}
+          {/* Next/Get Started Button */}
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: colors.primary }]}
+            style={[styles.nextButton, { backgroundColor: colors.primary }]}
             onPress={handleNext}
             activeOpacity={0.8}
           >
-            <Text style={[styles.buttonText, { color: colors.white }]}>
-              {currentSlide === slides.length - 1 ? "Let's Go!" : 'Next'}
+            <Text style={[styles.nextButtonText, { color: colors.white }]}>
+              {currentSlide === slides.length - 1 ? 'Get Started' : 'Next'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -176,84 +165,103 @@ export default function WelcomeCarousel({ visible, onComplete, isDarkMode = fals
 }
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  carouselCard: {
+    width: '100%',
+    maxWidth: 500,
+    borderRadius: 24,
+    padding: 24,
+    paddingTop: 32,
+    paddingBottom: 32,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 10,
+      },
+      web: {
+        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+      },
+    }),
   },
   skipButton: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 40,
-    right: 20,
+    position: 'absolute' as const,
+    top: 16,
+    right: 16,
     zIndex: 10,
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 20,
+    padding: 8,
+  },
+  skipText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  slidesContainer: {
+    height: 420,
+    marginTop: 16,
+    marginBottom: 16,
+    width: '100%',
   },
   scrollView: {
     flex: 1,
   },
   slide: {
-    flex: 1,
-    alignItems: 'center',
+    height: 420,
     justifyContent: 'center',
-    paddingHorizontal: 40,
-  },
-  slideContent: {
     alignItems: 'center',
-    maxWidth: 400,
+    paddingHorizontal: 32,
   },
-  iconContainer: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    alignItems: 'center',
+  iconCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     justifyContent: 'center',
-    marginBottom: 40,
+    alignItems: 'center',
+    marginBottom: 32,
   },
-  title: {
+  slideTitle: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: '700' as const,
     textAlign: 'center',
     marginBottom: 16,
     lineHeight: 36,
   },
-  description: {
-    fontSize: 17,
+  slideDescription: {
+    fontSize: 19,
     textAlign: 'center',
-    lineHeight: 26,
-    paddingHorizontal: 10,
-  },
-  bottomSection: {
-    paddingHorizontal: 40,
-    paddingBottom: Platform.OS === 'ios' ? 50 : 40,
-    alignItems: 'center',
+    lineHeight: 28,
+    paddingHorizontal: 20,
   },
   pagination: {
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 32,
+    marginBottom: 24,
+    height: 8,
   },
   dot: {
     height: 8,
     borderRadius: 4,
-    transition: 'all 0.3s',
   },
-  button: {
-    width: '100%',
-    maxWidth: 320,
+  nextButton: {
     paddingVertical: 16,
+    paddingHorizontal: 32,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    width: '100%',
   },
-  buttonText: {
+  nextButtonText: {
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
 });

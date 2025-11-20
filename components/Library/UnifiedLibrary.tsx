@@ -621,13 +621,29 @@ export default function UnifiedLibrary({
           }
 
           // Brand not in aligned/unaligned arrays (middle-scoring brands)
-          // Look up full brand data from Firebase
-          const fullBrand = brands.find(b => b.id === entry.brandId);
-          const brandName = fullBrand?.name || (entry as any).brandName || (entry as any).name || 'Unknown Brand';
-          const brandCategory = fullBrand?.category || (entry as any).brandCategory || (entry as any).category || 'Uncategorized';
-          const logoUrl = getLogoUrl(fullBrand?.website || (entry as any).website || '');
+          // Look up full brand data from Firebase brands array
+          let fullBrand = brands.find(b => b.id === entry.brandId);
+
+          // If not found by ID, try to find by website (for brands that may have been updated)
+          if (!fullBrand && entry.website) {
+            fullBrand = brands.find(b => b.website && b.website.toLowerCase() === entry.website?.toLowerCase());
+          }
+
+          // If not found by website, try to find by name (case-insensitive)
+          if (!fullBrand && entry.brandName) {
+            fullBrand = brands.find(b => b.name.toLowerCase() === entry.brandName.toLowerCase());
+          }
+
+          // Use data from fullBrand if found, otherwise use stored entry data
+          const brandName = fullBrand?.name || entry.brandName || 'Unknown Brand';
+          const brandCategory = fullBrand?.category || entry.brandCategory || 'Uncategorized';
+          const website = fullBrand?.website || entry.website || '';
+          const logoUrl = entry.logoUrl || getLogoUrl(website);
           const alignmentScore = scoredBrands.get(entry.brandId) || 50;
           const scoreColor = alignmentScore >= 50 ? colors.primary : colors.danger;
+
+          // Use fullBrand.id if found, otherwise use entry.brandId for navigation
+          const navigationId = fullBrand?.id || entry.brandId;
 
           return (
             <TouchableOpacity
@@ -638,7 +654,7 @@ export default function UnifiedLibrary({
               onPress={() => {
                 router.push({
                   pathname: '/brand/[id]',
-                  params: { id: entry.brandId },
+                  params: { id: navigationId },
                 });
               }}
               activeOpacity={0.7}
@@ -1593,49 +1609,64 @@ export default function UnifiedLibrary({
 
     return (
       <>
-        {/* System Lists Container */}
-        <View style={[styles.systemListsContainer, {
-          backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
-        }]}>
-          {/* 1. Endorsement List - Always first, pinned */}
-          {endorsementList && renderListCard(
-            'endorsement',
-            endorsementTitle,
-            endorsementList.entries?.length || 0,
-            true,
-            `Endorsed by ${endorsementList.creatorName || 'you'}`,
-            endorsementList.description,
-            true, // Always public
-            profileImage
-          )}
+        {/* 1. Endorsement List - Always first, pinned */}
+        {endorsementList && (
+          <View style={[styles.individualListContainer, {
+            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+          }]}>
+            {renderListCard(
+              'endorsement',
+              endorsementTitle,
+              endorsementList.entries?.length || 0,
+              true,
+              `Endorsed by ${endorsementList.creatorName || 'you'}`,
+              endorsementList.description,
+              true, // Always public
+              profileImage
+            )}
+          </View>
+        )}
 
-          {/* 2. Aligned List */}
-          {alignedItems.length > 0 && renderListCard(
-            'aligned',
-            'Aligned',
-            alignedItems.length,
-            false,
-            undefined,
-            'Brands and businesses aligned with your values',
-            false, // Always private
-            undefined,
-            true
-          )}
+        {/* 2. Aligned List */}
+        {alignedItems.length > 0 && (
+          <View style={[styles.individualListContainer, {
+            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+          }]}>
+            {renderListCard(
+              'aligned',
+              'Aligned',
+              alignedItems.length,
+              false,
+              undefined,
+              'Brands and businesses aligned with your values',
+              false, // Always private
+              undefined,
+              true
+            )}
+          </View>
+        )}
 
-          {/* 3. Unaligned List */}
-          {unalignedItems.length > 0 && renderListCard(
-            'unaligned',
-            'Unaligned',
-            unalignedItems.length,
-            false,
-            undefined,
-            'Brands and businesses not aligned with your values',
-            false, // Always private
-            undefined,
-            true
-          )}
-        </View>
+        {/* 3. Unaligned List */}
+        {unalignedItems.length > 0 && (
+          <View style={[styles.individualListContainer, {
+            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+          }]}>
+            {renderListCard(
+              'unaligned',
+              'Unaligned',
+              unalignedItems.length,
+              false,
+              undefined,
+              'Brands and businesses not aligned with your values',
+              false, // Always private
+              undefined,
+              true
+            )}
+          </View>
+        )}
 
         {/* 4. Custom Lists */}
         {customLists.map(list => {
@@ -1906,9 +1937,9 @@ const styles = StyleSheet.create({
   libraryDirectory: {
     flex: 1,
   },
-  systemListsContainer: {
+  individualListContainer: {
     marginHorizontal: 12,
-    marginBottom: 16,
+    marginBottom: 12,
     borderRadius: 16,
     borderWidth: 1,
     padding: 8,
@@ -1948,7 +1979,7 @@ const styles = StyleSheet.create({
   listProfileImageContainer: {
     width: 64,
     height: 64,
-    borderRadius: 0,
+    borderRadius: 8,
     borderWidth: 0,
     justifyContent: 'center',
     alignItems: 'center',

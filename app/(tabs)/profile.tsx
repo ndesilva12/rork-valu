@@ -569,10 +569,8 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={[
               styles.tab,
-              {
-                backgroundColor: selectedTab === 'library' ? colors.backgroundSecondary : 'transparent',
-                borderColor: selectedTab === 'library' ? colors.primary : colors.border,
-              }
+              { borderColor: selectedTab === 'library' ? colors.primary : colors.border },
+              selectedTab === 'library' && styles.tabSelected
             ]}
             onPress={() => setSelectedTab('library')}
             activeOpacity={0.7}
@@ -589,10 +587,8 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={[
               styles.tab,
-              {
-                backgroundColor: selectedTab === 'following' ? colors.backgroundSecondary : 'transparent',
-                borderColor: selectedTab === 'following' ? colors.primary : colors.border,
-              }
+              { borderColor: selectedTab === 'following' ? colors.primary : colors.border },
+              selectedTab === 'following' && styles.tabSelected
             ]}
             onPress={() => setSelectedTab('following')}
             activeOpacity={0.7}
@@ -609,10 +605,8 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={[
               styles.tab,
-              {
-                backgroundColor: selectedTab === 'followers' ? colors.backgroundSecondary : 'transparent',
-                borderColor: selectedTab === 'followers' ? colors.primary : colors.border,
-              }
+              { borderColor: selectedTab === 'followers' ? colors.primary : colors.border },
+              selectedTab === 'followers' && styles.tabSelected
             ]}
             onPress={() => setSelectedTab('followers')}
             activeOpacity={0.7}
@@ -827,16 +821,20 @@ const styles = StyleSheet.create({
   tabSelector: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    marginBottom: 16,
     gap: 8,
   },
   tab: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 14,
     paddingHorizontal: 8,
     alignItems: 'center',
-    borderRadius: 8,
     borderWidth: 2,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+  },
+  tabSelected: {
+    // Selected tab styling - border color is applied dynamically
   },
   tabTitle: {
     fontSize: 13,
