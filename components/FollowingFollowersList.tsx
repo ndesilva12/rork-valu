@@ -106,16 +106,20 @@ export default function FollowingFollowersList({
               }
             }
           } else if (type === 'business') {
-            // Fetch business details
-            const businessRef = doc(db, 'businesses', entityId);
+            // Fetch business details from users collection
+            const businessRef = doc(db, 'users', entityId);
             const businessSnap = await getDoc(businessRef);
             if (businessSnap.exists()) {
-              const businessData = businessSnap.data();
-              enriched.name = businessData.name || 'Unknown Business';
-              enriched.category = businessData.category;
-              enriched.website = businessData.website;
-              enriched.logoUrl = getLogoUrl(businessData.website || '');
-              // Could calculate alignment based on endorsed brand
+              const userData = businessSnap.data();
+              if (userData.accountType === 'business' && userData.businessInfo) {
+                enriched.name = userData.businessInfo.name || 'Unknown Business';
+                enriched.category = userData.businessInfo.category;
+                enriched.website = userData.businessInfo.website;
+                enriched.logoUrl = userData.businessInfo.logoUrl || getLogoUrl(userData.businessInfo.website || '');
+                // Could calculate alignment based on endorsed brand
+              } else {
+                enriched.name = userData.fullName || 'Unknown Business';
+              }
             }
           } else if (type === 'user') {
             // Fetch user details
