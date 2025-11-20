@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, MapPin, Navigation, Percent, X, Plus, ChevronRight, List, UserPlus, MoreVertical, Share2 } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, MapPin, Navigation, Percent, X, Plus, ChevronRight, List, UserPlus, MoreVertical, Share2, Users } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -30,7 +30,8 @@ import { calculateAlignmentScore } from '@/services/firebase/businessService';
 import { getUserLists, addEntryToList } from '@/services/firebase/listService';
 import { calculateSimilarityScore, getSimilarityLabel, normalizeSimilarityScores } from '@/lib/scoring';
 import { getAllUserBusinesses } from '@/services/firebase/businessService';
-import { followEntity, unfollowEntity, isFollowing as checkIsFollowing } from '@/services/firebase/followService';
+import { followEntity, unfollowEntity, isFollowing as checkIsFollowing, getFollowersCount, getFollowingCount } from '@/services/firebase/followService';
+import FollowingFollowersList from '@/components/FollowingFollowersList';
 
 interface BusinessUser {
   id: string;
@@ -60,6 +61,10 @@ export default function BusinessDetailScreen() {
   const [allBusinesses, setAllBusinesses] = useState<BusinessUser[]>([]);
   const [isFollowingBusiness, setIsFollowingBusiness] = useState(false);
   const [checkingFollowStatus, setCheckingFollowStatus] = useState(true);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
 
   useEffect(() => {
     const fetchBusiness = async () => {
@@ -285,6 +290,23 @@ export default function BusinessDetailScreen() {
     };
     fetchAllBusinesses();
   }, []);
+
+  // Load follower/following counts when business loads
+  useEffect(() => {
+    const loadFollowCounts = async () => {
+      if (!business?.id) return;
+
+      try {
+        const followers = await getFollowersCount(business.id, 'business');
+        const following = await getFollowingCount(business.id);
+        setFollowersCount(followers);
+        setFollowingCount(following);
+      } catch (error) {
+        console.error('[BusinessDetail] Error loading follow counts:', error);
+      }
+    };
+    loadFollowCounts();
+  }, [business?.id]);
 
   const handleShopPress = async () => {
     if (!business?.businessInfo.website) return;
@@ -635,6 +657,37 @@ export default function BusinessDetailScreen() {
                 <Text style={[styles.socialButtonText, { color: colors.text }]}>YouTube</Text>
               </TouchableOpacity>
             )}
+          </View>
+
+          {/* Follower/Following Counters */}
+          <View style={styles.followCountsContainer}>
+            <TouchableOpacity
+              style={[styles.followCountButton, { borderColor: colors.border }]}
+              onPress={() => setShowFollowersModal(true)}
+              activeOpacity={0.7}
+            >
+              <Users size={16} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.followCountNumber, { color: colors.text }]}>
+                {followersCount}
+              </Text>
+              <Text style={[styles.followCountLabel, { color: colors.textSecondary }]}>
+                Followers
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.followCountButton, { borderColor: colors.border }]}
+              onPress={() => setShowFollowingModal(true)}
+              activeOpacity={0.7}
+            >
+              <Users size={16} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.followCountNumber, { color: colors.text }]}>
+                {followingCount}
+              </Text>
+              <Text style={[styles.followCountLabel, { color: colors.textSecondary }]}>
+                Following
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Endorse Discount Section */}
@@ -1085,6 +1138,61 @@ export default function BusinessDetailScreen() {
             </TouchableOpacity>
           </Pressable>
         </Pressable>
+      </Modal>
+
+      {/* Followers Modal */}
+      <Modal
+        visible={showFollowersModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowFollowersModal(false)}
+      >
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Followers</Text>
+            <TouchableOpacity onPress={() => setShowFollowersModal(false)}>
+              <X size={24} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+          <View style={{ flex: 1, padding: 16 }}>
+            {business?.id && (
+              <FollowingFollowersList
+                mode="followers"
+                userId={business.id}
+                entityType="business"
+                isDarkMode={isDarkMode}
+                userCauses={profile?.causes || []}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Following Modal */}
+      <Modal
+        visible={showFollowingModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowFollowingModal(false)}
+      >
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Following</Text>
+            <TouchableOpacity onPress={() => setShowFollowingModal(false)}>
+              <X size={24} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+          <View style={{ flex: 1, padding: 16 }}>
+            {business?.id && (
+              <FollowingFollowersList
+                mode="following"
+                userId={business.id}
+                isDarkMode={isDarkMode}
+                userCauses={profile?.causes || []}
+              />
+            )}
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -1626,6 +1734,30 @@ const styles = StyleSheet.create({
   },
   actionMenuItemText: {
     fontSize: 16,
+    fontWeight: '500' as const,
+  },
+  followCountsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  followCountButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  followCountNumber: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  followCountLabel: {
+    fontSize: 13,
     fontWeight: '500' as const,
   },
 });

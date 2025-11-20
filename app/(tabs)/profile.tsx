@@ -578,7 +578,7 @@ export default function ProfileScreen() {
               Library
             </Text>
             <Text style={[styles.tabCount, { color: colors.textSecondary }]}>
-              {(library.state.userLists?.length || 0) + (library.state.endorsementList ? 1 : 0)}
+              {3 + (library.state.userLists?.length || 0)}
             </Text>
           </TouchableOpacity>
 
