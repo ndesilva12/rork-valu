@@ -136,7 +136,7 @@ export default function HomeScreen() {
   const { profile, isDarkMode, clerkUser, markIntroAsSeen } = useUser();
   const library = useLibrary();
   const colors = isDarkMode ? darkColors : lightColors;
-  const [mainView, setMainView] = useState<MainView>('forYou');
+  const [mainView, setMainView] = useState<MainView>('myLibrary');
   const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
   const [showWelcomeCarousel, setShowWelcomeCarousel] = useState(false);
   const [userPersonalList, setUserPersonalList] = useState<UserList | null>(null);
