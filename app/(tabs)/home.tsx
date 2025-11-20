@@ -222,19 +222,21 @@ export default function HomeScreen() {
 
   // Check if user should see welcome carousel
   useEffect(() => {
-    // Only show carousel if:
-    // 1. User has completed values selection (has causes)
-    // 2. User hasn't seen the intro before
-    // 3. User is logged in
-    if (clerkUser && profile.causes && profile.causes.length > 0 && !profile.hasSeenIntro) {
+    // Only show carousel if hasSeenIntro is EXPLICITLY false (new users from onboarding)
+    // If it's undefined (existing users), treat as already seen
+    if (clerkUser && profile.causes && profile.causes.length > 0 && profile.hasSeenIntro === false) {
       console.log('[HomeScreen] First time user, showing welcome carousel');
       setShowWelcomeCarousel(true);
       // Navigate to aligned list view
       setMainView('myLibrary');
       setExpandedListId('aligned');
       setSelectedListId('aligned');
+    } else if (clerkUser && profile.hasSeenIntro === undefined) {
+      // For existing users without this flag, mark as seen immediately
+      console.log('[HomeScreen] Existing user, marking intro as seen');
+      markIntroAsSeen();
     }
-  }, [clerkUser, profile.causes, profile.hasSeenIntro]);
+  }, [clerkUser, profile.causes, profile.hasSeenIntro, markIntroAsSeen]);
 
   const handleWelcomeComplete = async () => {
     setShowWelcomeCarousel(false);

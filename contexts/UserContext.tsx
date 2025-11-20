@@ -219,8 +219,15 @@ export const [UserProvider, useUser] = createContextHook(() => {
     // Use functional update to avoid stale closure
     let newProfile: UserProfile | null = null;
     setProfile((prevProfile) => {
-      newProfile = { ...prevProfile, causes };
-      console.log('[UserContext] Updated profile with causes. PromoCode:', newProfile!.promoCode);
+      // If this is a new user completing onboarding (no causes before), set hasSeenIntro to false
+      const isCompletingOnboarding = !prevProfile.causes || prevProfile.causes.length === 0;
+      newProfile = {
+        ...prevProfile,
+        causes,
+        // Set hasSeenIntro to false for new users so they see the welcome carousel
+        hasSeenIntro: isCompletingOnboarding ? false : prevProfile.hasSeenIntro,
+      };
+      console.log('[UserContext] Updated profile with causes. PromoCode:', newProfile!.promoCode, 'hasSeenIntro:', newProfile!.hasSeenIntro);
       return newProfile;
     });
     setHasCompletedOnboarding(causes.length > 0);
