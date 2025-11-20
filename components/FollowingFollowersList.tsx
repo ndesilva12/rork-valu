@@ -11,16 +11,21 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  Alert,
+  Share,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { MoreVertical, UserPlus, UserMinus, Share2, Award } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
-import { getFollowing, getFollowers, Follow } from '@/services/firebase/followService';
+import { getFollowing, getFollowers, Follow, followEntity, unfollowEntity, isFollowing } from '@/services/firebase/followService';
 import { useData } from '@/contexts/DataContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateBrandScore } from '@/lib/scoring';
+import ItemOptionsModal from '@/components/ItemOptionsModal';
+import { useUser } from '@/contexts/UserContext';
 
 type FilterType = 'all' | 'brand' | 'business' | 'user';
 
@@ -51,10 +56,13 @@ export default function FollowingFollowersList({
   const colors = isDarkMode ? darkColors : lightColors;
   const router = useRouter();
   const { brands, valuesMatrix } = useData();
+  const { clerkUser } = useUser();
 
   const [loading, setLoading] = useState(true);
   const [follows, setFollows] = useState<EnrichedFollow[]>([]);
   const [filterType, setFilterType] = useState<FilterType>('all');
+  const [selectedFollow, setSelectedFollow] = useState<EnrichedFollow | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     loadFollows();
@@ -156,6 +164,77 @@ export default function FollowingFollowersList({
     });
   }, [follows, filterType, mode]);
 
+  const handleFollowToggle = async (follow: EnrichedFollow) => {
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'You must be logged in to follow/unfollow');
+      return;
+    }
+
+    const entityId = mode === 'following' ? follow.followedId : follow.followerId;
+    const type = mode === 'following' ? follow.followedType : 'user';
+
+    try {
+      // Check current follow status
+      const isCurrentlyFollowing = await isFollowing(clerkUser.id, entityId, type);
+
+      if (isCurrentlyFollowing) {
+        await unfollowEntity(clerkUser.id, entityId, type);
+        Alert.alert('Success', `Unfollowed ${follow.name}`);
+      } else {
+        await followEntity(clerkUser.id, entityId, type);
+        Alert.alert('Success', `Following ${follow.name}`);
+      }
+
+      // Reload the list
+      await loadFollows();
+    } catch (error) {
+      console.error('[FollowingFollowersList] Error toggling follow:', error);
+      Alert.alert('Error', 'Failed to update follow status');
+    }
+  };
+
+  const handleShare = async (follow: EnrichedFollow) => {
+    const entityId = mode === 'following' ? follow.followedId : follow.followerId;
+    const type = mode === 'following' ? follow.followedType : 'user';
+
+    let shareUrl = '';
+    if (type === 'brand') {
+      shareUrl = `upright-money://brand/${entityId}`;
+    } else if (type === 'business') {
+      shareUrl = `upright-money://business/${entityId}`;
+    } else if (type === 'user') {
+      shareUrl = `upright-money://user/${entityId}`;
+    }
+
+    try {
+      await Share.share({
+        message: `Check out ${follow.name} on Upright Money: ${shareUrl}`,
+        title: follow.name,
+      });
+    } catch (error) {
+      console.error('[FollowingFollowersList] Error sharing:', error);
+    }
+  };
+
+  const handleEndorse = async (follow: EnrichedFollow) => {
+    const entityId = mode === 'following' ? follow.followedId : follow.followerId;
+    const type = mode === 'following' ? follow.followedType : 'user';
+
+    // Navigate to appropriate endorsement flow
+    if (type === 'brand') {
+      router.push({ pathname: '/brand/[id]', params: { id: entityId } });
+    } else if (type === 'business') {
+      router.push({ pathname: '/business/[id]', params: { id: entityId } });
+    } else {
+      Alert.alert('Info', 'User endorsement coming soon');
+    }
+  };
+
+  const handleOpenMenu = (follow: EnrichedFollow) => {
+    setSelectedFollow(follow);
+    setModalVisible(true);
+  };
+
   const renderFollowCard = (follow: EnrichedFollow) => {
     const type = mode === 'following' ? follow.followedType : 'user';
     const entityId = mode === 'following' ? follow.followedId : follow.followerId;
@@ -177,7 +256,7 @@ export default function FollowingFollowersList({
     return (
       <TouchableOpacity
         key={follow.id}
-        style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}
+        style={[styles.card, { backgroundColor: 'transparent' }]}
         onPress={handlePress}
         activeOpacity={0.7}
       >
@@ -216,6 +295,18 @@ export default function FollowingFollowersList({
               </Text>
             </View>
           )}
+
+          {/* Action Menu Button */}
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleOpenMenu(follow);
+            }}
+            activeOpacity={0.7}
+          >
+            <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
@@ -307,6 +398,36 @@ export default function FollowingFollowersList({
       <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
         {filteredFollows.map(renderFollowCard)}
       </ScrollView>
+
+      {/* Action Menu Modal */}
+      {selectedFollow && (
+        <ItemOptionsModal
+          visible={modalVisible}
+          onClose={() => {
+            setModalVisible(false);
+            setSelectedFollow(null);
+          }}
+          itemName={selectedFollow.name}
+          isDarkMode={isDarkMode}
+          options={[
+            {
+              icon: Share2,
+              label: 'Share',
+              onPress: () => handleShare(selectedFollow),
+            },
+            {
+              icon: UserPlus,
+              label: 'Follow/Unfollow',
+              onPress: () => handleFollowToggle(selectedFollow),
+            },
+            {
+              icon: Award,
+              label: 'Endorse',
+              onPress: () => handleEndorse(selectedFollow),
+            },
+          ]}
+        />
+      )}
     </View>
   );
 }
@@ -355,11 +476,6 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 12,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
   },
   cardContent: {
     flexDirection: 'row',
@@ -400,5 +516,9 @@ const styles = StyleSheet.create({
   score: {
     fontSize: 24,
     fontWeight: '700',
+  },
+  menuButton: {
+    padding: 8,
+    marginLeft: 8,
   },
 });

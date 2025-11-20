@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, ThumbsUp, MapPin, Plus, X, ChevronRight, List, UserPlus, MoreVertical, Share2 } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, ThumbsUp, MapPin, Plus, X, ChevronRight, List, UserPlus, MoreVertical, Share2, Users } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -26,7 +26,8 @@ import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { getLogoUrl } from '@/lib/logo';
 import { getUserLists, addEntryToList } from '@/services/firebase/listService';
 import { calculateBrandScore, getBrandScoreLabel, getBrandScoreColor, normalizeBrandScores } from '@/lib/scoring';
-import { followEntity, unfollowEntity, isFollowing as checkIsFollowing } from '@/services/firebase/followService';
+import { followEntity, unfollowEntity, isFollowing as checkIsFollowing, getFollowersCount, getFollowingCount } from '@/services/firebase/followService';
+import FollowingFollowersList from '@/components/FollowingFollowersList';
 
 export default function BrandDetailScreen() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
@@ -175,6 +176,10 @@ export default function BrandDetailScreen() {
   const [isFollowingBrand, setIsFollowingBrand] = useState(false);
   const [checkingFollowStatus, setCheckingFollowStatus] = useState(true);
   const [isEndorsingBrand, setIsEndorsingBrand] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -305,6 +310,23 @@ export default function BrandDetailScreen() {
     );
     setIsEndorsingBrand(brandIsEndorsed);
   }, [brand?.id, library.state.endorsementList]);
+
+  // Load follower/following counts when brand loads
+  useEffect(() => {
+    const loadFollowCounts = async () => {
+      if (!brand?.id) return;
+
+      try {
+        const followers = await getFollowersCount(brand.id, 'brand');
+        const following = await getFollowingCount(brand.id);
+        setFollowersCount(followers);
+        setFollowingCount(following);
+      } catch (error) {
+        console.error('[BrandDetail] Error loading follow counts:', error);
+      }
+    };
+    loadFollowCounts();
+  }, [brand?.id]);
 
   const handleShopPress = async () => {
     if (!brand) return;
@@ -646,6 +668,37 @@ export default function BrandDetailScreen() {
               activeOpacity={0.7}
             >
               <Text style={[styles.socialButtonText, { color: colors.text }]}>Facebook</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Follower/Following Counters */}
+          <View style={styles.followCountsContainer}>
+            <TouchableOpacity
+              style={[styles.followCountButton, { borderColor: colors.border }]}
+              onPress={() => setShowFollowersModal(true)}
+              activeOpacity={0.7}
+            >
+              <Users size={16} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.followCountNumber, { color: colors.text }]}>
+                {followersCount}
+              </Text>
+              <Text style={[styles.followCountLabel, { color: colors.textSecondary }]}>
+                Followers
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.followCountButton, { borderColor: colors.border }]}
+              onPress={() => setShowFollowingModal(true)}
+              activeOpacity={0.7}
+            >
+              <Users size={16} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.followCountNumber, { color: colors.text }]}>
+                {followingCount}
+              </Text>
+              <Text style={[styles.followCountLabel, { color: colors.textSecondary }]}>
+                Following
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -1015,6 +1068,61 @@ export default function BrandDetailScreen() {
             </TouchableOpacity>
           </Pressable>
         </Pressable>
+      </Modal>
+
+      {/* Followers Modal */}
+      <Modal
+        visible={showFollowersModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowFollowersModal(false)}
+      >
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Followers</Text>
+            <TouchableOpacity onPress={() => setShowFollowersModal(false)}>
+              <X size={24} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+          <View style={{ flex: 1, padding: 16 }}>
+            {brand?.id && (
+              <FollowingFollowersList
+                mode="followers"
+                userId={brand.id}
+                entityType="brand"
+                isDarkMode={isDarkMode}
+                userCauses={profile?.causes || []}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Following Modal */}
+      <Modal
+        visible={showFollowingModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowFollowingModal(false)}
+      >
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Following</Text>
+            <TouchableOpacity onPress={() => setShowFollowingModal(false)}>
+              <X size={24} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+          <View style={{ flex: 1, padding: 16 }}>
+            {brand?.id && (
+              <FollowingFollowersList
+                mode="following"
+                userId={brand.id}
+                isDarkMode={isDarkMode}
+                userCauses={profile?.causes || []}
+              />
+            )}
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -1585,6 +1693,30 @@ const styles = StyleSheet.create({
   },
   actionMenuItemText: {
     fontSize: 16,
+    fontWeight: '500' as const,
+  },
+  followCountsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  followCountButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  followCountNumber: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  followCountLabel: {
+    fontSize: 13,
     fontWeight: '500' as const,
   },
 });
