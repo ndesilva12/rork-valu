@@ -160,7 +160,7 @@ export default function HomeScreen() {
   const [hasSetDefaultExpansion, setHasSetDefaultExpansion] = useState(false); // Track if we've set default expansion
   const [showCreateListModal, setShowCreateListModal] = useState(false);
   const [libraryView, setLibraryView] = useState<'overview' | 'detail'>('overview');
-  const [selectedList, setSelectedList] = useState<UserList | 'browse' | null>(null);
+  const [selectedList, setSelectedList] = useState<UserList | null>(null);
   const [newListName, setNewListName] = useState('');
   const [newListDescription, setNewListDescription] = useState('');
   const [isLoadingLists, setIsLoadingLists] = useState(false);
@@ -212,9 +212,6 @@ export default function HomeScreen() {
   // Share modal state
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareData, setShareData] = useState<{ url: string; title: string; description?: string } | null>(null);
-
-  // Welcome carousel state
-  const [showWelcomeCarousel, setShowWelcomeCarousel] = useState(false);
 
   // Card Action Menu state
   const [activeCardMenuId, setActiveCardMenuId] = useState<string | null>(null);
@@ -303,11 +300,11 @@ export default function HomeScreen() {
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (!over || active.id === over.id || !selectedList || selectedList === 'browse') {
+    if (!over || active.id === over.id || !selectedList) {
       return;
     }
 
-    const list = selectedList as UserList;
+    const list = selectedList;
     const oldIndex = list.entries.findIndex((entry) => entry.id === active.id);
     const newIndex = list.entries.findIndex((entry) => entry.id === over.id);
 
@@ -1344,8 +1341,8 @@ export default function HomeScreen() {
   };
 
   const handleOpenRenameModal = () => {
-    if (selectedList && selectedList !== 'browse') {
-      const list = selectedList as UserList;
+    if (selectedList) {
+      const list = selectedList;
       setRenameListName(list.name);
       setRenameListDescription(list.description || '');
       setShowListOptionsMenu(false);
@@ -1359,8 +1356,8 @@ export default function HomeScreen() {
       return;
     }
 
-    if (selectedList && selectedList !== 'browse') {
-      const list = selectedList as UserList;
+    if (selectedList) {
+      const list = selectedList;
       try {
         await updateListMetadata(list.id, {
           name: renameListName.trim(),
@@ -1387,8 +1384,8 @@ export default function HomeScreen() {
   };
 
   const handleUpdateDescription = async () => {
-    if (selectedList && selectedList !== 'browse') {
-      const list = selectedList as UserList;
+    if (selectedList) {
+      const list = selectedList;
       try {
         await updateListMetadata(list.id, {
           description: descriptionText.trim(),
@@ -1413,8 +1410,8 @@ export default function HomeScreen() {
   };
 
   const handleDeleteCurrentList = () => {
-    if (selectedList && selectedList !== 'browse') {
-      const list = selectedList as UserList;
+    if (selectedList) {
+      const list = selectedList;
       setShowListOptionsMenu(false);
       setShowEditDropdown(false);
       handleDeleteList(list.id);
@@ -1557,7 +1554,7 @@ export default function HomeScreen() {
     }
   };
 
-  const handleOpenList = (list: UserList | 'browse') => {
+  const handleOpenList = (list: UserList) => {
     setSelectedList(list);
     setLibraryView('detail');
     // Scroll to top when opening a list
@@ -1602,8 +1599,8 @@ export default function HomeScreen() {
   };
 
   const handleMoveEntryUp = async (entryIndex: number) => {
-    if (selectedList && selectedList !== 'browse' && entryIndex > 0) {
-      const list = selectedList as UserList;
+    if (selectedList && entryIndex > 0) {
+      const list = selectedList;
       const newEntries = [...list.entries];
       const temp = newEntries[entryIndex];
       newEntries[entryIndex] = newEntries[entryIndex - 1];
@@ -1626,8 +1623,8 @@ export default function HomeScreen() {
   };
 
   const handleMoveEntryDown = async (entryIndex: number) => {
-    if (selectedList && selectedList !== 'browse') {
-      const list = selectedList as UserList;
+    if (selectedList) {
+      const list = selectedList;
       if (entryIndex < list.entries.length - 1) {
         const newEntries = [...list.entries];
         const temp = newEntries[entryIndex];
@@ -1652,8 +1649,8 @@ export default function HomeScreen() {
   };
 
   const handleDeleteEntry = async (entryId: string) => {
-    if (selectedList && selectedList !== 'browse') {
-      const list = selectedList as UserList;
+    if (selectedList) {
+      const list = selectedList;
       setActiveItemOptionsMenu(null); // Close modal first
 
       // Use native confirm/alert for web, Alert.alert for mobile
@@ -1826,8 +1823,8 @@ export default function HomeScreen() {
     setActiveCardMenuId(null);
 
     // Find the entry in the current list
-    if (selectedList && selectedList !== 'browse') {
-      const list = selectedList as UserList;
+    if (selectedList) {
+      const list = selectedList;
       const entry = list.entries.find(e =>
         (e.type === 'brand' && 'brandId' in e && e.brandId === cardMenuData.id) ||
         (e.type === 'business' && 'businessId' in e && e.businessId === cardMenuData.id)
@@ -1883,8 +1880,8 @@ export default function HomeScreen() {
     setShowValueModeModal(false);
 
     // If coming from Add Item modal, add directly to the current list
-    if (selectedList && selectedList !== 'browse' && quickAddItem) {
-      const list = selectedList as UserList;
+    if (selectedList && quickAddItem) {
+      const list = selectedList;
       handleAddItemSubmit({ valueId: quickAddItem.id, name: quickAddItem.name, mode });
     } else {
       // Otherwise, show the quick add modal to select a list
@@ -2190,7 +2187,7 @@ export default function HomeScreen() {
 
   // Add item modal handlers
   const handleOpenAddItemModal = () => {
-    if (selectedList && selectedList !== 'browse') {
+    if (selectedList) {
       setShowAddItemModal(true);
       setAddItemType(null);
       setAddItemSearchQuery('');
@@ -2206,9 +2203,9 @@ export default function HomeScreen() {
   };
 
   const handleAddItemSubmit = async (itemData: any) => {
-    if (!selectedList || selectedList === 'browse') return;
+    if (!selectedList) return;
 
-    const list = selectedList as UserList;
+    const list = selectedList;
 
     try {
       let entry: any;
@@ -2324,54 +2321,8 @@ export default function HomeScreen() {
   const renderListDetailView = () => {
     if (!selectedList) return null;
 
-    // Browse list - show categories with aligned brands
-    if (selectedList === 'browse') {
-      return (
-        <View style={styles.section}>
-          <View style={styles.listDetailHeader}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={handleBackToLibrary}
-              activeOpacity={0.7}
-            >
-              <ArrowLeft
-                size={28}
-                color={colors.primary}
-                strokeWidth={2.5}
-              />
-              <Text style={[styles.backButtonText, { color: colors.primary }]}>Library</Text>
-            </TouchableOpacity>
-
-            <View style={styles.listDetailTitleCentered}>
-              <Text style={[styles.listDetailTitle, { color: colors.text }]}>Browse</Text>
-            </View>
-          </View>
-
-          <ScrollView style={styles.listDetailContent}>
-            {FOLDER_CATEGORIES.map((category) => {
-              const categoryBrands = categorizedBrands.get(category.id) || [];
-              if (categoryBrands.length === 0) return null;
-
-              return (
-                <View key={category.id} style={styles.browseCategory}>
-                  <View style={styles.browseCategoryHeader}>
-                    <Text style={[styles.browseCategoryTitle, { color: colors.text }]}>
-                      {category.name}
-                    </Text>
-                  </View>
-                  <View style={styles.brandsContainer}>
-                    {categoryBrands.slice(0, 5).map((product) => renderBrandCard(product, 'support'))}
-                  </View>
-                </View>
-              );
-            })}
-          </ScrollView>
-        </View>
-      );
-    }
-
     // User list detail
-    const list = selectedList as UserList;
+    const list = selectedList;
 
     // Check if this list was generated from values
     const isValuesGeneratedList = list.metadata?.generatedFrom === 'values';
@@ -2953,232 +2904,19 @@ export default function HomeScreen() {
   };
 
   const renderMyLibraryView = () => {
-    // If viewing a list detail, show that instead
-    if (libraryView === 'detail') {
-      return renderListDetailView();
-    }
-
-    // Otherwise show the library overview
-    if (isLoadingLists) {
-      return (
-        <View style={styles.section}>
-          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
-            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-              Loading your lists...
-            </Text>
-          </View>
-        </View>
-      );
-    }
-
+    // Use UnifiedLibrary component (matches Profile tab and For You view)
     return (
-      <View style={styles.section}>
-        {/* Done button when in reorder mode */}
-        {isLibraryReorderMode && (
-          <View style={styles.libraryHeader}>
-            <TouchableOpacity
-              onPress={() => setIsLibraryReorderMode(false)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.libraryDoneButton, { color: colors.primary }]}>Done</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <View style={styles.listsContainer}>
-          {/* User Lists */}
-          {userLists.length === 0 ? (
-            <>
-              {/* Browse List - Second position when no user lists */}
-              <TouchableOpacity
-                style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                onPress={() => handleOpenList('browse')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.listCardContent}>
-                  <View style={styles.listCardHeader}>
-                    <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
-                      <FolderOpen size={20} color={colors.primary} strokeWidth={2} />
-                    </View>
-                    <View style={styles.listCardInfo}>
-                      <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
-                        Browse
-                      </Text>
-                      <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
-                        All categories • {allSupport.length} aligned brands
-                      </Text>
-                    </View>
-                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-                  </View>
-                </View>
-              </TouchableOpacity>
-
-              <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
-                <List size={48} color={colors.textSecondary} strokeWidth={1.5} />
-                <Text style={[styles.placeholderTitle, { color: colors.text }]}>No Custom Lists Yet</Text>
-                <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-                  Create custom lists to organize brands, businesses, values, links, and notes.
-                </Text>
-              </View>
-            </>
-          ) : (
-            (() => {
-              // Separate endorsed list from other lists
-              const endorsedList = userLists.find(list => list.isEndorsed);
-              const otherLists = userLists.filter(list => !list.isEndorsed);
-
-              return (
-                <>
-                  {/* 1. Endorsed List - Always first */}
-                  {endorsedList && (
-                    <TouchableOpacity
-                      key={endorsedList.id}
-                      style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                      onPress={() => handleOpenList(endorsedList)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={styles.listCardContent}>
-                        <View style={styles.listCardHeader}>
-                          <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
-                            <List size={20} color={colors.white} strokeWidth={2} />
-                          </View>
-                          <View style={styles.listCardInfo}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                              <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
-                                {endorsedList.name}
-                              </Text>
-                              <EndorsedBadge isDarkMode={isDarkMode} size="small" />
-                            </View>
-                            <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
-                              {endorsedList.entries.length} {endorsedList.entries.length === 1 ? 'item' : 'items'}
-                            </Text>
-                            {endorsedList.description && (
-                              <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                                {endorsedList.description}
-                              </Text>
-                            )}
-                          </View>
-                          <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  )}
-
-                  {/* 2. Browse List - Always second */}
-                  <TouchableOpacity
-                    style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                    onPress={() => handleOpenList('browse')}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.listCardContent}>
-                      <View style={styles.listCardHeader}>
-                        <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
-                          <FolderOpen size={20} color={colors.white} strokeWidth={2} />
-                        </View>
-                        <View style={styles.listCardInfo}>
-                          <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
-                            Browse
-                          </Text>
-                          <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                            Browse your aligned brands based on your current value selections.
-                          </Text>
-                        </View>
-                        <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-
-                  {/* 3. All other user lists */}
-                  {otherLists.map((list, index) => (
-              <View
-                key={list.id}
-                style={[
-                  styles.listCardWrapper,
-                  activeCardOptionsMenu === list.id && !isLibraryReorderMode && { zIndex: 1000 }
-                ]}
-              >
-                <TouchableOpacity
-                  style={[styles.listCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                  onPress={() => !isLibraryReorderMode && handleOpenList(list)}
-                  activeOpacity={0.7}
-                  disabled={isLibraryReorderMode}
-                >
-                  <View style={styles.listCardContentRow}>
-                    <View style={styles.listCardContent}>
-                      <View style={styles.listCardHeader}>
-                        <View style={[styles.listIconContainer, { backgroundColor: colors.primary }]}>
-                          <List size={20} color={colors.white} strokeWidth={2} />
-                        </View>
-                        <View style={styles.listCardInfo}>
-                          <Text style={[styles.listCardTitle, { color: colors.text }]} numberOfLines={1}>
-                            {list.name}
-                          </Text>
-                          <Text style={[styles.listCardCount, { color: colors.textSecondary }]}>
-                            {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
-                          </Text>
-                          {list.creatorName && (
-                            <Text style={[styles.listCardCreatedBy, { color: colors.textSecondary }]} numberOfLines={1}>
-                              created by {list.creatorName}
-                            </Text>
-                          )}
-                          {list.description && (
-                            <Text style={[styles.listCardDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                              {list.description}
-                            </Text>
-                          )}
-                        </View>
-                      </View>
-                    </View>
-                    {!isLibraryReorderMode && (
-                      <TouchableOpacity
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          setActiveCardOptionsMenu(activeCardOptionsMenu === list.id ? null : list.id);
-                        }}
-                        activeOpacity={0.7}
-                        style={styles.listCardOptionsButton}
-                      >
-                        <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                      </TouchableOpacity>
-                    )}
-                    {isLibraryReorderMode && (
-                      <View style={styles.listCardRearrangeButtons}>
-                        <TouchableOpacity
-                          onPress={() => handleMoveListUp(index)}
-                          disabled={index === 0}
-                          style={styles.rearrangeButton}
-                          activeOpacity={0.7}
-                        >
-                          <ChevronUp
-                            size={20}
-                            color={index === 0 ? colors.textSecondary : colors.text}
-                            strokeWidth={2}
-                          />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => handleMoveListDown(index)}
-                          disabled={index === otherLists.length - 1}
-                          style={styles.rearrangeButton}
-                          activeOpacity={0.7}
-                        >
-                          <ChevronDown
-                            size={20}
-                            color={index === otherLists.length - 1 ? colors.textSecondary : colors.text}
-                            strokeWidth={2}
-                          />
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              </View>
-            ))}
-                </>
-              );
-            })()
-          )}
-        </View>
-      </View>
+      <UnifiedLibrary
+        mode="edit"
+        currentUserId={clerkUser?.id}
+        alignedItems={allSupport}
+        unalignedItems={allAvoidFull}
+        isDarkMode={isDarkMode}
+        profileImage={profile?.userDetails?.profileImage || clerkUser?.imageUrl}
+        userBusinesses={userBusinesses}
+        scoredBrands={scoredBrands}
+        userCauses={profile?.causes || []}
+      />
     );
   };
 
@@ -3451,8 +3189,8 @@ export default function HomeScreen() {
             <View style={[styles.dropdownModalContent, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
               {(() => {
                 // Find the entry to get its details
-                if (!activeItemOptionsMenu || !selectedList || selectedList === 'browse') return null;
-                const list = selectedList as UserList;
+                if (!activeItemOptionsMenu || !selectedList) return null;
+                const list = selectedList;
                 const entry = list.entries.find(e => e.id === activeItemOptionsMenu);
                 if (!entry) return null;
 
@@ -6671,24 +6409,6 @@ const styles = StyleSheet.create({
   linkUrl: {
     fontSize: 12,
     flex: 1,
-  },
-  // Browse list styles
-  browseCategory: {
-    marginBottom: 20,
-  },
-  browseCategoryHeader: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  browseCategoryTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    textAlign: 'center' as const,
-  },
-  browseCategoryCount: {
-    fontSize: 13,
-    fontWeight: '600' as const,
   },
   // Library header styles
   libraryHeader: {
