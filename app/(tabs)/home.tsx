@@ -81,6 +81,7 @@ import * as Clipboard from 'expo-clipboard';
 import MenuButton from '@/components/MenuButton';
 import EndorsedBadge from '@/components/EndorsedBadge';
 import ShareModal from '@/components/ShareModal';
+import WelcomeCarousel from '@/components/WelcomeCarousel';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
@@ -210,6 +211,9 @@ export default function HomeScreen() {
   // Share modal state
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareData, setShareData] = useState<{ url: string; title: string; description?: string } | null>(null);
+
+  // Welcome carousel state
+  const [showWelcomeCarousel, setShowWelcomeCarousel] = useState(false);
 
   // Card Action Menu state
   const [activeCardMenuId, setActiveCardMenuId] = useState<string | null>(null);
@@ -410,6 +414,32 @@ export default function HomeScreen() {
 
     loadPersonalList();
   }, [clerkUser?.id, clerkUser?.unsafeMetadata?.fullName, clerkUser?.firstName, clerkUser?.lastName, profile?.userDetails?.name]);
+
+  // Check if we should show the welcome carousel (only once for new users)
+  useEffect(() => {
+    const checkWelcomeCarousel = async () => {
+      if (!clerkUser?.id) return;
+
+      const welcomeCarouselKey = `welcomeCarouselShown_${clerkUser.id}`;
+      const hasSeenCarousel = await AsyncStorage.getItem(welcomeCarouselKey);
+
+      // Show carousel only if user has never seen it
+      if (hasSeenCarousel === null) {
+        setShowWelcomeCarousel(true);
+      }
+    };
+
+    checkWelcomeCarousel();
+  }, [clerkUser?.id]);
+
+  // Handle carousel completion
+  const handleCarouselComplete = async () => {
+    if (clerkUser?.id) {
+      const welcomeCarouselKey = `welcomeCarouselShown_${clerkUser.id}`;
+      await AsyncStorage.setItem(welcomeCarouselKey, 'true');
+      setShowWelcomeCarousel(false);
+    }
+  };
 
   // Function to fetch user businesses
   const fetchUserBusinesses = useCallback(async () => {
@@ -5006,6 +5036,13 @@ export default function HomeScreen() {
         shareUrl={shareData?.url || ''}
         title={shareData?.title || ''}
         description={shareData?.description}
+        isDarkMode={isDarkMode}
+      />
+
+      {/* Welcome Carousel - Show only once for new users */}
+      <WelcomeCarousel
+        visible={showWelcomeCarousel}
+        onComplete={handleCarouselComplete}
         isDarkMode={isDarkMode}
       />
     </View>
