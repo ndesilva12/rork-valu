@@ -1,6 +1,6 @@
 /**
  * WelcomeCarousel Component
- * Shows a 3-slide intro to the app for first-time users
+ * Shows a 4-slide intro to the app for first-time users
  */
 import React, { useState, useRef } from 'react';
 import {
@@ -15,7 +15,7 @@ import {
   NativeSyntheticEvent,
   Platform,
 } from 'react-native';
-import { TrendingUp, List, Percent, X } from 'lucide-react-native';
+import { TrendingUp, List, Percent, X, Search } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -45,6 +45,12 @@ const slides: Slide[] = [
     title: 'Build Your Endorsements',
     description: 'Build your list of endorsements of brands and local businesses you support.',
     color: '#3B82F6', // blue
+  },
+  {
+    icon: Search,
+    title: 'Discover & Connect',
+    description: 'Use the Value Machine or find your friends in order to discover new brands or gift ideas.',
+    color: '#F59E0B', // orange
   },
   {
     icon: Percent,
