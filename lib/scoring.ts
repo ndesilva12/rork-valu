@@ -94,11 +94,12 @@ export function calculateBrandScore(
 }
 
 /**
- * Normalize an array of brand scores to 1-99 range for better visual separation
- * The highest score becomes 99, lowest becomes 1, others distributed proportionally
+ * Normalize brand scores using percentile ranking for better visual distribution
+ * Assigns scores from 1-99 based purely on ranking, ensuring proper separation
+ * regardless of how clustered the raw scores are
  *
  * @param brandsWithScores - Array of {brand, score} objects
- * @returns Array with normalized scores (1-99)
+ * @returns Array with percentile-based scores (1-99)
  */
 export function normalizeBrandScores(
   brandsWithScores: Array<{ brand: any; score: number }>
@@ -108,22 +109,21 @@ export function normalizeBrandScores(
     return [{ ...brandsWithScores[0], score: 50 }]; // Single brand = neutral
   }
 
-  // Find min and max scores
-  const scores = brandsWithScores.map(b => b.score);
-  const minScore = Math.min(...scores);
-  const maxScore = Math.max(...scores);
+  // Sort by score (descending) to establish ranking
+  const sorted = [...brandsWithScores].sort((a, b) => b.score - a.score);
 
-  // If all scores are the same, return 50 for all
-  if (minScore === maxScore) {
-    return brandsWithScores.map(b => ({ ...b, score: 50 }));
-  }
+  // Assign percentile-based scores
+  // Highest scorer gets 99, lowest gets 1, distributed evenly by rank
+  return sorted.map(({ brand }, index) => {
+    // Calculate percentile rank (0 to 1, where 0 is best)
+    const percentileRank = index / (sorted.length - 1);
 
-  // Normalize to 1-99 range
-  return brandsWithScores.map(({ brand, score }) => {
-    const normalized = 1 + ((score - minScore) / (maxScore - minScore)) * 98;
+    // Convert to score (99 for best, 1 for worst)
+    const percentileScore = Math.round(99 - (percentileRank * 98));
+
     return {
       brand,
-      score: Math.round(normalized)
+      score: percentileScore
     };
   });
 }
