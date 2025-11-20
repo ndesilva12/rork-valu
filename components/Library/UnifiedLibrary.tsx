@@ -621,13 +621,29 @@ export default function UnifiedLibrary({
           }
 
           // Brand not in aligned/unaligned arrays (middle-scoring brands)
-          // Look up full brand data from Firebase
-          const fullBrand = brands.find(b => b.id === entry.brandId);
-          const brandName = fullBrand?.name || (entry as any).brandName || (entry as any).name || 'Unknown Brand';
-          const brandCategory = fullBrand?.category || (entry as any).brandCategory || (entry as any).category || 'Uncategorized';
-          const logoUrl = getLogoUrl(fullBrand?.website || (entry as any).website || '');
+          // Look up full brand data from Firebase brands array
+          let fullBrand = brands.find(b => b.id === entry.brandId);
+
+          // If not found by ID, try to find by website (for brands that may have been updated)
+          if (!fullBrand && entry.website) {
+            fullBrand = brands.find(b => b.website && b.website.toLowerCase() === entry.website?.toLowerCase());
+          }
+
+          // If not found by website, try to find by name (case-insensitive)
+          if (!fullBrand && entry.brandName) {
+            fullBrand = brands.find(b => b.name.toLowerCase() === entry.brandName.toLowerCase());
+          }
+
+          // Use data from fullBrand if found, otherwise use stored entry data
+          const brandName = fullBrand?.name || entry.brandName || 'Unknown Brand';
+          const brandCategory = fullBrand?.category || entry.brandCategory || 'Uncategorized';
+          const website = fullBrand?.website || entry.website || '';
+          const logoUrl = entry.logoUrl || getLogoUrl(website);
           const alignmentScore = scoredBrands.get(entry.brandId) || 50;
           const scoreColor = alignmentScore >= 50 ? colors.primary : colors.danger;
+
+          // Use fullBrand.id if found, otherwise use entry.brandId for navigation
+          const navigationId = fullBrand?.id || entry.brandId;
 
           return (
             <TouchableOpacity
@@ -638,7 +654,7 @@ export default function UnifiedLibrary({
               onPress={() => {
                 router.push({
                   pathname: '/brand/[id]',
-                  params: { id: entry.brandId },
+                  params: { id: navigationId },
                 });
               }}
               activeOpacity={0.7}
@@ -977,21 +993,6 @@ export default function UnifiedLibrary({
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            {/* Action Menu Button for endorsement, aligned, and unaligned lists */}
-            {(listId === 'endorsement' || listId === 'aligned' || listId === 'unaligned') && canEdit && (
-              <TouchableOpacity
-                onPress={(e) => {
-                  e.stopPropagation();
-                  setActiveListOptionsId(isOptionsOpen ? null : listId);
-                }}
-                activeOpacity={0.7}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <View style={{ transform: [{ rotate: '90deg' }] }}>
-                  <MoreVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                </View>
-              </TouchableOpacity>
-            )}
             <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
           </View>
         </TouchableOpacity>
@@ -1935,6 +1936,14 @@ export default function UnifiedLibrary({
 const styles = StyleSheet.create({
   libraryDirectory: {
     flex: 1,
+  },
+  individualListContainer: {
+    marginHorizontal: 12,
+    marginBottom: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 8,
+    overflow: 'hidden',
   },
   menuBackdrop: {
     position: Platform.OS === 'web' ? 'fixed' as any : 'absolute',

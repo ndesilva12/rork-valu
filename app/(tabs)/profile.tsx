@@ -839,12 +839,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tabTitle: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600',
     marginBottom: 2,
   },
   tabCount: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '500',
   },
 

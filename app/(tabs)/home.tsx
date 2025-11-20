@@ -81,6 +81,7 @@ import * as Clipboard from 'expo-clipboard';
 import MenuButton from '@/components/MenuButton';
 import EndorsedBadge from '@/components/EndorsedBadge';
 import ShareModal from '@/components/ShareModal';
+import WelcomeCarousel from '@/components/WelcomeCarousel';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
@@ -132,11 +133,12 @@ const FOLDER_CATEGORIES: FolderCategory[] = [
 export default function HomeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { profile, isDarkMode, clerkUser } = useUser();
+  const { profile, isDarkMode, clerkUser, markIntroAsSeen } = useUser();
   const library = useLibrary();
   const colors = isDarkMode ? darkColors : lightColors;
-  const [mainView, setMainView] = useState<MainView>('forYou');
+  const [mainView, setMainView] = useState<MainView>('myLibrary');
   const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
+  const [showWelcomeCarousel, setShowWelcomeCarousel] = useState(false);
   const [userPersonalList, setUserPersonalList] = useState<UserList | null>(null);
   const [activeExplainerStep, setActiveExplainerStep] = useState<0 | 1 | 2 | 3 | 4>(0); // 0 = none, 1-4 = explainer steps
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
@@ -211,12 +213,58 @@ export default function HomeScreen() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareData, setShareData] = useState<{ url: string; title: string; description?: string } | null>(null);
 
+  // Welcome carousel state
+  const [showWelcomeCarousel, setShowWelcomeCarousel] = useState(false);
+
   // Card Action Menu state
   const [activeCardMenuId, setActiveCardMenuId] = useState<string | null>(null);
   const [cardMenuData, setCardMenuData] = useState<{ type: 'brand' | 'business', id: string, name: string, website?: string, logoUrl?: string, listId?: string } | null>(null);
   const [isFollowingCard, setIsFollowingCard] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // CRITICAL: Force mainView to myLibrary immediately on mount
+  useEffect(() => {
+    console.log('[HomeScreen] Forcing mainView to myLibrary on mount');
+    setMainView('myLibrary');
+  }, []);
+
+  // Check if user should see welcome carousel
+  useEffect(() => {
+    // Only show carousel if hasSeenIntro is EXPLICITLY false (new users from onboarding)
+    // If it's undefined (existing users), treat as already seen
+    if (clerkUser && profile.causes && profile.causes.length > 0 && profile.hasSeenIntro === false) {
+      console.log('[HomeScreen] First time user, setting up aligned list view and showing carousel');
+      // FIRST set the view states to library with aligned list expanded
+      // This ensures when carousel shows (and later dismisses), we're already on the right view
+      setMainView('myLibrary');
+      setExpandedListId('aligned');
+      setSelectedListId('aligned');
+      setLibraryView('detail');
+
+      // Small delay to ensure state is set before showing carousel
+      setTimeout(() => {
+        setShowWelcomeCarousel(true);
+      }, 100);
+    } else if (clerkUser && profile.hasSeenIntro === undefined) {
+      // For existing users without this flag, mark as seen immediately and ensure library view
+      console.log('[HomeScreen] Existing user, marking intro as seen and ensuring library view');
+      markIntroAsSeen();
+      // Make sure existing users also land on library view
+      setMainView('myLibrary');
+    }
+  }, [clerkUser, profile.causes, profile.hasSeenIntro, markIntroAsSeen]);
+
+  const handleWelcomeComplete = async () => {
+    console.log('[HomeScreen] Welcome carousel completed, ensuring we stay on library view');
+    setShowWelcomeCarousel(false);
+    // Make absolutely sure we're on the library view with aligned list expanded
+    setMainView('myLibrary');
+    setExpandedListId('aligned');
+    setSelectedListId('aligned');
+    setLibraryView('detail');
+    await markIntroAsSeen();
+  };
 
   // Fetch brands and values from Firebase via DataContext
   const { brands, values, valuesMatrix, isLoading, error } = useData();
@@ -389,7 +437,7 @@ export default function HomeScreen() {
           const shouldShowExplainers = !hasSeenExplainer && !hasEntries;
 
           if (shouldShowExplainers) {
-            setActiveExplainerStep(1); // Start with first explainer
+            setShowWelcomeCarousel(true); // Start with first explainer
             // Mark as shown so it won't appear again
             await AsyncStorage.setItem(explainerShownKey, 'true');
           } else {
@@ -410,6 +458,32 @@ export default function HomeScreen() {
 
     loadPersonalList();
   }, [clerkUser?.id, clerkUser?.unsafeMetadata?.fullName, clerkUser?.firstName, clerkUser?.lastName, profile?.userDetails?.name]);
+
+  // Check if we should show the welcome carousel (only once for new users)
+  useEffect(() => {
+    const checkWelcomeCarousel = async () => {
+      if (!clerkUser?.id) return;
+
+      const welcomeCarouselKey = `welcomeCarouselShown_${clerkUser.id}`;
+      const hasSeenCarousel = await AsyncStorage.getItem(welcomeCarouselKey);
+
+      // Show carousel only if user has never seen it
+      if (hasSeenCarousel === null) {
+        setShowWelcomeCarousel(true);
+      }
+    };
+
+    checkWelcomeCarousel();
+  }, [clerkUser?.id]);
+
+  // Handle carousel completion
+  const handleCarouselComplete = async () => {
+    if (clerkUser?.id) {
+      const welcomeCarouselKey = `welcomeCarouselShown_${clerkUser.id}`;
+      await AsyncStorage.setItem(welcomeCarouselKey, 'true');
+      setShowWelcomeCarousel(false);
+    }
+  };
 
   // Function to fetch user businesses
   const fetchUserBusinesses = useCallback(async () => {
@@ -526,7 +600,7 @@ export default function HomeScreen() {
   // Set default expanded/selected list when library loads (only once)
   useEffect(() => {
     const handleDefaultLibraryState = async () => {
-      if (mainView === 'forYou' && !hasSetDefaultExpansion && userPersonalList && clerkUser?.id) {
+      if (mainView === 'myLibrary' && !hasSetDefaultExpansion && userPersonalList && clerkUser?.id) {
         const firstTimeKey = `firstTimeLibraryVisit_${clerkUser.id}`;
         const isFirstTime = await AsyncStorage.getItem(firstTimeKey);
 
@@ -1020,11 +1094,11 @@ export default function HomeScreen() {
       <View style={styles.mainViewRow}>
         <View style={[styles.mainViewSelector, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
           <TouchableOpacity
-            style={[styles.mainViewButton, mainView === 'forYou' && { backgroundColor: colors.primary }]}
-            onPress={() => setMainView('forYou')}
+            style={[styles.mainViewButton, mainView === 'myLibrary' && { backgroundColor: colors.primary }]}
+            onPress={() => setMainView('myLibrary')}
             activeOpacity={0.7}
           >
-            <Text style={[styles.mainViewText, { color: mainView === 'forYou' ? colors.white : colors.textSecondary }]}>
+            <Text style={[styles.mainViewText, { color: mainView === 'myLibrary' ? colors.white : colors.textSecondary }]}>
               Library
             </Text>
           </TouchableOpacity>
@@ -3146,7 +3220,7 @@ export default function HomeScreen() {
             style={styles.headerLogo}
             resizeMode="contain"
           />
-          <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
+          <MenuButton onShowExplainers={() => setShowWelcomeCarousel(true)} />
         </View>
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>Loading brands...</Text>
@@ -3166,7 +3240,7 @@ export default function HomeScreen() {
             style={styles.headerLogo}
             resizeMode="contain"
           />
-          <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
+          <MenuButton onShowExplainers={() => setShowWelcomeCarousel(true)} />
         </View>
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>Error loading brands</Text>
@@ -3178,33 +3252,40 @@ export default function HomeScreen() {
     );
   }
 
-  // Check if profile exists and has causes
-  if (!profile || !profile.causes || profile.causes.length === 0) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-        <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <Image
-            source={require('@/assets/images/endo11.png')}
-            style={styles.headerLogo}
-            resizeMode="contain"
-          />
-          <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
-        </View>
-        <View style={styles.emptyContainer}>
-          <View style={[styles.emptyIconContainer, { backgroundColor: colors.neutralLight }]}>
-            <Target size={48} color={colors.textLight} strokeWidth={1.5} />
+  // Check if profile exists and has causes - BUT still show library if they have an endorsement list
+  if (!profile || (!profile.causes || profile.causes.length === 0)) {
+    // Check if user has an endorsement list - if so, still show the library
+    if (userPersonalList && userPersonalList.entries && userPersonalList.entries.length > 0) {
+      // User has endorsements but no causes set - show library with just endorsements
+      // The aligned/unaligned lists will be empty but endorsements will show
+    } else {
+      // No endorsements and no causes - show onboarding screen
+      return (
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+          <View style={[styles.header, { backgroundColor: colors.background }]}>
+            <Image
+              source={require('@/assets/images/endo11.png')}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
+            <MenuButton onShowExplainers={() => setShowWelcomeCarousel(true)} />
           </View>
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>Set Your Values First</Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-            Complete your profile to see personalized brand recommendations
-          </Text>
-          <TouchableOpacity style={[styles.emptyButton, { backgroundColor: colors.primary }]} onPress={() => router.push('/onboarding')} activeOpacity={0.7}>
-            <Text style={[styles.emptyButtonText, { color: colors.white }]}>Get Started</Text>
-          </TouchableOpacity>
+          <View style={styles.emptyContainer}>
+            <View style={[styles.emptyIconContainer, { backgroundColor: colors.neutralLight }]}>
+              <Target size={48} color={colors.textLight} strokeWidth={1.5} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>Set Your Values First</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+              Complete your profile to see personalized brand recommendations
+            </Text>
+            <TouchableOpacity style={[styles.emptyButton, { backgroundColor: colors.primary }]} onPress={() => router.push('/onboarding')} activeOpacity={0.7}>
+              <Text style={[styles.emptyButtonText, { color: colors.white }]}>Get Started</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    );
+      );
+    }
   }
 
   return (
@@ -3217,7 +3298,7 @@ export default function HomeScreen() {
             style={styles.headerLogo}
             resizeMode="contain"
           />
-          <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
+          <MenuButton onShowExplainers={() => setShowWelcomeCarousel(true)} />
         </View>
         {renderMainViewSelector()}
       </View>
@@ -4824,7 +4905,7 @@ export default function HomeScreen() {
             </View>
 
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
-              We generate brands that align or don't align based on your selections.
+              We give you the best ways to vote with your money based on your values.
             </Text>
 
             <TouchableOpacity
@@ -4870,7 +4951,7 @@ export default function HomeScreen() {
             </View>
 
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
-              Add brands or local businesses to your personal collection and build your identity.
+              Build your list of endorsements of brands and local businesses you support.
             </Text>
 
             <TouchableOpacity
@@ -4916,7 +4997,7 @@ export default function HomeScreen() {
             </View>
 
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
-              Create lists from ANY value inputs. Great for generating gift ideas for friends & family.
+              Use the Value Machine or find your friends in order to discover new brands or gift ideas.
             </Text>
 
             <TouchableOpacity
@@ -4977,7 +5058,7 @@ export default function HomeScreen() {
             </View>
 
             <Text style={[styles.explainerTextLarge, { color: colors.white }]}>
-              Use your code for discounts at participating businesses.
+              Collect discounts at businesses in exchange for your endorsement, following or simply being on our app!
             </Text>
 
             <TouchableOpacity
@@ -5006,6 +5087,13 @@ export default function HomeScreen() {
         shareUrl={shareData?.url || ''}
         title={shareData?.title || ''}
         description={shareData?.description}
+        isDarkMode={isDarkMode}
+      />
+
+      {/* Welcome Carousel - Show only once for new users */}
+      <WelcomeCarousel
+        visible={showWelcomeCarousel}
+        onComplete={handleCarouselComplete}
         isDarkMode={isDarkMode}
       />
     </View>
