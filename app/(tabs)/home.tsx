@@ -220,6 +220,12 @@ export default function HomeScreen() {
 
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // CRITICAL: Force mainView to myLibrary immediately on mount
+  useEffect(() => {
+    console.log('[HomeScreen] Forcing mainView to myLibrary on mount');
+    setMainView('myLibrary');
+  }, []);
+
   // Check if user should see welcome carousel
   useEffect(() => {
     // Only show carousel if hasSeenIntro is EXPLICITLY false (new users from onboarding)
@@ -565,7 +571,7 @@ export default function HomeScreen() {
   // Set default expanded/selected list when library loads (only once)
   useEffect(() => {
     const handleDefaultLibraryState = async () => {
-      if (mainView === 'forYou' && !hasSetDefaultExpansion && userPersonalList && clerkUser?.id) {
+      if (mainView === 'myLibrary' && !hasSetDefaultExpansion && userPersonalList && clerkUser?.id) {
         const firstTimeKey = `firstTimeLibraryVisit_${clerkUser.id}`;
         const isFirstTime = await AsyncStorage.getItem(firstTimeKey);
 
@@ -1059,11 +1065,11 @@ export default function HomeScreen() {
       <View style={styles.mainViewRow}>
         <View style={[styles.mainViewSelector, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
           <TouchableOpacity
-            style={[styles.mainViewButton, mainView === 'forYou' && { backgroundColor: colors.primary }]}
-            onPress={() => setMainView('forYou')}
+            style={[styles.mainViewButton, mainView === 'myLibrary' && { backgroundColor: colors.primary }]}
+            onPress={() => setMainView('myLibrary')}
             activeOpacity={0.7}
           >
-            <Text style={[styles.mainViewText, { color: mainView === 'forYou' ? colors.white : colors.textSecondary }]}>
+            <Text style={[styles.mainViewText, { color: mainView === 'myLibrary' ? colors.white : colors.textSecondary }]}>
               Library
             </Text>
           </TouchableOpacity>
