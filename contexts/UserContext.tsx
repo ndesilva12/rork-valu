@@ -219,8 +219,15 @@ export const [UserProvider, useUser] = createContextHook(() => {
     // Use functional update to avoid stale closure
     let newProfile: UserProfile | null = null;
     setProfile((prevProfile) => {
-      newProfile = { ...prevProfile, causes };
-      console.log('[UserContext] Updated profile with causes. PromoCode:', newProfile!.promoCode);
+      // If this is a new user completing onboarding (no causes before), set hasSeenIntro to false
+      const isCompletingOnboarding = !prevProfile.causes || prevProfile.causes.length === 0;
+      newProfile = {
+        ...prevProfile,
+        causes,
+        // Set hasSeenIntro to false for new users so they see the welcome carousel
+        hasSeenIntro: isCompletingOnboarding ? false : prevProfile.hasSeenIntro,
+      };
+      console.log('[UserContext] Updated profile with causes. PromoCode:', newProfile!.promoCode, 'hasSeenIntro:', newProfile!.hasSeenIntro);
       return newProfile;
     });
     setHasCompletedOnboarding(causes.length > 0);
@@ -671,6 +678,19 @@ export const [UserProvider, useUser] = createContextHook(() => {
     return !!profile.businessMembership && profile.businessMembership.role === 'team';
   }, [profile]);
 
+  const markIntroAsSeen = useCallback(async () => {
+    if (!clerkUser) return;
+
+    try {
+      const newProfile = { ...profile, hasSeenIntro: true };
+      setProfile(newProfile);
+      await saveUserProfile(clerkUser.id, newProfile);
+      console.log('[UserContext] ✅ Marked intro as seen');
+    } catch (error) {
+      console.error('[UserContext] ❌ Failed to mark intro as seen:', error);
+    }
+  }, [clerkUser, profile]);
+
   return useMemo(() => ({
     profile,
     isLoading: isLoading || !isClerkLoaded,
@@ -694,5 +714,6 @@ export const [UserProvider, useUser] = createContextHook(() => {
     getBusinessId,
     isBusinessOwner,
     isTeamMember,
-  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, removeCauses, toggleCauseType, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, clerkUser, setAccountType, setBusinessInfo, setUserDetails, refreshTransactionTotals, hasPermission, getBusinessId, isBusinessOwner, isTeamMember]);
+    markIntroAsSeen,
+  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, removeCauses, toggleCauseType, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, clerkUser, setAccountType, setBusinessInfo, setUserDetails, refreshTransactionTotals, hasPermission, getBusinessId, isBusinessOwner, isTeamMember, markIntroAsSeen]);
 });

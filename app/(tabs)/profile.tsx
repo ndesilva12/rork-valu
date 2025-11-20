@@ -837,12 +837,12 @@ const styles = StyleSheet.create({
     // Selected tab styling - border color is applied dynamically
   },
   tabTitle: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600',
     marginBottom: 2,
   },
   tabCount: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '500',
   },
 

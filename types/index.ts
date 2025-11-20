@@ -196,4 +196,5 @@ export interface UserProfile {
   isPublicProfile?: boolean; // Whether user's profile and library are publicly viewable (default: true)
   alignedListPublic?: boolean; // Whether the Aligned system list is publicly viewable (default: true)
   unalignedListPublic?: boolean; // Whether the Unaligned system list is publicly viewable (default: true)
+  hasSeenIntro?: boolean; // Whether user has seen the welcome carousel (default: false)
 }

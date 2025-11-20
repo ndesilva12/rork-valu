@@ -137,8 +137,8 @@ export default function FollowingFollowersList({
               }
             }
           } else if (type === 'business') {
-            // Fetch business details
-            const businessRef = doc(db, 'businesses', entityId);
+            // Fetch business details from users collection
+            const businessRef = doc(db, 'users', entityId);
             const businessSnap = await getDoc(businessRef);
             if (businessSnap.exists()) {
               const businessData = businessSnap.data();
