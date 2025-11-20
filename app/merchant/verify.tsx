@@ -177,7 +177,7 @@ export default function MerchantVerify() {
         // Check if customer has endorsed the business (added to endorsement list)
         if (businessInfo.requireEndorse) {
           const customerLists = await getUserLists(customerUserId as string);
-          const endorsementList = customerLists.find(list => list.mode === 'endorsement' || list.name === 'Endorsements');
+          const endorsementList = customerLists.find(list => list.isEndorsed === true);
 
           console.log('[MerchantVerify] Checking endorsement requirement for business:', businessId);
           console.log('[MerchantVerify] Customer lists found:', customerLists.length);
