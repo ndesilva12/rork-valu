@@ -94,8 +94,35 @@ export default function FollowingFollowersList({
 
         try {
           if (type === 'brand') {
-            // Fetch brand details
-            const brand = brands.find(b => b.id === entityId);
+            // Fetch brand details - try multiple lookup methods
+            let brand = brands.find(b => b.id === entityId);
+
+            // If not found by ID, try fetching from Firebase to get more data
+            if (!brand) {
+              try {
+                const brandRef = doc(db, 'brands', entityId);
+                const brandSnap = await getDoc(brandRef);
+                if (brandSnap.exists()) {
+                  const brandData = brandSnap.data();
+                  // Try to find in brands array by name or website
+                  brand = brands.find(b =>
+                    (brandData.name && b.name.toLowerCase() === brandData.name.toLowerCase()) ||
+                    (brandData.website && b.website && b.website.toLowerCase() === brandData.website.toLowerCase())
+                  );
+
+                  // If still not found, use the data from Firebase
+                  if (!brand) {
+                    enriched.name = brandData.name || 'Unknown Brand';
+                    enriched.category = brandData.category || 'Uncategorized';
+                    enriched.website = brandData.website;
+                    enriched.logoUrl = getLogoUrl(brandData.website || '');
+                  }
+                }
+              } catch (error) {
+                console.error('[FollowingFollowersList] Error fetching brand from Firebase:', error);
+              }
+            }
+
             if (brand) {
               enriched.name = brand.name;
               enriched.category = brand.category;
