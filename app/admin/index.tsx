@@ -97,6 +97,18 @@ export default function AdminDashboard() {
             </Text>
           </TouchableOpacity>
 
+          {/* Incomplete Brands */}
+          <TouchableOpacity
+            style={[styles.card, styles.highlightCard]}
+            onPress={() => router.push('/admin/incomplete-brands')}
+          >
+            <Text style={styles.cardIcon}>⚠️</Text>
+            <Text style={styles.cardTitle}>Incomplete Brands</Text>
+            <Text style={styles.cardDescription}>
+              Manage auto-created brands that need completion. Fill in details and mark as verified.
+            </Text>
+          </TouchableOpacity>
+
           {/* Cleanup Duplicates */}
           <TouchableOpacity
             style={[styles.card, styles.warningCard]}
@@ -258,6 +270,11 @@ const styles = StyleSheet.create({
   },
   statsCard: {
     backgroundColor: '#f0f4f8',
+  },
+  highlightCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#2196f3',
+    backgroundColor: '#e3f2fd',
   },
   warningCard: {
     borderLeftWidth: 4,

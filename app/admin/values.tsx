@@ -161,6 +161,7 @@ export default function ValuesManagement() {
         name: brandName,
         category: 'Uncategorized',
         description: 'Auto-created from value alignment. Please update with full details.',
+        status: 'auto-created', // Mark as auto-created for easy filtering
         alignmentScore: 0,
         keyReasons: [],
         relatedValues: [],
