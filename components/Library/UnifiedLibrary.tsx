@@ -1989,7 +1989,10 @@ const styles = StyleSheet.create({
   listProfileImageContainer: {
     width: 64,
     height: 64,
-    borderRadius: 8,
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
     borderWidth: 0,
     justifyContent: 'center',
     alignItems: 'center',
