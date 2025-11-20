@@ -102,11 +102,9 @@ import { UserList, ListEntry, ValueListMode } from '@/types/library';
 import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList, updateListMetadata, reorderListEntries, getEndorsementList, ensureEndorsementList } from '@/services/firebase/listService';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
-import { UnifiedLibrary } from '@/components/Library';
 import { useLibrary } from '@/contexts/LibraryContext';
 
-type MainView = 'forYou' | 'myLibrary' | 'local';
-type ForYouSubsection = 'userList' | 'aligned' | 'unaligned';
+type MainView = 'myLibrary' | 'local';
 type LocalDistanceOption = 1 | 5 | 10 | 50 | 100 | null;
 
 type FolderCategory = {
@@ -137,7 +135,6 @@ export default function HomeScreen() {
   const library = useLibrary();
   const colors = isDarkMode ? darkColors : lightColors;
   const [mainView, setMainView] = useState<MainView>('myLibrary');
-  const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
   const [showWelcomeCarousel, setShowWelcomeCarousel] = useState(false);
   const [userPersonalList, setUserPersonalList] = useState<UserList | null>(null);
   const [activeExplainerStep, setActiveExplainerStep] = useState<0 | 1 | 2 | 3 | 4>(0); // 0 = none, 1-4 = explainer steps
@@ -440,11 +437,6 @@ export default function HomeScreen() {
           } else {
             setActiveExplainerStep(0);
           }
-
-          // If personal list has entries, default to it. Otherwise, default to aligned.
-          if (hasEntries) {
-            setForYouSubsection('userList');
-          }
         } else {
           console.log('[Home] ⚠️ Could not find or create personal list');
         }
@@ -532,7 +524,7 @@ export default function HomeScreen() {
 
   // Fetch user lists when library view is activated
   useEffect(() => {
-    if ((mainView === 'myLibrary' || mainView === 'forYou') && clerkUser?.id) {
+    if (mainView === 'myLibrary' && clerkUser?.id) {
       loadUserLists();
     }
     // Reset to overview when leaving library
@@ -542,7 +534,7 @@ export default function HomeScreen() {
     }
   }, [mainView, clerkUser?.id, loadUserLists]);
 
-  // Reload personal list (used in For You view)
+  // Reload personal list
   const reloadPersonalList = async () => {
     if (!clerkUser?.id) return;
 
@@ -1129,7 +1121,7 @@ export default function HomeScreen() {
     </>
   );
 
-  // Helper function to render consistent header across all For You subsections
+  // Helper function to render consistent header across all subsections
   const renderSubsectionHeader = (title: string, onAddPress: () => void, showModalButton: boolean = true) => {
     return (
       <View style={styles.listDetailHeader}>
@@ -1163,22 +1155,6 @@ export default function HomeScreen() {
     );
   };
 
-  const renderForYouView = () => {
-    // Render unified library component with edit mode
-    return (
-      <UnifiedLibrary
-        mode="edit"
-        currentUserId={clerkUser?.id}
-        alignedItems={allSupport}
-        unalignedItems={allAvoidFull}
-        isDarkMode={isDarkMode}
-        profileImage={profile?.userDetails?.profileImage || clerkUser?.imageUrl}
-        userBusinesses={userBusinesses}
-        scoredBrands={scoredBrands}
-        userCauses={profile?.causes || []}
-      />
-    );
-  };
   const renderLocalView = () => {
     const { allBusinesses } = localBusinessData;
 
@@ -1632,7 +1608,7 @@ export default function HomeScreen() {
         try {
           await removeEntryFromList(list.id, entryId);
           await loadUserLists();
-          await reloadPersonalList(); // Also reload personal list for For You view
+          await reloadPersonalList();
 
           // Update selected list
           const updatedLists = await getUserLists(clerkUser?.id || '');
@@ -1926,7 +1902,7 @@ export default function HomeScreen() {
         setQuickAddItem(null);
         setSelectedValueMode(null);
 
-        // Always reload lists and personal list to keep For You and Library in sync
+        // Reload lists and personal list to keep data in sync
         await loadUserLists();
         await reloadPersonalList();
 
@@ -1939,7 +1915,7 @@ export default function HomeScreen() {
       setQuickAddItem(null);
       setSelectedValueMode(null);
 
-      // Always reload lists and personal list to keep For You and Library in sync
+      // Reload lists and personal list to keep data in sync
       await loadUserLists();
       await reloadPersonalList();
 
@@ -2268,7 +2244,7 @@ export default function HomeScreen() {
 
       await addEntryToList(list.id, entry);
       await loadUserLists();
-      await reloadPersonalList(); // Also reload personal list for For You view
+      await reloadPersonalList();
 
       // Update selected list
       const updatedLists = await getUserLists(clerkUser?.id || '');
@@ -3272,7 +3248,6 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.content, Platform.OS === 'web' && styles.webContent, { paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        {mainView === 'forYou' && renderForYouView()}
         {mainView === 'myLibrary' && renderMyLibraryView()}
         {mainView === 'local' && renderLocalView()}
 
@@ -3878,62 +3853,6 @@ export default function HomeScreen() {
               >
                 <Text style={[styles.modalButtonText, { color: colors.text }]}>List from Values</Text>
               </TouchableOpacity>
-
-              {/* Show these options only in For You view and if there's a selected list */}
-              {mainView === 'forYou' && expandedListId && (
-                <>
-                  <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: colors.backgroundSecondary, marginTop: 12 }]}
-                    onPress={() => {
-                      setShowNewListChoiceModal(false);
-                      setShowAddItemModal(true);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.modalButtonText, { color: colors.text }]}>Add to This List</Text>
-                  </TouchableOpacity>
-
-                  {(() => {
-                    // Get the current list
-                    let currentList: UserList | null = null;
-                    if (expandedListId === 'endorsement') {
-                      currentList = userPersonalList;
-                    } else if (expandedListId !== 'aligned' && expandedListId !== 'unaligned') {
-                      currentList = userLists.find(l => l.id === expandedListId) || null;
-                    }
-
-                    // Only show reorder and share for actual user lists (not Aligned/Unaligned)
-                    if (currentList) {
-                      return (
-                        <>
-                          <TouchableOpacity
-                            style={[styles.modalButton, { backgroundColor: colors.backgroundSecondary, marginTop: 12 }]}
-                            onPress={() => {
-                              setShowNewListChoiceModal(false);
-                              setIsEditMode(true);
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[styles.modalButtonText, { color: colors.text }]}>Reorder</Text>
-                          </TouchableOpacity>
-
-                          <TouchableOpacity
-                            style={[styles.modalButton, { backgroundColor: colors.backgroundSecondary, marginTop: 12 }]}
-                            onPress={() => {
-                              setShowNewListChoiceModal(false);
-                              handleShareList(currentList);
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[styles.modalButtonText, { color: colors.text }]}>Share</Text>
-                          </TouchableOpacity>
-                        </>
-                      );
-                    }
-                    return null;
-                  })()}
-                </>
-              )}
             </View>
           </Pressable>
         </View>
@@ -5339,22 +5258,6 @@ const styles = StyleSheet.create({
     width: '130%',
     marginTop: 2,
     borderRadius: 1,
-  },
-  forYouItemRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 6,
-  },
-  forYouItemNumber: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-    paddingTop: 20,
-    minWidth: 20,
-    textAlign: 'right',
-    marginLeft: -4,
-  },
-  forYouCardWrapper: {
-    flex: 1,
   },
   loadMoreButton: {
     paddingVertical: 14,
