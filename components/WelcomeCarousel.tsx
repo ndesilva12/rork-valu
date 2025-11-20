@@ -13,7 +13,8 @@ import { DollarSign, Heart, Sparkles, Gift } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const CAROUSEL_WIDTH = Math.min(SCREEN_WIDTH - 40, 500);
+const CARD_WIDTH = Math.min(SCREEN_WIDTH - 40, 500);
+const SLIDE_WIDTH = CARD_WIDTH - 48; // Card padding is 24 on each side
 
 interface WelcomeCarouselProps {
   visible: boolean;
@@ -54,12 +55,12 @@ export default function WelcomeCarousel({ visible, onComplete, isDarkMode }: Wel
   const colors = isDarkMode ? darkColors : lightColors;
 
   const handleScroll = (event: any) => {
-    const slideIndex = Math.round(event.nativeEvent.contentOffset.x / CAROUSEL_WIDTH);
+    const slideIndex = Math.round(event.nativeEvent.contentOffset.x / SLIDE_WIDTH);
     setCurrentSlide(slideIndex);
   };
 
   const goToSlide = (index: number) => {
-    scrollViewRef.current?.scrollTo({ x: index * CAROUSEL_WIDTH, animated: true });
+    scrollViewRef.current?.scrollTo({ x: index * SLIDE_WIDTH, animated: true });
     setCurrentSlide(index);
   };
 
@@ -105,12 +106,11 @@ export default function WelcomeCarousel({ visible, onComplete, isDarkMode }: Wel
               onScroll={handleScroll}
               scrollEventThrottle={16}
               style={styles.scrollView}
-              contentContainerStyle={styles.scrollContent}
             >
               {slides.map((slide, index) => {
                 const Icon = slide.icon;
                 return (
-                  <View key={index} style={[styles.slide, { width: CAROUSEL_WIDTH }]}>
+                  <View key={index} style={[styles.slide, { width: SLIDE_WIDTH }]}>
                     <View style={[styles.iconCircle, { backgroundColor: `${slide.color}20` }]}>
                       <Icon size={64} color={slide.color} strokeWidth={2} />
                     </View>
@@ -209,18 +209,16 @@ const styles = StyleSheet.create({
     height: 420,
     marginTop: 16,
     marginBottom: 16,
+    width: '100%',
   },
   scrollView: {
     flex: 1,
-  },
-  scrollContent: {
-    alignItems: 'center',
   },
   slide: {
     height: 420,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 32,
   },
   iconCircle: {
     width: 120,
