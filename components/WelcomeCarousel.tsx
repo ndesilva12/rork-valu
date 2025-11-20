@@ -31,7 +31,7 @@ const slides = [
   },
   {
     icon: Heart,
-    title: 'Build Your Library',
+    title: 'Endorse Businesses',
     description: 'Build your list of endorsements of brands and local businesses you support.',
     color: '#EF4444', // red
   },
@@ -236,9 +236,9 @@ const styles = StyleSheet.create({
     lineHeight: 36,
   },
   slideDescription: {
-    fontSize: 17,
+    fontSize: 19,
     textAlign: 'center',
-    lineHeight: 26,
+    lineHeight: 28,
     paddingHorizontal: 20,
   },
   pagination: {

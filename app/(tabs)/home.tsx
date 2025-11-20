@@ -393,7 +393,7 @@ export default function HomeScreen() {
           const shouldShowExplainers = !hasSeenExplainer && !hasEntries;
 
           if (shouldShowExplainers) {
-            setActiveExplainerStep(1); // Start with first explainer
+            setShowWelcomeCarousel(true); // Start with first explainer
             // Mark as shown so it won't appear again
             await AsyncStorage.setItem(explainerShownKey, 'true');
           } else {
@@ -3176,7 +3176,7 @@ export default function HomeScreen() {
             style={styles.headerLogo}
             resizeMode="contain"
           />
-          <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
+          <MenuButton onShowExplainers={() => setShowWelcomeCarousel(true)} />
         </View>
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>Loading brands...</Text>
@@ -3196,7 +3196,7 @@ export default function HomeScreen() {
             style={styles.headerLogo}
             resizeMode="contain"
           />
-          <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
+          <MenuButton onShowExplainers={() => setShowWelcomeCarousel(true)} />
         </View>
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>Error loading brands</Text>
@@ -3219,7 +3219,7 @@ export default function HomeScreen() {
             style={styles.headerLogo}
             resizeMode="contain"
           />
-          <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
+          <MenuButton onShowExplainers={() => setShowWelcomeCarousel(true)} />
         </View>
         <View style={styles.emptyContainer}>
           <View style={[styles.emptyIconContainer, { backgroundColor: colors.neutralLight }]}>
@@ -3247,7 +3247,7 @@ export default function HomeScreen() {
             style={styles.headerLogo}
             resizeMode="contain"
           />
-          <MenuButton onShowExplainers={() => setActiveExplainerStep(1)} />
+          <MenuButton onShowExplainers={() => setShowWelcomeCarousel(true)} />
         </View>
         {renderMainViewSelector()}
       </View>

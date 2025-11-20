@@ -23,9 +23,10 @@ import { useData } from '@/contexts/DataContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { getLogoUrl } from '@/lib/logo';
-import { calculateBrandScore } from '@/lib/scoring';
+import { calculateBrandScore, calculateSimilarityScore } from '@/lib/scoring';
 import ItemOptionsModal from '@/components/ItemOptionsModal';
 import { useUser } from '@/contexts/UserContext';
+import { Cause } from '@/types';
 
 type FilterType = 'all' | 'brand' | 'business' | 'user';
 
@@ -44,6 +45,8 @@ interface EnrichedFollow extends Follow {
   logoUrl?: string;
   profileImage?: string;
   alignmentScore?: number;
+  similarityScore?: number;
+  scoreType?: 'alignment' | 'similarity';
 }
 
 export default function FollowingFollowersList({
@@ -103,6 +106,7 @@ export default function FollowingFollowersList({
               if (userCauses.length > 0 && valuesMatrix) {
                 const score = calculateBrandScore(brand, valuesMatrix, userCauses);
                 enriched.alignmentScore = score;
+                enriched.scoreType = 'alignment';
               }
             }
           } else if (type === 'business') {
@@ -111,11 +115,19 @@ export default function FollowingFollowersList({
             const businessSnap = await getDoc(businessRef);
             if (businessSnap.exists()) {
               const businessData = businessSnap.data();
-              enriched.name = businessData.name || 'Unknown Business';
-              enriched.category = businessData.category;
-              enriched.website = businessData.website;
-              enriched.logoUrl = getLogoUrl(businessData.website || '');
-              // Could calculate alignment based on endorsed brand
+              enriched.name = businessData.businessInfo?.name || businessData.name || 'Unknown Business';
+              enriched.category = businessData.businessInfo?.category || businessData.category;
+              enriched.website = businessData.businessInfo?.website || businessData.website;
+              enriched.logoUrl = businessData.businessInfo?.logoUrl || getLogoUrl(businessData.businessInfo?.website || businessData.website || '');
+
+              // Calculate similarity score based on causes
+              if (userCauses.length > 0 && businessData.causes && Array.isArray(businessData.causes)) {
+                const businessCauses: Cause[] = businessData.causes;
+                const userCausesObj: Cause[] = userCauses.map(id => ({ id, name: id, category: 'social_issue', type: 'support' }));
+                const similarity = calculateSimilarityScore(userCausesObj, businessCauses);
+                enriched.similarityScore = similarity;
+                enriched.scoreType = 'similarity';
+              }
             }
           } else if (type === 'user') {
             // Fetch user details
@@ -137,13 +149,16 @@ export default function FollowingFollowersList({
 
       const enrichedFollows = await Promise.all(enrichedPromises);
 
-      // Sort by alignment score (highest first), then by name
+      // Sort by score (alignment or similarity, highest first), then by name
       enrichedFollows.sort((a, b) => {
-        if (a.alignmentScore !== undefined && b.alignmentScore !== undefined) {
-          return b.alignmentScore - a.alignmentScore;
+        const scoreA = a.alignmentScore ?? a.similarityScore;
+        const scoreB = b.alignmentScore ?? b.similarityScore;
+
+        if (scoreA !== undefined && scoreB !== undefined) {
+          return scoreB - scoreA;
         }
-        if (a.alignmentScore !== undefined) return -1;
-        if (b.alignmentScore !== undefined) return 1;
+        if (scoreA !== undefined) return -1;
+        if (scoreB !== undefined) return 1;
         return a.name.localeCompare(b.name);
       });
 
@@ -249,8 +264,9 @@ export default function FollowingFollowersList({
       }
     };
 
-    const scoreColor = follow.alignmentScore !== undefined
-      ? (follow.alignmentScore >= 50 ? colors.primary : colors.danger)
+    const displayScore = follow.alignmentScore ?? follow.similarityScore;
+    const scoreColor = displayScore !== undefined
+      ? (displayScore >= 50 ? colors.primary : colors.danger)
       : colors.textSecondary;
 
     return (
@@ -288,10 +304,13 @@ export default function FollowingFollowersList({
           </View>
 
           {/* Score */}
-          {follow.alignmentScore !== undefined && (
+          {displayScore !== undefined && (
             <View style={styles.scoreContainer}>
+              <Text style={[styles.scoreLabel, { color: colors.textSecondary }]}>
+                {follow.scoreType === 'similarity' ? 'Similar' : 'Aligned'}
+              </Text>
               <Text style={[styles.score, { color: scoreColor }]}>
-                {Math.round(follow.alignmentScore)}
+                {Math.round(displayScore)}
               </Text>
             </View>
           )}
@@ -512,6 +531,13 @@ const styles = StyleSheet.create({
   },
   scoreContainer: {
     marginLeft: 12,
+    alignItems: 'center',
+  },
+  scoreLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    marginBottom: 2,
   },
   score: {
     fontSize: 24,
