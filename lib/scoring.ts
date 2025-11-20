@@ -28,6 +28,7 @@ export function calculateBrandScore(
 
   let rawScore = 0;
   let maxPossibleScore = 0;
+  let mentionedCount = 0; // Track how many values mention this brand
 
   const brandNameLower = brandName.toLowerCase();
 
@@ -50,6 +51,9 @@ export function calculateBrandScore(
       maxPossibleScore += weight;
       return;
     }
+
+    // Brand is mentioned in this value's data
+    mentionedCount++;
 
     // Calculate position-based score (earlier position = higher score)
     // Position 0 (first) = 100% of weight
@@ -90,7 +94,14 @@ export function calculateBrandScore(
   if (maxPossibleScore === 0) return 50;
 
   const normalizedScore = 50 + (rawScore / maxPossibleScore) * 50;
-  return Math.round(Math.max(0, Math.min(100, normalizedScore)));
+  const finalScore = Math.round(Math.max(0, Math.min(100, normalizedScore)));
+
+  // Debug logging for investigation
+  if (finalScore < 50 || mentionedCount === 0) {
+    console.log(`[Score Debug] ${brandName}: finalScore=${finalScore}, rawScore=${rawScore.toFixed(2)}, maxPossible=${maxPossibleScore.toFixed(2)}, mentioned=${mentionedCount}/${userCauses.length} values`);
+  }
+
+  return finalScore;
 }
 
 /**
