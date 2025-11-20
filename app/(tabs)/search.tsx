@@ -805,8 +805,40 @@ export default function SearchScreen() {
             } as Product & { firebaseId: string; isFirebaseBusiness: boolean };
           });
 
-        // Combine product results and business results
-        const combinedResults = [...(productResults || []), ...businessResults];
+        // Search users
+        const userResults = publicUsers
+          .filter(user => {
+            const searchLower = text.toLowerCase();
+            const userName = user.profile.userDetails?.name || '';
+            const userLocation = user.profile.userDetails?.location || '';
+            const userBio = user.profile.userDetails?.description || '';
+
+            return (
+              userName.toLowerCase().includes(searchLower) ||
+              userLocation.toLowerCase().includes(searchLower) ||
+              userBio.toLowerCase().includes(searchLower)
+            );
+          })
+          .map(user => ({
+            id: `user-${user.id}`,
+            userId: user.id, // Store original user ID
+            name: user.profile.userDetails?.name || 'User',
+            brand: user.profile.userDetails?.name || 'User',
+            category: 'User',
+            description: user.profile.userDetails?.description || '',
+            alignmentScore: 50, // Default score for users
+            exampleImageUrl: user.profile.userDetails?.profileImage || '',
+            website: user.profile.userDetails?.website || '',
+            location: user.profile.userDetails?.location || '',
+            valueAlignments: [],
+            keyReasons: ['User profile'],
+            moneyFlow: { company: '', shareholders: [], overallAlignment: 0 },
+            relatedValues: [],
+            isUser: true, // Flag to identify users
+          } as Product & { userId: string; isUser: boolean }));
+
+        // Combine product, business, and user results
+        const combinedResults = [...(productResults || []), ...businessResults, ...userResults];
         setResults(combinedResults);
       } else {
         setResults([]);
@@ -817,9 +849,19 @@ export default function SearchScreen() {
     }
   };
 
-  const handleProductPress = (product: Product | (Product & { firebaseId: string; isFirebaseBusiness: boolean })) => {
+  const handleProductPress = (product: Product | (Product & { firebaseId: string; isFirebaseBusiness: boolean }) | (Product & { userId: string; isUser: boolean })) => {
     if (query.trim().length > 0) {
       addToSearchHistory(query);
+    }
+
+    // Check if this is a user
+    const userResult = product as Product & { userId?: string; isUser?: boolean };
+    if (userResult.isUser && userResult.userId) {
+      router.push({
+        pathname: '/user/[userId]',
+        params: { userId: userResult.userId },
+      });
+      return;
     }
 
     // Check if this is a Firebase business

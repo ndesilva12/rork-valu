@@ -17,6 +17,7 @@ import { Image as ExpoImage } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
 import EndorsedBadge from '@/components/EndorsedBadge';
 import { UnifiedLibrary } from '@/components/Library';
+import FollowingFollowersList from '@/components/FollowingFollowersList';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -641,20 +642,23 @@ export default function ProfileScreen() {
             </>
           )}
 
-          {selectedTab === 'following' && (
-            <View style={[styles.emptyPlaceholder, { backgroundColor: colors.backgroundSecondary }]}>
-              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-                Following list - Coming soon
-              </Text>
-            </View>
+          {selectedTab === 'following' && clerkUser?.id && (
+            <FollowingFollowersList
+              mode="following"
+              userId={clerkUser.id}
+              isDarkMode={isDarkMode}
+              userCauses={profile?.causes || []}
+            />
           )}
 
-          {selectedTab === 'followers' && (
-            <View style={[styles.emptyPlaceholder, { backgroundColor: colors.backgroundSecondary }]}>
-              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-                Followers list - Coming soon
-              </Text>
-            </View>
+          {selectedTab === 'followers' && clerkUser?.id && (
+            <FollowingFollowersList
+              mode="followers"
+              userId={clerkUser.id}
+              entityType="user"
+              isDarkMode={isDarkMode}
+              userCauses={profile?.causes || []}
+            />
           )}
         </View>
       </ScrollView>
