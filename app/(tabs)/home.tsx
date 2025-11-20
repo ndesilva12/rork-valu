@@ -657,6 +657,26 @@ export default function HomeScreen() {
       };
     }
 
+    // Debug: Check for brands without names or duplicate IDs
+    const brandIds = new Map<string, number>();
+    const brandsWithoutNames: any[] = [];
+    currentBrands.forEach(entity => {
+      if (!entity.name || entity.name.trim() === '') {
+        brandsWithoutNames.push({ id: entity.id, name: entity.name, hasBusinessInfo: 'businessInfo' in entity });
+      }
+      const count = brandIds.get(entity.id) || 0;
+      brandIds.set(entity.id, count + 1);
+    });
+
+    const duplicateIds = Array.from(brandIds.entries()).filter(([id, count]) => count > 1);
+
+    if (brandsWithoutNames.length > 0) {
+      console.log(`[Home] ⚠️ Found ${brandsWithoutNames.length} brands without names:`, brandsWithoutNames.slice(0, 10));
+    }
+    if (duplicateIds.length > 0) {
+      console.log(`[Home] ⚠️ Found ${duplicateIds.length} duplicate brand IDs:`, duplicateIds.slice(0, 10));
+    }
+
     // Calculate scores for all entities (brands AND businesses) using the appropriate scoring system
     const brandsWithScores = currentBrands.map(entity => {
       let score;
@@ -675,6 +695,20 @@ export default function HomeScreen() {
 
     // Normalize scores to 1-99 range for better visual separation
     const normalizedBrands = normalizeBrandScores(brandsWithScores);
+
+    // Debug: Check scores for brands without names
+    if (brandsWithoutNames.length > 0) {
+      const brandsWithoutNamesScores = brandsWithoutNames.map(b => {
+        const beforeNorm = brandsWithScores.find(bs => bs.brand.id === b.id);
+        const afterNorm = normalizedBrands.find(nb => nb.brand.id === b.id);
+        return {
+          id: b.id,
+          scoreBefore: beforeNorm?.score,
+          scoreAfter: afterNorm?.score,
+        };
+      });
+      console.log(`[Home] Scores for brands without names:`, brandsWithoutNamesScores.slice(0, 10));
+    }
 
     // Create scored brands map
     const scoredMap = new Map(normalizedBrands.map(({ brand, score }) => [brand.id, score]));
