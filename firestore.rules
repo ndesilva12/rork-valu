@@ -47,27 +47,22 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // User Lists collection - CONTROLLED ACCESS
+    // User Lists collection - OPEN ACCESS
     // TODO: Integrate Clerk with Firebase Custom Auth for proper user validation
-    // For now, we allow reads for public lists and require userId field to be set correctly
+    // For now, allow all read/write access (Clerk handles authentication on client)
     match /userLists/{listId} {
-      // Allow read if the list is public
-      // Note: Without Firebase Auth integration, we can't validate user identity
-      // All authenticated Clerk users can read public lists
-      allow read: if resource.data.isPublic == true;
-
-      // Allow create if the document has a userId field
-      // Client-side validation via Clerk ensures userId is correct
-      allow create: if request.resource.data.keys().hasAll(['userId', 'name', 'entries', 'createdAt', 'updatedAt']);
-
-      // Allow update/delete - requires userId field to match
-      // This provides basic protection but isn't fully secure without auth integration
-      allow update, delete: if resource.data.userId != null;
+      allow read, write: if true;
     }
 
     // Business Team Members collection - OPEN ACCESS
     // Business owners can manage their team members (Clerk handles authentication)
     match /businessTeamMembers/{memberId} {
+      allow read, write: if true;
+    }
+
+    // Follows collection - OPEN ACCESS
+    // Users can follow brands, businesses, and other users (Clerk handles authentication)
+    match /follows/{followId} {
       allow read, write: if true;
     }
 

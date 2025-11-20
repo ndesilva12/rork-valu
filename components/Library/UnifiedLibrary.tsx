@@ -3,7 +3,7 @@
  * EXACTLY matches Home tab's library visual appearance
  * Functionality controlled by mode prop
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -46,6 +46,7 @@ import { BusinessUser } from '@/services/firebase/businessService';
 import { useUser } from '@/contexts/UserContext';
 import { useRouter } from 'expo-router';
 import { updateListMetadata, copyListToLibrary } from '@/services/firebase/listService';
+import { followEntity, unfollowEntity, isFollowing as checkIsFollowing } from '@/services/firebase/followService';
 import AddToLibraryModal from '@/components/AddToLibraryModal';
 import EditListModal from '@/components/EditListModal';
 import ShareOptionsModal from '@/components/ShareOptionsModal';
@@ -113,6 +114,8 @@ export default function UnifiedLibrary({
   // Item Options Modal state
   const [showItemOptionsModal, setShowItemOptionsModal] = useState(false);
   const [selectedItemForOptions, setSelectedItemForOptions] = useState<ListEntry | null>(null);
+  const [isFollowingSelectedItem, setIsFollowingSelectedItem] = useState(false);
+  const [checkingFollowStatus, setCheckingFollowStatus] = useState(false);
 
   // Confirm Modal state (for copying lists and deleting)
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -157,6 +160,47 @@ export default function UnifiedLibrary({
 
   // Filter out endorsement list from custom lists
   const customLists = userLists.filter(list => list.id !== endorsementList?.id);
+
+  // Check follow status when item is selected for options modal
+  useEffect(() => {
+    const checkFollowStatus = async () => {
+      if (!selectedItemForOptions || !currentUserId) {
+        setIsFollowingSelectedItem(false);
+        setCheckingFollowStatus(false);
+        return;
+      }
+
+      const canFollow = selectedItemForOptions.type === 'brand' || selectedItemForOptions.type === 'business';
+      if (!canFollow) {
+        setIsFollowingSelectedItem(false);
+        setCheckingFollowStatus(false);
+        return;
+      }
+
+      const accountId = selectedItemForOptions.type === 'brand'
+        ? (selectedItemForOptions as any).brandId
+        : (selectedItemForOptions as any).businessId;
+
+      if (!accountId) {
+        setIsFollowingSelectedItem(false);
+        setCheckingFollowStatus(false);
+        return;
+      }
+
+      try {
+        setCheckingFollowStatus(true);
+        const following = await checkIsFollowing(currentUserId, accountId, selectedItemForOptions.type as 'brand' | 'business');
+        setIsFollowingSelectedItem(following);
+      } catch (error) {
+        console.error('[UnifiedLibrary] Error checking follow status:', error);
+        setIsFollowingSelectedItem(false);
+      } finally {
+        setCheckingFollowStatus(false);
+      }
+    };
+
+    checkFollowStatus();
+  }, [selectedItemForOptions, currentUserId]);
 
   // Share handlers - Open ShareOptionsModal first
   const handleShareList = (list: UserList) => {
@@ -208,18 +252,39 @@ export default function UnifiedLibrary({
     setShowShareOptionsModal(true);
   };
 
-  const handleFollow = async (entry: ListEntry) => {
-    // TODO: Implement follow/unfollow functionality
-    const accountId = entry.type === 'brand' ? entry.brandId : entry.businessId;
-    const accountType = entry.type;
+  const handleFollow = async (entry: ListEntry, isCurrentlyFollowing: boolean) => {
+    if (!currentUserId) {
+      Alert.alert('Error', 'You must be logged in to follow');
+      return;
+    }
+
+    const accountId = (entry.type === 'brand' ? (entry as any).brandId : (entry as any).businessId) as string;
+    const accountType = entry.type as 'brand' | 'business';
     const accountName = (entry as any).brandName || (entry as any).businessName || (entry as any).name || 'Account';
 
-    console.log('Follow clicked:', { accountId, accountType, accountName });
+    if (!accountId) {
+      console.error('[UnifiedLibrary] No account ID found for entry:', entry);
+      Alert.alert('Error', 'Cannot follow this item');
+      return;
+    }
 
-    // TODO: Call followService to add/remove follow
-    // TODO: Update UI to show followed state
+    try {
+      if (isCurrentlyFollowing) {
+        await unfollowEntity(currentUserId, accountId, accountType);
+        Alert.alert('Success', `Unfollowed ${accountName}`);
+      } else {
+        await followEntity(currentUserId, accountId, accountType);
+        Alert.alert('Success', `Now following ${accountName}`);
+      }
 
-    Alert.alert('Coming Soon', `Follow functionality will be implemented soon!\nAccount: ${accountName}`);
+      // Force refresh to update UI
+      if (currentUserId) {
+        await library.loadUserLists(currentUserId, true);
+      }
+    } catch (error) {
+      console.error('[UnifiedLibrary] Error following/unfollowing:', error);
+      Alert.alert('Error', 'Failed to update follow status. Please try again.');
+    }
   };
 
   const performShareItem = async (entry: ListEntry) => {
@@ -1799,12 +1864,12 @@ export default function UnifiedLibrary({
             });
           }
 
-          // Follow option (for brands and businesses)
+          // Follow/Unfollow option (for brands and businesses)
           if (canFollow) {
             options.push({
               icon: UserPlus,
-              label: 'Follow',
-              onPress: () => handleFollow(selectedItemForOptions),
+              label: isFollowingSelectedItem ? 'Unfollow' : 'Follow',
+              onPress: () => handleFollow(selectedItemForOptions, isFollowingSelectedItem),
             });
           }
 

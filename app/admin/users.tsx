@@ -1082,12 +1082,10 @@ export default function UsersManagement() {
                 <Text style={styles.helpText}>No lists found for this user.</Text>
               ) : (
                 userLists.map((list) => {
-                  const isProtected = list.name === 'Endorsements' ||
+                  const isProtected = list.isEndorsed ||
+                                    list.name === 'Endorsements' ||
                                     list.name === 'Aligned' ||
-                                    list.name === 'Unaligned' ||
-                                    list.mode === 'endorsement' ||
-                                    list.mode === 'aligned' ||
-                                    list.mode === 'unaligned';
+                                    list.name === 'Unaligned';
                   const isExpanded = expandedListId === list.id;
                   const isEditing = editingListId === list.id;
 

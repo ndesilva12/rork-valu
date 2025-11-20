@@ -227,10 +227,10 @@ export default function ValueCodeSettings() {
                   />
                 </View>
 
-                {/* Require Endorse Toggle */}
+                {/* Require Endorsement Toggle */}
                 <View style={styles.requirementRow}>
                   <View style={styles.requirementText}>
-                    <Text style={[styles.requirementLabel, { color: colors.text }]}>Require Endorse</Text>
+                    <Text style={[styles.requirementLabel, { color: colors.text }]}>Require Endorsement</Text>
                     <Text style={[styles.requirementDescription, { color: colors.textSecondary }]}>
                       Customer must endorse your business
                     </Text>
