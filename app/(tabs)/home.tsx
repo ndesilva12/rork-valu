@@ -639,11 +639,9 @@ export default function HomeScreen() {
   }, [cardMenuData, clerkUser?.id]);
 
   const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands, brandDistances } = useMemo(() => {
-    // Combine brands from CSV and user businesses
-    const csvBrands = brands || [];
-    const localBizList = userBusinesses || [];
-
-    const currentBrands = [...csvBrands, ...localBizList];
+    // Only use brands from Firebase (NOT businesses)
+    // Businesses are handled separately in the Local view
+    const currentBrands = brands || [];
 
     if (!currentBrands || currentBrands.length === 0) {
       return {
@@ -657,20 +655,10 @@ export default function HomeScreen() {
       };
     }
 
-    // Calculate scores for all entities (brands AND businesses) using the appropriate scoring system
-    const brandsWithScores = currentBrands.map(entity => {
-      let score;
-
-      // Check if this is a business (has businessInfo field)
-      if ('businessInfo' in entity) {
-        // For businesses, use similarity scoring based on shared causes
-        score = calculateSimilarityScore(profile.causes || [], entity.causes || []);
-      } else {
-        // For brands, use brand scoring based on values matrix
-        score = calculateBrandScore(entity.name, profile.causes || [], valuesMatrix);
-      }
-
-      return { brand: entity, score };
+    // Calculate scores for brands using values matrix
+    const brandsWithScores = currentBrands.map(brand => {
+      const score = calculateBrandScore(brand.name, profile.causes || [], valuesMatrix);
+      return { brand, score };
     });
 
     // Normalize scores to 1-99 range for better visual separation
@@ -707,7 +695,7 @@ export default function HomeScreen() {
       scoredBrands: scoredMap,
       brandDistances: new Map(),
     };
-  }, [brands, userBusinesses, profile.causes, valuesMatrix]);
+  }, [brands, profile.causes, valuesMatrix]);
 
   // Compute local businesses when "local" view is active
   const localBusinessData = useMemo(() => {
