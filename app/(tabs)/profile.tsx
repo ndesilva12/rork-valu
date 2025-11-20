@@ -73,6 +73,7 @@ export default function ProfileScreen() {
   const [isPublicProfile, setIsPublicProfile] = useState(profile.isPublicProfile !== false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [selectedTab, setSelectedTab] = useState<'library' | 'following' | 'followers'>('library');
 
   // Library context
   const library = useLibrary();
@@ -561,66 +562,99 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Following & Discover Sections */}
-        <View style={styles.socialSections}>
-          {/* Following Section */}
+        {/* Library / Following / Followers Tabs */}
+        <View style={styles.tabSelector}>
+          {/* Library Tab */}
           <TouchableOpacity
-            style={[styles.socialSection, { backgroundColor: colors.backgroundSecondary }]}
-            onPress={() => {
-              // TODO: Open Following modal
-              console.log('Open Following modal');
-            }}
+            style={[
+              styles.tab,
+              selectedTab === 'library' && { borderBottomWidth: 3, borderBottomColor: colors.primary }
+            ]}
+            onPress={() => setSelectedTab('library')}
             activeOpacity={0.7}
           >
-            <View style={styles.socialSectionHeader}>
-              <Text style={[styles.socialSectionTitle, { color: colors.text }]}>Following</Text>
-              <Text style={[styles.socialSectionCount, { color: colors.textSecondary }]}>{followingCount}</Text>
-            </View>
-            <Text style={[styles.socialSectionDescription, { color: colors.textSecondary }]}>
-              Accounts you follow
+            <Text style={[styles.tabTitle, { color: selectedTab === 'library' ? colors.primary : colors.text }]}>
+              Library
+            </Text>
+            <Text style={[styles.tabCount, { color: colors.textSecondary }]}>
+              {(library.state.userLists?.length || 0) + (library.state.endorsementList ? 1 : 0)}
             </Text>
           </TouchableOpacity>
 
-          {/* Followers Section */}
+          {/* Following Tab */}
           <TouchableOpacity
-            style={[styles.socialSection, { backgroundColor: colors.backgroundSecondary }]}
-            onPress={() => {
-              // TODO: Open Followers modal
-              console.log('Open Followers modal');
-            }}
+            style={[
+              styles.tab,
+              selectedTab === 'following' && { borderBottomWidth: 3, borderBottomColor: colors.primary }
+            ]}
+            onPress={() => setSelectedTab('following')}
             activeOpacity={0.7}
           >
-            <View style={styles.socialSectionHeader}>
-              <Text style={[styles.socialSectionTitle, { color: colors.text }]}>Followers</Text>
-              <Text style={[styles.socialSectionCount, { color: colors.textSecondary }]}>{followersCount}</Text>
-            </View>
-            <Text style={[styles.socialSectionDescription, { color: colors.textSecondary }]}>
-              Accounts following you
+            <Text style={[styles.tabTitle, { color: selectedTab === 'following' ? colors.primary : colors.text }]}>
+              Following
+            </Text>
+            <Text style={[styles.tabCount, { color: colors.textSecondary }]}>
+              {followingCount}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Followers Tab */}
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              selectedTab === 'followers' && { borderBottomWidth: 3, borderBottomColor: colors.primary }
+            ]}
+            onPress={() => setSelectedTab('followers')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.tabTitle, { color: selectedTab === 'followers' ? colors.primary : colors.text }]}>
+              Followers
+            </Text>
+            <Text style={[styles.tabCount, { color: colors.textSecondary }]}>
+              {followersCount}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Library Section - Uses Unified Library Component */}
-        <View style={styles.librarySection}>
-          <Text style={[styles.librarySectionTitle, { color: colors.text }]}>My Library</Text>
+        {/* Content Section - Shows Library/Following/Followers based on selected tab */}
+        <View style={styles.contentSection}>
+          {selectedTab === 'library' && (
+            <>
+              {library.state.isLoading ? (
+                <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundSecondary }]}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                  <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading your lists...</Text>
+                </View>
+              ) : (
+                <UnifiedLibrary
+                  mode="edit"
+                  currentUserId={clerkUser?.id}
+                  alignedItems={allSupportFull}
+                  unalignedItems={allAvoidFull}
+                  isDarkMode={isDarkMode}
+                  profileImage={profileImageUrl}
+                  userBusinesses={userBusinesses}
+                  scoredBrands={scoredBrands}
+                  userCauses={profile?.causes || []}
+                />
+              )}
+            </>
+          )}
 
-          {library.state.isLoading ? (
-            <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundSecondary }]}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading your lists...</Text>
+          {selectedTab === 'following' && (
+            <View style={[styles.emptyPlaceholder, { backgroundColor: colors.backgroundSecondary }]}>
+              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+                Following list - Coming soon
+              </Text>
             </View>
-          ) : (
-            <UnifiedLibrary
-              mode="edit"
-              currentUserId={clerkUser?.id}
-              alignedItems={allSupportFull}
-              unalignedItems={allAvoidFull}
-              isDarkMode={isDarkMode}
-              profileImage={profileImageUrl}
-              userBusinesses={userBusinesses}
-              scoredBrands={scoredBrands}
-              userCauses={profile?.causes || []}
-            />
+          )}
+
+          {selectedTab === 'followers' && (
+            <View style={[styles.emptyPlaceholder, { backgroundColor: colors.backgroundSecondary }]}>
+              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
+                Followers list - Coming soon
+              </Text>
+            </View>
           )}
         </View>
       </ScrollView>
@@ -776,39 +810,30 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Following & Discover Sections
-  socialSections: {
+  // Tab Selector
+  tabSelector: {
     flexDirection: 'row',
-    gap: 12,
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
-  socialSection: {
+  tab: {
     flex: 1,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  socialSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     alignItems: 'center',
-    marginBottom: 4,
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
   },
-  socialSectionTitle: {
-    fontSize: 16,
+  tabTitle: {
+    fontSize: 15,
     fontWeight: '600',
+    marginBottom: 2,
   },
-  socialSectionCount: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  socialSectionDescription: {
+  tabCount: {
     fontSize: 13,
+    fontWeight: '500',
   },
 
   // Edit Form
@@ -890,15 +915,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Library Section
-  librarySection: {
+  // Content Section (Library/Following/Followers)
+  contentSection: {
     paddingHorizontal: 16,
+    paddingTop: 16,
     paddingBottom: 20,
   },
-  librarySectionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 16,
+  emptyPlaceholder: {
+    padding: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
   loadingContainer: {
     padding: 40,
