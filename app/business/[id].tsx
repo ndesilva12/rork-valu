@@ -30,6 +30,7 @@ import { calculateAlignmentScore } from '@/services/firebase/businessService';
 import { getUserLists, addEntryToList } from '@/services/firebase/listService';
 import { calculateSimilarityScore, getSimilarityLabel, normalizeSimilarityScores } from '@/lib/scoring';
 import { getAllUserBusinesses } from '@/services/firebase/businessService';
+import { followEntity, unfollowEntity, isFollowing as checkIsFollowing } from '@/services/firebase/followService';
 
 interface BusinessUser {
   id: string;
@@ -57,6 +58,8 @@ export default function BusinessDetailScreen() {
   const [businessOwnerLists, setBusinessOwnerLists] = useState<any[]>([]);
   const [loadingBusinessLists, setLoadingBusinessLists] = useState(true);
   const [allBusinesses, setAllBusinesses] = useState<BusinessUser[]>([]);
+  const [isFollowingBusiness, setIsFollowingBusiness] = useState(false);
+  const [checkingFollowStatus, setCheckingFollowStatus] = useState(true);
 
   useEffect(() => {
     const fetchBusiness = async () => {
@@ -180,15 +183,26 @@ export default function BusinessDetailScreen() {
   };
 
   const handleFollow = async () => {
-    if (!business) return;
+    if (!business || !clerkUser?.id) {
+      Alert.alert('Error', 'You must be logged in to follow businesses');
+      return;
+    }
 
-    // TODO: Implement follow/unfollow functionality
-    console.log('Follow clicked:', { businessId: business.id, businessName: business.businessInfo.name });
-
-    // TODO: Call followService to add/remove follow
-    // TODO: Update UI to show followed state
-
-    Alert.alert('Coming Soon', `Follow functionality will be implemented soon!\nBusiness: ${business.businessInfo.name}`);
+    try {
+      if (isFollowingBusiness) {
+        await unfollowEntity(clerkUser.id, business.id, 'business');
+        setIsFollowingBusiness(false);
+        Alert.alert('Success', `Unfollowed ${business.businessInfo.name}`);
+      } else {
+        await followEntity(clerkUser.id, business.id, 'business');
+        setIsFollowingBusiness(true);
+        Alert.alert('Success', `Now following ${business.businessInfo.name}`);
+      }
+      setShowActionMenu(false);
+    } catch (error: any) {
+      console.error('[BusinessDetail] Error following/unfollowing business:', error);
+      Alert.alert('Error', error?.message || 'Could not follow business. Please try again.');
+    }
   };
 
   const handleEndorse = async () => {
@@ -239,6 +253,25 @@ export default function BusinessDetailScreen() {
   useEffect(() => {
     loadBusinessOwnerLists();
   }, [id]);
+
+  // Check follow status when business loads
+  useEffect(() => {
+    const checkFollow = async () => {
+      if (!clerkUser?.id || !business?.id) {
+        setCheckingFollowStatus(false);
+        return;
+      }
+      try {
+        const following = await checkIsFollowing(clerkUser.id, business.id, 'business');
+        setIsFollowingBusiness(following);
+      } catch (error) {
+        console.error('[BusinessDetail] Error checking follow status:', error);
+      } finally {
+        setCheckingFollowStatus(false);
+      }
+    };
+    checkFollow();
+  }, [clerkUser?.id, business?.id]);
 
   // Load all businesses for normalization
   useEffect(() => {
@@ -1037,7 +1070,9 @@ export default function BusinessDetailScreen() {
               activeOpacity={0.7}
             >
               <UserPlus size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Follow</Text>
+              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>
+                {isFollowingBusiness ? 'Unfollow' : 'Follow'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity

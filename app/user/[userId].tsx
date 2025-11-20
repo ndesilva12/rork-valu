@@ -171,6 +171,35 @@ export default function UserProfileScreen() {
     }
   };
 
+  const handleFollow = async () => {
+    if (!userProfile || !clerkUser?.id) {
+      Alert.alert('Error', 'You must be logged in to follow users');
+      return;
+    }
+
+    if (userId === clerkUser.id) {
+      Alert.alert('Info', 'You cannot follow yourself');
+      return;
+    }
+
+    try {
+      if (isFollowingUser) {
+        await unfollowEntity(clerkUser.id, userId, 'user');
+        setIsFollowingUser(false);
+        setFollowersCount(prev => Math.max(0, prev - 1));
+        Alert.alert('Success', `Unfollowed ${userProfile.userDetails?.name || 'user'}`);
+      } else {
+        await followEntity(clerkUser.id, userId, 'user');
+        setIsFollowingUser(true);
+        setFollowersCount(prev => prev + 1);
+        Alert.alert('Success', `Now following ${userProfile.userDetails?.name || 'user'}`);
+      }
+    } catch (error: any) {
+      console.error('[UserProfile] Error following/unfollowing user:', error);
+      Alert.alert('Error', error?.message || 'Could not follow user. Please try again.');
+    }
+  };
+
   // Fetch user businesses
   useEffect(() => {
     const fetchBusinesses = async () => {

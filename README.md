@@ -9,7 +9,7 @@ This is a native cross-platform mobile app created with [Rork](https://rork.com)
 
 ## How can I edit this code?
 
-There are several ways of editing your native mobile application.
+There are several ways of editing your native mobile application...
 
 ### **Use Rork**
 
