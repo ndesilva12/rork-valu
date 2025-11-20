@@ -1609,41 +1609,62 @@ export default function UnifiedLibrary({
     return (
       <>
         {/* 1. Endorsement List - Always first, pinned */}
-        {endorsementList && renderListCard(
-          'endorsement',
-          endorsementTitle,
-          endorsementList.entries?.length || 0,
-          true,
-          `Endorsed by ${endorsementList.creatorName || 'you'}`,
-          endorsementList.description,
-          true, // Always public
-          profileImage
+        {endorsementList && (
+          <View style={[styles.individualListContainer, {
+            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+          }]}>
+            {renderListCard(
+              'endorsement',
+              endorsementTitle,
+              endorsementList.entries?.length || 0,
+              true,
+              `Endorsed by ${endorsementList.creatorName || 'you'}`,
+              endorsementList.description,
+              true, // Always public
+              profileImage
+            )}
+          </View>
         )}
 
         {/* 2. Aligned List */}
-        {alignedItems.length > 0 && renderListCard(
-          'aligned',
-          'Aligned',
-          alignedItems.length,
-          false,
-          undefined,
-          'Brands and businesses aligned with your values',
-          false, // Always private
-          undefined,
-          true
+        {alignedItems.length > 0 && (
+          <View style={[styles.individualListContainer, {
+            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+          }]}>
+            {renderListCard(
+              'aligned',
+              'Aligned',
+              alignedItems.length,
+              false,
+              undefined,
+              'Brands and businesses aligned with your values',
+              false, // Always private
+              undefined,
+              true
+            )}
+          </View>
         )}
 
         {/* 3. Unaligned List */}
-        {unalignedItems.length > 0 && renderListCard(
-          'unaligned',
-          'Unaligned',
-          unalignedItems.length,
-          false,
-          undefined,
-          'Brands and businesses not aligned with your values',
-          false, // Always private
-          undefined,
-          true
+        {unalignedItems.length > 0 && (
+          <View style={[styles.individualListContainer, {
+            backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+          }]}>
+            {renderListCard(
+              'unaligned',
+              'Unaligned',
+              unalignedItems.length,
+              false,
+              undefined,
+              'Brands and businesses not aligned with your values',
+              false, // Always private
+              undefined,
+              true
+            )}
+          </View>
         )}
 
         {/* 4. Custom Lists */}
@@ -1923,14 +1944,24 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 999,
   },
+  individualListContainer: {
+    marginHorizontal: 0,
+    marginBottom: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 0,
+    overflow: 'hidden',
+    minHeight: 64,
+  },
   collapsibleListHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: Platform.OS === 'web' ? 2 : 8,
-    marginHorizontal: Platform.OS === 'web' ? 2 : 8,
-    marginVertical: 6,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    paddingRight: 12,
+    marginHorizontal: 0,
+    marginVertical: 0,
     minHeight: 64,
     backgroundColor: 'transparent',
   },
@@ -1949,7 +1980,7 @@ const styles = StyleSheet.create({
   listProfileImageContainer: {
     width: 64,
     height: 64,
-    borderRadius: 0,
+    borderRadius: 8,
     borderWidth: 0,
     justifyContent: 'center',
     alignItems: 'center',
