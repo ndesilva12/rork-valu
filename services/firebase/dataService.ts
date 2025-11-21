@@ -26,48 +26,58 @@ export async function getBrandsFromFirebase(): Promise<Brand[]> {
     const brandsRef = collection(db, 'brands');
     const snapshot = await getDocs(brandsRef);
 
-    const brands: Brand[] = snapshot.docs.map((doc) => {
-      const data = doc.data();
+    const brands: Brand[] = snapshot.docs
+      .filter((doc) => {
+        // Filter out business accounts (user IDs starting with "user_")
+        // These should not be in the brands collection
+        if (doc.id.startsWith('user_')) {
+          console.log(`[DataService] ⚠️ Filtering out business account from brands: ${doc.id}`);
+          return false;
+        }
+        return true;
+      })
+      .map((doc) => {
+        const data = doc.data();
 
-      // Data is now in the new array format after migration
-      const affiliates = data.affiliates || [];
-      const partnerships = data.partnerships || [];
-      const ownership = data.ownership || [];
-      const ownershipSources = data.ownershipSources || undefined;
+        // Data is now in the new array format after migration
+        const affiliates = data.affiliates || [];
+        const partnerships = data.partnerships || [];
+        const ownership = data.ownership || [];
+        const ownershipSources = data.ownershipSources || undefined;
 
-      return {
-        id: doc.id,
-        name: data.name || doc.id,
-        category: data.category || 'Uncategorized',
-        description: data.description || '',
-        website: data.website || undefined,
-        exampleImageUrl: data.exampleImageUrl || undefined,
+        return {
+          id: doc.id,
+          name: data.name || doc.id,
+          category: data.category || 'Uncategorized',
+          description: data.description || '',
+          website: data.website || undefined,
+          exampleImageUrl: data.exampleImageUrl || undefined,
 
-        // Money flow sections (now converted from old format if needed)
-        affiliates,
-        partnerships,
-        ownership,
-        ownershipSources,
+          // Money flow sections (now converted from old format if needed)
+          affiliates,
+          partnerships,
+          ownership,
+          ownershipSources,
 
-        // Location data
-        location: data.location || undefined,
-        latitude: data.latitude || undefined,
-        longitude: data.longitude || undefined,
+          // Location data
+          location: data.location || undefined,
+          latitude: data.latitude || undefined,
+          longitude: data.longitude || undefined,
 
-        // Default values for backward compatibility
-        alignmentScore: data.alignmentScore || 0,
-        keyReasons: data.keyReasons || [],
-        relatedValues: data.relatedValues || [],
-        valueAlignments: data.valueAlignments || [],
-        moneyFlow: data.moneyFlow || {
-          company: data.name || doc.id,
-          shareholders: [],
-          overallAlignment: 0,
-        },
-      } as Brand;
-    });
+          // Default values for backward compatibility
+          alignmentScore: data.alignmentScore || 0,
+          keyReasons: data.keyReasons || [],
+          relatedValues: data.relatedValues || [],
+          valueAlignments: data.valueAlignments || [],
+          moneyFlow: data.moneyFlow || {
+            company: data.name || doc.id,
+            shareholders: [],
+            overallAlignment: 0,
+          },
+        } as Brand;
+      });
 
-    console.log(`[DataService] ✅ Loaded ${brands.length} brands from Firebase`);
+    console.log(`[DataService] ✅ Loaded ${brands.length} brands from Firebase (business accounts filtered out)`);
     return brands;
   } catch (error) {
     console.error('[DataService] ❌ Error fetching brands from Firebase:', error);
