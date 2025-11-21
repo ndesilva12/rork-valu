@@ -478,18 +478,6 @@ export default function UserProfileScreen() {
                         style={styles.profileActionItem}
                         onPress={() => {
                           setShowActionMenu(false);
-                          handleAddEndorseListToLibrary();
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <List size={16} color={colors.text} strokeWidth={2} />
-                        <Text style={[styles.profileActionText, { color: colors.text }]}>Add Endorse List</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={styles.profileActionItem}
-                        onPress={() => {
-                          setShowActionMenu(false);
                           handleFollowUser();
                         }}
                         activeOpacity={0.7}

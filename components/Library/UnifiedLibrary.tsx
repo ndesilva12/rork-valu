@@ -183,6 +183,9 @@ export default function UnifiedLibrary({
   // Scroll ref for sticky header and scroll-to-top
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Action menu state for endorsed section header
+  const [showEndorsedActionMenu, setShowEndorsedActionMenu] = useState(false);
+
   // Section selection state - default to endorsement (or aligned if empty)
   type LibrarySection = 'endorsement' | 'aligned' | 'unaligned' | 'following' | 'followers' | 'local';
   const defaultSection: LibrarySection = (endorsementList && endorsementList.entries && endorsementList.entries.length > 0)
@@ -2009,17 +2012,58 @@ export default function UnifiedLibrary({
     };
 
     const title = sectionTitles[selectedSection];
+    const isEndorsed = selectedSection === 'endorsement';
+    const canReorder = isEndorsed && canEdit && endorsementList && endorsementList.entries && endorsementList.entries.length > 1;
 
     return (
-      <TouchableOpacity
-        style={[styles.sectionHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}
-        onPress={() => scrollViewRef.current?.scrollTo({ y: 0, animated: true })}
-        activeOpacity={0.7}
-      >
-        <Text style={[styles.sectionHeaderTitle, { color: colors.text }]}>
-          {title}
-        </Text>
-      </TouchableOpacity>
+      <View style={[styles.sectionHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          style={styles.sectionHeaderTitleContainer}
+          onPress={() => scrollViewRef.current?.scrollTo({ y: 0, animated: true })}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.sectionHeaderTitle, { color: colors.text }]}>
+            {title}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Action menu for endorsed section */}
+        {isEndorsed && canReorder && (
+          <View>
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                setShowEndorsedActionMenu(!showEndorsedActionMenu);
+              }}
+              style={styles.headerActionButton}
+              activeOpacity={0.7}
+            >
+              <View style={{ transform: [{ rotate: '90deg' }] }}>
+                <MoreVertical size={20} color={colors.text} strokeWidth={2} />
+              </View>
+            </TouchableOpacity>
+
+            {/* Action menu dropdown */}
+            {showEndorsedActionMenu && (
+              <View style={[styles.endorsedActionDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={styles.endorsedActionItem}
+                  onPress={() => {
+                    setShowEndorsedActionMenu(false);
+                    setIsReorderMode(true);
+                    setReorderingListId('endorsement');
+                    setLocalEntries([...endorsementList.entries]);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <GripVertical size={16} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.endorsedActionText, { color: colors.text }]}>Reorder</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+      </View>
     );
   };
 
@@ -2912,14 +2956,48 @@ const styles = StyleSheet.create({
     }),
   },
   sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
   },
+  sectionHeaderTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
   sectionHeaderTitle: {
     fontSize: 18,
     fontWeight: '700',
-    textAlign: 'center',
+  },
+  headerActionButton: {
+    padding: 8,
+  },
+  endorsedActionDropdown: {
+    position: 'absolute',
+    top: 40,
+    right: 0,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 1000,
+    minWidth: 150,
+  },
+  endorsedActionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 8,
+  },
+  endorsedActionText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   emptySection: {
     padding: 40,

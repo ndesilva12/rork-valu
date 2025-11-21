@@ -74,7 +74,6 @@ export default function ProfileScreen() {
   const [isPublicProfile, setIsPublicProfile] = useState(profile.isPublicProfile !== false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
-  const [selectedTab, setSelectedTab] = useState<'library' | 'following' | 'followers'>('library');
 
   // Library context
   const library = useLibrary();
@@ -563,110 +562,27 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Library / Following / Followers Tabs */}
-        <View style={styles.tabSelector}>
-          {/* Library Tab */}
-          <TouchableOpacity
-            style={[
-              styles.tab,
-              {
-                backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-                borderColor: selectedTab === 'library' ? colors.primary : (isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'),
-              }
-            ]}
-            onPress={() => setSelectedTab('library')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tabTitle, { color: selectedTab === 'library' ? colors.primary : colors.text }]}>
-              Library
-            </Text>
-            <Text style={[styles.tabCount, { color: colors.textSecondary }]}>
-              {3 + (library.state.userLists?.length || 0)}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Following Tab */}
-          <TouchableOpacity
-            style={[
-              styles.tab,
-              {
-                backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-                borderColor: selectedTab === 'following' ? colors.primary : (isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'),
-              }
-            ]}
-            onPress={() => setSelectedTab('following')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tabTitle, { color: selectedTab === 'following' ? colors.primary : colors.text }]}>
-              Following
-            </Text>
-            <Text style={[styles.tabCount, { color: colors.textSecondary }]}>
-              {followingCount}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Followers Tab */}
-          <TouchableOpacity
-            style={[
-              styles.tab,
-              {
-                backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-                borderColor: selectedTab === 'followers' ? colors.primary : (isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'),
-              }
-            ]}
-            onPress={() => setSelectedTab('followers')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tabTitle, { color: selectedTab === 'followers' ? colors.primary : colors.text }]}>
-              Followers
-            </Text>
-            <Text style={[styles.tabCount, { color: colors.textSecondary }]}>
-              {followersCount}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Content Section - Shows Library/Following/Followers based on selected tab */}
+        {/* Library with integrated sections */}
         <View style={styles.contentSection}>
-          {selectedTab === 'library' && (
-            <>
-              {library.state.isLoading ? (
-                <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundSecondary }]}>
-                  <ActivityIndicator size="large" color={colors.primary} />
-                  <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading your lists...</Text>
-                </View>
-              ) : (
-                <UnifiedLibrary
-                  mode="edit"
-                  currentUserId={clerkUser?.id}
-                  alignedItems={allSupportFull}
-                  unalignedItems={allAvoidFull}
-                  isDarkMode={isDarkMode}
-                  profileImage={profileImageUrl}
-                  userBusinesses={userBusinesses}
-                  scoredBrands={scoredBrands}
-                  userCauses={profile?.causes || []}
-                />
-              )}
-            </>
-          )}
-
-          {selectedTab === 'following' && clerkUser?.id && (
-            <FollowingFollowersList
-              mode="following"
-              userId={clerkUser.id}
+          {library.state.isLoading ? (
+            <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundSecondary }]}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading your lists...</Text>
+            </View>
+          ) : (
+            <UnifiedLibrary
+              mode="preview"
+              currentUserId={clerkUser?.id}
+              viewingUserId={clerkUser?.id}
+              alignedItems={allSupportFull}
+              unalignedItems={allAvoidFull}
               isDarkMode={isDarkMode}
+              profileImage={profileImageUrl}
+              userBusinesses={userBusinesses}
+              scoredBrands={scoredBrands}
               userCauses={profile?.causes || []}
-            />
-          )}
-
-          {selectedTab === 'followers' && clerkUser?.id && (
-            <FollowingFollowersList
-              mode="followers"
-              userId={clerkUser.id}
-              entityType="user"
-              isDarkMode={isDarkMode}
-              userCauses={profile?.causes || []}
+              followingCount={followingCount}
+              followersCount={followersCount}
             />
           )}
         </View>

@@ -219,18 +219,6 @@ const UserCard = ({ item, colors, router, clerkUser, profile, library }: {
                 style={styles.userActionItem}
                 onPress={() => {
                   setShowActionMenu(false);
-                  handleAddEndorseListToLibrary();
-                }}
-                activeOpacity={0.7}
-              >
-                <ListIcon size={16} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.userActionText, { color: colors.text }]}>Add Endorse List</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.userActionItem}
-                onPress={() => {
-                  setShowActionMenu(false);
                   handleFollowUser();
                 }}
                 activeOpacity={0.7}
