@@ -99,6 +99,10 @@ interface UnifiedLibraryProps {
   userCauses?: Cause[];
   // Location data for Local view
   userLocation?: { latitude: number; longitude: number } | null;
+  onRequestLocation?: () => void;
+  // Following/Followers counts
+  followingCount?: number;
+  followersCount?: number;
 }
 
 export default function UnifiedLibrary({
@@ -115,6 +119,9 @@ export default function UnifiedLibrary({
   scoredBrands = new Map(),
   userCauses = [],
   userLocation = null,
+  onRequestLocation,
+  followingCount = 0,
+  followersCount = 0,
 }: UnifiedLibraryProps) {
   const colors = isDarkMode ? darkColors : lightColors;
   const library = useLibrary();
@@ -1876,25 +1883,55 @@ export default function UnifiedLibrary({
       );
     };
 
+    const EndorsedSectionBox = () => {
+      const isSelected = selectedSection === 'endorsement';
+      return (
+        <TouchableOpacity
+          style={[
+            styles.sectionBox,
+            {
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: isSelected ? colors.primary : colors.border,
+              borderWidth: isSelected ? 2 : 1,
+            },
+          ]}
+          onPress={() => setSelectedSection('endorsement')}
+          activeOpacity={0.7}
+        >
+          <View style={styles.endorsedBadgeContainer}>
+            <View style={[styles.endorsedBadge, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.endorsedBadgeText, { color: colors.white }]}>★</Text>
+            </View>
+          </View>
+          <Text style={[styles.sectionLabel, { color: isSelected ? colors.primary : colors.text }]}>
+            Endorsed
+          </Text>
+          <Text style={[styles.sectionCount, { color: colors.textSecondary }]}>
+            {endorsementCount}
+          </Text>
+        </TouchableOpacity>
+      );
+    };
+
     return (
       <View style={styles.sectionSelector}>
-        {/* Top row: Following | Followers | Local */}
+        {/* Top row: Local | Following | Followers */}
         <View style={styles.sectionRow}>
           <View style={styles.sectionThird}>
-            <SectionBox section="following" label="Following" count={0} />
-          </View>
-          <View style={styles.sectionThird}>
-            <SectionBox section="followers" label="Followers" count={0} />
-          </View>
-          <View style={styles.sectionThird}>
             <SectionBox section="local" label="Local" count={localCount} />
+          </View>
+          <View style={styles.sectionThird}>
+            <SectionBox section="following" label="Following" count={followingCount} />
+          </View>
+          <View style={styles.sectionThird}>
+            <SectionBox section="followers" label="Followers" count={followersCount} />
           </View>
         </View>
 
         {/* Bottom row: Endorsed | Aligned | Unaligned */}
         <View style={styles.sectionRow}>
           <View style={styles.sectionThird}>
-            <SectionBox section="endorsement" label="Endorsed" count={endorsementCount} />
+            <EndorsedSectionBox />
           </View>
           <View style={styles.sectionThird}>
             <SectionBox section="aligned" label="Aligned" count={alignedCount} />
@@ -1977,6 +2014,7 @@ export default function UnifiedLibrary({
             userLocation={userLocation}
             userCauses={userCauses}
             isDarkMode={isDarkMode}
+            onRequestLocation={onRequestLocation}
           />
         );
 
@@ -2763,6 +2801,22 @@ const styles = StyleSheet.create({
   sectionCount: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  endorsedBadgeContainer: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+  },
+  endorsedBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  endorsedBadgeText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   emptySection: {
     padding: 40,

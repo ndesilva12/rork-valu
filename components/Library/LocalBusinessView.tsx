@@ -15,10 +15,9 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { MapPin, ChevronDown, ChevronUp, MoreVertical } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
-import { BusinessUser } from '@/services/firebase/businessService';
+import { BusinessUser, isBusinessWithinRange } from '@/services/firebase/businessService';
 import { Cause } from '@/types';
 import { calculateSimilarityScore } from '@/lib/scoring';
-import { isBusinessWithinRange } from '@/lib/distance';
 import { formatDistance } from '@/lib/distance';
 import { getLogoUrl } from '@/lib/logo';
 
@@ -29,6 +28,7 @@ interface LocalBusinessViewProps {
   userLocation?: { latitude: number; longitude: number } | null;
   userCauses?: Cause[];
   isDarkMode?: boolean;
+  onRequestLocation?: () => void;
 }
 
 interface BusinessWithScore {
@@ -81,6 +81,7 @@ export default function LocalBusinessView({
   userLocation,
   userCauses = [],
   isDarkMode = false,
+  onRequestLocation,
 }: LocalBusinessViewProps) {
   const colors = isDarkMode ? darkColors : lightColors;
   const router = useRouter();
@@ -208,6 +209,17 @@ export default function LocalBusinessView({
         <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
           Location access required to view local businesses
         </Text>
+        {onRequestLocation && (
+          <TouchableOpacity
+            style={[styles.enableLocationButton, { backgroundColor: colors.primary }]}
+            onPress={onRequestLocation}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.enableLocationButtonText, { color: colors.white }]}>
+              Enable Location
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   }
@@ -396,5 +408,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     textAlign: 'center',
+  },
+  enableLocationButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  enableLocationButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
