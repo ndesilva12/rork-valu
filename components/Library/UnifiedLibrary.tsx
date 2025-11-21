@@ -159,6 +159,10 @@ export default function UnifiedLibrary({
   const { width } = useWindowDimensions();
   const isLargeScreen = width >= 768;
 
+  // Use props if provided, otherwise use context (MUST be before defaultSection calculation)
+  const endorsementList = propsEndorsementList !== undefined ? propsEndorsementList : library.state.endorsementList;
+  const userLists = propsUserLists !== undefined ? propsUserLists : library.state.userLists;
+
   // Reorder mode state
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [reorderingListId, setReorderingListId] = useState<string | null>(null);
@@ -184,10 +188,6 @@ export default function UnifiedLibrary({
   const canEdit = mode === 'edit';
   const canInteract = mode !== 'preview'; // Can add/share in view mode
   const canBrowse = true; // All modes can expand/collapse to browse
-
-  // Use props if provided, otherwise use context
-  const endorsementList = propsEndorsementList !== undefined ? propsEndorsementList : library.state.endorsementList;
-  const userLists = propsUserLists !== undefined ? propsUserLists : library.state.userLists;
 
   // Navigate into a list (replaces expand/collapse)
   const handleListClick = (listId: string) => {
