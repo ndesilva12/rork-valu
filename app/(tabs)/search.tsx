@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Search as SearchIcon, TrendingUp, TrendingDown, Minus, ScanBarcode, X, Heart, MessageCircle, Share2, ExternalLink, MoreVertical } from 'lucide-react-native';
+import { Search as SearchIcon, TrendingUp, TrendingDown, Minus, ScanBarcode, X, Heart, MessageCircle, Share2, ExternalLink, MoreVertical, UserPlus, UserMinus, List as ListIcon } from 'lucide-react-native';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
 import {
@@ -68,6 +68,7 @@ const UserCard = ({ item, colors, router, clerkUser, profile, library }: {
 
   const [isFollowingUser, setIsFollowingUser] = useState(false);
   const [checkingFollowStatus, setCheckingFollowStatus] = useState(true);
+  const [showActionMenu, setShowActionMenu] = useState(false);
 
   // Check follow status on mount
   useEffect(() => {
@@ -147,40 +148,17 @@ const UserCard = ({ item, colors, router, clerkUser, profile, library }: {
     }
   };
 
-  const handleActionMenu = (e: any) => {
-    e.stopPropagation();
-    Alert.alert(
-      userName,
-      'Choose an action',
-      [
-        {
-          text: 'Add Endorse List to Library',
-          onPress: handleAddEndorseListToLibrary,
-        },
-        {
-          text: isFollowingUser ? 'Unfollow' : 'Follow',
-          onPress: handleFollowUser,
-        },
-        {
-          text: 'Share',
-          onPress: () => {
-            const shareUrl = `${Platform.OS === 'web' ? window.location.origin : 'https://upright.money'}/user/${item.id}`;
-            if (Platform.OS === 'web') {
-              navigator.clipboard.writeText(shareUrl);
-              Alert.alert('Link Copied', 'Profile link copied to clipboard');
-            } else {
-              RNShare.share({
-                message: `Check out ${userName}'s profile on Endorse: ${shareUrl}`,
-              });
-            }
-          },
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-      ]
-    );
+  const handleShare = () => {
+    const shareUrl = `${Platform.OS === 'web' ? window.location.origin : 'https://upright.money'}/user/${item.id}`;
+    if (Platform.OS === 'web') {
+      navigator.clipboard.writeText(shareUrl);
+      Alert.alert('Link Copied', 'Profile link copied to clipboard');
+    } else {
+      RNShare.share({
+        message: `Check out ${userName}'s profile on Endorse: ${shareUrl}`,
+      });
+    }
+    setShowActionMenu(false);
   };
 
   return (
@@ -223,15 +201,49 @@ const UserCard = ({ item, colors, router, clerkUser, profile, library }: {
             </Text>
           )}
         </View>
-        <TouchableOpacity
-          style={[styles.userCardActionButton, { backgroundColor: colors.backgroundSecondary }]}
-          onPress={handleActionMenu}
-          activeOpacity={0.7}
-        >
-          <View style={{ transform: [{ rotate: '90deg' }] }}>
-            <MoreVertical size={18} color={colors.text} strokeWidth={2} />
-          </View>
-        </TouchableOpacity>
+        <View style={{ position: 'relative' }}>
+          <TouchableOpacity
+            style={[styles.userCardActionButton, { backgroundColor: colors.backgroundSecondary }]}
+            onPress={() => setShowActionMenu(!showActionMenu)}
+            activeOpacity={0.7}
+          >
+            <View style={{ transform: [{ rotate: '90deg' }] }}>
+              <MoreVertical size={18} color={colors.text} strokeWidth={2} />
+            </View>
+          </TouchableOpacity>
+
+          {/* Action Menu Dropdown */}
+          {showActionMenu && (
+            <View style={[styles.userActionDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <TouchableOpacity
+                style={styles.userActionItem}
+                onPress={() => {
+                  setShowActionMenu(false);
+                  handleFollowUser();
+                }}
+                activeOpacity={0.7}
+              >
+                {isFollowingUser ? (
+                  <UserMinus size={16} color={colors.text} strokeWidth={2} />
+                ) : (
+                  <UserPlus size={16} color={colors.text} strokeWidth={2} />
+                )}
+                <Text style={[styles.userActionText, { color: colors.text }]}>
+                  {isFollowingUser ? 'Unfollow' : 'Follow'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.userActionItem}
+                onPress={handleShare}
+                activeOpacity={0.7}
+              >
+                <Share2 size={16} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.userActionText, { color: colors.text }]}>Share</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -2537,6 +2549,32 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  userActionDropdown: {
+    position: 'absolute',
+    top: 40,
+    right: 0,
+    minWidth: 180,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 1000,
+  },
+  userActionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  userActionText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
   userScoreCircle: {
     width: 52,

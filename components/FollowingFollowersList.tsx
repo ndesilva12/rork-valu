@@ -35,7 +35,7 @@ interface FollowingFollowersListProps {
   userId: string;
   entityType?: 'user' | 'brand' | 'business'; // For followers mode
   isDarkMode?: boolean;
-  userCauses?: string[];
+  userCauses?: Cause[];
 }
 
 interface EnrichedFollow extends Follow {
@@ -131,7 +131,7 @@ export default function FollowingFollowersList({
 
               // Calculate alignment score
               if (userCauses.length > 0 && valuesMatrix) {
-                const score = calculateBrandScore(brand, valuesMatrix, userCauses);
+                const score = calculateBrandScore(brand.name, userCauses, valuesMatrix);
                 enriched.alignmentScore = score;
                 enriched.scoreType = 'alignment';
               }

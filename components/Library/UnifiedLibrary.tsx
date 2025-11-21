@@ -3,7 +3,7 @@
  * EXACTLY matches Home tab's library visual appearance
  * Functionality controlled by mode prop
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -17,12 +17,16 @@ import {
   Modal,
   Dimensions,
   useWindowDimensions,
+  ScrollView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import {
   ChevronDown,
   ChevronRight,
   ArrowLeft,
+  ArrowUp,
+  ArrowDown,
+  GripVertical,
   User,
   Globe,
   Lock,
@@ -34,6 +38,7 @@ import {
   Trash2,
   Share2,
   UserPlus,
+  List as ListIcon,
 } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { UserList, ListEntry } from '@/types/library';
@@ -41,7 +46,7 @@ import { useLibrary } from '@/contexts/LibraryContext';
 import { useData } from '@/contexts/DataContext';
 import EndorsedBadge from '@/components/EndorsedBadge';
 import { getLogoUrl } from '@/lib/logo';
-import { Product } from '@/types';
+import { Product, Cause } from '@/types';
 import { BusinessUser } from '@/services/firebase/businessService';
 import { useUser } from '@/contexts/UserContext';
 import { useRouter } from 'expo-router';
@@ -52,8 +57,26 @@ import EditListModal from '@/components/EditListModal';
 import ShareOptionsModal from '@/components/ShareOptionsModal';
 import ItemOptionsModal from '@/components/ItemOptionsModal';
 import ConfirmModal from '@/components/ConfirmModal';
+import FollowingFollowersList from '@/components/FollowingFollowersList';
+import LocalBusinessView from '@/components/Library/LocalBusinessView';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
+import { reorderListEntries } from '@/services/firebase/listService';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // ===== Types =====
 
@@ -74,7 +97,13 @@ interface UnifiedLibraryProps {
   // Additional props for score calculation
   userBusinesses?: BusinessUser[];
   scoredBrands?: Map<string, number>;
-  userCauses?: string[];
+  userCauses?: Cause[];
+  // Location data for Local view
+  userLocation?: { latitude: number; longitude: number } | null;
+  onRequestLocation?: () => void;
+  // Following/Followers counts
+  followingCount?: number;
+  followersCount?: number;
 }
 
 export default function UnifiedLibrary({
@@ -90,6 +119,10 @@ export default function UnifiedLibrary({
   userBusinesses = [],
   scoredBrands = new Map(),
   userCauses = [],
+  userLocation = null,
+  onRequestLocation,
+  followingCount = 0,
+  followersCount = 0,
 }: UnifiedLibraryProps) {
   const colors = isDarkMode ? darkColors : lightColors;
   const library = useLibrary();
@@ -97,8 +130,8 @@ export default function UnifiedLibrary({
   const router = useRouter();
   const { brands } = useData();
 
-  // Local state for independent expansion in each location
-  const [openedListId, setOpenedListId] = useState<string | null>(null);
+  // Use context's expandedListId for persistent state across navigation
+  const openedListId = library.state.expandedListId;
   const [activeListOptionsId, setActiveListOptionsId] = useState<string | null>(null);
   const [showAddToLibraryModal, setShowAddToLibraryModal] = useState(false);
   const [selectedItemToAdd, setSelectedItemToAdd] = useState<ListEntry | null>(null);
@@ -138,24 +171,51 @@ export default function UnifiedLibrary({
   const { width } = useWindowDimensions();
   const isLargeScreen = width >= 768;
 
+  // Use props if provided, otherwise use context (MUST be before defaultSection calculation)
+  const endorsementList = propsEndorsementList !== undefined ? propsEndorsementList : library.state.endorsementList;
+  const userLists = propsUserLists !== undefined ? propsUserLists : library.state.userLists;
+
+  // Reorder mode state
+  const [isReorderMode, setIsReorderMode] = useState(false);
+  const [reorderingListId, setReorderingListId] = useState<string | null>(null);
+  const [localEntries, setLocalEntries] = useState<ListEntry[]>([]);
+
+  // Scroll ref for sticky header and scroll-to-top
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Action menu state for endorsed section header
+  const [showEndorsedActionMenu, setShowEndorsedActionMenu] = useState(false);
+
+  // Section selection state - default to endorsement (or aligned if empty)
+  type LibrarySection = 'endorsement' | 'aligned' | 'unaligned' | 'following' | 'followers' | 'local';
+  const defaultSection: LibrarySection = (endorsementList && endorsementList.entries && endorsementList.entries.length > 0)
+    ? 'endorsement'
+    : 'aligned';
+  const [selectedSection, setSelectedSection] = useState<LibrarySection>(defaultSection);
+
+  // Drag-and-drop sensors for list reordering (desktop only)
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Drag only after moving 8px (prevents accidental drags)
+      },
+    })
+  );
+
   // Mode-based permissions
   const canEdit = mode === 'edit';
   const canInteract = mode !== 'preview'; // Can add/share in view mode
   const canBrowse = true; // All modes can expand/collapse to browse
 
-  // Use props if provided, otherwise use context
-  const endorsementList = propsEndorsementList !== undefined ? propsEndorsementList : library.state.endorsementList;
-  const userLists = propsUserLists !== undefined ? propsUserLists : library.state.userLists;
-
   // Navigate into a list (replaces expand/collapse)
   const handleListClick = (listId: string) => {
     if (!canBrowse) return;
-    setOpenedListId(listId);
+    library.setExpandedList(listId);
   };
 
   // Navigate back to list overview
   const handleBackToLibrary = () => {
-    setOpenedListId(null);
+    library.setExpandedList(null);
   };
 
   // Filter out endorsement list from custom lists
@@ -351,6 +411,67 @@ export default function UnifiedLibrary({
       console.error('Error updating list:', error);
       Alert.alert('Error', 'Failed to update list. Please try again.');
     }
+  };
+
+  // ===== Reorder Handlers =====
+
+  // Move item up in the list (mobile)
+  const handleMoveUp = (index: number) => {
+    if (index === 0) return; // Already at top
+    const newEntries = [...localEntries];
+    [newEntries[index - 1], newEntries[index]] = [newEntries[index], newEntries[index - 1]];
+    setLocalEntries(newEntries);
+  };
+
+  // Move item down in the list (mobile)
+  const handleMoveDown = (index: number) => {
+    if (index === localEntries.length - 1) return; // Already at bottom
+    const newEntries = [...localEntries];
+    [newEntries[index], newEntries[index + 1]] = [newEntries[index + 1], newEntries[index]];
+    setLocalEntries(newEntries);
+  };
+
+  // Handle drag end (desktop)
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = localEntries.findIndex((entry) => entry.id === active.id);
+    const newIndex = localEntries.findIndex((entry) => entry.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newEntries = arrayMove(localEntries, oldIndex, newIndex);
+    setLocalEntries(newEntries);
+  };
+
+  // Save reordered entries to Firebase
+  const handleSaveReorder = async () => {
+    if (!reorderingListId) return;
+
+    try {
+      await reorderListEntries(reorderingListId, localEntries);
+
+      // Reload lists to reflect changes
+      if (currentUserId) {
+        await library.loadUserLists(currentUserId, true);
+      }
+
+      setIsReorderMode(false);
+      setReorderingListId(null);
+      setLocalEntries([]);
+      Alert.alert('Success', 'List reordered successfully!');
+    } catch (error) {
+      console.error('[UnifiedLibrary] Error reordering list:', error);
+      Alert.alert('Error', 'Failed to save new order. Please try again.');
+    }
+  };
+
+  // Cancel reordering
+  const handleCancelReorder = () => {
+    setIsReorderMode(false);
+    setReorderingListId(null);
+    setLocalEntries([]);
   };
 
   // Privacy toggle handler
@@ -1170,28 +1291,162 @@ export default function UnifiedLibrary({
       );
     }
 
-    return (
-      <View style={styles.listContentContainer}>
-        <View style={styles.brandsContainer}>
-          {endorsementList.entries
-            .filter(entry => entry != null) // Filter out null/undefined entries
-            .slice(0, endorsementLoadCount)
-            .map((entry, index) => {
-              const itemId = entry.brandId || entry.businessId || entry.valueId || entry.id;
-              return (
-                <View key={entry.id}>
-                  <View style={styles.forYouItemRow}>
-                    <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
-                      {index + 1}
-                    </Text>
-                    <View style={styles.forYouCardWrapper}>
-                      {renderListEntry(entry)}
-                    </View>
+    // Determine if we're in reorder mode for this list
+    const isReordering = isReorderMode && reorderingListId === 'endorsement';
+    const entriesToDisplay = isReordering ? localEntries : endorsementList.entries;
+
+    // Render Save/Cancel buttons when in reorder mode
+    const renderReorderControls = () => {
+      if (!isReordering) return null;
+
+      return (
+        <View style={[styles.reorderControls, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+          <Text style={[styles.reorderTitle, { color: colors.text }]}>
+            {isLargeScreen ? 'Drag items to reorder' : 'Use arrows to reorder'}
+          </Text>
+          <View style={styles.reorderButtons}>
+            <TouchableOpacity
+              style={[styles.reorderButton, styles.cancelButton, { borderColor: colors.border }]}
+              onPress={handleCancelReorder}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.reorderButtonText, { color: colors.text }]}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.reorderButton, styles.saveButton, { backgroundColor: colors.primary }]}
+              onPress={handleSaveReorder}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.reorderButtonText, { color: colors.white }]}>Save Order</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    };
+
+    // Render entry with reorder controls
+    const renderEntryWithControls = (entry: ListEntry, index: number) => {
+      const isFirst = index === 0;
+      const isLast = index === entriesToDisplay.length - 1;
+
+      if (isReordering) {
+        // Mobile: Show up/down arrows
+        if (!isLargeScreen) {
+          return (
+            <View style={styles.reorderEntryRow}>
+              <View style={styles.reorderControls}>
+                <TouchableOpacity
+                  style={[styles.reorderArrowButton, { backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => handleMoveUp(index)}
+                  disabled={isFirst}
+                  activeOpacity={0.7}
+                >
+                  <ArrowUp size={20} color={isFirst ? colors.textSecondary : colors.text} strokeWidth={2} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.reorderArrowButton, { backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => handleMoveDown(index)}
+                  disabled={isLast}
+                  activeOpacity={0.7}
+                >
+                  <ArrowDown size={20} color={isLast ? colors.textSecondary : colors.text} strokeWidth={2} />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.forYouItemRow}>
+                <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                  {index + 1}
+                </Text>
+                <View style={styles.forYouCardWrapper}>
+                  {renderListEntry(entry)}
+                </View>
+              </View>
+            </View>
+          );
+        }
+        // Desktop: Show drag handle
+        else {
+          const SortableEntry = () => {
+            const {
+              attributes,
+              listeners,
+              setNodeRef,
+              transform,
+              transition,
+            } = useSortable({ id: entry.id });
+
+            const style = {
+              transform: CSS.Transform.toString(transform),
+              transition,
+            };
+
+            return (
+              <View ref={setNodeRef} style={[styles.reorderEntryRow, style]}>
+                <TouchableOpacity
+                  {...attributes}
+                  {...listeners}
+                  style={[styles.dragHandle, { backgroundColor: colors.backgroundSecondary }]}
+                  activeOpacity={0.7}
+                >
+                  <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                </TouchableOpacity>
+                <View style={styles.forYouItemRow}>
+                  <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                    {index + 1}
+                  </Text>
+                  <View style={styles.forYouCardWrapper}>
+                    {renderListEntry(entry)}
                   </View>
                 </View>
-              );
-            })}
-          {endorsementLoadCount < endorsementList.entries.length && (
+              </View>
+            );
+          };
+
+          return <SortableEntry key={entry.id} />;
+        }
+      }
+
+      // Normal (non-reorder) mode
+      return (
+        <View key={entry.id}>
+          <View style={styles.forYouItemRow}>
+            <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+              {index + 1}
+            </Text>
+            <View style={styles.forYouCardWrapper}>
+              {renderListEntry(entry)}
+            </View>
+          </View>
+        </View>
+      );
+    };
+
+    const entriesContent = entriesToDisplay
+      .filter(entry => entry != null)
+      .slice(0, endorsementLoadCount)
+      .map((entry, index) => renderEntryWithControls(entry, index));
+
+    // Wrap with DndContext for desktop drag-and-drop
+    const contentWithDnd = isReordering && isLargeScreen ? (
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={localEntries.map(e => e.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          {entriesContent}
+        </SortableContext>
+      </DndContext>
+    ) : entriesContent;
+
+    return (
+      <View style={styles.listContentContainer}>
+        {renderReorderControls()}
+        <View style={styles.brandsContainer}>
+          {contentWithDnd}
+          {!isReordering && endorsementLoadCount < endorsementList.entries.length && (
             <TouchableOpacity
               style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
               onPress={() => setEndorsementLoadCount(endorsementLoadCount + 10)}
@@ -1449,17 +1704,20 @@ export default function UnifiedLibrary({
 
               return (
                 <>
-                  {canEditMeta && currentList && (
+                  {/* Reorder button - only for endorsement list */}
+                  {canEdit && currentList && currentList.entries && currentList.entries.length > 1 && (
                     <TouchableOpacity
                       style={styles.listOptionItem}
                       onPress={() => {
                         setActiveListOptionsId(null);
-                        handleEditList(currentList);
+                        setIsReorderMode(true);
+                        setReorderingListId(listId);
+                        setLocalEntries([...currentList.entries]);
                       }}
                       activeOpacity={0.7}
                     >
-                      <Edit size={16} color={colors.text} strokeWidth={2} />
-                      <Text style={[styles.listOptionText, { color: colors.text }]}>Edit</Text>
+                      <ListIcon size={16} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
                     </TouchableOpacity>
                   )}
 
@@ -1598,6 +1856,294 @@ export default function UnifiedLibrary({
         )}
       </View>
     );
+  };
+
+  // Render section selector - 6 boxes in grid layout
+  const renderSectionSelector = () => {
+    const endorsementCount = endorsementList?.entries?.length || 0;
+    const alignedCount = alignedItems.length;
+    const unalignedCount = unalignedItems.length;
+    const localCount = userBusinesses.length;
+
+    // Define section colors (border colors only, no background tints)
+    const sectionColors = {
+      local: {
+        border: isDarkMode ? 'rgb(0, 170, 250)' : 'rgb(3, 68, 102)',
+      },
+      following: {
+        border: isDarkMode ? 'rgb(167, 139, 250)' : 'rgb(124, 58, 237)',
+      },
+      followers: {
+        border: isDarkMode ? 'rgb(167, 139, 250)' : 'rgb(124, 58, 237)',
+      },
+      endorsement: {
+        border: isDarkMode ? 'rgb(0, 170, 250)' : 'rgb(3, 68, 102)',
+      },
+      aligned: {
+        border: isDarkMode ? 'rgb(132, 204, 22)' : 'rgb(101, 163, 13)',
+      },
+      unaligned: {
+        border: '#FF1F7A',
+      },
+    };
+
+    const SectionBox = ({ section, label, count }: { section: LibrarySection; label: string; count: number }) => {
+      const isSelected = selectedSection === section;
+      const sectionColor = sectionColors[section as keyof typeof sectionColors];
+
+      return (
+        <TouchableOpacity
+          style={[
+            styles.sectionBox,
+            {
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: isSelected ? sectionColor.border : colors.border,
+              borderWidth: isSelected ? 2 : 1,
+            },
+          ]}
+          onPress={() => setSelectedSection(section)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.sectionLabel, { color: isSelected ? sectionColor.border : colors.text }]}>
+            {label}
+          </Text>
+          <Text style={[styles.sectionCount, { color: colors.textSecondary }]}>
+            {count}
+          </Text>
+        </TouchableOpacity>
+      );
+    };
+
+    const EndorsedSectionBox = () => {
+      const isSelected = selectedSection === 'endorsement';
+      const sectionColor = sectionColors.endorsement;
+
+      return (
+        <TouchableOpacity
+          style={[
+            styles.sectionBox,
+            {
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: isSelected ? sectionColor.border : colors.border,
+              borderWidth: isSelected ? 2 : 1,
+            },
+          ]}
+          onPress={() => setSelectedSection('endorsement')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.sectionLabel, { color: isSelected ? sectionColor.border : colors.text }]}>
+            Endorsed
+          </Text>
+          <View style={styles.endorsedCountRow}>
+            <View style={[styles.endorsedBadge, { backgroundColor: sectionColor.border }]}>
+              <Text style={[styles.endorsedBadgeText, { color: colors.white }]}>★</Text>
+            </View>
+            <Text style={[styles.sectionCount, { color: colors.textSecondary, marginLeft: 6 }]}>
+              {endorsementCount}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      );
+    };
+
+    // For profile views (preview/view modes), only show 3 sections: Endorsed, Following, Followers
+    const isProfileView = mode === 'preview' || mode === 'view';
+
+    if (isProfileView) {
+      return (
+        <View style={styles.sectionSelector}>
+          {/* Single row for profile views: Endorsed | Following | Followers */}
+          <View style={styles.sectionRow}>
+            <View style={styles.sectionThird}>
+              <EndorsedSectionBox />
+            </View>
+            <View style={styles.sectionThird}>
+              <SectionBox section="following" label="Following" count={followingCount} />
+            </View>
+            <View style={styles.sectionThird}>
+              <SectionBox section="followers" label="Followers" count={followersCount} />
+            </View>
+          </View>
+        </View>
+      );
+    }
+
+    // For home tab (edit mode), show all 6 sections
+    return (
+      <View style={styles.sectionSelector}>
+        {/* Top row: Local | Following | Followers */}
+        <View style={styles.sectionRow}>
+          <View style={styles.sectionThird}>
+            <SectionBox section="local" label="Local" count={localCount} />
+          </View>
+          <View style={styles.sectionThird}>
+            <SectionBox section="following" label="Following" count={followingCount} />
+          </View>
+          <View style={styles.sectionThird}>
+            <SectionBox section="followers" label="Followers" count={followersCount} />
+          </View>
+        </View>
+
+        {/* Bottom row: Endorsed | Aligned | Unaligned */}
+        <View style={styles.sectionRow}>
+          <View style={styles.sectionThird}>
+            <EndorsedSectionBox />
+          </View>
+          <View style={styles.sectionThird}>
+            <SectionBox section="aligned" label="Aligned" count={alignedCount} />
+          </View>
+          <View style={styles.sectionThird}>
+            <SectionBox section="unaligned" label="Unaligned" count={unalignedCount} />
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  // Render section header (sticky)
+  const renderSectionHeader = () => {
+    const sectionTitles = {
+      endorsement: 'Endorsed',
+      aligned: 'Aligned',
+      unaligned: 'Unaligned',
+      following: 'Following',
+      followers: 'Followers',
+      local: 'Local',
+    };
+
+    const title = sectionTitles[selectedSection];
+    const isEndorsed = selectedSection === 'endorsement';
+    const canReorder = isEndorsed && canEdit && endorsementList && endorsementList.entries && endorsementList.entries.length > 1;
+
+    return (
+      <View style={[styles.sectionHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          style={styles.sectionHeaderTitleContainer}
+          onPress={() => scrollViewRef.current?.scrollTo({ y: 0, animated: true })}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.sectionHeaderTitle, { color: colors.text }]}>
+            {title}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Action menu for endorsed section */}
+        {isEndorsed && canReorder && (
+          <View>
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                setShowEndorsedActionMenu(!showEndorsedActionMenu);
+              }}
+              style={styles.headerActionButton}
+              activeOpacity={0.7}
+            >
+              <View style={{ transform: [{ rotate: '90deg' }] }}>
+                <MoreVertical size={20} color={colors.text} strokeWidth={2} />
+              </View>
+            </TouchableOpacity>
+
+            {/* Action menu dropdown */}
+            {showEndorsedActionMenu && (
+              <View style={[styles.endorsedActionDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={styles.endorsedActionItem}
+                  onPress={() => {
+                    setShowEndorsedActionMenu(false);
+                    setIsReorderMode(true);
+                    setReorderingListId('endorsement');
+                    setLocalEntries([...endorsementList.entries]);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <GripVertical size={16} color={colors.text} strokeWidth={2} />
+                  <Text style={[styles.endorsedActionText, { color: colors.text }]}>Reorder</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  // Render content for selected section
+  const renderSectionContent = () => {
+    switch (selectedSection) {
+      case 'endorsement':
+        return endorsementList ? renderEndorsementContent() : (
+          <View style={styles.emptySection}>
+            <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+              No endorsements yet
+            </Text>
+          </View>
+        );
+
+      case 'aligned':
+        return alignedItems.length > 0 ? renderAlignedContent() : (
+          <View style={styles.emptySection}>
+            <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+              No aligned brands yet
+            </Text>
+          </View>
+        );
+
+      case 'unaligned':
+        return unalignedItems.length > 0 ? renderUnalignedContent() : (
+          <View style={styles.emptySection}>
+            <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+              No unaligned brands yet
+            </Text>
+          </View>
+        );
+
+      case 'following':
+        return currentUserId || viewingUserId ? (
+          <FollowingFollowersList
+            mode="following"
+            userId={(viewingUserId || currentUserId)!}
+            isDarkMode={isDarkMode}
+            userCauses={userCauses || []}
+          />
+        ) : (
+          <View style={styles.emptySection}>
+            <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+              No following data available
+            </Text>
+          </View>
+        );
+
+      case 'followers':
+        return currentUserId || viewingUserId ? (
+          <FollowingFollowersList
+            mode="followers"
+            userId={(viewingUserId || currentUserId)!}
+            entityType="user"
+            isDarkMode={isDarkMode}
+            userCauses={userCauses || []}
+          />
+        ) : (
+          <View style={styles.emptySection}>
+            <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+              No followers data available
+            </Text>
+          </View>
+        );
+
+      case 'local':
+        return (
+          <LocalBusinessView
+            userBusinesses={userBusinesses}
+            userLocation={userLocation}
+            userCauses={userCauses}
+            isDarkMode={isDarkMode}
+            onRequestLocation={onRequestLocation}
+          />
+        );
+
+      default:
+        return null;
+    }
   };
 
   // Render library overview (all list cards)
@@ -1806,8 +2352,16 @@ export default function UnifiedLibrary({
         isDarkMode={isDarkMode}
       />
 
-      {/* Conditional render: overview or detail view */}
-      {openedListId ? renderListDetailView() : renderLibraryOverview()}
+      {/* New 6-section library layout */}
+      {renderSectionSelector()}
+
+      {/* Sticky section header */}
+      <View style={styles.stickyHeaderContainer}>
+        {renderSectionHeader()}
+      </View>
+
+      {/* Section content */}
+      {renderSectionContent()}
 
       {/* Modals */}
       <AddToLibraryModal
@@ -2294,5 +2848,164 @@ const styles = StyleSheet.create({
     top: 16,
     right: 16,
     padding: 4,
+  },
+  // Reorder styles
+  reorderControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    marginHorizontal: 12,
+    marginTop: 12,
+    marginBottom: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  reorderTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  reorderButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  reorderButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  cancelButton: {
+    borderWidth: 1,
+  },
+  saveButton: {
+    // backgroundColor set dynamically
+  },
+  reorderButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  reorderEntryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  reorderArrowButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dragHandle: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  // Section selector styles
+  sectionSelector: {
+    padding: 12,
+    gap: 12,
+  },
+  sectionRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  sectionThird: {
+    flex: 1,
+  },
+  sectionBox: {
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 52,
+  },
+  sectionLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  sectionCount: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  endorsedCountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  endorsedBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  endorsedBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  stickyHeaderContainer: {
+    ...(Platform.OS === 'web' && {
+      position: 'sticky' as any,
+      top: 0,
+      zIndex: 10,
+    }),
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+  },
+  sectionHeaderTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  sectionHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  headerActionButton: {
+    padding: 8,
+  },
+  endorsedActionDropdown: {
+    position: 'absolute',
+    top: 40,
+    right: 0,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 1000,
+    minWidth: 150,
+  },
+  endorsedActionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 8,
+  },
+  endorsedActionText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  emptySection: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptySectionText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

@@ -67,12 +67,18 @@ export const [UserProvider, useUser] = createContextHook(() => {
         try {
           firebaseProfile = await getUserProfile(clerkUser.id);
           if (firebaseProfile) {
-            console.log('[UserContext] ✅ Firebase profile found:', JSON.stringify(firebaseProfile, null, 2));
+            console.log('[UserContext] ✅ Firebase profile found!');
+            console.log('[UserContext]   - Causes:', firebaseProfile.causes?.length || 0);
+            console.log('[UserContext]   - UserDetails:', !!firebaseProfile.userDetails);
+            console.log('[UserContext]   - Promo Code:', firebaseProfile.promoCode);
+            console.log('[UserContext]   - hasSeenIntro:', firebaseProfile.hasSeenIntro);
           } else {
-            console.log('[UserContext] ⚠️ No Firebase profile found for user');
+            console.log('[UserContext] ⚠️ No Firebase profile found for user - getUserProfile returned null');
           }
         } catch (firebaseError) {
-          console.error('[UserContext] ❌ Failed to load from Firebase:', firebaseError);
+          console.error('[UserContext] ❌ CRITICAL: Failed to load from Firebase!');
+          console.error('[UserContext]   Error:', firebaseError);
+          console.error('[UserContext]   This means Firebase call threw an exception');
         }
 
         if (firebaseProfile && mounted) {
@@ -83,6 +89,26 @@ export const [UserProvider, useUser] = createContextHook(() => {
           if (!firebaseProfile.promoCode) {
             firebaseProfile.promoCode = generatePromoCode();
             console.log('[UserContext] Generated new promo code:', firebaseProfile.promoCode);
+          }
+
+          // Fix for existing users: if they have causes but hasSeenIntro is false/undefined, mark as seen
+          // This handles cases where:
+          // 1. Old users from before this field existed
+          // 2. Users whose hasSeenIntro got reset somehow
+          // 3. Users who had empty causes before but now have values
+          const hasValues = firebaseProfile.causes && firebaseProfile.causes.length > 0;
+          const needsIntroFix = hasValues && firebaseProfile.hasSeenIntro !== true;
+          if (needsIntroFix) {
+            console.log('[UserContext] 🔧 Existing user with values but hasSeenIntro !== true. Fixing...');
+            console.log('[UserContext]   - Current hasSeenIntro:', firebaseProfile.hasSeenIntro);
+            firebaseProfile.hasSeenIntro = true;
+            // Save the fix to Firebase
+            try {
+              await saveUserProfile(clerkUser.id, firebaseProfile);
+              console.log('[UserContext] ✅ Fixed hasSeenIntro in Firebase');
+            } catch (error) {
+              console.error('[UserContext] ❌ Failed to fix hasSeenIntro:', error);
+            }
           }
 
           // Ensure required fields are initialized
@@ -97,11 +123,13 @@ export const [UserProvider, useUser] = createContextHook(() => {
           await AsyncStorage.setItem(storageKey, JSON.stringify(firebaseProfile));
         } else {
           // No Firebase profile - check local storage or create new
+          console.log('[UserContext] 🔍 No Firebase profile - checking AsyncStorage...');
           const storedProfile = await AsyncStorage.getItem(storageKey);
 
           if (storedProfile && mounted) {
             const parsedProfile = JSON.parse(storedProfile) as UserProfile;
-            console.log('[UserContext] Loaded profile from AsyncStorage with', parsedProfile.causes.length, 'causes');
+            console.log('[UserContext] ✅ Loaded profile from AsyncStorage');
+            console.log('[UserContext]   - Causes:', parsedProfile.causes.length);
 
             // Generate promo code if it doesn't exist
             if (!parsedProfile.promoCode) {
@@ -136,7 +164,9 @@ export const [UserProvider, useUser] = createContextHook(() => {
               console.error('[UserContext] Failed to sync to Firebase:', syncError);
             }
           } else if (mounted) {
-            console.log('[UserContext] No stored profile found, creating new profile');
+            console.log('[UserContext] ⚠️ CREATING NEW PROFILE (no Firebase, no AsyncStorage)');
+            console.log('[UserContext]   - This should only happen for brand new users!');
+            console.log('[UserContext]   - If this is an existing user, something went wrong');
             const newProfile: UserProfile = {
               id: clerkUser.id,
               causes: [],
@@ -219,15 +249,18 @@ export const [UserProvider, useUser] = createContextHook(() => {
     // Use functional update to avoid stale closure
     let newProfile: UserProfile | null = null;
     setProfile((prevProfile) => {
-      // If this is a new user completing onboarding (no causes before), set hasSeenIntro to false
+      // Only set hasSeenIntro to false for TRULY new users:
+      // 1. No causes before (completing onboarding)
+      // 2. AND hasSeenIntro is undefined (not already set in Firebase)
       const isCompletingOnboarding = !prevProfile.causes || prevProfile.causes.length === 0;
+      const isNewUser = isCompletingOnboarding && prevProfile.hasSeenIntro === undefined;
       newProfile = {
         ...prevProfile,
         causes,
-        // Set hasSeenIntro to false for new users so they see the welcome carousel
-        hasSeenIntro: isCompletingOnboarding ? false : prevProfile.hasSeenIntro,
+        // Only set to false for new users; preserve existing value for returning users
+        hasSeenIntro: isNewUser ? false : prevProfile.hasSeenIntro,
       };
-      console.log('[UserContext] Updated profile with causes. PromoCode:', newProfile!.promoCode, 'hasSeenIntro:', newProfile!.hasSeenIntro);
+      console.log('[UserContext] Updated profile with causes. PromoCode:', newProfile!.promoCode, 'hasSeenIntro:', newProfile!.hasSeenIntro, 'isNewUser:', isNewUser);
       return newProfile;
     });
     setHasCompletedOnboarding(causes.length > 0);

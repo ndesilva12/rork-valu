@@ -96,7 +96,7 @@ import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
 import { calculateBrandScore, calculateSimilarityScore, normalizeBrandScores, normalizeSimilarityScores } from '@/lib/scoring';
 import { getAllUserBusinesses, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
-import { followEntity, unfollowEntity, isFollowing } from '@/services/firebase/followService';
+import { followEntity, unfollowEntity, isFollowing, getFollowingCount, getFollowersCount } from '@/services/firebase/followService';
 import BusinessMapView from '@/components/BusinessMapView';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
 import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList, updateListMetadata, reorderListEntries, getEndorsementList, ensureEndorsementList } from '@/services/firebase/listService';
@@ -148,6 +148,8 @@ export default function HomeScreen() {
   const [unalignedLoadCount, setUnalignedLoadCount] = useState<number>(10);
   const [myListLoadCount, setMyListLoadCount] = useState<number>(10);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followersCount, setFollowersCount] = useState(0);
   const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(null);
   const [userBusinesses, setUserBusinesses] = useState<BusinessUser[]>([]);
   const [showMapModal, setShowMapModal] = useState(false);
@@ -494,19 +496,30 @@ export default function HomeScreen() {
     }
   }, []);
 
+  // Load following and followers counts
+  useEffect(() => {
+    const loadFollowCounts = async () => {
+      if (!clerkUser?.id) return;
+
+      try {
+        const [following, followers] = await Promise.all([
+          getFollowingCount(clerkUser.id),
+          getFollowersCount(clerkUser.id, 'user')
+        ]);
+        setFollowingCount(following);
+        setFollowersCount(followers);
+      } catch (error) {
+        console.error('[Home] Error loading follow counts:', error);
+      }
+    };
+
+    loadFollowCounts();
+  }, [clerkUser?.id]);
+
   // Fetch user businesses on mount
   useEffect(() => {
     fetchUserBusinesses();
   }, [fetchUserBusinesses]);
-
-  // Request location and refetch businesses when local view is activated
-  useEffect(() => {
-    if (mainView === 'local') {
-      requestLocation();
-      // Refetch businesses to get latest data (including updated logos)
-      fetchUserBusinesses();
-    }
-  }, [mainView, fetchUserBusinesses]);
 
   // Reopen map if returning from business detail page
   useEffect(() => {
@@ -1073,75 +1086,6 @@ export default function HomeScreen() {
       console.error('Error toggling list privacy:', error);
     }
   };
-  const renderMainViewSelector = () => (
-    <>
-      {/* Main View Selector - Three Views */}
-      <View style={styles.mainViewRow}>
-        <View style={[styles.mainViewSelector, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-          <TouchableOpacity
-            style={[styles.mainViewButton, mainView === 'myLibrary' && { backgroundColor: colors.primary }]}
-            onPress={() => setMainView('myLibrary')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.mainViewText, { color: mainView === 'myLibrary' ? colors.white : colors.textSecondary }]}>
-              Library
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.mainViewButton, mainView === 'local' && { backgroundColor: colors.primary }]}
-            onPress={() => {
-              setMainView('local');
-              // Reset to "all" (no filter) when switching to Local view
-              setLocalDistance(null);
-            }}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.mainViewText, { color: mainView === 'local' ? colors.white : colors.textSecondary }]}>
-              Local
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Distance Filter Row - Shows when Local view is selected */}
-      {mainView === 'local' && (
-        <View style={styles.distanceFilterRow}>
-          <View style={styles.distanceOptionsContainer}>
-            {localDistanceOptions.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.distanceFilterButton,
-                  { backgroundColor: colors.background, borderColor: colors.border },
-                  localDistance === option && { borderColor: colors.primary, borderWidth: 2 },
-                ]}
-                onPress={() => setLocalDistance(option)}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.distanceFilterText,
-                    { color: colors.text },
-                    localDistance === option && { color: colors.primary, fontWeight: '600' },
-                  ]}
-                >
-                  {option} mi
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <TouchableOpacity
-            style={[styles.mapFilterButton, { backgroundColor: colors.primary }]}
-            onPress={() => setShowMapModal(true)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.mapFilterButtonText, { color: colors.white }]}>Map</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </>
-  );
 
   // Helper function to render consistent header across all For You subsections
   const renderSubsectionHeader = (title: string, onAddPress: () => void, showModalButton: boolean = true) => {
@@ -1190,52 +1134,13 @@ export default function HomeScreen() {
         userBusinesses={userBusinesses}
         scoredBrands={scoredBrands}
         userCauses={profile?.causes || []}
+        userLocation={userLocation}
+        onRequestLocation={requestLocation}
+        followingCount={followingCount}
+        followersCount={followersCount}
       />
     );
   };
-  const renderLocalView = () => {
-    const { allBusinesses } = localBusinessData;
-
-    return (
-      <View style={styles.section}>
-        <View style={[styles.sectionHeaderRow, styles.localSectionHeaderRow]}>
-          <View style={styles.sectionHeader}>
-            <MapPin size={24} color={colors.primary} strokeWidth={2} />
-            <Text style={[styles.localBusinessesTitle, { color: colors.text }]}>Local Businesses</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => setLocalSortDirection(localSortDirection === 'highToLow' ? 'lowToHigh' : 'highToLow')}
-            activeOpacity={0.7}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-          >
-            {localSortDirection === 'highToLow' ? (
-              <ChevronDown size={18} color={colors.primary} strokeWidth={2} />
-            ) : (
-              <ChevronUp size={18} color={colors.primary} strokeWidth={2} />
-            )}
-            <Text style={[styles.showAllButton, { color: colors.primary }]}>
-              {localSortDirection === 'highToLow' ? 'High to Low' : 'Low to High'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.brandsContainer}>
-          {allBusinesses.length > 0 ? (
-            allBusinesses.map((biz) => {
-              const isAligned = biz.alignmentScore >= 50;
-              return renderLocalBusinessCard(biz, isAligned ? 'aligned' : 'unaligned');
-            })
-          ) : (
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              {localDistance === null
-                ? 'No businesses found'
-                : `No businesses found within ${localDistance} mile${localDistance !== 1 ? 's' : ''}`}
-            </Text>
-          )}
-        </View>
-      </View>
-    );
-  };
-
   // Library handler functions
   const handleCreateList = async () => {
     console.log('[Home] handleCreateList called');
@@ -2904,6 +2809,10 @@ export default function HomeScreen() {
         userBusinesses={userBusinesses}
         scoredBrands={scoredBrands}
         userCauses={profile?.causes || []}
+        userLocation={userLocation}
+        onRequestLocation={requestLocation}
+        followingCount={followingCount}
+        followersCount={followersCount}
       />
     );
   };
@@ -3026,7 +2935,6 @@ export default function HomeScreen() {
           />
           <MenuButton onShowExplainers={() => setShowWelcomeCarousel(true)} />
         </View>
-        {renderMainViewSelector()}
       </View>
       <ScrollView
         ref={scrollViewRef}
@@ -3036,7 +2944,6 @@ export default function HomeScreen() {
       >
         {mainView === 'forYou' && renderForYouView()}
         {mainView === 'myLibrary' && renderMyLibraryView()}
-        {mainView === 'local' && renderLocalView()}
 
       </ScrollView>
 
