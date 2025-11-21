@@ -11,16 +11,19 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
+  Modal,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { MapPin, ChevronDown, ChevronUp, MoreVertical } from 'lucide-react-native';
+import { MapPin, ChevronDown, ChevronUp, MoreVertical, X } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { BusinessUser, isBusinessWithinRange } from '@/services/firebase/businessService';
 import { Cause } from '@/types';
 import { calculateSimilarityScore } from '@/lib/scoring';
 import { formatDistance } from '@/lib/distance';
 import { getLogoUrl } from '@/lib/logo';
+import BusinessMapView from '@/components/BusinessMapView';
 
 type LocalDistanceOption = 1 | 10 | 50 | 100 | null;
 
@@ -269,15 +272,15 @@ export default function LocalBusinessView({
               </Text>
             </TouchableOpacity>
           ))}
-          <TouchableOpacity
-            style={[styles.mapButton, { backgroundColor: colors.primary }]}
-            onPress={handleMapPress}
-            activeOpacity={0.7}
-          >
-            <MapPin size={14} color={colors.white} strokeWidth={2} />
-            <Text style={[styles.mapButtonText, { color: colors.white }]}>Map</Text>
-          </TouchableOpacity>
         </View>
+        <TouchableOpacity
+          style={[styles.mapButton, { backgroundColor: colors.primary }]}
+          onPress={handleMapPress}
+          activeOpacity={0.7}
+        >
+          <MapPin size={14} color={colors.white} strokeWidth={2} />
+          <Text style={[styles.mapButtonText, { color: colors.white }]}>Map</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Search Input */}
@@ -308,6 +311,40 @@ export default function LocalBusinessView({
           </View>
         )}
       </View>
+
+      {/* Map Modal */}
+      {Platform.OS !== 'web' && (
+        <Modal
+          visible={showMap}
+          animationType="slide"
+          onRequestClose={() => setShowMap(false)}
+        >
+          <View style={styles.mapModalContainer}>
+            <View style={[styles.mapModalHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+              <Text style={[styles.mapModalTitle, { color: colors.text }]}>Local Businesses Map</Text>
+              <TouchableOpacity
+                onPress={() => setShowMap(false)}
+                style={styles.mapCloseButton}
+                activeOpacity={0.7}
+              >
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            <BusinessMapView
+              businesses={allBusinesses}
+              userLocation={userLocation}
+              distanceRadius={localDistance || 100}
+              onBusinessPress={(businessId) => {
+                setShowMap(false);
+                router.push({
+                  pathname: '/business/[id]',
+                  params: { id: businessId },
+                });
+              }}
+            />
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -343,13 +380,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   distanceFilterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    gap: 12,
   },
   distanceOptionsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    flex: 1,
   },
   distanceFilterButton: {
     paddingHorizontal: 16,
@@ -456,5 +498,23 @@ const styles = StyleSheet.create({
   enableLocationButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  mapModalContainer: {
+    flex: 1,
+  },
+  mapModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  mapModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  mapCloseButton: {
+    padding: 4,
   },
 });
