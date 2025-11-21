@@ -3,7 +3,7 @@
  * EXACTLY matches Home tab's library visual appearance
  * Functionality controlled by mode prop
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import {
   Modal,
   Dimensions,
   useWindowDimensions,
+  ScrollView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import {
@@ -178,6 +179,9 @@ export default function UnifiedLibrary({
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [reorderingListId, setReorderingListId] = useState<string | null>(null);
   const [localEntries, setLocalEntries] = useState<ListEntry[]>([]);
+
+  // Scroll ref for sticky header and scroll-to-top
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // Section selection state - default to endorsement (or aligned if empty)
   type LibrarySection = 'endorsement' | 'aligned' | 'unaligned' | 'following' | 'followers' | 'local';
@@ -1858,22 +1862,52 @@ export default function UnifiedLibrary({
     const unalignedCount = unalignedItems.length;
     const localCount = userBusinesses.length;
 
+    // Define section colors (background tints and selection borders)
+    const sectionColors = {
+      local: {
+        background: isDarkMode ? 'rgba(0, 170, 250, 0.08)' : 'rgba(3, 68, 102, 0.05)',
+        border: isDarkMode ? 'rgb(0, 170, 250)' : 'rgb(3, 68, 102)',
+      },
+      following: {
+        background: isDarkMode ? 'rgba(167, 139, 250, 0.08)' : 'rgba(167, 139, 250, 0.08)',
+        border: isDarkMode ? 'rgb(167, 139, 250)' : 'rgb(124, 58, 237)',
+      },
+      followers: {
+        background: isDarkMode ? 'rgba(167, 139, 250, 0.08)' : 'rgba(167, 139, 250, 0.08)',
+        border: isDarkMode ? 'rgb(167, 139, 250)' : 'rgb(124, 58, 237)',
+      },
+      endorsement: {
+        background: isDarkMode ? 'rgba(0, 170, 250, 0.08)' : 'rgba(3, 68, 102, 0.05)',
+        border: isDarkMode ? 'rgb(0, 170, 250)' : 'rgb(3, 68, 102)',
+      },
+      aligned: {
+        background: isDarkMode ? 'rgba(132, 204, 22, 0.08)' : 'rgba(132, 204, 22, 0.08)',
+        border: isDarkMode ? 'rgb(132, 204, 22)' : 'rgb(101, 163, 13)',
+      },
+      unaligned: {
+        background: isDarkMode ? 'rgba(255, 31, 122, 0.08)' : 'rgba(255, 31, 122, 0.08)',
+        border: '#FF1F7A',
+      },
+    };
+
     const SectionBox = ({ section, label, count }: { section: LibrarySection; label: string; count: number }) => {
       const isSelected = selectedSection === section;
+      const sectionColor = sectionColors[section as keyof typeof sectionColors];
+
       return (
         <TouchableOpacity
           style={[
             styles.sectionBox,
             {
-              backgroundColor: colors.backgroundSecondary,
-              borderColor: isSelected ? colors.primary : colors.border,
+              backgroundColor: sectionColor.background,
+              borderColor: isSelected ? sectionColor.border : colors.border,
               borderWidth: isSelected ? 2 : 1,
             },
           ]}
           onPress={() => setSelectedSection(section)}
           activeOpacity={0.7}
         >
-          <Text style={[styles.sectionLabel, { color: isSelected ? colors.primary : colors.text }]}>
+          <Text style={[styles.sectionLabel, { color: isSelected ? sectionColor.border : colors.text }]}>
             {label}
           </Text>
           <Text style={[styles.sectionCount, { color: colors.textSecondary }]}>
@@ -1885,30 +1919,32 @@ export default function UnifiedLibrary({
 
     const EndorsedSectionBox = () => {
       const isSelected = selectedSection === 'endorsement';
+      const sectionColor = sectionColors.endorsement;
+
       return (
         <TouchableOpacity
           style={[
             styles.sectionBox,
             {
-              backgroundColor: colors.backgroundSecondary,
-              borderColor: isSelected ? colors.primary : colors.border,
+              backgroundColor: sectionColor.background,
+              borderColor: isSelected ? sectionColor.border : colors.border,
               borderWidth: isSelected ? 2 : 1,
             },
           ]}
           onPress={() => setSelectedSection('endorsement')}
           activeOpacity={0.7}
         >
-          <View style={styles.endorsedBadgeContainer}>
-            <View style={[styles.endorsedBadge, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.endorsedBadgeText, { color: colors.white }]}>★</Text>
-            </View>
-          </View>
-          <Text style={[styles.sectionLabel, { color: isSelected ? colors.primary : colors.text }]}>
+          <Text style={[styles.sectionLabel, { color: isSelected ? sectionColor.border : colors.text }]}>
             Endorsed
           </Text>
-          <Text style={[styles.sectionCount, { color: colors.textSecondary }]}>
-            {endorsementCount}
-          </Text>
+          <View style={styles.endorsedCountRow}>
+            <View style={[styles.endorsedBadge, { backgroundColor: sectionColor.border }]}>
+              <Text style={[styles.endorsedBadgeText, { color: colors.white }]}>★</Text>
+            </View>
+            <Text style={[styles.sectionCount, { color: colors.textSecondary, marginLeft: 6 }]}>
+              {endorsementCount}
+            </Text>
+          </View>
         </TouchableOpacity>
       );
     };
@@ -1941,6 +1977,32 @@ export default function UnifiedLibrary({
           </View>
         </View>
       </View>
+    );
+  };
+
+  // Render section header (sticky)
+  const renderSectionHeader = () => {
+    const sectionTitles = {
+      endorsement: 'Endorsed',
+      aligned: 'Aligned',
+      unaligned: 'Unaligned',
+      following: 'Following',
+      followers: 'Followers',
+      local: 'Local',
+    };
+
+    const title = sectionTitles[selectedSection];
+
+    return (
+      <TouchableOpacity
+        style={[styles.sectionHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}
+        onPress={() => scrollViewRef.current?.scrollTo({ y: 0, animated: true })}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.sectionHeaderTitle, { color: colors.text }]}>
+          {title}
+        </Text>
+      </TouchableOpacity>
     );
   };
 
@@ -2229,8 +2291,15 @@ export default function UnifiedLibrary({
         isDarkMode={isDarkMode}
       />
 
-      {/* New 5-section library layout */}
+      {/* New 6-section library layout */}
       {renderSectionSelector()}
+
+      {/* Sticky section header */}
+      <View style={styles.stickyHeaderContainer}>
+        {renderSectionHeader()}
+      </View>
+
+      {/* Section content */}
       {renderSectionContent()}
 
       {/* Modals */}
@@ -2787,11 +2856,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sectionBox: {
-    padding: 16,
+    padding: 12,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 80,
+    minHeight: 64,
   },
   sectionLabel: {
     fontSize: 16,
@@ -2802,21 +2871,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  endorsedBadgeContainer: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
+  endorsedCountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   endorsedBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   endorsedBadgeText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
+  },
+  stickyHeaderContainer: {
+    ...(Platform.OS === 'web' && {
+      position: 'sticky' as any,
+      top: 0,
+      zIndex: 10,
+    }),
+  },
+  sectionHeader: {
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+  },
+  sectionHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   emptySection: {
     padding: 40,
