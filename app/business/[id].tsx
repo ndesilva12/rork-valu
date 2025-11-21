@@ -61,6 +61,7 @@ export default function BusinessDetailScreen() {
   const [allBusinesses, setAllBusinesses] = useState<BusinessUser[]>([]);
   const [isFollowingBusiness, setIsFollowingBusiness] = useState(false);
   const [checkingFollowStatus, setCheckingFollowStatus] = useState(true);
+  const [isEndorsingBusiness, setIsEndorsingBusiness] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
@@ -217,18 +218,39 @@ export default function BusinessDetailScreen() {
     }
 
     try {
-      await library.addEntry(library.state.endorsementList.id, {
-        type: 'business',
-        businessId: business.id,
-        businessName: business.businessInfo.name,
-        website: business.businessInfo.website || '',
-        logoUrl: business.businessInfo.logoUrl || getLogoUrl(business.businessInfo.website || ''),
-      });
-      Alert.alert('Success', `${business.businessInfo.name} endorsed!`);
+      if (isEndorsingBusiness) {
+        // Find the entry in the endorsement list and remove it
+        const entryToRemove = library.state.endorsementList.entries.find(entry =>
+          entry.type === 'business' && (entry as any).businessId === business.id
+        );
+
+        if (entryToRemove) {
+          await library.removeEntry(library.state.endorsementList.id, entryToRemove.id);
+          setIsEndorsingBusiness(false);
+          Alert.alert('Success', `Unendorsed ${business.businessInfo.name}`);
+        }
+      } else {
+        // Add to endorsement list
+        await library.addEntry(library.state.endorsementList.id, {
+          type: 'business',
+          businessId: business.id,
+          businessName: business.businessInfo.name,
+          website: business.businessInfo.website || '',
+          logoUrl: business.businessInfo.logoUrl || getLogoUrl(business.businessInfo.website || ''),
+        });
+        setIsEndorsingBusiness(true);
+        Alert.alert('Success', `${business.businessInfo.name} endorsed!`);
+      }
+
       setShowActionMenu(false);
+
+      // Refresh library to update UI
+      if (clerkUser?.id) {
+        await library.loadUserLists(clerkUser.id, true);
+      }
     } catch (error: any) {
-      console.error('Error endorsing business:', error);
-      Alert.alert('Error', error?.message || 'Failed to endorse business');
+      console.error('Error toggling endorse:', error);
+      Alert.alert('Error', error?.message || 'Failed to update endorsement');
     }
   };
 
@@ -277,6 +299,19 @@ export default function BusinessDetailScreen() {
     };
     checkFollow();
   }, [clerkUser?.id, business?.id]);
+
+  // Check if business is endorsed when business or library loads
+  useEffect(() => {
+    if (!business?.id || !library.state.endorsementList) {
+      setIsEndorsingBusiness(false);
+      return;
+    }
+
+    const businessIsEndorsed = library.state.endorsementList.entries.some(entry =>
+      entry.type === 'business' && (entry as any).businessId === business.id
+    );
+    setIsEndorsingBusiness(businessIsEndorsed);
+  }, [business?.id, library.state.endorsementList]);
 
   // Load all businesses for normalization
   useEffect(() => {
@@ -1111,7 +1146,9 @@ export default function BusinessDetailScreen() {
               activeOpacity={0.7}
             >
               <UserPlus size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Endorse</Text>
+              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>
+                {isEndorsingBusiness ? 'Unendorse' : 'Endorse'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1252,7 +1289,8 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
   },
   content: {
-    padding: 20,
+    paddingVertical: 20,
+    paddingHorizontal: Platform.OS === 'web' ? 8 : 20,
   },
   header: {
     flexDirection: 'row',

@@ -13,6 +13,7 @@ import {
   ScrollView,
   Alert,
   Share,
+  TextInput,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -64,6 +65,7 @@ export default function FollowingFollowersList({
   const [loading, setLoading] = useState(true);
   const [follows, setFollows] = useState<EnrichedFollow[]>([]);
   const [filterType, setFilterType] = useState<FilterType>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedFollow, setSelectedFollow] = useState<EnrichedFollow | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -161,14 +163,40 @@ export default function FollowingFollowersList({
               }
             }
           } else if (type === 'user') {
-            // Fetch user details
+            // Fetch user details - could be a regular user or a business account
             const userRef = doc(db, 'users', entityId);
             const userSnap = await getDoc(userRef);
             if (userSnap.exists()) {
               const userData = userSnap.data();
-              enriched.name = userData.userDetails?.name || userData.name || 'Unknown User';
-              enriched.profileImage = userData.userDetails?.profileImage || userData.profileImage;
-              // Could calculate alignment based on shared causes
+
+              // Check if this is a business account
+              if (userData.accountType === 'business' && userData.businessInfo) {
+                enriched.name = userData.businessInfo.name || 'Unknown Business';
+                enriched.category = userData.businessInfo.category;
+                enriched.website = userData.businessInfo.website;
+                enriched.logoUrl = userData.businessInfo.logoUrl || getLogoUrl(userData.businessInfo.website || '');
+                enriched.profileImage = userData.businessInfo.logoUrl;
+
+                // Calculate similarity score based on shared causes
+                if (userCauses.length > 0 && userData.causes && Array.isArray(userData.causes)) {
+                  const businessCauses = userData.causes;
+                  const similarity = calculateSimilarityScore(userCauses, businessCauses);
+                  enriched.similarityScore = similarity;
+                  enriched.scoreType = 'similarity';
+                }
+              } else {
+                // Regular user account
+                enriched.name = userData.userDetails?.name || userData.name || userData.fullName || 'Unknown User';
+                enriched.profileImage = userData.userDetails?.profileImage || userData.profileImage;
+
+                // Calculate similarity score based on shared causes
+                if (userCauses.length > 0 && userData.causes && Array.isArray(userData.causes)) {
+                  const otherUserCauses = userData.causes;
+                  const similarity = calculateSimilarityScore(userCauses, otherUserCauses);
+                  enriched.similarityScore = similarity;
+                  enriched.scoreType = 'similarity';
+                }
+              }
             }
           }
         } catch (error) {
@@ -202,13 +230,27 @@ export default function FollowingFollowersList({
   };
 
   const filteredFollows = useMemo(() => {
-    if (filterType === 'all') return follows;
+    let filtered = follows;
 
-    return follows.filter(follow => {
-      const type = mode === 'following' ? follow.followedType : 'user';
-      return type === filterType;
-    });
-  }, [follows, filterType, mode]);
+    // Apply type filter
+    if (filterType !== 'all') {
+      filtered = filtered.filter(follow => {
+        const type = mode === 'following' ? follow.followedType : 'user';
+        return type === filterType;
+      });
+    }
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(follow =>
+        follow.name.toLowerCase().includes(query) ||
+        (follow.category && follow.category.toLowerCase().includes(query))
+      );
+    }
+
+    return filtered;
+  }, [follows, filterType, mode, searchQuery]);
 
   const handleFollowToggle = async (follow: EnrichedFollow) => {
     if (!clerkUser?.id) {
@@ -334,18 +376,6 @@ export default function FollowingFollowersList({
             </Text>
           </View>
 
-          {/* Score */}
-          {displayScore !== undefined && (
-            <View style={styles.scoreContainer}>
-              <Text style={[styles.scoreLabel, { color: colors.textSecondary }]}>
-                {follow.scoreType === 'similarity' ? 'Similar' : 'Aligned'}
-              </Text>
-              <Text style={[styles.score, { color: scoreColor }]}>
-                {Math.round(displayScore)}
-              </Text>
-            </View>
-          )}
-
           {/* Action Menu Button */}
           <TouchableOpacity
             style={styles.menuButton}
@@ -444,9 +474,28 @@ export default function FollowingFollowersList({
         </TouchableOpacity>
       </View>
 
+      {/* Search Input */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={[styles.searchInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+          placeholder="Search by name or category..."
+          placeholderTextColor={colors.textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
       {/* List */}
       <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
-        {filteredFollows.map(renderFollowCard)}
+        {filteredFollows.length > 0 ? (
+          filteredFollows.map(renderFollowCard)
+        ) : (
+          <View style={styles.emptySearchContainer}>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              No results found
+            </Text>
+          </View>
+        )}
       </ScrollView>
 
       {/* Action Menu Modal */}
@@ -519,6 +568,20 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  searchContainer: {
+    marginBottom: 16,
+  },
+  searchInput: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    fontSize: 14,
+  },
+  emptySearchContainer: {
+    padding: 40,
+    alignItems: 'center',
   },
   list: {
     flex: 1,
