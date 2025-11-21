@@ -1265,28 +1265,162 @@ export default function UnifiedLibrary({
       );
     }
 
-    return (
-      <View style={styles.listContentContainer}>
-        <View style={styles.brandsContainer}>
-          {endorsementList.entries
-            .filter(entry => entry != null) // Filter out null/undefined entries
-            .slice(0, endorsementLoadCount)
-            .map((entry, index) => {
-              const itemId = entry.brandId || entry.businessId || entry.valueId || entry.id;
-              return (
-                <View key={entry.id}>
-                  <View style={styles.forYouItemRow}>
-                    <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
-                      {index + 1}
-                    </Text>
-                    <View style={styles.forYouCardWrapper}>
-                      {renderListEntry(entry)}
-                    </View>
+    // Determine if we're in reorder mode for this list
+    const isReordering = isReorderMode && reorderingListId === 'endorsement';
+    const entriesToDisplay = isReordering ? localEntries : endorsementList.entries;
+
+    // Render Save/Cancel buttons when in reorder mode
+    const renderReorderControls = () => {
+      if (!isReordering) return null;
+
+      return (
+        <View style={[styles.reorderControls, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+          <Text style={[styles.reorderTitle, { color: colors.text }]}>
+            {isLargeScreen ? 'Drag items to reorder' : 'Use arrows to reorder'}
+          </Text>
+          <View style={styles.reorderButtons}>
+            <TouchableOpacity
+              style={[styles.reorderButton, styles.cancelButton, { borderColor: colors.border }]}
+              onPress={handleCancelReorder}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.reorderButtonText, { color: colors.text }]}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.reorderButton, styles.saveButton, { backgroundColor: colors.primary }]}
+              onPress={handleSaveReorder}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.reorderButtonText, { color: colors.white }]}>Save Order</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    };
+
+    // Render entry with reorder controls
+    const renderEntryWithControls = (entry: ListEntry, index: number) => {
+      const isFirst = index === 0;
+      const isLast = index === entriesToDisplay.length - 1;
+
+      if (isReordering) {
+        // Mobile: Show up/down arrows
+        if (!isLargeScreen) {
+          return (
+            <View style={styles.reorderEntryRow}>
+              <View style={styles.reorderControls}>
+                <TouchableOpacity
+                  style={[styles.reorderArrowButton, { backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => handleMoveUp(index)}
+                  disabled={isFirst}
+                  activeOpacity={0.7}
+                >
+                  <ArrowUp size={20} color={isFirst ? colors.textSecondary : colors.text} strokeWidth={2} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.reorderArrowButton, { backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => handleMoveDown(index)}
+                  disabled={isLast}
+                  activeOpacity={0.7}
+                >
+                  <ArrowDown size={20} color={isLast ? colors.textSecondary : colors.text} strokeWidth={2} />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.forYouItemRow}>
+                <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                  {index + 1}
+                </Text>
+                <View style={styles.forYouCardWrapper}>
+                  {renderListEntry(entry)}
+                </View>
+              </View>
+            </View>
+          );
+        }
+        // Desktop: Show drag handle
+        else {
+          const SortableEntry = () => {
+            const {
+              attributes,
+              listeners,
+              setNodeRef,
+              transform,
+              transition,
+            } = useSortable({ id: entry.id });
+
+            const style = {
+              transform: CSS.Transform.toString(transform),
+              transition,
+            };
+
+            return (
+              <View ref={setNodeRef} style={[styles.reorderEntryRow, style]}>
+                <TouchableOpacity
+                  {...attributes}
+                  {...listeners}
+                  style={[styles.dragHandle, { backgroundColor: colors.backgroundSecondary }]}
+                  activeOpacity={0.7}
+                >
+                  <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                </TouchableOpacity>
+                <View style={styles.forYouItemRow}>
+                  <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                    {index + 1}
+                  </Text>
+                  <View style={styles.forYouCardWrapper}>
+                    {renderListEntry(entry)}
                   </View>
                 </View>
-              );
-            })}
-          {endorsementLoadCount < endorsementList.entries.length && (
+              </View>
+            );
+          };
+
+          return <SortableEntry key={entry.id} />;
+        }
+      }
+
+      // Normal (non-reorder) mode
+      return (
+        <View key={entry.id}>
+          <View style={styles.forYouItemRow}>
+            <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+              {index + 1}
+            </Text>
+            <View style={styles.forYouCardWrapper}>
+              {renderListEntry(entry)}
+            </View>
+          </View>
+        </View>
+      );
+    };
+
+    const entriesContent = entriesToDisplay
+      .filter(entry => entry != null)
+      .slice(0, endorsementLoadCount)
+      .map((entry, index) => renderEntryWithControls(entry, index));
+
+    // Wrap with DndContext for desktop drag-and-drop
+    const contentWithDnd = isReordering && isLargeScreen ? (
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={localEntries.map(e => e.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          {entriesContent}
+        </SortableContext>
+      </DndContext>
+    ) : entriesContent;
+
+    return (
+      <View style={styles.listContentContainer}>
+        {renderReorderControls()}
+        <View style={styles.brandsContainer}>
+          {contentWithDnd}
+          {!isReordering && endorsementLoadCount < endorsementList.entries.length && (
             <TouchableOpacity
               style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
               onPress={() => setEndorsementLoadCount(endorsementLoadCount + 10)}
@@ -2392,5 +2526,60 @@ const styles = StyleSheet.create({
     top: 16,
     right: 16,
     padding: 4,
+  },
+  // Reorder styles
+  reorderControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    marginHorizontal: 12,
+    marginTop: 12,
+    marginBottom: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  reorderTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  reorderButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  reorderButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  cancelButton: {
+    borderWidth: 1,
+  },
+  saveButton: {
+    // backgroundColor set dynamically
+  },
+  reorderButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  reorderEntryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  reorderArrowButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dragHandle: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
   },
 });
