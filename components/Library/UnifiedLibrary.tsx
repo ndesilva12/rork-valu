@@ -23,6 +23,9 @@ import {
   ChevronDown,
   ChevronRight,
   ArrowLeft,
+  ArrowUp,
+  ArrowDown,
+  GripVertical,
   User,
   Globe,
   Lock,
@@ -34,6 +37,7 @@ import {
   Trash2,
   Share2,
   UserPlus,
+  List as ListIcon,
 } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { UserList, ListEntry } from '@/types/library';
@@ -54,6 +58,22 @@ import ItemOptionsModal from '@/components/ItemOptionsModal';
 import ConfirmModal from '@/components/ConfirmModal';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
+import { reorderListEntries } from '@/services/firebase/listService';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // ===== Types =====
 
@@ -137,6 +157,20 @@ export default function UnifiedLibrary({
   // Detect larger screens for responsive text display
   const { width } = useWindowDimensions();
   const isLargeScreen = width >= 768;
+
+  // Reorder mode state
+  const [isReorderMode, setIsReorderMode] = useState(false);
+  const [reorderingListId, setReorderingListId] = useState<string | null>(null);
+  const [localEntries, setLocalEntries] = useState<ListEntry[]>([]);
+
+  // Drag-and-drop sensors for list reordering (desktop only)
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Drag only after moving 8px (prevents accidental drags)
+      },
+    })
+  );
 
   // Mode-based permissions
   const canEdit = mode === 'edit';
@@ -351,6 +385,67 @@ export default function UnifiedLibrary({
       console.error('Error updating list:', error);
       Alert.alert('Error', 'Failed to update list. Please try again.');
     }
+  };
+
+  // ===== Reorder Handlers =====
+
+  // Move item up in the list (mobile)
+  const handleMoveUp = (index: number) => {
+    if (index === 0) return; // Already at top
+    const newEntries = [...localEntries];
+    [newEntries[index - 1], newEntries[index]] = [newEntries[index], newEntries[index - 1]];
+    setLocalEntries(newEntries);
+  };
+
+  // Move item down in the list (mobile)
+  const handleMoveDown = (index: number) => {
+    if (index === localEntries.length - 1) return; // Already at bottom
+    const newEntries = [...localEntries];
+    [newEntries[index], newEntries[index + 1]] = [newEntries[index + 1], newEntries[index]];
+    setLocalEntries(newEntries);
+  };
+
+  // Handle drag end (desktop)
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = localEntries.findIndex((entry) => entry.id === active.id);
+    const newIndex = localEntries.findIndex((entry) => entry.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newEntries = arrayMove(localEntries, oldIndex, newIndex);
+    setLocalEntries(newEntries);
+  };
+
+  // Save reordered entries to Firebase
+  const handleSaveReorder = async () => {
+    if (!reorderingListId) return;
+
+    try {
+      await reorderListEntries(reorderingListId, localEntries);
+
+      // Reload lists to reflect changes
+      if (currentUserId) {
+        await library.loadUserLists(currentUserId, true);
+      }
+
+      setIsReorderMode(false);
+      setReorderingListId(null);
+      setLocalEntries([]);
+      Alert.alert('Success', 'List reordered successfully!');
+    } catch (error) {
+      console.error('[UnifiedLibrary] Error reordering list:', error);
+      Alert.alert('Error', 'Failed to save new order. Please try again.');
+    }
+  };
+
+  // Cancel reordering
+  const handleCancelReorder = () => {
+    setIsReorderMode(false);
+    setReorderingListId(null);
+    setLocalEntries([]);
   };
 
   // Privacy toggle handler
@@ -1460,6 +1555,23 @@ export default function UnifiedLibrary({
                     >
                       <Edit size={16} color={colors.text} strokeWidth={2} />
                       <Text style={[styles.listOptionText, { color: colors.text }]}>Edit</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* Reorder button - only for endorsement list and custom lists that can be edited */}
+                  {canEdit && currentList && currentList.entries && currentList.entries.length > 1 && (
+                    <TouchableOpacity
+                      style={styles.listOptionItem}
+                      onPress={() => {
+                        setActiveListOptionsId(null);
+                        setIsReorderMode(true);
+                        setReorderingListId(listId);
+                        setLocalEntries([...currentList.entries]);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <ListIcon size={16} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.listOptionText, { color: colors.text }]}>Reorder</Text>
                     </TouchableOpacity>
                   )}
 
