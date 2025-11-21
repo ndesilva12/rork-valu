@@ -1862,30 +1862,24 @@ export default function UnifiedLibrary({
     const unalignedCount = unalignedItems.length;
     const localCount = userBusinesses.length;
 
-    // Define section colors (background tints and selection borders)
+    // Define section colors (border colors only, no background tints)
     const sectionColors = {
       local: {
-        background: isDarkMode ? 'rgba(0, 170, 250, 0.08)' : 'rgba(3, 68, 102, 0.05)',
         border: isDarkMode ? 'rgb(0, 170, 250)' : 'rgb(3, 68, 102)',
       },
       following: {
-        background: isDarkMode ? 'rgba(167, 139, 250, 0.08)' : 'rgba(167, 139, 250, 0.08)',
         border: isDarkMode ? 'rgb(167, 139, 250)' : 'rgb(124, 58, 237)',
       },
       followers: {
-        background: isDarkMode ? 'rgba(167, 139, 250, 0.08)' : 'rgba(167, 139, 250, 0.08)',
         border: isDarkMode ? 'rgb(167, 139, 250)' : 'rgb(124, 58, 237)',
       },
       endorsement: {
-        background: isDarkMode ? 'rgba(0, 170, 250, 0.08)' : 'rgba(3, 68, 102, 0.05)',
         border: isDarkMode ? 'rgb(0, 170, 250)' : 'rgb(3, 68, 102)',
       },
       aligned: {
-        background: isDarkMode ? 'rgba(132, 204, 22, 0.08)' : 'rgba(132, 204, 22, 0.08)',
         border: isDarkMode ? 'rgb(132, 204, 22)' : 'rgb(101, 163, 13)',
       },
       unaligned: {
-        background: isDarkMode ? 'rgba(255, 31, 122, 0.08)' : 'rgba(255, 31, 122, 0.08)',
         border: '#FF1F7A',
       },
     };
@@ -1899,7 +1893,7 @@ export default function UnifiedLibrary({
           style={[
             styles.sectionBox,
             {
-              backgroundColor: sectionColor.background,
+              backgroundColor: colors.backgroundSecondary,
               borderColor: isSelected ? sectionColor.border : colors.border,
               borderWidth: isSelected ? 2 : 1,
             },
@@ -1926,7 +1920,7 @@ export default function UnifiedLibrary({
           style={[
             styles.sectionBox,
             {
-              backgroundColor: sectionColor.background,
+              backgroundColor: colors.backgroundSecondary,
               borderColor: isSelected ? sectionColor.border : colors.border,
               borderWidth: isSelected ? 2 : 1,
             },
@@ -1949,6 +1943,29 @@ export default function UnifiedLibrary({
       );
     };
 
+    // For profile views (preview/view modes), only show 3 sections: Endorsed, Following, Followers
+    const isProfileView = mode === 'preview' || mode === 'view';
+
+    if (isProfileView) {
+      return (
+        <View style={styles.sectionSelector}>
+          {/* Single row for profile views: Endorsed | Following | Followers */}
+          <View style={styles.sectionRow}>
+            <View style={styles.sectionThird}>
+              <EndorsedSectionBox />
+            </View>
+            <View style={styles.sectionThird}>
+              <SectionBox section="following" label="Following" count={followingCount} />
+            </View>
+            <View style={styles.sectionThird}>
+              <SectionBox section="followers" label="Followers" count={followersCount} />
+            </View>
+          </View>
+        </View>
+      );
+    }
+
+    // For home tab (edit mode), show all 6 sections
     return (
       <View style={styles.sectionSelector}>
         {/* Top row: Local | Following | Followers */}
@@ -2856,11 +2873,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sectionBox: {
-    padding: 12,
-    borderRadius: 12,
+    padding: 10,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 64,
+    minHeight: 52,
   },
   sectionLabel: {
     fontSize: 16,
