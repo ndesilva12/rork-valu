@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Plus, List as ListIcon, Globe, Lock, MapPin, User, TrendingUp, TrendingDown, Minus, MoreVertical, ExternalLink } from 'lucide-react-native';
+import { ArrowLeft, Plus, List, Globe, Lock, MapPin, User, TrendingUp, TrendingDown, Minus, MoreVertical, ExternalLink, UserPlus, UserMinus, Share2 } from 'lucide-react-native';
 import { UnifiedLibrary } from '@/components/Library';
 import {
   View,
@@ -49,6 +49,7 @@ export default function UserProfileScreen() {
   const [isFollowingUser, setIsFollowingUser] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [showActionMenu, setShowActionMenu] = useState(false);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -459,65 +460,70 @@ export default function UserProfileScreen() {
                   </Text>
                 </View>
                 {/* Action menu button below score badge */}
-                <TouchableOpacity
-                  style={[styles.profileActionButton, { backgroundColor: colors.backgroundSecondary }]}
-                  onPress={() => {
-                    console.log('[ProfileDetails] Action menu clicked for user:', userName);
+                <View style={{ position: 'relative' }}>
+                  <TouchableOpacity
+                    style={[styles.profileActionButton, { backgroundColor: colors.backgroundSecondary }]}
+                    onPress={() => setShowActionMenu(!showActionMenu)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ transform: [{ rotate: '90deg' }] }}>
+                      <MoreVertical size={18} color={colors.text} strokeWidth={2} />
+                    </View>
+                  </TouchableOpacity>
 
-                    // On web, Alert.alert doesn't work well, so we'll use window.prompt
-                    if (Platform.OS === 'web') {
-                      const options = [
-                        'Add Endorse List to Library',
-                        isFollowingUser ? 'Unfollow' : 'Follow',
-                        'Share',
-                        'Cancel'
-                      ];
-                      const choice = window.prompt(`${userName} - Choose an action:\n1. ${options[0]}\n2. ${options[1]}\n3. ${options[2]}\n4. ${options[3]}\n\nEnter number (1-4):`);
+                  {/* Action Menu Dropdown */}
+                  {showActionMenu && (
+                    <View style={[styles.profileActionDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                      <TouchableOpacity
+                        style={styles.profileActionItem}
+                        onPress={() => {
+                          setShowActionMenu(false);
+                          handleAddEndorseListToLibrary();
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <List size={16} color={colors.text} strokeWidth={2} />
+                        <Text style={[styles.profileActionText, { color: colors.text }]}>Add Endorse List</Text>
+                      </TouchableOpacity>
 
-                      if (choice === '1') {
-                        handleAddEndorseListToLibrary();
-                      } else if (choice === '2') {
-                        handleFollowUser();
-                      } else if (choice === '3') {
-                        const shareUrl = `${window.location.origin}/user/${userId}`;
-                        navigator.clipboard.writeText(shareUrl);
-                        window.alert('Link copied to clipboard!');
-                      }
-                    } else {
-                      // Native Alert.alert works fine on mobile
-                      Alert.alert(
-                        userName,
-                        'Choose an action',
-                        [
-                          {
-                            text: 'Add Endorse List to Library',
-                            onPress: handleAddEndorseListToLibrary,
-                          },
-                          {
-                            text: isFollowingUser ? 'Unfollow' : 'Follow',
-                            onPress: handleFollowUser,
-                          },
-                          {
-                            text: 'Share',
-                            onPress: () => {
-                              const shareUrl = `https://upright.money/user/${userId}`;
-                              Alert.alert('Share', `Share ${userName}'s profile at ${shareUrl}`);
-                            },
-                          },
-                          {
-                            text: 'Cancel',
-                            style: 'cancel',
-                          },
-                        ]
-                      );
-                    }
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <View style={{ transform: [{ rotate: '90deg' }] }}>
-                    <MoreVertical size={18} color={colors.text} strokeWidth={2} />
-                  </View>
-                </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.profileActionItem}
+                        onPress={() => {
+                          setShowActionMenu(false);
+                          handleFollowUser();
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        {isFollowingUser ? (
+                          <UserMinus size={16} color={colors.text} strokeWidth={2} />
+                        ) : (
+                          <UserPlus size={16} color={colors.text} strokeWidth={2} />
+                        )}
+                        <Text style={[styles.profileActionText, { color: colors.text }]}>
+                          {isFollowingUser ? 'Unfollow' : 'Follow'}
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.profileActionItem}
+                        onPress={() => {
+                          setShowActionMenu(false);
+                          const shareUrl = `${Platform.OS === 'web' ? window.location.origin : 'https://upright.money'}/user/${userId}`;
+                          if (Platform.OS === 'web') {
+                            navigator.clipboard.writeText(shareUrl);
+                            Alert.alert('Link Copied', 'Profile link copied to clipboard');
+                          } else {
+                            Alert.alert('Share', `Share ${userName}'s profile at ${shareUrl}`);
+                          }
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Share2 size={16} color={colors.text} strokeWidth={2} />
+                        <Text style={[styles.profileActionText, { color: colors.text }]}>Share</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
               </View>
             )}
           </View>
@@ -751,6 +757,32 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  profileActionDropdown: {
+    position: 'absolute',
+    top: 40,
+    right: 0,
+    minWidth: 180,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 1000,
+  },
+  profileActionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  profileActionText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
   userDescription: {
     fontSize: 12,
