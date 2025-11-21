@@ -22,6 +22,8 @@ import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firesto
 import { db } from '@/firebase';
 import { ChevronDown, ChevronRight, Users, Receipt, TrendingUp, DollarSign, Percent } from 'lucide-react-native';
 import { aggregateBusinessTransactions } from '@/services/firebase/userService';
+import { PieChart } from 'react-native-chart-kit';
+import { Dimensions } from 'react-native';
 
 export default function DiscountScreen() {
   const router = useRouter();
@@ -48,6 +50,7 @@ export default function DiscountScreen() {
   });
   const [transactions, setTransactions] = useState<any[]>([]);
   const [customers, setCustomers] = useState<Map<string, any>>(new Map());
+  const [customerValues, setCustomerValues] = useState<Map<string, number>>(new Map());
 
   // Load business data
   const loadBusinessData = useCallback(async () => {
@@ -96,6 +99,25 @@ export default function DiscountScreen() {
 
       setTransactions(txns);
       setCustomers(customerMap);
+
+      // Fetch customer values/causes for pie chart
+      const valuesMap = new Map<string, number>();
+      for (const customerId of customerMap.keys()) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', customerId));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const causes = userData.causes || [];
+            causes.forEach((cause: any) => {
+              const valueName = cause.name || cause.id;
+              valuesMap.set(valueName, (valuesMap.get(valueName) || 0) + 1);
+            });
+          }
+        } catch (error) {
+          console.error(`[Money] Error fetching customer ${customerId} values:`, error);
+        }
+      }
+      setCustomerValues(valuesMap);
 
       // Also calculate financials
       let totalRevenue = 0;
@@ -147,6 +169,25 @@ export default function DiscountScreen() {
   );
 
   const totalSavings = profile.totalSavings || 0;
+
+  // Prepare pie chart data from customer values
+  const pieChartData = Array.from(customerValues.entries())
+    .sort((a, b) => b[1] - a[1]) // Sort by count descending
+    .slice(0, 8) // Top 8 values
+    .map(([name, count], index) => {
+      const colors = [
+        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+      ];
+      return {
+        name,
+        count,
+        color: colors[index % colors.length],
+        legendFontColor: isDarkMode ? '#FFFFFF' : '#333333',
+        legendFontSize: 12,
+      };
+    });
+
+  const screenWidth = Dimensions.get('window').width;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -248,6 +289,30 @@ export default function DiscountScreen() {
                           </Text>
                         </View>
                       </View>
+
+                      {/* Customer Values Pie Chart */}
+                      {pieChartData.length > 0 && (
+                        <View style={styles.chartContainer}>
+                          <Text style={[styles.chartTitle, { color: colors.text }]}>
+                            Customer Values Breakdown
+                          </Text>
+                          <PieChart
+                            data={pieChartData}
+                            width={Math.min(screenWidth - 64, 350)}
+                            height={220}
+                            chartConfig={{
+                              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                              backgroundColor: colors.background,
+                              backgroundGradientFrom: colors.background,
+                              backgroundGradientTo: colors.background,
+                            }}
+                            accessor="count"
+                            backgroundColor="transparent"
+                            paddingLeft="15"
+                            absolute
+                          />
+                        </View>
+                      )}
                     </View>
                   )}
                 </View>
@@ -840,6 +905,16 @@ const styles = StyleSheet.create({
   metricLabel: {
     fontSize: 12,
     textAlign: 'center' as const,
+  },
+  chartContainer: {
+    marginTop: 24,
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  chartTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 16,
   },
   // Discounts Section Styles
   discountsBreakdown: {
