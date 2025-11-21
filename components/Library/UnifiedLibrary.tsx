@@ -56,6 +56,7 @@ import EditListModal from '@/components/EditListModal';
 import ShareOptionsModal from '@/components/ShareOptionsModal';
 import ItemOptionsModal from '@/components/ItemOptionsModal';
 import ConfirmModal from '@/components/ConfirmModal';
+import FollowingFollowersList from '@/components/FollowingFollowersList';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { reorderListEntries } from '@/services/firebase/listService';
@@ -162,6 +163,13 @@ export default function UnifiedLibrary({
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [reorderingListId, setReorderingListId] = useState<string | null>(null);
   const [localEntries, setLocalEntries] = useState<ListEntry[]>([]);
+
+  // Section selection state - default to endorsement (or aligned if empty)
+  type LibrarySection = 'endorsement' | 'aligned' | 'unaligned' | 'following' | 'followers';
+  const defaultSection: LibrarySection = (endorsementList && endorsementList.entries && endorsementList.entries.length > 0)
+    ? 'endorsement'
+    : 'aligned';
+  const [selectedSection, setSelectedSection] = useState<LibrarySection>(defaultSection);
 
   // Drag-and-drop sensors for list reordering (desktop only)
   const sensors = useSensors(
@@ -1832,6 +1840,133 @@ export default function UnifiedLibrary({
     );
   };
 
+  // Render section selector - 5 boxes in grid layout
+  const renderSectionSelector = () => {
+    const endorsementCount = endorsementList?.entries?.length || 0;
+    const alignedCount = alignedItems.length;
+    const unalignedCount = unalignedItems.length;
+
+    const SectionBox = ({ section, label, count }: { section: LibrarySection; label: string; count: number }) => {
+      const isSelected = selectedSection === section;
+      return (
+        <TouchableOpacity
+          style={[
+            styles.sectionBox,
+            {
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: isSelected ? colors.primary : colors.border,
+              borderWidth: isSelected ? 2 : 1,
+            },
+          ]}
+          onPress={() => setSelectedSection(section)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.sectionLabel, { color: isSelected ? colors.primary : colors.text }]}>
+            {label}
+          </Text>
+          <Text style={[styles.sectionCount, { color: colors.textSecondary }]}>
+            {count}
+          </Text>
+        </TouchableOpacity>
+      );
+    };
+
+    return (
+      <View style={styles.sectionSelector}>
+        {/* Top row: Following | Followers */}
+        <View style={styles.sectionRow}>
+          <View style={styles.sectionHalf}>
+            <SectionBox section="following" label="Following" count={0} />
+          </View>
+          <View style={styles.sectionHalf}>
+            <SectionBox section="followers" label="Followers" count={0} />
+          </View>
+        </View>
+
+        {/* Bottom row: Endorsed | Aligned | Unaligned */}
+        <View style={styles.sectionRow}>
+          <View style={styles.sectionThird}>
+            <SectionBox section="endorsement" label="Endorsed" count={endorsementCount} />
+          </View>
+          <View style={styles.sectionThird}>
+            <SectionBox section="aligned" label="Aligned" count={alignedCount} />
+          </View>
+          <View style={styles.sectionThird}>
+            <SectionBox section="unaligned" label="Unaligned" count={unalignedCount} />
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  // Render content for selected section
+  const renderSectionContent = () => {
+    switch (selectedSection) {
+      case 'endorsement':
+        return endorsementList ? renderEndorsementContent() : (
+          <View style={styles.emptySection}>
+            <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+              No endorsements yet
+            </Text>
+          </View>
+        );
+
+      case 'aligned':
+        return alignedItems.length > 0 ? renderAlignedContent() : (
+          <View style={styles.emptySection}>
+            <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+              No aligned brands yet
+            </Text>
+          </View>
+        );
+
+      case 'unaligned':
+        return unalignedItems.length > 0 ? renderUnalignedContent() : (
+          <View style={styles.emptySection}>
+            <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+              No unaligned brands yet
+            </Text>
+          </View>
+        );
+
+      case 'following':
+        return currentUserId || viewingUserId ? (
+          <FollowingFollowersList
+            mode="following"
+            userId={(viewingUserId || currentUserId)!}
+            isDarkMode={isDarkMode}
+            userCauses={userCauses}
+          />
+        ) : (
+          <View style={styles.emptySection}>
+            <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+              No following data available
+            </Text>
+          </View>
+        );
+
+      case 'followers':
+        return currentUserId || viewingUserId ? (
+          <FollowingFollowersList
+            mode="followers"
+            userId={(viewingUserId || currentUserId)!}
+            entityType="user"
+            isDarkMode={isDarkMode}
+            userCauses={userCauses}
+          />
+        ) : (
+          <View style={styles.emptySection}>
+            <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+              No followers data available
+            </Text>
+          </View>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   // Render library overview (all list cards)
   const renderLibraryOverview = () => {
     // Determine if viewing own profile
@@ -2038,8 +2173,9 @@ export default function UnifiedLibrary({
         isDarkMode={isDarkMode}
       />
 
-      {/* Conditional render: overview or detail view */}
-      {openedListId ? renderListDetailView() : renderLibraryOverview()}
+      {/* New 5-section library layout */}
+      {renderSectionSelector()}
+      {renderSectionContent()}
 
       {/* Modals */}
       <AddToLibraryModal
@@ -2581,5 +2717,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
+  },
+  // Section selector styles
+  sectionSelector: {
+    padding: 12,
+    gap: 12,
+  },
+  sectionRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  sectionHalf: {
+    flex: 1,
+  },
+  sectionThird: {
+    flex: 1,
+  },
+  sectionBox: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 80,
+  },
+  sectionLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  sectionCount: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  emptySection: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptySectionText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
