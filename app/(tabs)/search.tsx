@@ -69,7 +69,6 @@ const UserCard = ({ item, colors, router, clerkUser, profile, library }: {
   const [isFollowingUser, setIsFollowingUser] = useState(false);
   const [checkingFollowStatus, setCheckingFollowStatus] = useState(true);
   const [showActionMenu, setShowActionMenu] = useState(false);
-  const colors = isDarkMode ? darkColors : lightColors;
 
   // Check follow status on mount
   useEffect(() => {
