@@ -189,20 +189,6 @@ export default function MenuButton({ onShowExplainers }: MenuButtonProps = {}) {
                 </TouchableOpacity>
               )}
 
-              {/* Search menu item - only for business accounts */}
-              {isBusiness && (
-                <TouchableOpacity
-                  style={[styles.menuItem, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
-                  onPress={handleNavigateToSearch}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.menuItemLeft}>
-                    <SearchIcon size={26} color={colors.primary} strokeWidth={2} />
-                    <Text style={[styles.menuItemTitle, { color: colors.text }]}>Search</Text>
-                  </View>
-                </TouchableOpacity>
-              )}
-
               <TouchableOpacity
                 style={[styles.menuItem, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
                 onPress={handleUpdate}

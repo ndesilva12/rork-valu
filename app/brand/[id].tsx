@@ -1182,7 +1182,8 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
   },
   content: {
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: Platform.OS === 'web' ? 8 : 16,
   },
   header: {
     flexDirection: 'row',

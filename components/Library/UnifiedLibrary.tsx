@@ -2011,7 +2011,17 @@ export default function UnifiedLibrary({
       local: 'Local',
     };
 
+    const sectionIcons = {
+      endorsement: UserPlus,
+      aligned: Target,
+      unaligned: Target,
+      following: User,
+      followers: User,
+      local: Globe,
+    };
+
     const title = sectionTitles[selectedSection];
+    const SectionIcon = sectionIcons[selectedSection];
     const isEndorsed = selectedSection === 'endorsement';
     const canReorder = isEndorsed && canEdit && endorsementList && endorsementList.entries && endorsementList.entries.length > 1;
 
@@ -2022,6 +2032,7 @@ export default function UnifiedLibrary({
           onPress={() => scrollViewRef.current?.scrollTo({ y: 0, animated: true })}
           activeOpacity={0.7}
         >
+          <SectionIcon size={20} color={colors.primary} strokeWidth={2} style={styles.sectionHeaderIcon} />
           <Text style={[styles.sectionHeaderTitle, { color: colors.text }]}>
             {title}
           </Text>
@@ -2965,7 +2976,13 @@ const styles = StyleSheet.create({
   },
   sectionHeaderTitleContainer: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  sectionHeaderIcon: {
+    marginRight: 0,
   },
   sectionHeaderTitle: {
     fontSize: 18,

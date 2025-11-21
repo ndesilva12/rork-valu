@@ -10,6 +10,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  TextInput,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -21,7 +22,7 @@ import { calculateSimilarityScore } from '@/lib/scoring';
 import { formatDistance } from '@/lib/distance';
 import { getLogoUrl } from '@/lib/logo';
 
-type LocalDistanceOption = 1 | 5 | 10 | 50 | 100 | null;
+type LocalDistanceOption = 1 | 10 | 50 | 100 | null;
 
 interface LocalBusinessViewProps {
   userBusinesses: BusinessUser[];
@@ -88,8 +89,9 @@ export default function LocalBusinessView({
 
   const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(null);
   const [localSortDirection, setLocalSortDirection] = useState<'highToLow' | 'lowToHigh'>('highToLow');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const localDistanceOptions: LocalDistanceOption[] = [100, 50, 10, 5, 1];
+  const localDistanceOptions: LocalDistanceOption[] = [100, 50, 10, 1];
 
   const localBusinessData = useMemo(() => {
     if (!userLocation || userBusinesses.length === 0) {
@@ -127,7 +129,18 @@ export default function LocalBusinessView({
     const businessesInRange = businessesWithScores.filter((b) => b.isWithinRange);
     const normalizedBusinesses = normalizeSimilarityScores(businessesInRange);
 
-    const allBusinessesSorted = [...normalizedBusinesses].sort((a, b) => {
+    // Apply search filter
+    let filteredBusinesses = normalizedBusinesses;
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filteredBusinesses = filteredBusinesses.filter((b) =>
+        b.business.businessInfo.name.toLowerCase().includes(query) ||
+        (b.business.businessInfo.category && b.business.businessInfo.category.toLowerCase().includes(query)) ||
+        (b.closestLocation && b.closestLocation.toLowerCase().includes(query))
+      );
+    }
+
+    const allBusinessesSorted = [...filteredBusinesses].sort((a, b) => {
       if (localSortDirection === 'highToLow') {
         return b.alignmentScore - a.alignmentScore;
       } else {
@@ -137,10 +150,10 @@ export default function LocalBusinessView({
 
     return {
       allBusinesses: allBusinessesSorted,
-      alignedBusinesses: normalizedBusinesses.filter((b) => b.alignmentScore >= 60),
-      unalignedBusinesses: normalizedBusinesses.filter((b) => b.alignmentScore < 40),
+      alignedBusinesses: filteredBusinesses.filter((b) => b.alignmentScore >= 60),
+      unalignedBusinesses: filteredBusinesses.filter((b) => b.alignmentScore < 40),
     };
-  }, [userLocation, userBusinesses, localDistance, userCauses, localSortDirection]);
+  }, [userLocation, userBusinesses, localDistance, userCauses, localSortDirection, searchQuery]);
 
   const renderLocalBusinessCard = (
     businessData: BusinessWithScore,
@@ -226,31 +239,15 @@ export default function LocalBusinessView({
 
   const { allBusinesses } = localBusinessData;
 
+  const [showMap, setShowMap] = useState(false);
+
+  const handleMapPress = () => {
+    setShowMap(true);
+  };
+
   return (
     <View style={styles.container}>
-      {/* Header with map icon and sort */}
-      <View style={[styles.localHeader, { borderBottomColor: colors.border }]}>
-        <View style={styles.localHeaderLeft}>
-          <MapPin size={24} color={colors.primary} strokeWidth={2} />
-          <Text style={[styles.localTitle, { color: colors.text }]}>Local Businesses</Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => setLocalSortDirection(localSortDirection === 'highToLow' ? 'lowToHigh' : 'highToLow')}
-          activeOpacity={0.7}
-          style={styles.sortButton}
-        >
-          {localSortDirection === 'highToLow' ? (
-            <ChevronDown size={18} color={colors.primary} strokeWidth={2} />
-          ) : (
-            <ChevronUp size={18} color={colors.primary} strokeWidth={2} />
-          )}
-          <Text style={[styles.sortButtonText, { color: colors.primary }]}>
-            {localSortDirection === 'highToLow' ? 'High to Low' : 'Low to High'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Distance Filter */}
+      {/* Distance Filter with Map Button */}
       <View style={styles.distanceFilterRow}>
         <View style={styles.distanceOptionsContainer}>
           {localDistanceOptions.map((option) => (
@@ -273,7 +270,26 @@ export default function LocalBusinessView({
               </Text>
             </TouchableOpacity>
           ))}
+          <TouchableOpacity
+            style={[styles.mapButton, { backgroundColor: colors.primary }]}
+            onPress={handleMapPress}
+            activeOpacity={0.7}
+          >
+            <MapPin size={14} color={colors.white} strokeWidth={2} />
+            <Text style={[styles.mapButtonText, { color: colors.white }]}>Map</Text>
+          </TouchableOpacity>
         </View>
+      </View>
+
+      {/* Search Input */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={[styles.searchInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+          placeholder="Search by name, category, or location..."
+          placeholderTextColor={colors.textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
       </View>
 
       {/* Business List */}
@@ -345,6 +361,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  mapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  mapButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  searchInput: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    fontSize: 14,
+  },
   businessList: {
     paddingHorizontal: 12,
     paddingTop: 8,
@@ -360,8 +399,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   businessLogoContainer: {
-    width: 48,
-    height: 48,
+    width: 80,
+    height: 80,
     borderRadius: 8,
     overflow: 'hidden',
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
