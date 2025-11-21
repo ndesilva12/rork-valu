@@ -228,15 +228,18 @@ export const [UserProvider, useUser] = createContextHook(() => {
     // Use functional update to avoid stale closure
     let newProfile: UserProfile | null = null;
     setProfile((prevProfile) => {
-      // If this is a new user completing onboarding (no causes before), set hasSeenIntro to false
+      // Only set hasSeenIntro to false for TRULY new users:
+      // 1. No causes before (completing onboarding)
+      // 2. AND hasSeenIntro is undefined (not already set in Firebase)
       const isCompletingOnboarding = !prevProfile.causes || prevProfile.causes.length === 0;
+      const isNewUser = isCompletingOnboarding && prevProfile.hasSeenIntro === undefined;
       newProfile = {
         ...prevProfile,
         causes,
-        // Set hasSeenIntro to false for new users so they see the welcome carousel
-        hasSeenIntro: isCompletingOnboarding ? false : prevProfile.hasSeenIntro,
+        // Only set to false for new users; preserve existing value for returning users
+        hasSeenIntro: isNewUser ? false : prevProfile.hasSeenIntro,
       };
-      console.log('[UserContext] Updated profile with causes. PromoCode:', newProfile!.promoCode, 'hasSeenIntro:', newProfile!.hasSeenIntro);
+      console.log('[UserContext] Updated profile with causes. PromoCode:', newProfile!.promoCode, 'hasSeenIntro:', newProfile!.hasSeenIntro, 'isNewUser:', isNewUser);
       return newProfile;
     });
     setHasCompletedOnboarding(causes.length > 0);
