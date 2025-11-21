@@ -462,37 +462,55 @@ export default function UserProfileScreen() {
                 <TouchableOpacity
                   style={[styles.profileActionButton, { backgroundColor: colors.backgroundSecondary }]}
                   onPress={() => {
-                    Alert.alert(
-                      userName,
-                      'Choose an action',
-                      [
-                        {
-                          text: 'Add Endorse List to Library',
-                          onPress: handleAddEndorseListToLibrary,
-                        },
-                        {
-                          text: isFollowingUser ? 'Unfollow' : 'Follow',
-                          onPress: handleFollowUser,
-                        },
-                        {
-                          text: 'Share',
-                          onPress: () => {
-                            const shareUrl = `${Platform.OS === 'web' ? window.location.origin : 'https://upright.money'}/user/${userId}`;
-                            if (Platform.OS === 'web') {
-                              navigator.clipboard.writeText(shareUrl);
-                              Alert.alert('Link Copied', 'Profile link copied to clipboard');
-                            } else {
-                              // Native share
-                              Alert.alert('Share', `Share ${userName}'s profile`);
-                            }
+                    console.log('[ProfileDetails] Action menu clicked for user:', userName);
+
+                    // On web, Alert.alert doesn't work well, so we'll use window.prompt
+                    if (Platform.OS === 'web') {
+                      const options = [
+                        'Add Endorse List to Library',
+                        isFollowingUser ? 'Unfollow' : 'Follow',
+                        'Share',
+                        'Cancel'
+                      ];
+                      const choice = window.prompt(`${userName} - Choose an action:\n1. ${options[0]}\n2. ${options[1]}\n3. ${options[2]}\n4. ${options[3]}\n\nEnter number (1-4):`);
+
+                      if (choice === '1') {
+                        handleAddEndorseListToLibrary();
+                      } else if (choice === '2') {
+                        handleFollowUser();
+                      } else if (choice === '3') {
+                        const shareUrl = `${window.location.origin}/user/${userId}`;
+                        navigator.clipboard.writeText(shareUrl);
+                        window.alert('Link copied to clipboard!');
+                      }
+                    } else {
+                      // Native Alert.alert works fine on mobile
+                      Alert.alert(
+                        userName,
+                        'Choose an action',
+                        [
+                          {
+                            text: 'Add Endorse List to Library',
+                            onPress: handleAddEndorseListToLibrary,
                           },
-                        },
-                        {
-                          text: 'Cancel',
-                          style: 'cancel',
-                        },
-                      ]
-                    );
+                          {
+                            text: isFollowingUser ? 'Unfollow' : 'Follow',
+                            onPress: handleFollowUser,
+                          },
+                          {
+                            text: 'Share',
+                            onPress: () => {
+                              const shareUrl = `https://upright.money/user/${userId}`;
+                              Alert.alert('Share', `Share ${userName}'s profile at ${shareUrl}`);
+                            },
+                          },
+                          {
+                            text: 'Cancel',
+                            style: 'cancel',
+                          },
+                        ]
+                      );
+                    }
                   }}
                   activeOpacity={0.7}
                 >

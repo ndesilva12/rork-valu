@@ -147,40 +147,59 @@ const UserCard = ({ item, colors, router, clerkUser, profile, library }: {
     }
   };
 
-  const handleActionMenu = (e: any) => {
-    e.stopPropagation();
-    Alert.alert(
-      userName,
-      'Choose an action',
-      [
-        {
-          text: 'Add Endorse List to Library',
-          onPress: handleAddEndorseListToLibrary,
-        },
-        {
-          text: isFollowingUser ? 'Unfollow' : 'Follow',
-          onPress: handleFollowUser,
-        },
-        {
-          text: 'Share',
-          onPress: () => {
-            const shareUrl = `${Platform.OS === 'web' ? window.location.origin : 'https://upright.money'}/user/${item.id}`;
-            if (Platform.OS === 'web') {
-              navigator.clipboard.writeText(shareUrl);
-              Alert.alert('Link Copied', 'Profile link copied to clipboard');
-            } else {
+  const handleActionMenu = () => {
+    console.log('[UserCard] Action menu clicked for user:', userName);
+
+    // On web, Alert.alert doesn't work well, so we'll use window.confirm for now
+    // TODO: Replace with a proper modal component
+    if (Platform.OS === 'web') {
+      const options = [
+        'Add Endorse List to Library',
+        isFollowingUser ? 'Unfollow' : 'Follow',
+        'Share',
+        'Cancel'
+      ];
+      const choice = window.prompt(`${userName} - Choose an action:\n1. ${options[0]}\n2. ${options[1]}\n3. ${options[2]}\n4. ${options[3]}\n\nEnter number (1-4):`);
+
+      if (choice === '1') {
+        handleAddEndorseListToLibrary();
+      } else if (choice === '2') {
+        handleFollowUser();
+      } else if (choice === '3') {
+        const shareUrl = `${window.location.origin}/user/${item.id}`;
+        navigator.clipboard.writeText(shareUrl);
+        window.alert('Link copied to clipboard!');
+      }
+    } else {
+      // Native Alert.alert works fine on mobile
+      Alert.alert(
+        userName,
+        'Choose an action',
+        [
+          {
+            text: 'Add Endorse List to Library',
+            onPress: handleAddEndorseListToLibrary,
+          },
+          {
+            text: isFollowingUser ? 'Unfollow' : 'Follow',
+            onPress: handleFollowUser,
+          },
+          {
+            text: 'Share',
+            onPress: () => {
+              const shareUrl = `https://upright.money/user/${item.id}`;
               RNShare.share({
                 message: `Check out ${userName}'s profile on Endorse: ${shareUrl}`,
               });
-            }
+            },
           },
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-      ]
-    );
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
+    }
   };
 
   return (
@@ -225,10 +244,7 @@ const UserCard = ({ item, colors, router, clerkUser, profile, library }: {
         </View>
         <TouchableOpacity
           style={[styles.userCardActionButton, { backgroundColor: colors.backgroundSecondary }]}
-          onPress={(e) => {
-            e?.stopPropagation?.();
-            handleActionMenu(e);
-          }}
+          onPress={handleActionMenu}
           activeOpacity={0.7}
         >
           <View style={{ transform: [{ rotate: '90deg' }] }}>
