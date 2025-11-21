@@ -38,6 +38,7 @@ export default function ValueCodeSettings() {
   const [customDiscountText, setCustomDiscountText] = useState(businessInfo.customDiscount || '');
   const [requireFollow, setRequireFollow] = useState(businessInfo.requireFollow || false);
   const [requireEndorse, setRequireEndorse] = useState(businessInfo.requireEndorse || false);
+  const [minimumEndorseDays, setMinimumEndorseDays] = useState(businessInfo.minimumEndorseDays || 0);
 
   const handleToggleDiscounts = async (value: boolean) => {
     setAcceptsDiscounts(value);
@@ -90,6 +91,21 @@ export default function ValueCodeSettings() {
     setRequireEndorse(value);
     await setBusinessInfo({
       requireEndorse: value,
+    });
+    // Reset minimum days when disabling endorsement requirement
+    if (!value) {
+      setMinimumEndorseDays(0);
+      await setBusinessInfo({
+        minimumEndorseDays: 0,
+      });
+    }
+  };
+
+  const handleChangeMinimumEndorseDays = async (newDays: number) => {
+    const clampedDays = Math.max(0, Math.min(365, newDays));
+    setMinimumEndorseDays(clampedDays);
+    await setBusinessInfo({
+      minimumEndorseDays: clampedDays,
     });
   };
 
@@ -243,6 +259,49 @@ export default function ValueCodeSettings() {
                     ios_backgroundColor='#E5E7EB'
                   />
                 </View>
+
+                {/* Minimum Endorsement Days - Only shown when requireEndorse is enabled */}
+                {requireEndorse && (
+                  <View style={styles.minimumDaysSection}>
+                    <View style={styles.minimumDaysHeader}>
+                      <Text style={[styles.requirementLabel, { color: colors.text }]}>Minimum Endorsement Days</Text>
+                      <Text style={[styles.requirementDescription, { color: colors.textSecondary }]}>
+                        Customer must have endorsed your business for at least this many days (0 = no minimum)
+                      </Text>
+                    </View>
+                    <View style={styles.minimumDaysCounter}>
+                      <TouchableOpacity
+                        style={[styles.daysButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                        onPress={() => handleChangeMinimumEndorseDays(minimumEndorseDays - 1)}
+                        activeOpacity={0.7}
+                      >
+                        <Minus size={18} color={colors.text} strokeWidth={2} />
+                      </TouchableOpacity>
+
+                      <View style={[styles.daysValueContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                        <Text style={[styles.daysValue, { color: colors.primary }]}>
+                          {minimumEndorseDays}
+                        </Text>
+                        <Text style={[styles.daysLabel, { color: colors.textSecondary }]}>
+                          {minimumEndorseDays === 1 ? 'day' : 'days'}
+                        </Text>
+                      </View>
+
+                      <TouchableOpacity
+                        style={[styles.daysButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                        onPress={() => handleChangeMinimumEndorseDays(minimumEndorseDays + 1)}
+                        activeOpacity={0.7}
+                      >
+                        <Plus size={18} color={colors.text} strokeWidth={2} />
+                      </TouchableOpacity>
+                    </View>
+                    {minimumEndorseDays > 0 && (
+                      <Text style={[styles.minimumDaysNote, { color: colors.textSecondary }]}>
+                        Customers will need to endorse you for {minimumEndorseDays} {minimumEndorseDays === 1 ? 'day' : 'days'} before they can use the discount
+                      </Text>
+                    )}
+                  </View>
+                )}
               </>
             ) : (
               /* Custom Discount Input */
@@ -487,6 +546,55 @@ const styles = StyleSheet.create({
   },
   requirementDescription: {
     fontSize: 12,
+    lineHeight: 16,
+  },
+  // Minimum Days Section
+  minimumDaysSection: {
+    marginTop: 4,
+    marginBottom: 8,
+    paddingLeft: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#E5E7EB',
+  },
+  minimumDaysHeader: {
+    marginBottom: 12,
+  },
+  minimumDaysCounter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  daysButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  daysValueContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 8,
+    borderWidth: 2,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  daysValue: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+  },
+  daysLabel: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  minimumDaysNote: {
+    fontSize: 12,
+    fontStyle: 'italic' as const,
+    marginTop: 8,
     lineHeight: 16,
   },
 });
