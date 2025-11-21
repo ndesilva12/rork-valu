@@ -90,8 +90,13 @@ export default function LocalBusinessView({
   const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(null);
   const [localSortDirection, setLocalSortDirection] = useState<'highToLow' | 'lowToHigh'>('highToLow');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showMap, setShowMap] = useState(false);
 
   const localDistanceOptions: LocalDistanceOption[] = [100, 50, 10, 1];
+
+  const handleMapPress = () => {
+    setShowMap(true);
+  };
 
   const localBusinessData = useMemo(() => {
     if (!userLocation || userBusinesses.length === 0) {
@@ -238,12 +243,6 @@ export default function LocalBusinessView({
   }
 
   const { allBusinesses } = localBusinessData;
-
-  const [showMap, setShowMap] = useState(false);
-
-  const handleMapPress = () => {
-    setShowMap(true);
-  };
 
   return (
     <View style={styles.container}>
