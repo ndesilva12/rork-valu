@@ -1544,21 +1544,7 @@ export default function UnifiedLibrary({
 
               return (
                 <>
-                  {canEditMeta && currentList && (
-                    <TouchableOpacity
-                      style={styles.listOptionItem}
-                      onPress={() => {
-                        setActiveListOptionsId(null);
-                        handleEditList(currentList);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Edit size={16} color={colors.text} strokeWidth={2} />
-                      <Text style={[styles.listOptionText, { color: colors.text }]}>Edit</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {/* Reorder button - only for endorsement list and custom lists that can be edited */}
+                  {/* Reorder button - only for endorsement list */}
                   {canEdit && currentList && currentList.entries && currentList.entries.length > 1 && (
                     <TouchableOpacity
                       style={styles.listOptionItem}
