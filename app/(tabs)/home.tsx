@@ -1190,6 +1190,7 @@ export default function HomeScreen() {
         userBusinesses={userBusinesses}
         scoredBrands={scoredBrands}
         userCauses={profile?.causes || []}
+        userLocation={userLocation}
       />
     );
   };
@@ -2904,6 +2905,7 @@ export default function HomeScreen() {
         userBusinesses={userBusinesses}
         scoredBrands={scoredBrands}
         userCauses={profile?.causes || []}
+        userLocation={userLocation}
       />
     );
   };

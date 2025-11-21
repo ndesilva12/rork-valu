@@ -45,7 +45,7 @@ import { useLibrary } from '@/contexts/LibraryContext';
 import { useData } from '@/contexts/DataContext';
 import EndorsedBadge from '@/components/EndorsedBadge';
 import { getLogoUrl } from '@/lib/logo';
-import { Product } from '@/types';
+import { Product, Cause } from '@/types';
 import { BusinessUser } from '@/services/firebase/businessService';
 import { useUser } from '@/contexts/UserContext';
 import { useRouter } from 'expo-router';
@@ -57,6 +57,7 @@ import ShareOptionsModal from '@/components/ShareOptionsModal';
 import ItemOptionsModal from '@/components/ItemOptionsModal';
 import ConfirmModal from '@/components/ConfirmModal';
 import FollowingFollowersList from '@/components/FollowingFollowersList';
+import LocalBusinessView from '@/components/Library/LocalBusinessView';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { reorderListEntries } from '@/services/firebase/listService';
@@ -95,7 +96,9 @@ interface UnifiedLibraryProps {
   // Additional props for score calculation
   userBusinesses?: BusinessUser[];
   scoredBrands?: Map<string, number>;
-  userCauses?: string[];
+  userCauses?: Cause[];
+  // Location data for Local view
+  userLocation?: { latitude: number; longitude: number } | null;
 }
 
 export default function UnifiedLibrary({
@@ -111,6 +114,7 @@ export default function UnifiedLibrary({
   userBusinesses = [],
   scoredBrands = new Map(),
   userCauses = [],
+  userLocation = null,
 }: UnifiedLibraryProps) {
   const colors = isDarkMode ? darkColors : lightColors;
   const library = useLibrary();
@@ -169,7 +173,7 @@ export default function UnifiedLibrary({
   const [localEntries, setLocalEntries] = useState<ListEntry[]>([]);
 
   // Section selection state - default to endorsement (or aligned if empty)
-  type LibrarySection = 'endorsement' | 'aligned' | 'unaligned' | 'following' | 'followers';
+  type LibrarySection = 'endorsement' | 'aligned' | 'unaligned' | 'following' | 'followers' | 'local';
   const defaultSection: LibrarySection = (endorsementList && endorsementList.entries && endorsementList.entries.length > 0)
     ? 'endorsement'
     : 'aligned';
@@ -1840,11 +1844,12 @@ export default function UnifiedLibrary({
     );
   };
 
-  // Render section selector - 5 boxes in grid layout
+  // Render section selector - 6 boxes in grid layout
   const renderSectionSelector = () => {
     const endorsementCount = endorsementList?.entries?.length || 0;
     const alignedCount = alignedItems.length;
     const unalignedCount = unalignedItems.length;
+    const localCount = userBusinesses.length;
 
     const SectionBox = ({ section, label, count }: { section: LibrarySection; label: string; count: number }) => {
       const isSelected = selectedSection === section;
@@ -1873,13 +1878,16 @@ export default function UnifiedLibrary({
 
     return (
       <View style={styles.sectionSelector}>
-        {/* Top row: Following | Followers */}
+        {/* Top row: Following | Followers | Local */}
         <View style={styles.sectionRow}>
-          <View style={styles.sectionHalf}>
+          <View style={styles.sectionThird}>
             <SectionBox section="following" label="Following" count={0} />
           </View>
-          <View style={styles.sectionHalf}>
+          <View style={styles.sectionThird}>
             <SectionBox section="followers" label="Followers" count={0} />
+          </View>
+          <View style={styles.sectionThird}>
+            <SectionBox section="local" label="Local" count={localCount} />
           </View>
         </View>
 
@@ -1935,7 +1943,7 @@ export default function UnifiedLibrary({
             mode="following"
             userId={(viewingUserId || currentUserId)!}
             isDarkMode={isDarkMode}
-            userCauses={userCauses}
+            userCauses={userCauses || []}
           />
         ) : (
           <View style={styles.emptySection}>
@@ -1952,7 +1960,7 @@ export default function UnifiedLibrary({
             userId={(viewingUserId || currentUserId)!}
             entityType="user"
             isDarkMode={isDarkMode}
-            userCauses={userCauses}
+            userCauses={userCauses || []}
           />
         ) : (
           <View style={styles.emptySection}>
@@ -1960,6 +1968,16 @@ export default function UnifiedLibrary({
               No followers data available
             </Text>
           </View>
+        );
+
+      case 'local':
+        return (
+          <LocalBusinessView
+            userBusinesses={userBusinesses}
+            userLocation={userLocation}
+            userCauses={userCauses}
+            isDarkMode={isDarkMode}
+          />
         );
 
       default:
@@ -2726,9 +2744,6 @@ const styles = StyleSheet.create({
   sectionRow: {
     flexDirection: 'row',
     gap: 12,
-  },
-  sectionHalf: {
-    flex: 1,
   },
   sectionThird: {
     flex: 1,
