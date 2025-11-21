@@ -98,7 +98,9 @@ export default function LocalBusinessView({
   const localDistanceOptions: LocalDistanceOption[] = [100, 50, 10, 1];
 
   const handleMapPress = () => {
+    console.log('[LocalBusinessView] Map button pressed, opening map...');
     setShowMap(true);
+    console.log('[LocalBusinessView] showMap state set to true');
   };
 
   const localBusinessData = useMemo(() => {
@@ -313,23 +315,24 @@ export default function LocalBusinessView({
       </View>
 
       {/* Map Modal */}
-      {Platform.OS !== 'web' && (
-        <Modal
-          visible={showMap}
-          animationType="slide"
-          onRequestClose={() => setShowMap(false)}
-        >
-          <View style={styles.mapModalContainer}>
-            <View style={[styles.mapModalHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-              <Text style={[styles.mapModalTitle, { color: colors.text }]}>Local Businesses Map</Text>
-              <TouchableOpacity
-                onPress={() => setShowMap(false)}
-                style={styles.mapCloseButton}
-                activeOpacity={0.7}
-              >
-                <X size={24} color={colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
+      <Modal
+        visible={showMap}
+        animationType="slide"
+        onRequestClose={() => setShowMap(false)}
+        transparent={Platform.OS === 'web'}
+      >
+        <View style={[styles.mapModalContainer, Platform.OS === 'web' && styles.webModalContainer]}>
+          <View style={[styles.mapModalHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+            <Text style={[styles.mapModalTitle, { color: colors.text }]}>Local Businesses Map</Text>
+            <TouchableOpacity
+              onPress={() => setShowMap(false)}
+              style={styles.mapCloseButton}
+              activeOpacity={0.7}
+            >
+              <X size={24} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+          {Platform.OS !== 'web' ? (
             <BusinessMapView
               businesses={allBusinesses}
               userLocation={userLocation}
@@ -342,9 +345,19 @@ export default function LocalBusinessView({
                 });
               }}
             />
-          </View>
-        </Modal>
-      )}
+          ) : (
+            <View style={[styles.webMapPlaceholder, { backgroundColor: colors.backgroundSecondary }]}>
+              <MapPin size={48} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.webMapText, { color: colors.text }]}>
+                Map view is available on mobile app
+              </Text>
+              <Text style={[styles.webMapSubtext, { color: colors.textSecondary }]}>
+                {allBusinesses.length} businesses found within {localDistance || 100} miles
+              </Text>
+            </View>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -502,6 +515,19 @@ const styles = StyleSheet.create({
   mapModalContainer: {
     flex: 1,
   },
+  webModalContainer: {
+    maxWidth: 600,
+    maxHeight: '80%',
+    alignSelf: 'center',
+    marginTop: '10%',
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
   mapModalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -516,5 +542,21 @@ const styles = StyleSheet.create({
   },
   mapCloseButton: {
     padding: 4,
+  },
+  webMapPlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+    gap: 16,
+  },
+  webMapText: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  webMapSubtext: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
