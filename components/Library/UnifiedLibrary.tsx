@@ -1292,7 +1292,7 @@ export default function UnifiedLibrary({
     }
 
     // Determine if we're in reorder mode for this list
-    const isReordering = isReorderMode && reorderingListId === 'endorsement';
+    const isReordering = isReorderMode && reorderingListId === endorsementList.id;
     const entriesToDisplay = isReordering ? localEntries : endorsementList.entries;
 
     // Render Save/Cancel buttons when in reorder mode
@@ -2062,7 +2062,7 @@ export default function UnifiedLibrary({
                   onPress={() => {
                     setShowEndorsedActionMenu(false);
                     setIsReorderMode(true);
-                    setReorderingListId('endorsement');
+                    setReorderingListId(endorsementList.id);
                     setLocalEntries([...endorsementList.entries]);
                   }}
                   activeOpacity={0.7}

@@ -332,30 +332,18 @@ export default function LocalBusinessView({
               <X size={24} color={colors.text} strokeWidth={2} />
             </TouchableOpacity>
           </View>
-          {Platform.OS !== 'web' ? (
-            <BusinessMapView
-              businesses={allBusinesses}
-              userLocation={userLocation}
-              distanceRadius={localDistance || 100}
-              onBusinessPress={(businessId) => {
-                setShowMap(false);
-                router.push({
-                  pathname: '/business/[id]',
-                  params: { id: businessId },
-                });
-              }}
-            />
-          ) : (
-            <View style={[styles.webMapPlaceholder, { backgroundColor: colors.backgroundSecondary }]}>
-              <MapPin size={48} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.webMapText, { color: colors.text }]}>
-                Map view is available on mobile app
-              </Text>
-              <Text style={[styles.webMapSubtext, { color: colors.textSecondary }]}>
-                {allBusinesses.length} businesses found within {localDistance || 100} miles
-              </Text>
-            </View>
-          )}
+          <BusinessMapView
+            businesses={allBusinesses}
+            userLocation={userLocation}
+            distanceRadius={localDistance || 100}
+            onBusinessPress={(businessId) => {
+              setShowMap(false);
+              router.push({
+                pathname: '/business/[id]',
+                params: { id: businessId },
+              });
+            }}
+          />
         </View>
       </Modal>
     </View>
@@ -542,21 +530,5 @@ const styles = StyleSheet.create({
   },
   mapCloseButton: {
     padding: 4,
-  },
-  webMapPlaceholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-    gap: 16,
-  },
-  webMapText: {
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  webMapSubtext: {
-    fontSize: 14,
-    textAlign: 'center',
   },
 });
