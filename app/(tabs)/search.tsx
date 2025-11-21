@@ -225,7 +225,10 @@ const UserCard = ({ item, colors, router, clerkUser, profile, library }: {
         </View>
         <TouchableOpacity
           style={[styles.userCardActionButton, { backgroundColor: colors.backgroundSecondary }]}
-          onPress={handleActionMenu}
+          onPress={(e) => {
+            e?.stopPropagation?.();
+            handleActionMenu(e);
+          }}
           activeOpacity={0.7}
         >
           <View style={{ transform: [{ rotate: '90deg' }] }}>
