@@ -97,8 +97,8 @@ export default function UnifiedLibrary({
   const router = useRouter();
   const { brands } = useData();
 
-  // Local state for independent expansion in each location
-  const [openedListId, setOpenedListId] = useState<string | null>(null);
+  // Use context's expandedListId for persistent state across navigation
+  const openedListId = library.state.expandedListId;
   const [activeListOptionsId, setActiveListOptionsId] = useState<string | null>(null);
   const [showAddToLibraryModal, setShowAddToLibraryModal] = useState(false);
   const [selectedItemToAdd, setSelectedItemToAdd] = useState<ListEntry | null>(null);
@@ -150,12 +150,12 @@ export default function UnifiedLibrary({
   // Navigate into a list (replaces expand/collapse)
   const handleListClick = (listId: string) => {
     if (!canBrowse) return;
-    setOpenedListId(listId);
+    library.setExpandedList(listId);
   };
 
   // Navigate back to list overview
   const handleBackToLibrary = () => {
-    setOpenedListId(null);
+    library.setExpandedList(null);
   };
 
   // Filter out endorsement list from custom lists
