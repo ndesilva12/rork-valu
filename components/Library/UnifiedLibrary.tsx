@@ -727,8 +727,32 @@ export default function UnifiedLibrary({
     );
   };
 
+  // Helper function to calculate days endorsed from createdAt
+  const calculateDaysEndorsed = (createdAt: Date | string | undefined): number => {
+    if (!createdAt) return 0;
+
+    let date: Date;
+    if (createdAt instanceof Date) {
+      date = createdAt;
+    } else if (typeof createdAt === 'string') {
+      date = new Date(createdAt);
+    } else if (typeof createdAt === 'object' && 'seconds' in createdAt) {
+      // Firestore Timestamp
+      date = new Date((createdAt as any).seconds * 1000);
+    } else {
+      return 0;
+    }
+
+    if (isNaN(date.getTime())) return 0;
+
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
   // EXACT copy of Home tab's renderListEntry with score calculation
-  const renderListEntry = (entry: ListEntry) => {
+  const renderListEntry = (entry: ListEntry, isEndorsementSection: boolean = false) => {
     if (!entry) return null;
 
     switch (entry.type) {
@@ -795,7 +819,9 @@ export default function UnifiedLibrary({
                     {brandName}
                   </Text>
                   <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {brandCategory}
+                    {isEndorsementSection
+                      ? `endorsed for ${calculateDaysEndorsed(entry.createdAt)} ${calculateDaysEndorsed(entry.createdAt) === 1 ? 'day' : 'days'}`
+                      : brandCategory}
                   </Text>
                 </View>
                 <View style={styles.brandScoreContainer}>
@@ -863,11 +889,11 @@ export default function UnifiedLibrary({
                   <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
                     {businessName}
                   </Text>
-                  {businessCategory && (
-                    <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {businessCategory}
-                    </Text>
-                  )}
+                  <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                    {isEndorsementSection
+                      ? `endorsed for ${calculateDaysEndorsed(entry.createdAt)} ${calculateDaysEndorsed(entry.createdAt) === 1 ? 'day' : 'days'}`
+                      : (businessCategory || 'Business')}
+                  </Text>
                 </View>
                 {alignmentScore !== null && (
                   <View style={styles.brandScoreContainer}>
@@ -1357,7 +1383,7 @@ export default function UnifiedLibrary({
                   {index + 1}
                 </Text>
                 <View style={styles.forYouCardWrapper}>
-                  {renderListEntry(entry)}
+                  {renderListEntry(entry, true)}
                 </View>
               </View>
             </View>
@@ -1394,7 +1420,7 @@ export default function UnifiedLibrary({
                     {index + 1}
                   </Text>
                   <View style={styles.forYouCardWrapper}>
-                    {renderListEntry(entry)}
+                    {renderListEntry(entry, true)}
                   </View>
                 </View>
               </View>
@@ -1413,7 +1439,7 @@ export default function UnifiedLibrary({
               {index + 1}
             </Text>
             <View style={styles.forYouCardWrapper}>
-              {renderListEntry(entry)}
+              {renderListEntry(entry, true)}
             </View>
           </View>
         </View>
@@ -1559,7 +1585,7 @@ export default function UnifiedLibrary({
                       {index + 1}
                     </Text>
                     <View style={styles.forYouCardWrapper}>
-                      {renderListEntry(entry)}
+                      {renderListEntry(entry, false)}
                     </View>
                   </View>
                 </View>

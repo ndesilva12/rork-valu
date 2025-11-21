@@ -21,7 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { collection, getDocs, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getCustomFields, CustomField } from '@/services/firebase/customFieldsService';
-import { getUserLists, deleteList, removeEntryFromList, addEntryToList } from '@/services/firebase/listService';
+import { getUserLists, deleteList, removeEntryFromList, addEntryToList, updateEntryInList } from '@/services/firebase/listService';
 import { UserList, ListEntry } from '@/types/library';
 import { Picker } from '@react-native-picker/picker';
 
@@ -122,6 +122,8 @@ export default function UsersManagement() {
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [newEntryBrandId, setNewEntryBrandId] = useState('');
   const [newEntryBusinessId, setNewEntryBusinessId] = useState('');
+  const [editingEntryDateId, setEditingEntryDateId] = useState<string | null>(null);
+  const [editingEntryDateValue, setEditingEntryDateValue] = useState('');
 
   useEffect(() => {
     loadUsers();
@@ -367,6 +369,78 @@ export default function UsersManagement() {
         window.alert('Error adding entry');
       } else {
         Alert.alert('Error', 'Could not add entry');
+      }
+    }
+  };
+
+  // Helper to format date for display
+  const formatDateForDisplay = (date: Date | string | undefined): string => {
+    if (!date) return 'Not set';
+    let d: Date;
+    if (date instanceof Date) {
+      d = date;
+    } else if (typeof date === 'string') {
+      d = new Date(date);
+    } else if (typeof date === 'object' && 'seconds' in date) {
+      d = new Date((date as any).seconds * 1000);
+    } else {
+      return 'Invalid date';
+    }
+    if (isNaN(d.getTime())) return 'Invalid date';
+    return d.toISOString().split('T')[0]; // YYYY-MM-DD format
+  };
+
+  // Helper to calculate days from date
+  const calculateDaysFromDate = (date: Date | string | undefined): number => {
+    if (!date) return 0;
+    let d: Date;
+    if (date instanceof Date) {
+      d = date;
+    } else if (typeof date === 'string') {
+      d = new Date(date);
+    } else if (typeof date === 'object' && 'seconds' in date) {
+      d = new Date((date as any).seconds * 1000);
+    } else {
+      return 0;
+    }
+    if (isNaN(d.getTime())) return 0;
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - d.getTime());
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  // Handle updating entry's createdAt date
+  const handleUpdateEntryDate = async (listId: string, entryId: string, newDateString: string) => {
+    if (!editingUser) return;
+
+    try {
+      const newDate = new Date(newDateString);
+      if (isNaN(newDate.getTime())) {
+        if (Platform.OS === 'web') {
+          window.alert('Invalid date format. Please use YYYY-MM-DD format.');
+        } else {
+          Alert.alert('Error', 'Invalid date format. Please use YYYY-MM-DD format.');
+        }
+        return;
+      }
+
+      await updateEntryInList(listId, entryId, { createdAt: newDate });
+      await loadUserLists(editingUser.userId);
+
+      setEditingEntryDateId(null);
+      setEditingEntryDateValue('');
+
+      if (Platform.OS === 'web') {
+        window.alert('Entry date updated successfully');
+      } else {
+        Alert.alert('Success', 'Entry date updated successfully');
+      }
+    } catch (error) {
+      console.error('[Admin] Error updating entry date:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Error updating entry date');
+      } else {
+        Alert.alert('Error', 'Could not update entry date');
       }
     }
   };
@@ -1157,14 +1231,60 @@ export default function UsersManagement() {
                           {list.entries && list.entries.length > 0 ? (
                             list.entries.map((entry) => {
                               const entryId = entry.id || '';
-                              const entryName = entry.name || entry.brandId || entry.businessId || 'Unknown';
+                              const entryName = (entry as any).brandName || (entry as any).businessName || (entry as any).name || (entry as any).brandId || (entry as any).businessId || 'Unknown';
                               const entryType = entry.type || 'unknown';
+                              const isEditingDate = editingEntryDateId === entryId;
+                              const daysEndorsed = calculateDaysFromDate(entry.createdAt);
+                              const dateDisplay = formatDateForDisplay(entry.createdAt);
 
                               return (
                                 <View key={entryId} style={styles.entryRow}>
                                   <View style={styles.entryInfo}>
                                     <Text style={styles.entryName}>{entryName}</Text>
                                     <Text style={styles.entryType}>({entryType})</Text>
+                                    {list.isEndorsed && (
+                                      <View style={styles.entryDateContainer}>
+                                        <Text style={styles.entryDateText}>
+                                          Endorsed for {daysEndorsed} {daysEndorsed === 1 ? 'day' : 'days'} (since {dateDisplay})
+                                        </Text>
+                                        {isEditingDate ? (
+                                          <View style={styles.editDateContainer}>
+                                            <TextInput
+                                              style={styles.dateInput}
+                                              value={editingEntryDateValue}
+                                              onChangeText={setEditingEntryDateValue}
+                                              placeholder="YYYY-MM-DD"
+                                              placeholderTextColor="#999"
+                                            />
+                                            <TouchableOpacity
+                                              style={styles.saveDateButton}
+                                              onPress={() => handleUpdateEntryDate(list.id, entryId, editingEntryDateValue)}
+                                            >
+                                              <Text style={styles.saveDateButtonText}>Save</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                              style={styles.cancelDateButton}
+                                              onPress={() => {
+                                                setEditingEntryDateId(null);
+                                                setEditingEntryDateValue('');
+                                              }}
+                                            >
+                                              <Text style={styles.cancelDateButtonText}>Cancel</Text>
+                                            </TouchableOpacity>
+                                          </View>
+                                        ) : (
+                                          <TouchableOpacity
+                                            style={styles.editDateButton}
+                                            onPress={() => {
+                                              setEditingEntryDateId(entryId);
+                                              setEditingEntryDateValue(dateDisplay !== 'Not set' && dateDisplay !== 'Invalid date' ? dateDisplay : '');
+                                            }}
+                                          >
+                                            <Text style={styles.editDateButtonText}>Edit Date</Text>
+                                          </TouchableOpacity>
+                                        )}
+                                      </View>
+                                    )}
                                   </View>
                                   <TouchableOpacity
                                     style={styles.removeEntryButton}
@@ -1664,5 +1784,59 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: 12,
+  },
+  entryDateContainer: {
+    marginTop: 4,
+  },
+  entryDateText: {
+    fontSize: 12,
+    color: '#007bff',
+    fontWeight: '500',
+  },
+  editDateButton: {
+    marginTop: 4,
+  },
+  editDateButtonText: {
+    fontSize: 11,
+    color: '#6c757d',
+    textDecorationLine: 'underline',
+  },
+  editDateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 8,
+  },
+  dateInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    fontSize: 12,
+    backgroundColor: '#fff',
+  },
+  saveDateButton: {
+    backgroundColor: '#28a745',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  saveDateButtonText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  cancelDateButton: {
+    backgroundColor: '#6c757d',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  cancelDateButtonText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
   },
 });
