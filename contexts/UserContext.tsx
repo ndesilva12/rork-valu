@@ -67,12 +67,17 @@ export const [UserProvider, useUser] = createContextHook(() => {
         try {
           firebaseProfile = await getUserProfile(clerkUser.id);
           if (firebaseProfile) {
-            console.log('[UserContext] ✅ Firebase profile found:', JSON.stringify(firebaseProfile, null, 2));
+            console.log('[UserContext] ✅ Firebase profile found!');
+            console.log('[UserContext]   - Causes:', firebaseProfile.causes?.length || 0);
+            console.log('[UserContext]   - UserDetails:', !!firebaseProfile.userDetails);
+            console.log('[UserContext]   - Promo Code:', firebaseProfile.promoCode);
           } else {
-            console.log('[UserContext] ⚠️ No Firebase profile found for user');
+            console.log('[UserContext] ⚠️ No Firebase profile found for user - getUserProfile returned null');
           }
         } catch (firebaseError) {
-          console.error('[UserContext] ❌ Failed to load from Firebase:', firebaseError);
+          console.error('[UserContext] ❌ CRITICAL: Failed to load from Firebase!');
+          console.error('[UserContext]   Error:', firebaseError);
+          console.error('[UserContext]   This means Firebase call threw an exception');
         }
 
         if (firebaseProfile && mounted) {
@@ -97,11 +102,13 @@ export const [UserProvider, useUser] = createContextHook(() => {
           await AsyncStorage.setItem(storageKey, JSON.stringify(firebaseProfile));
         } else {
           // No Firebase profile - check local storage or create new
+          console.log('[UserContext] 🔍 No Firebase profile - checking AsyncStorage...');
           const storedProfile = await AsyncStorage.getItem(storageKey);
 
           if (storedProfile && mounted) {
             const parsedProfile = JSON.parse(storedProfile) as UserProfile;
-            console.log('[UserContext] Loaded profile from AsyncStorage with', parsedProfile.causes.length, 'causes');
+            console.log('[UserContext] ✅ Loaded profile from AsyncStorage');
+            console.log('[UserContext]   - Causes:', parsedProfile.causes.length);
 
             // Generate promo code if it doesn't exist
             if (!parsedProfile.promoCode) {
@@ -136,7 +143,9 @@ export const [UserProvider, useUser] = createContextHook(() => {
               console.error('[UserContext] Failed to sync to Firebase:', syncError);
             }
           } else if (mounted) {
-            console.log('[UserContext] No stored profile found, creating new profile');
+            console.log('[UserContext] ⚠️ CREATING NEW PROFILE (no Firebase, no AsyncStorage)');
+            console.log('[UserContext]   - This should only happen for brand new users!');
+            console.log('[UserContext]   - If this is an existing user, something went wrong');
             const newProfile: UserProfile = {
               id: clerkUser.id,
               causes: [],
