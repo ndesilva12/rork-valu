@@ -71,6 +71,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
             console.log('[UserContext]   - Causes:', firebaseProfile.causes?.length || 0);
             console.log('[UserContext]   - UserDetails:', !!firebaseProfile.userDetails);
             console.log('[UserContext]   - Promo Code:', firebaseProfile.promoCode);
+            console.log('[UserContext]   - hasSeenIntro:', firebaseProfile.hasSeenIntro);
           } else {
             console.log('[UserContext] ⚠️ No Firebase profile found for user - getUserProfile returned null');
           }
@@ -88,6 +89,26 @@ export const [UserProvider, useUser] = createContextHook(() => {
           if (!firebaseProfile.promoCode) {
             firebaseProfile.promoCode = generatePromoCode();
             console.log('[UserContext] Generated new promo code:', firebaseProfile.promoCode);
+          }
+
+          // Fix for existing users: if they have causes but hasSeenIntro is false/undefined, mark as seen
+          // This handles cases where:
+          // 1. Old users from before this field existed
+          // 2. Users whose hasSeenIntro got reset somehow
+          // 3. Users who had empty causes before but now have values
+          const hasValues = firebaseProfile.causes && firebaseProfile.causes.length > 0;
+          const needsIntroFix = hasValues && firebaseProfile.hasSeenIntro !== true;
+          if (needsIntroFix) {
+            console.log('[UserContext] 🔧 Existing user with values but hasSeenIntro !== true. Fixing...');
+            console.log('[UserContext]   - Current hasSeenIntro:', firebaseProfile.hasSeenIntro);
+            firebaseProfile.hasSeenIntro = true;
+            // Save the fix to Firebase
+            try {
+              await saveUserProfile(clerkUser.id, firebaseProfile);
+              console.log('[UserContext] ✅ Fixed hasSeenIntro in Firebase');
+            } catch (error) {
+              console.error('[UserContext] ❌ Failed to fix hasSeenIntro:', error);
+            }
           }
 
           // Ensure required fields are initialized
