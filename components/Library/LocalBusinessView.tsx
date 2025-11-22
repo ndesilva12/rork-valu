@@ -25,6 +25,44 @@ import { formatDistance } from '@/lib/distance';
 import { getLogoUrl } from '@/lib/logo';
 import BusinessMapView from '@/components/BusinessMapView';
 
+// Helper function to extract Town, State from full address
+const shortenAddress = (fullAddress: string | undefined): string => {
+  if (!fullAddress) return '';
+
+  // Try to parse "City, State ZIP" or "City, State" from address
+  // Common formats: "123 Main St, Wellesley, MA 02481" or "Wellesley, MA"
+  const parts = fullAddress.split(',').map(p => p.trim());
+
+  if (parts.length >= 2) {
+    // Get the second-to-last and last parts (typically City, State [ZIP])
+    const cityPart = parts.length >= 3 ? parts[parts.length - 2] : parts[0];
+    const statePart = parts[parts.length - 1];
+
+    // Extract just state abbreviation (remove ZIP code if present)
+    const stateMatch = statePart.match(/([A-Z]{2})/);
+    const state = stateMatch ? stateMatch[1] : statePart.replace(/\d+/g, '').trim();
+
+    return `${cityPart}, ${state}`;
+  }
+
+  return fullAddress;
+};
+
+// Helper function to get discount display text
+const getDiscountDisplay = (business: any): string | null => {
+  const info = business.businessInfo;
+
+  if (info.customDiscount && info.customDiscount.trim()) {
+    return 'Custom Discount';
+  }
+
+  if (info.customerDiscountPercent && info.customerDiscountPercent > 0) {
+    return `${info.customerDiscountPercent}% off`;
+  }
+
+  return null;
+};
+
 type LocalDistanceOption = 1 | 10 | 50 | 100 | null;
 
 interface LocalBusinessViewProps {
@@ -172,6 +210,8 @@ export default function LocalBusinessView({
     const { business, alignmentScore, distance, closestLocation } = businessData;
     const isAligned = type === 'aligned';
     const scoreColor = alignmentScore >= 50 ? colors.primary : colors.danger;
+    const shortAddress = shortenAddress(closestLocation);
+    const discountText = getDiscountDisplay(business);
 
     return (
       <View key={business.id} style={{ position: 'relative', marginBottom: 12 }}>
@@ -202,16 +242,25 @@ export default function LocalBusinessView({
               <Text style={[styles.businessName, { color: colors.white }]} numberOfLines={2}>
                 {business.businessInfo.name || 'Local Business'}
               </Text>
-              <Text style={[styles.businessCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                {closestLocation || 'Local business'}
-              </Text>
-              {distance !== undefined && (
-                <View style={styles.distanceContainer}>
-                  <MapPin size={12} color={colors.textSecondary} strokeWidth={2} />
-                  <Text style={[styles.distanceText, { color: colors.textSecondary }]}>
-                    {formatDistance(distance)}
-                  </Text>
-                </View>
+              {/* Address and distance on same line */}
+              <View style={styles.locationDistanceRow}>
+                <Text style={[styles.businessCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                  {shortAddress || 'Local business'}
+                </Text>
+                {distance !== undefined && (
+                  <>
+                    <MapPin size={12} color={colors.textSecondary} strokeWidth={2} style={{ marginLeft: 8 }} />
+                    <Text style={[styles.distanceText, { color: colors.textSecondary, marginLeft: 4 }]}>
+                      {formatDistance(distance)}
+                    </Text>
+                  </>
+                )}
+              </View>
+              {/* Discount line */}
+              {discountText && (
+                <Text style={[styles.discountText, { color: colors.primary }]}>
+                  {discountText}
+                </Text>
               )}
             </View>
             <View style={styles.businessScoreContainer}>
@@ -461,7 +510,13 @@ const styles = StyleSheet.create({
   },
   businessCategory: {
     fontSize: 14,
+    flexShrink: 1,
+  },
+  locationDistanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 4,
+    flexWrap: 'wrap',
   },
   distanceContainer: {
     flexDirection: 'row',
@@ -470,6 +525,11 @@ const styles = StyleSheet.create({
   },
   distanceText: {
     fontSize: 12,
+  },
+  discountText: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 2,
   },
   businessScoreContainer: {
     alignItems: 'center',
@@ -504,10 +564,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   webModalContainer: {
-    maxWidth: 600,
-    maxHeight: '80%',
+    width: '95%',
+    maxHeight: '85%',
     alignSelf: 'center',
-    marginTop: '10%',
+    marginTop: '5%',
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',

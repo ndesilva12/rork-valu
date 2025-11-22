@@ -32,6 +32,9 @@ export default function DiscountScreen() {
 
   const isBusiness = profile.accountType === 'business';
 
+  // Business tab state
+  const [activeBusinessTab, setActiveBusinessTab] = useState<'deals' | 'data'>('deals');
+
   // Business financial state
   const [businessFinancials, setBusinessFinancials] = useState({
     totalRevenue: 0,
@@ -214,8 +217,47 @@ export default function DiscountScreen() {
         {isBusiness ? (
           /* Business View */
           <>
+            {/* Tab Headers */}
+            <View style={[styles.tabSelector, { borderBottomColor: colors.border }]}>
+              <TouchableOpacity
+                style={[
+                  styles.tab,
+                  activeBusinessTab === 'deals' && styles.activeTab,
+                  { borderBottomColor: colors.primary }
+                ]}
+                onPress={() => setActiveBusinessTab('deals')}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.tabText,
+                  { color: activeBusinessTab === 'deals' ? colors.primary : colors.textSecondary },
+                  activeBusinessTab === 'deals' && styles.activeTabText
+                ]}>
+                  Deals
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.tab,
+                  activeBusinessTab === 'data' && styles.activeTab,
+                  { borderBottomColor: colors.primary }
+                ]}
+                onPress={() => setActiveBusinessTab('data')}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.tabText,
+                  { color: activeBusinessTab === 'data' ? colors.primary : colors.textSecondary },
+                  activeBusinessTab === 'data' && styles.activeTabText
+                ]}>
+                  Data
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {activeBusinessTab === 'data' ? (
+            <>
             {/* DATA SECTION */}
-            <Text style={[styles.sectionHeading, { color: colors.text }]}>Data</Text>
 
             {isLoadingData ? (
               <View style={[styles.section, { backgroundColor: colors.backgroundSecondary }]}>
@@ -549,18 +591,23 @@ export default function DiscountScreen() {
                 </View>
               </>
             )}
+            </>
+            ) : (
+            /* DEALS SECTION */
+            <>
+              {/* Business Code: Value Code Settings */}
+              <ValueCodeSettings />
 
-            {/* Business Code: Value Code Settings */}
-            <ValueCodeSettings />
-
-            {/* Business Payment Section */}
-            <BusinessPayment
-              amountOwed={businessFinancials.totalOwed}
-              standFees={businessFinancials.standFees}
-              businessId={clerkUser?.id || ''}
-              businessName={profile.businessInfo?.name || 'Your Business'}
-              colors={colors}
-            />
+              {/* Business Payment Section */}
+              <BusinessPayment
+                amountOwed={businessFinancials.totalOwed}
+                standFees={businessFinancials.standFees}
+                businessId={clerkUser?.id || ''}
+                businessName={profile.businessInfo?.name || 'Your Business'}
+                colors={colors}
+              />
+            </>
+            )}
           </>
         ) : (
           /* Individual View */
@@ -636,6 +683,29 @@ const styles = StyleSheet.create({
     height: 47,
     marginTop: 8,
     alignSelf: 'flex-start',
+  },
+  // Tab Selector Styles
+  tabSelector: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    marginBottom: 16,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+  },
+  tabText: {
+    fontSize: 24,
+    fontWeight: '600' as const,
+  },
+  activeTabText: {
+    fontWeight: '700' as const,
   },
   promoSection: {
     borderWidth: 3,

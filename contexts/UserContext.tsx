@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { Cause, UserProfile, Charity, AccountType, BusinessInfo, UserDetails, BusinessMembership } from '@/types';
-import { saveUserProfile, getUserProfile, createUser, updateUserMetadata, aggregateUserTransactions, aggregateBusinessTransactions } from '@/services/firebase/userService';
+import { saveUserProfile, getUserProfile, createUser, updateUserMetadata, aggregateUserTransactions, aggregateBusinessTransactions, updateUserProfileFields } from '@/services/firebase/userService';
 import { createList, getUserLists } from '@/services/firebase/listService';
 import { hasPermission as checkTeamPermission, initializeBusinessOwner } from '@/services/firebase/businessTeamService';
 
@@ -715,14 +715,15 @@ export const [UserProvider, useUser] = createContextHook(() => {
     if (!clerkUser) return;
 
     try {
-      const newProfile = { ...profile, hasSeenIntro: true };
-      setProfile(newProfile);
-      await saveUserProfile(clerkUser.id, newProfile);
-      console.log('[UserContext] ✅ Marked intro as seen');
+      // Only update hasSeenIntro field - don't spread the entire profile
+      // This prevents overwriting causes/values with empty arrays before profile loads
+      setProfile(prev => ({ ...prev, hasSeenIntro: true }));
+      await updateUserProfileFields(clerkUser.id, { hasSeenIntro: true });
+      console.log('[UserContext] ✅ Marked intro as seen (safe update)');
     } catch (error) {
       console.error('[UserContext] ❌ Failed to mark intro as seen:', error);
     }
-  }, [clerkUser, profile]);
+  }, [clerkUser]);
 
   return useMemo(() => ({
     profile,

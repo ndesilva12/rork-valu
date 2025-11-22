@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   logo: {
     width: 220,
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_600SemiBold',
     fontWeight: '600',
     letterSpacing: 0.5,
-    marginTop: -55,
+    marginTop: -75,
   },
   title: {
     fontSize: 28,

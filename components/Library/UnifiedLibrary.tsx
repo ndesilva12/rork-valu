@@ -39,6 +39,7 @@ import {
   Share2,
   UserPlus,
   List as ListIcon,
+  FileText,
 } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { UserList, ListEntry } from '@/types/library';
@@ -59,6 +60,8 @@ import ItemOptionsModal from '@/components/ItemOptionsModal';
 import ConfirmModal from '@/components/ConfirmModal';
 import FollowingFollowersList from '@/components/FollowingFollowersList';
 import LocalBusinessView from '@/components/Library/LocalBusinessView';
+import PostsView from '@/components/Library/PostsView';
+import { getUserPosts } from '@/services/firebase/postService';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { reorderListEntries } from '@/services/firebase/listService';
@@ -126,7 +129,7 @@ export default function UnifiedLibrary({
 }: UnifiedLibraryProps) {
   const colors = isDarkMode ? darkColors : lightColors;
   const library = useLibrary();
-  const { profile } = useUser();
+  const { profile, clerkUser } = useUser();
   const router = useRouter();
   const { brands } = useData();
 
@@ -167,6 +170,9 @@ export default function UnifiedLibrary({
   const [unalignedLoadCount, setUnalignedLoadCount] = useState(10);
   const [customListLoadCounts, setCustomListLoadCounts] = useState<Record<string, number>>({});
 
+  // Posts count for the section selector
+  const [postsCount, setPostsCount] = useState(0);
+
   // Detect larger screens for responsive text display
   const { width } = useWindowDimensions();
   const isLargeScreen = width >= 768;
@@ -187,7 +193,7 @@ export default function UnifiedLibrary({
   const [showEndorsedActionMenu, setShowEndorsedActionMenu] = useState(false);
 
   // Section selection state - default to endorsement (or aligned if empty)
-  type LibrarySection = 'endorsement' | 'aligned' | 'unaligned' | 'following' | 'followers' | 'local';
+  type LibrarySection = 'endorsement' | 'aligned' | 'unaligned' | 'following' | 'followers' | 'local' | 'posts';
   const defaultSection: LibrarySection = (endorsementList && endorsementList.entries && endorsementList.entries.length > 0)
     ? 'endorsement'
     : 'aligned';
@@ -220,6 +226,23 @@ export default function UnifiedLibrary({
 
   // Filter out endorsement list from custom lists
   const customLists = userLists.filter(list => list.id !== endorsementList?.id);
+
+  // Load posts count for the user being viewed
+  useEffect(() => {
+    const loadPostsCount = async () => {
+      const targetUserId = viewingUserId || currentUserId;
+      if (!targetUserId) return;
+
+      try {
+        const posts = await getUserPosts(targetUserId);
+        setPostsCount(posts.length);
+      } catch (error) {
+        console.error('[UnifiedLibrary] Error loading posts count:', error);
+      }
+    };
+
+    loadPostsCount();
+  }, [viewingUserId, currentUserId]);
 
   // Check follow status when item is selected for options modal
   useEffect(() => {
@@ -1446,10 +1469,15 @@ export default function UnifiedLibrary({
       );
     };
 
-    const entriesContent = entriesToDisplay
-      .filter(entry => entry != null)
-      .slice(0, endorsementLoadCount)
-      .map((entry, index) => renderEntryWithControls(entry, index));
+    const filteredEntries = entriesToDisplay.filter(entry => entry != null);
+    const displayedEntries = filteredEntries.slice(0, endorsementLoadCount);
+
+    // Separate top 5 from the rest
+    const top5Entries = displayedEntries.slice(0, 5);
+    const remainingEntries = displayedEntries.slice(5);
+
+    const top5Content = top5Entries.map((entry, index) => renderEntryWithControls(entry, index));
+    const remainingContent = remainingEntries.map((entry, index) => renderEntryWithControls(entry, index + 5));
 
     // Wrap with DndContext for desktop drag-and-drop
     const contentWithDnd = isReordering && isLargeScreen ? (
@@ -1462,10 +1490,22 @@ export default function UnifiedLibrary({
           items={localEntries.map(e => e.id)}
           strategy={verticalListSortingStrategy}
         >
-          {entriesContent}
+          {top5Content}
+          {remainingContent}
         </SortableContext>
       </DndContext>
-    ) : entriesContent;
+    ) : (
+      <>
+        {/* Top 5 endorsements with blue outline */}
+        {top5Content.length > 0 && (
+          <View style={[styles.top5Container, { borderColor: colors.primary }]}>
+            {top5Content}
+          </View>
+        )}
+        {/* Remaining endorsements */}
+        {remainingContent}
+      </>
+    );
 
     return (
       <View style={styles.listContentContainer}>
@@ -1960,34 +2000,35 @@ export default function UnifiedLibrary({
           <Text style={[styles.sectionLabel, { color: isSelected ? sectionColor.border : colors.text }]}>
             Endorsed
           </Text>
-          <View style={styles.endorsedCountRow}>
-            <View style={[styles.endorsedBadge, { backgroundColor: sectionColor.border }]}>
-              <Text style={[styles.endorsedBadgeText, { color: colors.white }]}>★</Text>
-            </View>
-            <Text style={[styles.sectionCount, { color: colors.textSecondary, marginLeft: 6 }]}>
-              {endorsementCount}
-            </Text>
-          </View>
+          <Text style={[styles.sectionCount, { color: colors.textSecondary }]}>
+            {endorsementCount}
+          </Text>
         </TouchableOpacity>
       );
     };
 
-    // For profile views (preview/view modes), only show 3 sections: Endorsed, Following, Followers
+    // For profile views (preview/view modes), show 4 sections in 2x2 grid: Following, Followers, Endorsements, Posts
     const isProfileView = mode === 'preview' || mode === 'view';
 
     if (isProfileView) {
       return (
         <View style={styles.sectionSelector}>
-          {/* Single row for profile views: Endorsed | Following | Followers */}
+          {/* Top row: Following | Followers */}
           <View style={styles.sectionRow}>
-            <View style={styles.sectionThird}>
-              <EndorsedSectionBox />
-            </View>
-            <View style={styles.sectionThird}>
+            <View style={styles.sectionHalf}>
               <SectionBox section="following" label="Following" count={followingCount} />
             </View>
-            <View style={styles.sectionThird}>
+            <View style={styles.sectionHalf}>
               <SectionBox section="followers" label="Followers" count={followersCount} />
+            </View>
+          </View>
+          {/* Bottom row: Endorsements | Posts */}
+          <View style={styles.sectionRow}>
+            <View style={styles.sectionHalf}>
+              <EndorsedSectionBox />
+            </View>
+            <View style={styles.sectionHalf}>
+              <SectionBox section="posts" label="Posts" count={postsCount} />
             </View>
           </View>
         </View>
@@ -1997,23 +2038,10 @@ export default function UnifiedLibrary({
     // For home tab (edit mode), show all 6 sections
     return (
       <View style={styles.sectionSelector}>
-        {/* Top row: Local | Following | Followers */}
+        {/* Top row: Local | Aligned | Unaligned */}
         <View style={styles.sectionRow}>
           <View style={styles.sectionThird}>
             <SectionBox section="local" label="Local" count={localCount} />
-          </View>
-          <View style={styles.sectionThird}>
-            <SectionBox section="following" label="Following" count={followingCount} />
-          </View>
-          <View style={styles.sectionThird}>
-            <SectionBox section="followers" label="Followers" count={followersCount} />
-          </View>
-        </View>
-
-        {/* Bottom row: Endorsed | Aligned | Unaligned */}
-        <View style={styles.sectionRow}>
-          <View style={styles.sectionThird}>
-            <EndorsedSectionBox />
           </View>
           <View style={styles.sectionThird}>
             <SectionBox section="aligned" label="Aligned" count={alignedCount} />
@@ -2022,28 +2050,43 @@ export default function UnifiedLibrary({
             <SectionBox section="unaligned" label="Unaligned" count={unalignedCount} />
           </View>
         </View>
+
+        {/* Bottom row: Endorsed | Following | Followers */}
+        <View style={styles.sectionRow}>
+          <View style={styles.sectionThird}>
+            <EndorsedSectionBox />
+          </View>
+          <View style={styles.sectionThird}>
+            <SectionBox section="following" label="Following" count={followingCount} />
+          </View>
+          <View style={styles.sectionThird}>
+            <SectionBox section="followers" label="Followers" count={followersCount} />
+          </View>
+        </View>
       </View>
     );
   };
 
   // Render section header (sticky)
   const renderSectionHeader = () => {
-    const sectionTitles = {
-      endorsement: 'Endorsed',
+    const sectionTitles: Record<LibrarySection, string> = {
+      endorsement: 'Endorsements',
       aligned: 'Aligned',
       unaligned: 'Unaligned',
       following: 'Following',
       followers: 'Followers',
       local: 'Local',
+      posts: 'Posts',
     };
 
-    const sectionIcons = {
+    const sectionIcons: Record<LibrarySection, any> = {
       endorsement: UserPlus,
       aligned: Target,
       unaligned: Target,
       following: User,
       followers: User,
       local: Globe,
+      posts: FileText,
     };
 
     const title = sectionTitles[selectedSection];
@@ -2176,6 +2219,24 @@ export default function UnifiedLibrary({
             isDarkMode={isDarkMode}
             onRequestLocation={onRequestLocation}
           />
+        );
+
+      case 'posts':
+        const targetUserId = viewingUserId || currentUserId;
+        return targetUserId ? (
+          <PostsView
+            userId={targetUserId}
+            currentUserId={currentUserId}
+            currentUserName={profile?.userDetails?.name || clerkUser?.fullName || clerkUser?.firstName || ''}
+            currentUserImage={profile?.userDetails?.profileImage || clerkUser?.imageUrl}
+            isDarkMode={isDarkMode}
+          />
+        ) : (
+          <View style={styles.emptySection}>
+            <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+              No posts available
+            </Text>
+          </View>
         );
 
       default:
@@ -2711,6 +2772,13 @@ const styles = StyleSheet.create({
   brandsContainer: {
     gap: 8,
   },
+  top5Container: {
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 8,
+    marginBottom: 8,
+    gap: 8,
+  },
   forYouItemRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -2951,6 +3019,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sectionThird: {
+    flex: 1,
+  },
+  sectionHalf: {
     flex: 1,
   },
   sectionBox: {

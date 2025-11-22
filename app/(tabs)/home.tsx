@@ -79,7 +79,6 @@ import { Image } from 'expo-image';
 import { Picker } from '@react-native-picker/picker';
 import * as Clipboard from 'expo-clipboard';
 import MenuButton from '@/components/MenuButton';
-import EndorsedBadge from '@/components/EndorsedBadge';
 import ShareModal from '@/components/ShareModal';
 import WelcomeCarousel from '@/components/WelcomeCarousel';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -133,7 +132,7 @@ const FOLDER_CATEGORIES: FolderCategory[] = [
 export default function HomeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { profile, isDarkMode, clerkUser, markIntroAsSeen } = useUser();
+  const { profile, isDarkMode, clerkUser, markIntroAsSeen, isLoading: isProfileLoading } = useUser();
   const library = useLibrary();
   const colors = isDarkMode ? darkColors : lightColors;
   const [mainView, setMainView] = useState<MainView>('myLibrary');
@@ -230,6 +229,9 @@ export default function HomeScreen() {
 
   // Check if user should see welcome carousel
   useEffect(() => {
+    // Don't run until profile is loaded to avoid race conditions
+    if (isProfileLoading) return;
+
     // Only show carousel if hasSeenIntro is EXPLICITLY false (new users from onboarding)
     // If it's undefined (existing users), treat as already seen
     if (clerkUser && profile.causes && profile.causes.length > 0 && profile.hasSeenIntro === false) {
@@ -252,7 +254,7 @@ export default function HomeScreen() {
       // Make sure existing users also land on library view
       setMainView('myLibrary');
     }
-  }, [clerkUser, profile.causes, profile.hasSeenIntro, markIntroAsSeen]);
+  }, [clerkUser, profile.causes, profile.hasSeenIntro, markIntroAsSeen, isProfileLoading]);
 
   const handleWelcomeComplete = async () => {
     console.log('[HomeScreen] Welcome carousel completed, ensuring we stay on library view');
@@ -3854,12 +3856,9 @@ export default function HomeScreen() {
                               <List size={18} color={colors.primary} strokeWidth={2} />
                             </View>
                             <View style={styles.quickAddListInfo}>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                <Text style={[styles.quickAddListName, { color: colors.text }]} numberOfLines={1}>
-                                  {endorsementList.name}
-                                </Text>
-                                <EndorsedBadge isDarkMode={isDarkMode} size="small" />
-                              </View>
+                              <Text style={[styles.quickAddListName, { color: colors.text }]} numberOfLines={1}>
+                                {endorsementList.name}
+                              </Text>
                               <Text style={[styles.quickAddListCount, { color: colors.textSecondary }]}>
                                 {endorsementList.entries.length} {endorsementList.entries.length === 1 ? 'item' : 'items'}
                               </Text>

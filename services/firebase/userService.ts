@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { UserProfile, Cause, Charity, AccountType, BusinessInfo, UserDetails } from '@/types';
 
@@ -93,6 +93,36 @@ export async function saveUserProfile(userId: string, profile: UserProfile): Pro
       console.error('[Firebase] Error message:', error.message);
       console.error('[Firebase] Error stack:', error.stack);
     }
+    throw error;
+  }
+}
+
+/**
+ * Update specific user profile fields without overwriting other data
+ * This is safe to call even before the full profile is loaded
+ * @param userId - The Clerk user ID
+ * @param fields - Only the fields to update
+ */
+export async function updateUserProfileFields(
+  userId: string,
+  fields: Partial<UserProfile>
+): Promise<void> {
+  try {
+    console.log('[Firebase] 🔄 Updating specific fields for user:', userId);
+    console.log('[Firebase] Fields to update:', JSON.stringify(fields, null, 2));
+
+    const userRef = doc(db, 'users', userId);
+
+    // Only update the specified fields + updatedAt timestamp
+    const dataToUpdate = {
+      ...fields,
+      updatedAt: serverTimestamp(),
+    };
+
+    await updateDoc(userRef, dataToUpdate);
+    console.log('[Firebase] ✅ updateDoc completed successfully');
+  } catch (error) {
+    console.error('[Firebase] ❌ Error updating profile fields:', error);
     throw error;
   }
 }

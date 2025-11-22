@@ -202,11 +202,35 @@ export default function BusinessesAcceptingDiscounts() {
     );
   };
 
+  // Helper to get discount requirements summary
+  const getRequirementsSummary = (info: any): string[] => {
+    const requirements: string[] = [];
+
+    if (info.endorsementEnabled) {
+      let req = '';
+      if (info.endorsementType === 'any') req = 'Endorse any value';
+      else if (info.endorsementType === 'shared') req = 'Shared value';
+      else if (info.endorsementType === 'endorsed') req = 'Endorse business';
+      if (info.endorsementMinDays > 0) req += ` ${info.endorsementMinDays}+ days`;
+      requirements.push(req);
+    }
+
+    if (info.followsEnabled) {
+      let req = 'Follow';
+      if (info.followsMinDays > 0) req += ` ${info.followsMinDays}+ days`;
+      requirements.push(req);
+    }
+
+    return requirements;
+  };
+
   const renderBusinessCard = ({ item }: { item: BusinessUser }) => {
     const { businessInfo, distance } = item;
 
     // Get discount percentage
     const discountPercent = businessInfo.customerDiscountPercent || 0;
+    const hasCustomDiscount = businessInfo.customDiscount && businessInfo.customDiscount.trim();
+    const requirements = getRequirementsSummary(businessInfo);
 
     return (
       <TouchableOpacity
@@ -235,10 +259,24 @@ export default function BusinessesAcceptingDiscounts() {
 
           <View style={styles.acceptanceInfo}>
             <Text style={[styles.discountPercentText, { color: colors.primary }]}>
-              {discountPercent.toFixed(1)}% off
+              {discountPercent.toFixed(0)}% off
             </Text>
+            {hasCustomDiscount && (
+              <Text style={[styles.customDiscountBadge, { color: colors.primary }]}>
+                + Custom
+              </Text>
+            )}
           </View>
         </View>
+
+        {/* Requirements row */}
+        {requirements.length > 0 && (
+          <View style={[styles.requirementsRow, { borderTopColor: colors.border }]}>
+            <Text style={[styles.requirementsText, { color: colors.textSecondary }]}>
+              Requires: {requirements.join(' • ')}
+            </Text>
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -522,6 +560,19 @@ const styles = StyleSheet.create({
   discountPercentText: {
     fontSize: 14,
     fontWeight: '700' as const,
+  },
+  customDiscountBadge: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+  },
+  requirementsRow: {
+    borderTopWidth: 1,
+    paddingTop: 10,
+    marginTop: 10,
+  },
+  requirementsText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
   },
   emptyContainer: {
     padding: 40,

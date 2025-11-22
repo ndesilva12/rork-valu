@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
-import { Search as SearchIcon, TrendingUp, TrendingDown, Minus, ScanBarcode, X, Heart, MessageCircle, Share2, ExternalLink, MoreVertical, UserPlus, UserMinus, List as ListIcon } from 'lucide-react-native';
+import { Search as SearchIcon, TrendingUp, TrendingDown, Minus, ScanBarcode, X, Heart, MessageCircle, Share2, ExternalLink, MoreVertical, UserPlus, UserMinus, List as ListIcon, Plus, Send, ImageIcon } from 'lucide-react-native';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 import {
   View,
   Text,
@@ -37,6 +38,7 @@ import { UserProfile } from '@/types';
 import { copyListToLibrary, getEndorsementList } from '@/services/firebase/listService';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { followEntity, unfollowEntity, isFollowing } from '@/services/firebase/followService';
+import { Post, getPosts, createPost, likePost, unlikePost, hasLikedPost } from '@/services/firebase/postService';
 
 interface Comment {
   id: string;
@@ -331,19 +333,17 @@ export default function SearchScreen() {
   const [lookingUp, setLookingUp] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
 
-  // Value Machine state
-  const [activeTab, setActiveTab] = useState<'value-machine' | 'discover-users'>('value-machine');
-  const [selectedSupportValues, setSelectedSupportValues] = useState<string[]>([]);
-  const [selectedRejectValues, setSelectedRejectValues] = useState<string[]>([]);
-  const [valueMachineResults, setValueMachineResults] = useState<Product[]>([]);
-  const [showingResults, setShowingResults] = useState(false);
-  const [resultsLimit, setResultsLimit] = useState(10);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
-  const [categoryDropdownLayout, setCategoryDropdownLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
-  const [resultsMode, setResultsMode] = useState<'aligned' | 'unaligned'>('aligned');
+  // Posts feed state
+  const [activeTab, setActiveTab] = useState<'posts' | 'discover-users'>('posts');
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [postLikes, setPostLikes] = useState<Map<string, boolean>>(new Map());
+  const [createPostModalVisible, setCreatePostModalVisible] = useState(false);
+  const [newPostContent, setNewPostContent] = useState('');
+  const [newPostImage, setNewPostImage] = useState<string | null>(null);
+  const [creatingPost, setCreatingPost] = useState(false);
 
-  // Fetch Firebase businesses and public users on mount
+  // Fetch Firebase businesses, public users, and posts on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -352,12 +352,29 @@ export default function SearchScreen() {
 
         const users = await getAllPublicUsers();
         setPublicUsers(users);
+
+        // Fetch posts
+        setPostsLoading(true);
+        const { posts: fetchedPosts } = await getPosts(20);
+        setPosts(fetchedPosts);
+
+        // Check like status for each post
+        if (clerkUser?.id) {
+          const likesMap = new Map<string, boolean>();
+          for (const post of fetchedPosts) {
+            const liked = await hasLikedPost(post.id, clerkUser.id);
+            likesMap.set(post.id, liked);
+          }
+          setPostLikes(likesMap);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
+      } finally {
+        setPostsLoading(false);
       }
     };
     fetchData();
-  }, []);
+  }, [clerkUser?.id]);
 
   // Responsive grid columns
   const numColumns = useMemo(() => width > 768 ? 3 : 2, [width]);
@@ -577,181 +594,150 @@ export default function SearchScreen() {
     return firstMatchingValue.name;
   }, [availableValuesByCategory]);
 
-  // Value Machine handlers
-  const handleValueToggle = useCallback((valueId: string) => {
-    const isSupported = selectedSupportValues.includes(valueId);
-    const isRejected = selectedRejectValues.includes(valueId);
+  // Posts handlers
+  const handlePickImage = useCallback(async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please allow access to your photo library to upload images.');
+        return;
+      }
 
-    if (!isSupported && !isRejected) {
-      // First tap: Support
-      setSelectedSupportValues(prev => [...prev, valueId]);
-    } else if (isSupported) {
-      // Second tap: Reject
-      setSelectedSupportValues(prev => prev.filter(id => id !== valueId));
-      setSelectedRejectValues(prev => [...prev, valueId]);
-    } else {
-      // Third tap: Unselect
-      setSelectedRejectValues(prev => prev.filter(id => id !== valueId));
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setNewPostImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
     }
-  }, [selectedSupportValues, selectedRejectValues]);
-
-  const handleResetSelections = useCallback(() => {
-    setSelectedSupportValues([]);
-    setSelectedRejectValues([]);
-    setShowingResults(false);
   }, []);
 
-  const handleGenerateResults = useCallback(() => {
-    // Use Firebase brands instead of MOCK_PRODUCTS
-    const allProducts = firebaseBrands || [];
-    const allSelectedValues = [...selectedSupportValues, ...selectedRejectValues];
+  const handleCreatePost = useCallback(async () => {
+    console.log('[Search] handleCreatePost called', {
+      hasClerkUserId: !!clerkUser?.id,
+      hasContent: !!newPostContent.trim(),
+      hasImage: !!newPostImage,
+    });
 
-    if (allSelectedValues.length === 0) {
-      Alert.alert('No Values Selected', 'Please select at least one value to support or reject.');
+    if (!clerkUser?.id) {
+      console.log('[Search] No clerk user ID');
+      Alert.alert('Error', 'You must be logged in to create a post');
       return;
     }
 
-    // Convert selected values to Cause format for scoring
-    const userCauses = [
-      ...selectedSupportValues.map(id => ({ id, type: 'support' as const, weight: 1.0 })),
-      ...selectedRejectValues.map(id => ({ id, type: 'avoid' as const, weight: 1.0 }))
-    ];
-
-    // Debug: Check which selected values have no data in valuesMatrix
-    const missingValues = userCauses.filter(cause => {
-      const valueData = valuesMatrix[cause.id];
-      return !valueData || (valueData.support.length === 0 && valueData.oppose.length === 0);
-    });
-
-    if (missingValues.length > 0) {
-      console.log('[Search] ⚠️ Value Machine - Selected values with NO brand data in valuesMatrix:',
-        missingValues.map(c => ({ id: c.id, type: c.type }))
-      );
+    if (!newPostContent.trim() && !newPostImage) {
+      console.log('[Search] No content or image');
+      Alert.alert('Error', 'Please enter some content or add an image for your post');
+      return;
     }
 
-    console.log('[Search] Value Machine - Selected values:', {
-      support: selectedSupportValues.length,
-      reject: selectedRejectValues.length,
-      brands: allProducts.length,
-      missingData: missingValues.length
-    });
+    setCreatingPost(true);
+    try {
+      const authorName = profile?.userDetails?.name || clerkUser?.firstName || 'User';
+      const authorImage = profile?.userDetails?.profileImage;
+      const authorType = profile?.accountType === 'business' ? 'business' : 'user';
 
-    // Score each brand using calculateBrandScore (same as home tab)
-    const brandsWithScores = allProducts.map(brand => {
-      const score = calculateBrandScore(brand.name, userCauses, valuesMatrix);
-      return { brand, score };
-    });
+      console.log('[Search] Creating post with:', {
+        authorId: clerkUser.id,
+        authorName,
+        hasAuthorImage: !!authorImage,
+        authorType,
+        contentLength: newPostContent.trim().length,
+        hasPostImage: !!newPostImage,
+      });
 
-    // Normalize scores (same as home tab)
-    const normalizedBrands = normalizeBrandScores(brandsWithScores);
+      // For now, we'll store the image URI directly (in production, upload to storage first)
+      await createPost(
+        clerkUser.id,
+        authorName,
+        authorImage,
+        authorType as 'user' | 'business',
+        newPostContent.trim(),
+        newPostImage ? 'recommendation' : 'text',
+        newPostImage ? { id: 'image', type: 'brand', name: 'Image Post', image: newPostImage } : undefined
+      );
 
-    // Convert to product format with alignment data
-    const scored = normalizedBrands.map(({ brand, score }) => {
-      const isPositivelyAligned = score >= 50;
-      return {
-        product: brand as Product,
-        totalSupportScore: isPositivelyAligned ? score : 0,
-        totalRejectScore: isPositivelyAligned ? 0 : (100 - score),
-        matchingValuesCount: userCauses.length,
-        alignmentStrength: score,
-        isPositivelyAligned
-      };
-    });
+      console.log('[Search] Post created successfully');
 
-    // Score Firebase businesses based on their causes
-    const businessScored = firebaseBusinesses.map(business => {
-      if (!business.causes || business.causes.length === 0) {
-        // Business has no values - assign neutral score
-        return {
-          product: {
-            id: `firebase-business-${business.id}`,
-            firebaseId: business.id,
-            name: business.businessInfo.name,
-            brand: business.businessInfo.name,
-            category: business.businessInfo.category,
-            description: business.businessInfo.description || '',
-            exampleImageUrl: business.businessInfo.logoUrl,
-            website: business.businessInfo.website,
-            location: business.businessInfo.location,
-            valueAlignments: [],
-            keyReasons: [
-              business.businessInfo.acceptsStandDiscounts
-                ? `Accepts Endorse Discounts`
-                : `Local business`
-            ],
-            moneyFlow: { company: business.businessInfo.name, shareholders: [], overallAlignment: 0 },
-            relatedValues: [],
-            isFirebaseBusiness: true,
-          } as Product & { firebaseId: string; isFirebaseBusiness: boolean },
-          totalSupportScore: 0,
-          totalRejectScore: 0,
-          matchingValuesCount: 0,
-          alignmentStrength: 50,
-          isPositivelyAligned: false
-        };
+      // Refresh posts
+      const { posts: refreshedPosts } = await getPosts(20);
+      setPosts(refreshedPosts);
+
+      // Check likes for refreshed posts
+      if (clerkUser?.id) {
+        const likesMap = new Map<string, boolean>();
+        for (const post of refreshedPosts) {
+          const liked = await hasLikedPost(post.id, clerkUser.id);
+          likesMap.set(post.id, liked);
+        }
+        setPostLikes(likesMap);
       }
 
-      // Calculate raw alignment score
-      const rawScore = calculateAlignmentScore(userCauses, business.causes);
+      setNewPostContent('');
+      setNewPostImage(null);
+      setCreatePostModalVisible(false);
 
-      // Determine if positively or negatively aligned based on raw score
-      const isPositivelyAligned = rawScore > 0;
-
-      // Map to 0-100 range with proper clamping
-      // Raw scores typically range from -100 to +100
-      // Map: -100 -> 0, 0 -> 50, +100 -> 100
-      const alignmentStrength = Math.max(0, Math.min(100, Math.round(50 + (rawScore * 0.5))));
-
-      return {
-        product: {
-          id: `firebase-business-${business.id}`,
-          firebaseId: business.id,
-          name: business.businessInfo.name,
-          brand: business.businessInfo.name,
-          category: business.businessInfo.category,
-          description: business.businessInfo.description || '',
-          exampleImageUrl: business.businessInfo.logoUrl,
-          website: business.businessInfo.website,
-          location: business.businessInfo.location,
-          valueAlignments: [],
-          keyReasons: [
-            business.businessInfo.acceptsStandDiscounts
-              ? `Accepts Endorse Discounts`
-              : `Local business`
-          ],
-          moneyFlow: { company: business.businessInfo.name, shareholders: [], overallAlignment: 0 },
-          relatedValues: [],
-          isFirebaseBusiness: true,
-        } as Product & { firebaseId: string; isFirebaseBusiness: boolean },
-        totalSupportScore: isPositivelyAligned ? rawScore : 0,
-        totalRejectScore: isPositivelyAligned ? 0 : Math.abs(rawScore),
-        matchingValuesCount: business.causes.length,
-        alignmentStrength,
-        isPositivelyAligned
-      };
-    });
-
-    // Combine products and businesses
-    const allScored = [...scored, ...businessScored];
-
-    // Sort all results by alignment strength
-    const allSorted = allScored
-      .sort((a, b) => b.alignmentStrength - a.alignmentStrength)
-      .map(s => ({ ...s.product, alignmentScore: s.alignmentStrength, isPositivelyAligned: s.isPositivelyAligned }));
-
-    setValueMachineResults(allSorted);
-    setShowingResults(true);
-    setResultsLimit(10);
-    setResultsMode('aligned');
-  }, [selectedSupportValues, selectedRejectValues, firebaseBusinesses, firebaseBrands, valuesMatrix]);
-
-  const handleLoadMore = useCallback(() => {
-    if (resultsLimit === 10) {
-      setResultsLimit(20);
-    } else if (resultsLimit === 20) {
-      setResultsLimit(30);
+      // Use platform-appropriate notification
+      if (Platform.OS === 'web') {
+        window.alert('Your post has been published!');
+      } else {
+        Alert.alert('Success', 'Your post has been published!');
+      }
+    } catch (error) {
+      console.error('[Search] Error creating post:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Failed to create post. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to create post. Please try again.');
+      }
+    } finally {
+      setCreatingPost(false);
     }
-  }, [resultsLimit]);
+  }, [clerkUser?.id, newPostContent, newPostImage, profile]);
+
+  const handlePostLike = useCallback(async (postId: string) => {
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'You must be logged in to like posts');
+      return;
+    }
+
+    const isLiked = postLikes.get(postId) || false;
+
+    try {
+      if (isLiked) {
+        await unlikePost(postId, clerkUser.id);
+        setPostLikes(prev => new Map(prev).set(postId, false));
+        setPosts(prev => prev.map(p => p.id === postId ? { ...p, likesCount: p.likesCount - 1 } : p));
+      } else {
+        await likePost(postId, clerkUser.id);
+        setPostLikes(prev => new Map(prev).set(postId, true));
+        setPosts(prev => prev.map(p => p.id === postId ? { ...p, likesCount: p.likesCount + 1 } : p));
+      }
+    } catch (error) {
+      console.error('Error liking/unliking post:', error);
+    }
+  }, [clerkUser?.id, postLikes]);
+
+  const formatTimeAgo = useCallback((date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+  }, []);
 
   const handleSearch = (text: string) => {
     try {
@@ -1104,21 +1090,18 @@ export default function SearchScreen() {
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === 'value-machine' && styles.activeTab,
+            activeTab === 'posts' && styles.activeTab,
             { borderBottomColor: colors.primary }
           ]}
-          onPress={() => {
-            setActiveTab('value-machine');
-            setShowingResults(false);
-          }}
+          onPress={() => setActiveTab('posts')}
           activeOpacity={0.7}
         >
           <Text style={[
             styles.tabText,
-            { color: activeTab === 'value-machine' ? colors.primary : colors.textSecondary },
-            activeTab === 'value-machine' && styles.activeTabText
+            { color: activeTab === 'posts' ? colors.primary : colors.textSecondary },
+            activeTab === 'posts' && styles.activeTabText
           ]}>
-            Value Machine
+            Posts
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -1135,7 +1118,7 @@ export default function SearchScreen() {
             { color: activeTab === 'discover-users' ? colors.primary : colors.textSecondary },
             activeTab === 'discover-users' && styles.activeTabText
           ]}>
-            Discover Users
+            Users
           </Text>
         </TouchableOpacity>
       </View>
@@ -1182,190 +1165,181 @@ export default function SearchScreen() {
     );
   };
 
-  const renderValueMachineSection = () => {
-    const selectedCategoryLabel = categoriesWithLabels.find(c => c.key === selectedCategory)?.label || 'Select Category';
+  const renderPostsFeed = () => {
+    return (
+      <View style={styles.postsFeedContainer}>
+        {/* Create Post Button */}
+        <TouchableOpacity
+          style={[styles.createPostButton, { backgroundColor: colors.primary }]}
+          onPress={() => setCreatePostModalVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Plus size={20} color={colors.white} strokeWidth={2.5} />
+          <Text style={[styles.createPostButtonText, { color: colors.white }]}>Create Post</Text>
+        </TouchableOpacity>
 
-    if (showingResults) {
-      // Filter and sort based on mode
-      const filteredResults = resultsMode === 'aligned'
-        ? valueMachineResults.filter((item: any) => item.isPositivelyAligned !== false)
-        : [...valueMachineResults].filter((item: any) => item.isPositivelyAligned === false).sort((a, b) => a.alignmentScore - b.alignmentScore);
-
-      const displayedResults = filteredResults.slice(0, resultsLimit);
-      const canLoadMore = resultsLimit < 30 && filteredResults.length > resultsLimit;
-
-      return (
-        <View style={styles.valueMachineContainer}>
-          <View style={styles.valueMachineHeader}>
-            <View style={styles.valueMachineHeaderRow}>
-              <View style={styles.resultsModeToggle}>
-                <TouchableOpacity
-                  style={[
-                    styles.resultsModeButton,
-                    resultsMode === 'aligned' && { backgroundColor: colors.primary }
-                  ]}
-                  onPress={() => setResultsMode('aligned')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[
-                    styles.resultsModeButtonText,
-                    { color: resultsMode === 'aligned' ? colors.white : colors.textSecondary }
-                  ]}>
-                    Aligned
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.resultsModeButton,
-                    resultsMode === 'unaligned' && { backgroundColor: colors.primary }
-                  ]}
-                  onPress={() => setResultsMode('unaligned')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[
-                    styles.resultsModeButtonText,
-                    { color: resultsMode === 'unaligned' ? colors.white : colors.textSecondary }
-                  ]}>
-                    Unaligned
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              <TouchableOpacity
-                onPress={handleResetSelections}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.resetButton, { color: colors.primary }]}>Reset</Text>
-              </TouchableOpacity>
-            </View>
+        {postsLoading ? (
+          <View style={styles.loadingContainer}>
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading posts...</Text>
           </View>
+        ) : posts.length === 0 ? (
+          <View style={styles.emptyPostsContainer}>
+            <MessageCircle size={48} color={colors.textSecondary} strokeWidth={1.5} />
+            <Text style={[styles.emptyPostsTitle, { color: colors.text }]}>No Posts Yet</Text>
+            <Text style={[styles.emptyPostsSubtitle, { color: colors.textSecondary }]}>
+              Be the first to share something with the community!
+            </Text>
+          </View>
+        ) : (
           <FlatList
-            data={displayedResults}
-            renderItem={renderResultListItem}
+            data={posts}
             keyExtractor={item => item.id}
             contentContainerStyle={{ paddingBottom: 100 }}
             showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <Text style={[styles.emptyTitle, { color: colors.text }]}>No Results Found</Text>
-                <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                  Try selecting different values
-                </Text>
-              </View>
-            }
-            ListFooterComponent={
-              canLoadMore ? (
-                <TouchableOpacity
-                  style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                  onPress={handleLoadMore}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.loadMoreText, { color: colors.primary }]}>
-                    Load More ({resultsLimit === 10 ? '10 more' : '10 more'})
-                  </Text>
-                </TouchableOpacity>
-              ) : null
-            }
-          />
-        </View>
-      );
-    }
-
-    const currentCategoryValues = availableValuesByCategory[selectedCategory] || [];
-
-    return (
-      <ScrollView
-        style={styles.valueMachineContainer}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.valueMachineHeader}>
-          <View style={styles.valueMachineHeaderRow}>
-            <Text style={[styles.valueMachineSubtitle, { color: colors.textSecondary }]}>
-              Generate results from specific values
-            </Text>
-            {(selectedSupportValues.length > 0 || selectedRejectValues.length > 0) && (
-              <TouchableOpacity
-                onPress={handleResetSelections}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.resetButton, { color: colors.primary }]}>Reset</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* Category Dropdown */}
-        <View style={styles.categoryDropdownContainer}>
-          <TouchableOpacity
-            style={[styles.categoryDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-            onPress={(e) => {
-              e.currentTarget.measure((x, y, width, height, pageX, pageY) => {
-                setCategoryDropdownLayout({ x: pageX, y: pageY, width, height });
-                setCategoryModalVisible(true);
-              });
-            }}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.categoryDropdownText, { color: selectedCategory ? colors.text : colors.textSecondary }]}>
-              {selectedCategoryLabel}
-            </Text>
-            <Text style={[styles.categoryDropdownText, { color: colors.textSecondary }]}>
-              ▼
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Values Pills */}
-        {selectedCategory && (
-          <View style={styles.valuesPillsContainer}>
-            {currentCategoryValues.map(value => {
-              const isSupported = selectedSupportValues.includes(value.id);
-              const isRejected = selectedRejectValues.includes(value.id);
-
-              let pillStyle = [styles.valuePill, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }];
-              let textStyle = [styles.valuePillText, { color: colors.text }];
-
-              if (isSupported) {
-                pillStyle = [styles.valuePill, { backgroundColor: colors.success + '20', borderColor: colors.success }];
-                textStyle = [styles.valuePillText, { color: colors.success }];
-              } else if (isRejected) {
-                pillStyle = [styles.valuePill, { backgroundColor: colors.danger + '20', borderColor: colors.danger }];
-                textStyle = [styles.valuePillText, { color: colors.danger }];
-              }
+            renderItem={({ item: post }) => {
+              const isLiked = postLikes.get(post.id) || false;
 
               return (
-                <TouchableOpacity
-                  key={value.id}
-                  style={pillStyle}
-                  onPress={() => handleValueToggle(value.id)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={textStyle}>
-                    {value.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
+                <View style={[styles.postCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                  <View style={styles.postCardHeader}>
+                    <TouchableOpacity
+                      style={styles.postAuthorInfo}
+                      onPress={() => router.push(`/user/${post.authorId}`)}
+                      activeOpacity={0.7}
+                    >
+                      {post.authorImage ? (
+                        <Image
+                          source={{ uri: post.authorImage }}
+                          style={styles.postAuthorImage}
+                          contentFit="cover"
+                          transition={200}
+                        />
+                      ) : (
+                        <View style={[styles.postAuthorImagePlaceholder, { backgroundColor: colors.primary }]}>
+                          <Text style={[styles.postAuthorInitial, { color: colors.white }]}>
+                            {post.authorName.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
+                      <View style={styles.postAuthorDetails}>
+                        <Text style={[styles.postAuthorName, { color: colors.text }]}>
+                          {post.authorName}
+                        </Text>
+                        <Text style={[styles.postTimestamp, { color: colors.textSecondary }]}>
+                          {formatTimeAgo(post.createdAt)}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                    {post.authorType === 'business' && (
+                      <View style={[styles.businessBadge, { backgroundColor: colors.primary + '15' }]}>
+                        <Text style={[styles.businessBadgeText, { color: colors.primary }]}>Business</Text>
+                      </View>
+                    )}
+                  </View>
 
-        {(selectedSupportValues.length > 0 || selectedRejectValues.length > 0) && (
-          <View style={styles.generateContainer}>
-            <TouchableOpacity
-              style={[styles.generateButton, { backgroundColor: colors.primary }]}
-              onPress={handleGenerateResults}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.generateButtonText, { color: colors.white }]}>
-                Generate Results
-              </Text>
-            </TouchableOpacity>
-            <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
-              {selectedSupportValues.length} supported • {selectedRejectValues.length} rejected
-            </Text>
-          </View>
+                  {/* Image Post - Show image as main content */}
+                  {post.linkedEntityImage && post.linkedEntityId === 'image' ? (
+                    <>
+                      <Image
+                        source={{ uri: post.linkedEntityImage }}
+                        style={styles.postMainImage}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                      {post.content ? (
+                        <Text style={[styles.postCaption, { color: colors.text }]}>
+                          {post.content}
+                        </Text>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      {/* Text-only post with blue border */}
+                      {post.content ? (
+                        post.linkedEntityImage ? (
+                          <Text style={[styles.postContent, { color: colors.text }]}>
+                            {post.content}
+                          </Text>
+                        ) : (
+                          <View style={[styles.textOnlyPostBox, { borderColor: colors.primary }]}>
+                            <Text style={[styles.textOnlyPostContent, { color: colors.text }]}>
+                              {post.content}
+                            </Text>
+                          </View>
+                        )
+                      ) : null}
+                    </>
+                  )}
+
+                  {post.linkedEntityName && post.linkedEntityId !== 'image' && (
+                    <TouchableOpacity
+                      style={[styles.linkedEntityCard, { backgroundColor: colors.background, borderColor: colors.border }]}
+                      onPress={() => {
+                        if (post.linkedEntityType === 'brand') {
+                          router.push(`/brand/${post.linkedEntityId}`);
+                        } else if (post.linkedEntityType === 'business') {
+                          router.push(`/business/${post.linkedEntityId}`);
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      {post.linkedEntityImage && (
+                        <Image
+                          source={{ uri: post.linkedEntityImage }}
+                          style={styles.linkedEntityImage}
+                          contentFit="cover"
+                          transition={200}
+                        />
+                      )}
+                      <View style={styles.linkedEntityInfo}>
+                        <Text style={[styles.linkedEntityType, { color: colors.textSecondary }]}>
+                          {post.linkedEntityType === 'brand' ? 'Brand' : post.linkedEntityType === 'business' ? 'Business' : 'Value'}
+                        </Text>
+                        <Text style={[styles.linkedEntityName, { color: colors.text }]} numberOfLines={1}>
+                          {post.linkedEntityName}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+
+                  <View style={styles.postActions}>
+                    <TouchableOpacity
+                      style={styles.postActionButton}
+                      onPress={() => handlePostLike(post.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Heart
+                        size={22}
+                        color={isLiked ? colors.danger : colors.textSecondary}
+                        fill={isLiked ? colors.danger : 'none'}
+                        strokeWidth={2}
+                      />
+                      <Text style={[styles.postActionText, { color: isLiked ? colors.danger : colors.textSecondary }]}>
+                        {post.likesCount}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.postActionButton}
+                      activeOpacity={0.7}
+                    >
+                      <MessageCircle size={22} color={colors.textSecondary} strokeWidth={2} />
+                      <Text style={[styles.postActionText, { color: colors.textSecondary }]}>
+                        {post.commentsCount}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.postActionButton}
+                      activeOpacity={0.7}
+                    >
+                      <Share2 size={22} color={colors.textSecondary} strokeWidth={2} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            }}
+          />
         )}
-      </ScrollView>
+      </View>
     );
   };
 
@@ -1563,7 +1537,7 @@ export default function SearchScreen() {
             }
           />
         ) : (
-          renderValueMachineSection()
+          renderPostsFeed()
         )
       ) : results.length === 0 ? (
         <View style={styles.emptyState}>
@@ -1862,47 +1836,126 @@ export default function SearchScreen() {
         </View>
       </Modal>
 
-      {/* Category Dropdown Menu */}
+      {/* Create Post Modal - Centered */}
       <Modal
-        visible={categoryModalVisible}
-        animationType="none"
+        visible={createPostModalVisible}
+        animationType="fade"
         transparent
-        onRequestClose={() => setCategoryModalVisible(false)}
+        onRequestClose={() => {
+          setCreatePostModalVisible(false);
+          setNewPostImage(null);
+          setNewPostContent('');
+        }}
       >
-        <TouchableOpacity
-          style={styles.categoryDropdownOverlay}
-          activeOpacity={1}
-          onPress={() => setCategoryModalVisible(false)}
-        >
-          <View
-            style={[
-              styles.categoryDropdownMenu,
-              {
-                backgroundColor: colors.background,
-                borderColor: colors.border,
-                top: categoryDropdownLayout.y + categoryDropdownLayout.height + 4,
-                left: categoryDropdownLayout.x,
-                width: categoryDropdownLayout.width,
-              }
-            ]}
-          >
-            {categoriesWithLabels.map(category => (
+        <View style={styles.createPostModalOverlay}>
+          <View style={[styles.createPostModalContent, { backgroundColor: colors.background }]}>
+            <View style={[styles.createPostModalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.createPostModalTitle, { color: colors.text }]}>Create Post</Text>
               <TouchableOpacity
-                key={category.key}
-                style={[styles.categoryDropdownItem, { borderBottomColor: colors.border }]}
                 onPress={() => {
-                  setSelectedCategory(category.key);
-                  setCategoryModalVisible(false);
+                  setCreatePostModalVisible(false);
+                  setNewPostImage(null);
+                  setNewPostContent('');
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.categoryDropdownItemText, { color: selectedCategory === category.key ? colors.primary : colors.text }]}>
-                  {category.label}
-                </Text>
+                <X size={24} color={colors.text} strokeWidth={2} />
               </TouchableOpacity>
-            ))}
+            </View>
+
+            <ScrollView style={styles.createPostModalBody} showsVerticalScrollIndicator={false}>
+              <View style={styles.createPostAuthorRow}>
+                {profile?.userDetails?.profileImage ? (
+                  <Image
+                    source={{ uri: profile.userDetails.profileImage }}
+                    style={styles.createPostAuthorImage}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                ) : (
+                  <View style={[styles.createPostAuthorImagePlaceholder, { backgroundColor: colors.primary }]}>
+                    <Text style={[styles.createPostAuthorInitial, { color: colors.white }]}>
+                      {(profile?.userDetails?.name || clerkUser?.firstName || 'U').charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                <Text style={[styles.createPostAuthorName, { color: colors.text }]}>
+                  {profile?.userDetails?.name || clerkUser?.firstName || 'User'}
+                </Text>
+              </View>
+
+              {/* Image Preview */}
+              {newPostImage ? (
+                <View style={styles.createPostImageContainer}>
+                  <Image
+                    source={{ uri: newPostImage }}
+                    style={styles.createPostImagePreview}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                  <TouchableOpacity
+                    style={[styles.removeImageButton, { backgroundColor: colors.danger }]}
+                    onPress={() => setNewPostImage(null)}
+                    activeOpacity={0.7}
+                  >
+                    <X size={16} color={colors.white} strokeWidth={2.5} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.addImageButton, { borderColor: colors.primary }]}
+                  onPress={handlePickImage}
+                  activeOpacity={0.7}
+                >
+                  <ImageIcon size={32} color={colors.primary} strokeWidth={1.5} />
+                  <Text style={[styles.addImageText, { color: colors.primary }]}>Add Image</Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Text Input - Caption style if image, larger if text only */}
+              <TextInput
+                style={[
+                  newPostImage ? styles.createPostCaptionInput : styles.createPostTextOnlyInput,
+                  { color: colors.text },
+                  !newPostImage && { borderColor: colors.primary }
+                ]}
+                placeholder={newPostImage ? "Add a caption..." : "What's on your mind?"}
+                placeholderTextColor={colors.textSecondary}
+                value={newPostContent}
+                onChangeText={setNewPostContent}
+                multiline
+                numberOfLines={newPostImage ? 3 : 6}
+                maxLength={500}
+                textAlignVertical="top"
+              />
+
+              <Text style={[styles.characterCount, { color: colors.textSecondary }]}>
+                {newPostContent.length}/500
+              </Text>
+            </ScrollView>
+
+            <View style={[styles.createPostModalFooter, { borderTopColor: colors.border }]}>
+              <TouchableOpacity
+                style={[
+                  styles.publishButton,
+                  { backgroundColor: (newPostContent.trim() || newPostImage) && !creatingPost ? colors.primary : colors.neutral }
+                ]}
+                onPress={handleCreatePost}
+                disabled={(!newPostContent.trim() && !newPostImage) || creatingPost}
+                activeOpacity={0.8}
+              >
+                {creatingPost ? (
+                  <Text style={[styles.publishButtonText, { color: colors.white }]}>Publishing...</Text>
+                ) : (
+                  <>
+                    <Send size={18} color={colors.white} strokeWidth={2.5} />
+                    <Text style={[styles.publishButtonText, { color: colors.white }]}>Publish</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </View>
   );
@@ -2792,5 +2845,305 @@ const styles = StyleSheet.create({
   categoryDropdownItemText: {
     fontSize: 16,
     fontWeight: '500' as const,
+  },
+
+  // Posts Feed Styles
+  postsFeedContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  createPostButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginVertical: 16,
+    gap: 8,
+  },
+  createPostButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    fontSize: 15,
+  },
+  emptyPostsContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    gap: 12,
+  },
+  emptyPostsTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    marginTop: 8,
+  },
+  emptyPostsSubtitle: {
+    fontSize: 15,
+    textAlign: 'center' as const,
+    paddingHorizontal: 24,
+  },
+  postCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  postCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    paddingBottom: 12,
+  },
+  postAuthorInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  postAuthorImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  postAuthorImagePlaceholder: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  postAuthorInitial: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  postAuthorDetails: {
+    flex: 1,
+  },
+  postAuthorName: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 2,
+  },
+  postTimestamp: {
+    fontSize: 13,
+  },
+  businessBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  businessBadgeText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  postContent: {
+    fontSize: 15,
+    lineHeight: 22,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  postMainImage: {
+    width: '100%',
+    aspectRatio: 1,
+    marginBottom: 0,
+  },
+  postCaption: {
+    fontSize: 15,
+    lineHeight: 22,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+  },
+  textOnlyPostBox: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+  },
+  textOnlyPostContent: {
+    fontSize: 17,
+    lineHeight: 26,
+  },
+  linkedEntityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 12,
+  },
+  linkedEntityImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+  },
+  linkedEntityInfo: {
+    flex: 1,
+  },
+  linkedEntityType: {
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  linkedEntityName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  postActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 20,
+  },
+  postActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  postActionText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+
+  // Create Post Modal Styles - Centered
+  createPostModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  createPostModalContent: {
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '85%',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  createPostModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  createPostModalTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  createPostModalBody: {
+    padding: 16,
+  },
+  createPostAuthorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  createPostAuthorImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  createPostAuthorImagePlaceholder: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  createPostAuthorInitial: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  createPostAuthorName: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  createPostImageContainer: {
+    position: 'relative',
+    marginVertical: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  createPostImagePreview: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 12,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addImageButton: {
+    marginVertical: 16,
+    paddingVertical: 40,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  addImageText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  createPostTextOnlyInput: {
+    minHeight: 180,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    fontSize: 18,
+    lineHeight: 28,
+    marginTop: 8,
+  },
+  createPostCaptionInput: {
+    minHeight: 80,
+    padding: 12,
+    fontSize: 15,
+    lineHeight: 22,
+    marginTop: 8,
+  },
+  characterCount: {
+    fontSize: 13,
+    textAlign: 'right' as const,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  createPostModalFooter: {
+    padding: 16,
+    borderTopWidth: 1,
+  },
+  publishButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  publishButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
 });
