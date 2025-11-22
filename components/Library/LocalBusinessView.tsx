@@ -564,10 +564,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   webModalContainer: {
-    maxWidth: 600,
-    maxHeight: '80%',
+    width: '95%',
+    maxHeight: '85%',
     alignSelf: 'center',
-    marginTop: '10%',
+    marginTop: '5%',
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',
