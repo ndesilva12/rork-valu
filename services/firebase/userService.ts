@@ -408,10 +408,15 @@ export async function aggregateBusinessTransactions(businessId: string): Promise
  */
 export async function getAllPublicUsers(): Promise<Array<{ id: string; profile: UserProfile }>> {
   try {
-    console.log('[Firebase] Fetching all public users');
+    console.log('[Firebase] Fetching all public users (excluding business accounts)');
 
     const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('isPublicProfile', '==', true));
+    // Only fetch individual accounts with public profiles (exclude business accounts)
+    const q = query(
+      usersRef,
+      where('isPublicProfile', '==', true),
+      where('accountType', '==', 'individual')
+    );
 
     const querySnapshot = await getDocs(q);
 

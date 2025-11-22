@@ -1006,7 +1006,7 @@ export default function HomeScreen() {
         <View style={styles.brandCardInner}>
           <View style={styles.brandLogoContainer}>
             <Image
-              source={{ uri: business.businessInfo.logoUrl ? business.businessInfo.logoUrl : getLogoUrl(business.businessInfo.website || '') }}
+              source={{ uri: getLogoUrl(business.businessInfo.website || '') }}
               style={styles.brandLogo}
               contentFit="cover"
               transition={200}
@@ -1641,7 +1641,7 @@ export default function HomeScreen() {
     const endorsementList = library.state.endorsementList;
     if (!endorsementList?.entries) return false;
 
-    return endorsementList.entries.some(e => {
+    return endorsementList.entries.filter(e => e).some(e => {
       if (itemType === 'brand') {
         return e.brandId === itemId;
       } else {

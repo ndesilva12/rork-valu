@@ -194,8 +194,8 @@ export default function MerchantVerify() {
           console.log('[MerchantVerify] Endorsement list entries:', JSON.stringify(endorsementList.entries, null, 2));
 
           // Check if user has endorsed this specific business
-          // Support multiple entry formats for robustness
-          const hasEndorsed = endorsementList.entries.some(entry => {
+          // Support multiple entry formats for robustness (filter out null/undefined entries)
+          const hasEndorsed = endorsementList.entries.filter(e => e).some(entry => {
             if (entry.type === 'business') {
               // Check by businessId (primary method)
               if ('businessId' in entry && entry.businessId === businessId) {

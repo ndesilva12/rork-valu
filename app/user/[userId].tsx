@@ -50,6 +50,7 @@ export default function UserProfileScreen() {
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [showActionMenu, setShowActionMenu] = useState(false);
+  const [selectedLibrarySection, setSelectedLibrarySection] = useState<'endorsement' | 'aligned' | 'unaligned' | 'following' | 'followers' | 'local' | 'posts'>('endorsement');
 
   const panResponder = useRef(
     PanResponder.create({
@@ -522,16 +523,24 @@ export default function UserProfileScreen() {
             </Text>
           )}
 
-          {/* Follower/Following Counts */}
+          {/* Follower/Following Counts - Clickable to show lists */}
           <View style={styles.followStatsContainer}>
-            <View style={styles.followStat}>
-              <Text style={[styles.followStatNumber, { color: colors.text }]}>{followersCount}</Text>
-              <Text style={[styles.followStatLabel, { color: colors.textSecondary }]}>Followers</Text>
-            </View>
-            <View style={styles.followStat}>
-              <Text style={[styles.followStatNumber, { color: colors.text }]}>{followingCount}</Text>
-              <Text style={[styles.followStatLabel, { color: colors.textSecondary }]}>Following</Text>
-            </View>
+            <TouchableOpacity
+              style={styles.followStat}
+              onPress={() => setSelectedLibrarySection('followers')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.followStatNumber, { color: selectedLibrarySection === 'followers' ? colors.primary : colors.text }]}>{followersCount}</Text>
+              <Text style={[styles.followStatLabel, { color: selectedLibrarySection === 'followers' ? colors.primary : colors.textSecondary }]}>Followers</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.followStat}
+              onPress={() => setSelectedLibrarySection('following')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.followStatNumber, { color: selectedLibrarySection === 'following' ? colors.primary : colors.text }]}>{followingCount}</Text>
+              <Text style={[styles.followStatLabel, { color: selectedLibrarySection === 'following' ? colors.primary : colors.textSecondary }]}>Following</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Social Links */}
@@ -613,6 +622,10 @@ export default function UserProfileScreen() {
               userBusinesses={userBusinesses}
               scoredBrands={scoredBrands}
               userCauses={currentUserProfile?.causes || []}
+              followingCount={followingCount}
+              followersCount={followersCount}
+              externalSelectedSection={selectedLibrarySection}
+              onSectionChange={setSelectedLibrarySection}
             />
           </View>
         </View>

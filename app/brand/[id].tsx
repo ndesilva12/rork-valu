@@ -339,7 +339,7 @@ export default function BrandDetailScreen() {
       return;
     }
 
-    const brandIsEndorsed = library.state.endorsementList.entries.some(entry =>
+    const brandIsEndorsed = library.state.endorsementList.entries.filter(e => e).some(entry =>
       entry.type === 'brand' && (entry as any).brandId === brand.id
     );
     setIsEndorsingBrand(brandIsEndorsed);
