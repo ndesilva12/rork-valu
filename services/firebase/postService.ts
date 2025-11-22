@@ -76,8 +76,16 @@ export async function createPost(
   },
   rating?: number
 ): Promise<string> {
-  if (!authorId || !content.trim()) {
-    throw new Error('Author ID and content are required');
+  // Allow posts with either content OR an image (linkedEntity with image)
+  const hasContent = content && content.trim().length > 0;
+  const hasImage = linkedEntity?.image;
+
+  if (!authorId) {
+    throw new Error('Author ID is required');
+  }
+
+  if (!hasContent && !hasImage) {
+    throw new Error('Post must have either content or an image');
   }
 
   try {
@@ -88,7 +96,7 @@ export async function createPost(
       authorImage: authorImage || null,
       authorType,
       type,
-      content: content.trim(),
+      content: content?.trim() || '',
       likesCount: 0,
       commentsCount: 0,
       createdAt: Timestamp.now(),
