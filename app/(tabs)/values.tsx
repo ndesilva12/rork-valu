@@ -1113,31 +1113,33 @@ export default function ValuesScreen() {
               </TouchableOpacity>
               {vmCategoryDropdownOpen && (
                 <View style={[styles.vmCategoryDropdownList, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                  {vmCategoriesWithLabels.map(category => (
-                    <TouchableOpacity
-                      key={category.key}
-                      style={[
-                        styles.vmCategoryDropdownItem,
-                        { borderBottomColor: colors.border },
-                        vmSelectedCategory === category.key && { backgroundColor: colors.primary + '15' }
-                      ]}
-                      onPress={() => {
-                        setVmSelectedCategory(category.key);
-                        setVmCategoryDropdownOpen(false);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[
-                        styles.vmCategoryDropdownItemText,
-                        { color: vmSelectedCategory === category.key ? colors.primary : colors.text }
-                      ]}>
-                        {category.label}
-                      </Text>
-                      <Text style={[styles.vmCategoryCount, { color: colors.textSecondary }]}>
-                        ({(availableValues[category.key] || []).length})
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                  <ScrollView style={styles.vmCategoryDropdownScroll} nestedScrollEnabled={true}>
+                    {vmCategoriesWithLabels.map(category => (
+                      <TouchableOpacity
+                        key={category.key}
+                        style={[
+                          styles.vmCategoryDropdownItem,
+                          { borderBottomColor: colors.border },
+                          vmSelectedCategory === category.key && { backgroundColor: colors.primary + '15' }
+                        ]}
+                        onPress={() => {
+                          setVmSelectedCategory(category.key);
+                          setVmCategoryDropdownOpen(false);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[
+                          styles.vmCategoryDropdownItemText,
+                          { color: vmSelectedCategory === category.key ? colors.primary : colors.text }
+                        ]}>
+                          {category.label}
+                        </Text>
+                        <Text style={[styles.vmCategoryCount, { color: colors.textSecondary }]}>
+                          ({(availableValues[category.key] || []).length})
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
                 </View>
               )}
             </View>
@@ -2185,8 +2187,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 0,
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
-    maxHeight: 250,
+    maxHeight: 350,
     overflow: 'hidden',
+  },
+  vmCategoryDropdownScroll: {
+    maxHeight: 350,
   },
   vmCategoryDropdownItem: {
     flexDirection: 'row',

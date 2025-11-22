@@ -1118,7 +1118,7 @@ export default function SearchScreen() {
             { color: activeTab === 'discover-users' ? colors.primary : colors.textSecondary },
             activeTab === 'discover-users' && styles.activeTabText
           ]}>
-            Discover Users
+            Users
           </Text>
         </TouchableOpacity>
       </View>

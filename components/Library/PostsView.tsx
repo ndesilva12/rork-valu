@@ -44,9 +44,10 @@ export default function PostsView({
   currentUserId,
   currentUserName,
   currentUserImage,
-  isDarkMode = false,
+  isDarkMode,
 }: PostsViewProps) {
-  const colors = isDarkMode ? darkColors : lightColors;
+  // Ensure colors is always defined
+  const colors = isDarkMode === true ? darkColors : lightColors;
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
