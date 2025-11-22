@@ -127,7 +127,7 @@ export default function UnifiedLibrary({
   followingCount = 0,
   followersCount = 0,
 }: UnifiedLibraryProps) {
-  const colors = isDarkMode ? darkColors : lightColors;
+  const colors = (isDarkMode ? darkColors : lightColors) || lightColors;
   const library = useLibrary();
   const { profile, clerkUser } = useUser();
   const router = useRouter();
@@ -2221,7 +2221,7 @@ export default function UnifiedLibrary({
           />
         );
 
-      case 'posts':
+      case 'posts': {
         const targetUserId = viewingUserId || currentUserId;
         return targetUserId ? (
           <PostsView
@@ -2233,11 +2233,12 @@ export default function UnifiedLibrary({
           />
         ) : (
           <View style={styles.emptySection}>
-            <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+            <Text style={[styles.emptySectionText, { color: colors?.textSecondary || '#6B7280' }]}>
               No posts available
             </Text>
           </View>
         );
+      }
 
       default:
         return null;
