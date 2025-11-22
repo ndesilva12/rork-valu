@@ -66,6 +66,36 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Posts collection - OPEN ACCESS
+    // Users can create, read, and delete their own posts (Clerk handles authentication)
+    match /posts/{postId} {
+      allow read, write: if true;
+    }
+
+    // Post Likes collection - OPEN ACCESS
+    // Users can like/unlike posts (Clerk handles authentication)
+    match /postLikes/{likeId} {
+      allow read, write: if true;
+    }
+
+    // Post Comments collection - OPEN ACCESS
+    // Users can comment on posts (Clerk handles authentication)
+    match /postComments/{commentId} {
+      allow read, write: if true;
+    }
+
+    // Reviews collection - OPEN ACCESS
+    // Users can review brands and businesses (Clerk handles authentication)
+    match /reviews/{reviewId} {
+      allow read, write: if true;
+    }
+
+    // Review Likes collection - OPEN ACCESS
+    // Users can like/unlike reviews (Clerk handles authentication)
+    match /reviewLikes/{likeId} {
+      allow read, write: if true;
+    }
+
     // Deny all other collections
     match /{document=**} {
       allow read, write: if false;
