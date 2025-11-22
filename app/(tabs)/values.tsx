@@ -105,6 +105,9 @@ export default function ValuesScreen() {
   const colors = isDarkMode ? darkColors : lightColors;
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
+  // Tab state for My Values / Value Machine
+  const [activeTab, setActiveTab] = useState<'myValues' | 'valueMachine'>('myValues');
+
   // Local state to track changes before persisting
   const [localChanges, setLocalChanges] = useState<Map<string, LocalValueState | null>>(new Map());
   const hasUnsavedChanges = useRef(false);
@@ -560,28 +563,63 @@ export default function ValuesScreen() {
         </View>
       </View>
 
+      {/* Tab Headers */}
+      <View style={styles.tabHeaderContainer}>
+        <TouchableOpacity
+          style={styles.tabHeaderButton}
+          onPress={() => setActiveTab('myValues')}
+          activeOpacity={0.7}
+        >
+          <Text style={[
+            styles.tabHeaderText,
+            { color: activeTab === 'myValues' ? colors.primary : colors.textSecondary }
+          ]}>
+            My Values
+          </Text>
+          {activeTab === 'myValues' && (
+            <View style={[styles.tabUnderline, { backgroundColor: colors.primary }]} />
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.tabHeaderButton}
+          onPress={() => setActiveTab('valueMachine')}
+          activeOpacity={0.7}
+        >
+          <Text style={[
+            styles.tabHeaderText,
+            { color: activeTab === 'valueMachine' ? colors.primary : colors.textSecondary }
+          ]}>
+            Value Machine
+          </Text>
+          {activeTab === 'valueMachine' && (
+            <View style={[styles.tabUnderline, { backgroundColor: colors.primary }]} />
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {activeTab === 'myValues' ? (
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Action Buttons */}
-        <View style={styles.actionButtonsContainer}>
+        {/* Action Buttons - Made smaller */}
+        <View style={styles.smallActionButtonsContainer}>
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: colors.primary }]}
+            style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
             onPress={handleUpdateValues}
             activeOpacity={0.7}
           >
-            <Text style={[styles.actionButtonText, { color: colors.white }]}>
+            <Text style={[styles.smallActionButtonText, { color: colors.white }]}>
               Update All Values
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionButton, styles.resetButton, { borderColor: colors.danger }]}
+            style={[styles.smallActionButton, styles.smallResetButton, { borderColor: colors.danger }]}
             onPress={handleResetValues}
             activeOpacity={0.7}
           >
-            <Text style={[styles.actionButtonText, { color: colors.danger }]}>
+            <Text style={[styles.smallActionButtonText, { color: colors.danger }]}>
               Reset All Values
             </Text>
           </TouchableOpacity>
@@ -676,13 +714,13 @@ export default function ValuesScreen() {
           </>
         )}
 
-        {/* Unselected Values Section */}
+        {/* Unselected Values Section - Collapsed by Category */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Unselected Values
           </Text>
           <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-            Tap to select or cycle values. Long press to explore brands.
+            Tap a category to expand. Tap values to select or cycle. Long press to explore brands.
           </Text>
 
           {sortedCategories.map((category) => {
@@ -691,65 +729,64 @@ export default function ValuesScreen() {
 
             const Icon = getCategoryIcon(category);
             const isExpanded = expandedCategories.has(category as CauseCategory);
-            const displayedValues = isExpanded ? values : values.slice(0, 10);
-            const hasMore = values.length > 10;
 
             return (
               <View key={category} style={styles.categorySection}>
-                <View style={styles.categoryHeader}>
-                  <Icon size={18} color={colors.textSecondary} strokeWidth={2} />
-                  <Text style={[styles.categoryTitle, { color: colors.text }]}>
-                    {getCategoryLabel(category)}
-                  </Text>
-                </View>
-                <View style={styles.valuesGrid}>
-                  {displayedValues.map(value => {
-                    const currentState = getValueState(value.id);
-                    return (
-                      <TouchableOpacity
-                        key={value.id}
-                        style={[
-                          styles.valueChip,
-                          currentState === 'unselected' && styles.unselectedValueChip,
-                          currentState === 'unselected' && { borderColor: colors.neutral, backgroundColor: 'transparent' },
-                          currentState === 'support' && { backgroundColor: colors.success, borderColor: colors.success },
-                          currentState === 'avoid' && { backgroundColor: colors.danger, borderColor: colors.danger }
-                        ]}
-                        onPress={() => handleValueTap(value.id, value.name, value.category)}
-                        onLongPress={() => router.push(`/value/${value.id}`)}
-                        activeOpacity={0.7}
-                      >
-                        <Text
-                          style={[
-                            styles.valueChipText,
-                            currentState === 'unselected' && styles.unselectedValueText,
-                            currentState === 'unselected' && { color: colors.neutral },
-                            currentState === 'support' && { color: colors.white },
-                            currentState === 'avoid' && { color: colors.white }
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {value.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-                {hasMore && (
-                  <TouchableOpacity
-                    style={[styles.showMoreButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                    onPress={() => toggleCategoryExpanded(category)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.showMoreText, { color: colors.textSecondary }]}>
-                      {isExpanded ? 'Show Less' : `Show ${values.length - 10} More`}
+                <TouchableOpacity
+                  style={[styles.collapsibleCategoryHeader, { backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => toggleCategoryExpanded(category)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.categoryHeaderLeft}>
+                    <Icon size={18} color={colors.textSecondary} strokeWidth={2} />
+                    <Text style={[styles.categoryTitle, { color: colors.text }]}>
+                      {getCategoryLabel(category)}
                     </Text>
-                    {isExpanded ? (
-                      <ChevronUp size={16} color={colors.textSecondary} strokeWidth={2} />
-                    ) : (
-                      <ChevronDown size={16} color={colors.textSecondary} strokeWidth={2} />
-                    )}
-                  </TouchableOpacity>
+                    <Text style={[styles.categoryCount, { color: colors.textSecondary }]}>
+                      ({values.length})
+                    </Text>
+                  </View>
+                  {isExpanded ? (
+                    <ChevronUp size={20} color={colors.textSecondary} strokeWidth={2} />
+                  ) : (
+                    <ChevronDown size={20} color={colors.textSecondary} strokeWidth={2} />
+                  )}
+                </TouchableOpacity>
+
+                {isExpanded && (
+                  <View style={[styles.valuesGrid, styles.expandedValuesGrid]}>
+                    {values.map(value => {
+                      const currentState = getValueState(value.id);
+                      return (
+                        <TouchableOpacity
+                          key={value.id}
+                          style={[
+                            styles.valueChip,
+                            currentState === 'unselected' && styles.unselectedValueChip,
+                            currentState === 'unselected' && { borderColor: colors.neutral, backgroundColor: 'transparent' },
+                            currentState === 'support' && { backgroundColor: colors.success, borderColor: colors.success },
+                            currentState === 'avoid' && { backgroundColor: colors.danger, borderColor: colors.danger }
+                          ]}
+                          onPress={() => handleValueTap(value.id, value.name, value.category)}
+                          onLongPress={() => router.push(`/value/${value.id}`)}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={[
+                              styles.valueChipText,
+                              currentState === 'unselected' && styles.unselectedValueText,
+                              currentState === 'unselected' && { color: colors.neutral },
+                              currentState === 'support' && { color: colors.white },
+                              currentState === 'avoid' && { color: colors.white }
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {value.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 )}
               </View>
             );
@@ -766,6 +803,28 @@ export default function ValuesScreen() {
           </Text>
         </View>
       </ScrollView>
+      ) : (
+        /* Value Machine Tab */
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.valueMachinePlaceholder}>
+            <Text style={[styles.valueMachineTitle, { color: colors.text }]}>
+              Value Machine
+            </Text>
+            <Text style={[styles.valueMachineDescription, { color: colors.textSecondary }]}>
+              Select values to discover brands that align with your beliefs. This feature is being migrated here.
+            </Text>
+            <View style={[styles.comingSoonBadge, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.comingSoonText, { color: colors.white }]}>
+                Coming Soon
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      )}
 
       {/* Max Pain/Max Benefit Selection Modal */}
       <Modal
@@ -1100,6 +1159,102 @@ const styles = StyleSheet.create({
     marginTop: 8,
     alignSelf: 'flex-start',
   },
+  // Tab Header Styles
+  tabHeaderContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    gap: 24,
+  },
+  tabHeaderButton: {
+    paddingBottom: 8,
+    position: 'relative',
+  },
+  tabHeaderText: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
+  tabUnderline: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    borderRadius: 2,
+  },
+  // Small Action Buttons
+  smallActionButtonsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  smallActionButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  smallResetButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+  },
+  smallActionButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  // Collapsible Category Styles
+  collapsibleCategoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 4,
+  },
+  categoryHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  categoryCount: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  expandedValuesGrid: {
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  // Value Machine Placeholder Styles
+  valueMachinePlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 24,
+  },
+  valueMachineTitle: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    marginBottom: 12,
+  },
+  valueMachineDescription: {
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  comingSoonBadge: {
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+  },
+  comingSoonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  // Legacy styles
   actionButtonsContainer: {
     flexDirection: 'row',
     gap: 12,
