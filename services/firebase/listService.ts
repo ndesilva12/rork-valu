@@ -233,8 +233,8 @@ export const addEntryToList = async (
       throw new Error('List not found');
     }
 
-    // Check for duplicates based on entry type
-    const isDuplicate = list.entries.some((existingEntry) => {
+    // Check for duplicates based on entry type (filter out null/undefined entries first)
+    const isDuplicate = list.entries.filter(e => e).some((existingEntry) => {
       // For brands, check brandId
       if (entry.type === 'brand' && existingEntry.type === 'brand' && 'brandId' in entry && 'brandId' in existingEntry) {
         return entry.brandId === existingEntry.brandId;

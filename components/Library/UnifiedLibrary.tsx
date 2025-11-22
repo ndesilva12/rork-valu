@@ -83,6 +83,8 @@ import { CSS } from '@dnd-kit/utilities';
 
 // ===== Types =====
 
+type LibrarySectionType = 'endorsement' | 'aligned' | 'unaligned' | 'following' | 'followers' | 'local' | 'posts';
+
 interface UnifiedLibraryProps {
   mode: 'edit' | 'preview' | 'view';
   // 'edit' = Home tab - full editing
@@ -107,6 +109,9 @@ interface UnifiedLibraryProps {
   // Following/Followers counts
   followingCount?: number;
   followersCount?: number;
+  // External section control
+  externalSelectedSection?: LibrarySectionType;
+  onSectionChange?: (section: LibrarySectionType) => void;
 }
 
 export default function UnifiedLibrary({
@@ -126,6 +131,8 @@ export default function UnifiedLibrary({
   onRequestLocation,
   followingCount = 0,
   followersCount = 0,
+  externalSelectedSection,
+  onSectionChange,
 }: UnifiedLibraryProps) {
   const colors = (isDarkMode ? darkColors : lightColors) || lightColors;
   const library = useLibrary();
@@ -193,11 +200,19 @@ export default function UnifiedLibrary({
   const [showEndorsedActionMenu, setShowEndorsedActionMenu] = useState(false);
 
   // Section selection state - default to endorsement (or aligned if empty)
-  type LibrarySection = 'endorsement' | 'aligned' | 'unaligned' | 'following' | 'followers' | 'local' | 'posts';
-  const defaultSection: LibrarySection = (endorsementList && endorsementList.entries && endorsementList.entries.length > 0)
+  const defaultSection: LibrarySectionType = (endorsementList && endorsementList.entries && endorsementList.entries.length > 0)
     ? 'endorsement'
     : 'aligned';
-  const [selectedSection, setSelectedSection] = useState<LibrarySection>(defaultSection);
+  const [internalSelectedSection, setInternalSelectedSection] = useState<LibrarySectionType>(defaultSection);
+
+  // Use external section if provided, otherwise use internal
+  const selectedSection = externalSelectedSection ?? internalSelectedSection;
+  const setSelectedSection = (section: LibrarySectionType) => {
+    if (onSectionChange) {
+      onSectionChange(section);
+    }
+    setInternalSelectedSection(section);
+  };
 
   // Drag-and-drop sensors for list reordering (desktop only)
   const sensors = useSensors(
@@ -882,7 +897,8 @@ export default function UnifiedLibrary({
           // Get business name from multiple possible fields
           const businessName = (entry as any).businessName || (entry as any).name || 'Unknown Business';
           const businessCategory = (entry as any).businessCategory || (entry as any).category;
-          const logoUrl = (entry as any).logoUrl || getLogoUrl((entry as any).website || '');
+          // Prefer generated logo from website to avoid cover images being shown
+          const logoUrl = (entry as any).website ? getLogoUrl((entry as any).website) : ((entry as any).logoUrl || getLogoUrl(''));
 
           return (
             <TouchableOpacity
@@ -2010,22 +2026,13 @@ export default function UnifiedLibrary({
       );
     };
 
-    // For profile views (preview/view modes), show 4 sections in 2x2 grid: Following, Followers, Endorsements, Posts
+    // For profile views (preview/view modes), show Endorsements (full width) and Posts
     const isProfileView = mode === 'preview' || mode === 'view';
 
     if (isProfileView) {
       return (
         <View style={styles.sectionSelector}>
-          {/* Top row: Following | Followers */}
-          <View style={styles.sectionRow}>
-            <View style={styles.sectionHalf}>
-              <SectionBox section="following" label="Following" count={followingCount} />
-            </View>
-            <View style={styles.sectionHalf}>
-              <SectionBox section="followers" label="Followers" count={followersCount} />
-            </View>
-          </View>
-          {/* Bottom row: Endorsements | Posts */}
+          {/* Single row: Endorsements | Posts */}
           <View style={styles.sectionRow}>
             <View style={styles.sectionHalf}>
               <EndorsedSectionBox />
@@ -2038,7 +2045,7 @@ export default function UnifiedLibrary({
       );
     }
 
-    // For home tab (edit mode), show all 6 sections
+    // For home tab (edit mode), show Local, Aligned, Unaligned, and Endorsed (full width)
     return (
       <View style={styles.sectionSelector}>
         {/* Top row: Local | Aligned | Unaligned */}
@@ -2054,16 +2061,10 @@ export default function UnifiedLibrary({
           </View>
         </View>
 
-        {/* Bottom row: Endorsed | Following | Followers */}
+        {/* Bottom row: Endorsed (full width) */}
         <View style={styles.sectionRow}>
-          <View style={styles.sectionThird}>
+          <View style={styles.sectionFull}>
             <EndorsedSectionBox />
-          </View>
-          <View style={styles.sectionThird}>
-            <SectionBox section="following" label="Following" count={followingCount} />
-          </View>
-          <View style={styles.sectionThird}>
-            <SectionBox section="followers" label="Followers" count={followersCount} />
           </View>
         </View>
       </View>
@@ -3026,6 +3027,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sectionHalf: {
+    flex: 1,
+  },
+  sectionFull: {
     flex: 1,
   },
   sectionBox: {

@@ -315,7 +315,7 @@ export default function BusinessDetailScreen() {
       return;
     }
 
-    const businessIsEndorsed = library.state.endorsementList.entries.some(entry =>
+    const businessIsEndorsed = library.state.endorsementList.entries.filter(e => e).some(entry =>
       entry.type === 'business' && (entry as any).businessId === business.id
     );
     setIsEndorsingBusiness(businessIsEndorsed);
