@@ -79,7 +79,6 @@ import { Image } from 'expo-image';
 import { Picker } from '@react-native-picker/picker';
 import * as Clipboard from 'expo-clipboard';
 import MenuButton from '@/components/MenuButton';
-import EndorsedBadge from '@/components/EndorsedBadge';
 import ShareModal from '@/components/ShareModal';
 import WelcomeCarousel from '@/components/WelcomeCarousel';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -3857,12 +3856,9 @@ export default function HomeScreen() {
                               <List size={18} color={colors.primary} strokeWidth={2} />
                             </View>
                             <View style={styles.quickAddListInfo}>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                <Text style={[styles.quickAddListName, { color: colors.text }]} numberOfLines={1}>
-                                  {endorsementList.name}
-                                </Text>
-                                <EndorsedBadge isDarkMode={isDarkMode} size="small" />
-                              </View>
+                              <Text style={[styles.quickAddListName, { color: colors.text }]} numberOfLines={1}>
+                                {endorsementList.name}
+                              </Text>
                               <Text style={[styles.quickAddListCount, { color: colors.textSecondary }]}>
                                 {endorsementList.entries.length} {endorsementList.entries.length === 1 ? 'item' : 'items'}
                               </Text>

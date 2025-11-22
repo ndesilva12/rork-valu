@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, MapPin, Navigation, Percent, X, Plus, ChevronRight, List, UserPlus, MoreVertical, Share2, Users } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, MapPin, Navigation, Percent, X, Plus, ChevronRight, List, UserPlus, MoreVertical, Share2, Users, Star } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -733,21 +733,61 @@ export default function BusinessDetailScreen() {
                 <Text style={[styles.discountHeaderText, { color: colors.text }]}>Endorse Discount</Text>
               </View>
               <View style={[styles.discountCard, { backgroundColor: colors.background, borderColor: colors.primary }]}>
+                {/* Main discount percentage */}
                 <View style={styles.discountRow}>
-                  <Text style={[styles.discountLabel, { color: colors.textSecondary }]}>Discount %:</Text>
+                  <Text style={[styles.discountLabel, { color: colors.textSecondary }]}>Discount:</Text>
                   <Text style={[styles.discountValue, { color: colors.primary }]}>
-                    {(business.businessInfo.customerDiscountPercent || 0).toFixed(1)}%
+                    {(business.businessInfo.customerDiscountPercent || 0).toFixed(0)}% off
                   </Text>
                 </View>
 
-                {/* Display requirements if any are set */}
-                {(business.businessInfo.requireFollow || business.businessInfo.requireEndorse) && (
+                {/* Custom discount if set */}
+                {business.businessInfo.customDiscount && (
+                  <>
+                    <View style={[styles.discountDivider, { backgroundColor: colors.border }]} />
+                    <View style={styles.discountRow}>
+                      <Text style={[styles.discountLabel, { color: colors.textSecondary }]}>Special:</Text>
+                      <Text style={[styles.discountValue, { color: colors.primary }]}>
+                        {business.businessInfo.customDiscount}
+                      </Text>
+                    </View>
+                  </>
+                )}
+
+                {/* Requirements section */}
+                {(business.businessInfo.endorsementEnabled || business.businessInfo.followsEnabled ||
+                  business.businessInfo.requireFollow || business.businessInfo.requireEndorse) && (
                   <>
                     <View style={[styles.discountDivider, { backgroundColor: colors.border }]} />
                     <Text style={[styles.requirementsHeader, { color: colors.textSecondary }]}>
                       Requirements:
                     </Text>
-                    {business.businessInfo.requireFollow && (
+
+                    {/* Endorsement requirement */}
+                    {business.businessInfo.endorsementEnabled && (
+                      <View style={styles.requirementItem}>
+                        <Star size={16} color={colors.text} strokeWidth={2} />
+                        <Text style={[styles.requirementText, { color: colors.text }]}>
+                          {business.businessInfo.endorsementType === 'any' && 'Endorse any value'}
+                          {business.businessInfo.endorsementType === 'shared' && 'Endorse a shared value'}
+                          {business.businessInfo.endorsementType === 'endorsed' && 'Endorse this business'}
+                          {business.businessInfo.endorsementMinDays > 0 && ` for ${business.businessInfo.endorsementMinDays}+ days`}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Following requirement */}
+                    {business.businessInfo.followsEnabled && (
+                      <View style={styles.requirementItem}>
+                        <UserPlus size={16} color={colors.text} strokeWidth={2} />
+                        <Text style={[styles.requirementText, { color: colors.text }]}>
+                          Follow this business{business.businessInfo.followsMinDays > 0 && ` for ${business.businessInfo.followsMinDays}+ days`}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Legacy requirements (backwards compatibility) */}
+                    {!business.businessInfo.followsEnabled && business.businessInfo.requireFollow && (
                       <View style={styles.requirementItem}>
                         <UserPlus size={16} color={colors.text} strokeWidth={2} />
                         <Text style={[styles.requirementText, { color: colors.text }]}>
@@ -755,7 +795,7 @@ export default function BusinessDetailScreen() {
                         </Text>
                       </View>
                     )}
-                    {business.businessInfo.requireEndorse && (
+                    {!business.businessInfo.endorsementEnabled && business.businessInfo.requireEndorse && (
                       <View style={styles.requirementItem}>
                         <List size={16} color={colors.text} strokeWidth={2} />
                         <Text style={[styles.requirementText, { color: colors.text }]}>

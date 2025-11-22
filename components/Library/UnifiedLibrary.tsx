@@ -1446,10 +1446,15 @@ export default function UnifiedLibrary({
       );
     };
 
-    const entriesContent = entriesToDisplay
-      .filter(entry => entry != null)
-      .slice(0, endorsementLoadCount)
-      .map((entry, index) => renderEntryWithControls(entry, index));
+    const filteredEntries = entriesToDisplay.filter(entry => entry != null);
+    const displayedEntries = filteredEntries.slice(0, endorsementLoadCount);
+
+    // Separate top 5 from the rest
+    const top5Entries = displayedEntries.slice(0, 5);
+    const remainingEntries = displayedEntries.slice(5);
+
+    const top5Content = top5Entries.map((entry, index) => renderEntryWithControls(entry, index));
+    const remainingContent = remainingEntries.map((entry, index) => renderEntryWithControls(entry, index + 5));
 
     // Wrap with DndContext for desktop drag-and-drop
     const contentWithDnd = isReordering && isLargeScreen ? (
@@ -1462,10 +1467,22 @@ export default function UnifiedLibrary({
           items={localEntries.map(e => e.id)}
           strategy={verticalListSortingStrategy}
         >
-          {entriesContent}
+          {top5Content}
+          {remainingContent}
         </SortableContext>
       </DndContext>
-    ) : entriesContent;
+    ) : (
+      <>
+        {/* Top 5 endorsements with blue outline */}
+        {top5Content.length > 0 && (
+          <View style={[styles.top5Container, { borderColor: colors.primary }]}>
+            {top5Content}
+          </View>
+        )}
+        {/* Remaining endorsements */}
+        {remainingContent}
+      </>
+    );
 
     return (
       <View style={styles.listContentContainer}>
@@ -1997,29 +2014,29 @@ export default function UnifiedLibrary({
     // For home tab (edit mode), show all 6 sections
     return (
       <View style={styles.sectionSelector}>
-        {/* Top row: Local | Following | Followers */}
+        {/* Top row: Local | Aligned | Unaligned */}
         <View style={styles.sectionRow}>
           <View style={styles.sectionThird}>
             <SectionBox section="local" label="Local" count={localCount} />
-          </View>
-          <View style={styles.sectionThird}>
-            <SectionBox section="following" label="Following" count={followingCount} />
-          </View>
-          <View style={styles.sectionThird}>
-            <SectionBox section="followers" label="Followers" count={followersCount} />
-          </View>
-        </View>
-
-        {/* Bottom row: Endorsed | Aligned | Unaligned */}
-        <View style={styles.sectionRow}>
-          <View style={styles.sectionThird}>
-            <EndorsedSectionBox />
           </View>
           <View style={styles.sectionThird}>
             <SectionBox section="aligned" label="Aligned" count={alignedCount} />
           </View>
           <View style={styles.sectionThird}>
             <SectionBox section="unaligned" label="Unaligned" count={unalignedCount} />
+          </View>
+        </View>
+
+        {/* Bottom row: Endorsed | Following | Followers */}
+        <View style={styles.sectionRow}>
+          <View style={styles.sectionThird}>
+            <EndorsedSectionBox />
+          </View>
+          <View style={styles.sectionThird}>
+            <SectionBox section="following" label="Following" count={followingCount} />
+          </View>
+          <View style={styles.sectionThird}>
+            <SectionBox section="followers" label="Followers" count={followersCount} />
           </View>
         </View>
       </View>
@@ -2029,7 +2046,7 @@ export default function UnifiedLibrary({
   // Render section header (sticky)
   const renderSectionHeader = () => {
     const sectionTitles = {
-      endorsement: 'Endorsed',
+      endorsement: 'Endorsements',
       aligned: 'Aligned',
       unaligned: 'Unaligned',
       following: 'Following',
@@ -2709,6 +2726,13 @@ const styles = StyleSheet.create({
   },
   // Brand card and item row styles from Home tab
   brandsContainer: {
+    gap: 8,
+  },
+  top5Container: {
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 8,
+    marginBottom: 8,
     gap: 8,
   },
   forYouItemRow: {

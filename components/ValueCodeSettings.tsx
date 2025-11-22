@@ -19,7 +19,6 @@ export default function ValueCodeSettings() {
   const { isDarkMode, profile, setBusinessInfo } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const { width } = useWindowDimensions();
-  const isMobile = width < 768;
 
   const businessInfo = profile.businessInfo || {
     name: '',
@@ -33,20 +32,18 @@ export default function ValueCodeSettings() {
     businessInfo.acceptsStandDiscounts ?? false
   );
 
-  // Universal discount
-  const [universalDiscount, setUniversalDiscount] = useState(businessInfo.customerDiscountPercent || 5);
+  // Discount percentage
+  const [discountPercent, setDiscountPercent] = useState(businessInfo.customerDiscountPercent || 5);
 
-  // Endorsement discount
+  // Endorsement settings
   const [endorsementEnabled, setEndorsementEnabled] = useState(businessInfo.endorsementEnabled || false);
   const [endorsementType, setEndorsementType] = useState<EndorsementType>(businessInfo.endorsementType || 'any');
-  const [endorsementDiscount, setEndorsementDiscount] = useState(businessInfo.endorsementDiscount || 10);
   const [endorsementMinDays, setEndorsementMinDays] = useState(businessInfo.endorsementMinDays || 0);
   const [showEndorsementTypeDropdown, setShowEndorsementTypeDropdown] = useState(false);
 
-  // Follows discount
-  const [followsEnabled, setFollowsEnabled] = useState(businessInfo.followsEnabled || false);
-  const [followsDiscount, setFollowsDiscount] = useState(businessInfo.followsDiscount || 7);
-  const [followsMinDays, setFollowsMinDays] = useState(businessInfo.followsMinDays || 0);
+  // Following settings
+  const [followingEnabled, setFollowingEnabled] = useState(businessInfo.followsEnabled || false);
+  const [followingMinDays, setFollowingMinDays] = useState(businessInfo.followsMinDays || 0);
 
   // Custom discount
   const [customDiscountText, setCustomDiscountText] = useState(businessInfo.customDiscount || '');
@@ -67,9 +64,9 @@ export default function ValueCodeSettings() {
     }
   };
 
-  const handleChangeUniversalDiscount = async (newValue: number) => {
+  const handleChangeDiscountPercent = async (newValue: number) => {
     const clamped = Math.max(0, Math.min(50, newValue));
-    setUniversalDiscount(clamped);
+    setDiscountPercent(clamped);
     await setBusinessInfo({
       customerDiscountPercent: clamped,
     });
@@ -90,16 +87,6 @@ export default function ValueCodeSettings() {
     });
   };
 
-  const handleChangeEndorsementDiscount = async (newValue: number) => {
-    // Must be higher than universal discount
-    const minValue = universalDiscount + 0.5;
-    const clamped = Math.max(minValue, Math.min(50, newValue));
-    setEndorsementDiscount(clamped);
-    await setBusinessInfo({
-      endorsementDiscount: clamped,
-    });
-  };
-
   const handleChangeEndorsementMinDays = async (newDays: number) => {
     const clamped = Math.max(0, Math.min(365, newDays));
     setEndorsementMinDays(clamped);
@@ -108,45 +95,26 @@ export default function ValueCodeSettings() {
     });
   };
 
-  const handleToggleFollows = async (value: boolean) => {
-    setFollowsEnabled(value);
+  const handleToggleFollowing = async (value: boolean) => {
+    setFollowingEnabled(value);
     await setBusinessInfo({
       followsEnabled: value,
     });
   };
 
-  const handleChangeFollowsDiscount = async (newValue: number) => {
-    const clamped = Math.max(0, Math.min(50, newValue));
-    setFollowsDiscount(clamped);
-    await setBusinessInfo({
-      followsDiscount: clamped,
-    });
-  };
-
-  const handleChangeFollowsMinDays = async (newDays: number) => {
+  const handleChangeFollowingMinDays = async (newDays: number) => {
     const clamped = Math.max(0, Math.min(365, newDays));
-    setFollowsMinDays(clamped);
+    setFollowingMinDays(clamped);
     await setBusinessInfo({
       followsMinDays: clamped,
     });
   };
 
-  const handleSaveCustomDiscount = async () => {
-    if (!customDiscountText.trim()) {
-      Alert.alert('Error', 'Please enter your custom discount details');
-      return;
-    }
-
+  const handleCustomDiscountChange = async (text: string) => {
+    setCustomDiscountText(text);
     await setBusinessInfo({
-      customDiscount: customDiscountText.trim(),
+      customDiscount: text,
     });
-
-    Alert.alert(
-      'Custom Discount Submitted',
-      'Thank you! We will reach out to confirm and approve your custom discount.',
-      [{ text: 'OK' }]
-    );
-    setShowCustomInput(false);
   };
 
   const getEndorsementTypeLabel = (type: EndorsementType) => {
@@ -192,44 +160,36 @@ export default function ValueCodeSettings() {
             <>
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-              {/* ROW 1: Universal Discount */}
+              {/* ROW 1: Discount */}
               <View style={[styles.discountRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <View style={styles.discountRowHeader}>
-                  <Text style={[styles.discountRowTitle, { color: colors.text }]}>Universal Discount</Text>
-                  <Text style={[styles.discountRowDescription, { color: colors.textSecondary }]}>
-                    Available to all customers
-                  </Text>
-                </View>
-                <View style={styles.inlineCounter}>
-                  <TouchableOpacity
-                    style={[styles.smallButton, { borderColor: colors.border }]}
-                    onPress={() => handleChangeUniversalDiscount(universalDiscount - 0.5)}
-                    activeOpacity={0.7}
-                  >
-                    <Minus size={16} color={colors.text} strokeWidth={2} />
-                  </TouchableOpacity>
-                  <Text style={[styles.counterValue, { color: colors.primary }]}>
-                    {universalDiscount.toFixed(1)}%
-                  </Text>
-                  <TouchableOpacity
-                    style={[styles.smallButton, { borderColor: colors.border }]}
-                    onPress={() => handleChangeUniversalDiscount(universalDiscount + 0.5)}
-                    activeOpacity={0.7}
-                  >
-                    <Plus size={16} color={colors.text} strokeWidth={2} />
-                  </TouchableOpacity>
+                <View style={styles.rowContentCentered}>
+                  <Text style={[styles.discountRowTitle, { color: colors.text }]}>Discount</Text>
+                  <View style={styles.inlineCounter}>
+                    <TouchableOpacity
+                      style={[styles.smallButton, { borderColor: colors.border }]}
+                      onPress={() => handleChangeDiscountPercent(discountPercent - 0.5)}
+                      activeOpacity={0.7}
+                    >
+                      <Minus size={16} color={colors.text} strokeWidth={2} />
+                    </TouchableOpacity>
+                    <Text style={[styles.counterValue, { color: colors.primary }]}>
+                      {discountPercent.toFixed(1)}%
+                    </Text>
+                    <TouchableOpacity
+                      style={[styles.smallButton, { borderColor: colors.border }]}
+                      onPress={() => handleChangeDiscountPercent(discountPercent + 0.5)}
+                      activeOpacity={0.7}
+                    >
+                      <Plus size={16} color={colors.text} strokeWidth={2} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
 
-              {/* ROW 2: Endorsement Discount */}
+              {/* ROW 2: Endorsement */}
               <View style={[styles.discountRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <View style={styles.discountRowHeaderWithToggle}>
-                  <View style={styles.discountRowHeader}>
-                    <Text style={[styles.discountRowTitle, { color: colors.text }]}>Endorsement</Text>
-                    <Text style={[styles.discountRowDescription, { color: colors.textSecondary }]}>
-                      Rank and time requirement
-                    </Text>
-                  </View>
+                <View style={styles.rowContentSpaced}>
+                  <Text style={[styles.discountRowTitle, { color: colors.text }]}>Endorsement</Text>
                   <Switch
                     value={endorsementEnabled}
                     onValueChange={handleToggleEndorsement}
@@ -240,9 +200,9 @@ export default function ValueCodeSettings() {
                 </View>
 
                 {endorsementEnabled && (
-                  <View style={styles.expandedOptions}>
+                  <View style={styles.expandedOptionsSpaced}>
                     {/* Type Dropdown */}
-                    <View style={styles.optionGroup}>
+                    <View style={styles.optionGroupCentered}>
                       <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>Type</Text>
                       <TouchableOpacity
                         style={[styles.dropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
@@ -279,36 +239,12 @@ export default function ValueCodeSettings() {
                       )}
                     </View>
 
-                    {/* Discount Percentage */}
-                    <View style={styles.optionGroup}>
-                      <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>Discount</Text>
-                      <View style={styles.inlineCounter}>
-                        <TouchableOpacity
-                          style={[styles.smallButton, { borderColor: colors.border }]}
-                          onPress={() => handleChangeEndorsementDiscount(endorsementDiscount - 0.5)}
-                          activeOpacity={0.7}
-                        >
-                          <Minus size={14} color={colors.text} strokeWidth={2} />
-                        </TouchableOpacity>
-                        <Text style={[styles.counterValueSmall, { color: colors.primary }]}>
-                          {endorsementDiscount.toFixed(1)}%
-                        </Text>
-                        <TouchableOpacity
-                          style={[styles.smallButton, { borderColor: colors.border }]}
-                          onPress={() => handleChangeEndorsementDiscount(endorsementDiscount + 0.5)}
-                          activeOpacity={0.7}
-                        >
-                          <Plus size={14} color={colors.text} strokeWidth={2} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
                     {/* Minimum Days */}
-                    <View style={styles.optionGroup}>
+                    <View style={styles.optionGroupCentered}>
                       <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>Min Days</Text>
-                      <View style={styles.inlineCounter}>
+                      <View style={styles.inlineCounterSmall}>
                         <TouchableOpacity
-                          style={[styles.smallButton, { borderColor: colors.border }]}
+                          style={[styles.smallButtonCompact, { borderColor: colors.border }]}
                           onPress={() => handleChangeEndorsementMinDays(endorsementMinDays - 1)}
                           activeOpacity={0.7}
                         >
@@ -318,7 +254,7 @@ export default function ValueCodeSettings() {
                           {endorsementMinDays}
                         </Text>
                         <TouchableOpacity
-                          style={[styles.smallButton, { borderColor: colors.border }]}
+                          style={[styles.smallButtonCompact, { borderColor: colors.border }]}
                           onPress={() => handleChangeEndorsementMinDays(endorsementMinDays + 1)}
                           activeOpacity={0.7}
                         >
@@ -330,67 +266,38 @@ export default function ValueCodeSettings() {
                 )}
               </View>
 
-              {/* ROW 3: Follows Discount */}
+              {/* ROW 3: Following */}
               <View style={[styles.discountRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <View style={styles.discountRowHeaderWithToggle}>
-                  <View style={styles.discountRowHeader}>
-                    <Text style={[styles.discountRowTitle, { color: colors.text }]}>Follows</Text>
-                    <Text style={[styles.discountRowDescription, { color: colors.textSecondary }]}>
-                      Requires following your business
-                    </Text>
-                  </View>
+                <View style={styles.rowContentSpaced}>
+                  <Text style={[styles.discountRowTitle, { color: colors.text }]}>Following</Text>
                   <Switch
-                    value={followsEnabled}
-                    onValueChange={handleToggleFollows}
+                    value={followingEnabled}
+                    onValueChange={handleToggleFollowing}
                     trackColor={{ false: '#D1D5DB', true: '#000000' }}
                     thumbColor='#FFFFFF'
                     ios_backgroundColor='#E5E7EB'
                   />
                 </View>
 
-                {followsEnabled && (
-                  <View style={styles.expandedOptions}>
-                    {/* Discount Percentage */}
-                    <View style={styles.optionGroup}>
-                      <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>Discount</Text>
-                      <View style={styles.inlineCounter}>
-                        <TouchableOpacity
-                          style={[styles.smallButton, { borderColor: colors.border }]}
-                          onPress={() => handleChangeFollowsDiscount(followsDiscount - 0.5)}
-                          activeOpacity={0.7}
-                        >
-                          <Minus size={14} color={colors.text} strokeWidth={2} />
-                        </TouchableOpacity>
-                        <Text style={[styles.counterValueSmall, { color: colors.primary }]}>
-                          {followsDiscount.toFixed(1)}%
-                        </Text>
-                        <TouchableOpacity
-                          style={[styles.smallButton, { borderColor: colors.border }]}
-                          onPress={() => handleChangeFollowsDiscount(followsDiscount + 0.5)}
-                          activeOpacity={0.7}
-                        >
-                          <Plus size={14} color={colors.text} strokeWidth={2} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    {/* Minimum Days */}
-                    <View style={styles.optionGroup}>
+                {followingEnabled && (
+                  <View style={styles.expandedOptionsCentered}>
+                    {/* Minimum Days - centered since it's the only item */}
+                    <View style={styles.optionGroupCentered}>
                       <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>Min Days</Text>
-                      <View style={styles.inlineCounter}>
+                      <View style={styles.inlineCounterSmall}>
                         <TouchableOpacity
-                          style={[styles.smallButton, { borderColor: colors.border }]}
-                          onPress={() => handleChangeFollowsMinDays(followsMinDays - 1)}
+                          style={[styles.smallButtonCompact, { borderColor: colors.border }]}
+                          onPress={() => handleChangeFollowingMinDays(followingMinDays - 1)}
                           activeOpacity={0.7}
                         >
                           <Minus size={14} color={colors.text} strokeWidth={2} />
                         </TouchableOpacity>
                         <Text style={[styles.counterValueSmall, { color: colors.primary }]}>
-                          {followsMinDays}
+                          {followingMinDays}
                         </Text>
                         <TouchableOpacity
-                          style={[styles.smallButton, { borderColor: colors.border }]}
-                          onPress={() => handleChangeFollowsMinDays(followsMinDays + 1)}
+                          style={[styles.smallButtonCompact, { borderColor: colors.border }]}
+                          onPress={() => handleChangeFollowingMinDays(followingMinDays + 1)}
                           activeOpacity={0.7}
                         >
                           <Plus size={14} color={colors.text} strokeWidth={2} />
@@ -432,20 +339,11 @@ export default function ValueCodeSettings() {
                     placeholder="e.g., 15% off for veterans, 10% for students..."
                     placeholderTextColor={colors.textSecondary}
                     value={customDiscountText}
-                    onChangeText={setCustomDiscountText}
+                    onChangeText={handleCustomDiscountChange}
                     multiline
                     numberOfLines={4}
                     textAlignVertical="top"
                   />
-                  <TouchableOpacity
-                    style={[styles.saveCustomButton, { backgroundColor: colors.primary }]}
-                    onPress={handleSaveCustomDiscount}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.saveCustomButtonText, { color: colors.white }]}>
-                      Submit Custom Discount
-                    </Text>
-                  </TouchableOpacity>
                 </View>
               )}
             </>
@@ -508,10 +406,12 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
   },
-  discountRowHeader: {
-    flex: 1,
+  rowContentCentered: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  discountRowHeaderWithToggle: {
+  rowContentSpaced: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -519,21 +419,29 @@ const styles = StyleSheet.create({
   discountRowTitle: {
     fontSize: 16,
     fontWeight: '600' as const,
-    marginBottom: 2,
-  },
-  discountRowDescription: {
-    fontSize: 13,
   },
   inlineCounter: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 12,
+  },
+  inlineCounterSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   smallButton: {
     width: 32,
     height: 32,
     borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  smallButtonCompact: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -547,21 +455,28 @@ const styles = StyleSheet.create({
   counterValueSmall: {
     fontSize: 16,
     fontWeight: '700' as const,
-    minWidth: 50,
+    minWidth: 40,
     textAlign: 'center',
   },
   // Expanded Options
-  expandedOptions: {
+  expandedOptionsSpaced: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
+    justifyContent: 'space-evenly',
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.1)',
   },
-  optionGroup: {
-    minWidth: 100,
+  expandedOptionsCentered: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
+  },
+  optionGroupCentered: {
+    alignItems: 'center',
   },
   optionLabel: {
     fontSize: 12,
@@ -644,15 +559,5 @@ const styles = StyleSheet.create({
     minHeight: 100,
     fontSize: 15,
     textAlignVertical: 'top',
-  },
-  saveCustomButton: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  saveCustomButtonText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
   },
 });
