@@ -28,6 +28,7 @@ import { getUserLists, addEntryToList } from '@/services/firebase/listService';
 import { calculateBrandScore, getBrandScoreLabel, getBrandScoreColor, normalizeBrandScores } from '@/lib/scoring';
 import { followEntity, unfollowEntity, isFollowing as checkIsFollowing, getFollowersCount, getFollowingCount } from '@/services/firebase/followService';
 import FollowingFollowersList from '@/components/FollowingFollowersList';
+import { Review as FirebaseReview, getEntityReviews, createReview, likeReview, unlikeReview, hasLikedReview, getUserLikedReviewIds } from '@/services/firebase/reviewService';
 
 export default function BrandDetailScreen() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
@@ -119,53 +120,10 @@ export default function BrandDetailScreen() {
     userLiked: boolean;
   }
 
-  const [reviews, setReviews] = useState<Review[]>([
-    {
-      id: '1',
-      userName: 'Sarah M.',
-      rating: 5,
-      text: 'Love this brand! They really walk the talk when it comes to their values. High quality products too.',
-      timestamp: new Date('2024-01-15'),
-      likes: 24,
-      userLiked: false
-    },
-    {
-      id: '2',
-      userName: 'Mike T.',
-      rating: 4,
-      text: 'Good company overall. A bit pricey but worth it for the ethical practices.',
-      timestamp: new Date('2024-01-20'),
-      likes: 15,
-      userLiked: false
-    },
-    {
-      id: '3',
-      userName: 'Jessica R.',
-      rating: 5,
-      text: 'Finally a brand that aligns with my values! Customer service is excellent too.',
-      timestamp: new Date('2024-01-10'),
-      likes: 42,
-      userLiked: false
-    },
-    {
-      id: '4',
-      userName: 'David L.',
-      rating: 3,
-      text: 'Decent brand but could do more in certain areas. Still better than most alternatives.',
-      timestamp: new Date('2024-01-22'),
-      likes: 8,
-      userLiked: false
-    },
-    {
-      id: '5',
-      userName: 'Emily K.',
-      rating: 5,
-      text: 'Outstanding commitment to sustainability! Will definitely purchase again.',
-      timestamp: new Date('2024-01-18'),
-      likes: 31,
-      userLiked: false
-    },
-  ]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [likedReviewIds, setLikedReviewIds] = useState<Set<string>>(new Set());
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const [sortBy, setSortBy] = useState<'latest' | 'popular'>('latest');
   const [reviewText, setReviewText] = useState('');
@@ -204,36 +162,112 @@ export default function BrandDetailScreen() {
     return sorted;
   }, [reviews, sortBy]);
 
-  const handleLikeReview = useCallback((reviewId: string) => {
+  const handleLikeReview = useCallback(async (reviewId: string) => {
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'You must be logged in to like reviews');
+      return;
+    }
+
+    const isLiked = likedReviewIds.has(reviewId);
+
+    // Optimistic update
     setReviews(prev => prev.map(review => {
       if (review.id === reviewId) {
         return {
           ...review,
-          userLiked: !review.userLiked,
-          likes: review.userLiked ? review.likes - 1 : review.likes + 1
+          likes: isLiked ? review.likes - 1 : review.likes + 1
         };
       }
       return review;
     }));
-  }, []);
 
-  const handleSubmitReview = useCallback(() => {
-    if (!reviewText.trim() || userRating === 0) return;
+    if (isLiked) {
+      setLikedReviewIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(reviewId);
+        return newSet;
+      });
+    } else {
+      setLikedReviewIds(prev => new Set(prev).add(reviewId));
+    }
 
-    const newReview: Review = {
-      id: Date.now().toString(),
-      userName: clerkUser?.firstName || clerkUser?.username || 'Anonymous',
-      rating: userRating,
-      text: reviewText.trim(),
-      timestamp: new Date(),
-      likes: 0,
-      userLiked: false
-    };
+    try {
+      if (isLiked) {
+        await unlikeReview(reviewId, clerkUser.id);
+      } else {
+        await likeReview(reviewId, clerkUser.id);
+      }
+    } catch (error) {
+      console.error('[BrandDetail] Error liking review:', error);
+      // Revert optimistic update on error
+      setReviews(prev => prev.map(review => {
+        if (review.id === reviewId) {
+          return {
+            ...review,
+            likes: isLiked ? review.likes + 1 : review.likes - 1
+          };
+        }
+        return review;
+      }));
+      if (isLiked) {
+        setLikedReviewIds(prev => new Set(prev).add(reviewId));
+      } else {
+        setLikedReviewIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(reviewId);
+          return newSet;
+        });
+      }
+    }
+  }, [clerkUser?.id, likedReviewIds]);
 
-    setReviews(prev => [newReview, ...prev]);
-    setReviewText('');
-    setUserRating(0);
-  }, [reviewText, userRating, clerkUser]);
+  const handleSubmitReview = useCallback(async () => {
+    if (!reviewText.trim() || userRating === 0) {
+      Alert.alert('Error', 'Please enter a review and select a rating');
+      return;
+    }
+    if (!clerkUser?.id || !brand?.id) {
+      Alert.alert('Error', 'You must be logged in to submit a review');
+      return;
+    }
+
+    setSubmittingReview(true);
+    try {
+      const authorName = profile?.userDetails?.name || clerkUser?.firstName || clerkUser?.username || 'Anonymous';
+      const authorImage = profile?.userDetails?.profileImage;
+
+      await createReview(
+        brand.id,
+        'brand',
+        clerkUser.id,
+        authorName,
+        authorImage,
+        userRating,
+        reviewText.trim()
+      );
+
+      // Add the new review to the list optimistically
+      const newReview: Review = {
+        id: Date.now().toString(), // Temporary ID
+        userName: authorName,
+        rating: userRating,
+        text: reviewText.trim(),
+        timestamp: new Date(),
+        likes: 0,
+        userLiked: false
+      };
+
+      setReviews(prev => [newReview, ...prev]);
+      setReviewText('');
+      setUserRating(0);
+      Alert.alert('Success', 'Your review has been submitted!');
+    } catch (error: any) {
+      console.error('[BrandDetail] Error submitting review:', error);
+      Alert.alert('Error', error?.message || 'Could not submit review. Please try again.');
+    } finally {
+      setSubmittingReview(false);
+    }
+  }, [reviewText, userRating, clerkUser, brand?.id, profile]);
 
   const loadUserLists = useCallback(async () => {
     if (!clerkUser?.id) return;
@@ -327,6 +361,45 @@ export default function BrandDetailScreen() {
     };
     loadFollowCounts();
   }, [brand?.id]);
+
+  // Load reviews from Firebase
+  useEffect(() => {
+    const loadReviews = async () => {
+      if (!brand?.id) {
+        setReviewsLoading(false);
+        return;
+      }
+
+      try {
+        setReviewsLoading(true);
+        const firebaseReviews = await getEntityReviews(brand.id, 'brand');
+
+        // Convert Firebase reviews to our Review interface
+        const convertedReviews: Review[] = firebaseReviews.map(fr => ({
+          id: fr.id,
+          userName: fr.authorName,
+          rating: fr.rating,
+          text: fr.text,
+          timestamp: fr.createdAt,
+          likes: fr.likes,
+          userLiked: false, // Will be updated below
+        }));
+
+        setReviews(convertedReviews);
+
+        // Load user's liked reviews
+        if (clerkUser?.id) {
+          const likedIds = await getUserLikedReviewIds(brand.id, clerkUser.id);
+          setLikedReviewIds(likedIds);
+        }
+      } catch (error) {
+        console.error('[BrandDetail] Error loading reviews:', error);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+    loadReviews();
+  }, [brand?.id, clerkUser?.id]);
 
   const handleShopPress = async () => {
     if (!brand) return;
@@ -930,15 +1003,15 @@ export default function BrandDetailScreen() {
                   onPress={() => handleLikeReview(review.id)}
                   activeOpacity={0.7}
                 >
-                  <ThumbsUp 
-                    size={16} 
-                    color={review.userLiked ? colors.primary : colors.textSecondary}
-                    fill={review.userLiked ? colors.primary : 'none'}
+                  <ThumbsUp
+                    size={16}
+                    color={likedReviewIds.has(review.id) ? colors.primary : colors.textSecondary}
+                    fill={likedReviewIds.has(review.id) ? colors.primary : 'none'}
                     strokeWidth={2}
                   />
                   <Text style={[
                     styles.reviewLikes,
-                    { color: review.userLiked ? colors.primary : colors.textSecondary }
+                    { color: likedReviewIds.has(review.id) ? colors.primary : colors.textSecondary }
                   ]}>
                     {review.likes}
                   </Text>

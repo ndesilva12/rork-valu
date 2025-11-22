@@ -8,22 +8,27 @@ import {
   Platform,
   StatusBar,
   Alert,
-  Image,
+  Image as RNImage,
   Modal,
   TouchableWithoutFeedback,
   Pressable,
   TextInput,
+  FlatList,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { ChevronRight, ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Plus, List, Tag, X, Trophy } from 'lucide-react-native';
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
-import { CauseCategory, Cause } from '@/types';
+import { CauseCategory, Cause, Product } from '@/types';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
 import { getUserLists, addEntryToList, createList } from '@/services/firebase/listService';
 import { useFocusEffect } from '@react-navigation/native';
+import { getAllUserBusinesses, BusinessUser, calculateAlignmentScore } from '@/services/firebase/businessService';
+import { calculateBrandScore, normalizeBrandScores } from '@/lib/scoring';
+import { getLogoUrl } from '@/lib/logo';
 
 const CATEGORY_ICONS: Record<string, any> = {
   social_issue: Heart,
@@ -108,6 +113,17 @@ export default function ValuesScreen() {
   // Tab state for My Values / Value Machine
   const [activeTab, setActiveTab] = useState<'myValues' | 'valueMachine'>('myValues');
 
+  // Value Machine state
+  const [vmSelectedSupportValues, setVmSelectedSupportValues] = useState<string[]>([]);
+  const [vmSelectedRejectValues, setVmSelectedRejectValues] = useState<string[]>([]);
+  const [vmResults, setVmResults] = useState<Product[]>([]);
+  const [vmShowingResults, setVmShowingResults] = useState(false);
+  const [vmResultsLimit, setVmResultsLimit] = useState(10);
+  const [vmSelectedCategory, setVmSelectedCategory] = useState<string>('');
+  const [vmCategoryModalVisible, setVmCategoryModalVisible] = useState(false);
+  const [vmResultsMode, setVmResultsMode] = useState<'aligned' | 'unaligned'>('aligned');
+  const [firebaseBusinesses, setFirebaseBusinesses] = useState<BusinessUser[]>([]);
+
   // Local state to track changes before persisting
   const [localChanges, setLocalChanges] = useState<Map<string, LocalValueState | null>>(new Map());
   const hasUnsavedChanges = useRef(false);
@@ -179,6 +195,140 @@ export default function ValuesScreen() {
   const knownCategories = CATEGORY_ORDER.filter(cat => allCategories.includes(cat));
   const unknownCategories = allCategories.filter(cat => !CATEGORY_ORDER.includes(cat)).sort();
   const sortedCategories = [...knownCategories, ...unknownCategories];
+
+  // Value Machine: Categories with labels for dropdown
+  const vmCategoriesWithLabels = useMemo(() => {
+    const categoryLabels: Record<string, string> = {
+      'ideology': 'Ideology',
+      'social_issue': 'Social Issues',
+      'person': 'People',
+      'lifestyle': 'Lifestyle',
+      'nation': 'Places',
+      'religion': 'Religion',
+      'organization': 'Organizations',
+      'sports': 'Sports',
+      'corporation': 'Corporations',
+    };
+
+    return Object.keys(availableValues)
+      .map(key => ({
+        key,
+        label: categoryLabels[key] || key.charAt(0).toUpperCase() + key.slice(1).replace('_', ' ')
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [availableValues]);
+
+  // Fetch Firebase businesses for Value Machine
+  useEffect(() => {
+    const fetchBusinesses = async () => {
+      try {
+        const businesses = await getAllUserBusinesses();
+        setFirebaseBusinesses(businesses);
+      } catch (error) {
+        console.error('[Values] Error fetching businesses:', error);
+      }
+    };
+    fetchBusinesses();
+  }, []);
+
+  // Value Machine handlers
+  const handleVmValueToggle = useCallback((valueId: string) => {
+    const isSupported = vmSelectedSupportValues.includes(valueId);
+    const isRejected = vmSelectedRejectValues.includes(valueId);
+
+    if (!isSupported && !isRejected) {
+      setVmSelectedSupportValues(prev => [...prev, valueId]);
+    } else if (isSupported) {
+      setVmSelectedSupportValues(prev => prev.filter(id => id !== valueId));
+      setVmSelectedRejectValues(prev => [...prev, valueId]);
+    } else {
+      setVmSelectedRejectValues(prev => prev.filter(id => id !== valueId));
+    }
+  }, [vmSelectedSupportValues, vmSelectedRejectValues]);
+
+  const handleVmResetSelections = useCallback(() => {
+    setVmSelectedSupportValues([]);
+    setVmSelectedRejectValues([]);
+    setVmShowingResults(false);
+    setVmResultsLimit(10);
+  }, []);
+
+  const handleVmGenerateResults = useCallback(() => {
+    const allSelectedValues = [...vmSelectedSupportValues, ...vmSelectedRejectValues];
+
+    if (allSelectedValues.length === 0) {
+      Alert.alert('No Values Selected', 'Please select at least one value to support or reject.');
+      return;
+    }
+
+    const userCauses = [
+      ...vmSelectedSupportValues.map(id => ({ id, type: 'support' as const, weight: 1.0 })),
+      ...vmSelectedRejectValues.map(id => ({ id, type: 'avoid' as const, weight: 1.0 }))
+    ];
+
+    // Score Firebase brands
+    const brandsWithScores = (brands || []).map(brand => {
+      const score = calculateBrandScore(brand.name, userCauses, valuesMatrix);
+      return { brand, score };
+    });
+
+    const normalizedBrands = normalizeBrandScores(brandsWithScores);
+
+    const scored = normalizedBrands.map(({ brand, score }) => {
+      const isPositivelyAligned = score >= 50;
+      return {
+        ...brand,
+        alignmentScore: score,
+        isPositivelyAligned
+      } as Product;
+    });
+
+    // Score Firebase businesses
+    const businessScored = firebaseBusinesses.map(business => {
+      if (!business.causes || business.causes.length === 0) {
+        return {
+          id: `firebase-business-${business.id}`,
+          firebaseId: business.id,
+          name: business.businessInfo.name,
+          brand: business.businessInfo.name,
+          category: business.businessInfo.category,
+          description: business.businessInfo.description || '',
+          exampleImageUrl: business.businessInfo.logoUrl,
+          website: business.businessInfo.website,
+          alignmentScore: 50,
+          isPositivelyAligned: false,
+          isFirebaseBusiness: true,
+        } as Product & { firebaseId: string; isFirebaseBusiness: boolean };
+      }
+
+      const rawScore = calculateAlignmentScore(userCauses, business.causes);
+      const isPositivelyAligned = rawScore > 0;
+      const alignmentScore = Math.max(0, Math.min(100, Math.round(50 + (rawScore * 0.5))));
+
+      return {
+        id: `firebase-business-${business.id}`,
+        firebaseId: business.id,
+        name: business.businessInfo.name,
+        brand: business.businessInfo.name,
+        category: business.businessInfo.category,
+        description: business.businessInfo.description || '',
+        exampleImageUrl: business.businessInfo.logoUrl,
+        website: business.businessInfo.website,
+        alignmentScore,
+        isPositivelyAligned,
+        isFirebaseBusiness: true,
+      } as Product & { firebaseId: string; isFirebaseBusiness: boolean };
+    });
+
+    const allSorted = [...scored, ...businessScored].sort((a, b) => b.alignmentScore - a.alignmentScore);
+    setVmResults(allSorted);
+    setVmShowingResults(true);
+    setVmResultsLimit(10);
+  }, [vmSelectedSupportValues, vmSelectedRejectValues, brands, valuesMatrix, firebaseBusinesses]);
+
+  const handleVmLoadMore = useCallback(() => {
+    setVmResultsLimit(prev => Math.min(prev + 10, 30));
+  }, []);
 
   const toggleCategoryExpanded = (category: string) => {
     setExpandedCategories(prev => {
@@ -805,26 +955,250 @@ export default function ValuesScreen() {
       </ScrollView>
       ) : (
         /* Value Machine Tab */
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.valueMachinePlaceholder}>
-            <Text style={[styles.valueMachineTitle, { color: colors.text }]}>
-              Value Machine
-            </Text>
-            <Text style={[styles.valueMachineDescription, { color: colors.textSecondary }]}>
-              Select values to discover brands that align with your beliefs. This feature is being migrated here.
-            </Text>
-            <View style={[styles.comingSoonBadge, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.comingSoonText, { color: colors.white }]}>
-                Coming Soon
-              </Text>
+        vmShowingResults ? (
+          <View style={styles.vmResultsContainer}>
+            <View style={styles.vmResultsHeader}>
+              <View style={styles.vmResultsModeToggle}>
+                <TouchableOpacity
+                  style={[
+                    styles.vmResultsModeButton,
+                    vmResultsMode === 'aligned' && { backgroundColor: colors.primary }
+                  ]}
+                  onPress={() => setVmResultsMode('aligned')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.vmResultsModeButtonText,
+                    { color: vmResultsMode === 'aligned' ? colors.white : colors.textSecondary }
+                  ]}>
+                    Aligned
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.vmResultsModeButton,
+                    vmResultsMode === 'unaligned' && { backgroundColor: colors.primary }
+                  ]}
+                  onPress={() => setVmResultsMode('unaligned')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.vmResultsModeButtonText,
+                    { color: vmResultsMode === 'unaligned' ? colors.white : colors.textSecondary }
+                  ]}>
+                    Unaligned
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity onPress={handleVmResetSelections} activeOpacity={0.7}>
+                <Text style={[styles.vmResetButton, { color: colors.primary }]}>Reset</Text>
+              </TouchableOpacity>
             </View>
+            <FlatList
+              data={
+                vmResultsMode === 'aligned'
+                  ? vmResults.filter((item: any) => item.isPositivelyAligned !== false).slice(0, vmResultsLimit)
+                  : vmResults.filter((item: any) => item.isPositivelyAligned === false).slice(0, vmResultsLimit)
+              }
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.vmResultItem, { backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => {
+                    if ((item as any).isFirebaseBusiness) {
+                      router.push(`/business/${(item as any).firebaseId}`);
+                    } else {
+                      router.push(`/brand/${item.id}`);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Image
+                    source={{ uri: item.exampleImageUrl || getLogoUrl(item.website || '') }}
+                    style={styles.vmResultImage}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                  <View style={styles.vmResultInfo}>
+                    <Text style={[styles.vmResultName, { color: colors.text }]} numberOfLines={1}>
+                      {item.name || item.brand}
+                    </Text>
+                    <Text style={[styles.vmResultCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {item.category}
+                    </Text>
+                  </View>
+                  <View style={[
+                    styles.vmResultScore,
+                    { backgroundColor: item.alignmentScore >= 50 ? colors.success + '20' : colors.danger + '20' }
+                  ]}>
+                    <Text style={[
+                      styles.vmResultScoreText,
+                      { color: item.alignmentScore >= 50 ? colors.success : colors.danger }
+                    ]}>
+                      {item.alignmentScore}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              keyExtractor={item => item.id}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
+                <View style={styles.vmEmptyState}>
+                  <Text style={[styles.vmEmptyTitle, { color: colors.text }]}>No Results Found</Text>
+                  <Text style={[styles.vmEmptySubtitle, { color: colors.textSecondary }]}>
+                    Try selecting different values
+                  </Text>
+                </View>
+              }
+              ListFooterComponent={
+                vmResultsLimit < 30 && vmResults.filter((item: any) =>
+                  vmResultsMode === 'aligned' ? item.isPositivelyAligned !== false : item.isPositivelyAligned === false
+                ).length > vmResultsLimit ? (
+                  <TouchableOpacity
+                    style={[styles.vmLoadMoreButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                    onPress={handleVmLoadMore}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.vmLoadMoreText, { color: colors.primary }]}>Load More</Text>
+                  </TouchableOpacity>
+                ) : null
+              }
+            />
           </View>
-        </ScrollView>
+        ) : (
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.vmHeader}>
+              <View style={styles.vmHeaderRow}>
+                <Text style={[styles.vmSubtitle, { color: colors.textSecondary }]}>
+                  Generate results from specific values
+                </Text>
+                {(vmSelectedSupportValues.length > 0 || vmSelectedRejectValues.length > 0) && (
+                  <TouchableOpacity onPress={handleVmResetSelections} activeOpacity={0.7}>
+                    <Text style={[styles.vmResetButton, { color: colors.primary }]}>Reset</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            {/* Category Dropdown */}
+            <TouchableOpacity
+              style={[styles.vmCategoryDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+              onPress={() => setVmCategoryModalVisible(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.vmCategoryDropdownText, { color: vmSelectedCategory ? colors.text : colors.textSecondary }]}>
+                {vmSelectedCategory
+                  ? vmCategoriesWithLabels.find(c => c.key === vmSelectedCategory)?.label || 'Select Category'
+                  : 'Select Category'}
+              </Text>
+              <ChevronDown size={20} color={colors.textSecondary} strokeWidth={2} />
+            </TouchableOpacity>
+
+            {/* Values Pills */}
+            {vmSelectedCategory && (
+              <View style={styles.vmValuesPillsContainer}>
+                {(availableValues[vmSelectedCategory] || []).map(value => {
+                  const isSupported = vmSelectedSupportValues.includes(value.id);
+                  const isRejected = vmSelectedRejectValues.includes(value.id);
+
+                  return (
+                    <TouchableOpacity
+                      key={value.id}
+                      style={[
+                        styles.vmValuePill,
+                        { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
+                        isSupported && { backgroundColor: colors.success + '20', borderColor: colors.success },
+                        isRejected && { backgroundColor: colors.danger + '20', borderColor: colors.danger }
+                      ]}
+                      onPress={() => handleVmValueToggle(value.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[
+                        styles.vmValuePillText,
+                        { color: colors.text },
+                        isSupported && { color: colors.success },
+                        isRejected && { color: colors.danger }
+                      ]}>
+                        {value.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+
+            {/* Generate Button */}
+            {(vmSelectedSupportValues.length > 0 || vmSelectedRejectValues.length > 0) && (
+              <View style={styles.vmGenerateContainer}>
+                <TouchableOpacity
+                  style={[styles.vmGenerateButton, { backgroundColor: colors.primary }]}
+                  onPress={handleVmGenerateResults}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.vmGenerateButtonText, { color: colors.white }]}>
+                    Generate Results
+                  </Text>
+                </TouchableOpacity>
+                <Text style={[styles.vmSelectedCount, { color: colors.textSecondary }]}>
+                  {vmSelectedSupportValues.length} supported • {vmSelectedRejectValues.length} rejected
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        )
       )}
+
+      {/* Category Selection Modal */}
+      <Modal
+        visible={vmCategoryModalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setVmCategoryModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={() => setVmCategoryModalVisible(false)}>
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <View style={[styles.vmCategoryModal, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Select Category</Text>
+              <TouchableOpacity onPress={() => setVmCategoryModalVisible(false)}>
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.vmCategoryList}>
+              {vmCategoriesWithLabels.map(category => (
+                <TouchableOpacity
+                  key={category.key}
+                  style={[
+                    styles.vmCategoryOption,
+                    vmSelectedCategory === category.key && { backgroundColor: colors.primary + '15' }
+                  ]}
+                  onPress={() => {
+                    setVmSelectedCategory(category.key);
+                    setVmCategoryModalVisible(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.vmCategoryOptionText,
+                    { color: vmSelectedCategory === category.key ? colors.primary : colors.text }
+                  ]}>
+                    {category.label}
+                  </Text>
+                  <Text style={[styles.vmCategoryCount, { color: colors.textSecondary }]}>
+                    ({(availableValues[category.key] || []).length})
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Max Pain/Max Benefit Selection Modal */}
       <Modal
@@ -1687,5 +2061,170 @@ const styles = StyleSheet.create({
   valueActionButtonText: {
     fontSize: 16,
     fontWeight: '700' as const,
+  },
+  // Value Machine Styles
+  vmResultsContainer: {
+    flex: 1,
+  },
+  vmResultsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  vmResultsModeToggle: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  vmResultsModeButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  vmResultsModeButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  vmResetButton: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  vmResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    gap: 12,
+  },
+  vmResultImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+  },
+  vmResultInfo: {
+    flex: 1,
+  },
+  vmResultName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 2,
+  },
+  vmResultCategory: {
+    fontSize: 13,
+  },
+  vmResultScore: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+  },
+  vmResultScoreText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  vmEmptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  vmEmptyTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    marginBottom: 8,
+  },
+  vmEmptySubtitle: {
+    fontSize: 14,
+  },
+  vmLoadMoreButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 8,
+  },
+  vmLoadMoreText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  vmHeader: {
+    marginBottom: 16,
+  },
+  vmHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  vmSubtitle: {
+    fontSize: 14,
+  },
+  vmCategoryDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  vmCategoryDropdownText: {
+    fontSize: 15,
+    fontWeight: '500' as const,
+  },
+  vmValuesPillsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  vmValuePill: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1.5,
+  },
+  vmValuePillText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  vmGenerateContainer: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  vmGenerateButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  vmGenerateButtonText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  vmSelectedCount: {
+    fontSize: 13,
+  },
+  vmCategoryModal: {
+    borderRadius: 20,
+    padding: 0,
+    marginHorizontal: 20,
+    maxWidth: 400,
+    width: '100%',
+    maxHeight: '70%',
+    overflow: 'hidden',
+  },
+  vmCategoryList: {
+    maxHeight: 400,
+  },
+  vmCategoryOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  vmCategoryOptionText: {
+    fontSize: 16,
+    fontWeight: '500' as const,
   },
 });
