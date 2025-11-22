@@ -16,7 +16,10 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Heart, MessageCircle, X, Send, Trash2 } from 'lucide-react-native';
+import { Heart, MessageCircle, X, Send, Trash2, Edit, MoreVertical } from 'lucide-react-native';
+import { Alert } from 'react-native';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/firebase';
 import { lightColors, darkColors } from '@/constants/colors';
 import {
   Post,
@@ -58,6 +61,12 @@ export default function PostsView({
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+
+  // Edit/Delete post state
+  const [showPostMenu, setShowPostMenu] = useState<string | null>(null);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [editPostContent, setEditPostContent] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   // Load posts
   useEffect(() => {
@@ -193,6 +202,93 @@ export default function PostsView({
     }
   };
 
+  // Handle edit post
+  const handleStartEditPost = (post: Post) => {
+    setEditingPost(post);
+    setEditPostContent(post.content || '');
+    setShowPostMenu(null);
+    setSelectedPost(null);
+  };
+
+  // Handle save edited post
+  const handleSaveEditedPost = async () => {
+    if (!editingPost || !currentUserId || editingPost.authorId !== currentUserId) return;
+
+    setIsSavingEdit(true);
+    try {
+      const postRef = doc(db, 'posts', editingPost.id);
+      await updateDoc(postRef, {
+        content: editPostContent.trim(),
+        updatedAt: new Date(),
+      });
+
+      // Update local state
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === editingPost.id ? { ...p, content: editPostContent.trim(), updatedAt: new Date() } : p
+        )
+      );
+
+      setEditingPost(null);
+      setEditPostContent('');
+
+      if (Platform.OS === 'web') {
+        window.alert('Post updated successfully');
+      } else {
+        Alert.alert('Success', 'Post updated successfully');
+      }
+    } catch (error) {
+      console.error('[PostsView] Error updating post:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Failed to update post');
+      } else {
+        Alert.alert('Error', 'Failed to update post');
+      }
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  // Handle delete post
+  const handleDeleteUserPost = async (post: Post) => {
+    if (!currentUserId || post.authorId !== currentUserId) return;
+
+    const confirmDelete = Platform.OS === 'web'
+      ? window.confirm('Are you sure you want to delete this post? This action cannot be undone.')
+      : await new Promise((resolve) => {
+          Alert.alert(
+            'Delete Post',
+            'Are you sure you want to delete this post? This action cannot be undone.',
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Delete', style: 'destructive', onPress: () => resolve(true) },
+            ]
+          );
+        });
+
+    if (!confirmDelete) return;
+
+    try {
+      await deletePost(post.id, currentUserId);
+      setPosts((prev) => prev.filter((p) => p.id !== post.id));
+      setShowPostMenu(null);
+      setSelectedPost(null);
+
+      if (Platform.OS === 'web') {
+        window.alert('Post deleted successfully');
+      } else {
+        Alert.alert('Success', 'Post deleted successfully');
+      }
+    } catch (error) {
+      console.error('[PostsView] Error deleting post:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Failed to delete post');
+      } else {
+        Alert.alert('Error', 'Failed to delete post');
+      }
+    }
+  };
+
   // Format date
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -212,6 +308,8 @@ export default function PostsView({
   const renderPostCard = (post: Post) => {
     const hasImage = post.linkedEntityImage;
     const isLiked = likedPosts.has(post.id);
+    const isAuthor = currentUserId === post.authorId;
+    const showMenu = showPostMenu === post.id;
 
     return (
       <TouchableOpacity
@@ -235,7 +333,7 @@ export default function PostsView({
 
           {/* Text content */}
           <View style={[styles.postTextContainer, !hasImage && styles.postTextContainerFull]}>
-            {/* Author info */}
+            {/* Author info with menu */}
             <View style={styles.postAuthorRow}>
               {post.authorImage && (
                 <Image
@@ -244,7 +342,7 @@ export default function PostsView({
                   contentFit="cover"
                 />
               )}
-              <View style={styles.authorInfo}>
+              <View style={[styles.authorInfo, { flex: 1 }]}>
                 <Text style={[styles.authorName, { color: colors?.text || '#111827' }]} numberOfLines={1}>
                   {post.authorName}
                 </Text>
@@ -252,6 +350,47 @@ export default function PostsView({
                   {formatDate(post.createdAt)}
                 </Text>
               </View>
+              {/* Author menu button */}
+              {isAuthor && (
+                <View style={styles.postMenuContainer}>
+                  <TouchableOpacity
+                    style={styles.postMenuButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      setShowPostMenu(showMenu ? null : post.id);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <MoreVertical size={18} color={colors?.textSecondary || '#6B7280'} strokeWidth={2} />
+                  </TouchableOpacity>
+                  {showMenu && (
+                    <View style={[styles.postMenuDropdown, { backgroundColor: colors?.background || '#FFFFFF', borderColor: colors?.border || '#E5E7EB' }]}>
+                      <TouchableOpacity
+                        style={styles.postMenuItem}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleStartEditPost(post);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Edit size={16} color={colors?.text || '#111827'} strokeWidth={2} />
+                        <Text style={[styles.postMenuItemText, { color: colors?.text || '#111827' }]}>Edit</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.postMenuItem}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleDeleteUserPost(post);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Trash2 size={16} color={colors?.danger || '#EF4444'} strokeWidth={2} />
+                        <Text style={[styles.postMenuItemText, { color: colors?.danger || '#EF4444' }]}>Delete</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              )}
             </View>
 
             {/* Post content */}
@@ -372,6 +511,78 @@ export default function PostsView({
       <View style={styles.postsList}>
         {posts.map((post) => renderPostCard(post))}
       </View>
+
+      {/* Edit post modal */}
+      <Modal
+        visible={editingPost !== null}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setEditingPost(null);
+          setEditPostContent('');
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.editModalContainer, { backgroundColor: colors?.background || '#FFFFFF' }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors?.border || '#E5E7EB' }]}>
+              <Text style={[styles.modalTitle, { color: colors?.text || '#111827' }]}>Edit Post</Text>
+              <TouchableOpacity
+                style={[styles.closeButton, { backgroundColor: colors?.backgroundSecondary || '#F3F4F6' }]}
+                onPress={() => {
+                  setEditingPost(null);
+                  setEditPostContent('');
+                }}
+                activeOpacity={0.7}
+              >
+                <X size={24} color={colors?.text || '#111827'} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.editModalContent}>
+              <Text style={[styles.editLabel, { color: colors?.text || '#111827' }]}>Caption / Text</Text>
+              <TextInput
+                style={[styles.editTextInput, {
+                  color: colors?.text || '#111827',
+                  backgroundColor: colors?.backgroundSecondary || '#F3F4F6',
+                  borderColor: colors?.border || '#E5E7EB'
+                }]}
+                placeholder="Write something..."
+                placeholderTextColor={colors?.textSecondary || '#6B7280'}
+                value={editPostContent}
+                onChangeText={setEditPostContent}
+                multiline
+                numberOfLines={6}
+                textAlignVertical="top"
+              />
+
+              <View style={styles.editModalActions}>
+                <TouchableOpacity
+                  style={[styles.editCancelButton, { borderColor: colors?.border || '#E5E7EB' }]}
+                  onPress={() => {
+                    setEditingPost(null);
+                    setEditPostContent('');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.editCancelButtonText, { color: colors?.text || '#111827' }]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.editSaveButton, { backgroundColor: colors?.primary || '#3B82F6' }]}
+                  onPress={handleSaveEditedPost}
+                  disabled={isSavingEdit}
+                  activeOpacity={0.7}
+                >
+                  {isSavingEdit ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.editSaveButtonText}>Save Changes</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Post detail modal */}
       <Modal
@@ -752,5 +963,89 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Post menu styles
+  postMenuContainer: {
+    position: 'relative',
+  },
+  postMenuButton: {
+    padding: 4,
+  },
+  postMenuDropdown: {
+    position: 'absolute',
+    top: 28,
+    right: 0,
+    borderRadius: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    minWidth: 120,
+    zIndex: 100,
+  },
+  postMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  postMenuItemText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  // Edit modal styles
+  editModalContainer: {
+    borderRadius: 16,
+    maxWidth: 500,
+    width: '90%',
+    maxHeight: '80%',
+    overflow: 'hidden',
+  },
+  editModalContent: {
+    padding: 16,
+  },
+  editLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  editTextInput: {
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 14,
+    minHeight: 120,
+    textAlignVertical: 'top',
+  },
+  editModalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  editCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  editCancelButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  editSaveButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  editSaveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
