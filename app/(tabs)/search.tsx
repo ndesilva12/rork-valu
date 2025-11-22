@@ -1810,49 +1810,6 @@ export default function SearchScreen() {
           </View>
         </View>
       </Modal>
-
-      {/* Category Dropdown Menu - Legacy, kept for compatibility */}
-      <Modal
-        visible={false}
-        animationType="none"
-        transparent
-        onRequestClose={() => {}}
-      >
-        <TouchableOpacity
-          style={styles.categoryDropdownOverlay}
-          activeOpacity={1}
-          onPress={() => setCategoryModalVisible(false)}
-        >
-          <View
-            style={[
-              styles.categoryDropdownMenu,
-              {
-                backgroundColor: colors.background,
-                borderColor: colors.border,
-                top: categoryDropdownLayout.y + categoryDropdownLayout.height + 4,
-                left: categoryDropdownLayout.x,
-                width: categoryDropdownLayout.width,
-              }
-            ]}
-          >
-            {categoriesWithLabels.map(category => (
-              <TouchableOpacity
-                key={category.key}
-                style={[styles.categoryDropdownItem, { borderBottomColor: colors.border }]}
-                onPress={() => {
-                  setSelectedCategory(category.key);
-                  setCategoryModalVisible(false);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.categoryDropdownItemText, { color: selectedCategory === category.key ? colors.primary : colors.text }]}>
-                  {category.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </View>
   );
 }
