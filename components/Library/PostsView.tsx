@@ -46,8 +46,8 @@ export default function PostsView({
   currentUserImage,
   isDarkMode,
 }: PostsViewProps) {
-  // Ensure colors is always defined
-  const colors = isDarkMode === true ? darkColors : lightColors;
+  // Ensure colors is always defined with fallback
+  const colors = (isDarkMode === true ? darkColors : lightColors) || lightColors;
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,6 +57,7 @@ export default function PostsView({
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
 
   // Load posts
   useEffect(() => {
@@ -64,22 +65,34 @@ export default function PostsView({
   }, [userId]);
 
   const loadPosts = async () => {
+    if (!userId) {
+      setIsLoading(false);
+      setError('No user ID provided');
+      return;
+    }
+
     setIsLoading(true);
+    setError(null);
     try {
       const userPosts = await getUserPosts(userId);
       setPosts(userPosts);
 
       // Check which posts are liked by current user
-      if (currentUserId) {
+      if (currentUserId && userPosts.length > 0) {
         const likedSet = new Set<string>();
         for (const post of userPosts) {
-          const isLiked = await hasLikedPost(post.id, currentUserId);
-          if (isLiked) likedSet.add(post.id);
+          try {
+            const isLiked = await hasLikedPost(post.id, currentUserId);
+            if (isLiked) likedSet.add(post.id);
+          } catch (e) {
+            // Ignore individual like check errors
+          }
         }
         setLikedPosts(likedSet);
       }
-    } catch (error) {
-      console.error('[PostsView] Error loading posts:', error);
+    } catch (err) {
+      console.error('[PostsView] Error loading posts:', err);
+      setError('Failed to load posts. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -329,8 +342,17 @@ export default function PostsView({
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading posts...</Text>
+        <ActivityIndicator size="large" color={colors?.primary || '#3B82F6'} />
+        <Text style={[styles.loadingText, { color: colors?.textSecondary || '#6B7280' }]}>Loading posts...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.emptyContainer}>
+        <MessageCircle size={48} color={colors?.textSecondary || '#6B7280'} strokeWidth={1.5} />
+        <Text style={[styles.emptyText, { color: colors?.textSecondary || '#6B7280' }]}>{error}</Text>
       </View>
     );
   }
@@ -338,8 +360,8 @@ export default function PostsView({
   if (posts.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <MessageCircle size={48} color={colors.textSecondary} strokeWidth={1.5} />
-        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No posts yet</Text>
+        <MessageCircle size={48} color={colors?.textSecondary || '#6B7280'} strokeWidth={1.5} />
+        <Text style={[styles.emptyText, { color: colors?.textSecondary || '#6B7280' }]}>No posts yet</Text>
       </View>
     );
   }
