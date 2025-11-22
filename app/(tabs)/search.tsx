@@ -620,7 +620,20 @@ export default function SearchScreen() {
   }, []);
 
   const handleCreatePost = useCallback(async () => {
-    if (!clerkUser?.id || (!newPostContent.trim() && !newPostImage)) {
+    console.log('[Search] handleCreatePost called', {
+      hasClerkUserId: !!clerkUser?.id,
+      hasContent: !!newPostContent.trim(),
+      hasImage: !!newPostImage,
+    });
+
+    if (!clerkUser?.id) {
+      console.log('[Search] No clerk user ID');
+      Alert.alert('Error', 'You must be logged in to create a post');
+      return;
+    }
+
+    if (!newPostContent.trim() && !newPostImage) {
+      console.log('[Search] No content or image');
       Alert.alert('Error', 'Please enter some content or add an image for your post');
       return;
     }
@@ -630,6 +643,15 @@ export default function SearchScreen() {
       const authorName = profile?.userDetails?.name || clerkUser?.firstName || 'User';
       const authorImage = profile?.userDetails?.profileImage;
       const authorType = profile?.accountType === 'business' ? 'business' : 'user';
+
+      console.log('[Search] Creating post with:', {
+        authorId: clerkUser.id,
+        authorName,
+        hasAuthorImage: !!authorImage,
+        authorType,
+        contentLength: newPostContent.trim().length,
+        hasPostImage: !!newPostImage,
+      });
 
       // For now, we'll store the image URI directly (in production, upload to storage first)
       await createPost(
@@ -642,17 +664,39 @@ export default function SearchScreen() {
         newPostImage ? { id: 'image', type: 'brand', name: 'Image Post', image: newPostImage } : undefined
       );
 
+      console.log('[Search] Post created successfully');
+
       // Refresh posts
       const { posts: refreshedPosts } = await getPosts(20);
       setPosts(refreshedPosts);
 
+      // Check likes for refreshed posts
+      if (clerkUser?.id) {
+        const likesMap = new Map<string, boolean>();
+        for (const post of refreshedPosts) {
+          const liked = await hasLikedPost(post.id, clerkUser.id);
+          likesMap.set(post.id, liked);
+        }
+        setPostLikes(likesMap);
+      }
+
       setNewPostContent('');
       setNewPostImage(null);
       setCreatePostModalVisible(false);
-      Alert.alert('Success', 'Your post has been published!');
+
+      // Use platform-appropriate notification
+      if (Platform.OS === 'web') {
+        window.alert('Your post has been published!');
+      } else {
+        Alert.alert('Success', 'Your post has been published!');
+      }
     } catch (error) {
-      console.error('Error creating post:', error);
-      Alert.alert('Error', 'Failed to create post. Please try again.');
+      console.error('[Search] Error creating post:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Failed to create post. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to create post. Please try again.');
+      }
     } finally {
       setCreatingPost(false);
     }
