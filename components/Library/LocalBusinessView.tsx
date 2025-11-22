@@ -125,7 +125,7 @@ export default function LocalBusinessView({
   isDarkMode = false,
   onRequestLocation,
 }: LocalBusinessViewProps) {
-  const colors = isDarkMode ? darkColors : lightColors;
+  const colors = (isDarkMode ? darkColors : lightColors) || lightColors;
   const router = useRouter();
 
   const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(null);
@@ -337,7 +337,7 @@ export default function LocalBusinessView({
       {/* Search Input */}
       <View style={styles.searchContainer}>
         <TextInput
-          style={[styles.searchInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+          style={[styles.searchInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors?.border || '#E5E7EB' }]}
           placeholder="Search by name, category, or location..."
           placeholderTextColor={colors.textSecondary}
           value={searchQuery}
@@ -371,7 +371,7 @@ export default function LocalBusinessView({
         transparent={Platform.OS === 'web'}
       >
         <View style={[styles.mapModalContainer, Platform.OS === 'web' && styles.webModalContainer]}>
-          <View style={[styles.mapModalHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+          <View style={[styles.mapModalHeader, { backgroundColor: colors.background, borderBottomColor: colors?.border || '#E5E7EB' }]}>
             <Text style={[styles.mapModalTitle, { color: colors.text }]}>Local Businesses Map</Text>
             <TouchableOpacity
               onPress={() => setShowMap(false)}

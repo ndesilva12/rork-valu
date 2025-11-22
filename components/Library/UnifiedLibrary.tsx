@@ -1951,11 +1951,14 @@ export default function UnifiedLibrary({
       unaligned: {
         border: '#FF1F7A',
       },
+      posts: {
+        border: isDarkMode ? 'rgb(251, 146, 60)' : 'rgb(234, 88, 12)',
+      },
     };
 
     const SectionBox = ({ section, label, count }: { section: LibrarySection; label: string; count: number }) => {
       const isSelected = selectedSection === section;
-      const sectionColor = sectionColors[section as keyof typeof sectionColors];
+      const sectionColor = sectionColors[section as keyof typeof sectionColors] || { border: colors.primary };
 
       return (
         <TouchableOpacity

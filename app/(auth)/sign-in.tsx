@@ -344,6 +344,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.5,
     marginTop: -75,
+    marginBottom: 24,
   },
   title: {
     fontSize: 28,

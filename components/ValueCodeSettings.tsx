@@ -186,6 +186,11 @@ export default function ValueCodeSettings() {
                 </View>
               </View>
 
+              {/* Requirements Section Title */}
+              <Text style={[styles.requirementsTitle, { color: colors.textSecondary }]}>
+                Requirements (optional)
+              </Text>
+
               {/* ROW 2: Endorsement */}
               <View style={[styles.discountRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <View style={styles.rowContentSpaced}>
@@ -398,6 +403,15 @@ const styles = StyleSheet.create({
   underlinedText: {
     textDecorationLine: 'underline',
     fontWeight: '600' as const,
+  },
+  // Requirements Title
+  requirementsTitle: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+    marginTop: 4,
   },
   // Discount Rows
   discountRow: {
