@@ -2000,37 +2000,32 @@ export default function UnifiedLibrary({
           <Text style={[styles.sectionLabel, { color: isSelected ? sectionColor.border : colors.text }]}>
             Endorsed
           </Text>
-          <View style={styles.endorsedCountRow}>
-            <View style={[styles.endorsedBadge, { backgroundColor: sectionColor.border }]}>
-              <Text style={[styles.endorsedBadgeText, { color: colors.white }]}>★</Text>
-            </View>
-            <Text style={[styles.sectionCount, { color: colors.textSecondary, marginLeft: 6 }]}>
-              {endorsementCount}
-            </Text>
-          </View>
+          <Text style={[styles.sectionCount, { color: colors.textSecondary }]}>
+            {endorsementCount}
+          </Text>
         </TouchableOpacity>
       );
     };
 
-    // For profile views (preview/view modes), show 4 sections in 2x2 grid: Endorsed, Following, Followers, Posts
+    // For profile views (preview/view modes), show 4 sections in 2x2 grid: Following, Followers, Endorsements, Posts
     const isProfileView = mode === 'preview' || mode === 'view';
 
     if (isProfileView) {
       return (
         <View style={styles.sectionSelector}>
-          {/* Top row: Endorsed | Following */}
+          {/* Top row: Following | Followers */}
           <View style={styles.sectionRow}>
-            <View style={styles.sectionHalf}>
-              <EndorsedSectionBox />
-            </View>
             <View style={styles.sectionHalf}>
               <SectionBox section="following" label="Following" count={followingCount} />
             </View>
-          </View>
-          {/* Bottom row: Followers | Posts */}
-          <View style={styles.sectionRow}>
             <View style={styles.sectionHalf}>
               <SectionBox section="followers" label="Followers" count={followersCount} />
+            </View>
+          </View>
+          {/* Bottom row: Endorsements | Posts */}
+          <View style={styles.sectionRow}>
+            <View style={styles.sectionHalf}>
+              <EndorsedSectionBox />
             </View>
             <View style={styles.sectionHalf}>
               <SectionBox section="posts" label="Posts" count={postsCount} />
