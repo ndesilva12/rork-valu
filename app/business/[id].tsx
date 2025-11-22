@@ -134,25 +134,33 @@ export default function BusinessDetailScreen() {
     }
   };
 
-  // Helper to extract all brands and businesses from business owner's lists
-  const extractBrandsAndBusinesses = () => {
-    const brands: { name: string; listName: string }[] = [];
-    const businesses: { name: string; listName: string }[] = [];
+  // Helper to extract endorsements from business owner's endorsement list
+  const getEndorsements = () => {
+    // Find the endorsement list (named after the business)
+    const businessName = business?.businessInfo?.name || business?.fullName || '';
+    const endorsementList = businessOwnerLists.find(list =>
+      list.name === businessName || list.name === business?.fullName
+    );
 
-    businessOwnerLists.forEach(list => {
-      list.entries.forEach((entry: any) => {
-        if (entry.type === 'brand' && entry.brandName && entry.brandId) {
-          brands.push({
-            name: entry.brandName,
-            listName: list.name
-          });
-        } else if (entry.type === 'business' && entry.businessId) {
-          businesses.push({
-            name: entry.businessName || entry.name || 'Unknown Business',
-            listName: list.name
-          });
-        }
-      });
+    if (!endorsementList) {
+      return { brands: [], businesses: [] };
+    }
+
+    const brands: { name: string; id: string }[] = [];
+    const businesses: { name: string; id: string }[] = [];
+
+    endorsementList.entries.forEach((entry: any) => {
+      if (entry.type === 'brand' && entry.brandName && entry.brandId) {
+        brands.push({
+          name: entry.brandName,
+          id: entry.brandId
+        });
+      } else if (entry.type === 'business' && entry.businessId) {
+        businesses.push({
+          name: entry.businessName || entry.name || 'Unknown Business',
+          id: entry.businessId
+        });
+      }
     });
 
     return { brands, businesses };
@@ -876,9 +884,9 @@ export default function BusinessDetailScreen() {
             </View>
           )}
 
-          {/* Brands & Businesses Section */}
+          {/* Endorsements Section */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Brands & Businesses</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Endorsements</Text>
 
             <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.success }]}>
               {loadingBusinessLists ? (
@@ -886,27 +894,18 @@ export default function BusinessDetailScreen() {
                   <Text style={[styles.noDataText, { color: colors.textSecondary }]}>Loading...</Text>
                 </View>
               ) : (() => {
-                const { brands, businesses } = extractBrandsAndBusinesses();
+                const { brands, businesses } = getEndorsements();
                 const hasData = brands.length > 0 || businesses.length > 0;
 
                 if (!hasData) {
                   return (
                     <View style={styles.shareholdersContainer}>
                       <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
-                        No brands or businesses in lists
+                        No endorsements yet
                       </Text>
                     </View>
                   );
                 }
-
-                // Helper function to get display name for list
-                const getListDisplayName = (listName: string) => {
-                  // If list name is "My List" or matches the business owner's name, show business name
-                  if (listName === 'My List' || listName === business?.fullName || listName === business?.businessInfo.name) {
-                    return business?.businessInfo.name || listName;
-                  }
-                  return listName;
-                };
 
                 return (
                   <View style={styles.shareholdersContainer}>
@@ -916,14 +915,14 @@ export default function BusinessDetailScreen() {
                           <Text style={[styles.subsectionTitle, { color: colors.text }]}>Brands ({brands.length})</Text>
                         </View>
                         {brands.map((brand, index) => (
-                          <View key={`brand-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
-                            <View style={styles.tableRow}>
-                              <Text style={[styles.affiliateName, { color: colors.text }]}>{brand.name}</Text>
-                              <Text style={[styles.affiliateRelationship, { color: colors.textSecondary }]}>
-                                {getListDisplayName(brand.listName)}
-                              </Text>
-                            </View>
-                          </View>
+                          <TouchableOpacity
+                            key={`brand-${index}`}
+                            style={[styles.shareholderItem, { borderBottomColor: colors.border }]}
+                            onPress={() => router.push(`/brand/${brand.id}`)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.affiliateName, { color: colors.text }]}>{brand.name}</Text>
+                          </TouchableOpacity>
                         ))}
                       </>
                     )}
@@ -934,14 +933,14 @@ export default function BusinessDetailScreen() {
                           <Text style={[styles.subsectionTitle, { color: colors.text }]}>Businesses ({businesses.length})</Text>
                         </View>
                         {businesses.map((biz, index) => (
-                          <View key={`business-${index}`} style={[styles.shareholderItem, { borderBottomColor: colors.border }]}>
-                            <View style={styles.tableRow}>
-                              <Text style={[styles.affiliateName, { color: colors.text }]}>{biz.name}</Text>
-                              <Text style={[styles.affiliateRelationship, { color: colors.textSecondary }]}>
-                                {getListDisplayName(biz.listName)}
-                              </Text>
-                            </View>
-                          </View>
+                          <TouchableOpacity
+                            key={`business-${index}`}
+                            style={[styles.shareholderItem, { borderBottomColor: colors.border }]}
+                            onPress={() => router.push(`/business/${biz.id}`)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.affiliateName, { color: colors.text }]}>{biz.name}</Text>
+                          </TouchableOpacity>
                         ))}
                       </>
                     )}

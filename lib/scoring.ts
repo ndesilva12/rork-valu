@@ -96,11 +96,6 @@ export function calculateBrandScore(
   const normalizedScore = 50 + (rawScore / maxPossibleScore) * 50;
   const finalScore = Math.round(Math.max(0, Math.min(100, normalizedScore)));
 
-  // Debug logging for investigation
-  if (finalScore < 50 || mentionedCount === 0) {
-    console.log(`[Score Debug] ${brandName}: finalScore=${finalScore}, rawScore=${rawScore.toFixed(2)}, maxPossible=${maxPossibleScore.toFixed(2)}, mentioned=${mentionedCount}/${userCauses.length} values`);
-  }
-
   return finalScore;
 }
 

@@ -46,8 +46,8 @@ export default function PostsView({
   currentUserImage,
   isDarkMode,
 }: PostsViewProps) {
-  // Ensure colors is always defined
-  const colors = isDarkMode === true ? darkColors : lightColors;
+  // Ensure colors is always defined with fallback
+  const colors = (isDarkMode === true ? darkColors : lightColors) || lightColors;
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,6 +57,7 @@ export default function PostsView({
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
 
   // Load posts
   useEffect(() => {
@@ -64,22 +65,34 @@ export default function PostsView({
   }, [userId]);
 
   const loadPosts = async () => {
+    if (!userId) {
+      setIsLoading(false);
+      setError('No user ID provided');
+      return;
+    }
+
     setIsLoading(true);
+    setError(null);
     try {
       const userPosts = await getUserPosts(userId);
       setPosts(userPosts);
 
       // Check which posts are liked by current user
-      if (currentUserId) {
+      if (currentUserId && userPosts.length > 0) {
         const likedSet = new Set<string>();
         for (const post of userPosts) {
-          const isLiked = await hasLikedPost(post.id, currentUserId);
-          if (isLiked) likedSet.add(post.id);
+          try {
+            const isLiked = await hasLikedPost(post.id, currentUserId);
+            if (isLiked) likedSet.add(post.id);
+          } catch (e) {
+            // Ignore individual like check errors
+          }
         }
         setLikedPosts(likedSet);
       }
-    } catch (error) {
-      console.error('[PostsView] Error loading posts:', error);
+    } catch (err) {
+      console.error('[PostsView] Error loading posts:', err);
+      setError('Failed to load posts. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -203,7 +216,7 @@ export default function PostsView({
     return (
       <TouchableOpacity
         key={post.id}
-        style={[styles.postCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+        style={[styles.postCard, { backgroundColor: colors?.backgroundSecondary || '#F3F4F6', borderColor: colors?.border || '#E5E7EB' }]}
         onPress={() => handlePostPress(post)}
         activeOpacity={0.7}
       >
@@ -232,10 +245,10 @@ export default function PostsView({
                 />
               )}
               <View style={styles.authorInfo}>
-                <Text style={[styles.authorName, { color: colors.text }]} numberOfLines={1}>
+                <Text style={[styles.authorName, { color: colors?.text || '#111827' }]} numberOfLines={1}>
                   {post.authorName}
                 </Text>
-                <Text style={[styles.postTime, { color: colors.textSecondary }]}>
+                <Text style={[styles.postTime, { color: colors?.textSecondary || '#6B7280' }]}>
                   {formatDate(post.createdAt)}
                 </Text>
               </View>
@@ -245,7 +258,7 @@ export default function PostsView({
             <Text
               style={[
                 styles.postContent,
-                { color: colors.text },
+                { color: colors?.text || '#111827' },
                 !hasImage && styles.postContentLarge,
               ]}
               numberOfLines={hasImage ? 3 : 5}
@@ -265,18 +278,18 @@ export default function PostsView({
               >
                 <Heart
                   size={18}
-                  color={isLiked ? colors.danger : colors.textSecondary}
-                  fill={isLiked ? colors.danger : 'transparent'}
+                  color={isLiked ? (colors?.danger || '#EF4444') : (colors?.textSecondary || '#6B7280')}
+                  fill={isLiked ? (colors?.danger || '#EF4444') : 'transparent'}
                   strokeWidth={2}
                 />
-                <Text style={[styles.engagementText, { color: colors.textSecondary }]}>
+                <Text style={[styles.engagementText, { color: colors?.textSecondary || '#6B7280' }]}>
                   {post.likesCount}
                 </Text>
               </TouchableOpacity>
 
               <View style={styles.engagementButton}>
-                <MessageCircle size={18} color={colors.textSecondary} strokeWidth={2} />
-                <Text style={[styles.engagementText, { color: colors.textSecondary }]}>
+                <MessageCircle size={18} color={colors?.textSecondary || '#6B7280'} strokeWidth={2} />
+                <Text style={[styles.engagementText, { color: colors?.textSecondary || '#6B7280' }]}>
                   {post.commentsCount}
                 </Text>
               </View>
@@ -292,7 +305,7 @@ export default function PostsView({
     const canDelete = currentUserId === comment.authorId;
 
     return (
-      <View key={comment.id} style={[styles.commentCard, { borderBottomColor: colors.border }]}>
+      <View key={comment.id} style={[styles.commentCard, { borderBottomColor: colors?.border || '#E5E7EB' }]}>
         <View style={styles.commentHeader}>
           {comment.authorImage && (
             <Image
@@ -302,10 +315,10 @@ export default function PostsView({
             />
           )}
           <View style={styles.commentAuthorInfo}>
-            <Text style={[styles.commentAuthorName, { color: colors.text }]}>
+            <Text style={[styles.commentAuthorName, { color: colors?.text || '#111827' }]}>
               {comment.authorName}
             </Text>
-            <Text style={[styles.commentTime, { color: colors.textSecondary }]}>
+            <Text style={[styles.commentTime, { color: colors?.textSecondary || '#6B7280' }]}>
               {formatDate(comment.createdAt)}
             </Text>
           </View>
@@ -315,11 +328,11 @@ export default function PostsView({
               onPress={() => handleDeleteComment(comment)}
               activeOpacity={0.7}
             >
-              <Trash2 size={16} color={colors.danger} strokeWidth={2} />
+              <Trash2 size={16} color={colors?.danger || '#EF4444'} strokeWidth={2} />
             </TouchableOpacity>
           )}
         </View>
-        <Text style={[styles.commentContent, { color: colors.text }]}>
+        <Text style={[styles.commentContent, { color: colors?.text || '#111827' }]}>
           {comment.content}
         </Text>
       </View>
@@ -329,8 +342,17 @@ export default function PostsView({
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading posts...</Text>
+        <ActivityIndicator size="large" color={colors?.primary || '#3B82F6'} />
+        <Text style={[styles.loadingText, { color: colors?.textSecondary || '#6B7280' }]}>Loading posts...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.emptyContainer}>
+        <MessageCircle size={48} color={colors?.textSecondary || '#6B7280'} strokeWidth={1.5} />
+        <Text style={[styles.emptyText, { color: colors?.textSecondary || '#6B7280' }]}>{error}</Text>
       </View>
     );
   }
@@ -338,8 +360,8 @@ export default function PostsView({
   if (posts.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <MessageCircle size={48} color={colors.textSecondary} strokeWidth={1.5} />
-        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No posts yet</Text>
+        <MessageCircle size={48} color={colors?.textSecondary || '#6B7280'} strokeWidth={1.5} />
+        <Text style={[styles.emptyText, { color: colors?.textSecondary || '#6B7280' }]}>No posts yet</Text>
       </View>
     );
   }
@@ -362,16 +384,16 @@ export default function PostsView({
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalContainer, { backgroundColor: colors?.background || '#FFFFFF' }]}>
             {/* Modal header */}
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Post</Text>
+            <View style={[styles.modalHeader, { borderBottomColor: colors?.border || '#E5E7EB' }]}>
+              <Text style={[styles.modalTitle, { color: colors?.text || '#111827' }]}>Post</Text>
               <TouchableOpacity
-                style={[styles.closeButton, { backgroundColor: colors.backgroundSecondary }]}
+                style={[styles.closeButton, { backgroundColor: colors?.backgroundSecondary || '#F3F4F6' }]}
                 onPress={() => setSelectedPost(null)}
                 activeOpacity={0.7}
               >
-                <X size={24} color={colors.text} strokeWidth={2} />
+                <X size={24} color={colors?.text || '#111827'} strokeWidth={2} />
               </TouchableOpacity>
             </View>
 
@@ -390,10 +412,10 @@ export default function PostsView({
                         />
                       )}
                       <View style={styles.authorInfo}>
-                        <Text style={[styles.authorNameLarge, { color: colors.text }]}>
+                        <Text style={[styles.authorNameLarge, { color: colors?.text || '#111827' }]}>
                           {selectedPost.authorName}
                         </Text>
-                        <Text style={[styles.postTime, { color: colors.textSecondary }]}>
+                        <Text style={[styles.postTime, { color: colors?.textSecondary || '#6B7280' }]}>
                           {formatDate(selectedPost.createdAt)}
                         </Text>
                       </View>
@@ -410,12 +432,12 @@ export default function PostsView({
                     )}
 
                     {/* Post content */}
-                    <Text style={[styles.fullPostContent, { color: colors.text }]}>
+                    <Text style={[styles.fullPostContent, { color: colors?.text || '#111827' }]}>
                       {selectedPost.content}
                     </Text>
 
                     {/* Engagement row */}
-                    <View style={[styles.fullEngagementRow, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
+                    <View style={[styles.fullEngagementRow, { borderTopColor: colors?.border || '#E5E7EB', borderBottomColor: colors?.border || '#E5E7EB' }]}>
                       <TouchableOpacity
                         style={styles.engagementButton}
                         onPress={() => handleLike(selectedPost.id)}
@@ -423,18 +445,18 @@ export default function PostsView({
                       >
                         <Heart
                           size={22}
-                          color={likedPosts.has(selectedPost.id) ? colors.danger : colors.textSecondary}
-                          fill={likedPosts.has(selectedPost.id) ? colors.danger : 'transparent'}
+                          color={likedPosts.has(selectedPost.id) ? (colors?.danger || '#EF4444') : (colors?.textSecondary || '#6B7280')}
+                          fill={likedPosts.has(selectedPost.id) ? (colors?.danger || '#EF4444') : 'transparent'}
                           strokeWidth={2}
                         />
-                        <Text style={[styles.engagementText, { color: colors.textSecondary }]}>
+                        <Text style={[styles.engagementText, { color: colors?.textSecondary || '#6B7280' }]}>
                           {selectedPost.likesCount} likes
                         </Text>
                       </TouchableOpacity>
 
                       <View style={styles.engagementButton}>
-                        <MessageCircle size={22} color={colors.textSecondary} strokeWidth={2} />
-                        <Text style={[styles.engagementText, { color: colors.textSecondary }]}>
+                        <MessageCircle size={22} color={colors?.textSecondary || '#6B7280'} strokeWidth={2} />
+                        <Text style={[styles.engagementText, { color: colors?.textSecondary || '#6B7280' }]}>
                           {selectedPost.commentsCount} comments
                         </Text>
                       </View>
@@ -443,14 +465,14 @@ export default function PostsView({
 
                   {/* Comments section */}
                   <View style={styles.commentsSection}>
-                    <Text style={[styles.commentsSectionTitle, { color: colors.text }]}>
+                    <Text style={[styles.commentsSectionTitle, { color: colors?.text || '#111827' }]}>
                       Comments
                     </Text>
 
                     {isLoadingComments ? (
-                      <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 20 }} />
+                      <ActivityIndicator size="small" color={colors?.primary || '#3B82F6'} style={{ marginVertical: 20 }} />
                     ) : comments.length === 0 ? (
-                      <Text style={[styles.noCommentsText, { color: colors.textSecondary }]}>
+                      <Text style={[styles.noCommentsText, { color: colors?.textSecondary || '#6B7280' }]}>
                         No comments yet. Be the first to comment!
                       </Text>
                     ) : (
@@ -463,11 +485,11 @@ export default function PostsView({
 
             {/* Comment input */}
             {currentUserId && (
-              <View style={[styles.commentInputContainer, { backgroundColor: colors.backgroundSecondary, borderTopColor: colors.border }]}>
+              <View style={[styles.commentInputContainer, { backgroundColor: colors?.backgroundSecondary || '#F3F4F6', borderTopColor: colors?.border || '#E5E7EB' }]}>
                 <TextInput
-                  style={[styles.commentInput, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]}
+                  style={[styles.commentInput, { color: colors?.text || '#111827', backgroundColor: colors?.background || '#FFFFFF', borderColor: colors?.border || '#E5E7EB' }]}
                   placeholder="Write a comment..."
-                  placeholderTextColor={colors.textSecondary}
+                  placeholderTextColor={colors?.textSecondary || '#6B7280'}
                   value={newComment}
                   onChangeText={setNewComment}
                   multiline
@@ -476,16 +498,16 @@ export default function PostsView({
                 <TouchableOpacity
                   style={[
                     styles.sendButton,
-                    { backgroundColor: newComment.trim() ? colors.primary : colors.backgroundSecondary }
+                    { backgroundColor: newComment.trim() ? (colors?.primary || '#3B82F6') : (colors?.backgroundSecondary || '#F3F4F6') }
                   ]}
                   onPress={handleAddComment}
                   disabled={!newComment.trim() || isSubmittingComment}
                   activeOpacity={0.7}
                 >
                   {isSubmittingComment ? (
-                    <ActivityIndicator size="small" color={colors.white} />
+                    <ActivityIndicator size="small" color={colors?.white || '#FFFFFF'} />
                   ) : (
-                    <Send size={20} color={newComment.trim() ? colors.white : colors.textSecondary} strokeWidth={2} />
+                    <Send size={20} color={newComment.trim() ? (colors?.white || '#FFFFFF') : (colors?.textSecondary || '#6B7280')} strokeWidth={2} />
                   )}
                 </TouchableOpacity>
               </View>
