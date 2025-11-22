@@ -120,7 +120,7 @@ export default function ValuesScreen() {
   const [vmShowingResults, setVmShowingResults] = useState(false);
   const [vmResultsLimit, setVmResultsLimit] = useState(10);
   const [vmSelectedCategory, setVmSelectedCategory] = useState<string>('');
-  const [vmCategoryModalVisible, setVmCategoryModalVisible] = useState(false);
+  const [vmCategoryDropdownOpen, setVmCategoryDropdownOpen] = useState(false);
   const [vmResultsMode, setVmResultsMode] = useState<'aligned' | 'unaligned'>('aligned');
   const [firebaseBusinesses, setFirebaseBusinesses] = useState<BusinessUser[]>([]);
 
@@ -714,36 +714,40 @@ export default function ValuesScreen() {
       </View>
 
       {/* Tab Headers */}
-      <View style={styles.tabHeaderContainer}>
+      <View style={[styles.tabSelector, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
-          style={styles.tabHeaderButton}
+          style={[
+            styles.tab,
+            activeTab === 'myValues' && styles.activeTab,
+            { borderBottomColor: colors.primary }
+          ]}
           onPress={() => setActiveTab('myValues')}
           activeOpacity={0.7}
         >
           <Text style={[
-            styles.tabHeaderText,
-            { color: activeTab === 'myValues' ? colors.primary : colors.textSecondary }
+            styles.tabText,
+            { color: activeTab === 'myValues' ? colors.primary : colors.textSecondary },
+            activeTab === 'myValues' && styles.activeTabText
           ]}>
             My Values
           </Text>
-          {activeTab === 'myValues' && (
-            <View style={[styles.tabUnderline, { backgroundColor: colors.primary }]} />
-          )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.tabHeaderButton}
+          style={[
+            styles.tab,
+            activeTab === 'valueMachine' && styles.activeTab,
+            { borderBottomColor: colors.primary }
+          ]}
           onPress={() => setActiveTab('valueMachine')}
           activeOpacity={0.7}
         >
           <Text style={[
-            styles.tabHeaderText,
-            { color: activeTab === 'valueMachine' ? colors.primary : colors.textSecondary }
+            styles.tabText,
+            { color: activeTab === 'valueMachine' ? colors.primary : colors.textSecondary },
+            activeTab === 'valueMachine' && styles.activeTabText
           ]}>
             Value Machine
           </Text>
-          {activeTab === 'valueMachine' && (
-            <View style={[styles.tabUnderline, { backgroundColor: colors.primary }]} />
-          )}
         </TouchableOpacity>
       </View>
 
@@ -1084,19 +1088,59 @@ export default function ValuesScreen() {
               </View>
             </View>
 
-            {/* Category Dropdown */}
-            <TouchableOpacity
-              style={[styles.vmCategoryDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-              onPress={() => setVmCategoryModalVisible(true)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.vmCategoryDropdownText, { color: vmSelectedCategory ? colors.text : colors.textSecondary }]}>
-                {vmSelectedCategory
-                  ? vmCategoriesWithLabels.find(c => c.key === vmSelectedCategory)?.label || 'Select Category'
-                  : 'Select Category'}
-              </Text>
-              <ChevronDown size={20} color={colors.textSecondary} strokeWidth={2} />
-            </TouchableOpacity>
+            {/* Category Dropdown - Traditional Style */}
+            <View style={styles.vmCategoryContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.vmCategoryDropdown,
+                  { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
+                  vmCategoryDropdownOpen && styles.vmCategoryDropdownOpen
+                ]}
+                onPress={() => setVmCategoryDropdownOpen(!vmCategoryDropdownOpen)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.vmCategoryDropdownText, { color: vmSelectedCategory ? colors.text : colors.textSecondary }]}>
+                  {vmSelectedCategory
+                    ? vmCategoriesWithLabels.find(c => c.key === vmSelectedCategory)?.label || 'Select Category'
+                    : 'Select Category'}
+                </Text>
+                <ChevronDown
+                  size={20}
+                  color={colors.textSecondary}
+                  strokeWidth={2}
+                  style={{ transform: [{ rotate: vmCategoryDropdownOpen ? '180deg' : '0deg' }] }}
+                />
+              </TouchableOpacity>
+              {vmCategoryDropdownOpen && (
+                <View style={[styles.vmCategoryDropdownList, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                  {vmCategoriesWithLabels.map(category => (
+                    <TouchableOpacity
+                      key={category.key}
+                      style={[
+                        styles.vmCategoryDropdownItem,
+                        { borderBottomColor: colors.border },
+                        vmSelectedCategory === category.key && { backgroundColor: colors.primary + '15' }
+                      ]}
+                      onPress={() => {
+                        setVmSelectedCategory(category.key);
+                        setVmCategoryDropdownOpen(false);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[
+                        styles.vmCategoryDropdownItemText,
+                        { color: vmSelectedCategory === category.key ? colors.primary : colors.text }
+                      ]}>
+                        {category.label}
+                      </Text>
+                      <Text style={[styles.vmCategoryCount, { color: colors.textSecondary }]}>
+                        ({(availableValues[category.key] || []).length})
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
 
             {/* Values Pills */}
             {vmSelectedCategory && (
@@ -1151,54 +1195,6 @@ export default function ValuesScreen() {
           </ScrollView>
         )
       )}
-
-      {/* Category Selection Modal */}
-      <Modal
-        visible={vmCategoryModalVisible}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setVmCategoryModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableWithoutFeedback onPress={() => setVmCategoryModalVisible(false)}>
-            <View style={StyleSheet.absoluteFill} />
-          </TouchableWithoutFeedback>
-          <View style={[styles.vmCategoryModal, { backgroundColor: colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Select Category</Text>
-              <TouchableOpacity onPress={() => setVmCategoryModalVisible(false)}>
-                <X size={24} color={colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.vmCategoryList}>
-              {vmCategoriesWithLabels.map(category => (
-                <TouchableOpacity
-                  key={category.key}
-                  style={[
-                    styles.vmCategoryOption,
-                    vmSelectedCategory === category.key && { backgroundColor: colors.primary + '15' }
-                  ]}
-                  onPress={() => {
-                    setVmSelectedCategory(category.key);
-                    setVmCategoryModalVisible(false);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[
-                    styles.vmCategoryOptionText,
-                    { color: vmSelectedCategory === category.key ? colors.primary : colors.text }
-                  ]}>
-                    {category.label}
-                  </Text>
-                  <Text style={[styles.vmCategoryCount, { color: colors.textSecondary }]}>
-                    ({(availableValues[category.key] || []).length})
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
 
       {/* Max Pain/Max Benefit Selection Modal */}
       <Modal
@@ -1534,19 +1530,26 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   // Tab Header Styles
-  tabHeaderContainer: {
+  tabSelector: {
     flexDirection: 'row',
+    borderBottomWidth: 1,
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
-    gap: 24,
   },
-  tabHeaderButton: {
-    paddingBottom: 8,
-    position: 'relative',
+  tab: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
   },
-  tabHeaderText: {
-    fontSize: 20,
+  activeTab: {
+    borderBottomWidth: 2,
+  },
+  tabText: {
+    fontSize: 24,
+    fontWeight: '600' as const,
+  },
+  activeTabText: {
     fontWeight: '700' as const,
   },
   tabUnderline: {
@@ -2157,6 +2160,9 @@ const styles = StyleSheet.create({
   vmSubtitle: {
     fontSize: 14,
   },
+  vmCategoryContainer: {
+    marginBottom: 16,
+  },
   vmCategoryDropdown: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2165,9 +2171,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 16,
+  },
+  vmCategoryDropdownOpen: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
   },
   vmCategoryDropdownText: {
+    fontSize: 15,
+    fontWeight: '500' as const,
+  },
+  vmCategoryDropdownList: {
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    maxHeight: 250,
+    overflow: 'hidden',
+  },
+  vmCategoryDropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+  },
+  vmCategoryDropdownItemText: {
     fontSize: 15,
     fontWeight: '500' as const,
   },

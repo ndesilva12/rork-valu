@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
-import { Search as SearchIcon, TrendingUp, TrendingDown, Minus, ScanBarcode, X, Heart, MessageCircle, Share2, ExternalLink, MoreVertical, UserPlus, UserMinus, List as ListIcon, Plus, Send } from 'lucide-react-native';
+import { Search as SearchIcon, TrendingUp, TrendingDown, Minus, ScanBarcode, X, Heart, MessageCircle, Share2, ExternalLink, MoreVertical, UserPlus, UserMinus, List as ListIcon, Plus, Send, ImageIcon } from 'lucide-react-native';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 import {
   View,
   Text,
@@ -339,6 +340,7 @@ export default function SearchScreen() {
   const [postLikes, setPostLikes] = useState<Map<string, boolean>>(new Map());
   const [createPostModalVisible, setCreatePostModalVisible] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
+  const [newPostImage, setNewPostImage] = useState<string | null>(null);
   const [creatingPost, setCreatingPost] = useState(false);
 
   // Fetch Firebase businesses, public users, and posts on mount
@@ -593,9 +595,33 @@ export default function SearchScreen() {
   }, [availableValuesByCategory]);
 
   // Posts handlers
+  const handlePickImage = useCallback(async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please allow access to your photo library to upload images.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setNewPostImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
+    }
+  }, []);
+
   const handleCreatePost = useCallback(async () => {
-    if (!clerkUser?.id || !newPostContent.trim()) {
-      Alert.alert('Error', 'Please enter some content for your post');
+    if (!clerkUser?.id || (!newPostContent.trim() && !newPostImage)) {
+      Alert.alert('Error', 'Please enter some content or add an image for your post');
       return;
     }
 
@@ -605,13 +631,15 @@ export default function SearchScreen() {
       const authorImage = profile?.userDetails?.profileImage;
       const authorType = profile?.accountType === 'business' ? 'business' : 'user';
 
+      // For now, we'll store the image URI directly (in production, upload to storage first)
       await createPost(
         clerkUser.id,
         authorName,
         authorImage,
         authorType as 'user' | 'business',
         newPostContent.trim(),
-        'text'
+        newPostImage ? 'recommendation' : 'text',
+        newPostImage ? { id: 'image', type: 'brand', name: 'Image Post', image: newPostImage } : undefined
       );
 
       // Refresh posts
@@ -619,6 +647,7 @@ export default function SearchScreen() {
       setPosts(refreshedPosts);
 
       setNewPostContent('');
+      setNewPostImage(null);
       setCreatePostModalVisible(false);
       Alert.alert('Success', 'Your post has been published!');
     } catch (error) {
@@ -627,7 +656,7 @@ export default function SearchScreen() {
     } finally {
       setCreatingPost(false);
     }
-  }, [clerkUser?.id, newPostContent, profile]);
+  }, [clerkUser?.id, newPostContent, newPostImage, profile]);
 
   const handlePostLike = useCallback(async (postId: string) => {
     if (!clerkUser?.id) {
@@ -1164,11 +1193,41 @@ export default function SearchScreen() {
                     )}
                   </View>
 
-                  <Text style={[styles.postContent, { color: colors.text }]}>
-                    {post.content}
-                  </Text>
+                  {/* Image Post - Show image as main content */}
+                  {post.linkedEntityImage && post.linkedEntityId === 'image' ? (
+                    <>
+                      <Image
+                        source={{ uri: post.linkedEntityImage }}
+                        style={styles.postMainImage}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                      {post.content ? (
+                        <Text style={[styles.postCaption, { color: colors.text }]}>
+                          {post.content}
+                        </Text>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      {/* Text-only post with blue border */}
+                      {post.content ? (
+                        post.linkedEntityImage ? (
+                          <Text style={[styles.postContent, { color: colors.text }]}>
+                            {post.content}
+                          </Text>
+                        ) : (
+                          <View style={[styles.textOnlyPostBox, { borderColor: colors.primary }]}>
+                            <Text style={[styles.textOnlyPostContent, { color: colors.text }]}>
+                              {post.content}
+                            </Text>
+                          </View>
+                        )
+                      ) : null}
+                    </>
+                  )}
 
-                  {post.linkedEntityName && (
+                  {post.linkedEntityName && post.linkedEntityId !== 'image' && (
                     <TouchableOpacity
                       style={[styles.linkedEntityCard, { backgroundColor: colors.background, borderColor: colors.border }]}
                       onPress={() => {
@@ -1733,23 +1792,34 @@ export default function SearchScreen() {
         </View>
       </Modal>
 
-      {/* Create Post Modal */}
+      {/* Create Post Modal - Centered */}
       <Modal
         visible={createPostModalVisible}
-        animationType="slide"
+        animationType="fade"
         transparent
-        onRequestClose={() => setCreatePostModalVisible(false)}
+        onRequestClose={() => {
+          setCreatePostModalVisible(false);
+          setNewPostImage(null);
+          setNewPostContent('');
+        }}
       >
         <View style={styles.createPostModalOverlay}>
           <View style={[styles.createPostModalContent, { backgroundColor: colors.background }]}>
             <View style={[styles.createPostModalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.createPostModalTitle, { color: colors.text }]}>Create Post</Text>
-              <TouchableOpacity onPress={() => setCreatePostModalVisible(false)} activeOpacity={0.7}>
+              <TouchableOpacity
+                onPress={() => {
+                  setCreatePostModalVisible(false);
+                  setNewPostImage(null);
+                  setNewPostContent('');
+                }}
+                activeOpacity={0.7}
+              >
                 <X size={24} color={colors.text} strokeWidth={2} />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.createPostModalBody}>
+            <ScrollView style={styles.createPostModalBody} showsVerticalScrollIndicator={false}>
               <View style={styles.createPostAuthorRow}>
                 {profile?.userDetails?.profileImage ? (
                   <Image
@@ -1770,14 +1840,47 @@ export default function SearchScreen() {
                 </Text>
               </View>
 
+              {/* Image Preview */}
+              {newPostImage ? (
+                <View style={styles.createPostImageContainer}>
+                  <Image
+                    source={{ uri: newPostImage }}
+                    style={styles.createPostImagePreview}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                  <TouchableOpacity
+                    style={[styles.removeImageButton, { backgroundColor: colors.danger }]}
+                    onPress={() => setNewPostImage(null)}
+                    activeOpacity={0.7}
+                  >
+                    <X size={16} color={colors.white} strokeWidth={2.5} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.addImageButton, { borderColor: colors.primary }]}
+                  onPress={handlePickImage}
+                  activeOpacity={0.7}
+                >
+                  <ImageIcon size={32} color={colors.primary} strokeWidth={1.5} />
+                  <Text style={[styles.addImageText, { color: colors.primary }]}>Add Image</Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Text Input - Caption style if image, larger if text only */}
               <TextInput
-                style={[styles.createPostInput, { color: colors.text, borderColor: colors.border }]}
-                placeholder="What's on your mind?"
+                style={[
+                  newPostImage ? styles.createPostCaptionInput : styles.createPostTextOnlyInput,
+                  { color: colors.text },
+                  !newPostImage && { borderColor: colors.primary }
+                ]}
+                placeholder={newPostImage ? "Add a caption..." : "What's on your mind?"}
                 placeholderTextColor={colors.textSecondary}
                 value={newPostContent}
                 onChangeText={setNewPostContent}
                 multiline
-                numberOfLines={5}
+                numberOfLines={newPostImage ? 3 : 6}
                 maxLength={500}
                 textAlignVertical="top"
               />
@@ -1785,16 +1888,16 @@ export default function SearchScreen() {
               <Text style={[styles.characterCount, { color: colors.textSecondary }]}>
                 {newPostContent.length}/500
               </Text>
-            </View>
+            </ScrollView>
 
             <View style={[styles.createPostModalFooter, { borderTopColor: colors.border }]}>
               <TouchableOpacity
                 style={[
                   styles.publishButton,
-                  { backgroundColor: newPostContent.trim() && !creatingPost ? colors.primary : colors.neutral }
+                  { backgroundColor: (newPostContent.trim() || newPostImage) && !creatingPost ? colors.primary : colors.neutral }
                 ]}
                 onPress={handleCreatePost}
-                disabled={!newPostContent.trim() || creatingPost}
+                disabled={(!newPostContent.trim() && !newPostImage) || creatingPost}
                 activeOpacity={0.8}
               >
                 {creatingPost ? (
@@ -2805,6 +2908,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
+  postMainImage: {
+    width: '100%',
+    aspectRatio: 1,
+    marginBottom: 0,
+  },
+  postCaption: {
+    fontSize: 15,
+    lineHeight: 22,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+  },
+  textOnlyPostBox: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+  },
+  textOnlyPostContent: {
+    fontSize: 17,
+    lineHeight: 26,
+  },
   linkedEntityCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2848,16 +2974,20 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,
   },
 
-  // Create Post Modal Styles
+  // Create Post Modal Styles - Centered
   createPostModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   createPostModalContent: {
-    maxHeight: '80%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '85%',
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   createPostModalHeader: {
     flexDirection: 'row',
@@ -2899,18 +3029,62 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
   },
-  createPostInput: {
-    minHeight: 150,
+  createPostImageContainer: {
+    position: 'relative',
+    marginVertical: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  createPostImagePreview: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 12,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addImageButton: {
+    marginVertical: 16,
+    paddingVertical: 40,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  addImageText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  createPostTextOnlyInput: {
+    minHeight: 180,
     padding: 16,
     borderRadius: 12,
-    borderWidth: 1,
-    fontSize: 16,
-    lineHeight: 24,
+    borderWidth: 2,
+    fontSize: 18,
+    lineHeight: 28,
+    marginTop: 8,
+  },
+  createPostCaptionInput: {
+    minHeight: 80,
+    padding: 12,
+    fontSize: 15,
+    lineHeight: 22,
+    marginTop: 8,
   },
   characterCount: {
     fontSize: 13,
     textAlign: 'right' as const,
     marginTop: 8,
+    marginBottom: 8,
   },
   createPostModalFooter: {
     padding: 16,
