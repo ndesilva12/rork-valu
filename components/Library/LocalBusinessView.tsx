@@ -13,6 +13,7 @@ import {
   TextInput,
   Modal,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -63,7 +64,7 @@ const getDiscountDisplay = (business: any): string | null => {
   return null;
 };
 
-type LocalDistanceOption = 1 | 10 | 50 | 100 | null;
+type LocalDistanceOption = 1 | 5 | 10 | 25 | 50 | 100 | null;
 
 interface LocalBusinessViewProps {
   userBusinesses: BusinessUser[];
@@ -127,13 +128,18 @@ export default function LocalBusinessView({
 }: LocalBusinessViewProps) {
   const colors = (isDarkMode ? darkColors : lightColors) || lightColors;
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
 
   const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(null);
   const [localSortDirection, setLocalSortDirection] = useState<'highToLow' | 'lowToHigh'>('highToLow');
   const [searchQuery, setSearchQuery] = useState('');
   const [showMap, setShowMap] = useState(false);
 
-  const localDistanceOptions: LocalDistanceOption[] = [100, 50, 10, 1];
+  // Mobile: fewer options to fit on one row; Desktop: more granular options
+  const localDistanceOptions: LocalDistanceOption[] = isMobile
+    ? [50, 10, 1]
+    : [100, 50, 25, 10, 5, 1];
 
   const handleMapPress = () => {
     console.log('[LocalBusinessView] Map button pressed, opening map...');
