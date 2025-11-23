@@ -150,8 +150,8 @@ export default function FollowingFollowersList({
                 enriched.name = businessInfo.name || 'Unknown Business';
                 enriched.category = businessInfo.category;
                 enriched.website = businessInfo.website;
-                // Always use generated logo from website - never use logoUrl as it might be the cover image
-                enriched.logoUrl = businessInfo.website ? getLogoUrl(businessInfo.website) : getLogoUrl('');
+                // Use uploaded logoUrl first, fallback to generated logo from website
+                enriched.logoUrl = businessInfo.logoUrl || (businessInfo.website ? getLogoUrl(businessInfo.website) : getLogoUrl(''));
                 enriched.profileImage = enriched.logoUrl;
 
                 // Calculate similarity score based on shared causes
@@ -175,8 +175,8 @@ export default function FollowingFollowersList({
                 enriched.name = userData.businessInfo.name || 'Unknown Business';
                 enriched.category = userData.businessInfo.category;
                 enriched.website = userData.businessInfo.website;
-                // Always use generated logo from website - never use logoUrl as it might be the cover image
-                enriched.logoUrl = userData.businessInfo.website ? getLogoUrl(userData.businessInfo.website) : getLogoUrl('');
+                // Use uploaded logoUrl first, fallback to generated logo from website
+                enriched.logoUrl = userData.businessInfo.logoUrl || (userData.businessInfo.website ? getLogoUrl(userData.businessInfo.website) : getLogoUrl(''));
                 enriched.profileImage = enriched.logoUrl;
 
                 // Calculate similarity score based on shared causes

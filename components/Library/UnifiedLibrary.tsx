@@ -872,8 +872,8 @@ export default function UnifiedLibrary({
           // Get business name from multiple possible fields
           const businessName = (entry as any).businessName || (entry as any).name || 'Unknown Business';
           const businessCategory = (entry as any).businessCategory || (entry as any).category;
-          // Always use generated logo from website - never use logoUrl as it might be the cover image
-          const logoUrl = (entry as any).website ? getLogoUrl((entry as any).website) : getLogoUrl('');
+          // Use uploaded logoUrl first, fallback to generated logo from website
+          const logoUrl = (entry as any).logoUrl || ((entry as any).website ? getLogoUrl((entry as any).website) : getLogoUrl(''));
 
           return (
             <TouchableOpacity
@@ -2045,6 +2045,9 @@ export default function UnifiedLibrary({
     // For home tab (edit mode), show Global, Local, and Endorsed (full width)
     return (
       <View style={styles.sectionSelector}>
+        {/* Header: recommendations */}
+        <Text style={[styles.sectionGroupHeader, { color: colors.textSecondary }]}>recommendations</Text>
+
         {/* Top row: Global | Local */}
         <View style={styles.sectionRow}>
           <View style={styles.sectionHalf}>
@@ -2054,6 +2057,9 @@ export default function UnifiedLibrary({
             <SectionBox section="local" label="Local" count={localCount} />
           </View>
         </View>
+
+        {/* Header: your list */}
+        <Text style={[styles.sectionGroupHeader, { color: colors.textSecondary }]}>your list</Text>
 
         {/* Bottom row: Endorsed (full width) */}
         <View style={styles.sectionRow}>
@@ -3029,6 +3035,13 @@ const styles = StyleSheet.create({
   sectionSelector: {
     padding: 12,
     gap: 12,
+  },
+  sectionGroupHeader: {
+    fontSize: 16,
+    fontWeight: '600',
+    textTransform: 'lowercase',
+    marginBottom: 4,
+    textAlign: 'center',
   },
   sectionRow: {
     flexDirection: 'row',
