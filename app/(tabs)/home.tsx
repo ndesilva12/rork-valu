@@ -106,7 +106,7 @@ import { useLibrary } from '@/contexts/LibraryContext';
 
 type MainView = 'forYou' | 'myLibrary' | 'local';
 type ForYouSubsection = 'userList' | 'aligned' | 'unaligned';
-type LocalDistanceOption = 1 | 5 | 10 | 50 | 100 | null;
+type LocalDistanceOption = 1 | 5 | 10 | 25 | 50 | 100 | null;
 
 type FolderCategory = {
   id: string;
