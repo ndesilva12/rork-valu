@@ -90,6 +90,8 @@ export default function UsersManagement() {
   const [createName, setCreateName] = useState('');
   const [createDescription, setCreateDescription] = useState('');
   const [createLocation, setCreateLocation] = useState('');
+  const [createProfileImageUrl, setCreateProfileImageUrl] = useState('');
+  const [createCauses, setCreateCauses] = useState('');
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -775,11 +777,28 @@ export default function UsersManagement() {
     try {
       const userRef = doc(db, 'users', createUserId.trim());
 
+      // Parse causes from text (format: id|name|category|type per line)
+      const parsedCauses = createCauses.trim()
+        ? createCauses.split('\n')
+            .map(line => line.trim())
+            .filter(line => line)
+            .map(line => {
+              const [id, name, category, type] = line.split('|').map(s => s.trim());
+              return {
+                id: id || '',
+                name: name || id || '',
+                category: category || 'General',
+                type: (type === 'avoid' ? 'avoid' : 'support') as 'support' | 'avoid',
+              };
+            })
+            .filter(cause => cause.id)
+        : [];
+
       const newUserData: Record<string, any> = {
         email: createEmail.trim(),
         accountType: 'individual',
         isPublicProfile: true,
-        causes: [],
+        causes: parsedCauses,
         searchHistory: [],
         createdAt: new Date().toISOString(),
       };
@@ -795,7 +814,7 @@ export default function UsersManagement() {
       }
 
       // Add userDetails if any profile fields are filled
-      if (createName.trim() || createDescription.trim() || createLocation.trim()) {
+      if (createName.trim() || createDescription.trim() || createLocation.trim() || createProfileImageUrl.trim()) {
         newUserData.userDetails = {};
         if (createName.trim()) {
           newUserData.userDetails.name = createName.trim();
@@ -805,6 +824,9 @@ export default function UsersManagement() {
         }
         if (createLocation.trim()) {
           newUserData.userDetails.location = createLocation.trim();
+        }
+        if (createProfileImageUrl.trim()) {
+          newUserData.userDetails.profileImage = createProfileImageUrl.trim();
         }
       }
 
@@ -818,6 +840,8 @@ export default function UsersManagement() {
       setCreateName('');
       setCreateDescription('');
       setCreateLocation('');
+      setCreateProfileImageUrl('');
+      setCreateCauses('');
       setShowCreateModal(false);
 
       // Reload users
@@ -1506,6 +1530,38 @@ export default function UsersManagement() {
                 onChangeText={setCreateLocation}
               />
 
+              <Text style={styles.label}>Profile Image URL</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://example.com/profile.jpg"
+                value={createProfileImageUrl}
+                onChangeText={setCreateProfileImageUrl}
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.sectionTitle}>💡 Values (Optional)</Text>
+              <Text style={styles.helpText}>
+                Format: id|name|category|type (one per line). Type can be "support" or "avoid".
+                {'\n'}Example: environment|Environment|Social|support
+              </Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="environment|Environment|Social|support&#10;animal-welfare|Animal Welfare|Social|support"
+                value={createCauses}
+                onChangeText={setCreateCauses}
+                multiline
+                numberOfLines={5}
+              />
+
+              <Text style={styles.sectionTitle}>🔐 About Authentication</Text>
+              <Text style={styles.helpText}>
+                Password creation is managed by Clerk authentication and requires server-side API integration.
+                To create a fully authenticated user:
+                {'\n'}1. Create the user in Clerk Dashboard (or via Clerk API)
+                {'\n'}2. Use the Clerk user ID as the User ID above
+                {'\n'}3. The user will authenticate through Clerk, and this profile will be linked automatically
+              </Text>
+
               <View style={styles.modalActions}>
                 <TouchableOpacity
                   style={styles.cancelButton}
@@ -1518,6 +1574,8 @@ export default function UsersManagement() {
                     setCreateName('');
                     setCreateDescription('');
                     setCreateLocation('');
+                    setCreateProfileImageUrl('');
+                    setCreateCauses('');
                   }}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
