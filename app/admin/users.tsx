@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { collection, getDocs, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, query, where, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getCustomFields, CustomField } from '@/services/firebase/customFieldsService';
 import { getUserLists, deleteList, removeEntryFromList, addEntryToList, updateEntryInList } from '@/services/firebase/listService';
@@ -79,7 +79,18 @@ export default function UsersManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [bulkData, setBulkData] = useState('');
+
+  // Create user form state
+  const [createUserId, setCreateUserId] = useState('');
+  const [createEmail, setCreateEmail] = useState('');
+  const [createFirstName, setCreateFirstName] = useState('');
+  const [createLastName, setCreateLastName] = useState('');
+  const [createName, setCreateName] = useState('');
+  const [createDescription, setCreateDescription] = useState('');
+  const [createLocation, setCreateLocation] = useState('');
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
@@ -740,6 +751,96 @@ export default function UsersManagement() {
     }
   };
 
+  const handleCreateUser = async () => {
+    if (!createUserId.trim()) {
+      if (Platform.OS === 'web') {
+        window.alert('User ID is required');
+      } else {
+        Alert.alert('Error', 'User ID is required');
+      }
+      return;
+    }
+
+    if (!createEmail.trim()) {
+      if (Platform.OS === 'web') {
+        window.alert('Email is required');
+      } else {
+        Alert.alert('Error', 'Email is required');
+      }
+      return;
+    }
+
+    setIsCreatingUser(true);
+
+    try {
+      const userRef = doc(db, 'users', createUserId.trim());
+
+      const newUserData: Record<string, any> = {
+        email: createEmail.trim(),
+        accountType: 'individual',
+        isPublicProfile: true,
+        causes: [],
+        searchHistory: [],
+        createdAt: new Date().toISOString(),
+      };
+
+      if (createFirstName.trim()) {
+        newUserData.firstName = createFirstName.trim();
+      }
+      if (createLastName.trim()) {
+        newUserData.lastName = createLastName.trim();
+      }
+      if (createFirstName.trim() || createLastName.trim()) {
+        newUserData.fullName = `${createFirstName.trim()} ${createLastName.trim()}`.trim();
+      }
+
+      // Add userDetails if any profile fields are filled
+      if (createName.trim() || createDescription.trim() || createLocation.trim()) {
+        newUserData.userDetails = {};
+        if (createName.trim()) {
+          newUserData.userDetails.name = createName.trim();
+        }
+        if (createDescription.trim()) {
+          newUserData.userDetails.description = createDescription.trim();
+        }
+        if (createLocation.trim()) {
+          newUserData.userDetails.location = createLocation.trim();
+        }
+      }
+
+      await setDoc(userRef, newUserData);
+
+      // Reset form
+      setCreateUserId('');
+      setCreateEmail('');
+      setCreateFirstName('');
+      setCreateLastName('');
+      setCreateName('');
+      setCreateDescription('');
+      setCreateLocation('');
+      setShowCreateModal(false);
+
+      // Reload users
+      await loadUsers();
+
+      if (Platform.OS === 'web') {
+        window.alert('User created successfully!');
+      } else {
+        Alert.alert('Success', 'User created successfully!');
+      }
+    } catch (error: any) {
+      console.error('[Admin Users] Error creating user:', error);
+      const errorMessage = error?.message || 'Unknown error';
+      if (Platform.OS === 'web') {
+        window.alert(`Failed to create user: ${errorMessage}`);
+      } else {
+        Alert.alert('Error', `Failed to create user: ${errorMessage}`);
+      }
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
   const filteredUsers = users.filter(
     (user) =>
       (user.userDetails?.name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -779,6 +880,9 @@ export default function UsersManagement() {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
+        <TouchableOpacity style={styles.createButton} onPress={() => setShowCreateModal(true)}>
+          <Text style={styles.createButtonText}>+ Create</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.bulkButton} onPress={() => setShowBulkModal(true)}>
           <Text style={styles.bulkButtonText}>Bulk Create</Text>
         </TouchableOpacity>
@@ -1318,6 +1422,123 @@ export default function UsersManagement() {
         </SafeAreaView>
       </Modal>
 
+      {/* Create User Modal */}
+      <Modal visible={showCreateModal} animationType="slide" transparent={false}>
+        <SafeAreaView style={styles.modalContainer}>
+          <ScrollView>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Create New User</Text>
+              <Text style={styles.helpText}>
+                Create a new user account directly in Firebase. Note: This creates a database profile only.
+                For full authentication, you may need to create the user in Clerk separately.
+              </Text>
+
+              <Text style={styles.sectionTitle}>🔑 Required Fields</Text>
+
+              <Text style={styles.label}>User ID (Firebase Document ID)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., user_abc123 or clerk_user_id"
+                value={createUserId}
+                onChangeText={setCreateUserId}
+                autoCapitalize="none"
+              />
+              <Text style={styles.helpText}>
+                This will be the document ID in Firebase. Use the Clerk user ID if syncing with Clerk.
+              </Text>
+
+              <Text style={styles.label}>Email *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="user@example.com"
+                value={createEmail}
+                onChangeText={setCreateEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.sectionTitle}>👤 Basic Information</Text>
+
+              <Text style={styles.label}>First Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="John"
+                value={createFirstName}
+                onChangeText={setCreateFirstName}
+                autoCapitalize="words"
+              />
+
+              <Text style={styles.label}>Last Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Doe"
+                value={createLastName}
+                onChangeText={setCreateLastName}
+                autoCapitalize="words"
+              />
+
+              <Text style={styles.sectionTitle}>📋 Profile Details</Text>
+
+              <Text style={styles.label}>Display Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="John Doe"
+                value={createName}
+                onChangeText={setCreateName}
+                autoCapitalize="words"
+              />
+
+              <Text style={styles.label}>Bio</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="A short bio about this user..."
+                value={createDescription}
+                onChangeText={setCreateDescription}
+                multiline
+                numberOfLines={3}
+              />
+
+              <Text style={styles.label}>Location</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., New York, NY"
+                value={createLocation}
+                onChangeText={setCreateLocation}
+              />
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => {
+                    setShowCreateModal(false);
+                    setCreateUserId('');
+                    setCreateEmail('');
+                    setCreateFirstName('');
+                    setCreateLastName('');
+                    setCreateName('');
+                    setCreateDescription('');
+                    setCreateLocation('');
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.saveButton, isCreatingUser && { opacity: 0.6 }]}
+                  onPress={handleCreateUser}
+                  disabled={isCreatingUser}
+                >
+                  {isCreatingUser ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.saveButtonText}>Create User</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
       {/* Bulk Create Modal */}
       <Modal visible={showBulkModal} animationType="slide" transparent={false}>
         <SafeAreaView style={styles.modalContainer}>
@@ -1429,6 +1650,18 @@ const styles = StyleSheet.create({
   actionsBar: {
     flexDirection: 'row',
     gap: 12,
+  },
+  createButton: {
+    backgroundColor: '#28a745',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  createButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   bulkButton: {
     backgroundColor: '#6c757d',

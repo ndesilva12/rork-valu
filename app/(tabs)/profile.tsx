@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   profileImageContainer: {
     position: 'relative',
@@ -722,6 +722,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 12,
+    backgroundColor: '#FFFFFF',
   },
   profileIconContainer: {
     width: 80,
@@ -729,6 +730,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
   },
   uploadImageButton: {
     position: 'absolute',
@@ -781,13 +783,13 @@ const styles = StyleSheet.create({
   profileDescription: {
     fontSize: 15,
     lineHeight: 22,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   socialLinksContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   socialButton: {
     flexDirection: 'row',
@@ -910,7 +912,7 @@ const styles = StyleSheet.create({
   // Content Section (Library/Following/Followers)
   contentSection: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 8,
     paddingBottom: 20,
   },
   emptyPlaceholder: {
@@ -1020,8 +1022,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 16,
-    paddingTop: 16,
+    marginTop: 8,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: 'rgba(128, 128, 128, 0.2)',
   },

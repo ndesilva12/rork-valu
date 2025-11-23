@@ -562,7 +562,7 @@ export default function ValuesScreen() {
             {supportCauses.length > 0 && (
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  Aligned
+                  Support
                 </Text>
                 <View style={styles.valuesGrid}>
                   {supportCauses.map(cause => {
@@ -601,7 +601,7 @@ export default function ValuesScreen() {
             {avoidCauses.length > 0 && (
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  Unaligned
+                  Against
                 </Text>
                 <View style={styles.valuesGrid}>
                   {avoidCauses.map(cause => {
@@ -938,7 +938,7 @@ export default function ValuesScreen() {
 
             <View style={styles.valueActionContent}>
               <Text style={[styles.valueActionCurrentState, { color: colors.textSecondary }]}>
-                Currently: {selectedValueForAction?.currentState === 'support' ? 'Aligned' : selectedValueForAction?.currentState === 'avoid' ? 'Unaligned' : 'Unselected'}
+                Currently: {selectedValueForAction?.currentState === 'support' ? 'Support' : selectedValueForAction?.currentState === 'avoid' ? 'Against' : 'Unselected'}
               </Text>
 
               <TouchableOpacity

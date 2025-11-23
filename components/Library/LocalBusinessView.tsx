@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#FFFFFF',
   },
   businessLogo: {
     width: '100%',
