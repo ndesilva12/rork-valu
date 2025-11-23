@@ -710,9 +710,7 @@ export default function UnifiedLibrary({
             </Text>
           </View>
           <View style={styles.brandScoreContainer}>
-            <Text style={[styles.brandScore, { color: scoreColor }]}>
-              {alignmentScore !== undefined ? alignmentScore : 50}
-            </Text>
+            <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
           </View>
           {(mode === 'edit' || mode === 'view') && (
             <TouchableOpacity
@@ -842,9 +840,7 @@ export default function UnifiedLibrary({
                   </Text>
                 </View>
                 <View style={styles.brandScoreContainer}>
-                  <Text style={[styles.brandScore, { color: scoreColor }]}>
-                    {alignmentScore}
-                  </Text>
+                  <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
                 </View>
                 {(mode === 'edit' || mode === 'view') && (
                   <TouchableOpacity
@@ -913,11 +909,9 @@ export default function UnifiedLibrary({
                       : (businessCategory || 'Business')}
                   </Text>
                 </View>
-                {alignmentScore !== null && (
-                  <View style={styles.brandScoreContainer}>
-                    <Text style={[styles.brandScore, { color: scoreColor }]}>{alignmentScore}</Text>
-                  </View>
-                )}
+                <View style={styles.brandScoreContainer}>
+                  <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                </View>
                 {(mode === 'edit' || mode === 'view') && (
                   <TouchableOpacity
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
