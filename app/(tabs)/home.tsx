@@ -1006,7 +1006,7 @@ export default function HomeScreen() {
         <View style={styles.brandCardInner}>
           <View style={styles.brandLogoContainer}>
             <Image
-              source={{ uri: getLogoUrl(business.businessInfo.website || '') }}
+              source={{ uri: business.businessInfo.logoUrl || getLogoUrl(business.businessInfo.website || '') }}
               style={styles.brandLogo}
               contentFit="cover"
               transition={200}

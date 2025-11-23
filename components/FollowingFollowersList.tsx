@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     overflow: 'hidden',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
   },
   logo: {
     width: '100%',

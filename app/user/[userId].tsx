@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 8,
     gap: 10,
   },
   headerLogo: {
@@ -686,6 +686,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 2,
     borderColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: '#FFFFFF',
   },
   headerLogoPlaceholder: {
     width: 56,
@@ -693,6 +694,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 2,
     borderColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -788,14 +790,14 @@ const styles = StyleSheet.create({
   userDescription: {
     fontSize: 12,
     lineHeight: 17,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   followStatsContainer: {
     flexDirection: 'row',
     gap: 32,
-    marginTop: 16,
-    paddingVertical: 12,
-    marginBottom: 8,
+    marginTop: 8,
+    paddingVertical: 8,
+    marginBottom: 4,
   },
   followStat: {
     alignItems: 'center',
@@ -812,7 +814,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   socialButton: {
     flexDirection: 'row',
@@ -838,7 +840,7 @@ const styles = StyleSheet.create({
   librarySectionTitle: {
     fontSize: 22,
     fontWeight: '700' as const,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   emptyContainer: {
     padding: 48,

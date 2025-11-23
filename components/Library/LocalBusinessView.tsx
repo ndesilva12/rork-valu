@@ -237,7 +237,7 @@ export default function LocalBusinessView({
           <View style={styles.businessCardInner}>
             <View style={styles.businessLogoContainer}>
               <Image
-                source={{ uri: getLogoUrl(business.businessInfo.website || '') }}
+                source={{ uri: business.businessInfo.logoUrl || getLogoUrl(business.businessInfo.website || '') }}
                 style={styles.businessLogo}
                 contentFit="cover"
                 transition={200}
@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#FFFFFF',
   },
   businessLogo: {
     width: '100%',
