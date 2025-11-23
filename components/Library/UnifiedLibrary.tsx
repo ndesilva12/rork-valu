@@ -1493,7 +1493,7 @@ export default function UnifiedLibrary({
       <>
         {/* Top 5 endorsements with light blue tinted background */}
         {top5Content.length > 0 && (
-          <View style={[styles.top5Container, { backgroundColor: colors.primary + '15', borderColor: 'transparent' }]}>
+          <View style={[styles.top5Container, { backgroundColor: colors.primary + '08', borderColor: 'transparent' }]}>
             {top5Content}
           </View>
         )}
