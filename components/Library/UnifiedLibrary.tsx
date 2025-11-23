@@ -1491,9 +1491,9 @@ export default function UnifiedLibrary({
       </DndContext>
     ) : (
       <>
-        {/* Top 5 endorsements with blue outline */}
+        {/* Top 5 endorsements with light blue tinted background */}
         {top5Content.length > 0 && (
-          <View style={[styles.top5Container, { borderColor: colors.primary }]}>
+          <View style={[styles.top5Container, { backgroundColor: colors.primary + '30', borderColor: 'transparent' }]}>
             {top5Content}
           </View>
         )}
@@ -1929,7 +1929,7 @@ export default function UnifiedLibrary({
     // Define section colors (border colors only, no background tints)
     const sectionColors = {
       local: {
-        border: isDarkMode ? 'rgb(0, 170, 250)' : 'rgb(3, 68, 102)',
+        border: isDarkMode ? 'rgb(132, 204, 22)' : 'rgb(101, 163, 13)', // lime green
       },
       following: {
         border: isDarkMode ? 'rgb(167, 139, 250)' : 'rgb(124, 58, 237)',
@@ -1941,10 +1941,10 @@ export default function UnifiedLibrary({
         border: isDarkMode ? 'rgb(0, 170, 250)' : 'rgb(3, 68, 102)',
       },
       aligned: {
-        border: isDarkMode ? 'rgb(132, 204, 22)' : 'rgb(101, 163, 13)',
+        border: '#FF1F7A', // red/pink for global (aligned)
       },
       unaligned: {
-        border: '#FF1F7A',
+        border: '#FF1F7A', // red/pink for global (unaligned)
       },
     };
 
@@ -2002,16 +2002,19 @@ export default function UnifiedLibrary({
       );
     };
 
-    // For profile views (preview/view modes), show Endorsements (full width)
+    // For profile views (preview/view modes), show Followers | Following counters
     const isProfileView = mode === 'preview' || mode === 'view';
 
     if (isProfileView) {
       return (
         <View style={styles.sectionSelector}>
-          {/* Single row: Endorsements (full width) */}
+          {/* Single row: Followers | Following */}
           <View style={styles.sectionRow}>
-            <View style={styles.sectionFull}>
-              <EndorsedSectionBox />
+            <View style={styles.sectionHalf}>
+              <SectionBox section="followers" label="Followers" count={followersCount} />
+            </View>
+            <View style={styles.sectionHalf}>
+              <SectionBox section="following" label="Following" count={followingCount} />
             </View>
           </View>
         </View>
@@ -2021,7 +2024,7 @@ export default function UnifiedLibrary({
     // Global section box (combines aligned + unaligned)
     const GlobalSectionBox = () => {
       const isSelected = selectedSection === 'aligned' || selectedSection === 'unaligned';
-      const sectionColor = sectionColors.aligned;
+      const sectionColor = sectionColors.aligned; // red/pink
       const globalCount = alignedCount + unalignedCount;
 
       return (
@@ -2793,7 +2796,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   top5Container: {
-    borderWidth: 2,
+    borderWidth: 0,
     borderRadius: 12,
     padding: 8,
     marginBottom: 8,

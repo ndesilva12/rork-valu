@@ -1,8 +1,7 @@
 import { useRouter } from 'expo-router';
-import { Search as SearchIcon, TrendingUp, TrendingDown, Minus, ScanBarcode, X, Heart, MessageCircle, Share2, ExternalLink, MoreVertical, UserPlus, UserMinus, List as ListIcon, Plus, Send, ImageIcon } from 'lucide-react-native';
+import { Search as SearchIcon, TrendingUp, TrendingDown, Minus, ScanBarcode, X, Heart, MessageCircle, Share2, ExternalLink, MoreVertical, UserPlus, UserMinus, List as ListIcon, Plus } from 'lucide-react-native';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
-import * as ImagePicker from 'expo-image-picker';
 import {
   View,
   Text,
@@ -37,7 +36,7 @@ import { getAllPublicUsers } from '@/services/firebase/userService';
 import { UserProfile } from '@/types';
 import { copyListToLibrary, getEndorsementList } from '@/services/firebase/listService';
 import { useLibrary } from '@/contexts/LibraryContext';
-import { followEntity, unfollowEntity, isFollowing } from '@/services/firebase/followService';
+import { followEntity, unfollowEntity, isFollowing, getFollowing } from '@/services/firebase/followService';
 
 interface Comment {
   id: string;
@@ -325,6 +324,8 @@ export default function SearchScreen() {
   const [results, setResults] = useState<Product[]>([]);
   const [firebaseBusinesses, setFirebaseBusinesses] = useState<BusinessUser[]>([]);
   const [publicUsers, setPublicUsers] = useState<Array<{ id: string; profile: UserProfile }>>([]);
+  const [followingUsers, setFollowingUsers] = useState<Array<{ id: string; profile: UserProfile }>>([]);
+  const [activeTab, setActiveTab] = useState<'explore' | 'following'>('explore');
   const [scannerVisible, setScannerVisible] = useState(false);
   const [scannedProduct, setScannedProduct] = useState<Product | null>(null);
   const [scannedInfo, setScannedInfo] = useState<{productName: string; brandName: string; imageUrl?: string; notInDatabase: boolean} | null>(null);
@@ -348,6 +349,31 @@ export default function SearchScreen() {
     };
     fetchData();
   }, []);
+
+  // Fetch following users when tab changes or user logs in
+  useEffect(() => {
+    const fetchFollowingUsers = async () => {
+      if (!clerkUser?.id || activeTab !== 'following') return;
+
+      try {
+        const followingEntities = await getFollowing(clerkUser.id);
+        const userFollowing = followingEntities.filter(f => f.type === 'user');
+
+        // Get profiles for followed users
+        const followingProfiles: Array<{ id: string; profile: UserProfile }> = [];
+        for (const entity of userFollowing) {
+          const userProfile = publicUsers.find(u => u.id === entity.entityId);
+          if (userProfile) {
+            followingProfiles.push(userProfile);
+          }
+        }
+        setFollowingUsers(followingProfiles);
+      } catch (error) {
+        console.error('Error fetching following users:', error);
+      }
+    };
+    fetchFollowingUsers();
+  }, [clerkUser?.id, activeTab, publicUsers]);
 
   // Responsive grid columns
   const numColumns = useMemo(() => width > 768 ? 3 : 2, [width]);
@@ -566,137 +592,6 @@ export default function SearchScreen() {
     if (!firstMatchingValue) return null;
     return firstMatchingValue.name;
   }, [availableValuesByCategory]);
-
-  // Posts handlers
-  const handlePickImage = useCallback(async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please allow access to your photo library to upload images.');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        setNewPostImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
-    }
-  }, []);
-
-  const handleCreatePost = useCallback(async () => {
-    console.log('[Search] handleCreatePost called', {
-      hasClerkUserId: !!clerkUser?.id,
-      hasContent: !!newPostContent.trim(),
-      hasImage: !!newPostImage,
-    });
-
-    if (!clerkUser?.id) {
-      console.log('[Search] No clerk user ID');
-      Alert.alert('Error', 'You must be logged in to create a post');
-      return;
-    }
-
-    if (!newPostContent.trim() && !newPostImage) {
-      console.log('[Search] No content or image');
-      Alert.alert('Error', 'Please enter some content or add an image for your post');
-      return;
-    }
-
-    setCreatingPost(true);
-    try {
-      const authorName = profile?.userDetails?.name || clerkUser?.firstName || 'User';
-      const authorImage = profile?.userDetails?.profileImage;
-      const authorType = profile?.accountType === 'business' ? 'business' : 'user';
-
-      console.log('[Search] Creating post with:', {
-        authorId: clerkUser.id,
-        authorName,
-        hasAuthorImage: !!authorImage,
-        authorType,
-        contentLength: newPostContent.trim().length,
-        hasPostImage: !!newPostImage,
-      });
-
-      // For now, we'll store the image URI directly (in production, upload to storage first)
-      await createPost(
-        clerkUser.id,
-        authorName,
-        authorImage,
-        authorType as 'user' | 'business',
-        newPostContent.trim(),
-        newPostImage ? 'recommendation' : 'text',
-        newPostImage ? { id: 'image', type: 'brand', name: 'Image Post', image: newPostImage } : undefined
-      );
-
-      console.log('[Search] Post created successfully');
-
-      // Refresh posts
-      const { posts: refreshedPosts } = await getPosts(20);
-      setPosts(refreshedPosts);
-
-      // Check likes for refreshed posts
-      if (clerkUser?.id) {
-        const likesMap = new Map<string, boolean>();
-        for (const post of refreshedPosts) {
-          const liked = await hasLikedPost(post.id, clerkUser.id);
-          likesMap.set(post.id, liked);
-        }
-        setPostLikes(likesMap);
-      }
-
-      setNewPostContent('');
-      setNewPostImage(null);
-      setCreatePostModalVisible(false);
-
-      // Use platform-appropriate notification
-      if (Platform.OS === 'web') {
-        window.alert('Your post has been published!');
-      } else {
-        Alert.alert('Success', 'Your post has been published!');
-      }
-    } catch (error) {
-      console.error('[Search] Error creating post:', error);
-      if (Platform.OS === 'web') {
-        window.alert('Failed to create post. Please try again.');
-      } else {
-        Alert.alert('Error', 'Failed to create post. Please try again.');
-      }
-    } finally {
-      setCreatingPost(false);
-    }
-  }, [clerkUser?.id, newPostContent, newPostImage, profile]);
-
-  const handlePostLike = useCallback(async (postId: string) => {
-    if (!clerkUser?.id) {
-      Alert.alert('Error', 'You must be logged in to like posts');
-      return;
-    }
-
-    const isLiked = postLikes.get(postId) || false;
-
-    try {
-      if (isLiked) {
-        await unlikePost(postId, clerkUser.id);
-        setPostLikes(prev => new Map(prev).set(postId, false));
-        setPosts(prev => prev.map(p => p.id === postId ? { ...p, likesCount: p.likesCount - 1 } : p));
-      } else {
-        await likePost(postId, clerkUser.id);
-        setPostLikes(prev => new Map(prev).set(postId, true));
-        setPosts(prev => prev.map(p => p.id === postId ? { ...p, likesCount: p.likesCount + 1 } : p));
-      }
-    } catch (error) {
-      console.error('Error liking/unliking post:', error);
-    }
-  }, [clerkUser?.id, postLikes]);
 
   const formatTimeAgo = useCallback((date: Date) => {
     const now = new Date();
@@ -1060,11 +955,40 @@ export default function SearchScreen() {
 
     return (
       <View style={[styles.tabSelector, { borderBottomColor: colors.border }]}>
-        <View style={[styles.tab, styles.activeTab, { borderBottomColor: colors.primary }]}>
-          <Text style={[styles.tabText, { color: colors.primary }, styles.activeTabText]}>
-            Discover Users
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            activeTab === 'explore' && styles.activeTab,
+            activeTab === 'explore' && { borderBottomColor: colors.primary }
+          ]}
+          onPress={() => setActiveTab('explore')}
+          activeOpacity={0.7}
+        >
+          <Text style={[
+            styles.tabText,
+            { color: activeTab === 'explore' ? colors.primary : colors.textSecondary },
+            activeTab === 'explore' && styles.activeTabText
+          ]}>
+            Explore
           </Text>
-        </View>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            activeTab === 'following' && styles.activeTab,
+            activeTab === 'following' && { borderBottomColor: colors.primary }
+          ]}
+          onPress={() => setActiveTab('following')}
+          activeOpacity={0.7}
+        >
+          <Text style={[
+            styles.tabText,
+            { color: activeTab === 'following' ? colors.primary : colors.textSecondary },
+            activeTab === 'following' && styles.activeTabText
+          ]}>
+            Following
+          </Text>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -1283,8 +1207,8 @@ export default function SearchScreen() {
 
       {query.trim().length === 0 ? (
         <FlatList
-          key="user-list"
-          data={publicUsers}
+          key={activeTab === 'explore' ? 'explore-list' : 'following-list'}
+          data={activeTab === 'explore' ? publicUsers : followingUsers}
           renderItem={renderUserCard}
           keyExtractor={item => item.id}
           contentContainerStyle={[styles.userListContainer, { paddingBottom: 100 }]}
@@ -1294,9 +1218,13 @@ export default function SearchScreen() {
               <View style={[styles.emptyIconContainer, { backgroundColor: colors.primaryLight + '10' }]}>
                 <SearchIcon size={48} color={colors.primaryLight} strokeWidth={1.5} />
               </View>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>No Users Yet</Text>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                {activeTab === 'explore' ? 'No Users Yet' : 'Not Following Anyone'}
+              </Text>
               <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                Be one of the first to make your profile public!
+                {activeTab === 'explore'
+                  ? 'Be one of the first to make your profile public!'
+                  : 'Explore users and follow them to see them here!'}
               </Text>
             </View>
           }
@@ -1595,128 +1523,6 @@ export default function SearchScreen() {
               </View>
             </View>
           ) : null}
-        </View>
-      </Modal>
-
-      {/* Create Post Modal - Centered */}
-      <Modal
-        visible={createPostModalVisible}
-        animationType="fade"
-        transparent
-        onRequestClose={() => {
-          setCreatePostModalVisible(false);
-          setNewPostImage(null);
-          setNewPostContent('');
-        }}
-      >
-        <View style={styles.createPostModalOverlay}>
-          <View style={[styles.createPostModalContent, { backgroundColor: colors.background }]}>
-            <View style={[styles.createPostModalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.createPostModalTitle, { color: colors.text }]}>Create Post</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setCreatePostModalVisible(false);
-                  setNewPostImage(null);
-                  setNewPostContent('');
-                }}
-                activeOpacity={0.7}
-              >
-                <X size={24} color={colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.createPostModalBody} showsVerticalScrollIndicator={false}>
-              <View style={styles.createPostAuthorRow}>
-                {profile?.userDetails?.profileImage ? (
-                  <Image
-                    source={{ uri: profile.userDetails.profileImage }}
-                    style={styles.createPostAuthorImage}
-                    contentFit="cover"
-                    transition={200}
-                  />
-                ) : (
-                  <View style={[styles.createPostAuthorImagePlaceholder, { backgroundColor: colors.primary }]}>
-                    <Text style={[styles.createPostAuthorInitial, { color: colors.white }]}>
-                      {(profile?.userDetails?.name || clerkUser?.firstName || 'U').charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                )}
-                <Text style={[styles.createPostAuthorName, { color: colors.text }]}>
-                  {profile?.userDetails?.name || clerkUser?.firstName || 'User'}
-                </Text>
-              </View>
-
-              {/* Image Preview */}
-              {newPostImage ? (
-                <View style={styles.createPostImageContainer}>
-                  <Image
-                    source={{ uri: newPostImage }}
-                    style={styles.createPostImagePreview}
-                    contentFit="cover"
-                    transition={200}
-                  />
-                  <TouchableOpacity
-                    style={[styles.removeImageButton, { backgroundColor: colors.danger }]}
-                    onPress={() => setNewPostImage(null)}
-                    activeOpacity={0.7}
-                  >
-                    <X size={16} color={colors.white} strokeWidth={2.5} />
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.addImageButton, { borderColor: colors.primary }]}
-                  onPress={handlePickImage}
-                  activeOpacity={0.7}
-                >
-                  <ImageIcon size={32} color={colors.primary} strokeWidth={1.5} />
-                  <Text style={[styles.addImageText, { color: colors.primary }]}>Add Image</Text>
-                </TouchableOpacity>
-              )}
-
-              {/* Text Input - Caption style if image, larger if text only */}
-              <TextInput
-                style={[
-                  newPostImage ? styles.createPostCaptionInput : styles.createPostTextOnlyInput,
-                  { color: colors.text },
-                  !newPostImage && { borderColor: colors.primary }
-                ]}
-                placeholder={newPostImage ? "Add a caption..." : "What's on your mind?"}
-                placeholderTextColor={colors.textSecondary}
-                value={newPostContent}
-                onChangeText={setNewPostContent}
-                multiline
-                numberOfLines={newPostImage ? 3 : 6}
-                maxLength={500}
-                textAlignVertical="top"
-              />
-
-              <Text style={[styles.characterCount, { color: colors.textSecondary }]}>
-                {newPostContent.length}/500
-              </Text>
-            </ScrollView>
-
-            <View style={[styles.createPostModalFooter, { borderTopColor: colors.border }]}>
-              <TouchableOpacity
-                style={[
-                  styles.publishButton,
-                  { backgroundColor: (newPostContent.trim() || newPostImage) && !creatingPost ? colors.primary : colors.neutral }
-                ]}
-                onPress={handleCreatePost}
-                disabled={(!newPostContent.trim() && !newPostImage) || creatingPost}
-                activeOpacity={0.8}
-              >
-                {creatingPost ? (
-                  <Text style={[styles.publishButtonText, { color: colors.white }]}>Publishing...</Text>
-                ) : (
-                  <>
-                    <Send size={18} color={colors.white} strokeWidth={2.5} />
-                    <Text style={[styles.publishButtonText, { color: colors.white }]}>Publish</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
         </View>
       </Modal>
     </View>

@@ -38,7 +38,7 @@ const slides = [
   {
     icon: Sparkles,
     title: 'Discover & Connect',
-    description: 'Use the Value Machine or find your friends in order to discover new brands or gift ideas.',
+    description: 'Find your friends in order to discover new brands or gift ideas.',
     color: '#8B5CF6', // purple
   },
   {

@@ -545,6 +545,9 @@ export default function ValuesScreen() {
               Update Values
             </Text>
           </TouchableOpacity>
+          <Text style={[styles.valueHintText, { color: colors.textSecondary }]}>
+            click any value to see related brands
+          </Text>
         </View>
 
         {supportCauses.length === 0 && avoidCauses.length === 0 ? (
@@ -640,9 +643,6 @@ export default function ValuesScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Unselected Values
-          </Text>
-          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-            Tap a category to expand. Tap values to select or cycle. Long press to explore brands.
           </Text>
 
           {sortedCategories.map((category) => {
@@ -1128,6 +1128,11 @@ const styles = StyleSheet.create({
   centeredButtonText: {
     fontSize: 15,
     fontWeight: '600' as const,
+  },
+  valueHintText: {
+    fontSize: 13,
+    marginTop: 8,
+    textAlign: 'center' as const,
   },
   // Collapsible Category Styles
   collapsibleCategoryHeader: {
