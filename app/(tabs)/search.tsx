@@ -383,12 +383,16 @@ export default function SearchScreen() {
                 const userData = userSnap.data();
                 // Check if this is a business account
                 if (userData.accountType === 'business' && userData.businessInfo) {
+                  // Always use generated logo from website - never use logoUrl as it might be the cover image
+                  const logoImage = userData.businessInfo.website
+                    ? getLogoUrl(userData.businessInfo.website)
+                    : ''; // Empty string will show placeholder
                   items.push({
                     id: entity.followedId,
                     type: 'business',
                     name: userData.businessInfo.name || 'Unknown Business',
                     description: userData.businessInfo.description || '',
-                    profileImage: userData.businessInfo.website ? getLogoUrl(userData.businessInfo.website) : (userData.businessInfo.logoUrl || ''),
+                    profileImage: logoImage,
                     category: userData.businessInfo.category,
                     website: userData.businessInfo.website,
                   });
@@ -412,12 +416,16 @@ export default function SearchScreen() {
                 const businessData = businessSnap.data();
                 const businessInfo = businessData.businessInfo;
                 if (businessInfo) {
+                  // Always use generated logo from website - never use logoUrl as it might be the cover image
+                  const logoImage = businessInfo.website
+                    ? getLogoUrl(businessInfo.website)
+                    : ''; // Empty string will show placeholder
                   items.push({
                     id: entity.followedId,
                     type: 'business',
                     name: businessInfo.name || 'Unknown Business',
                     description: businessInfo.description || '',
-                    profileImage: businessInfo.website ? getLogoUrl(businessInfo.website) : (businessInfo.logoUrl || ''),
+                    profileImage: logoImage,
                     category: businessInfo.category,
                     website: businessInfo.website,
                   });

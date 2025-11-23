@@ -872,8 +872,8 @@ export default function UnifiedLibrary({
           // Get business name from multiple possible fields
           const businessName = (entry as any).businessName || (entry as any).name || 'Unknown Business';
           const businessCategory = (entry as any).businessCategory || (entry as any).category;
-          // Prefer generated logo from website to avoid cover images being shown
-          const logoUrl = (entry as any).website ? getLogoUrl((entry as any).website) : ((entry as any).logoUrl || getLogoUrl(''));
+          // Always use generated logo from website - never use logoUrl as it might be the cover image
+          const logoUrl = (entry as any).website ? getLogoUrl((entry as any).website) : getLogoUrl('');
 
           return (
             <TouchableOpacity

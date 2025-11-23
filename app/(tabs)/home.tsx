@@ -4405,7 +4405,7 @@ export default function HomeScreen() {
                         activeOpacity={0.7}
                       >
                         <Image
-                          source={{ uri: business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : (business.businessInfo.logoUrl || getLogoUrl('')) }}
+                          source={{ uri: business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : getLogoUrl('') }}
                           style={styles.searchResultLogo}
                           contentFit="cover"
                         />
