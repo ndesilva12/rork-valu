@@ -1487,7 +1487,7 @@ export default function UnifiedLibrary({
       <>
         {/* Top 5 endorsements with light blue tinted background */}
         {top5Content.length > 0 && (
-          <View style={[styles.top5Container, { backgroundColor: isDarkMode ? 'rgba(0, 170, 250, 0.08)' : 'rgba(3, 68, 102, 0.08)', borderColor: 'transparent' }]}>
+          <View style={[styles.top5Container, { backgroundColor: isDarkMode ? 'rgba(0, 170, 250, 0.15)' : 'rgba(3, 68, 102, 0.15)', borderColor: 'transparent' }]}>
             {top5Content}
           </View>
         )}

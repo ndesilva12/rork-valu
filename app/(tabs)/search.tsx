@@ -440,7 +440,7 @@ export default function SearchScreen() {
                 });
               } else {
                 // Brand might be in the brands data context
-                const brand = brands.find(b => b.id === entity.followedId || b.name === entity.followedId);
+                const brand = firebaseBrands.find(b => b.id === entity.followedId || b.name === entity.followedId);
                 if (brand) {
                   items.push({
                     id: entity.followedId,
@@ -464,7 +464,7 @@ export default function SearchScreen() {
       }
     };
     fetchFollowingItems();
-  }, [clerkUser?.id, activeTab, brands]);
+  }, [clerkUser?.id, activeTab, firebaseBrands]);
 
   // Responsive grid columns
   const numColumns = useMemo(() => width > 768 ? 3 : 2, [width]);
