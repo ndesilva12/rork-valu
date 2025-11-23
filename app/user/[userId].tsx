@@ -50,7 +50,7 @@ export default function UserProfileScreen() {
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [showActionMenu, setShowActionMenu] = useState(false);
-  const [selectedLibrarySection, setSelectedLibrarySection] = useState<'endorsement' | 'aligned' | 'unaligned' | 'following' | 'followers' | 'local' | 'posts'>('endorsement');
+  const [selectedLibrarySection, setSelectedLibrarySection] = useState<'endorsement' | 'aligned' | 'unaligned' | 'following' | 'followers' | 'local'>('endorsement');
 
   const panResponder = useRef(
     PanResponder.create({

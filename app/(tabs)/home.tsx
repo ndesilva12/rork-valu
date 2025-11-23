@@ -1036,7 +1036,7 @@ export default function HomeScreen() {
             style={[styles.quickAddButton, { backgroundColor: colors.background }]}
             onPress={(e) => {
               e.stopPropagation();
-              handleCardMenuOpen('business', business.id, business.businessInfo.name, business.businessInfo.website, business.businessInfo.logoUrl);
+              handleCardMenuOpen('business', business.id, business.businessInfo.name, business.businessInfo.website, business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : '');
             }}
             activeOpacity={0.7}
           >
@@ -4401,11 +4401,11 @@ export default function HomeScreen() {
                       <TouchableOpacity
                         key={business.id}
                         style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                        onPress={() => handleAddItemSubmit({ businessId: business.id, name: business.businessInfo.name, website: business.businessInfo.website, logoUrl: business.businessInfo.logoUrl })}
+                        onPress={() => handleAddItemSubmit({ businessId: business.id, name: business.businessInfo.name, website: business.businessInfo.website, logoUrl: business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : '' })}
                         activeOpacity={0.7}
                       >
                         <Image
-                          source={{ uri: business.businessInfo.logoUrl || getLogoUrl(business.businessInfo.website || '') }}
+                          source={{ uri: business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : getLogoUrl('') }}
                           style={styles.searchResultLogo}
                           contentFit="cover"
                         />

@@ -110,20 +110,6 @@ export default function ValuesScreen() {
   const colors = isDarkMode ? darkColors : lightColors;
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
-  // Tab state for My Values / Value Machine
-  const [activeTab, setActiveTab] = useState<'myValues' | 'valueMachine'>('myValues');
-
-  // Value Machine state
-  const [vmSelectedSupportValues, setVmSelectedSupportValues] = useState<string[]>([]);
-  const [vmSelectedRejectValues, setVmSelectedRejectValues] = useState<string[]>([]);
-  const [vmResults, setVmResults] = useState<Product[]>([]);
-  const [vmShowingResults, setVmShowingResults] = useState(false);
-  const [vmResultsLimit, setVmResultsLimit] = useState(10);
-  const [vmSelectedCategory, setVmSelectedCategory] = useState<string>('');
-  const [vmCategoryDropdownOpen, setVmCategoryDropdownOpen] = useState(false);
-  const [vmResultsMode, setVmResultsMode] = useState<'aligned' | 'unaligned'>('aligned');
-  const [firebaseBusinesses, setFirebaseBusinesses] = useState<BusinessUser[]>([]);
-
   // Local state to track changes before persisting
   const [localChanges, setLocalChanges] = useState<Map<string, LocalValueState | null>>(new Map());
   const hasUnsavedChanges = useRef(false);
@@ -196,140 +182,6 @@ export default function ValuesScreen() {
   const unknownCategories = allCategories.filter(cat => !CATEGORY_ORDER.includes(cat)).sort();
   const sortedCategories = [...knownCategories, ...unknownCategories];
 
-  // Value Machine: Categories with labels for dropdown
-  const vmCategoriesWithLabels = useMemo(() => {
-    const categoryLabels: Record<string, string> = {
-      'ideology': 'Ideology',
-      'social_issue': 'Social Issues',
-      'person': 'People',
-      'lifestyle': 'Lifestyle',
-      'nation': 'Places',
-      'religion': 'Religion',
-      'organization': 'Organizations',
-      'sports': 'Sports',
-      'corporation': 'Corporations',
-    };
-
-    return Object.keys(availableValues)
-      .map(key => ({
-        key,
-        label: categoryLabels[key] || key.charAt(0).toUpperCase() + key.slice(1).replace('_', ' ')
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [availableValues]);
-
-  // Fetch Firebase businesses for Value Machine
-  useEffect(() => {
-    const fetchBusinesses = async () => {
-      try {
-        const businesses = await getAllUserBusinesses();
-        setFirebaseBusinesses(businesses);
-      } catch (error) {
-        console.error('[Values] Error fetching businesses:', error);
-      }
-    };
-    fetchBusinesses();
-  }, []);
-
-  // Value Machine handlers
-  const handleVmValueToggle = useCallback((valueId: string) => {
-    const isSupported = vmSelectedSupportValues.includes(valueId);
-    const isRejected = vmSelectedRejectValues.includes(valueId);
-
-    if (!isSupported && !isRejected) {
-      setVmSelectedSupportValues(prev => [...prev, valueId]);
-    } else if (isSupported) {
-      setVmSelectedSupportValues(prev => prev.filter(id => id !== valueId));
-      setVmSelectedRejectValues(prev => [...prev, valueId]);
-    } else {
-      setVmSelectedRejectValues(prev => prev.filter(id => id !== valueId));
-    }
-  }, [vmSelectedSupportValues, vmSelectedRejectValues]);
-
-  const handleVmResetSelections = useCallback(() => {
-    setVmSelectedSupportValues([]);
-    setVmSelectedRejectValues([]);
-    setVmShowingResults(false);
-    setVmResultsLimit(10);
-  }, []);
-
-  const handleVmGenerateResults = useCallback(() => {
-    const allSelectedValues = [...vmSelectedSupportValues, ...vmSelectedRejectValues];
-
-    if (allSelectedValues.length === 0) {
-      Alert.alert('No Values Selected', 'Please select at least one value to support or reject.');
-      return;
-    }
-
-    const userCauses = [
-      ...vmSelectedSupportValues.map(id => ({ id, type: 'support' as const, weight: 1.0 })),
-      ...vmSelectedRejectValues.map(id => ({ id, type: 'avoid' as const, weight: 1.0 }))
-    ];
-
-    // Score Firebase brands
-    const brandsWithScores = (brands || []).map(brand => {
-      const score = calculateBrandScore(brand.name, userCauses, valuesMatrix);
-      return { brand, score };
-    });
-
-    const normalizedBrands = normalizeBrandScores(brandsWithScores);
-
-    const scored = normalizedBrands.map(({ brand, score }) => {
-      const isPositivelyAligned = score >= 50;
-      return {
-        ...brand,
-        alignmentScore: score,
-        isPositivelyAligned
-      } as Product;
-    });
-
-    // Score Firebase businesses
-    const businessScored = firebaseBusinesses.map(business => {
-      if (!business.causes || business.causes.length === 0) {
-        return {
-          id: `firebase-business-${business.id}`,
-          firebaseId: business.id,
-          name: business.businessInfo.name,
-          brand: business.businessInfo.name,
-          category: business.businessInfo.category,
-          description: business.businessInfo.description || '',
-          exampleImageUrl: business.businessInfo.logoUrl,
-          website: business.businessInfo.website,
-          alignmentScore: 50,
-          isPositivelyAligned: false,
-          isFirebaseBusiness: true,
-        } as Product & { firebaseId: string; isFirebaseBusiness: boolean };
-      }
-
-      const rawScore = calculateAlignmentScore(userCauses, business.causes);
-      const isPositivelyAligned = rawScore > 0;
-      const alignmentScore = Math.max(0, Math.min(100, Math.round(50 + (rawScore * 0.5))));
-
-      return {
-        id: `firebase-business-${business.id}`,
-        firebaseId: business.id,
-        name: business.businessInfo.name,
-        brand: business.businessInfo.name,
-        category: business.businessInfo.category,
-        description: business.businessInfo.description || '',
-        exampleImageUrl: business.businessInfo.logoUrl,
-        website: business.businessInfo.website,
-        alignmentScore,
-        isPositivelyAligned,
-        isFirebaseBusiness: true,
-      } as Product & { firebaseId: string; isFirebaseBusiness: boolean };
-    });
-
-    const allSorted = [...scored, ...businessScored].sort((a, b) => b.alignmentScore - a.alignmentScore);
-    setVmResults(allSorted);
-    setVmShowingResults(true);
-    setVmResultsLimit(10);
-  }, [vmSelectedSupportValues, vmSelectedRejectValues, brands, valuesMatrix, firebaseBusinesses]);
-
-  const handleVmLoadMore = useCallback(() => {
-    setVmResultsLimit(prev => Math.min(prev + 10, 30));
-  }, []);
-
   const toggleCategoryExpanded = (category: string) => {
     setExpandedCategories(prev => {
       const next = new Set(prev);
@@ -344,33 +196,6 @@ export default function ValuesScreen() {
 
   const handleUpdateValues = () => {
     router.push('/onboarding');
-  };
-
-  const handleResetValues = () => {
-    const isBusiness = profile.accountType === 'business';
-    const minValues = isBusiness ? 3 : 5;
-
-    Alert.alert(
-      'Reset All Values',
-      `Are you sure you want to reset all your values? You will be redirected to select at least ${minValues} new values.`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: async () => {
-            // Remove all causes and redirect to onboarding
-            const allCauseIds = (profile.causes || []).map(c => c.id);
-            await removeCauses(allCauseIds);
-            router.replace('/onboarding');
-          },
-        },
-      ],
-      { cancelable: true }
-    );
   };
 
   // Get the current state of a value (local changes take priority over profile)
@@ -470,18 +295,9 @@ export default function ValuesScreen() {
     }, [localChanges, profile.causes])
   );
 
-  const handleValueTap = (valueId: string, valueName: string, valueCategory: string, description?: string) => {
-    console.log('[Values] Value tapped:', valueName);
-    const currentState = getValueState(valueId);
-
-    setSelectedValueForAction({
-      id: valueId,
-      name: valueName,
-      category: valueCategory,
-      description,
-      currentState,
-    });
-    setShowValueActionModal(true);
+  const handleValueTap = (valueId: string) => {
+    // Navigate directly to value details page
+    router.push(`/value/${valueId}`);
   };
 
   const handleValueAction = (action: 'view' | 'aligned' | 'unaligned' | 'deselect') => {
@@ -713,70 +529,25 @@ export default function ValuesScreen() {
         </View>
       </View>
 
-      {/* Tab Headers */}
-      <View style={[styles.tabSelector, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === 'myValues' && styles.activeTab,
-            { borderBottomColor: colors.primary }
-          ]}
-          onPress={() => setActiveTab('myValues')}
-          activeOpacity={0.7}
-        >
-          <Text style={[
-            styles.tabText,
-            { color: activeTab === 'myValues' ? colors.primary : colors.textSecondary },
-            activeTab === 'myValues' && styles.activeTabText
-          ]}>
-            My Values
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === 'valueMachine' && styles.activeTab,
-            { borderBottomColor: colors.primary }
-          ]}
-          onPress={() => setActiveTab('valueMachine')}
-          activeOpacity={0.7}
-        >
-          <Text style={[
-            styles.tabText,
-            { color: activeTab === 'valueMachine' ? colors.primary : colors.textSecondary },
-            activeTab === 'valueMachine' && styles.activeTabText
-          ]}>
-            Value Machine
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {activeTab === 'myValues' ? (
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Action Buttons - Made smaller */}
-        <View style={styles.smallActionButtonsContainer}>
+        {/* Update Values Button - Centered */}
+        <View style={styles.centeredButtonContainer}>
           <TouchableOpacity
-            style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
+            style={[styles.centeredButton, { backgroundColor: colors.primary }]}
             onPress={handleUpdateValues}
             activeOpacity={0.7}
           >
-            <Text style={[styles.smallActionButtonText, { color: colors.white }]}>
-              Update All Values
+            <Text style={[styles.centeredButtonText, { color: colors.white }]}>
+              Update Values
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.smallActionButton, styles.smallResetButton, { borderColor: colors.danger }]}
-            onPress={handleResetValues}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.smallActionButtonText, { color: colors.danger }]}>
-              Reset All Values
-            </Text>
-          </TouchableOpacity>
+          <Text style={[styles.valueHintText, { color: colors.textSecondary }]}>
+            click any value to see related brands
+          </Text>
         </View>
 
         {supportCauses.length === 0 && avoidCauses.length === 0 ? (
@@ -805,7 +576,7 @@ export default function ValuesScreen() {
                           currentState === 'avoid' && { backgroundColor: colors.danger, borderColor: colors.danger },
                           currentState === 'unselected' && { backgroundColor: 'transparent', borderColor: colors.neutral, borderWidth: 1.5 }
                         ]}
-                        onPress={() => handleValueTap(cause.id, cause.name, cause.category, cause.description)}
+                        onPress={() => handleValueTap(cause.id)}
                         onLongPress={() => router.push(`/value/${cause.id}`)}
                         activeOpacity={0.7}
                       >
@@ -844,7 +615,7 @@ export default function ValuesScreen() {
                           currentState === 'avoid' && { backgroundColor: colors.danger, borderColor: colors.danger },
                           currentState === 'unselected' && { backgroundColor: 'transparent', borderColor: colors.neutral, borderWidth: 1.5 }
                         ]}
-                        onPress={() => handleValueTap(cause.id, cause.name, cause.category, cause.description)}
+                        onPress={() => handleValueTap(cause.id)}
                         onLongPress={() => router.push(`/value/${cause.id}`)}
                         activeOpacity={0.7}
                       >
@@ -872,9 +643,6 @@ export default function ValuesScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Unselected Values
-          </Text>
-          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-            Tap a category to expand. Tap values to select or cycle. Long press to explore brands.
           </Text>
 
           {sortedCategories.map((category) => {
@@ -921,7 +689,7 @@ export default function ValuesScreen() {
                             currentState === 'support' && { backgroundColor: colors.success, borderColor: colors.success },
                             currentState === 'avoid' && { backgroundColor: colors.danger, borderColor: colors.danger }
                           ]}
-                          onPress={() => handleValueTap(value.id, value.name, value.category)}
+                          onPress={() => handleValueTap(value.id)}
                           onLongPress={() => router.push(`/value/${value.id}`)}
                           activeOpacity={0.7}
                         >
@@ -957,246 +725,6 @@ export default function ValuesScreen() {
           </Text>
         </View>
       </ScrollView>
-      ) : (
-        /* Value Machine Tab */
-        vmShowingResults ? (
-          <View style={styles.vmResultsContainer}>
-            <View style={styles.vmResultsHeader}>
-              <View style={styles.vmResultsModeToggle}>
-                <TouchableOpacity
-                  style={[
-                    styles.vmResultsModeButton,
-                    vmResultsMode === 'aligned' && { backgroundColor: colors.primary }
-                  ]}
-                  onPress={() => setVmResultsMode('aligned')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[
-                    styles.vmResultsModeButtonText,
-                    { color: vmResultsMode === 'aligned' ? colors.white : colors.textSecondary }
-                  ]}>
-                    Aligned
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.vmResultsModeButton,
-                    vmResultsMode === 'unaligned' && { backgroundColor: colors.primary }
-                  ]}
-                  onPress={() => setVmResultsMode('unaligned')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[
-                    styles.vmResultsModeButtonText,
-                    { color: vmResultsMode === 'unaligned' ? colors.white : colors.textSecondary }
-                  ]}>
-                    Unaligned
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              <TouchableOpacity onPress={handleVmResetSelections} activeOpacity={0.7}>
-                <Text style={[styles.vmResetButton, { color: colors.primary }]}>Reset</Text>
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={
-                vmResultsMode === 'aligned'
-                  ? vmResults.filter((item: any) => item.isPositivelyAligned !== false).slice(0, vmResultsLimit)
-                  : vmResults.filter((item: any) => item.isPositivelyAligned === false).slice(0, vmResultsLimit)
-              }
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[styles.vmResultItem, { backgroundColor: colors.backgroundSecondary }]}
-                  onPress={() => {
-                    if ((item as any).isFirebaseBusiness) {
-                      router.push(`/business/${(item as any).firebaseId}`);
-                    } else {
-                      router.push(`/brand/${item.id}`);
-                    }
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Image
-                    source={{ uri: item.exampleImageUrl || getLogoUrl(item.website || '') }}
-                    style={styles.vmResultImage}
-                    contentFit="cover"
-                    transition={200}
-                  />
-                  <View style={styles.vmResultInfo}>
-                    <Text style={[styles.vmResultName, { color: colors.text }]} numberOfLines={1}>
-                      {item.name || item.brand}
-                    </Text>
-                    <Text style={[styles.vmResultCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {item.category}
-                    </Text>
-                  </View>
-                  <View style={[
-                    styles.vmResultScore,
-                    { backgroundColor: item.alignmentScore >= 50 ? colors.success + '20' : colors.danger + '20' }
-                  ]}>
-                    <Text style={[
-                      styles.vmResultScoreText,
-                      { color: item.alignmentScore >= 50 ? colors.success : colors.danger }
-                    ]}>
-                      {item.alignmentScore}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              )}
-              keyExtractor={item => item.id}
-              contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
-              showsVerticalScrollIndicator={false}
-              ListEmptyComponent={
-                <View style={styles.vmEmptyState}>
-                  <Text style={[styles.vmEmptyTitle, { color: colors.text }]}>No Results Found</Text>
-                  <Text style={[styles.vmEmptySubtitle, { color: colors.textSecondary }]}>
-                    Try selecting different values
-                  </Text>
-                </View>
-              }
-              ListFooterComponent={
-                vmResultsLimit < 30 && vmResults.filter((item: any) =>
-                  vmResultsMode === 'aligned' ? item.isPositivelyAligned !== false : item.isPositivelyAligned === false
-                ).length > vmResultsLimit ? (
-                  <TouchableOpacity
-                    style={[styles.vmLoadMoreButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                    onPress={handleVmLoadMore}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.vmLoadMoreText, { color: colors.primary }]}>Load More</Text>
-                  </TouchableOpacity>
-                ) : null
-              }
-            />
-          </View>
-        ) : (
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.vmHeader}>
-              <View style={styles.vmHeaderRow}>
-                <Text style={[styles.vmSubtitle, { color: colors.textSecondary }]}>
-                  Generate results from specific values
-                </Text>
-                {(vmSelectedSupportValues.length > 0 || vmSelectedRejectValues.length > 0) && (
-                  <TouchableOpacity onPress={handleVmResetSelections} activeOpacity={0.7}>
-                    <Text style={[styles.vmResetButton, { color: colors.primary }]}>Reset</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-
-            {/* Category Dropdown - Traditional Style */}
-            <View style={styles.vmCategoryContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.vmCategoryDropdown,
-                  { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-                  vmCategoryDropdownOpen && styles.vmCategoryDropdownOpen
-                ]}
-                onPress={() => setVmCategoryDropdownOpen(!vmCategoryDropdownOpen)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.vmCategoryDropdownText, { color: vmSelectedCategory ? colors.text : colors.textSecondary }]}>
-                  {vmSelectedCategory
-                    ? vmCategoriesWithLabels.find(c => c.key === vmSelectedCategory)?.label || 'Select Category'
-                    : 'Select Category'}
-                </Text>
-                <ChevronDown
-                  size={20}
-                  color={colors.textSecondary}
-                  strokeWidth={2}
-                  style={{ transform: [{ rotate: vmCategoryDropdownOpen ? '180deg' : '0deg' }] }}
-                />
-              </TouchableOpacity>
-              {vmCategoryDropdownOpen && (
-                <View style={[styles.vmCategoryDropdownList, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                  <ScrollView style={styles.vmCategoryDropdownScroll} nestedScrollEnabled={true}>
-                    {vmCategoriesWithLabels.map(category => (
-                      <TouchableOpacity
-                        key={category.key}
-                        style={[
-                          styles.vmCategoryDropdownItem,
-                          { borderBottomColor: colors.border },
-                          vmSelectedCategory === category.key && { backgroundColor: colors.primary + '15' }
-                        ]}
-                        onPress={() => {
-                          setVmSelectedCategory(category.key);
-                          setVmCategoryDropdownOpen(false);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[
-                          styles.vmCategoryDropdownItemText,
-                          { color: vmSelectedCategory === category.key ? colors.primary : colors.text }
-                        ]}>
-                          {category.label}
-                        </Text>
-                        <Text style={[styles.vmCategoryCount, { color: colors.textSecondary }]}>
-                          ({(availableValues[category.key] || []).length})
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
-
-            {/* Values Pills */}
-            {vmSelectedCategory && (
-              <View style={styles.vmValuesPillsContainer}>
-                {(availableValues[vmSelectedCategory] || []).map(value => {
-                  const isSupported = vmSelectedSupportValues.includes(value.id);
-                  const isRejected = vmSelectedRejectValues.includes(value.id);
-
-                  return (
-                    <TouchableOpacity
-                      key={value.id}
-                      style={[
-                        styles.vmValuePill,
-                        { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-                        isSupported && { backgroundColor: colors.success + '20', borderColor: colors.success },
-                        isRejected && { backgroundColor: colors.danger + '20', borderColor: colors.danger }
-                      ]}
-                      onPress={() => handleVmValueToggle(value.id)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[
-                        styles.vmValuePillText,
-                        { color: colors.text },
-                        isSupported && { color: colors.success },
-                        isRejected && { color: colors.danger }
-                      ]}>
-                        {value.name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
-
-            {/* Generate Button */}
-            {(vmSelectedSupportValues.length > 0 || vmSelectedRejectValues.length > 0) && (
-              <View style={styles.vmGenerateContainer}>
-                <TouchableOpacity
-                  style={[styles.vmGenerateButton, { backgroundColor: colors.primary }]}
-                  onPress={handleVmGenerateResults}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.vmGenerateButtonText, { color: colors.white }]}>
-                    Generate Results
-                  </Text>
-                </TouchableOpacity>
-                <Text style={[styles.vmSelectedCount, { color: colors.textSecondary }]}>
-                  {vmSelectedSupportValues.length} supported • {vmSelectedRejectValues.length} rejected
-                </Text>
-              </View>
-            )}
-          </ScrollView>
-        )
-      )}
 
       {/* Max Pain/Max Benefit Selection Modal */}
       <Modal
@@ -1583,6 +1111,28 @@ const styles = StyleSheet.create({
   smallActionButtonText: {
     fontSize: 13,
     fontWeight: '600' as const,
+  },
+  // Centered Button Styles
+  centeredButtonContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  centeredButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 8,
+    minWidth: 180,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centeredButtonText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  valueHintText: {
+    fontSize: 13,
+    marginTop: 8,
+    textAlign: 'center' as const,
   },
   // Collapsible Category Styles
   collapsibleCategoryHeader: {

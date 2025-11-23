@@ -244,7 +244,7 @@ export default function BusinessDetailScreen() {
           businessId: business.id,
           businessName: business.businessInfo.name,
           website: business.businessInfo.website || '',
-          logoUrl: business.businessInfo.logoUrl || getLogoUrl(business.businessInfo.website || ''),
+          logoUrl: business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : '',
         });
         setIsEndorsingBusiness(true);
         Alert.alert('Success', `${business.businessInfo.name} endorsed!`);
@@ -530,9 +530,10 @@ export default function BusinessDetailScreen() {
     );
   }
 
-  // Use cover image for hero, otherwise fall back to logo
-  const coverSource = business.businessInfo.coverImageUrl || business.businessInfo.logoUrl || getLogoUrl(business.businessInfo.website || '');
-  const logoSource = business.businessInfo.logoUrl || getLogoUrl(business.businessInfo.website || '');
+  // Use cover image for hero, otherwise fall back to generated logo
+  const coverSource = business.businessInfo.coverImageUrl || (business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : getLogoUrl(''));
+  // Always use generated logo from website for logo display
+  const logoSource = business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : getLogoUrl('');
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

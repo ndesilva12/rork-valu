@@ -39,7 +39,6 @@ import {
   Share2,
   UserPlus,
   List as ListIcon,
-  FileText,
 } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { UserList, ListEntry } from '@/types/library';
@@ -60,8 +59,6 @@ import ItemOptionsModal from '@/components/ItemOptionsModal';
 import ConfirmModal from '@/components/ConfirmModal';
 import FollowingFollowersList from '@/components/FollowingFollowersList';
 import LocalBusinessView from '@/components/Library/LocalBusinessView';
-import PostsView from '@/components/Library/PostsView';
-import { getUserPosts } from '@/services/firebase/postService';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { reorderListEntries } from '@/services/firebase/listService';
@@ -83,7 +80,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 // ===== Types =====
 
-type LibrarySectionType = 'endorsement' | 'aligned' | 'unaligned' | 'following' | 'followers' | 'local' | 'posts';
+type LibrarySectionType = 'endorsement' | 'aligned' | 'unaligned' | 'following' | 'followers' | 'local';
 
 interface UnifiedLibraryProps {
   mode: 'edit' | 'preview' | 'view';
@@ -177,8 +174,6 @@ export default function UnifiedLibrary({
   const [unalignedLoadCount, setUnalignedLoadCount] = useState(10);
   const [customListLoadCounts, setCustomListLoadCounts] = useState<Record<string, number>>({});
 
-  // Posts count for the section selector
-  const [postsCount, setPostsCount] = useState(0);
 
   // Detect larger screens for responsive text display
   const { width } = useWindowDimensions();
@@ -242,22 +237,6 @@ export default function UnifiedLibrary({
   // Filter out endorsement list from custom lists
   const customLists = userLists.filter(list => list.id !== endorsementList?.id);
 
-  // Load posts count for the user being viewed
-  useEffect(() => {
-    const loadPostsCount = async () => {
-      const targetUserId = viewingUserId || currentUserId;
-      if (!targetUserId) return;
-
-      try {
-        const posts = await getUserPosts(targetUserId);
-        setPostsCount(posts.length);
-      } catch (error) {
-        console.error('[UnifiedLibrary] Error loading posts count:', error);
-      }
-    };
-
-    loadPostsCount();
-  }, [viewingUserId, currentUserId]);
 
   // Check follow status when item is selected for options modal
   useEffect(() => {
@@ -731,9 +710,7 @@ export default function UnifiedLibrary({
             </Text>
           </View>
           <View style={styles.brandScoreContainer}>
-            <Text style={[styles.brandScore, { color: scoreColor }]}>
-              {alignmentScore !== undefined ? alignmentScore : 50}
-            </Text>
+            <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
           </View>
           {(mode === 'edit' || mode === 'view') && (
             <TouchableOpacity
@@ -863,9 +840,7 @@ export default function UnifiedLibrary({
                   </Text>
                 </View>
                 <View style={styles.brandScoreContainer}>
-                  <Text style={[styles.brandScore, { color: scoreColor }]}>
-                    {alignmentScore}
-                  </Text>
+                  <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
                 </View>
                 {(mode === 'edit' || mode === 'view') && (
                   <TouchableOpacity
@@ -897,8 +872,8 @@ export default function UnifiedLibrary({
           // Get business name from multiple possible fields
           const businessName = (entry as any).businessName || (entry as any).name || 'Unknown Business';
           const businessCategory = (entry as any).businessCategory || (entry as any).category;
-          // Prefer generated logo from website to avoid cover images being shown
-          const logoUrl = (entry as any).website ? getLogoUrl((entry as any).website) : ((entry as any).logoUrl || getLogoUrl(''));
+          // Always use generated logo from website - never use logoUrl as it might be the cover image
+          const logoUrl = (entry as any).website ? getLogoUrl((entry as any).website) : getLogoUrl('');
 
           return (
             <TouchableOpacity
@@ -934,11 +909,9 @@ export default function UnifiedLibrary({
                       : (businessCategory || 'Business')}
                   </Text>
                 </View>
-                {alignmentScore !== null && (
-                  <View style={styles.brandScoreContainer}>
-                    <Text style={[styles.brandScore, { color: scoreColor }]}>{alignmentScore}</Text>
-                  </View>
-                )}
+                <View style={styles.brandScoreContainer}>
+                  <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                </View>
                 {(mode === 'edit' || mode === 'view') && (
                   <TouchableOpacity
                     style={[styles.quickAddButton, { backgroundColor: colors.background }]}
@@ -1488,12 +1461,14 @@ export default function UnifiedLibrary({
     const filteredEntries = entriesToDisplay.filter(entry => entry != null);
     const displayedEntries = filteredEntries.slice(0, endorsementLoadCount);
 
-    // Separate top 5 from the rest
+    // Separate top 5, items 6-10, and the rest
     const top5Entries = displayedEntries.slice(0, 5);
-    const remainingEntries = displayedEntries.slice(5);
+    const next5Entries = displayedEntries.slice(5, 10); // Items 6-10
+    const remainingEntries = displayedEntries.slice(10); // Items 11+
 
     const top5Content = top5Entries.map((entry, index) => renderEntryWithControls(entry, index));
-    const remainingContent = remainingEntries.map((entry, index) => renderEntryWithControls(entry, index + 5));
+    const next5Content = next5Entries.map((entry, index) => renderEntryWithControls(entry, index + 5));
+    const remainingContent = remainingEntries.map((entry, index) => renderEntryWithControls(entry, index + 10));
 
     // Wrap with DndContext for desktop drag-and-drop
     const contentWithDnd = isReordering && isLargeScreen ? (
@@ -1507,18 +1482,25 @@ export default function UnifiedLibrary({
           strategy={verticalListSortingStrategy}
         >
           {top5Content}
+          {next5Content}
           {remainingContent}
         </SortableContext>
       </DndContext>
     ) : (
       <>
-        {/* Top 5 endorsements with blue outline */}
+        {/* Top 5 endorsements with 15% opacity background */}
         {top5Content.length > 0 && (
-          <View style={[styles.top5Container, { borderColor: colors.primary }]}>
+          <View style={[styles.top5Container, { backgroundColor: isDarkMode ? 'rgba(0, 170, 250, 0.15)' : 'rgba(3, 68, 102, 0.15)', borderColor: 'transparent' }]}>
             {top5Content}
           </View>
         )}
-        {/* Remaining endorsements */}
+        {/* Items 6-10 with 8% opacity background */}
+        {next5Content.length > 0 && (
+          <View style={[styles.top5Container, { backgroundColor: isDarkMode ? 'rgba(0, 170, 250, 0.08)' : 'rgba(3, 68, 102, 0.08)', borderColor: 'transparent' }]}>
+            {next5Content}
+          </View>
+        )}
+        {/* Remaining endorsements (11+) - no background */}
         {remainingContent}
       </>
     );
@@ -1950,7 +1932,7 @@ export default function UnifiedLibrary({
     // Define section colors (border colors only, no background tints)
     const sectionColors = {
       local: {
-        border: isDarkMode ? 'rgb(0, 170, 250)' : 'rgb(3, 68, 102)',
+        border: isDarkMode ? 'rgb(132, 204, 22)' : 'rgb(101, 163, 13)', // lime green
       },
       following: {
         border: isDarkMode ? 'rgb(167, 139, 250)' : 'rgb(124, 58, 237)',
@@ -1962,13 +1944,10 @@ export default function UnifiedLibrary({
         border: isDarkMode ? 'rgb(0, 170, 250)' : 'rgb(3, 68, 102)',
       },
       aligned: {
-        border: isDarkMode ? 'rgb(132, 204, 22)' : 'rgb(101, 163, 13)',
+        border: '#FF1F7A', // red/pink for global (aligned)
       },
       unaligned: {
-        border: '#FF1F7A',
-      },
-      posts: {
-        border: isDarkMode ? 'rgb(251, 146, 60)' : 'rgb(234, 88, 12)',
+        border: '#FF1F7A', // red/pink for global (unaligned)
       },
     };
 
@@ -2026,38 +2005,53 @@ export default function UnifiedLibrary({
       );
     };
 
-    // For profile views (preview/view modes), show Endorsements (full width) and Posts
+    // For profile views (preview/view modes), don't show section selector
+    // Followers/following counters are now in the profile header
     const isProfileView = mode === 'preview' || mode === 'view';
 
     if (isProfileView) {
-      return (
-        <View style={styles.sectionSelector}>
-          {/* Single row: Endorsements | Posts */}
-          <View style={styles.sectionRow}>
-            <View style={styles.sectionHalf}>
-              <EndorsedSectionBox />
-            </View>
-            <View style={styles.sectionHalf}>
-              <SectionBox section="posts" label="Posts" count={postsCount} />
-            </View>
-          </View>
-        </View>
-      );
+      return null;
     }
 
-    // For home tab (edit mode), show Local, Aligned, Unaligned, and Endorsed (full width)
+    // Global section box (combines aligned + unaligned)
+    const GlobalSectionBox = () => {
+      const isSelected = selectedSection === 'aligned' || selectedSection === 'unaligned';
+      const sectionColor = sectionColors.aligned; // red/pink
+      const globalCount = alignedCount + unalignedCount;
+
+      return (
+        <TouchableOpacity
+          style={[
+            styles.sectionBox,
+            {
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: isSelected ? sectionColor.border : colors.border,
+              borderWidth: isSelected ? 2 : 1,
+            },
+          ]}
+          onPress={() => setSelectedSection('aligned')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.sectionLabel, { color: isSelected ? sectionColor.border : colors.text }]}>
+            Global
+          </Text>
+          <Text style={[styles.sectionCount, { color: colors.textSecondary }]}>
+            {globalCount}
+          </Text>
+        </TouchableOpacity>
+      );
+    };
+
+    // For home tab (edit mode), show Global, Local, and Endorsed (full width)
     return (
       <View style={styles.sectionSelector}>
-        {/* Top row: Local | Aligned | Unaligned */}
+        {/* Top row: Global | Local */}
         <View style={styles.sectionRow}>
-          <View style={styles.sectionThird}>
+          <View style={styles.sectionHalf}>
+            <GlobalSectionBox />
+          </View>
+          <View style={styles.sectionHalf}>
             <SectionBox section="local" label="Local" count={localCount} />
-          </View>
-          <View style={styles.sectionThird}>
-            <SectionBox section="aligned" label="Aligned" count={alignedCount} />
-          </View>
-          <View style={styles.sectionThird}>
-            <SectionBox section="unaligned" label="Unaligned" count={unalignedCount} />
           </View>
         </View>
 
@@ -2075,12 +2069,11 @@ export default function UnifiedLibrary({
   const renderSectionHeader = () => {
     const sectionTitles: Record<LibrarySection, string> = {
       endorsement: 'Endorsements',
-      aligned: 'Aligned',
-      unaligned: 'Unaligned',
+      aligned: 'Global',
+      unaligned: 'Global',
       following: 'Following',
       followers: 'Followers',
       local: 'Local',
-      posts: 'Posts',
     };
 
     const sectionIcons: Record<LibrarySection, any> = {
@@ -2090,11 +2083,11 @@ export default function UnifiedLibrary({
       following: User,
       followers: User,
       local: Globe,
-      posts: FileText,
     };
 
     const title = sectionTitles[selectedSection];
     const SectionIcon = sectionIcons[selectedSection];
+    const isGlobalSection = selectedSection === 'aligned' || selectedSection === 'unaligned';
     const isEndorsed = selectedSection === 'endorsement';
     const canReorder = isEndorsed && canEdit && endorsementList && endorsementList.entries && endorsementList.entries.length > 1;
 
@@ -2110,6 +2103,42 @@ export default function UnifiedLibrary({
             {title}
           </Text>
         </TouchableOpacity>
+
+        {/* Toggle for Global section (aligned/unaligned) */}
+        {isGlobalSection && (
+          <View style={styles.globalToggle}>
+            <TouchableOpacity
+              style={[
+                styles.globalToggleButton,
+                selectedSection === 'aligned' && { backgroundColor: colors.success + '20' },
+              ]}
+              onPress={() => setSelectedSection('aligned')}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.globalToggleText,
+                { color: selectedSection === 'aligned' ? colors.success : colors.textSecondary }
+              ]}>
+                Aligned
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.globalToggleButton,
+                selectedSection === 'unaligned' && { backgroundColor: colors.danger + '20' },
+              ]}
+              onPress={() => setSelectedSection('unaligned')}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.globalToggleText,
+                { color: selectedSection === 'unaligned' ? colors.danger : colors.textSecondary }
+              ]}>
+                Unaligned
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Action menu for endorsed section */}
         {isEndorsed && canReorder && (
@@ -2224,25 +2253,6 @@ export default function UnifiedLibrary({
             onRequestLocation={onRequestLocation}
           />
         );
-
-      case 'posts': {
-        const targetUserId = viewingUserId || currentUserId;
-        return targetUserId ? (
-          <PostsView
-            userId={targetUserId}
-            currentUserId={currentUserId}
-            currentUserName={profile?.userDetails?.name || clerkUser?.fullName || clerkUser?.firstName || ''}
-            currentUserImage={profile?.userDetails?.profileImage || clerkUser?.imageUrl}
-            isDarkMode={isDarkMode}
-          />
-        ) : (
-          <View style={styles.emptySection}>
-            <Text style={[styles.emptySectionText, { color: colors?.textSecondary || '#6B7280' }]}>
-              No posts available
-            </Text>
-          </View>
-        );
-      }
 
       default:
         return null;
@@ -2634,6 +2644,7 @@ const styles = StyleSheet.create({
   listContentContainer: {
     marginHorizontal: Platform.OS === 'web' ? 2 : 8,
     marginBottom: 8,
+    paddingTop: 8,
   },
   pinnedListHeader: {
     // No special styling for pinned headers
@@ -2778,10 +2789,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   top5Container: {
-    borderWidth: 2,
-    borderRadius: 12,
-    padding: 8,
-    marginBottom: 8,
+    borderWidth: 0,
+    borderRadius: 0,
+    padding: 0,
+    marginBottom: 0,
     gap: 8,
   },
   forYouItemRow: {
@@ -3120,6 +3131,19 @@ const styles = StyleSheet.create({
   endorsedActionText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  globalToggle: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  globalToggleButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+  },
+  globalToggleText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   emptySection: {
     padding: 40,
