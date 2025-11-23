@@ -24,7 +24,6 @@ import { getCustomFields, CustomField } from '@/services/firebase/customFieldsSe
 import { getUserLists, deleteList, removeEntryFromList, addEntryToList, updateEntryInList } from '@/services/firebase/listService';
 import { UserList, ListEntry } from '@/types/library';
 import { Picker } from '@react-native-picker/picker';
-import { getUserPosts, Post, deletePost } from '@/services/firebase/postService';
 
 interface SocialMedia {
   facebook?: string;
@@ -125,14 +124,6 @@ export default function UsersManagement() {
   const [newEntryBusinessId, setNewEntryBusinessId] = useState('');
   const [editingEntryDateId, setEditingEntryDateId] = useState<string | null>(null);
   const [editingEntryDateValue, setEditingEntryDateValue] = useState('');
-
-  // Posts management state
-  const [userPosts, setUserPosts] = useState<Post[]>([]);
-  const [loadingPosts, setLoadingPosts] = useState(false);
-  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
-  const [editingPostId, setEditingPostId] = useState<string | null>(null);
-  const [editPostContent, setEditPostContent] = useState('');
-  const [editPostImage, setEditPostImage] = useState('');
 
   useEffect(() => {
     loadUsers();
@@ -241,10 +232,9 @@ export default function UsersManagement() {
 
     setShowModal(true);
 
-    // Load user's lists and posts
+    // Load user's lists
     if (user.userId) {
       loadUserLists(user.userId);
-      loadUserPostsData(user.userId);
     }
   };
 
@@ -262,101 +252,6 @@ export default function UsersManagement() {
       }
     } finally {
       setLoadingLists(false);
-    }
-  };
-
-  // Posts management functions
-  const loadUserPostsData = async (userId: string) => {
-    setLoadingPosts(true);
-    try {
-      const posts = await getUserPosts(userId);
-      setUserPosts(posts);
-    } catch (error) {
-      console.error('[Admin] Error loading user posts:', error);
-      if (Platform.OS === 'web') {
-        window.alert('Error loading user posts');
-      } else {
-        Alert.alert('Error', 'Could not load user posts');
-      }
-    } finally {
-      setLoadingPosts(false);
-    }
-  };
-
-  const handleEditPost = (post: Post) => {
-    setEditingPostId(post.id);
-    setEditPostContent(post.content || '');
-    setEditPostImage(post.linkedEntityImage || '');
-  };
-
-  const handleSavePost = async () => {
-    if (!editingPostId || !editingUser) return;
-
-    try {
-      const postRef = doc(db, 'posts', editingPostId);
-      await updateDoc(postRef, {
-        content: editPostContent.trim(),
-        linkedEntityImage: editPostImage.trim() || null,
-        updatedAt: new Date(),
-      });
-
-      await loadUserPostsData(editingUser.userId);
-      setEditingPostId(null);
-      setEditPostContent('');
-      setEditPostImage('');
-
-      if (Platform.OS === 'web') {
-        window.alert('Post updated successfully');
-      } else {
-        Alert.alert('Success', 'Post updated successfully');
-      }
-    } catch (error) {
-      console.error('[Admin] Error updating post:', error);
-      if (Platform.OS === 'web') {
-        window.alert('Error updating post');
-      } else {
-        Alert.alert('Error', 'Could not update post');
-      }
-    }
-  };
-
-  const handleDeletePost = async (postId: string) => {
-    if (!editingUser) return;
-
-    const confirmDelete = Platform.OS === 'web'
-      ? window.confirm('Are you sure you want to delete this post? This action cannot be undone.')
-      : await new Promise((resolve) => {
-          Alert.alert(
-            'Delete Post',
-            'Are you sure you want to delete this post? This action cannot be undone.',
-            [
-              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-              { text: 'Delete', style: 'destructive', onPress: () => resolve(true) },
-            ]
-          );
-        });
-
-    if (!confirmDelete) return;
-
-    try {
-      // Admin bypass - delete directly without author check
-      const postRef = doc(db, 'posts', postId);
-      await deleteDoc(postRef);
-
-      await loadUserPostsData(editingUser.userId);
-
-      if (Platform.OS === 'web') {
-        window.alert('Post deleted successfully');
-      } else {
-        Alert.alert('Success', 'Post deleted successfully');
-      }
-    } catch (error) {
-      console.error('[Admin] Error deleting post:', error);
-      if (Platform.OS === 'web') {
-        window.alert('Error deleting post');
-      } else {
-        Alert.alert('Error', 'Could not delete post');
-      }
     }
   };
 
@@ -1402,134 +1297,6 @@ export default function UsersManagement() {
                             })
                           ) : (
                             <Text style={styles.emptyListText}>No entries in this list</Text>
-                          )}
-                        </View>
-                      )}
-                    </View>
-                  );
-                })
-              )}
-
-              {/* POSTS MANAGEMENT */}
-              <Text style={styles.sectionTitle}>📝 Posts Management</Text>
-              <Text style={styles.helpText}>
-                View and manage this user's posts. You can edit the caption/text or image URL, or delete posts entirely.
-              </Text>
-
-              {loadingPosts ? (
-                <ActivityIndicator size="large" color="#007AFF" style={{ marginVertical: 20 }} />
-              ) : userPosts.length === 0 ? (
-                <Text style={styles.helpText}>No posts found for this user.</Text>
-              ) : (
-                userPosts.map((post) => {
-                  const isExpanded = expandedPostId === post.id;
-                  const isEditing = editingPostId === post.id;
-                  const postDate = post.createdAt instanceof Date
-                    ? post.createdAt.toLocaleDateString()
-                    : new Date(post.createdAt).toLocaleDateString();
-
-                  return (
-                    <View key={post.id} style={styles.listCard}>
-                      <View style={styles.listHeader}>
-                        <TouchableOpacity
-                          style={styles.listTitleRow}
-                          onPress={() => setExpandedPostId(isExpanded ? null : post.id)}
-                        >
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.listName} numberOfLines={1}>
-                              {post.content ? post.content.substring(0, 50) + (post.content.length > 50 ? '...' : '') : '[Image Post]'}
-                            </Text>
-                            <Text style={styles.listCount}>
-                              {post.type} • {postDate} • {post.likesCount || 0} likes • {post.commentsCount || 0} comments
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                          style={styles.deleteListButton}
-                          onPress={() => handleDeletePost(post.id)}
-                        >
-                          <Text style={styles.deleteListButtonText}>Delete</Text>
-                        </TouchableOpacity>
-                      </View>
-
-                      {isExpanded && (
-                        <View style={styles.listEntries}>
-                          {isEditing ? (
-                            <View style={styles.addEntryForm}>
-                              <Text style={styles.label}>Caption / Text</Text>
-                              <TextInput
-                                style={[styles.input, { minHeight: 80 }]}
-                                placeholder="Post caption or text content"
-                                value={editPostContent}
-                                onChangeText={setEditPostContent}
-                                multiline
-                                numberOfLines={4}
-                                textAlignVertical="top"
-                              />
-
-                              <Text style={styles.label}>Image URL (optional)</Text>
-                              <TextInput
-                                style={styles.input}
-                                placeholder="https://example.com/image.jpg"
-                                value={editPostImage}
-                                onChangeText={setEditPostImage}
-                              />
-
-                              <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
-                                <TouchableOpacity
-                                  style={[styles.addEntryButton, { backgroundColor: '#6B7280', flex: 1 }]}
-                                  onPress={() => {
-                                    setEditingPostId(null);
-                                    setEditPostContent('');
-                                    setEditPostImage('');
-                                  }}
-                                >
-                                  <Text style={styles.addEntryButtonText}>Cancel</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                  style={[styles.submitEntryButton, { flex: 1 }]}
-                                  onPress={handleSavePost}
-                                >
-                                  <Text style={styles.submitEntryButtonText}>Save Changes</Text>
-                                </TouchableOpacity>
-                              </View>
-                            </View>
-                          ) : (
-                            <View>
-                              <Text style={styles.label}>Post ID</Text>
-                              <Text style={[styles.helpText, { marginBottom: 10 }]}>{post.id}</Text>
-
-                              <Text style={styles.label}>Content</Text>
-                              <Text style={[styles.helpText, { marginBottom: 10 }]}>
-                                {post.content || '[No text content]'}
-                              </Text>
-
-                              {post.linkedEntityImage && (
-                                <>
-                                  <Text style={styles.label}>Image URL</Text>
-                                  <Text style={[styles.helpText, { marginBottom: 10 }]} numberOfLines={2}>
-                                    {post.linkedEntityImage}
-                                  </Text>
-                                </>
-                              )}
-
-                              {post.linkedEntityName && (
-                                <>
-                                  <Text style={styles.label}>Linked Entity</Text>
-                                  <Text style={[styles.helpText, { marginBottom: 10 }]}>
-                                    {post.linkedEntityName} ({post.linkedEntityType})
-                                  </Text>
-                                </>
-                              )}
-
-                              <TouchableOpacity
-                                style={styles.addEntryButton}
-                                onPress={() => handleEditPost(post)}
-                              >
-                                <Text style={styles.addEntryButtonText}>Edit Post</Text>
-                              </TouchableOpacity>
-                            </View>
                           )}
                         </View>
                       )}
