@@ -739,7 +739,7 @@ export default function SearchScreen() {
               category: business.businessInfo.category,
               description: business.businessInfo.description || '',
               alignmentScore,
-              exampleImageUrl: business.businessInfo.logoUrl,
+              exampleImageUrl: business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : '',
               website: business.businessInfo.website,
               location: business.businessInfo.location,
               valueAlignments: [],

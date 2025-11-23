@@ -1461,12 +1461,14 @@ export default function UnifiedLibrary({
     const filteredEntries = entriesToDisplay.filter(entry => entry != null);
     const displayedEntries = filteredEntries.slice(0, endorsementLoadCount);
 
-    // Separate top 5 from the rest
+    // Separate top 5, items 6-10, and the rest
     const top5Entries = displayedEntries.slice(0, 5);
-    const remainingEntries = displayedEntries.slice(5);
+    const next5Entries = displayedEntries.slice(5, 10); // Items 6-10
+    const remainingEntries = displayedEntries.slice(10); // Items 11+
 
     const top5Content = top5Entries.map((entry, index) => renderEntryWithControls(entry, index));
-    const remainingContent = remainingEntries.map((entry, index) => renderEntryWithControls(entry, index + 5));
+    const next5Content = next5Entries.map((entry, index) => renderEntryWithControls(entry, index + 5));
+    const remainingContent = remainingEntries.map((entry, index) => renderEntryWithControls(entry, index + 10));
 
     // Wrap with DndContext for desktop drag-and-drop
     const contentWithDnd = isReordering && isLargeScreen ? (
@@ -1480,18 +1482,25 @@ export default function UnifiedLibrary({
           strategy={verticalListSortingStrategy}
         >
           {top5Content}
+          {next5Content}
           {remainingContent}
         </SortableContext>
       </DndContext>
     ) : (
       <>
-        {/* Top 5 endorsements with light blue tinted background */}
+        {/* Top 5 endorsements with 15% opacity background */}
         {top5Content.length > 0 && (
           <View style={[styles.top5Container, { backgroundColor: isDarkMode ? 'rgba(0, 170, 250, 0.15)' : 'rgba(3, 68, 102, 0.15)', borderColor: 'transparent' }]}>
             {top5Content}
           </View>
         )}
-        {/* Remaining endorsements */}
+        {/* Items 6-10 with 8% opacity background */}
+        {next5Content.length > 0 && (
+          <View style={[styles.top5Container, { backgroundColor: isDarkMode ? 'rgba(0, 170, 250, 0.08)' : 'rgba(3, 68, 102, 0.08)', borderColor: 'transparent' }]}>
+            {next5Content}
+          </View>
+        )}
+        {/* Remaining endorsements (11+) - no background */}
         {remainingContent}
       </>
     );
@@ -2635,6 +2644,7 @@ const styles = StyleSheet.create({
   listContentContainer: {
     marginHorizontal: Platform.OS === 'web' ? 2 : 8,
     marginBottom: 8,
+    paddingTop: 8,
   },
   pinnedListHeader: {
     // No special styling for pinned headers

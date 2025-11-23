@@ -775,7 +775,7 @@ export default function BrandDetailScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={[styles.alignmentCard, { backgroundColor: isDarkMode ? 'rgba(0, 170, 250, 0.15)' : 'rgba(3, 68, 102, 0.15)' }]}>
+          <View style={[styles.alignmentCard, { backgroundColor: colors.backgroundSecondary }]}>
             <View style={styles.alignmentLabelRow}>
               <Text style={[styles.alignmentLabel, { color: colors.text }]}>
                 Why
