@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { collection, getDocs, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, query, where, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getUserLists, deleteList, removeEntryFromList, addEntryToList } from '@/services/firebase/listService';
 import { UserList, ListEntry } from '@/types/library';
@@ -89,9 +89,31 @@ export default function BusinessesManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [bulkData, setBulkData] = useState('');
   const [editingBusiness, setEditingBusiness] = useState<BusinessData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isCreatingBusiness, setIsCreatingBusiness] = useState(false);
+
+  // Create business form state
+  const [createUserId, setCreateUserId] = useState('');
+  const [createEmail, setCreateEmail] = useState('');
+  const [createBusinessName, setCreateBusinessName] = useState('');
+  const [createCategory, setCreateCategory] = useState('');
+  const [createDescription, setCreateDescription] = useState('');
+  const [createWebsite, setCreateWebsite] = useState('');
+  const [createLogoUrl, setCreateLogoUrl] = useState('');
+  const [createCoverImageUrl, setCreateCoverImageUrl] = useState('');
+  const [createAddress, setCreateAddress] = useState('');
+  const [createLatitude, setCreateLatitude] = useState('');
+  const [createLongitude, setCreateLongitude] = useState('');
+  const [createAcceptsDiscounts, setCreateAcceptsDiscounts] = useState(false);
+  const [createDiscountPercent, setCreateDiscountPercent] = useState('');
+  const [createCustomDiscount, setCreateCustomDiscount] = useState('');
+  const [createFacebook, setCreateFacebook] = useState('');
+  const [createInstagram, setCreateInstagram] = useState('');
+  const [createTwitter, setCreateTwitter] = useState('');
+  const [createLinkedin, setCreateLinkedin] = useState('');
 
   // Form state - Basic Info
   const [formName, setFormName] = useState('');
@@ -568,6 +590,142 @@ export default function BusinessesManagement() {
     }
   };
 
+  const handleCreateBusiness = async () => {
+    if (!createUserId.trim()) {
+      if (Platform.OS === 'web') {
+        window.alert('User ID is required');
+      } else {
+        Alert.alert('Error', 'User ID is required');
+      }
+      return;
+    }
+
+    if (!createEmail.trim()) {
+      if (Platform.OS === 'web') {
+        window.alert('Email is required');
+      } else {
+        Alert.alert('Error', 'Email is required');
+      }
+      return;
+    }
+
+    if (!createBusinessName.trim()) {
+      if (Platform.OS === 'web') {
+        window.alert('Business name is required');
+      } else {
+        Alert.alert('Error', 'Business name is required');
+      }
+      return;
+    }
+
+    if (!createCategory.trim()) {
+      if (Platform.OS === 'web') {
+        window.alert('Category is required');
+      } else {
+        Alert.alert('Error', 'Category is required');
+      }
+      return;
+    }
+
+    setIsCreatingBusiness(true);
+
+    try {
+      const userRef = doc(db, 'users', createUserId.trim());
+
+      // Build locations array if address provided
+      const locations: BusinessLocation[] = [];
+      if (createAddress.trim()) {
+        locations.push({
+          address: createAddress.trim(),
+          latitude: parseFloat(createLatitude) || 0,
+          longitude: parseFloat(createLongitude) || 0,
+          isPrimary: true,
+        });
+      }
+
+      // Build social media object
+      const socialMedia: SocialMedia = {};
+      if (createFacebook.trim()) socialMedia.facebook = createFacebook.trim();
+      if (createInstagram.trim()) socialMedia.instagram = createInstagram.trim();
+      if (createTwitter.trim()) socialMedia.twitter = createTwitter.trim();
+      if (createLinkedin.trim()) socialMedia.linkedin = createLinkedin.trim();
+
+      const businessInfo = {
+        name: createBusinessName.trim(),
+        category: createCategory.trim(),
+        description: createDescription.trim() || '',
+        website: createWebsite.trim() || '',
+        logoUrl: createLogoUrl.trim() || '',
+        coverImageUrl: createCoverImageUrl.trim() || '',
+        locations: locations,
+        acceptsStandDiscounts: createAcceptsDiscounts,
+        acceptsQRCode: false,
+        acceptsValueCode: false,
+        valueCodeDiscount: 0,
+        customerDiscountPercent: parseFloat(createDiscountPercent) || 0,
+        customDiscount: createCustomDiscount.trim() || '',
+        socialMedia: socialMedia,
+        galleryImages: [],
+        affiliates: [],
+        partnerships: [],
+        ownership: [],
+        ownershipSources: '',
+      };
+
+      const newBusinessData = {
+        email: createEmail.trim(),
+        accountType: 'business',
+        isPublicProfile: true,
+        businessInfo: businessInfo,
+        causes: [],
+        searchHistory: [],
+        createdAt: new Date().toISOString(),
+      };
+
+      await setDoc(userRef, newBusinessData);
+
+      // Reset form
+      setCreateUserId('');
+      setCreateEmail('');
+      setCreateBusinessName('');
+      setCreateCategory('');
+      setCreateDescription('');
+      setCreateWebsite('');
+      setCreateLogoUrl('');
+      setCreateCoverImageUrl('');
+      setCreateAddress('');
+      setCreateLatitude('');
+      setCreateLongitude('');
+      setCreateAcceptsDiscounts(false);
+      setCreateDiscountPercent('');
+      setCreateCustomDiscount('');
+      setCreateFacebook('');
+      setCreateInstagram('');
+      setCreateTwitter('');
+      setCreateLinkedin('');
+      setShowCreateModal(false);
+
+      // Reload businesses
+      await loadBusinesses();
+
+      if (Platform.OS === 'web') {
+        window.alert('Business created successfully!');
+      } else {
+        Alert.alert('Success', 'Business created successfully!');
+      }
+    } catch (error: any) {
+      console.error('[Admin Businesses] Error creating business:', error);
+      const errorMessage = error?.message || 'Unknown error';
+      if (Platform.OS === 'web') {
+        window.alert(`Failed to create business: ${errorMessage}`);
+      } else {
+        Alert.alert('Error', `Failed to create business: ${errorMessage}`);
+      }
+    } finally {
+      setIsCreatingBusiness(false);
+    }
+  };
+
   const filteredBusinesses = businesses.filter(
     (business) =>
       business.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -607,6 +765,9 @@ export default function BusinessesManagement() {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
+        <TouchableOpacity style={styles.createButton} onPress={() => setShowCreateModal(true)}>
+          <Text style={styles.createButtonText}>+ Create</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.bulkButton} onPress={() => setShowBulkModal(true)}>
           <Text style={styles.bulkButtonText}>Bulk Create</Text>
         </TouchableOpacity>
@@ -658,6 +819,238 @@ export default function BusinessesManagement() {
           )}
         </View>
       </ScrollView>
+
+      {/* Create Business Modal */}
+      <Modal visible={showCreateModal} animationType="slide" transparent={false}>
+        <SafeAreaView style={styles.modalContainer}>
+          <ScrollView>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Create New Business</Text>
+              <Text style={styles.helpText}>
+                Create a new business account directly in Firebase. Note: This creates a database profile only.
+                For full authentication, you may need to create the user in Clerk separately.
+              </Text>
+
+              <Text style={styles.sectionTitle}>🔑 Required Fields</Text>
+
+              <Text style={styles.label}>User ID (Firebase Document ID) *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., biz_abc123 or clerk_user_id"
+                value={createUserId}
+                onChangeText={setCreateUserId}
+                autoCapitalize="none"
+              />
+              <Text style={styles.helpText}>
+                This will be the document ID in Firebase. Use the Clerk user ID if syncing with Clerk.
+              </Text>
+
+              <Text style={styles.label}>Email *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="business@example.com"
+                value={createEmail}
+                onChangeText={setCreateEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.label}>Business Name *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., Joe's Coffee Shop"
+                value={createBusinessName}
+                onChangeText={setCreateBusinessName}
+              />
+
+              <Text style={styles.label}>Category *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., Restaurant, Retail, Service"
+                value={createCategory}
+                onChangeText={setCreateCategory}
+              />
+
+              <Text style={styles.sectionTitle}>📋 Business Details</Text>
+
+              <Text style={styles.label}>Description</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="A short description of the business..."
+                value={createDescription}
+                onChangeText={setCreateDescription}
+                multiline
+                numberOfLines={3}
+              />
+
+              <Text style={styles.label}>Website</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://example.com"
+                value={createWebsite}
+                onChangeText={setCreateWebsite}
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.label}>Logo URL</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://example.com/logo.png"
+                value={createLogoUrl}
+                onChangeText={setCreateLogoUrl}
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.label}>Cover Image URL</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://example.com/cover.jpg"
+                value={createCoverImageUrl}
+                onChangeText={setCreateCoverImageUrl}
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.sectionTitle}>📍 Location (Optional)</Text>
+
+              <Text style={styles.label}>Address</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="123 Main St, City, State ZIP"
+                value={createAddress}
+                onChangeText={setCreateAddress}
+              />
+
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>Latitude</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="40.7128"
+                    value={createLatitude}
+                    onChangeText={setCreateLatitude}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>Longitude</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="-74.0060"
+                    value={createLongitude}
+                    onChangeText={setCreateLongitude}
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              <Text style={styles.sectionTitle}>💳 Discounts</Text>
+
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Accepts Endorse Discounts</Text>
+                <Switch
+                  value={createAcceptsDiscounts}
+                  onValueChange={setCreateAcceptsDiscounts}
+                />
+              </View>
+
+              <Text style={styles.label}>Discount Percent (%)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="10"
+                value={createDiscountPercent}
+                onChangeText={setCreateDiscountPercent}
+                keyboardType="numeric"
+              />
+
+              <Text style={styles.label}>Custom Discount Text</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., Buy one get one free"
+                value={createCustomDiscount}
+                onChangeText={setCreateCustomDiscount}
+              />
+
+              <Text style={styles.sectionTitle}>📱 Social Media (Optional)</Text>
+
+              <Text style={styles.label}>Facebook</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://facebook.com/..."
+                value={createFacebook}
+                onChangeText={setCreateFacebook}
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.label}>Instagram</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="@username or https://instagram.com/..."
+                value={createInstagram}
+                onChangeText={setCreateInstagram}
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.label}>Twitter/X</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="@username or https://twitter.com/..."
+                value={createTwitter}
+                onChangeText={setCreateTwitter}
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.label}>LinkedIn</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://linkedin.com/..."
+                value={createLinkedin}
+                onChangeText={setCreateLinkedin}
+                autoCapitalize="none"
+              />
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => {
+                    setShowCreateModal(false);
+                    setCreateUserId('');
+                    setCreateEmail('');
+                    setCreateBusinessName('');
+                    setCreateCategory('');
+                    setCreateDescription('');
+                    setCreateWebsite('');
+                    setCreateLogoUrl('');
+                    setCreateCoverImageUrl('');
+                    setCreateAddress('');
+                    setCreateLatitude('');
+                    setCreateLongitude('');
+                    setCreateAcceptsDiscounts(false);
+                    setCreateDiscountPercent('');
+                    setCreateCustomDiscount('');
+                    setCreateFacebook('');
+                    setCreateInstagram('');
+                    setCreateTwitter('');
+                    setCreateLinkedin('');
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.saveButton, isCreatingBusiness && { opacity: 0.6 }]}
+                  onPress={handleCreateBusiness}
+                  disabled={isCreatingBusiness}
+                >
+                  {isCreatingBusiness ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.saveButtonText}>Create Business</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
 
       {/* Edit Modal */}
       <Modal visible={showModal} animationType="slide" transparent={false}>
@@ -1180,6 +1573,18 @@ const styles = StyleSheet.create({
   actionsBar: {
     flexDirection: 'row',
     gap: 12,
+  },
+  createButton: {
+    backgroundColor: '#28a745',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  createButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   bulkButton: {
     backgroundColor: '#6c757d',
