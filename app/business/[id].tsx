@@ -735,7 +735,7 @@ export default function BusinessDetailScreen() {
 
           {/* Endorse Discount Section */}
           {business.businessInfo.acceptsStandDiscounts && (
-            <View style={[styles.standDiscountSection, { backgroundColor: colors.backgroundSecondary }]}>
+            <View style={[styles.standDiscountSection, { backgroundColor: isDarkMode ? 'rgba(0, 170, 250, 0.15)' : 'rgba(3, 68, 102, 0.15)' }]}>
               <View style={styles.discountHeader}>
                 <Percent size={20} color={colors.primary} strokeWidth={2} />
                 <Text style={[styles.discountHeaderText, { color: colors.text }]}>Endorse Discount</Text>
@@ -817,7 +817,7 @@ export default function BusinessDetailScreen() {
             </View>
           )}
 
-          <View style={[styles.alignmentCard, { backgroundColor: colors.backgroundSecondary }]}>
+          <View style={[styles.alignmentCard, { backgroundColor: isDarkMode ? 'rgba(0, 170, 250, 0.15)' : 'rgba(3, 68, 102, 0.15)' }]}>
             <View style={styles.alignmentLabelRow}>
               <Text style={[styles.alignmentLabel, { color: colors.text }]}>
                 Why

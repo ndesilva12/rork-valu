@@ -2780,9 +2780,9 @@ const styles = StyleSheet.create({
   },
   top5Container: {
     borderWidth: 0,
-    borderRadius: 12,
-    padding: 8,
-    marginBottom: 8,
+    borderRadius: 0,
+    padding: 0,
+    marginBottom: 0,
     gap: 8,
   },
   forYouItemRow: {

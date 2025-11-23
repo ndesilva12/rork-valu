@@ -4758,6 +4758,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(0, 0, 0, 0.05)',
     zIndex: 1000,
     position: 'relative' as const,
+    marginBottom: 8,
   },
   header: {
     flexDirection: 'row',

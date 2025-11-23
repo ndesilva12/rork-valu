@@ -327,7 +327,7 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Header - Matches Brand/Business Details Structure */}
-        <View style={[styles.profileHeaderSection, { backgroundColor: colors.backgroundSecondary }]}>
+        <View style={[styles.profileHeaderSection, { backgroundColor: isDarkMode ? 'rgba(0, 170, 250, 0.15)' : 'rgba(3, 68, 102, 0.15)' }]}>
           <View style={styles.profileHeader}>
             {/* Profile Image */}
             <View style={styles.profileImageContainer}>
@@ -673,6 +673,7 @@ const styles = StyleSheet.create({
   },
   stickyHeaderContainer: {
     borderBottomWidth: 1,
+    marginBottom: 8,
   },
   header: {
     flexDirection: 'row',
