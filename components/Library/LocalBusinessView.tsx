@@ -237,7 +237,7 @@ export default function LocalBusinessView({
           <View style={styles.businessCardInner}>
             <View style={styles.businessLogoContainer}>
               <Image
-                source={{ uri: getLogoUrl(business.businessInfo.website || '') }}
+                source={{ uri: business.businessInfo.logoUrl || getLogoUrl(business.businessInfo.website || '') }}
                 style={styles.businessLogo}
                 contentFit="cover"
                 transition={200}

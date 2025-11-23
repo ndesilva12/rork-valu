@@ -175,7 +175,7 @@ export default function BusinessDetailScreen() {
         businessId: business.id,
         name: business.businessInfo.name,
         website: business.businessInfo.website || '',
-        logoUrl: getLogoUrl(business.businessInfo.website || ''),
+        logoUrl: business.businessInfo.logoUrl || getLogoUrl(business.businessInfo.website || ''),
       });
 
       // Refresh library to show the new entry immediately
