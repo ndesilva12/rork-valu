@@ -3037,11 +3037,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sectionGroupHeader: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
     textTransform: 'lowercase',
-    marginBottom: -4,
-    marginLeft: 4,
+    marginBottom: 4,
+    textAlign: 'center',
   },
   sectionRow: {
     flexDirection: 'row',
