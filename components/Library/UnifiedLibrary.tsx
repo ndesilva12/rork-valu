@@ -2045,6 +2045,9 @@ export default function UnifiedLibrary({
     // For home tab (edit mode), show Global, Local, and Endorsed (full width)
     return (
       <View style={styles.sectionSelector}>
+        {/* Header: recommendations */}
+        <Text style={[styles.sectionGroupHeader, { color: colors.textSecondary }]}>recommendations</Text>
+
         {/* Top row: Global | Local */}
         <View style={styles.sectionRow}>
           <View style={styles.sectionHalf}>
@@ -2054,6 +2057,9 @@ export default function UnifiedLibrary({
             <SectionBox section="local" label="Local" count={localCount} />
           </View>
         </View>
+
+        {/* Header: your list */}
+        <Text style={[styles.sectionGroupHeader, { color: colors.textSecondary }]}>your list</Text>
 
         {/* Bottom row: Endorsed (full width) */}
         <View style={styles.sectionRow}>
@@ -3029,6 +3035,13 @@ const styles = StyleSheet.create({
   sectionSelector: {
     padding: 12,
     gap: 12,
+  },
+  sectionGroupHeader: {
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'lowercase',
+    marginBottom: -4,
+    marginLeft: 4,
   },
   sectionRow: {
     flexDirection: 'row',
