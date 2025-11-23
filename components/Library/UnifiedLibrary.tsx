@@ -2002,23 +2002,12 @@ export default function UnifiedLibrary({
       );
     };
 
-    // For profile views (preview/view modes), show Followers | Following counters
+    // For profile views (preview/view modes), don't show section selector
+    // Followers/following counters are now in the profile header
     const isProfileView = mode === 'preview' || mode === 'view';
 
     if (isProfileView) {
-      return (
-        <View style={styles.sectionSelector}>
-          {/* Single row: Followers | Following */}
-          <View style={styles.sectionRow}>
-            <View style={styles.sectionHalf}>
-              <SectionBox section="followers" label="Followers" count={followersCount} />
-            </View>
-            <View style={styles.sectionHalf}>
-              <SectionBox section="following" label="Following" count={followingCount} />
-            </View>
-          </View>
-        </View>
-      );
+      return null;
     }
 
     // Global section box (combines aligned + unaligned)

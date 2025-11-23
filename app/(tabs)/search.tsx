@@ -37,6 +37,8 @@ import { UserProfile } from '@/types';
 import { copyListToLibrary, getEndorsementList } from '@/services/firebase/listService';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { followEntity, unfollowEntity, isFollowing, getFollowing } from '@/services/firebase/followService';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/firebase';
 
 interface Comment {
   id: string;
@@ -357,14 +359,37 @@ export default function SearchScreen() {
 
       try {
         const followingEntities = await getFollowing(clerkUser.id);
-        const userFollowing = followingEntities.filter(f => f.type === 'user');
+        const userFollowing = followingEntities.filter(f => f.followedType === 'user');
 
-        // Get profiles for followed users
+        // Get profiles for followed users - fetch directly from Firebase
         const followingProfiles: Array<{ id: string; profile: UserProfile }> = [];
         for (const entity of userFollowing) {
-          const userProfile = publicUsers.find(u => u.id === entity.entityId);
-          if (userProfile) {
-            followingProfiles.push(userProfile);
+          // First check if in publicUsers
+          const existingProfile = publicUsers.find(u => u.id === entity.followedId);
+          if (existingProfile) {
+            followingProfiles.push(existingProfile);
+          } else {
+            // Fetch directly from Firebase
+            try {
+              const userRef = doc(db, 'users', entity.followedId);
+              const userSnap = await getDoc(userRef);
+              if (userSnap.exists()) {
+                const userData = userSnap.data();
+                const profile: UserProfile = {
+                  id: entity.followedId,
+                  name: userData.userDetails?.name || userData.name || userData.fullName || 'User',
+                  description: userData.userDetails?.description || userData.description || '',
+                  profileImage: userData.userDetails?.profileImage || userData.profileImage || '',
+                  isPublicProfile: userData.isPublicProfile ?? false,
+                  socialMedia: userData.userDetails?.socialMedia || {},
+                  location: userData.userDetails?.location || '',
+                  website: userData.userDetails?.website || '',
+                };
+                followingProfiles.push({ id: entity.followedId, profile });
+              }
+            } catch (err) {
+              console.error('Error fetching user profile:', entity.followedId, err);
+            }
           }
         }
         setFollowingUsers(followingProfiles);
@@ -1215,8 +1240,8 @@ export default function SearchScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <View style={[styles.emptyIconContainer, { backgroundColor: colors.primaryLight + '10' }]}>
-                <SearchIcon size={48} color={colors.primaryLight} strokeWidth={1.5} />
+              <View style={[styles.emptyIconContainer, { backgroundColor: colors.backgroundSecondary }]}>
+                <SearchIcon size={48} color={colors.primary} strokeWidth={1.5} />
               </View>
               <Text style={[styles.emptyTitle, { color: colors.text }]}>
                 {activeTab === 'explore' ? 'No Users Yet' : 'Not Following Anyone'}

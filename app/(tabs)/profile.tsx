@@ -12,6 +12,7 @@ import {
   Alert,
   ActivityIndicator,
   Linking,
+  Modal,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import MenuButton from '@/components/MenuButton';
@@ -24,7 +25,7 @@ import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 import { useRouter } from 'expo-router';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { User, Globe, MapPin, Facebook, Instagram, Twitter, Linkedin, ExternalLink, Camera, Eye, EyeOff, ChevronDown, ChevronRight, MoreVertical, Plus, Edit, Trash2, Lock } from 'lucide-react-native';
+import { User, Globe, MapPin, Facebook, Instagram, Twitter, Linkedin, ExternalLink, Camera, Eye, EyeOff, ChevronDown, ChevronRight, MoreVertical, Plus, Edit, Trash2, Lock, X } from 'lucide-react-native';
 import { pickAndUploadImage } from '@/lib/imageUpload';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -74,6 +75,8 @@ export default function ProfileScreen() {
   const [isPublicProfile, setIsPublicProfile] = useState(profile.isPublicProfile !== false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [followModalVisible, setFollowModalVisible] = useState(false);
+  const [followModalMode, setFollowModalMode] = useState<'followers' | 'following'>('followers');
 
   // Library context
   const library = useLibrary();
@@ -435,6 +438,35 @@ export default function ProfileScreen() {
             </View>
           )}
 
+          {/* Followers/Following Counters */}
+          {!editing && (
+            <View style={styles.followStatsContainer}>
+              <TouchableOpacity
+                style={styles.followStatButton}
+                onPress={() => {
+                  setFollowModalMode('followers');
+                  setFollowModalVisible(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.followStatCount, { color: colors.text }]}>{followersCount}</Text>
+                <Text style={[styles.followStatLabel, { color: colors.textSecondary }]}>Followers</Text>
+              </TouchableOpacity>
+              <View style={[styles.followStatDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.followStatButton}
+                onPress={() => {
+                  setFollowModalMode('following');
+                  setFollowModalVisible(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.followStatCount, { color: colors.text }]}>{followingCount}</Text>
+                <Text style={[styles.followStatLabel, { color: colors.textSecondary }]}>Following</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Edit Form */}
           {editing && (
             <View style={styles.editForm}>
@@ -587,6 +619,38 @@ export default function ProfileScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Followers/Following Modal */}
+      <Modal
+        visible={followModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setFollowModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {followModalMode === 'followers' ? 'Followers' : 'Following'}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setFollowModalVisible(false)}
+                style={[styles.modalCloseButton, { backgroundColor: colors.backgroundSecondary }]}
+              >
+                <X size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            {clerkUser?.id && (
+              <FollowingFollowersList
+                mode={followModalMode}
+                userId={clerkUser.id}
+                isDarkMode={isDarkMode}
+                userCauses={profile?.causes || []}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -950,5 +1014,61 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     textAlign: 'center',
+  },
+  // Follow stats styles
+  followStatsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(128, 128, 128, 0.2)',
+  },
+  followStatButton: {
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  followStatCount: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  followStatLabel: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  followStatDivider: {
+    width: 1,
+    height: 32,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 16,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(128, 128, 128, 0.2)',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  modalCloseButton: {
+    padding: 8,
+    borderRadius: 20,
   },
 });
