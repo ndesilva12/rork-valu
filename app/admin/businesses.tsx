@@ -23,6 +23,32 @@ import { collection, getDocs, doc, updateDoc, deleteDoc, query, where, setDoc } 
 import { db } from '../../firebase';
 import { getUserLists, deleteList, removeEntryFromList, addEntryToList } from '@/services/firebase/listService';
 import { UserList, ListEntry } from '@/types/library';
+import LocationAutocomplete from '@/components/LocationAutocomplete';
+import { pickAndUploadImage } from '@/lib/imageUpload';
+import { Image } from 'react-native';
+
+// Helper function to extract just the referral code from a URL or return as-is if it's just a code
+const sanitizeReferralCode = (input: string): string => {
+  const trimmed = input.trim();
+  if (!trimmed) return '';
+
+  // Check if it looks like a URL
+  if (trimmed.includes('?') || trimmed.includes('/')) {
+    // Try to extract the ref or source parameter
+    const refMatch = trimmed.match(/[?&]ref=([^&\s]+)/i);
+    if (refMatch) return refMatch[1];
+
+    const sourceMatch = trimmed.match(/[?&]source=([^&\s]+)/i);
+    if (sourceMatch) return sourceMatch[1];
+
+    // If it's a URL but no ref param found, try to get the last path segment
+    const pathMatch = trimmed.match(/\/([^/?]+)(?:\?|$)/);
+    if (pathMatch) return pathMatch[1];
+  }
+
+  // Return as-is (it's just a code)
+  return trimmed;
+};
 
 interface Affiliate {
   name: string;
@@ -117,6 +143,9 @@ export default function BusinessesManagement() {
   const [createTwitter, setCreateTwitter] = useState('');
   const [createLinkedin, setCreateLinkedin] = useState('');
   const [createReferralCode, setCreateReferralCode] = useState('');
+  const [createLocationConfirmed, setCreateLocationConfirmed] = useState(false);
+  const [createLogoUploading, setCreateLogoUploading] = useState(false);
+  const [createCoverUploading, setCreateCoverUploading] = useState(false);
 
   // Form state - Basic Info
   const [formName, setFormName] = useState('');
@@ -743,6 +772,7 @@ export default function BusinessesManagement() {
       setCreateTwitter('');
       setCreateLinkedin('');
       setCreateReferralCode('');
+      setCreateLocationConfirmed(false);
       setShowCreateModal(false);
 
       // Reload businesses
@@ -941,56 +971,98 @@ export default function BusinessesManagement() {
                 autoCapitalize="none"
               />
 
-              <Text style={styles.label}>Logo URL</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="https://example.com/logo.png"
-                value={createLogoUrl}
-                onChangeText={setCreateLogoUrl}
-                autoCapitalize="none"
-              />
+              <Text style={styles.label}>Logo Image</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="https://example.com/logo.png"
+                  value={createLogoUrl}
+                  onChangeText={setCreateLogoUrl}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={[styles.uploadButton, createLogoUploading && { opacity: 0.5 }]}
+                  onPress={async () => {
+                    if (!createUserId) {
+                      Alert.alert('User ID Required', 'Please enter a User ID first to upload images.');
+                      return;
+                    }
+                    setCreateLogoUploading(true);
+                    const url = await pickAndUploadImage(createUserId, 'business', [1, 1]);
+                    if (url) {
+                      setCreateLogoUrl(url);
+                    }
+                    setCreateLogoUploading(false);
+                  }}
+                  disabled={createLogoUploading}
+                >
+                  {createLogoUploading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.uploadButtonText}>Upload</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+              {createLogoUrl ? (
+                <Image source={{ uri: createLogoUrl }} style={{ width: 60, height: 60, borderRadius: 8, marginBottom: 12 }} />
+              ) : null}
 
-              <Text style={styles.label}>Cover Image URL</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="https://example.com/cover.jpg"
-                value={createCoverImageUrl}
-                onChangeText={setCreateCoverImageUrl}
-                autoCapitalize="none"
-              />
+              <Text style={styles.label}>Cover Image</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="https://example.com/cover.jpg"
+                  value={createCoverImageUrl}
+                  onChangeText={setCreateCoverImageUrl}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={[styles.uploadButton, createCoverUploading && { opacity: 0.5 }]}
+                  onPress={async () => {
+                    if (!createUserId) {
+                      Alert.alert('User ID Required', 'Please enter a User ID first to upload images.');
+                      return;
+                    }
+                    setCreateCoverUploading(true);
+                    const url = await pickAndUploadImage(createUserId, 'cover', [16, 9]);
+                    if (url) {
+                      setCreateCoverImageUrl(url);
+                    }
+                    setCreateCoverUploading(false);
+                  }}
+                  disabled={createCoverUploading}
+                >
+                  {createCoverUploading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.uploadButtonText}>Upload</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+              {createCoverImageUrl ? (
+                <Image source={{ uri: createCoverImageUrl }} style={{ width: '100%', height: 100, borderRadius: 8, marginBottom: 12 }} />
+              ) : null}
 
               <Text style={styles.sectionTitle}>📍 Location (Optional)</Text>
 
               <Text style={styles.label}>Address</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="123 Main St, City, State ZIP"
+              <LocationAutocomplete
                 value={createAddress}
-                onChangeText={setCreateAddress}
+                onLocationSelect={(address, lat, lng) => {
+                  setCreateAddress(address);
+                  setCreateLatitude(lat.toString());
+                  setCreateLongitude(lng.toString());
+                  setCreateLocationConfirmed(true);
+                }}
+                isDarkMode={false}
+                placeholder="Type address and click search to verify"
+                isConfirmed={createLocationConfirmed}
               />
-
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.label}>Latitude</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="40.7128"
-                    value={createLatitude}
-                    onChangeText={setCreateLatitude}
-                    keyboardType="numeric"
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.label}>Longitude</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="-74.0060"
-                    value={createLongitude}
-                    onChangeText={setCreateLongitude}
-                    keyboardType="numeric"
-                  />
-                </View>
-              </View>
+              {createLocationConfirmed && createLatitude && createLongitude && (
+                <Text style={[styles.helpText, { color: '#22C55E' }]}>
+                  ✓ Location verified: {createLatitude}, {createLongitude}
+                </Text>
+              )}
 
               <Text style={styles.sectionTitle}>💳 Discounts</Text>
 
@@ -1064,11 +1136,11 @@ export default function BusinessesManagement() {
                 style={styles.input}
                 placeholder="e.g., joescoffee, downtown1"
                 value={createReferralCode}
-                onChangeText={setCreateReferralCode}
+                onChangeText={(text) => setCreateReferralCode(sanitizeReferralCode(text))}
                 autoCapitalize="none"
               />
               <Text style={styles.helpText}>
-                This code will be used in URLs like: https://iendorse.app/sign-up?ref=joescoffee
+                Enter just the code (e.g., "joescoffee"). If you paste a full URL, it will be automatically extracted.
               </Text>
 
               <View style={styles.modalActions}>
@@ -1095,6 +1167,7 @@ export default function BusinessesManagement() {
                     setCreateTwitter('');
                     setCreateLinkedin('');
                     setCreateReferralCode('');
+                    setCreateLocationConfirmed(false);
                   }}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -1403,10 +1476,10 @@ export default function BusinessesManagement() {
                 style={styles.input}
                 placeholder="e.g., joescoffee, downtown1"
                 value={formReferralCode}
-                onChangeText={setFormReferralCode}
+                onChangeText={(text) => setFormReferralCode(sanitizeReferralCode(text))}
               />
               <Text style={styles.helpText}>
-                URL format: https://iendorse.app/sign-up?ref={formReferralCode || 'code'}
+                Enter just the code. Full URL: https://iendorse.app/sign-up?ref={formReferralCode || 'code'}
               </Text>
               {editingBusiness?.referralCount !== undefined && editingBusiness.referralCount > 0 && (
                 <View style={styles.referralStatsBox}>
@@ -1694,6 +1767,20 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 12,
     lineHeight: 18,
+  },
+  uploadButton: {
+    backgroundColor: '#007bff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 80,
+  },
+  uploadButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   searchInput: {
     height: 40,

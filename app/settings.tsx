@@ -13,6 +13,7 @@ import {
   Image,
   Switch,
   Linking,
+  useWindowDimensions,
 } from 'react-native';
 import { useState, useEffect } from 'react';
 import { ChevronLeft, Lock, Download, Shield, FileText, ExternalLink, Trash2 } from 'lucide-react-native';
@@ -26,6 +27,11 @@ export default function SettingsScreen() {
   const colors = isDarkMode ? darkColors : lightColors;
   const { user } = useUser();
   const { signOut } = useAuth();
+  const { width: windowWidth } = useWindowDimensions();
+
+  // On larger screens (web), constrain content to 50% width in the center
+  const isLargeScreen = Platform.OS === 'web' && windowWidth > 768;
+  const contentMaxWidth = isLargeScreen ? windowWidth * 0.5 : undefined;
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -184,7 +190,14 @@ export default function SettingsScreen() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          isLargeScreen && {
+            maxWidth: contentMaxWidth,
+            width: '100%',
+            alignSelf: 'center',
+          }
+        ]}
       >
         <Text style={[styles.pageTitle, { color: colors.text }]}>Settings</Text>
 

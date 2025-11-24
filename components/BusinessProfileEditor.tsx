@@ -22,6 +22,15 @@ import { getUserLists } from '@/services/firebase/listService';
 import { UserList, BrandListEntry, BusinessListEntry } from '@/types/library';
 import TeamManagement from '@/components/TeamManagement';
 
+// Helper function for cross-platform alerts
+const showAlert = (title: string, message: string) => {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}: ${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+};
+
 const BUSINESS_CATEGORIES = [
   'Retail',
   'Food & Beverage',
@@ -115,7 +124,7 @@ export default function BusinessProfileEditor() {
 
   const handleRemoveLocation = (index: number) => {
     if (locations.length === 1) {
-      Alert.alert('Required', 'You must have at least one location');
+      showAlert('Required', 'You must have at least one location');
       return;
     }
     const newLocations = locations.filter((_, i) => i !== index);
@@ -210,12 +219,12 @@ export default function BusinessProfileEditor() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Required', 'Business name is required');
+      showAlert('Required', 'Business name is required');
       return;
     }
 
     if (!category) {
-      Alert.alert('Required', 'Business category is required');
+      showAlert('Required', 'Business category is required');
       return;
     }
 
@@ -225,7 +234,7 @@ export default function BusinessProfileEditor() {
     );
 
     if (validLocations.length === 0) {
-      Alert.alert('Required', 'Please add at least one business location');
+      showAlert('Required', 'Please add at least one business location');
       return;
     }
 
@@ -262,10 +271,15 @@ export default function BusinessProfileEditor() {
 
     console.log('[BusinessProfileEditor] Saving locations:', validLocations);
     console.log('[BusinessProfileEditor] Full updateInfo:', updateInfo);
-    await setBusinessInfo(updateInfo);
 
-    setEditing(false);
-    Alert.alert('Success', 'Business profile updated');
+    try {
+      await setBusinessInfo(updateInfo);
+      setEditing(false);
+      showAlert('Success', 'Business profile updated');
+    } catch (error: any) {
+      console.error('[BusinessProfileEditor] Save error:', error);
+      showAlert('Error', `Failed to save: ${error?.message || 'Unknown error'}`);
+    }
   };
 
   const handleCancel = () => {
@@ -303,7 +317,7 @@ export default function BusinessProfileEditor() {
   const handleLogoUpload = async () => {
     if (!clerkUser?.id) {
       console.error('[BusinessProfileEditor] No clerk user ID available');
-      Alert.alert('Error', 'User not logged in. Please log in and try again.');
+      showAlert('Error', 'User not logged in. Please log in and try again.');
       return;
     }
 
@@ -316,14 +330,14 @@ export default function BusinessProfileEditor() {
       if (downloadURL) {
         console.log('[BusinessProfileEditor] Setting logo URL to:', downloadURL);
         setLogoUrl(downloadURL);
-        Alert.alert('Success', 'Business logo uploaded! Remember to click "Save Changes" to save it to your profile.');
+        showAlert('Success', 'Business logo uploaded! Remember to click "Save Changes" to save it to your profile.');
       } else {
         console.warn('[BusinessProfileEditor] Logo upload returned null - cancelled or failed');
       }
     } catch (error: any) {
       console.error('[BusinessProfileEditor] Error uploading business logo:', error);
       console.error('[BusinessProfileEditor] Error stack:', error?.stack);
-      Alert.alert('Error', `Failed to upload logo: ${error?.message || 'Unknown error'}`);
+      showAlert('Error', `Failed to upload logo: ${error?.message || 'Unknown error'}`);
     } finally {
       console.log('[BusinessProfileEditor] Logo upload complete, stopping spinner');
       setUploadingImage(false);
@@ -333,7 +347,7 @@ export default function BusinessProfileEditor() {
   const handleCoverImageUpload = async () => {
     if (!clerkUser?.id) {
       console.error('[BusinessProfileEditor] No clerk user ID available');
-      Alert.alert('Error', 'User not logged in. Please log in and try again.');
+      showAlert('Error', 'User not logged in. Please log in and try again.');
       return;
     }
 
@@ -347,14 +361,14 @@ export default function BusinessProfileEditor() {
       if (downloadURL) {
         console.log('[BusinessProfileEditor] Setting cover image URL to:', downloadURL);
         setCoverImageUrl(downloadURL);
-        Alert.alert('Success', 'Cover image uploaded! Remember to click "Save Changes" to save it to your profile.');
+        showAlert('Success', 'Cover image uploaded! Remember to click "Save Changes" to save it to your profile.');
       } else {
         console.warn('[BusinessProfileEditor] Cover upload returned null - cancelled or failed');
       }
     } catch (error: any) {
       console.error('[BusinessProfileEditor] Error uploading cover image:', error);
       console.error('[BusinessProfileEditor] Error stack:', error?.stack);
-      Alert.alert('Error', `Failed to upload cover: ${error?.message || 'Unknown error'}`);
+      showAlert('Error', `Failed to upload cover: ${error?.message || 'Unknown error'}`);
     } finally {
       console.log('[BusinessProfileEditor] Cover upload complete, stopping spinner');
       setUploadingImage(false);
@@ -364,12 +378,12 @@ export default function BusinessProfileEditor() {
   const handleGalleryImageUpload = async () => {
     if (!clerkUser?.id) {
       console.error('[BusinessProfileEditor] No clerk user ID available');
-      Alert.alert('Error', 'User not logged in. Please log in and try again.');
+      showAlert('Error', 'User not logged in. Please log in and try again.');
       return;
     }
 
     if (galleryImages.length >= 3) {
-      Alert.alert('Maximum Reached', 'You can only upload up to 3 gallery images.');
+      showAlert('Maximum Reached', 'You can only upload up to 3 gallery images.');
       return;
     }
 
@@ -385,14 +399,14 @@ export default function BusinessProfileEditor() {
         console.log('[BusinessProfileEditor] Adding gallery image to array');
         // Add image with empty caption - user can add caption in text field
         setGalleryImages([...galleryImages, { imageUrl: downloadURL, caption: '' }]);
-        Alert.alert('Success', 'Image uploaded! Add a caption below and click "Save Changes".');
+        showAlert('Success', 'Image uploaded! Add a caption below and click "Save Changes".');
       } else {
         console.warn('[BusinessProfileEditor] Gallery upload returned null - cancelled or failed');
       }
     } catch (error: any) {
       console.error('[BusinessProfileEditor] Error uploading gallery image:', error);
       console.error('[BusinessProfileEditor] Error stack:', error?.stack);
-      Alert.alert('Error', `Failed to upload gallery image: ${error?.message || 'Unknown error'}`);
+      showAlert('Error', `Failed to upload gallery image: ${error?.message || 'Unknown error'}`);
     } finally {
       console.log('[BusinessProfileEditor] Gallery upload complete, stopping spinner');
       setUploadingImage(false);
