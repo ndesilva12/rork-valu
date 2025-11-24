@@ -1181,7 +1181,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   valueHintText: {
-    fontSize: 13,
+    fontSize: 16,
     marginBottom: 16,
     textAlign: 'center' as const,
   },
