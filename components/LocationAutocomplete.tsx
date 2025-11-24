@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,43 +13,6 @@ import {
 import { MapPin, Search } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import { lightColors, darkColors } from '@/constants/colors';
-
-// For web, we need to load Google Maps JavaScript API
-declare global {
-  interface Window {
-    google?: {
-      maps: {
-        places: {
-          AutocompleteService: new () => {
-            getPlacePredictions: (
-              request: { input: string; types?: string[] },
-              callback: (predictions: any[] | null, status: string) => void
-            ) => void;
-          };
-          PlacesService: new (attrContainer: HTMLElement) => {
-            getDetails: (
-              request: { placeId: string; fields: string[] },
-              callback: (place: any | null, status: string) => void
-            ) => void;
-          };
-          PlacesServiceStatus: {
-            OK: string;
-          };
-        };
-        Geocoder: new () => {
-          geocode: (
-            request: { address: string },
-            callback: (results: any[] | null, status: string) => void
-          ) => void;
-        };
-        GeocoderStatus: {
-          OK: string;
-        };
-      };
-    };
-    initGoogleMapsCallback?: () => void;
-  }
-}
 
 interface LocationSuggestion {
   description: string;
@@ -66,42 +29,10 @@ interface LocationAutocompleteProps {
 
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || '';
 
-// Load Google Maps JavaScript API for web
-const loadGoogleMapsScript = (): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    if (Platform.OS !== 'web') {
-      resolve();
-      return;
-    }
-
-    // Already loaded
-    if (window.google?.maps?.places) {
-      resolve();
-      return;
-    }
-
-    // Check if script is already being loaded
-    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
-    if (existingScript) {
-      // Wait for it to load
-      existingScript.addEventListener('load', () => resolve());
-      existingScript.addEventListener('error', () => reject(new Error('Failed to load Google Maps')));
-      return;
-    }
-
-    // Create and load the script
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_API_KEY}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      console.log('[Location] Google Maps JavaScript API loaded');
-      resolve();
-    };
-    script.onerror = () => reject(new Error('Failed to load Google Maps'));
-    document.head.appendChild(script);
-  });
-};
+// Note: The Google Maps JavaScript API requires the "Maps JavaScript API" to be enabled
+// in Google Cloud Console. If only "Places API" and "Geocoding API" are enabled,
+// the JS SDK won't work. We use REST APIs as fallback which work for geocoding
+// but not for autocomplete suggestions due to CORS restrictions.
 
 export default function LocationAutocomplete({
   value,
@@ -117,44 +48,7 @@ export default function LocationAutocomplete({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [showInfoTooltip, setShowInfoTooltip] = useState(false);
-  const [googleMapsLoaded, setGoogleMapsLoaded] = useState(false);
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
-  const autocompleteService = useRef<any>(null);
-  const placesService = useRef<any>(null);
-  const geocoder = useRef<any>(null);
-  const placesAttrRef = useRef<HTMLDivElement | null>(null);
-
-  // Load Google Maps on web
-  useEffect(() => {
-    if (Platform.OS === 'web' && GOOGLE_API_KEY) {
-      loadGoogleMapsScript()
-        .then(() => {
-          setGoogleMapsLoaded(true);
-          if (window.google?.maps?.places) {
-            autocompleteService.current = new window.google.maps.places.AutocompleteService();
-            // Create a hidden div for PlacesService attribution requirement
-            if (!placesAttrRef.current) {
-              placesAttrRef.current = document.createElement('div');
-              placesAttrRef.current.style.display = 'none';
-              document.body.appendChild(placesAttrRef.current);
-            }
-            placesService.current = new window.google.maps.places.PlacesService(placesAttrRef.current);
-            geocoder.current = new window.google.maps.Geocoder();
-            console.log('[Location] Google services initialized');
-          }
-        })
-        .catch((err) => {
-          console.error('[Location] Failed to load Google Maps:', err);
-        });
-    }
-
-    return () => {
-      // Cleanup hidden div
-      if (placesAttrRef.current && placesAttrRef.current.parentNode) {
-        placesAttrRef.current.parentNode.removeChild(placesAttrRef.current);
-      }
-    };
-  }, []);
 
   // Sync internal state with external value prop
   useEffect(() => {
@@ -172,37 +66,17 @@ export default function LocationAutocomplete({
 
     console.log('[Location] Fetching autocomplete for:', text);
 
-    // Use Google Maps JavaScript SDK on web (avoids CORS issues)
-    if (Platform.OS === 'web' && autocompleteService.current) {
-      try {
-        autocompleteService.current.getPlacePredictions(
-          { input: text },
-          (predictions: any[] | null, status: string) => {
-            console.log('[Location] Web autocomplete status:', status);
-            if (status === window.google?.maps?.places?.PlacesServiceStatus?.OK && predictions && predictions.length > 0) {
-              console.log('[Location] Got', predictions.length, 'suggestions');
-              const formattedPredictions = predictions.map((p: any) => ({
-                description: p.description,
-                place_id: p.place_id,
-              }));
-              setSuggestions(formattedPredictions);
-              setShowSuggestions(true);
-            } else {
-              console.log('[Location] No suggestions from API, status:', status);
-              setSuggestions([]);
-              setShowSuggestions(false);
-            }
-          }
-        );
-      } catch (error) {
-        console.error('[Location] Web autocomplete error:', error);
-        setSuggestions([]);
-        setShowSuggestions(false);
-      }
+    // Note: Places Autocomplete REST API is blocked by CORS on web browsers.
+    // This will only work on native mobile platforms.
+    // For web, users must use the search button to geocode their address.
+    if (Platform.OS === 'web') {
+      console.log('[Location] Autocomplete not available on web (CORS restriction)');
+      setSuggestions([]);
+      setShowSuggestions(false);
       return;
     }
 
-    // Fallback: Direct REST API call (works on native, blocked by CORS on web)
+    // REST API call (works on native mobile platforms)
     try {
       const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_API_KEY}`;
       const response = await fetch(url);
@@ -248,38 +122,8 @@ export default function LocationAutocomplete({
     setSuggestions([]);
     setIsLoading(true);
 
-    // Use PlacesService on web
-    if (Platform.OS === 'web' && placesService.current) {
-      try {
-        placesService.current.getDetails(
-          { placeId: suggestion.place_id, fields: ['geometry'] },
-          (place: any | null, status: string) => {
-            setIsLoading(false);
-            if (status === window.google?.maps?.places?.PlacesServiceStatus?.OK && place?.geometry?.location) {
-              const lat = place.geometry.location.lat();
-              const lng = place.geometry.location.lng();
-              console.log('[Location] Web PlacesService got coordinates:', { lat, lng });
-              onLocationSelect(suggestion.description, lat, lng);
-              if (Platform.OS === 'web') {
-                window.alert(`Location "${suggestion.description}" has been set. Click "Save Changes" to save.`);
-              } else {
-                Alert.alert('Location Set', `Location "${suggestion.description}" has been set. Click "Save Changes" to save.`);
-              }
-            } else {
-              console.log('[Location] PlacesService failed, falling back to geocode');
-              geocodeAddressWithGoogle(suggestion.description);
-            }
-          }
-        );
-      } catch (error) {
-        console.error('[Location] Web PlacesService error:', error);
-        setIsLoading(false);
-        await geocodeAddressWithGoogle(suggestion.description);
-      }
-      return;
-    }
-
-    // Fallback: Direct REST API call (works on native)
+    // This is only called on native (autocomplete doesn't work on web)
+    // Try Place Details REST API, fall back to geocoding
     try {
       if (!GOOGLE_API_KEY) {
         await geocodeAddressWithGoogle(suggestion.description);
@@ -295,7 +139,7 @@ export default function LocationAutocomplete({
         const { lat, lng } = data.result.geometry.location;
         console.log('[Location] Got coordinates from Place Details:', { lat, lng });
         onLocationSelect(suggestion.description, lat, lng);
-        Alert.alert('Location Set', `Location "${suggestion.description}" has been set. Click "Save Changes" to save.`);
+        showLocationAlert('Location Set', `Location "${suggestion.description}" has been set. Click "Save Changes" to save.`);
       } else {
         // Fallback to geocoding
         await geocodeAddressWithGoogle(suggestion.description);
@@ -325,35 +169,8 @@ export default function LocationAutocomplete({
       return false;
     }
 
-    // Use Geocoder from JavaScript SDK on web (avoids CORS issues)
-    if (Platform.OS === 'web' && geocoder.current) {
-      return new Promise((resolve) => {
-        geocoder.current.geocode(
-          { address: address },
-          (results: any[] | null, status: string) => {
-            console.log('[Location] Web Geocoder status:', status);
-            if (status === window.google?.maps?.GeocoderStatus?.OK && results && results.length > 0) {
-              const location = results[0].geometry.location;
-              const lat = location.lat();
-              const lng = location.lng();
-              console.log('[Location] SUCCESS - Geocoded to:', { lat, lng });
-              onLocationSelect(address, lat, lng);
-              showLocationAlert('Location Set', `Location "${address}" has been set. Click "Save Changes" to save.`);
-              resolve(true);
-            } else {
-              console.warn('[Location] Geocoding failed with status:', status);
-              showLocationAlert(
-                'Location Not Found',
-                'Could not find that address. Please include the full address with city and state (e.g., "123 Main St, New York, NY").'
-              );
-              resolve(false);
-            }
-          }
-        );
-      });
-    }
-
-    // Fallback: Direct REST API call (works on native)
+    // Use Geocoding REST API - this works on both web and native
+    // (Google allows CORS for the Geocoding API, unlike Places API)
     try {
       const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_API_KEY}`;
       const response = await fetch(url);
@@ -368,11 +185,11 @@ export default function LocationAutocomplete({
         // Call the callback to save location
         onLocationSelect(address, lat, lng);
 
-        Alert.alert('Location Set', `Location "${address}" has been set. Click "Save Changes" to save.`);
+        showLocationAlert('Location Set', `Location "${address}" has been set. Click "Save Changes" to save.`);
         return true;
       } else {
         console.warn('[Location] Geocoding failed with status:', data.status);
-        Alert.alert(
+        showLocationAlert(
           'Location Not Found',
           'Could not find that address. Please include the full address with city and state (e.g., "123 Main St, New York, NY").'
         );
@@ -380,7 +197,7 @@ export default function LocationAutocomplete({
       }
     } catch (error) {
       console.error('[Location] Geocoding error:', error);
-      Alert.alert('Error', 'Failed to find this location. Please check your internet connection and try again.');
+      showLocationAlert('Error', 'Failed to find this location. Please check your internet connection and try again.');
       return false;
     }
   };
@@ -389,7 +206,7 @@ export default function LocationAutocomplete({
     const trimmedInput = inputValue.trim();
 
     if (!trimmedInput) {
-      Alert.alert('Enter Location', 'Please type an address');
+      showLocationAlert('Enter Location', 'Please type an address');
       return;
     }
 
@@ -411,7 +228,7 @@ export default function LocationAutocomplete({
 
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Location permission is required to use your current location.');
+        showLocationAlert('Permission Denied', 'Location permission is required to use your current location.');
         return;
       }
 
@@ -436,13 +253,13 @@ export default function LocationAutocomplete({
           setInputValue(address);
           onLocationSelect(address, lat, lon);
 
-          Alert.alert('Current Location Set', `Location set to "${address}". Click "Save Changes" to save.`);
+          showLocationAlert('Current Location Set', `Location set to "${address}". Click "Save Changes" to save.`);
         } else {
           // Fallback to coordinates
           const coords = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
           setInputValue(coords);
           onLocationSelect(coords, lat, lon);
-          Alert.alert('Current Location Set', 'Location set to your coordinates. Click "Save Changes" to save.');
+          showLocationAlert('Current Location Set', 'Location set to your coordinates. Click "Save Changes" to save.');
         }
       } else {
         // No API key, try expo-location reverse geocoding (mobile only)
@@ -455,24 +272,24 @@ export default function LocationAutocomplete({
 
             setInputValue(displayLocation);
             onLocationSelect(displayLocation, lat, lon);
-            Alert.alert('Current Location Set', `Location set to "${displayLocation}". Click "Save Changes" to save.`);
+            showLocationAlert('Current Location Set', `Location set to "${displayLocation}". Click "Save Changes" to save.`);
           } else {
             const coords = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
             setInputValue(coords);
             onLocationSelect(coords, lat, lon);
-            Alert.alert('Current Location Set', 'Location set. Click "Save Changes" to save.');
+            showLocationAlert('Current Location Set', 'Location set. Click "Save Changes" to save.');
           }
         } catch (reverseError) {
           console.error('[Location] Reverse geocoding failed:', reverseError);
           const coords = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
           setInputValue(coords);
           onLocationSelect(coords, lat, lon);
-          Alert.alert('Current Location Set', 'Location set. Click "Save Changes" to save.');
+          showLocationAlert('Current Location Set', 'Location set. Click "Save Changes" to save.');
         }
       }
     } catch (error: any) {
       console.error('[Location] Current location error:', error);
-      Alert.alert('Error', `Failed to get current location: ${error.message || 'Unknown error'}`);
+      showLocationAlert('Error', `Failed to get current location: ${error.message || 'Unknown error'}`);
     } finally {
       setGettingLocation(false);
       setIsLoading(false);
