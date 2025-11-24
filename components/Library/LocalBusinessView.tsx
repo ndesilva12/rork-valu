@@ -486,19 +486,22 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   businessCard: {
-    borderRadius: 12,
-    overflow: 'hidden',
+    borderRadius: 0,
+    height: 64,
+    overflow: 'visible',
+    backgroundColor: 'transparent',
   },
   businessCardInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    gap: 12,
+    height: '100%',
+    overflow: 'visible',
+    backgroundColor: 'transparent',
   },
   businessLogoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
+    width: 64,
+    height: 64,
+    borderRadius: 0,
     overflow: 'hidden',
     backgroundColor: '#FFFFFF',
   },
@@ -508,14 +511,19 @@ const styles = StyleSheet.create({
   },
   businessCardContent: {
     flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   businessName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 2,
   },
   businessCategory: {
-    fontSize: 14,
+    fontSize: 11,
+    opacity: 0.7,
     flexShrink: 1,
   },
   locationDistanceRow: {
@@ -538,11 +546,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   businessScoreContainer: {
-    alignItems: 'center',
+    paddingHorizontal: 12,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   businessScore: {
-    fontSize: 24,
+    fontSize: 17,
     fontWeight: '700',
   },
   emptySection: {

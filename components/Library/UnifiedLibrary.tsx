@@ -62,6 +62,7 @@ import LocalBusinessView from '@/components/Library/LocalBusinessView';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { reorderListEntries } from '@/services/firebase/listService';
+import { getTopBrands, getTopBusinesses } from '@/services/firebase/topRankingsService';
 import {
   DndContext,
   closestCenter,
@@ -80,7 +81,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 // ===== Types =====
 
-type LibrarySectionType = 'endorsement' | 'aligned' | 'unaligned' | 'following' | 'followers' | 'local';
+type LibrarySectionType = 'endorsement' | 'aligned' | 'unaligned' | 'alignedTop' | 'following' | 'followers' | 'local' | 'localTop';
 
 interface UnifiedLibraryProps {
   mode: 'edit' | 'preview' | 'view';
@@ -174,6 +175,13 @@ export default function UnifiedLibrary({
   const [unalignedLoadCount, setUnalignedLoadCount] = useState(10);
   const [customListLoadCounts, setCustomListLoadCounts] = useState<Record<string, number>>({});
 
+  // Top rankings state
+  const [topBrands, setTopBrands] = useState<any[]>([]);
+  const [topBusinesses, setTopBusinesses] = useState<any[]>([]);
+  const [loadingTopBrands, setLoadingTopBrands] = useState(false);
+  const [loadingTopBusinesses, setLoadingTopBusinesses] = useState(false);
+  const [topBrandsLoadCount, setTopBrandsLoadCount] = useState(10);
+  const [topBusinessesLoadCount, setTopBusinessesLoadCount] = useState(10);
 
   // Detect larger screens for responsive text display
   const { width } = useWindowDimensions();
@@ -2114,7 +2122,7 @@ export default function UnifiedLibrary({
           </Text>
         </TouchableOpacity>
 
-        {/* Toggle for Global section (aligned/unaligned) */}
+        {/* Toggle for Global section (aligned/unaligned/top) */}
         {isGlobalSection && (
           <View style={styles.globalToggle}>
             <TouchableOpacity
@@ -2145,6 +2153,57 @@ export default function UnifiedLibrary({
                 { color: selectedSection === 'unaligned' ? colors.danger : colors.textSecondary }
               ]}>
                 Unaligned
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.globalToggleButton,
+                selectedSection === 'alignedTop' && { backgroundColor: colors.primary + '20' },
+              ]}
+              onPress={() => setSelectedSection('alignedTop')}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.globalToggleText,
+                { color: selectedSection === 'alignedTop' ? colors.primary : colors.textSecondary }
+              ]}>
+                Top
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Toggle for Local section (for you/top) */}
+        {(selectedSection === 'local' || selectedSection === 'localTop') && (
+          <View style={styles.globalToggle}>
+            <TouchableOpacity
+              style={[
+                styles.globalToggleButton,
+                selectedSection === 'local' && { backgroundColor: colors.primary + '20' },
+              ]}
+              onPress={() => setSelectedSection('local')}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.globalToggleText,
+                { color: selectedSection === 'local' ? colors.primary : colors.textSecondary }
+              ]}>
+                For You
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.globalToggleButton,
+                selectedSection === 'localTop' && { backgroundColor: colors.primary + '20' },
+              ]}
+              onPress={() => setSelectedSection('localTop')}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.globalToggleText,
+                { color: selectedSection === 'localTop' ? colors.primary : colors.textSecondary }
+              ]}>
+                Top
               </Text>
             </TouchableOpacity>
           </View>
