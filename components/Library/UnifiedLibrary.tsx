@@ -2404,7 +2404,9 @@ export default function UnifiedLibrary({
             <TouchableOpacity
               style={[
                 styles.globalToggleButton,
-                selectedSection === 'alignedTop' && { backgroundColor: colors.primary + '20' },
+                selectedSection === 'alignedTop' && {
+                  backgroundColor: isDarkMode ? 'rgba(0, 170, 250, 0.12)' : 'rgba(3, 68, 102, 0.12)'
+                },
               ]}
               onPress={() => setSelectedSection('alignedTop')}
               activeOpacity={0.7}
@@ -2425,7 +2427,9 @@ export default function UnifiedLibrary({
             <TouchableOpacity
               style={[
                 styles.globalToggleButton,
-                selectedSection === 'local' && { backgroundColor: colors.primary + '20' },
+                selectedSection === 'local' && {
+                  backgroundColor: isDarkMode ? 'rgba(0, 170, 250, 0.12)' : 'rgba(3, 68, 102, 0.12)'
+                },
               ]}
               onPress={() => setSelectedSection('local')}
               activeOpacity={0.7}
@@ -2440,7 +2444,9 @@ export default function UnifiedLibrary({
             <TouchableOpacity
               style={[
                 styles.globalToggleButton,
-                selectedSection === 'localTop' && { backgroundColor: colors.primary + '20' },
+                selectedSection === 'localTop' && {
+                  backgroundColor: isDarkMode ? 'rgba(0, 170, 250, 0.12)' : 'rgba(3, 68, 102, 0.12)'
+                },
               ]}
               onPress={() => setSelectedSection('localTop')}
               activeOpacity={0.7}
