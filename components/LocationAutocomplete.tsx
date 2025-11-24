@@ -398,7 +398,7 @@ export default function LocationAutocomplete({
         <View style={[
           styles.suggestionsContainer,
           {
-            backgroundColor: colors.backgroundSecondary,
+            backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
             borderColor: colors.border,
           }
         ]}>
@@ -407,12 +407,18 @@ export default function LocationAutocomplete({
             keyExtractor={(item) => item.place_id}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={[styles.suggestionItem, { borderBottomColor: colors.border }]}
+                style={[
+                  styles.suggestionItem,
+                  {
+                    borderBottomColor: colors.border,
+                    backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
+                  }
+                ]}
                 onPress={() => handleSelectSuggestion(item)}
                 activeOpacity={0.7}
               >
                 <MapPin size={16} color={colors.textSecondary} strokeWidth={2} />
-                <Text style={[styles.suggestionText, { color: colors.text }]}>
+                <Text style={[styles.suggestionText, { color: isDarkMode ? '#F9FAFB' : '#111827' }]}>
                   {item.description}
                 </Text>
               </TouchableOpacity>
