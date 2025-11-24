@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator, Alert, Modal } from 'react-native';
 import { useSignUp } from '@clerk/clerk-expo';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { darkColors, lightColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useUser } from '@/contexts/UserContext';
@@ -9,8 +9,12 @@ import { useUser } from '@/contexts/UserContext';
 export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp();
   const router = useRouter();
+  const params = useLocalSearchParams<{ ref?: string; source?: string }>();
   const { isDarkMode } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+
+  // Capture referral source from URL params (supports ?ref=location1 or ?source=location1)
+  const referralSource = params.ref || params.source || null;
 
   const [emailAddress, setEmailAddress] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -113,6 +117,7 @@ export default function SignUpScreen() {
           consentGivenAt: new Date().toISOString(),
           consentVersion: '1.0',
           fullName: fullName.trim(),
+          ...(referralSource && { referralSource }), // Track which QR code/location the user signed up from
         },
       });
 

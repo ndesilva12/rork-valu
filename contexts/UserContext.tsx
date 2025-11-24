@@ -147,15 +147,18 @@ export const [UserProvider, useUser] = createContextHook(() => {
             // Sync to Firebase
             try {
               if (isFirstTime) {
+                // Get referral source from Clerk unsafeMetadata (set during signup from QR code URL params)
+                const referralSource = (clerkUser.unsafeMetadata as any)?.referralSource as string | undefined;
                 const userData = {
                   email: clerkUser.primaryEmailAddress?.emailAddress,
                   firstName: clerkUser.firstName || undefined,
                   lastName: clerkUser.lastName || undefined,
                   fullName: clerkUser.fullName || undefined,
                   imageUrl: clerkUser.imageUrl || undefined,
+                  referralSource: referralSource || undefined,
                 };
                 await createUser(clerkUser.id, userData, parsedProfile);
-                console.log('[UserContext] ✅ New user created in Firebase');
+                console.log('[UserContext] ✅ New user created in Firebase', referralSource ? `(from: ${referralSource})` : '');
               } else {
                 await saveUserProfile(clerkUser.id, parsedProfile);
                 console.log('[UserContext] ✅ Profile synced to Firebase');
@@ -180,15 +183,18 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
             // Create user in Firebase
             try {
+              // Get referral source from Clerk unsafeMetadata (set during signup from QR code URL params)
+              const referralSource = (clerkUser.unsafeMetadata as any)?.referralSource as string | undefined;
               const userData = {
                 email: clerkUser.primaryEmailAddress?.emailAddress,
                 firstName: clerkUser.firstName || undefined,
                 lastName: clerkUser.lastName || undefined,
                 fullName: clerkUser.fullName || undefined,
                 imageUrl: clerkUser.imageUrl || undefined,
+                referralSource: referralSource || undefined,
               };
               await createUser(clerkUser.id, userData, newProfile);
-              console.log('[UserContext] ✅ New user created in Firebase');
+              console.log('[UserContext] ✅ New user created in Firebase', referralSource ? `(from: ${referralSource})` : '');
             } catch (createError) {
               console.error('[UserContext] Failed to create user in Firebase:', createError);
             }

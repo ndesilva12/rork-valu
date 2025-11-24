@@ -249,7 +249,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
 /**
  * Create a new user in Firebase Firestore
  * @param userId - The Clerk user ID
- * @param userData - User data including email, name, etc.
+ * @param userData - User data including email, name, referral source, etc.
  * @param initialProfile - Initial profile data (optional)
  */
 export async function createUser(
@@ -260,6 +260,7 @@ export async function createUser(
     lastName?: string;
     fullName?: string;
     imageUrl?: string;
+    referralSource?: string; // Track which QR code/location the user signed up from
   },
   initialProfile?: Partial<UserProfile>
 ): Promise<void> {
@@ -304,6 +305,7 @@ export async function createUser(
       }
     }
     if (userData.imageUrl) userDoc.imageUrl = userData.imageUrl;
+    if (userData.referralSource) userDoc.referralSource = userData.referralSource; // QR code/location tracking
 
     await setDoc(userRef, userDoc);
 
