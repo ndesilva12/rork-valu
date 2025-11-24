@@ -353,7 +353,7 @@ export default function UnifiedLibrary({
       return `${window.location.origin}/list/${list.id}`;
     }
     // For mobile, use a deep link format (can be updated with actual deep link scheme)
-    return `uprightmoney://list/${list.id}`;
+    return `iendorse://list/${list.id}`;
   };
 
   const getItemShareUrl = (entry: ListEntry): string => {
@@ -362,13 +362,13 @@ export default function UnifiedLibrary({
       if (Platform.OS === 'web') {
         return `${window.location.origin}/brand/${brandId}`;
       }
-      return `uprightmoney://brand/${brandId}`;
+      return `iendorse://brand/${brandId}`;
     } else if (entry.type === 'business') {
       const businessId = (entry as any).businessId;
       if (Platform.OS === 'web') {
         return `${window.location.origin}/business/${businessId}`;
       }
-      return `uprightmoney://business/${businessId}`;
+      return `iendorse://business/${businessId}`;
     }
     // For other types (value, link, text), no URL
     return '';

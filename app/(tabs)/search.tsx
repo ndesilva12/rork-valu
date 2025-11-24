@@ -163,7 +163,7 @@ const UserCard = ({ item, colors, router, clerkUser, profile, library }: {
   };
 
   const handleShare = () => {
-    const shareUrl = `${Platform.OS === 'web' ? window.location.origin : 'https://upright.money'}/user/${item.id}`;
+    const shareUrl = `${Platform.OS === 'web' ? window.location.origin : 'https://iendorse.app'}/user/${item.id}`;
     if (Platform.OS === 'web') {
       navigator.clipboard.writeText(shareUrl);
       Alert.alert('Link Copied', 'Profile link copied to clipboard');

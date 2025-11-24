@@ -291,16 +291,16 @@ export default function FollowingFollowersList({
 
     let shareUrl = '';
     if (type === 'brand') {
-      shareUrl = `upright-money://brand/${entityId}`;
+      shareUrl = `iendorse://brand/${entityId}`;
     } else if (type === 'business') {
-      shareUrl = `upright-money://business/${entityId}`;
+      shareUrl = `iendorse://business/${entityId}`;
     } else if (type === 'user') {
-      shareUrl = `upright-money://user/${entityId}`;
+      shareUrl = `iendorse://user/${entityId}`;
     }
 
     try {
       await Share.share({
-        message: `Check out ${follow.name} on Upright Money: ${shareUrl}`,
+        message: `Check out ${follow.name} on iEndorse Money: ${shareUrl}`,
         title: follow.name,
       });
     } catch (error) {

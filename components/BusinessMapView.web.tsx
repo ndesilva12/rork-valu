@@ -150,7 +150,7 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
                 ${acceptsStand ? `
                   <div style="background-color: #f0f9ff; border-radius: 8px; padding: 10px; margin-bottom: 10px;">
                     <div style="font-size: 12px; font-weight: 600; color: #00aaff; margin-bottom: 6px;">
-                      Upright Contributions Accepted
+                      iEndorse Contributions Accepted
                     </div>
                     <div style="font-size: 11px; color: #4b5563; margin-bottom: 3px;">
                       Accepts: ${acceptanceMethod}

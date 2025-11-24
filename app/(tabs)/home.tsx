@@ -1224,7 +1224,7 @@ export default function HomeScreen() {
       `${list.entries.length} ${list.entries.length === 1 ? 'item' : 'items'}`;
 
     // Generate shareable link
-    const shareLink = `https://upright.money/list/${list.id}`;
+    const shareLink = `https://iendorse.app/list/${list.id}`;
 
     // Show ShareModal with platform options (works for both web and mobile)
     setShareData({
@@ -1735,7 +1735,7 @@ export default function HomeScreen() {
     setActiveCardMenuId(null);
 
     const itemType = cardMenuData.type;
-    const shareLink = `https://upright.money/${itemType}/${cardMenuData.id}`;
+    const shareLink = `https://iendorse.app/${itemType}/${cardMenuData.id}`;
 
     // Show ShareModal with platform options
     setShareData({
@@ -3165,7 +3165,7 @@ export default function HomeScreen() {
                             const itemName = entry.type === 'brand' && 'brandName' in entry ? entry.brandName :
                                            entry.type === 'business' && 'businessName' in entry ? entry.businessName : '';
 
-                            const shareLink = `https://upright.money/${itemType}/${itemId}`;
+                            const shareLink = `https://iendorse.app/${itemType}/${itemId}`;
 
                             // Show ShareModal with platform options
                             setShareData({

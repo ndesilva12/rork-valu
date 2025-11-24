@@ -114,7 +114,7 @@ export default function TeamManagement() {
       // Generate invitation link
       const baseUrl = Platform.OS === 'web'
         ? window.location.origin
-        : 'uprightmoney://'; // Deep link for mobile
+        : 'iendorse://'; // Deep link for mobile
       const inviteLink = `${baseUrl}/business/join/${invitation.inviteCode}`;
 
       // Copy to clipboard
@@ -140,7 +140,7 @@ export default function TeamManagement() {
   const handleCopyInviteLink = async (inviteCode: string) => {
     const baseUrl = Platform.OS === 'web'
       ? window.location.origin
-      : 'uprightmoney://';
+      : 'iendorse://';
     const inviteLink = `${baseUrl}/business/join/${inviteCode}`;
 
     await Clipboard.setStringAsync(inviteLink);

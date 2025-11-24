@@ -464,7 +464,7 @@ export default function CustomerProfileScreen() {
                       Discount: {formatCurrency(txn.discountAmount)} ({txn.discountPercent}%)
                     </Text>
                     <Text style={[styles.transactionDetail, { color: colors.textSecondary }]}>
-                      Upright Fee: {formatCurrency(txn.uprightFeeAmount || 0)} ({txn.uprightFeePercent || 2.5}%)
+                      iEndorse Fee: {formatCurrency(txn.endorseFeeAmount || 0)} ({txn.endorseFeePercent || 2.5}%)
                     </Text>
                   </View>
                 </View>

@@ -51,7 +51,7 @@ export default function CustomerDiscount() {
                         'Customer';
 
     // Generate URL that will be scanned by merchant's camera
-    const baseUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://upright.money';
+    const baseUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://iendorse.app';
     const verifyUrl = `${baseUrl}/merchant/verify?` +
       `userId=${clerkUser.id}&` +
       `code=${transactionId}&` +
