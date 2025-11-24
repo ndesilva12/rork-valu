@@ -340,16 +340,18 @@ export default function LocalBusinessView({
         </TouchableOpacity>
       </View>
 
-      {/* Search Input */}
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={[styles.searchInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors?.border || '#E5E7EB' }]}
-          placeholder="Search by name, category, or location..."
-          placeholderTextColor={colors.textSecondary}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
+      {/* Search Input - Only show if more than 20 businesses */}
+      {allBusinesses.length > 20 && (
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={[styles.searchInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors?.border || '#E5E7EB' }]}
+            placeholder="Search by name, category, or location..."
+            placeholderTextColor={colors.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+      )}
 
       {/* Business List */}
       <View style={styles.businessList}>
