@@ -173,6 +173,10 @@ export default function BrowseScreen() {
 
     try {
       // Find the endorsement list
+      if (!library?.userLists) {
+        Alert.alert('Error', 'Library not loaded yet. Please try again.');
+        return;
+      }
       const endorsementList = library.userLists.find(list => list.isEndorsed);
       if (!endorsementList) {
         Alert.alert('Error', 'Could not find endorsement list');
@@ -210,6 +214,10 @@ export default function BrowseScreen() {
 
     try {
       // Find the endorsement list
+      if (!library?.userLists) {
+        Alert.alert('Error', 'Library not loaded yet. Please try again.');
+        return;
+      }
       const endorsementList = library.userLists.find(list => list.isEndorsed);
       if (!endorsementList) {
         Alert.alert('Error', 'Could not find endorsement list');
@@ -262,11 +270,12 @@ export default function BrowseScreen() {
 
   // Check if brand is endorsed
   const isBrandEndorsed = (brandId: string): boolean => {
+    if (!library?.userLists) return false;
     const endorsementList = library.userLists.find(list => list.isEndorsed);
     if (!endorsementList) return false;
-    return endorsementList.entries.some(
-      (e: any) => e.type === 'brand' && e.brandId === brandId
-    );
+    return endorsementList.entries?.some(
+      (e: any) => e && e.type === 'brand' && e.brandId === brandId
+    ) || false;
   };
 
   // Compute brand scores for Global section
