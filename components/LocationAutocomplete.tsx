@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,39 @@ import {
 import { MapPin, Search } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import { lightColors, darkColors } from '@/constants/colors';
+
+// Portal component for web to render dropdown at document body level
+const WebPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  if (Platform.OS !== 'web') {
+    return <>{children}</>;
+  }
+
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    // Create a container div at body level
+    const div = document.createElement('div');
+    div.style.position = 'fixed';
+    div.style.top = '0';
+    div.style.left = '0';
+    div.style.width = '100%';
+    div.style.height = '0';
+    div.style.zIndex = '999999';
+    div.style.pointerEvents = 'none';
+    document.body.appendChild(div);
+    setContainer(div);
+
+    return () => {
+      document.body.removeChild(div);
+    };
+  }, []);
+
+  if (!container) return null;
+
+  // Use ReactDOM.createPortal for web
+  const ReactDOM = require('react-dom');
+  return ReactDOM.createPortal(children, container);
+};
 
 interface LocationSuggestion {
   description: string;
@@ -92,10 +125,27 @@ export default function LocationAutocomplete({
   const [gettingLocation, setGettingLocation] = useState(false);
   const [showInfoTooltip, setShowInfoTooltip] = useState(false);
   const [mapsReady, setMapsReady] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
   const autocompleteService = useRef<any>(null);
   const placesService = useRef<any>(null);
   const placesAttrRef = useRef<HTMLDivElement | null>(null);
+  const inputContainerRef = useRef<View>(null);
+
+  // Update dropdown position when showing suggestions on web
+  const updateDropdownPosition = useCallback(() => {
+    if (Platform.OS === 'web' && inputContainerRef.current) {
+      const element = inputContainerRef.current as unknown as HTMLElement;
+      if (element.getBoundingClientRect) {
+        const rect = element.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + window.scrollY + 4,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+        });
+      }
+    }
+  }, []);
 
   // Load Google Maps on web
   useEffect(() => {
@@ -157,6 +207,7 @@ export default function LocationAutocomplete({
                 place_id: p.place_id,
               }));
               setSuggestions(formattedPredictions);
+              updateDropdownPosition();
               setShowSuggestions(true);
             } else {
               console.log('[Location] No suggestions from API');
@@ -184,6 +235,7 @@ export default function LocationAutocomplete({
       if (data.status === 'OK' && data.predictions && data.predictions.length > 0) {
         console.log('[Location] Got', data.predictions.length, 'suggestions');
         setSuggestions(data.predictions);
+        updateDropdownPosition();
         setShowSuggestions(true);
       } else {
         console.log('[Location] No suggestions from API');
@@ -431,14 +483,96 @@ export default function LocationAutocomplete({
     if (!isConfirmed) {
       setShowInfoTooltip(true);
     }
+    updateDropdownPosition();
     if (inputValue && inputValue.length >= 3) {
       fetchSuggestions(inputValue);
     }
   };
 
+  // Update dropdown position on scroll/resize for web
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+
+    const handleScroll = () => {
+      if (showSuggestions) {
+        updateDropdownPosition();
+      }
+    };
+
+    const handleResize = () => {
+      if (showSuggestions) {
+        updateDropdownPosition();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [showSuggestions, updateDropdownPosition]);
+
+  // Render the suggestions dropdown - uses portal on web for proper z-index
+  const renderSuggestionsDropdown = () => {
+    if (!showSuggestions || suggestions.length === 0) return null;
+
+    const dropdownContent = (
+      <View style={[
+        styles.suggestionsContainer,
+        {
+          backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
+          borderColor: colors.border,
+        },
+        // On web with portal, use fixed positioning
+        Platform.OS === 'web' ? {
+          position: 'fixed' as any,
+          top: dropdownPosition.top,
+          left: dropdownPosition.left,
+          width: dropdownPosition.width,
+          right: undefined,
+          pointerEvents: 'auto' as any,
+        } : {},
+      ]}>
+        <FlatList
+          data={suggestions}
+          keyExtractor={(item) => item.place_id}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[
+                styles.suggestionItem,
+                {
+                  borderBottomColor: colors.border,
+                  backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
+                }
+              ]}
+              onPress={() => handleSelectSuggestion(item)}
+              activeOpacity={0.7}
+            >
+              <MapPin size={16} color={colors.textSecondary} strokeWidth={2} />
+              <Text style={[styles.suggestionText, { color: isDarkMode ? '#F9FAFB' : '#111827' }]}>
+                {item.description}
+              </Text>
+            </TouchableOpacity>
+          )}
+          style={styles.suggestionsList}
+          nestedScrollEnabled
+        />
+      </View>
+    );
+
+    // Use portal on web to escape stacking context
+    if (Platform.OS === 'web') {
+      return <WebPortal>{dropdownContent}</WebPortal>;
+    }
+
+    return dropdownContent;
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.inputRow}>
+      <View style={styles.inputRow} ref={inputContainerRef}>
         <TextInput
           style={[
             styles.input,
@@ -516,41 +650,8 @@ export default function LocationAutocomplete({
         </View>
       )}
 
-      {/* Suggestions list */}
-      {showSuggestions && suggestions.length > 0 && (
-        <View style={[
-          styles.suggestionsContainer,
-          {
-            backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
-            borderColor: colors.border,
-          }
-        ]}>
-          <FlatList
-            data={suggestions}
-            keyExtractor={(item) => item.place_id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[
-                  styles.suggestionItem,
-                  {
-                    borderBottomColor: colors.border,
-                    backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
-                  }
-                ]}
-                onPress={() => handleSelectSuggestion(item)}
-                activeOpacity={0.7}
-              >
-                <MapPin size={16} color={colors.textSecondary} strokeWidth={2} />
-                <Text style={[styles.suggestionText, { color: isDarkMode ? '#F9FAFB' : '#111827' }]}>
-                  {item.description}
-                </Text>
-              </TouchableOpacity>
-            )}
-            style={styles.suggestionsList}
-            nestedScrollEnabled
-          />
-        </View>
-      )}
+      {/* Suggestions list - rendered via portal on web */}
+      {renderSuggestionsDropdown()}
     </View>
   );
 }
