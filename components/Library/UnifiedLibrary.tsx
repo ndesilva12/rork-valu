@@ -2318,27 +2318,31 @@ export default function UnifiedLibrary({
 
   // Render section header (sticky)
   const renderSectionHeader = () => {
-    const sectionTitles: Record<LibrarySection, string> = {
+    const sectionTitles: Record<LibrarySectionType, string> = {
       endorsement: 'Endorsements',
       aligned: 'Global',
       unaligned: 'Global',
+      alignedTop: 'Global',
       following: 'Following',
       followers: 'Followers',
       local: 'Local',
+      localTop: 'Local',
     };
 
-    const sectionIcons: Record<LibrarySection, any> = {
+    const sectionIcons: Record<LibrarySectionType, any> = {
       endorsement: UserPlus,
       aligned: Target,
       unaligned: Target,
+      alignedTop: Target,
       following: User,
       followers: User,
       local: Globe,
+      localTop: Globe,
     };
 
     const title = sectionTitles[selectedSection];
     const SectionIcon = sectionIcons[selectedSection];
-    const isGlobalSection = selectedSection === 'aligned' || selectedSection === 'unaligned';
+    const isGlobalSection = selectedSection === 'aligned' || selectedSection === 'unaligned' || selectedSection === 'alignedTop';
     const isEndorsed = selectedSection === 'endorsement';
     const canReorder = isEndorsed && canEdit && endorsementList && endorsementList.entries && endorsementList.entries.length > 1;
 
