@@ -203,10 +203,19 @@ export default function UnifiedLibrary({
   // Action menu state for endorsed section header
   const [showEndorsedActionMenu, setShowEndorsedActionMenu] = useState(false);
 
-  // Section selection state - default to endorsement (or aligned if empty)
-  const defaultSection: LibrarySectionType = (endorsementList && endorsementList.entries && endorsementList.entries.length > 0)
-    ? 'endorsement'
-    : 'aligned';
+  // Section selection state
+  // Profile views (preview/view) ALWAYS default to endorsement
+  // Home tab (edit) defaults to endorsement, or aligned if endorsement is empty
+  const defaultSection: LibrarySectionType = (() => {
+    const isProfileView = mode === 'preview' || mode === 'view';
+    if (isProfileView) {
+      return 'endorsement'; // Profile ALWAYS shows endorsement by default
+    }
+    // Home tab: default to endorsement if it has entries, otherwise aligned
+    return (endorsementList && endorsementList.entries && endorsementList.entries.length > 0)
+      ? 'endorsement'
+      : 'aligned';
+  })();
   const [internalSelectedSection, setInternalSelectedSection] = useState<LibrarySectionType>(defaultSection);
 
   // Use external section if provided, otherwise use internal
@@ -2488,6 +2497,21 @@ export default function UnifiedLibrary({
 
   // Render content for selected section
   const renderSectionContent = () => {
+    // Profile views can ONLY show endorsement, following, or followers
+    const isProfileView = mode === 'preview' || mode === 'view';
+    const allowedProfileSections: LibrarySectionType[] = ['endorsement', 'following', 'followers'];
+
+    if (isProfileView && !allowedProfileSections.includes(selectedSection)) {
+      // Invalid section for profile view - show endorsement instead
+      return endorsementList ? renderEndorsementContent() : (
+        <View style={styles.emptySection}>
+          <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+            No endorsements yet
+          </Text>
+        </View>
+      );
+    }
+
     switch (selectedSection) {
       case 'endorsement':
         return endorsementList ? renderEndorsementContent() : (
