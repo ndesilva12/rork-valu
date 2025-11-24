@@ -37,6 +37,7 @@ interface FollowingFollowersListProps {
   entityType?: 'user' | 'brand' | 'business'; // For followers mode
   isDarkMode?: boolean;
   userCauses?: Cause[];
+  onNavigate?: () => void; // Called when navigating to a profile, so parent can close modal
 }
 
 interface EnrichedFollow extends Follow {
@@ -56,6 +57,7 @@ export default function FollowingFollowersList({
   entityType = 'user',
   isDarkMode = false,
   userCauses = [],
+  onNavigate,
 }: FollowingFollowersListProps) {
   const colors = isDarkMode ? darkColors : lightColors;
   const router = useRouter();
@@ -330,6 +332,9 @@ export default function FollowingFollowersList({
     const entityId = mode === 'following' ? follow.followedId : follow.followerId;
 
     const handlePress = () => {
+      // Close the modal first before navigating
+      onNavigate?.();
+
       if (type === 'brand') {
         router.push({ pathname: '/brand/[id]', params: { id: entityId } });
       } else if (type === 'business') {

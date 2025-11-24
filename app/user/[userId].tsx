@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Plus, List, Globe, Lock, MapPin, User, TrendingUp, TrendingDown, Minus, MoreVertical, ExternalLink, UserPlus, UserMinus, Share2 } from 'lucide-react-native';
+import { ArrowLeft, Plus, List, Globe, Lock, MapPin, User, TrendingUp, TrendingDown, Minus, MoreVertical, ExternalLink, UserPlus, UserMinus, Share2, X } from 'lucide-react-native';
 import { UnifiedLibrary } from '@/components/Library';
 import {
   View,
@@ -12,6 +12,7 @@ import {
   Alert,
   PanResponder,
   Linking,
+  Modal,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -51,6 +52,7 @@ export default function UserProfileScreen() {
   const [followingCount, setFollowingCount] = useState(0);
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [selectedLibrarySection, setSelectedLibrarySection] = useState<'endorsement' | 'aligned' | 'unaligned' | 'following' | 'followers' | 'local'>('endorsement');
+  const [showImageModal, setShowImageModal] = useState(false);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -425,13 +427,18 @@ export default function UserProfileScreen() {
           {/* Header with profile image, user info, and alignment score */}
           <View style={styles.header}>
             {profileImageUrl ? (
-              <Image
-                source={{ uri: profileImageUrl }}
-                style={styles.headerLogo}
-                contentFit="cover"
-                transition={200}
-                cachePolicy="memory-disk"
-              />
+              <TouchableOpacity
+                onPress={() => setShowImageModal(true)}
+                activeOpacity={0.8}
+              >
+                <Image
+                  source={{ uri: profileImageUrl }}
+                  style={styles.headerLogo}
+                  contentFit="cover"
+                  transition={200}
+                  cachePolicy="memory-disk"
+                />
+              </TouchableOpacity>
             ) : (
               <View style={[styles.headerLogoPlaceholder, { backgroundColor: colors.primary }]}>
                 <User size={28} color={colors.white} strokeWidth={2} />
@@ -638,6 +645,38 @@ export default function UserProfileScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Full Screen Image Modal */}
+      <Modal
+        visible={showImageModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowImageModal(false)}
+      >
+        <View style={styles.imageModalOverlay}>
+          <TouchableOpacity
+            style={styles.imageModalCloseButton}
+            onPress={() => setShowImageModal(false)}
+            activeOpacity={0.7}
+          >
+            <X size={28} color="#FFFFFF" strokeWidth={2} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.imageModalContent}
+            activeOpacity={1}
+            onPress={() => setShowImageModal(false)}
+          >
+            {profileImageUrl && (
+              <Image
+                source={{ uri: profileImageUrl }}
+                style={styles.fullScreenImage}
+                contentFit="contain"
+                transition={200}
+              />
+            )}
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1011,5 +1050,34 @@ const styles = StyleSheet.create({
   homeButtonText: {
     fontSize: 16,
     fontWeight: '600' as const,
+  },
+  // Image Modal Styles
+  imageModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageModalCloseButton: {
+    position: 'absolute' as const,
+    top: Platform.OS === 'ios' ? 50 : 20,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  imageModalContent: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: '90%',
+    height: '80%',
   },
 });

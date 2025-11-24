@@ -667,6 +667,10 @@ export default function ProfileScreen() {
                 userId={clerkUser.id}
                 isDarkMode={isDarkMode}
                 userCauses={profile?.causes || []}
+                onNavigate={() => {
+                  setFollowModalVisible(false);
+                  setSelectedStatSection('endorsements');
+                }}
               />
             )}
           </View>
