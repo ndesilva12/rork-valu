@@ -18,6 +18,7 @@ import {
   Dimensions,
   useWindowDimensions,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import {
@@ -831,8 +832,10 @@ export default function UnifiedLibrary({
         if ('brandId' in entry) {
           const brand = alignedItems.find(b => b.id === entry.brandId) ||
                        unalignedItems.find(b => b.id === entry.brandId);
-          if (brand) {
-            // Brand found - render with full data and score
+          // Don't use renderBrandCard for endorsement section - it shows scores
+          // Always render manually for endorsement to show days endorsed instead
+          if (brand && !isEndorsementSection) {
+            // Brand found - render with full data and score (only for non-endorsement sections)
             return renderBrandCard(brand, 'support');
           }
 
