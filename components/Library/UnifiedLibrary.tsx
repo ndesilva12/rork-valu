@@ -3,7 +3,7 @@
  * EXACTLY matches Home tab's library visual appearance
  * Functionality controlled by mode prop
  */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import {
   useWindowDimensions,
   ScrollView,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { Image } from 'expo-image';
 import {
@@ -40,6 +41,9 @@ import {
   Share2,
   UserPlus,
   List as ListIcon,
+  Search,
+  X,
+  Check,
 } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { UserList, ListEntry } from '@/types/library';
@@ -48,7 +52,7 @@ import { useData } from '@/contexts/DataContext';
 import EndorsedBadge from '@/components/EndorsedBadge';
 import { getLogoUrl } from '@/lib/logo';
 import { Product, Cause } from '@/types';
-import { BusinessUser } from '@/services/firebase/businessService';
+import { BusinessUser, getAllUserBusinesses } from '@/services/firebase/businessService';
 import { useUser } from '@/contexts/UserContext';
 import { useRouter } from 'expo-router';
 import { updateListMetadata, copyListToLibrary } from '@/services/firebase/listService';
@@ -111,6 +115,8 @@ interface UnifiedLibraryProps {
   // External section control
   externalSelectedSection?: LibrarySectionType;
   onSectionChange?: (section: LibrarySectionType) => void;
+  // Show only endorsement section (hides section selector)
+  endorsementOnly?: boolean;
 }
 
 export default function UnifiedLibrary({
@@ -132,6 +138,7 @@ export default function UnifiedLibrary({
   followersCount = 0,
   externalSelectedSection,
   onSectionChange,
+  endorsementOnly = false,
 }: UnifiedLibraryProps) {
   const colors = (isDarkMode ? darkColors : lightColors) || lightColors;
   const library = useLibrary();
@@ -171,7 +178,7 @@ export default function UnifiedLibrary({
   const [isConfirmLoading, setIsConfirmLoading] = useState(false);
 
   // Pagination state for each list
-  const [endorsementLoadCount, setEndorsementLoadCount] = useState(10);
+  const [endorsementLoadCount, setEndorsementLoadCount] = useState(25);
   const [alignedLoadCount, setAlignedLoadCount] = useState(10);
   const [unalignedLoadCount, setUnalignedLoadCount] = useState(10);
   const [customListLoadCounts, setCustomListLoadCounts] = useState<Record<string, number>>({});
@@ -203,10 +210,22 @@ export default function UnifiedLibrary({
   // Action menu state for endorsed section header
   const [showEndorsedActionMenu, setShowEndorsedActionMenu] = useState(false);
 
+  // Add to endorsement search modal state
+  const [showAddEndorsementModal, setShowAddEndorsementModal] = useState(false);
+  const [addSearchQuery, setAddSearchQuery] = useState('');
+  const [allBusinesses, setAllBusinesses] = useState<BusinessUser[]>([]);
+  const [loadingBusinesses, setLoadingBusinesses] = useState(false);
+  const [addingItemId, setAddingItemId] = useState<string | null>(null);
+  const [addedItemIds, setAddedItemIds] = useState<Set<string>>(new Set());
+
   // Section selection state
   // Profile views (preview/view) ALWAYS default to endorsement
   // Home tab (edit) defaults to endorsement, or aligned if endorsement is empty
+  // endorsementOnly mode always forces endorsement section
   const defaultSection: LibrarySectionType = (() => {
+    if (endorsementOnly) {
+      return 'endorsement'; // endorsementOnly always shows endorsement
+    }
     const isProfileView = mode === 'preview' || mode === 'view';
     if (isProfileView) {
       return 'endorsement'; // Profile ALWAYS shows endorsement by default
@@ -219,7 +238,8 @@ export default function UnifiedLibrary({
   const [internalSelectedSection, setInternalSelectedSection] = useState<LibrarySectionType>(defaultSection);
 
   // Use external section if provided, otherwise use internal
-  const selectedSection = externalSelectedSection ?? internalSelectedSection;
+  // endorsementOnly mode overrides everything to 'endorsement'
+  const selectedSection = endorsementOnly ? 'endorsement' : (externalSelectedSection ?? internalSelectedSection);
   const setSelectedSection = (section: LibrarySectionType) => {
     if (onSectionChange) {
       onSectionChange(section);
@@ -340,6 +360,122 @@ export default function UnifiedLibrary({
 
     fetchTopBusinesses();
   }, [selectedSection, userLocation]);
+
+  // Fetch all businesses when add endorsement modal opens
+  useEffect(() => {
+    const fetchBusinesses = async () => {
+      if (!showAddEndorsementModal) return;
+      if (allBusinesses.length > 0) return; // Only fetch once
+
+      setLoadingBusinesses(true);
+      try {
+        console.log('[UnifiedLibrary] Fetching all businesses for search...');
+        const businesses = await getAllUserBusinesses();
+        setAllBusinesses(businesses);
+        console.log('[UnifiedLibrary] Loaded', businesses.length, 'businesses for search');
+      } catch (error) {
+        console.error('[UnifiedLibrary] Error fetching businesses:', error);
+      } finally {
+        setLoadingBusinesses(false);
+      }
+    };
+
+    fetchBusinesses();
+  }, [showAddEndorsementModal]);
+
+  // Search results for add endorsement modal
+  const addSearchResults = useMemo(() => {
+    if (!addSearchQuery.trim()) return { brands: [], businesses: [] };
+
+    const query = addSearchQuery.toLowerCase().trim();
+
+    // Get IDs of already endorsed items (with robust null checks)
+    const entries = endorsementList?.entries || [];
+    const safeEntries = Array.isArray(entries) ? entries.filter(e => e != null && typeof e === 'object') : [];
+
+    const endorsedBrandIds = new Set(
+      safeEntries
+        .filter(e => e.type === 'brand')
+        .map(e => (e as any).brandId)
+        .filter(id => id != null)
+    );
+    const endorsedBusinessIds = new Set(
+      safeEntries
+        .filter(e => e.type === 'business')
+        .map(e => (e as any).businessId)
+        .filter(id => id != null)
+    );
+
+    // Search brands
+    const matchingBrands = (brands || [])
+      .filter(brand => {
+        const nameMatch = brand.name?.toLowerCase().includes(query);
+        const notEndorsed = !endorsedBrandIds.has(brand.id);
+        return nameMatch && notEndorsed;
+      })
+      .slice(0, 10);
+
+    // Search businesses
+    const matchingBusinesses = allBusinesses
+      .filter(business => {
+        const nameMatch = business.businessInfo?.name?.toLowerCase().includes(query);
+        const notEndorsed = !endorsedBusinessIds.has(business.id);
+        return nameMatch && notEndorsed;
+      })
+      .slice(0, 10);
+
+    return { brands: matchingBrands, businesses: matchingBusinesses };
+  }, [addSearchQuery, brands, allBusinesses, endorsementList]);
+
+  // Handle adding a brand or business to endorsement list
+  const handleAddToEndorsement = useCallback(async (item: any, type: 'brand' | 'business') => {
+    if (!endorsementList?.id || !currentUserId) {
+      Alert.alert('Error', 'Unable to add to endorsements. Please try again.');
+      return;
+    }
+
+    const itemId = type === 'brand' ? item.id : item.id;
+    setAddingItemId(itemId);
+
+    try {
+      const entry: Omit<ListEntry, 'id'> = type === 'brand'
+        ? {
+            type: 'brand',
+            brandId: item.id,
+            name: item.name,
+            logo: getLogoUrl(item.website),
+            createdAt: new Date(),
+          }
+        : {
+            type: 'business',
+            businessId: item.id,
+            name: item.businessInfo?.name || 'Business',
+            logo: item.businessInfo?.logo || getLogoUrl(item.businessInfo?.website),
+            createdAt: new Date(),
+          };
+
+      await library.addEntry(endorsementList.id, entry);
+      console.log('[UnifiedLibrary] Added', type, 'to endorsement list:', entry.name);
+      // Track this item as added
+      setAddedItemIds(prev => new Set(prev).add(itemId));
+    } catch (error) {
+      console.error('[UnifiedLibrary] Error adding to endorsement:', error);
+      Alert.alert('Error', 'Failed to add to endorsements. Please try again.');
+    } finally {
+      setAddingItemId(null);
+    }
+  }, [endorsementList, currentUserId, library]);
+
+  // Navigate to brand or business details
+  const handleNavigateToDetails = useCallback((item: any, type: 'brand' | 'business') => {
+    setShowAddEndorsementModal(false);
+    setAddSearchQuery('');
+    if (type === 'brand') {
+      router.push(`/brand/${item.id}`);
+    } else {
+      router.push(`/business/${item.id}`);
+    }
+  }, [router]);
 
   // Share handlers - Open ShareOptionsModal first
   const handleShareList = (list: UserList) => {
@@ -1581,7 +1717,7 @@ export default function UnifiedLibrary({
           {!isReordering && endorsementLoadCount < endorsementList.entries.length && (
             <TouchableOpacity
               style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
-              onPress={() => setEndorsementLoadCount(endorsementLoadCount + 10)}
+              onPress={() => setEndorsementLoadCount(endorsementLoadCount + 25)}
               activeOpacity={0.7}
             >
               <Text style={[styles.loadMoreText, { color: colors.primary }]}>
@@ -2261,9 +2397,10 @@ export default function UnifiedLibrary({
 
     // For profile views (preview/view modes), don't show section selector
     // Followers/following counters are now in the profile header
+    // Also hide when endorsementOnly is true (Home tab now shows only endorsements)
     const isProfileView = mode === 'preview' || mode === 'view';
 
-    if (isProfileView) {
+    if (isProfileView || endorsementOnly) {
       return null;
     }
 
@@ -2461,38 +2598,52 @@ export default function UnifiedLibrary({
           </View>
         )}
 
-        {/* Action menu for endorsed section */}
-        {isEndorsed && canReorder && (
-          <View>
+        {/* Action buttons for endorsed section */}
+        {isEndorsed && canEdit && (
+          <View style={styles.endorsedHeaderActions}>
+            {/* Add button */}
             <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                setShowEndorsedActionMenu(!showEndorsedActionMenu);
-              }}
-              style={styles.headerActionButton}
+              onPress={() => setShowAddEndorsementModal(true)}
+              style={[styles.addEndorsementButton, { backgroundColor: colors.primary }]}
               activeOpacity={0.7}
             >
-              <View style={{ transform: [{ rotate: '90deg' }] }}>
-                <MoreVertical size={20} color={colors.text} strokeWidth={2} />
-              </View>
+              <Plus size={20} color={colors.white} strokeWidth={2.5} />
             </TouchableOpacity>
 
-            {/* Action menu dropdown */}
-            {showEndorsedActionMenu && (
-              <View style={[styles.endorsedActionDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+            {/* Action menu button - only show if there are items to reorder */}
+            {canReorder && (
+              <View>
                 <TouchableOpacity
-                  style={styles.endorsedActionItem}
-                  onPress={() => {
-                    setShowEndorsedActionMenu(false);
-                    setIsReorderMode(true);
-                    setReorderingListId(endorsementList.id);
-                    setLocalEntries([...endorsementList.entries]);
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    setShowEndorsedActionMenu(!showEndorsedActionMenu);
                   }}
+                  style={styles.headerActionButton}
                   activeOpacity={0.7}
                 >
-                  <GripVertical size={16} color={colors.text} strokeWidth={2} />
-                  <Text style={[styles.endorsedActionText, { color: colors.text }]}>Reorder</Text>
+                  <View style={{ transform: [{ rotate: '90deg' }] }}>
+                    <MoreVertical size={20} color={colors.text} strokeWidth={2} />
+                  </View>
                 </TouchableOpacity>
+
+                {/* Action menu dropdown */}
+                {showEndorsedActionMenu && (
+                  <View style={[styles.endorsedActionDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                    <TouchableOpacity
+                      style={styles.endorsedActionItem}
+                      onPress={() => {
+                        setShowEndorsedActionMenu(false);
+                        setIsReorderMode(true);
+                        setReorderingListId(endorsementList.id);
+                        setLocalEntries([...endorsementList.entries]);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <GripVertical size={16} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.endorsedActionText, { color: colors.text }]}>Reorder</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -2937,6 +3088,205 @@ export default function UnifiedLibrary({
         isLoading={isConfirmLoading}
         isDanger={confirmModalData?.isDanger}
       />
+
+      {/* Add to Endorsement Search Modal */}
+      <Modal
+        visible={showAddEndorsementModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowAddEndorsementModal(false);
+          setAddSearchQuery('');
+          setAddedItemIds(new Set());
+        }}
+      >
+        <View style={[
+          styles.addEndorsementModalOverlay,
+          isLargeScreen && styles.addEndorsementModalOverlayLarge
+        ]}>
+          <View style={[
+            styles.addEndorsementModalContent,
+            { backgroundColor: colors.background },
+            isLargeScreen && styles.addEndorsementModalContentLarge
+          ]}>
+            {/* Modal Header */}
+            <View style={[styles.addEndorsementModalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.addEndorsementModalTitle, { color: colors.text }]}>Add Endorsement</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowAddEndorsementModal(false);
+                  setAddSearchQuery('');
+                  setAddedItemIds(new Set());
+                }}
+                style={styles.addEndorsementCloseButton}
+                activeOpacity={0.7}
+              >
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Search Input */}
+            <View style={[styles.addEndorsementSearchContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <Search size={20} color={colors.primaryLight} strokeWidth={2} />
+              <TextInput
+                style={[styles.addEndorsementSearchInput, { color: colors.primary, outlineStyle: 'none' } as any]}
+                placeholder="Search"
+                placeholderTextColor={colors.textSecondary}
+                value={addSearchQuery}
+                onChangeText={setAddSearchQuery}
+                autoFocus={true}
+                autoCapitalize="none"
+                autoCorrect={false}
+                underlineColorAndroid="transparent"
+              />
+              {addSearchQuery.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setAddSearchQuery('')}
+                  style={styles.addEndorsementClearButton}
+                  activeOpacity={0.7}
+                >
+                  <X size={Platform.OS === 'web' ? 20 : 24} color={colors.textSecondary} strokeWidth={2.5} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Search Results */}
+            <ScrollView style={styles.addEndorsementResultsContainer} showsVerticalScrollIndicator={false}>
+              {loadingBusinesses && !addSearchQuery ? (
+                <View style={styles.addEndorsementLoadingContainer}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={[styles.addEndorsementLoadingText, { color: colors.textSecondary }]}>
+                    Loading businesses...
+                  </Text>
+                </View>
+              ) : addSearchQuery.trim() === '' ? (
+                <View style={styles.addEndorsementEmptyContainer}>
+                  <Search size={48} color={colors.textSecondary} strokeWidth={1.5} />
+                  <Text style={[styles.addEndorsementEmptyText, { color: colors.textSecondary }]}>
+                    Start typing to search for brands and businesses
+                  </Text>
+                </View>
+              ) : addSearchResults.brands.length === 0 && addSearchResults.businesses.length === 0 ? (
+                <View style={styles.addEndorsementEmptyContainer}>
+                  <Text style={[styles.addEndorsementEmptyText, { color: colors.textSecondary }]}>
+                    No results found for "{addSearchQuery}"
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  {/* Brands Section */}
+                  {addSearchResults.brands.length > 0 && (
+                    <View style={styles.addEndorsementSection}>
+                      <Text style={[styles.addEndorsementSectionTitle, { color: colors.textSecondary }]}>
+                        Brands ({addSearchResults.brands.length})
+                      </Text>
+                      {addSearchResults.brands.map((brand) => (
+                        <View
+                          key={brand.id}
+                          style={styles.addEndorsementResultItem}
+                        >
+                          <TouchableOpacity
+                            style={styles.addEndorsementResultInfo}
+                            onPress={() => handleNavigateToDetails(brand, 'brand')}
+                            activeOpacity={0.7}
+                          >
+                            <View style={styles.addEndorsementResultLogo}>
+                              <Image
+                                source={{ uri: getLogoUrl(brand.website) }}
+                                style={styles.addEndorsementResultLogoImage}
+                                contentFit="cover"
+                                transition={200}
+                                cachePolicy="memory-disk"
+                              />
+                            </View>
+                            <View style={styles.addEndorsementResultText}>
+                              <Text style={[styles.addEndorsementResultName, { color: colors.text }]} numberOfLines={2}>
+                                {brand.name}
+                              </Text>
+                              {brand.category && (
+                                <Text style={[styles.addEndorsementResultCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                                  {brand.category}
+                                </Text>
+                              )}
+                            </View>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.addEndorsementTextButton,
+                              { backgroundColor: addedItemIds.has(brand.id) ? colors.textSecondary : (addingItemId === brand.id ? colors.success : colors.primary) }
+                            ]}
+                            onPress={() => handleAddToEndorsement(brand, 'brand')}
+                            disabled={addingItemId === brand.id || addedItemIds.has(brand.id)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.addEndorsementTextButtonLabel}>
+                              {addedItemIds.has(brand.id) ? 'Added' : (addingItemId === brand.id ? 'Adding...' : 'Endorse')}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Businesses Section */}
+                  {addSearchResults.businesses.length > 0 && (
+                    <View style={styles.addEndorsementSection}>
+                      <Text style={[styles.addEndorsementSectionTitle, { color: colors.textSecondary }]}>
+                        Businesses ({addSearchResults.businesses.length})
+                      </Text>
+                      {addSearchResults.businesses.map((business) => (
+                        <View
+                          key={business.id}
+                          style={styles.addEndorsementResultItem}
+                        >
+                          <TouchableOpacity
+                            style={styles.addEndorsementResultInfo}
+                            onPress={() => handleNavigateToDetails(business, 'business')}
+                            activeOpacity={0.7}
+                          >
+                            <View style={styles.addEndorsementResultLogo}>
+                              <Image
+                                source={{ uri: business.businessInfo?.logo || getLogoUrl(business.businessInfo?.website) }}
+                                style={styles.addEndorsementResultLogoImage}
+                                contentFit="cover"
+                                transition={200}
+                                cachePolicy="memory-disk"
+                              />
+                            </View>
+                            <View style={styles.addEndorsementResultText}>
+                              <Text style={[styles.addEndorsementResultName, { color: colors.text }]} numberOfLines={2}>
+                                {business.businessInfo?.name || 'Business'}
+                              </Text>
+                              {business.businessInfo?.category && (
+                                <Text style={[styles.addEndorsementResultCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                                  {business.businessInfo.category}
+                                </Text>
+                              )}
+                            </View>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.addEndorsementTextButton,
+                              { backgroundColor: addedItemIds.has(business.id) ? colors.textSecondary : (addingItemId === business.id ? colors.success : colors.primary) }
+                            ]}
+                            onPress={() => handleAddToEndorsement(business, 'business')}
+                            disabled={addingItemId === business.id || addedItemIds.has(business.id)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.addEndorsementTextButtonLabel}>
+                              {addedItemIds.has(business.id) ? 'Added' : (addingItemId === business.id ? 'Adding...' : 'Endorse')}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -3513,5 +3863,178 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     marginTop: 8,
+  },
+  // Add endorsement button and header actions
+  endorsedHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  addEndorsementButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Add endorsement modal styles
+  addEndorsementModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  addEndorsementModalOverlayLarge: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addEndorsementModalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    minHeight: '60%',
+  },
+  addEndorsementModalContentLarge: {
+    width: '50%',
+    maxWidth: 600,
+    minHeight: '75%',
+    maxHeight: '85%',
+    borderRadius: 24,
+  },
+  addEndorsementModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  addEndorsementModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  addEndorsementCloseButton: {
+    padding: 4,
+  },
+  addEndorsementSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 12,
+    height: 56,
+  },
+  addEndorsementSearchInput: {
+    flex: 1,
+    fontSize: 26,
+    fontWeight: '700',
+    height: '100%',
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    margin: 0,
+    borderWidth: 0,
+    outlineWidth: 0,
+  },
+  addEndorsementClearButton: {
+    width: Platform.OS === 'web' ? 32 : 44,
+    height: Platform.OS === 'web' ? 32 : 44,
+    borderRadius: Platform.OS === 'web' ? 16 : 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  addEndorsementResultsContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  addEndorsementLoadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    gap: 12,
+  },
+  addEndorsementLoadingText: {
+    fontSize: 14,
+  },
+  addEndorsementEmptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    gap: 16,
+  },
+  addEndorsementEmptyText: {
+    fontSize: 15,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  addEndorsementSection: {
+    marginBottom: 16,
+  },
+  addEndorsementSectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  addEndorsementResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 64,
+    marginBottom: 4,
+  },
+  addEndorsementResultInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: '100%',
+  },
+  addEndorsementResultLogo: {
+    width: 64,
+    height: 64,
+    borderRadius: 0,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+  },
+  addEndorsementResultLogoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  addEndorsementResultText: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  addEndorsementResultName: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  addEndorsementResultCategory: {
+    fontSize: 11,
+    opacity: 0.7,
+  },
+  addEndorsementAddButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
+  addEndorsementTextButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
+  addEndorsementTextButtonLabel: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

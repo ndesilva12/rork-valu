@@ -994,43 +994,38 @@ export default function SearchScreen() {
 
   const renderProduct = ({ item }: { item: Product }) => {
     const alignmentColor = getAlignmentColor(item.alignmentScore);
-    const AlignmentIcon = getAlignmentIcon(item.alignmentScore);
-    const alignmentLabel = getAlignmentLabel(item.alignmentScore);
+    const score = normalizeScore(item.alignmentScore);
+    const scoreColor = score >= 50 ? colors.primary : colors.danger;
 
     return (
       <TouchableOpacity
-        style={[styles.productCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+        style={styles.productCard}
         onPress={() => handleProductPress(item)}
         activeOpacity={0.7}
       >
-        <Image
-          source={{ uri: getLogoUrl(item.website || '') }}
-          style={styles.productImage}
-          contentFit="cover"
-          transition={200}
-          cachePolicy="memory-disk"
-        />
-        <View style={styles.productInfo}>
-          <View style={styles.productHeader}>
-            <View style={styles.productTitleContainer}>
-              <Text style={[styles.productBrand, { color: colors.primary }]}>{item.brand}</Text>
-              <Text style={[styles.productName, { color: colors.text }]}>{item.name}</Text>
-            </View>
-            <View style={[styles.scoreContainer, { backgroundColor: alignmentColor + '15' }]}>
-              <AlignmentIcon size={16} color={alignmentColor} strokeWidth={2.5} />
-              <Text style={[styles.scoreText, { color: alignmentColor }]}>
-                {normalizeScore(item.alignmentScore)}
-              </Text>
-            </View>
+        <View style={styles.productCardInner}>
+          <View style={styles.productLogoContainer}>
+            <Image
+              source={{ uri: getLogoUrl(item.website || '') }}
+              style={styles.productLogo}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
+            />
           </View>
-          <View style={[styles.alignmentBadge, { backgroundColor: alignmentColor + '15' }]}>
-            <Text style={[styles.alignmentText, { color: alignmentColor }]}>
-              {alignmentLabel}
+          <View style={styles.productCardContent}>
+            <Text style={[styles.productName, { color: colors.text }]} numberOfLines={2}>
+              {item.name}
+            </Text>
+            <Text style={[styles.productCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+              {item.brand || item.category || 'Brand'}
             </Text>
           </View>
-          <Text style={[styles.keyReason, { color: colors.textSecondary }]} numberOfLines={2}>
-            {item.keyReasons[0]}
-          </Text>
+          <View style={styles.productScoreContainer}>
+            <Text style={[styles.productScore, { color: scoreColor }]}>
+              {score}
+            </Text>
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -2079,66 +2074,59 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   listContent: {
-    padding: 16,
-    gap: 16,
+    paddingHorizontal: Platform.OS === 'web' ? 4 : 8,
+    paddingTop: 4,
   },
   productCard: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-  },
-  productImage: {
-    width: '100%',
-    height: 200,
-  },
-  productInfo: {
-    padding: 16,
-  },
-  productHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  productTitleContainer: {
-    flex: 1,
-    marginRight: 12,
-  },
-  productBrand: {
-    fontSize: 14,
-    fontWeight: '600' as const,
+    borderRadius: 0,
+    height: 64,
+    overflow: 'visible',
+    backgroundColor: 'transparent',
     marginBottom: 4,
   },
-  productName: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-  },
-  scoreContainer: {
+  productCardInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 6,
+    height: '100%',
+    overflow: 'visible',
+    backgroundColor: 'transparent',
   },
-  scoreText: {
-    fontSize: 16,
-    fontWeight: '700' as const,
+  productLogoContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 0,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
   },
-  alignmentBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
+  productLogo: {
+    width: '100%',
+    height: '100%',
+  },
+  productCardContent: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 8,
-    marginBottom: 12,
   },
-  alignmentText: {
+  productName: {
     fontSize: 13,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
+    marginBottom: 2,
   },
-  keyReason: {
-    fontSize: 14,
-    lineHeight: 20,
+  productCategory: {
+    fontSize: 11,
+    opacity: 0.7,
+    flexShrink: 1,
+  },
+  productScoreContainer: {
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  productScore: {
+    fontSize: 17,
+    fontWeight: '700' as const,
   },
 
   // Barcode Scanner

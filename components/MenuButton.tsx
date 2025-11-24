@@ -1,5 +1,5 @@
 import { useRouter, useSegments } from 'expo-router';
-import { Menu, RefreshCw, LogOut, Settings, Search as SearchIcon, User, HelpCircle } from 'lucide-react-native';
+import { Menu, LogOut, User, HelpCircle, Heart } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   View,
@@ -23,41 +23,11 @@ interface MenuButtonProps {
 export default function MenuButton({ onShowExplainers }: MenuButtonProps = {}) {
   const router = useRouter();
   const segments = useSegments();
-  const { isDarkMode, toggleDarkMode, clerkUser, resetProfile, profile } = useUser();
+  const { isDarkMode, clerkUser, profile } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const { signOut } = useClerk();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-
   const isBusiness = profile.accountType === 'business';
-
-  const handleUpdate = () => {
-    setIsMenuVisible(false);
-    router.push('/onboarding');
-  };
-
-  const handleReset = () => {
-    console.log('[MenuButton] Opening reset confirmation');
-    setIsMenuVisible(false);
-    setTimeout(() => {
-      setShowResetConfirm(true);
-    }, 300);
-  };
-
-  const handleConfirmReset = async () => {
-    console.log('[MenuButton] Confirming reset');
-    try {
-      setShowResetConfirm(false);
-      await resetProfile();
-      console.log('[MenuButton] Reset completed successfully');
-    } catch (error) {
-      console.error('[MenuButton] Reset failed:', error);
-    }
-  };
-
-  const handleCancelReset = () => {
-    setShowResetConfirm(false);
-  };
 
   const handleSignOut = async () => {
     try {
@@ -98,6 +68,11 @@ export default function MenuButton({ onShowExplainers }: MenuButtonProps = {}) {
     if (onShowExplainers) {
       onShowExplainers();
     }
+  };
+
+  const handleUpdateValues = () => {
+    setIsMenuVisible(false);
+    router.push('/onboarding/values');
   };
 
   return (
@@ -189,25 +164,15 @@ export default function MenuButton({ onShowExplainers }: MenuButtonProps = {}) {
                 </TouchableOpacity>
               )}
 
+              {/* Update My Values menu item */}
               <TouchableOpacity
                 style={[styles.menuItem, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
-                onPress={handleUpdate}
+                onPress={handleUpdateValues}
                 activeOpacity={0.7}
               >
                 <View style={styles.menuItemLeft}>
-                  <Settings size={26} color={colors.primary} strokeWidth={2} />
+                  <Heart size={26} color={colors.primary} strokeWidth={2} />
                   <Text style={[styles.menuItemTitle, { color: colors.text }]}>Update My Values</Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.menuItem, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
-                onPress={handleReset}
-                activeOpacity={0.7}
-              >
-                <View style={styles.menuItemLeft}>
-                  <RefreshCw size={26} color={colors.primary} strokeWidth={2} />
-                  <Text style={[styles.menuItemTitle, { color: colors.text }]}>Reset My Values</Text>
                 </View>
               </TouchableOpacity>
 
@@ -224,38 +189,6 @@ export default function MenuButton({ onShowExplainers }: MenuButtonProps = {}) {
             </ScrollView>
           </TouchableOpacity>
         </TouchableOpacity>
-      </Modal>
-
-      <Modal
-        visible={showResetConfirm}
-        animationType="fade"
-        transparent
-        onRequestClose={handleCancelReset}
-      >
-        <View style={styles.confirmOverlay}>
-          <View style={[styles.confirmContainer, { backgroundColor: colors.background }]}>
-            <Text style={[styles.confirmTitle, { color: colors.text }]}>Reset Your Values?</Text>
-            <Text style={[styles.confirmMessage, { color: colors.textSecondary }]}>
-              This will permanently delete all your selected values and search history. This action cannot be undone.
-            </Text>
-            <View style={styles.confirmButtons}>
-              <TouchableOpacity
-                style={[styles.confirmButton, styles.cancelButton, { backgroundColor: colors.backgroundSecondary }]}
-                onPress={handleCancelReset}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.confirmButtonText, { color: colors.text }]}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.confirmButton, styles.resetButton, { backgroundColor: colors.danger }]}
-                onPress={handleConfirmReset}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.confirmButtonText, { color: colors.white }]}>Reset</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
       </Modal>
     </>
   );
@@ -330,51 +263,5 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 22,
     fontWeight: '700' as const,
-  },
-  confirmOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  confirmContainer: {
-    width: '100%',
-    maxWidth: 400,
-    borderRadius: 20,
-    padding: 24,
-  },
-  confirmTitle: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  confirmMessage: {
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  confirmButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  confirmButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButton: {
-    borderWidth: 0,
-  },
-  resetButton: {
-    borderWidth: 0,
-  },
-  confirmButtonText: {
-    fontSize: 16,
-    fontWeight: '600' as const,
   },
 });
