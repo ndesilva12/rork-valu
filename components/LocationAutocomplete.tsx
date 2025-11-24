@@ -558,11 +558,17 @@ export default function LocationAutocomplete({
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
-    zIndex: 1,
+    zIndex: 9999,
+    ...Platform.select({
+      web: {
+        zIndex: 9999,
+      },
+    }),
   },
   inputRow: {
     flexDirection: 'row',
     gap: 8,
+    zIndex: 1,
   },
   input: {
     flex: 1,
@@ -597,7 +603,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     overflow: 'hidden',
-    zIndex: 1000,
+    zIndex: 99999,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -606,10 +612,11 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
       },
       android: {
-        elevation: 4,
+        elevation: 10,
       },
       web: {
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        zIndex: 99999,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
       },
     }),
   },
