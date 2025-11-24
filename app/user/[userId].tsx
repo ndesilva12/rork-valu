@@ -530,35 +530,7 @@ export default function UserProfileScreen() {
             </Text>
           )}
 
-          {/* Endorsements/Following/Followers Counts - Clickable to show lists */}
-          <View style={styles.followStatsContainer}>
-            <TouchableOpacity
-              style={styles.followStat}
-              onPress={() => setSelectedLibrarySection('endorsement')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.followStatNumber, { color: selectedLibrarySection === 'endorsement' ? colors.primary : colors.text }]}>{allSupportFull.length}</Text>
-              <Text style={[styles.followStatLabel, { color: selectedLibrarySection === 'endorsement' ? colors.primary : colors.textSecondary }]}>Endorsements</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.followStat}
-              onPress={() => setSelectedLibrarySection('following')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.followStatNumber, { color: selectedLibrarySection === 'following' ? colors.primary : colors.text }]}>{followingCount}</Text>
-              <Text style={[styles.followStatLabel, { color: selectedLibrarySection === 'following' ? colors.primary : colors.textSecondary }]}>Following</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.followStat}
-              onPress={() => setSelectedLibrarySection('followers')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.followStatNumber, { color: selectedLibrarySection === 'followers' ? colors.primary : colors.text }]}>{followersCount}</Text>
-              <Text style={[styles.followStatLabel, { color: selectedLibrarySection === 'followers' ? colors.primary : colors.textSecondary }]}>Followers</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Social Links */}
+          {/* Social Links - Above counters to match profile.tsx */}
           {(userDetails?.socialMedia?.twitter || userDetails?.socialMedia?.instagram || userDetails?.socialMedia?.facebook || userDetails?.socialMedia?.linkedin || userDetails?.website) && (
             <View style={styles.socialLinksContainer}>
               {userDetails.website && (
@@ -610,12 +582,36 @@ export default function UserProfileScreen() {
             </View>
           )}
 
+          {/* Endorsements/Following/Followers Counts - Clickable to show lists */}
+          <View style={styles.followStatsContainer}>
+            <TouchableOpacity
+              style={styles.followStat}
+              onPress={() => setSelectedLibrarySection('endorsement')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.followStatNumber, { color: selectedLibrarySection === 'endorsement' ? colors.primary : colors.text }]}>{allSupportFull.length}</Text>
+              <Text style={[styles.followStatLabel, { color: selectedLibrarySection === 'endorsement' ? colors.primary : colors.textSecondary }]}>Endorsements</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.followStat}
+              onPress={() => setSelectedLibrarySection('following')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.followStatNumber, { color: selectedLibrarySection === 'following' ? colors.primary : colors.text }]}>{followingCount}</Text>
+              <Text style={[styles.followStatLabel, { color: selectedLibrarySection === 'following' ? colors.primary : colors.textSecondary }]}>Following</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.followStat}
+              onPress={() => setSelectedLibrarySection('followers')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.followStatNumber, { color: selectedLibrarySection === 'followers' ? colors.primary : colors.text }]}>{followersCount}</Text>
+              <Text style={[styles.followStatLabel, { color: selectedLibrarySection === 'followers' ? colors.primary : colors.textSecondary }]}>Followers</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Library Section - Uses Unified Library Component */}
           <View style={styles.librarySection}>
-            <Text style={[styles.librarySectionTitle, { color: colors.text }]}>
-              {isOwnProfile ? 'My Library' : `${userName}'s Library`}
-            </Text>
-
             <UnifiedLibrary
               mode={isOwnProfile ? 'preview' : 'view'}
               currentUserId={clerkUser?.id}
@@ -883,11 +879,6 @@ const styles = StyleSheet.create({
   },
   librarySection: {
     marginTop: 8,
-  },
-  librarySectionTitle: {
-    fontSize: 22,
-    fontWeight: '700' as const,
-    marginBottom: 8,
   },
   emptyContainer: {
     padding: 48,
