@@ -439,9 +439,21 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          {/* Following/Followers/Endorsements Counters */}
+          {/* Endorsements/Following/Followers Counters */}
           {!editing && (
             <View style={styles.followStatsContainer}>
+              <TouchableOpacity
+                style={styles.followStatButton}
+                onPress={() => {
+                  setSelectedStatSection('endorsements');
+                  setFollowModalVisible(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.followStatCount, { color: selectedStatSection === 'endorsements' ? colors.primary : colors.text }]}>{allSupportFull.length}</Text>
+                <Text style={[styles.followStatLabel, { color: selectedStatSection === 'endorsements' ? colors.primary : colors.textSecondary }]}>Endorsements</Text>
+              </TouchableOpacity>
+              <View style={[styles.followStatDivider, { backgroundColor: colors.border }]} />
               <TouchableOpacity
                 style={styles.followStatButton}
                 onPress={() => {
@@ -466,18 +478,6 @@ export default function ProfileScreen() {
               >
                 <Text style={[styles.followStatCount, { color: selectedStatSection === 'followers' ? colors.primary : colors.text }]}>{followersCount}</Text>
                 <Text style={[styles.followStatLabel, { color: selectedStatSection === 'followers' ? colors.primary : colors.textSecondary }]}>Followers</Text>
-              </TouchableOpacity>
-              <View style={[styles.followStatDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity
-                style={styles.followStatButton}
-                onPress={() => {
-                  setSelectedStatSection('endorsements');
-                  setFollowModalVisible(false);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.followStatCount, { color: selectedStatSection === 'endorsements' ? colors.primary : colors.text }]}>{allSupportFull.length}</Text>
-                <Text style={[styles.followStatLabel, { color: selectedStatSection === 'endorsements' ? colors.primary : colors.textSecondary }]}>Endorsements</Text>
               </TouchableOpacity>
             </View>
           )}

@@ -523,8 +523,16 @@ export default function UserProfileScreen() {
             </Text>
           )}
 
-          {/* Following/Followers/Endorsements Counts - Clickable to show lists */}
+          {/* Endorsements/Following/Followers Counts - Clickable to show lists */}
           <View style={styles.followStatsContainer}>
+            <TouchableOpacity
+              style={styles.followStat}
+              onPress={() => setSelectedLibrarySection('endorsement')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.followStatNumber, { color: selectedLibrarySection === 'endorsement' ? colors.primary : colors.text }]}>{allSupportFull.length}</Text>
+              <Text style={[styles.followStatLabel, { color: selectedLibrarySection === 'endorsement' ? colors.primary : colors.textSecondary }]}>Endorsements</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.followStat}
               onPress={() => setSelectedLibrarySection('following')}
@@ -540,14 +548,6 @@ export default function UserProfileScreen() {
             >
               <Text style={[styles.followStatNumber, { color: selectedLibrarySection === 'followers' ? colors.primary : colors.text }]}>{followersCount}</Text>
               <Text style={[styles.followStatLabel, { color: selectedLibrarySection === 'followers' ? colors.primary : colors.textSecondary }]}>Followers</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.followStat}
-              onPress={() => setSelectedLibrarySection('endorsement')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.followStatNumber, { color: selectedLibrarySection === 'endorsement' ? colors.primary : colors.text }]}>{allSupportFull.length}</Text>
-              <Text style={[styles.followStatLabel, { color: selectedLibrarySection === 'endorsement' ? colors.primary : colors.textSecondary }]}>Endorsements</Text>
             </TouchableOpacity>
           </View>
 
