@@ -220,7 +220,7 @@ export default function LocalBusinessView({
     const discountText = getDiscountDisplay(business);
 
     return (
-      <View key={business.id} style={{ position: 'relative', marginBottom: 12 }}>
+      <View key={business.id} style={{ position: 'relative', marginBottom: 4 }}>
         <TouchableOpacity
           style={[
             styles.businessCard,
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   },
   businessList: {
     paddingHorizontal: 12,
-    paddingTop: 8,
+    paddingTop: 4,
   },
   businessCard: {
     borderRadius: 12,

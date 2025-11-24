@@ -841,9 +841,12 @@ export default function BusinessesManagement() {
                 onChangeText={setCreateUserId}
                 autoCapitalize="none"
               />
-              <Text style={styles.helpText}>
-                This will be the document ID in Firebase. Use the Clerk user ID if syncing with Clerk.
-              </Text>
+              <View style={[styles.authWarningBox, { backgroundColor: '#fff3cd', borderColor: '#ffc107' }]}>
+                <Text style={[styles.authWarningTitle, { color: '#856404' }]}>⚠️ Important: Authentication Required</Text>
+                <Text style={[styles.authWarningText, { color: '#856404' }]}>
+                  This only creates the Firebase profile. To allow login, first create the business user in Clerk Dashboard, then use that Clerk User ID here.
+                </Text>
+              </View>
 
               <Text style={styles.label}>Email *</Text>
               <TextInput
@@ -1939,5 +1942,20 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: 12,
+  },
+  authWarningBox: {
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 8,
+  },
+  authWarningTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  authWarningText: {
+    fontSize: 13,
+    lineHeight: 18,
   },
 });

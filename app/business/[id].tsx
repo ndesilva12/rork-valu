@@ -66,6 +66,8 @@ export default function BusinessDetailScreen() {
   const [followingCount, setFollowingCount] = useState(0);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
+  const [endorsementsVisibleCount, setEndorsementsVisibleCount] = useState(5);
+  const [endorsementActionMenuTarget, setEndorsementActionMenuTarget] = useState<{ type: 'brand' | 'business'; id: string; name: string } | null>(null);
 
   useEffect(() => {
     const fetchBusiness = async () => {
@@ -136,34 +138,36 @@ export default function BusinessDetailScreen() {
 
   // Helper to extract endorsements from business owner's endorsement list
   const getEndorsements = () => {
-    // Find the endorsement list (named after the business)
-    const businessName = business?.businessInfo?.name || business?.fullName || '';
-    const endorsementList = businessOwnerLists.find(list =>
-      list.name === businessName || list.name === business?.fullName
-    );
+    // Find the endorsement list (isEndorsed flag indicates endorsement list)
+    const endorsementList = businessOwnerLists.find(list => list.isEndorsed === true);
 
     if (!endorsementList) {
-      return { brands: [], businesses: [] };
+      return [];
     }
 
-    const brands: { name: string; id: string }[] = [];
-    const businesses: { name: string; id: string }[] = [];
+    const endorsements: { type: 'brand' | 'business'; id: string; name: string; logoUrl?: string; website?: string }[] = [];
 
     endorsementList.entries.forEach((entry: any) => {
-      if (entry.type === 'brand' && entry.brandName && entry.brandId) {
-        brands.push({
-          name: entry.brandName,
-          id: entry.brandId
+      if (entry.type === 'brand' && entry.brandId) {
+        endorsements.push({
+          type: 'brand',
+          id: entry.brandId,
+          name: entry.brandName || entry.name || entry.brandId,
+          logoUrl: entry.logoUrl || '',
+          website: entry.website || '',
         });
       } else if (entry.type === 'business' && entry.businessId) {
-        businesses.push({
+        endorsements.push({
+          type: 'business',
+          id: entry.businessId,
           name: entry.businessName || entry.name || 'Unknown Business',
-          id: entry.businessId
+          logoUrl: entry.logoUrl || '',
+          website: entry.website || '',
         });
       }
     });
 
-    return { brands, businesses };
+    return endorsements;
   };
 
   const handleAddToList = async (listId: string) => {
@@ -889,18 +893,17 @@ export default function BusinessDetailScreen() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Endorsements</Text>
 
-            <View style={[styles.moneyFlowCard, { backgroundColor: colors.background, borderColor: colors.success }]}>
+            <View style={[styles.endorsementsCard, { backgroundColor: colors.backgroundSecondary }]}>
               {loadingBusinessLists ? (
-                <View style={styles.shareholdersContainer}>
+                <View style={styles.endorsementsLoading}>
                   <Text style={[styles.noDataText, { color: colors.textSecondary }]}>Loading...</Text>
                 </View>
               ) : (() => {
-                const { brands, businesses } = getEndorsements();
-                const hasData = brands.length > 0 || businesses.length > 0;
+                const endorsements = getEndorsements();
 
-                if (!hasData) {
+                if (endorsements.length === 0) {
                   return (
-                    <View style={styles.shareholdersContainer}>
+                    <View style={styles.endorsementsLoading}>
                       <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
                         No endorsements yet
                       </Text>
@@ -908,42 +911,82 @@ export default function BusinessDetailScreen() {
                   );
                 }
 
-                return (
-                  <View style={styles.shareholdersContainer}>
-                    {brands.length > 0 && (
-                      <>
-                        <View style={[styles.subsectionHeader, { borderBottomColor: colors.border }]}>
-                          <Text style={[styles.subsectionTitle, { color: colors.text }]}>Brands ({brands.length})</Text>
-                        </View>
-                        {brands.map((brand, index) => (
-                          <TouchableOpacity
-                            key={`brand-${index}`}
-                            style={[styles.shareholderItem, { borderBottomColor: colors.border }]}
-                            onPress={() => router.push(`/brand/${brand.id}`)}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[styles.affiliateName, { color: colors.text }]}>{brand.name}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </>
-                    )}
+                const visibleEndorsements = endorsements.slice(0, endorsementsVisibleCount);
+                const hasMore = endorsements.length > endorsementsVisibleCount;
+                const remainingCount = endorsements.length - endorsementsVisibleCount;
 
-                    {businesses.length > 0 && (
-                      <>
-                        <View style={[styles.subsectionHeader, { borderBottomColor: colors.border, marginTop: brands.length > 0 ? 16 : 0 }]}>
-                          <Text style={[styles.subsectionTitle, { color: colors.text }]}>Businesses ({businesses.length})</Text>
-                        </View>
-                        {businesses.map((biz, index) => (
-                          <TouchableOpacity
-                            key={`business-${index}`}
-                            style={[styles.shareholderItem, { borderBottomColor: colors.border }]}
-                            onPress={() => router.push(`/business/${biz.id}`)}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[styles.affiliateName, { color: colors.text }]}>{biz.name}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </>
+                return (
+                  <View>
+                    <View style={[styles.endorsementsHeader, { borderBottomColor: colors.border }]}>
+                      <Text style={[styles.endorsementsCount, { color: colors.text }]}>
+                        {endorsements.length} {endorsements.length === 1 ? 'endorsement' : 'endorsements'}
+                      </Text>
+                    </View>
+
+                    {visibleEndorsements.map((item, index) => (
+                      <View
+                        key={`${item.type}-${item.id}-${index}`}
+                        style={[styles.endorsementItem, { borderBottomColor: colors.border }]}
+                      >
+                        <TouchableOpacity
+                          style={styles.endorsementItemContent}
+                          onPress={() => {
+                            if (item.type === 'brand') {
+                              router.push(`/brand/${item.id}`);
+                            } else {
+                              router.push(`/business/${item.id}`);
+                            }
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <View style={[styles.endorsementLogo, { backgroundColor: '#FFFFFF' }]}>
+                            {item.logoUrl ? (
+                              <Image
+                                source={{ uri: item.logoUrl }}
+                                style={styles.endorsementLogoImage}
+                                contentFit="cover"
+                                cachePolicy="memory-disk"
+                              />
+                            ) : (
+                              <Image
+                                source={{ uri: getLogoUrl(item.website || '') }}
+                                style={styles.endorsementLogoImage}
+                                contentFit="cover"
+                                cachePolicy="memory-disk"
+                              />
+                            )}
+                          </View>
+                          <View style={styles.endorsementInfo}>
+                            <Text style={[styles.endorsementName, { color: colors.text }]} numberOfLines={1}>
+                              {item.name}
+                            </Text>
+                            <Text style={[styles.endorsementType, { color: colors.textSecondary }]}>
+                              {item.type === 'brand' ? 'Brand' : 'Business'}
+                            </Text>
+                          </View>
+                          <ChevronRight size={18} color={colors.textSecondary} strokeWidth={2} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.endorsementActionButton, { backgroundColor: colors.background }]}
+                          onPress={() => setEndorsementActionMenuTarget(item)}
+                          activeOpacity={0.7}
+                        >
+                          <MoreVertical size={18} color={colors.text} strokeWidth={2} />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+
+                    {hasMore && (
+                      <TouchableOpacity
+                        style={[styles.showMoreButton, { borderColor: colors.border }]}
+                        onPress={() => setEndorsementsVisibleCount(prev => prev + 10)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.showMoreText, { color: colors.primary }]}>
+                          Show more ({remainingCount} remaining)
+                        </Text>
+                        <Plus size={16} color={colors.primary} strokeWidth={2} />
+                      </TouchableOpacity>
                     )}
                   </View>
                 );
@@ -1270,6 +1313,129 @@ export default function BusinessDetailScreen() {
             )}
           </View>
         </View>
+      </Modal>
+
+      {/* Endorsement Action Menu Modal */}
+      <Modal
+        visible={endorsementActionMenuTarget !== null}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setEndorsementActionMenuTarget(null)}
+      >
+        <Pressable
+          style={styles.actionMenuOverlay}
+          onPress={() => setEndorsementActionMenuTarget(null)}
+        >
+          <Pressable
+            style={[styles.actionMenuContainer, { backgroundColor: colors.background }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={[styles.actionMenuHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.actionMenuTitle, { color: colors.text }]} numberOfLines={1}>
+                {endorsementActionMenuTarget?.name || 'Actions'}
+              </Text>
+              <TouchableOpacity onPress={() => setEndorsementActionMenuTarget(null)}>
+                <X size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.actionMenuItem, { borderBottomColor: colors.border }]}
+              onPress={async () => {
+                if (!endorsementActionMenuTarget || !library.state.endorsementList?.id || !clerkUser?.id) {
+                  Alert.alert('Error', 'Unable to endorse. Please make sure you are logged in.');
+                  setEndorsementActionMenuTarget(null);
+                  return;
+                }
+
+                try {
+                  // Add to user's endorsement list
+                  if (endorsementActionMenuTarget.type === 'brand') {
+                    await library.addEntry(library.state.endorsementList.id, {
+                      type: 'brand',
+                      brandId: endorsementActionMenuTarget.id,
+                      brandName: endorsementActionMenuTarget.name,
+                      website: '',
+                      logoUrl: '',
+                    });
+                  } else {
+                    await library.addEntry(library.state.endorsementList.id, {
+                      type: 'business',
+                      businessId: endorsementActionMenuTarget.id,
+                      businessName: endorsementActionMenuTarget.name,
+                      website: '',
+                      logoUrl: '',
+                    });
+                  }
+                  Alert.alert('Success', `${endorsementActionMenuTarget.name} endorsed!`);
+                  await library.loadUserLists(clerkUser.id, true);
+                } catch (error: any) {
+                  Alert.alert('Error', error?.message || 'Failed to endorse');
+                }
+                setEndorsementActionMenuTarget(null);
+              }}
+              activeOpacity={0.7}
+            >
+              <UserPlus size={20} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Endorse</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionMenuItem, { borderBottomColor: colors.border }]}
+              onPress={async () => {
+                if (!endorsementActionMenuTarget || !clerkUser?.id) {
+                  Alert.alert('Error', 'You must be logged in to follow');
+                  setEndorsementActionMenuTarget(null);
+                  return;
+                }
+
+                try {
+                  const entityType = endorsementActionMenuTarget.type === 'brand' ? 'brand' : 'business';
+                  await followEntity(clerkUser.id, endorsementActionMenuTarget.id, entityType);
+                  Alert.alert('Success', `Now following ${endorsementActionMenuTarget.name}`);
+                } catch (error: any) {
+                  Alert.alert('Error', error?.message || 'Failed to follow');
+                }
+                setEndorsementActionMenuTarget(null);
+              }}
+              activeOpacity={0.7}
+            >
+              <UserPlus size={20} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Follow</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionMenuItem}
+              onPress={async () => {
+                if (!endorsementActionMenuTarget) {
+                  setEndorsementActionMenuTarget(null);
+                  return;
+                }
+
+                try {
+                  const targetType = endorsementActionMenuTarget.type;
+                  const targetId = endorsementActionMenuTarget.id;
+                  const message = `Check out ${endorsementActionMenuTarget.name} on Endorse Money!`;
+                  const url = Platform.OS === 'web'
+                    ? `${window.location.origin}/${targetType}/${targetId}`
+                    : `uprightmoney://${targetType}/${targetId}`;
+
+                  await Share.share({
+                    message: `${message}\n${url}`,
+                    title: endorsementActionMenuTarget.name,
+                  });
+                } catch (error) {
+                  console.error('Error sharing:', error);
+                }
+                setEndorsementActionMenuTarget(null);
+              }}
+              activeOpacity={0.7}
+            >
+              <Share2 size={20} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Share</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -1837,5 +2003,77 @@ const styles = StyleSheet.create({
   followCountLabel: {
     fontSize: 13,
     fontWeight: '500' as const,
+  },
+  // Endorsements section styles
+  endorsementsCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  endorsementsLoading: {
+    padding: 24,
+  },
+  endorsementsHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  endorsementsCount: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  endorsementItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingLeft: 16,
+    paddingRight: 8,
+    borderBottomWidth: 1,
+  },
+  endorsementItemContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  endorsementLogo: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  endorsementLogoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  endorsementInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  endorsementName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  endorsementType: {
+    fontSize: 12,
+  },
+  endorsementActionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  showMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+  },
+  showMoreText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
 });

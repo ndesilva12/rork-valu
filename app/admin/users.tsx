@@ -1553,13 +1553,26 @@ export default function UsersManagement() {
                 numberOfLines={5}
               />
 
-              <Text style={styles.sectionTitle}>🔐 About Authentication</Text>
-              <Text style={styles.helpText}>
-                Password creation is managed by Clerk authentication and requires server-side API integration.
-                To create a fully authenticated user:
-                {'\n'}1. Create the user in Clerk Dashboard (or via Clerk API)
-                {'\n'}2. Use the Clerk user ID as the User ID above
-                {'\n'}3. The user will authenticate through Clerk, and this profile will be linked automatically
+              <Text style={styles.sectionTitle}>🔐 Authentication Setup (IMPORTANT)</Text>
+              <View style={[styles.authWarningBox, { backgroundColor: '#fff3cd', borderColor: '#ffc107' }]}>
+                <Text style={[styles.authWarningTitle, { color: '#856404' }]}>⚠️ This Does NOT Create a Login</Text>
+                <Text style={[styles.authWarningText, { color: '#856404' }]}>
+                  Creating a user here only creates their Firebase profile data. The user will NOT be able to log in unless you also create them in Clerk.
+                </Text>
+              </View>
+              <Text style={[styles.helpText, { marginTop: 12 }]}>
+                <Text style={styles.boldText}>To create a fully authenticated user:</Text>
+                {'\n\n'}1. Go to Clerk Dashboard (dashboard.clerk.com)
+                {'\n'}2. Navigate to "Users" → "Create user"
+                {'\n'}3. Enter their email and set a password
+                {'\n'}4. Copy the Clerk User ID (starts with "user_")
+                {'\n'}5. Use that EXACT Clerk User ID in the "User ID" field above
+                {'\n'}6. The email should match in both Clerk and here
+                {'\n\n'}<Text style={styles.boldText}>Why this matters:</Text>
+                {'\n'}• Clerk handles all authentication (login, passwords, sessions)
+                {'\n'}• Firebase stores profile data (name, bio, causes, etc.)
+                {'\n'}• The Clerk User ID must match the Firebase document ID
+                {'\n'}• Without matching IDs, the user can log in but won't see their profile
               </Text>
 
               <View style={styles.modalActions}>
@@ -2129,5 +2142,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 11,
     fontWeight: '600',
+  },
+  authWarningBox: {
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 8,
+  },
+  authWarningTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  authWarningText: {
+    fontSize: 13,
+    lineHeight: 18,
   },
 });
