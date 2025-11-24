@@ -373,11 +373,11 @@ export default function LocationAutocomplete({
         <View style={[
           styles.infoTooltip,
           {
-            backgroundColor: colors.primary + '15',
-            borderColor: colors.primary + '40',
+            backgroundColor: isDarkMode ? 'rgba(55, 65, 81, 0.9)' : 'rgba(249, 250, 251, 0.95)',
+            borderColor: isDarkMode ? '#4B5563' : '#E5E7EB',
           }
         ]}>
-          <Text style={[styles.infoTooltipText, { color: colors.primary }]}>
+          <Text style={[styles.infoTooltipText, { color: isDarkMode ? '#F9FAFB' : '#374151' }]}>
             💡 Click the search icon after typing your full address to confirm and save your location
           </Text>
         </View>
