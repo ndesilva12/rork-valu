@@ -1,5 +1,5 @@
 import { useRouter, useSegments } from 'expo-router';
-import { Menu, LogOut, User, HelpCircle } from 'lucide-react-native';
+import { Menu, LogOut, User, HelpCircle, Heart } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   View,
@@ -68,6 +68,11 @@ export default function MenuButton({ onShowExplainers }: MenuButtonProps = {}) {
     if (onShowExplainers) {
       onShowExplainers();
     }
+  };
+
+  const handleUpdateValues = () => {
+    setIsMenuVisible(false);
+    router.push('/onboarding/values');
   };
 
   return (
@@ -158,6 +163,18 @@ export default function MenuButton({ onShowExplainers }: MenuButtonProps = {}) {
                   </View>
                 </TouchableOpacity>
               )}
+
+              {/* Update My Values menu item */}
+              <TouchableOpacity
+                style={[styles.menuItem, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
+                onPress={handleUpdateValues}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemLeft}>
+                  <Heart size={26} color={colors.primary} strokeWidth={2} />
+                  <Text style={[styles.menuItemTitle, { color: colors.text }]}>Update My Values</Text>
+                </View>
+              </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.menuItem}
