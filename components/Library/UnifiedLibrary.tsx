@@ -2391,14 +2391,14 @@ export default function UnifiedLibrary({
             <TouchableOpacity
               style={[
                 styles.globalToggleButton,
-                selectedSection === 'alignedTop' && { backgroundColor: colors.primary + '20' },
+                selectedSection === 'alignedTop' && { backgroundColor: colors.primary },
               ]}
               onPress={() => setSelectedSection('alignedTop')}
               activeOpacity={0.7}
             >
               <Text style={[
                 styles.globalToggleText,
-                { color: selectedSection === 'alignedTop' ? colors.primary : colors.textSecondary }
+                { color: selectedSection === 'alignedTop' ? colors.white : colors.textSecondary }
               ]}>
                 Top
               </Text>
@@ -2412,14 +2412,14 @@ export default function UnifiedLibrary({
             <TouchableOpacity
               style={[
                 styles.globalToggleButton,
-                selectedSection === 'local' && { backgroundColor: colors.primary + '20' },
+                selectedSection === 'local' && { backgroundColor: colors.primary },
               ]}
               onPress={() => setSelectedSection('local')}
               activeOpacity={0.7}
             >
               <Text style={[
                 styles.globalToggleText,
-                { color: selectedSection === 'local' ? colors.primary : colors.textSecondary }
+                { color: selectedSection === 'local' ? colors.white : colors.textSecondary }
               ]}>
                 For You
               </Text>
@@ -2427,14 +2427,14 @@ export default function UnifiedLibrary({
             <TouchableOpacity
               style={[
                 styles.globalToggleButton,
-                selectedSection === 'localTop' && { backgroundColor: colors.primary + '20' },
+                selectedSection === 'localTop' && { backgroundColor: colors.primary },
               ]}
               onPress={() => setSelectedSection('localTop')}
               activeOpacity={0.7}
             >
               <Text style={[
                 styles.globalToggleText,
-                { color: selectedSection === 'localTop' ? colors.primary : colors.textSecondary }
+                { color: selectedSection === 'localTop' ? colors.white : colors.textSecondary }
               ]}>
                 Top
               </Text>
