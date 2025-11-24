@@ -391,12 +391,12 @@ export default function UnifiedLibrary({
     // Get IDs of already endorsed items
     const endorsedBrandIds = new Set(
       endorsementList?.entries
-        ?.filter(e => e.type === 'brand')
+        ?.filter(e => e && e.type === 'brand')
         ?.map(e => (e as any).brandId) || []
     );
     const endorsedBusinessIds = new Set(
       endorsementList?.entries
-        ?.filter(e => e.type === 'business')
+        ?.filter(e => e && e.type === 'business')
         ?.map(e => (e as any).businessId) || []
     );
 
@@ -3109,21 +3109,26 @@ export default function UnifiedLibrary({
             </View>
 
             {/* Search Input */}
-            <View style={[styles.addEndorsementSearchContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-              <Search size={20} color={colors.textSecondary} strokeWidth={2} />
+            <View style={[styles.addEndorsementSearchContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <Search size={20} color={colors.primaryLight} strokeWidth={2} />
               <TextInput
-                style={[styles.addEndorsementSearchInput, { color: colors.text }]}
-                placeholder="Search brands or businesses..."
+                style={[styles.addEndorsementSearchInput, { color: colors.primary, outlineStyle: 'none' } as any]}
+                placeholder="Search"
                 placeholderTextColor={colors.textSecondary}
                 value={addSearchQuery}
                 onChangeText={setAddSearchQuery}
                 autoFocus={true}
                 autoCapitalize="none"
                 autoCorrect={false}
+                underlineColorAndroid="transparent"
               />
               {addSearchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setAddSearchQuery('')} activeOpacity={0.7}>
-                  <X size={18} color={colors.textSecondary} strokeWidth={2} />
+                <TouchableOpacity
+                  onPress={() => setAddSearchQuery('')}
+                  style={styles.addEndorsementClearButton}
+                  activeOpacity={0.7}
+                >
+                  <X size={Platform.OS === 'web' ? 20 : 24} color={colors.textSecondary} strokeWidth={2.5} />
                 </TouchableOpacity>
               )}
             </View>
@@ -3161,22 +3166,24 @@ export default function UnifiedLibrary({
                       {addSearchResults.brands.map((brand) => (
                         <View
                           key={brand.id}
-                          style={[styles.addEndorsementResultItem, { borderBottomColor: colors.border }]}
+                          style={styles.addEndorsementResultItem}
                         >
                           <TouchableOpacity
                             style={styles.addEndorsementResultInfo}
                             onPress={() => handleNavigateToDetails(brand, 'brand')}
                             activeOpacity={0.7}
                           >
-                            <View style={[styles.addEndorsementResultLogo, { backgroundColor: colors.white }]}>
+                            <View style={styles.addEndorsementResultLogo}>
                               <Image
                                 source={{ uri: getLogoUrl(brand.website) }}
                                 style={styles.addEndorsementResultLogoImage}
-                                contentFit="contain"
+                                contentFit="cover"
+                                transition={200}
+                                cachePolicy="memory-disk"
                               />
                             </View>
                             <View style={styles.addEndorsementResultText}>
-                              <Text style={[styles.addEndorsementResultName, { color: colors.text }]} numberOfLines={1}>
+                              <Text style={[styles.addEndorsementResultName, { color: colors.text }]} numberOfLines={2}>
                                 {brand.name}
                               </Text>
                               {brand.category && (
@@ -3215,22 +3222,24 @@ export default function UnifiedLibrary({
                       {addSearchResults.businesses.map((business) => (
                         <View
                           key={business.id}
-                          style={[styles.addEndorsementResultItem, { borderBottomColor: colors.border }]}
+                          style={styles.addEndorsementResultItem}
                         >
                           <TouchableOpacity
                             style={styles.addEndorsementResultInfo}
                             onPress={() => handleNavigateToDetails(business, 'business')}
                             activeOpacity={0.7}
                           >
-                            <View style={[styles.addEndorsementResultLogo, { backgroundColor: colors.white }]}>
+                            <View style={styles.addEndorsementResultLogo}>
                               <Image
                                 source={{ uri: business.businessInfo?.logo || getLogoUrl(business.businessInfo?.website) }}
                                 style={styles.addEndorsementResultLogoImage}
-                                contentFit="contain"
+                                contentFit="cover"
+                                transition={200}
+                                cachePolicy="memory-disk"
                               />
                             </View>
                             <View style={styles.addEndorsementResultText}>
-                              <Text style={[styles.addEndorsementResultName, { color: colors.text }]} numberOfLines={1}>
+                              <Text style={[styles.addEndorsementResultName, { color: colors.text }]} numberOfLines={2}>
                                 {business.businessInfo?.name || 'Business'}
                               </Text>
                               {business.businessInfo?.category && (
@@ -3887,16 +3896,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 16,
     marginVertical: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 1,
-    gap: 10,
+    gap: 12,
+    height: 56,
   },
   addEndorsementSearchInput: {
     flex: 1,
-    fontSize: 16,
-    padding: 0,
+    fontSize: 26,
+    fontWeight: '700',
+    height: '100%',
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    margin: 0,
+    borderWidth: 0,
+    outlineWidth: 0,
+  },
+  addEndorsementClearButton: {
+    width: Platform.OS === 'web' ? 32 : 44,
+    height: Platform.OS === 'web' ? 32 : 44,
+    borderRadius: Platform.OS === 'web' ? 16 : 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
   },
   addEndorsementResultsContainer: {
     flex: 1,
@@ -3935,37 +3958,39 @@ const styles = StyleSheet.create({
   addEndorsementResultItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    height: 64,
+    marginBottom: 4,
   },
   addEndorsementResultInfo: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    height: '100%',
   },
   addEndorsementResultLogo: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 64,
+    height: 64,
+    borderRadius: 0,
     overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
   },
   addEndorsementResultLogoImage: {
-    width: 36,
-    height: 36,
+    width: '100%',
+    height: '100%',
   },
   addEndorsementResultText: {
     flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
   },
   addEndorsementResultName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 2,
   },
   addEndorsementResultCategory: {
-    fontSize: 13,
-    marginTop: 2,
+    fontSize: 11,
+    opacity: 0.7,
   },
   addEndorsementAddButton: {
     width: 36,

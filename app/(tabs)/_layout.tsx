@@ -1,5 +1,5 @@
 import { Tabs, useSegments } from "expo-router";
-import { BookOpen, DollarSign, Heart, Compass, User } from "lucide-react-native";
+import { BookOpen, DollarSign, Heart, Compass, User, Home } from "lucide-react-native";
 import React from "react";
 import { Platform, useWindowDimensions, StyleSheet, StatusBar, View, Text } from "react-native";
 import { lightColors, darkColors } from "@/constants/colors";
@@ -110,14 +110,14 @@ export default function TabLayout() {
               name="home"
               options={{
                 title: "Home",
-                tabBarIcon: renderTabIconWithLabel(BookOpen, "Home", colors.primary),
+                tabBarIcon: renderTabIconWithLabel(Home, "Home", colors.primary),
               }}
             />
             <Tabs.Screen
               name="values"
               options={{
                 title: "Browse",
-                tabBarIcon: renderTabIconWithLabel(Heart, "Browse", colors.primary),
+                tabBarIcon: renderTabIconWithLabel(BookOpen, "Browse", colors.primary),
               }}
             />
             <Tabs.Screen
