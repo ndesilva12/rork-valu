@@ -72,6 +72,8 @@ interface UserData {
   selectedCharities?: Charity[];
   consentGivenAt?: string;
   consentVersion?: string;
+  referralSource?: string; // QR code/location tracking for signups
+  createdAt?: any; // Firestore Timestamp
 }
 
 export default function UsersManagement() {
@@ -175,6 +177,8 @@ export default function UsersManagement() {
           selectedCharities: data.selectedCharities || [],
           consentGivenAt: data.consentGivenAt || '',
           consentVersion: data.consentVersion || '',
+          referralSource: data.referralSource || '', // QR code/location tracking
+          createdAt: data.createdAt || null,
         };
       });
 
@@ -962,6 +966,9 @@ export default function UsersManagement() {
                   </Text>
                   {user.promoCode && (
                     <Text style={styles.previewText}>💳 Promo: {user.promoCode}</Text>
+                  )}
+                  {user.referralSource && (
+                    <Text style={[styles.previewText, styles.referralSourceTag]}>📍 Source: {user.referralSource}</Text>
                   )}
                 </View>
               </View>
@@ -2157,5 +2164,15 @@ const styles = StyleSheet.create({
   authWarningText: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  referralSourceTag: {
+    backgroundColor: '#e8f5e9',
+    color: '#2e7d32',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginTop: 4,
+    alignSelf: 'flex-start',
   },
 });

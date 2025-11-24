@@ -82,6 +82,8 @@ interface BusinessData {
   partnerships?: Partnership[];
   ownership?: Ownership[];
   ownershipSources?: string;
+  referralCode?: string; // Unique referral code for tracking signups
+  referralCount?: number; // Number of users who signed up via this business's referral
 }
 
 export default function BusinessesManagement() {
@@ -114,6 +116,7 @@ export default function BusinessesManagement() {
   const [createInstagram, setCreateInstagram] = useState('');
   const [createTwitter, setCreateTwitter] = useState('');
   const [createLinkedin, setCreateLinkedin] = useState('');
+  const [createReferralCode, setCreateReferralCode] = useState('');
 
   // Form state - Basic Info
   const [formName, setFormName] = useState('');
@@ -156,6 +159,9 @@ export default function BusinessesManagement() {
   const [formOwnership, setFormOwnership] = useState('');
   const [formOwnershipSources, setFormOwnershipSources] = useState('');
 
+  // Form state - Referral
+  const [formReferralCode, setFormReferralCode] = useState('');
+
   // List management state
   const [userLists, setUserLists] = useState<UserList[]>([]);
   const [loadingLists, setLoadingLists] = useState(false);
@@ -175,6 +181,7 @@ export default function BusinessesManagement() {
       const q = query(usersRef, where('accountType', '==', 'business'));
       const snapshot = await getDocs(q);
 
+      // First, load all businesses
       const loadedBusinesses: BusinessData[] = snapshot.docs
         .map((doc) => {
           const data = doc.data();
@@ -203,9 +210,36 @@ export default function BusinessesManagement() {
             partnerships: biz.partnerships || [],
             ownership: biz.ownership || [],
             ownershipSources: biz.ownershipSources || '',
+            referralCode: biz.referralCode || '',
+            referralCount: 0, // Will be populated below
           };
         })
         .filter((b): b is BusinessData => b !== null);
+
+      // Count referred users for each business that has a referral code
+      const businessesWithReferrals = loadedBusinesses.filter(b => b.referralCode);
+      if (businessesWithReferrals.length > 0) {
+        // Get all users with referralSource
+        const allUsersQuery = query(usersRef, where('referralSource', '!=', ''));
+        const allUsersSnapshot = await getDocs(allUsersQuery);
+
+        // Create a map of referralSource -> count
+        const referralCounts = new Map<string, number>();
+        allUsersSnapshot.docs.forEach((userDoc) => {
+          const userData = userDoc.data();
+          const source = userData.referralSource;
+          if (source) {
+            referralCounts.set(source, (referralCounts.get(source) || 0) + 1);
+          }
+        });
+
+        // Update business referral counts
+        loadedBusinesses.forEach((business) => {
+          if (business.referralCode) {
+            business.referralCount = referralCounts.get(business.referralCode) || 0;
+          }
+        });
+      }
 
       setBusinesses(loadedBusinesses);
     } catch (error) {
@@ -271,6 +305,9 @@ export default function BusinessesManagement() {
       business.ownership?.map((o) => `${o.name}|${o.relationship}`).join('\n') || ''
     );
     setFormOwnershipSources(business.ownershipSources || '');
+
+    // Referral
+    setFormReferralCode(business.referralCode || '');
 
     // Load user lists
     loadUserLists(business.userId);
@@ -490,6 +527,7 @@ export default function BusinessesManagement() {
         partnerships: parseMoneyFlowSection(formPartnerships),
         ownership: parseMoneyFlowSection(formOwnership),
         ownershipSources: formOwnershipSources.trim(),
+        referralCode: formReferralCode.trim() || undefined,
       };
 
       const userRef = doc(db, 'users', editingBusiness.userId);
@@ -670,6 +708,7 @@ export default function BusinessesManagement() {
         partnerships: [],
         ownership: [],
         ownershipSources: '',
+        referralCode: createReferralCode.trim() || undefined,
       };
 
       const newBusinessData = {
@@ -703,6 +742,7 @@ export default function BusinessesManagement() {
       setCreateInstagram('');
       setCreateTwitter('');
       setCreateLinkedin('');
+      setCreateReferralCode('');
       setShowCreateModal(false);
 
       // Reload businesses
@@ -813,6 +853,12 @@ export default function BusinessesManagement() {
                 )}
                 {business.locations && business.locations.length > 0 && (
                   <Text style={styles.previewText}>📍 {business.locations.length} location(s)</Text>
+                )}
+                {business.referralCode && (
+                  <Text style={styles.referralTag}>🔗 Referral: {business.referralCode}</Text>
+                )}
+                {business.referralCount !== undefined && business.referralCount > 0 && (
+                  <Text style={styles.referralCountTag}>👥 {business.referralCount} referral signup{business.referralCount !== 1 ? 's' : ''}</Text>
                 )}
               </View>
             ))
@@ -1011,6 +1057,20 @@ export default function BusinessesManagement() {
                 autoCapitalize="none"
               />
 
+              <Text style={styles.sectionTitle}>🔗 Referral Tracking</Text>
+
+              <Text style={styles.label}>Referral Code</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., joescoffee, downtown1"
+                value={createReferralCode}
+                onChangeText={setCreateReferralCode}
+                autoCapitalize="none"
+              />
+              <Text style={styles.helpText}>
+                This code will be used in URLs like: https://iendorse.app/sign-up?ref=joescoffee
+              </Text>
+
               <View style={styles.modalActions}>
                 <TouchableOpacity
                   style={styles.cancelButton}
@@ -1034,6 +1094,7 @@ export default function BusinessesManagement() {
                     setCreateInstagram('');
                     setCreateTwitter('');
                     setCreateLinkedin('');
+                    setCreateReferralCode('');
                   }}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -1333,6 +1394,27 @@ export default function BusinessesManagement() {
                 multiline
                 numberOfLines={3}
               />
+
+              {/* REFERRAL TRACKING */}
+              <Text style={styles.sectionTitle}>🔗 Referral Tracking</Text>
+
+              <Text style={styles.label}>Referral Code</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., joescoffee, downtown1"
+                value={formReferralCode}
+                onChangeText={setFormReferralCode}
+              />
+              <Text style={styles.helpText}>
+                URL format: https://iendorse.app/sign-up?ref={formReferralCode || 'code'}
+              </Text>
+              {editingBusiness?.referralCount !== undefined && editingBusiness.referralCount > 0 && (
+                <View style={styles.referralStatsBox}>
+                  <Text style={styles.referralStatsText}>
+                    👥 {editingBusiness.referralCount} user{editingBusiness.referralCount !== 1 ? 's' : ''} signed up using this referral code
+                  </Text>
+                </View>
+              )}
 
               {/* LIBRARY / LIST MANAGEMENT */}
               <Text style={styles.sectionTitle}>📚 Library / List Management</Text>
@@ -1957,5 +2039,42 @@ const styles = StyleSheet.create({
   authWarningText: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  referralStatsBox: {
+    backgroundColor: '#e3f2fd',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#90caf9',
+  },
+  referralStatsText: {
+    fontSize: 14,
+    color: '#1565c0',
+    fontWeight: '600',
+  },
+  referralTag: {
+    backgroundColor: '#e8f5e9',
+    color: '#2e7d32',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginTop: 4,
+    alignSelf: 'flex-start',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  referralCountTag: {
+    backgroundColor: '#e3f2fd',
+    color: '#1565c0',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginTop: 4,
+    alignSelf: 'flex-start',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
