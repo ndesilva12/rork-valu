@@ -560,6 +560,17 @@ export default function BrowseScreen() {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Values section - Update Values button */}
+        {selectedSection === 'values' && (
+          <TouchableOpacity
+            style={[styles.updateValuesButton, { backgroundColor: colors.primary }]}
+            onPress={() => router.push('/onboarding/values')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.updateValuesButtonText}>Update Values</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
@@ -1034,6 +1045,16 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   globalToggleText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  updateValuesButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  updateValuesButtonText: {
+    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '600' as const,
   },

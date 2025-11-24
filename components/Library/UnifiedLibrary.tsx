@@ -178,7 +178,7 @@ export default function UnifiedLibrary({
   const [isConfirmLoading, setIsConfirmLoading] = useState(false);
 
   // Pagination state for each list
-  const [endorsementLoadCount, setEndorsementLoadCount] = useState(10);
+  const [endorsementLoadCount, setEndorsementLoadCount] = useState(25);
   const [alignedLoadCount, setAlignedLoadCount] = useState(10);
   const [unalignedLoadCount, setUnalignedLoadCount] = useState(10);
   const [customListLoadCounts, setCustomListLoadCounts] = useState<Record<string, number>>({});
@@ -216,6 +216,7 @@ export default function UnifiedLibrary({
   const [allBusinesses, setAllBusinesses] = useState<BusinessUser[]>([]);
   const [loadingBusinesses, setLoadingBusinesses] = useState(false);
   const [addingItemId, setAddingItemId] = useState<string | null>(null);
+  const [addedItemIds, setAddedItemIds] = useState<Set<string>>(new Set());
 
   // Section selection state
   // Profile views (preview/view) ALWAYS default to endorsement
@@ -455,6 +456,8 @@ export default function UnifiedLibrary({
 
       await library.addEntry(endorsementList.id, entry);
       console.log('[UnifiedLibrary] Added', type, 'to endorsement list:', entry.name);
+      // Track this item as added
+      setAddedItemIds(prev => new Set(prev).add(itemId));
     } catch (error) {
       console.error('[UnifiedLibrary] Error adding to endorsement:', error);
       Alert.alert('Error', 'Failed to add to endorsements. Please try again.');
@@ -1714,7 +1717,7 @@ export default function UnifiedLibrary({
           {!isReordering && endorsementLoadCount < endorsementList.entries.length && (
             <TouchableOpacity
               style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
-              onPress={() => setEndorsementLoadCount(endorsementLoadCount + 10)}
+              onPress={() => setEndorsementLoadCount(endorsementLoadCount + 25)}
               activeOpacity={0.7}
             >
               <Text style={[styles.loadMoreText, { color: colors.primary }]}>
@@ -3094,10 +3097,18 @@ export default function UnifiedLibrary({
         onRequestClose={() => {
           setShowAddEndorsementModal(false);
           setAddSearchQuery('');
+          setAddedItemIds(new Set());
         }}
       >
-        <View style={styles.addEndorsementModalOverlay}>
-          <View style={[styles.addEndorsementModalContent, { backgroundColor: colors.background }]}>
+        <View style={[
+          styles.addEndorsementModalOverlay,
+          isLargeScreen && styles.addEndorsementModalOverlayLarge
+        ]}>
+          <View style={[
+            styles.addEndorsementModalContent,
+            { backgroundColor: colors.background },
+            isLargeScreen && styles.addEndorsementModalContentLarge
+          ]}>
             {/* Modal Header */}
             <View style={[styles.addEndorsementModalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.addEndorsementModalTitle, { color: colors.text }]}>Add Endorsement</Text>
@@ -3105,6 +3116,7 @@ export default function UnifiedLibrary({
                 onPress={() => {
                   setShowAddEndorsementModal(false);
                   setAddSearchQuery('');
+                  setAddedItemIds(new Set());
                 }}
                 style={styles.addEndorsementCloseButton}
                 activeOpacity={0.7}
@@ -3201,14 +3213,14 @@ export default function UnifiedLibrary({
                           <TouchableOpacity
                             style={[
                               styles.addEndorsementTextButton,
-                              { backgroundColor: addingItemId === brand.id ? colors.success : colors.primary }
+                              { backgroundColor: addedItemIds.has(brand.id) ? colors.textSecondary : (addingItemId === brand.id ? colors.success : colors.primary) }
                             ]}
                             onPress={() => handleAddToEndorsement(brand, 'brand')}
-                            disabled={addingItemId === brand.id}
+                            disabled={addingItemId === brand.id || addedItemIds.has(brand.id)}
                             activeOpacity={0.7}
                           >
                             <Text style={styles.addEndorsementTextButtonLabel}>
-                              {addingItemId === brand.id ? 'Added' : 'Endorse'}
+                              {addedItemIds.has(brand.id) ? 'Added' : (addingItemId === brand.id ? 'Adding...' : 'Endorse')}
                             </Text>
                           </TouchableOpacity>
                         </View>
@@ -3255,14 +3267,14 @@ export default function UnifiedLibrary({
                           <TouchableOpacity
                             style={[
                               styles.addEndorsementTextButton,
-                              { backgroundColor: addingItemId === business.id ? colors.success : colors.primary }
+                              { backgroundColor: addedItemIds.has(business.id) ? colors.textSecondary : (addingItemId === business.id ? colors.success : colors.primary) }
                             ]}
                             onPress={() => handleAddToEndorsement(business, 'business')}
-                            disabled={addingItemId === business.id}
+                            disabled={addingItemId === business.id || addedItemIds.has(business.id)}
                             activeOpacity={0.7}
                           >
                             <Text style={styles.addEndorsementTextButtonLabel}>
-                              {addingItemId === business.id ? 'Added' : 'Endorse'}
+                              {addedItemIds.has(business.id) ? 'Added' : (addingItemId === business.id ? 'Adding...' : 'Endorse')}
                             </Text>
                           </TouchableOpacity>
                         </View>
@@ -3871,11 +3883,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
+  addEndorsementModalOverlayLarge: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   addEndorsementModalContent: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '85%',
     minHeight: '60%',
+  },
+  addEndorsementModalContentLarge: {
+    width: '50%',
+    maxWidth: 600,
+    minHeight: '75%',
+    maxHeight: '85%',
+    borderRadius: 24,
   },
   addEndorsementModalHeader: {
     flexDirection: 'row',
