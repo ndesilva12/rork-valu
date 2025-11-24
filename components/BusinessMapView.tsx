@@ -325,10 +325,10 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
                   </Text>
                 )}
 
-                {/* Upright Contributions */}
+                {/* iEndorse Contributions */}
                 {acceptsStand && (
                   <View style={styles.standContributionsBox}>
-                    <Text style={styles.standContributionsTitle}>Upright Contributions Accepted</Text>
+                    <Text style={styles.standContributionsTitle}>iEndorse Contributions Accepted</Text>
                     <Text style={styles.standContributionsAccepts}>Accepts: {acceptanceMethod}</Text>
                     <View style={styles.standContributionsPercents}>
                       <Text style={styles.standContributionsPercentText}>

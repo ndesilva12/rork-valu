@@ -284,7 +284,7 @@ export default function BusinessesAcceptingDiscounts() {
   if (isLoading) {
     return (
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Businesses Accepting Upright</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Businesses Accepting iEndorse</Text>
         <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundSecondary }]}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading businesses...</Text>
@@ -367,7 +367,7 @@ export default function BusinessesAcceptingDiscounts() {
         <View style={[styles.emptyContainer, { backgroundColor: colors.backgroundSecondary }]}>
           <AlertCircle size={48} color={colors.textSecondary} strokeWidth={1.5} />
           <Text style={[styles.emptyText, { color: colors.text }]}>
-            {searchQuery ? 'No businesses found matching your search' : 'No businesses accepting Upright yet'}
+            {searchQuery ? 'No businesses found matching your search' : 'No businesses accepting iEndorse yet'}
           </Text>
           <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
             {searchQuery ? 'Try a different search term' : 'Check back soon as more businesses join!'}

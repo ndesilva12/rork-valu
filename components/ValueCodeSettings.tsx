@@ -58,7 +58,7 @@ export default function ValueCodeSettings() {
     if (value) {
       Alert.alert(
         'Discounts Enabled',
-        'Customers can now use Upright to receive discounts at your business!',
+        'Customers can now use iEndorse to receive discounts at your business!',
         [{ text: 'Great!' }]
       );
     }
@@ -313,10 +313,10 @@ export default function ValueCodeSettings() {
                 )}
               </View>
 
-              {/* Upright Fee */}
+              {/* iEndorse Fee */}
               <View style={styles.feeRow}>
                 <Text style={[styles.feeText, { color: colors.textSecondary }]}>
-                  Upright Fee: 2.5% Fixed
+                  iEndorse Fee: 2.5% Fixed
                 </Text>
               </View>
 

@@ -514,7 +514,7 @@ export default function BrandDetailScreen() {
       const message = `Check out ${brand.name} on Endorse Money!`;
       const url = Platform.OS === 'web'
         ? `${window.location.origin}/brand/${brand.id}`
-        : `uprightmoney://brand/${brand.id}`;
+        : `iendorse://brand/${brand.id}`;
 
       await Share.share({
         message: `${message}\n${url}`,

@@ -273,7 +273,7 @@ export default function BusinessDetailScreen() {
       const message = `Check out ${business.businessInfo.name} on Endorse Money!`;
       const url = Platform.OS === 'web'
         ? `${window.location.origin}/business/${business.id}`
-        : `uprightmoney://business/${business.id}`;
+        : `iendorse://business/${business.id}`;
 
       await Share.share({
         message: `${message}\n${url}`,
@@ -1418,7 +1418,7 @@ export default function BusinessDetailScreen() {
                   const message = `Check out ${endorsementActionMenuTarget.name} on Endorse Money!`;
                   const url = Platform.OS === 'web'
                     ? `${window.location.origin}/${targetType}/${targetId}`
-                    : `uprightmoney://${targetType}/${targetId}`;
+                    : `iendorse://${targetType}/${targetId}`;
 
                   await Share.share({
                     message: `${message}\n${url}`,

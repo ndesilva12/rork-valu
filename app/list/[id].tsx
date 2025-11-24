@@ -81,7 +81,7 @@ export default function SharedListScreen() {
       (list.creatorName ? `Created by: ${list.creatorName}\n` : '') +
       (list.description ? `${list.description}\n\n` : '') +
       `${list.entries.length} ${list.entries.length === 1 ? 'item' : 'items'}`;
-    const shareLink = `https://upright.money/list/${list.id}`;
+    const shareLink = `https://iendorse.app/list/${list.id}`;
     const shareMessageWithLink = `${shareMessage}\n\n${shareLink}`;
 
     try {
@@ -97,7 +97,7 @@ export default function SharedListScreen() {
   const handleCopyLink = async () => {
     if (!list) return;
 
-    const shareLink = `https://upright.money/list/${list.id}`;
+    const shareLink = `https://iendorse.app/list/${list.id}`;
     try {
       await Clipboard.setStringAsync(shareLink);
       Alert.alert('Success', 'Link copied to clipboard!');
@@ -108,7 +108,7 @@ export default function SharedListScreen() {
   };
 
   const handleGoToHomepage = () => {
-    const homepageUrl = 'https://upright.money';
+    const homepageUrl = 'https://iendorse.app';
     if (Platform.OS === 'web') {
       window.open(homepageUrl, '_blank');
     } else {

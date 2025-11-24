@@ -240,14 +240,14 @@ export default function MerchantVerify() {
         // Note: team members can confirm transactions, discount comes from business settings
       }
 
-      const uprightFeePercent = 2.5;
+      const endorseFeePercent = 2.5;
 
       // Get team member name for verification tracking
       const verifiedByName = clerkUser.fullName || clerkUser.firstName || clerkUser.primaryEmailAddress?.emailAddress?.split('@')[0] || 'Unknown';
 
       console.log('[MerchantVerify] Recording transaction with:', {
         merchantDiscount,
-        uprightFeePercent,
+        endorseFeePercent,
         purchaseAmount: parseFloat(purchaseAmount),
         businessId,
         verifiedBy: clerkUser.id,
@@ -264,9 +264,9 @@ export default function MerchantVerify() {
         merchantName: merchantName,
         purchaseAmount: parseFloat(purchaseAmount),
         discountPercent: merchantDiscount,
-        uprightFeePercent: uprightFeePercent,
+        endorseFeePercent: endorseFeePercent,
         discountAmount: (parseFloat(purchaseAmount) * merchantDiscount) / 100,
-        uprightFeeAmount: (parseFloat(purchaseAmount) * uprightFeePercent) / 100,
+        endorseFeeAmount: (parseFloat(purchaseAmount) * endorseFeePercent) / 100,
         status: 'completed',
         createdAt: serverTimestamp(),
         verifiedAt: serverTimestamp(),
@@ -357,7 +357,7 @@ export default function MerchantVerify() {
                 </Text>
 
                 <Text style={[styles.feeLabel, { color: colors.text }]}>
-                  Upright Fee: 2.5%
+                  iEndorse Fee: 2.5%
                 </Text>
                 <Text style={[styles.feeValue, { color: colors.primary }]}>
                   ${((parseFloat(purchaseAmount) * 2.5) / 100).toFixed(2)}
