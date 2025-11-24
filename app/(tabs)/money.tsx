@@ -20,7 +20,7 @@ import BusinessesAcceptingDiscounts from '@/components/BusinessesAcceptingDiscou
 import BusinessPayment from '@/components/BusinessPayment';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
-import { ChevronDown, ChevronRight, Users, Receipt, TrendingUp, DollarSign, Percent } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, Users, Receipt, TrendingUp, DollarSign, Percent, Link } from 'lucide-react-native';
 import { aggregateBusinessTransactions } from '@/services/firebase/userService';
 import { PieChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
@@ -44,7 +44,7 @@ export default function DiscountScreen() {
   });
 
   // Business data state
-  const [expandedDataSection, setExpandedDataSection] = useState<'metrics' | 'customers' | 'transactions' | 'discounts' | null>(null);
+  const [expandedDataSection, setExpandedDataSection] = useState<'metrics' | 'customers' | 'transactions' | 'discounts' | 'referrals' | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [businessMetrics, setBusinessMetrics] = useState({
     totalDiscountGiven: 0,
@@ -54,6 +54,10 @@ export default function DiscountScreen() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [customers, setCustomers] = useState<Map<string, any>>(new Map());
   const [customerValues, setCustomerValues] = useState<Map<string, number>>(new Map());
+
+  // Referral tracking state
+  const [referralCode, setReferralCode] = useState<string>('');
+  const [referredUsers, setReferredUsers] = useState<any[]>([]);
 
   // Load business data
   const loadBusinessData = useCallback(async () => {
@@ -138,6 +142,47 @@ export default function DiscountScreen() {
         totalOwed,
         isLoading: false,
       });
+
+      // Load business's referral code and referred users
+      try {
+        const businessDoc = await getDoc(doc(db, 'users', clerkUser.id));
+        if (businessDoc.exists()) {
+          const businessData = businessDoc.data();
+          const bizReferralCode = businessData.businessInfo?.referralCode || '';
+          setReferralCode(bizReferralCode);
+
+          // If business has a referral code, query users who signed up with it
+          if (bizReferralCode) {
+            const usersRef = collection(db, 'users');
+            const referralQuery = query(usersRef, where('referralSource', '==', bizReferralCode));
+            const referralSnapshot = await getDocs(referralQuery);
+
+            const referred: any[] = [];
+            referralSnapshot.docs.forEach((userDoc) => {
+              const userData = userDoc.data();
+              referred.push({
+                id: userDoc.id,
+                name: userData.fullName || userData.firstName || userData.email || 'Unknown User',
+                email: userData.email || '',
+                createdAt: userData.createdAt || null,
+              });
+            });
+
+            // Sort by createdAt descending
+            referred.sort((a, b) => {
+              const aTime = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
+              const bTime = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
+              return new Date(bTime).getTime() - new Date(aTime).getTime();
+            });
+
+            setReferredUsers(referred);
+          } else {
+            setReferredUsers([]);
+          }
+        }
+      } catch (refError) {
+        console.error('[Money] Error loading referral data:', refError);
+      }
     } catch (error) {
       console.error('[Money] Error loading business data:', error);
       setBusinessFinancials((prev) => ({ ...prev, isLoading: false }));
@@ -157,7 +202,7 @@ export default function DiscountScreen() {
     // Note: loadBusinessData and refreshTransactionTotals are stable callbacks, don't need in deps
   );
 
-  const toggleDataSection = (section: 'metrics' | 'customers' | 'transactions' | 'discounts') => {
+  const toggleDataSection = (section: 'metrics' | 'customers' | 'transactions' | 'discounts' | 'referrals') => {
     setExpandedDataSection(expandedDataSection === section ? null : section);
   };
 
@@ -589,6 +634,107 @@ export default function DiscountScreen() {
                     </View>
                   )}
                 </View>
+
+                {/* Referrals Section */}
+                <View style={[styles.section, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                  <TouchableOpacity
+                    style={styles.sectionHeader}
+                    onPress={() => toggleDataSection('referrals')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.sectionHeaderLeft}>
+                      <Link size={24} color={colors.primary} strokeWidth={2} />
+                      <Text style={[styles.sectionTitle, { color: colors.text }]}>Referrals</Text>
+                    </View>
+                    <View style={styles.sectionHeaderRight}>
+                      <Text style={[styles.sectionMetric, { color: colors.primary }]}>
+                        {referredUsers.length}
+                      </Text>
+                      {expandedDataSection === 'referrals' ? (
+                        <ChevronDown size={24} color={colors.text} strokeWidth={2} />
+                      ) : (
+                        <ChevronRight size={24} color={colors.text} strokeWidth={2} />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+
+                  {expandedDataSection === 'referrals' && (
+                    <View style={[styles.sectionContent, { borderTopColor: colors.border }]}>
+                      {/* Referral Code Display */}
+                      <View style={[styles.referralCodeCard, { backgroundColor: colors.background }]}>
+                        <Text style={[styles.referralCodeLabel, { color: colors.textSecondary }]}>
+                          Your Referral Link
+                        </Text>
+                        {referralCode ? (
+                          <>
+                            <Text style={[styles.referralCodeValue, { color: colors.primary }]}>
+                              iendorse.app/sign-up?ref={referralCode}
+                            </Text>
+                            <Text style={[styles.referralCodeHint, { color: colors.textSecondary }]}>
+                              Share this link or QR code to track user signups
+                            </Text>
+                          </>
+                        ) : (
+                          <Text style={[styles.referralCodeValue, { color: colors.textSecondary }]}>
+                            No referral code set - contact admin to set one up
+                          </Text>
+                        )}
+                      </View>
+
+                      {/* Referral Stats */}
+                      <View style={[styles.referralStatsRow, { marginTop: 16 }]}>
+                        <View style={[styles.referralStatCard, { backgroundColor: colors.background }]}>
+                          <Text style={[styles.referralStatValue, { color: colors.primary }]}>
+                            {referredUsers.length}
+                          </Text>
+                          <Text style={[styles.referralStatLabel, { color: colors.textSecondary }]}>
+                            Total Signups
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Referred Users List */}
+                      {referredUsers.length > 0 && (
+                        <>
+                          <Text style={[styles.referredListHeader, { color: colors.text }]}>
+                            Users Who Signed Up
+                          </Text>
+                          {referredUsers.slice(0, 10).map((user) => (
+                            <View
+                              key={user.id}
+                              style={[styles.dataRow, { borderBottomColor: colors.border }]}
+                            >
+                              <View style={styles.dataRowMain}>
+                                <Text style={[styles.dataRowTitle, { color: colors.text }]}>
+                                  {user.name}
+                                </Text>
+                              </View>
+                              <View style={styles.dataRowDetails}>
+                                <Text style={[styles.dataRowDetail, { color: colors.textSecondary }]}>
+                                  {user.email}
+                                </Text>
+                                <Text style={[styles.dataRowDetail, { color: colors.textSecondary }]}>
+                                  {user.createdAt?.toDate ? formatDate(user.createdAt) : 'Recently'}
+                                </Text>
+                              </View>
+                            </View>
+                          ))}
+                          {referredUsers.length > 10 && (
+                            <Text style={[styles.moreText, { color: colors.textSecondary }]}>
+                              + {referredUsers.length - 10} more users
+                            </Text>
+                          )}
+                        </>
+                      )}
+
+                      {referredUsers.length === 0 && referralCode && (
+                        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                          No users have signed up using your referral link yet
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                </View>
               </>
             )}
             </>
@@ -1011,6 +1157,54 @@ const styles = StyleSheet.create({
   discountListHeader: {
     fontSize: 16,
     fontWeight: '700' as const,
+    marginBottom: 12,
+  },
+  // Referral Section Styles
+  referralCodeCard: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  referralCodeLabel: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  referralCodeValue: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    textAlign: 'center' as const,
+  },
+  referralCodeHint: {
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: 'center' as const,
+  },
+  referralStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  referralStatCard: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    minWidth: 120,
+  },
+  referralStatValue: {
+    fontSize: 32,
+    fontWeight: '700' as const,
+  },
+  referralStatLabel: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    marginTop: 4,
+  },
+  referredListHeader: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginTop: 20,
     marginBottom: 12,
   },
 });
