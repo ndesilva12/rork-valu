@@ -1078,13 +1078,26 @@ export default function SearchScreen() {
       >
         <View style={styles.userCardContent}>
           {item.profileImage ? (
-            <Image
-              source={{ uri: item.profileImage }}
-              style={styles.userCardImage}
-              contentFit="cover"
-              transition={200}
-              cachePolicy="memory-disk"
-            />
+            // Brands and businesses get white background to show logo transparency
+            item.type === 'brand' || item.type === 'business' ? (
+              <View style={[styles.userCardImage, { backgroundColor: '#FFFFFF' }]}>
+                <Image
+                  source={{ uri: item.profileImage }}
+                  style={styles.userCardImage}
+                  contentFit="cover"
+                  transition={200}
+                  cachePolicy="memory-disk"
+                />
+              </View>
+            ) : (
+              <Image
+                source={{ uri: item.profileImage }}
+                style={styles.userCardImage}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+              />
+            )
           ) : (
             <View style={[styles.userCardImagePlaceholder, { backgroundColor: colors.primary }]}>
               <Text style={[styles.userCardImageText, { color: colors.white }]}>
@@ -2044,6 +2057,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
+    paddingTop: 60,
   },
   emptyIconContainer: {
     width: 96,
