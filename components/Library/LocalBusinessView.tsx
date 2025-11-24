@@ -25,6 +25,10 @@ import { calculateSimilarityScore } from '@/lib/scoring';
 import { formatDistance } from '@/lib/distance';
 import { getLogoUrl } from '@/lib/logo';
 import BusinessMapView from '@/components/BusinessMapView';
+import { useUser } from '@/contexts/UserContext';
+import { useLibrary } from '@/contexts/LibraryContext';
+import { unfollowEntity } from '@/services/firebase/followService';
+import { removeEntryFromList } from '@/services/firebase/listService';
 
 // Helper function to extract Town, State from full address
 const shortenAddress = (fullAddress: string | undefined): string => {
@@ -130,6 +134,8 @@ export default function LocalBusinessView({
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+  const { clerkUser } = useUser();
+  const library = useLibrary();
 
   const [localDistance, setLocalDistance] = useState<LocalDistanceOption>(null);
   const [localSortDirection, setLocalSortDirection] = useState<'highToLow' | 'lowToHigh'>('highToLow');
@@ -146,6 +152,52 @@ export default function LocalBusinessView({
     console.log('[LocalBusinessView] Map button pressed, opening map...');
     setShowMap(true);
     console.log('[LocalBusinessView] showMap state set to true');
+  };
+
+  const handleUnendorse = async (businessId: string, businessName: string) => {
+    if (!clerkUser?.id) return;
+
+    try {
+      // Find the endorsement list
+      const endorsementList = library.userLists.find(list => list.isEndorsed);
+      if (!endorsementList) {
+        Alert.alert('Error', 'Could not find endorsement list');
+        return;
+      }
+
+      // Find the entry for this business
+      const entry = endorsementList.entries.find(
+        (e: any) => e.type === 'business' && e.businessId === businessId
+      );
+
+      if (!entry) {
+        Alert.alert('Error', 'Business not found in endorsement list');
+        return;
+      }
+
+      // Remove the entry
+      await removeEntryFromList(endorsementList.id, entry.id);
+
+      // Reload the library to reflect changes
+      await library.loadUserLists(clerkUser.id);
+
+      Alert.alert('Success', `${businessName} removed from endorsements`);
+    } catch (error) {
+      console.error('Error removing business from endorsements:', error);
+      Alert.alert('Error', 'Failed to remove business from endorsements');
+    }
+  };
+
+  const handleUnfollow = async (businessId: string, businessName: string) => {
+    if (!clerkUser?.id) return;
+
+    try {
+      await unfollowEntity(clerkUser.id, 'business', businessId);
+      Alert.alert('Success', `Unfollowed ${businessName}`);
+    } catch (error) {
+      console.error('Error unfollowing business:', error);
+      Alert.alert('Error', 'Failed to unfollow business');
+    }
   };
 
   const localBusinessData = useMemo(() => {
@@ -301,8 +353,7 @@ export default function LocalBusinessView({
                 Alert.alert('Unendorse', `Remove ${business.businessInfo.name} from your endorsement list?`, [
                   { text: 'Cancel', style: 'cancel' },
                   { text: 'Remove', style: 'destructive', onPress: () => {
-                    // TODO: Implement unendorse functionality
-                    Alert.alert('Success', 'Business removed from endorsements');
+                    handleUnendorse(business.id, business.businessInfo.name);
                   }}
                 ]);
               }}
@@ -319,8 +370,7 @@ export default function LocalBusinessView({
                 Alert.alert('Unfollow', `Stop following ${business.businessInfo.name}?`, [
                   { text: 'Cancel', style: 'cancel' },
                   { text: 'Unfollow', style: 'destructive', onPress: () => {
-                    // TODO: Implement unfollow functionality
-                    Alert.alert('Success', 'Unfollowed business');
+                    handleUnfollow(business.id, business.businessInfo.name);
                   }}
                 ]);
               }}
