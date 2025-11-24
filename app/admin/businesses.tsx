@@ -536,7 +536,7 @@ export default function BusinessesManagement() {
       if (formYelp) socialMedia.yelp = formYelp;
       if (formYoutube) socialMedia.youtube = formYoutube;
 
-      const updatedBusinessInfo = {
+      const updatedBusinessInfo: any = {
         name: formName,
         category: formCategory,
         description: formDescription,
@@ -556,8 +556,12 @@ export default function BusinessesManagement() {
         partnerships: parseMoneyFlowSection(formPartnerships),
         ownership: parseMoneyFlowSection(formOwnership),
         ownershipSources: formOwnershipSources.trim(),
-        referralCode: formReferralCode.trim() || undefined,
       };
+
+      // Only add referralCode if it's not empty (Firebase doesn't allow undefined)
+      if (formReferralCode.trim()) {
+        updatedBusinessInfo.referralCode = formReferralCode.trim();
+      }
 
       const userRef = doc(db, 'users', editingBusiness.userId);
 
