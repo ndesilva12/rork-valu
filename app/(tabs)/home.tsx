@@ -1124,7 +1124,8 @@ export default function HomeScreen() {
   };
 
   const renderForYouView = () => {
-    // Render unified library component with edit mode
+    // Render unified library component with endorsementOnly mode
+    // Global and Local sections have been moved to Browse tab
     return (
       <UnifiedLibrary
         mode="edit"
@@ -1140,6 +1141,7 @@ export default function HomeScreen() {
         onRequestLocation={requestLocation}
         followingCount={followingCount}
         followersCount={followersCount}
+        endorsementOnly={true}
       />
     );
   };
@@ -2799,7 +2801,8 @@ export default function HomeScreen() {
   };
 
   const renderMyLibraryView = () => {
-    // Use UnifiedLibrary component (matches Profile tab and For You view)
+    // Use UnifiedLibrary component with endorsementOnly mode
+    // Global and Local sections have been moved to Browse tab
     return (
       <UnifiedLibrary
         mode="edit"
@@ -2815,6 +2818,7 @@ export default function HomeScreen() {
         onRequestLocation={requestLocation}
         followingCount={followingCount}
         followersCount={followersCount}
+        endorsementOnly={true}
       />
     );
   };

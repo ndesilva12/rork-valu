@@ -8,27 +8,24 @@ import {
   Platform,
   StatusBar,
   Alert,
-  Image as RNImage,
-  Modal,
-  TouchableWithoutFeedback,
-  Pressable,
-  TextInput,
-  FlatList,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { ChevronRight, ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Plus, List, Tag, X, Trophy } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Tag, Trophy, Target, MapPin } from 'lucide-react-native';
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import * as Location from 'expo-location';
 import MenuButton from '@/components/MenuButton';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 import { CauseCategory, Cause, Product } from '@/types';
-import { UserList, ListEntry, ValueListMode } from '@/types/library';
-import { getUserLists, addEntryToList, createList } from '@/services/firebase/listService';
 import { useFocusEffect } from '@react-navigation/native';
-import { getAllUserBusinesses, BusinessUser, calculateAlignmentScore } from '@/services/firebase/businessService';
+import { getAllUserBusinesses, BusinessUser } from '@/services/firebase/businessService';
 import { calculateBrandScore, normalizeBrandScores } from '@/lib/scoring';
 import { getLogoUrl } from '@/lib/logo';
+import LocalBusinessView from '@/components/Library/LocalBusinessView';
+
+// ===== Types =====
+type BrowseSection = 'global' | 'local' | 'values';
 
 const CATEGORY_ICONS: Record<string, any> = {
   social_issue: Heart,
@@ -49,10 +46,10 @@ const CATEGORY_LABELS: Record<string, string> = {
   corporation: 'Corporations',
   nation: 'Places',
   nations: 'Places',
-  places: 'Places', // Handle all variations
+  places: 'Places',
   organization: 'Organizations',
   person: 'People',
-  people: 'People', // Handle both "person" and "people"
+  people: 'People',
   sports: 'Sports',
   lifestyle: 'Lifestyle',
 };
@@ -60,12 +57,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 // Normalize category names to handle case variations and synonyms
 const normalizeCategory = (category: string): string => {
   const lower = category.toLowerCase().trim();
-
-  // Handle synonyms and variations
   if (lower === 'person' || lower === 'people') return 'person';
   if (lower === 'social_issue' || lower === 'social issues') return 'social_issue';
   if (lower === 'nation' || lower === 'nations' || lower === 'places') return 'nation';
-
   return lower;
 };
 
@@ -87,11 +81,10 @@ const getCategoryIcon = (category: string) => {
   return CATEGORY_ICONS[normalized] || Tag;
 };
 
-// Helper to get category label, with fallback to capitalized category name
+// Helper to get category label, with fallback
 const getCategoryLabel = (category: string) => {
   const normalized = normalizeCategory(category);
   if (CATEGORY_LABELS[normalized]) return CATEGORY_LABELS[normalized];
-  // Capitalize and format the category name (e.g., "sports" -> "Sports", "social_issue" -> "Social Issue")
   return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 
@@ -103,50 +96,112 @@ interface LocalValueState {
   description?: string;
 }
 
-export default function ValuesScreen() {
+export default function BrowseScreen() {
   const router = useRouter();
-  const { profile, isDarkMode, removeCauses, toggleCauseType, clerkUser, addCauses } = useUser();
+  const { profile, isDarkMode, removeCauses, clerkUser, addCauses } = useUser();
   const { brands, valuesMatrix, values: firebaseValues } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
-  // Local state to track changes before persisting
+  // Section state
+  const [selectedSection, setSelectedSection] = useState<BrowseSection>('global');
+
+  // Values tab state
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [localChanges, setLocalChanges] = useState<Map<string, LocalValueState | null>>(new Map());
   const hasUnsavedChanges = useRef(false);
 
-  // Value action modal state
-  const [showValueActionModal, setShowValueActionModal] = useState(false);
-  const [selectedValueForAction, setSelectedValueForAction] = useState<{
-    id: string;
-    name: string;
-    category: string;
-    description?: string;
-    currentState: 'support' | 'avoid' | 'unselected';
-  } | null>(null);
+  // Global section state
+  const [globalSubsection, setGlobalSubsection] = useState<'aligned' | 'unaligned'>('aligned');
+  const [alignedLoadCount, setAlignedLoadCount] = useState(10);
+  const [unalignedLoadCount, setUnalignedLoadCount] = useState(10);
 
-  // Quick-add state
-  const [showModeSelectionModal, setShowModeSelectionModal] = useState(false);
-  const [showListSelectionModal, setShowListSelectionModal] = useState(false);
-  const [selectedValue, setSelectedValue] = useState<Cause | null>(null);
-  const [selectedMode, setSelectedMode] = useState<ValueListMode | null>(null);
-  const [userLists, setUserLists] = useState<UserList[]>([]);
-  const [newListName, setNewListName] = useState('');
-  const [newListDescription, setNewListDescription] = useState('');
+  // Local section state
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [userBusinesses, setUserBusinesses] = useState<BusinessUser[]>([]);
+
+  // Fetch user businesses
+  const fetchUserBusinesses = useCallback(async () => {
+    try {
+      const businesses = await getAllUserBusinesses();
+      setUserBusinesses(businesses);
+    } catch (error) {
+      console.error('[Browse] Error fetching user businesses:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUserBusinesses();
+  }, [fetchUserBusinesses]);
+
+  // Request location permission
+  const requestLocation = async () => {
+    try {
+      let { status } = await Location.getForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        const result = await Location.requestForegroundPermissionsAsync();
+        status = result.status;
+      }
+
+      if (status !== 'granted') {
+        Alert.alert(
+          'Location Permission Required',
+          'Please enable location access to see local recommendations.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      setUserLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+    } catch (error) {
+      console.error('[Browse] Error getting location:', error);
+      Alert.alert('Error', 'Could not get your location. Please try again.');
+    }
+  };
+
+  // Compute brand scores for Global section
+  const { allSupport, allAvoid, scoredBrands } = useMemo(() => {
+    const currentBrands = brands || [];
+
+    if (!currentBrands || currentBrands.length === 0) {
+      return {
+        allSupport: [],
+        allAvoid: [],
+        scoredBrands: new Map(),
+      };
+    }
+
+    const brandsWithScores = currentBrands.map(brand => {
+      const score = calculateBrandScore(brand.name, profile.causes || [], valuesMatrix);
+      return { brand, score };
+    });
+
+    const normalizedBrands = normalizeBrandScores(brandsWithScores);
+    const scoredMap = new Map(normalizedBrands.map(({ brand, score }) => [brand.id, score]));
+    const sortedByScore = [...normalizedBrands].sort((a, b) => b.score - a.score);
+
+    const alignedBrands = sortedByScore.slice(0, 50).map(({ brand }) => brand);
+    const unalignedBrands = sortedByScore.slice(-50).reverse().map(({ brand }) => brand);
+
+    return {
+      allSupport: alignedBrands,
+      allAvoid: unalignedBrands,
+      scoredBrands: scoredMap,
+    };
+  }, [brands, profile.causes, valuesMatrix]);
 
   // Transform Firebase values into the format expected by the UI
-  // Dynamically build categories based on what's in Firebase, using NORMALIZED categories
   const availableValues = useMemo(() => {
     const valuesByCategory: Record<string, any[]> = {};
 
     firebaseValues.forEach(value => {
-      // Normalize the category to handle case variations and synonyms
       const normalizedCategory = normalizeCategory(value.category || 'other');
-
-      // Initialize category array if it doesn't exist
       if (!valuesByCategory[normalizedCategory]) {
         valuesByCategory[normalizedCategory] = [];
       }
-
       valuesByCategory[normalizedCategory].push({
         id: value.id,
         name: value.name,
@@ -164,19 +219,14 @@ export default function ValuesScreen() {
     .filter(c => c.type === 'avoid')
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  // Get all selected value IDs
   const selectedValueIds = new Set((profile.causes || []).map(c => c.id));
 
-  // Get unselected values by category (dynamically based on what's in Firebase)
   const unselectedValuesByCategory: Record<string, any[]> = {};
-
-  // Populate unselected values from Firebase for all categories
   Object.keys(availableValues).forEach(category => {
     const values = availableValues[category] || [];
     unselectedValuesByCategory[category] = values.filter(v => !selectedValueIds.has(v.id));
   });
 
-  // Get categories in the specified order, then add any additional categories alphabetically
   const allCategories = Object.keys(unselectedValuesByCategory);
   const knownCategories = CATEGORY_ORDER.filter(cat => allCategories.includes(cat));
   const unknownCategories = allCategories.filter(cat => !CATEGORY_ORDER.includes(cat)).sort();
@@ -194,26 +244,17 @@ export default function ValuesScreen() {
     });
   };
 
-  const handleUpdateValues = () => {
-    router.push('/onboarding');
-  };
-
-  // Get the current state of a value (local changes take priority over profile)
   const getValueState = (valueId: string): 'unselected' | 'support' | 'avoid' => {
-    // Check local changes first
     if (localChanges.has(valueId)) {
       const localState = localChanges.get(valueId);
       if (localState === null) return 'unselected';
       return localState.type;
     }
-
-    // Fall back to profile state
     const profileCause = profile.causes.find(c => c.id === valueId);
     if (!profileCause) return 'unselected';
     return profileCause.type;
   };
 
-  // Save all pending changes when leaving the tab
   const savePendingChanges = async () => {
     if (!hasUnsavedChanges.current || localChanges.size === 0) return;
 
@@ -221,16 +262,13 @@ export default function ValuesScreen() {
       const isBusiness = profile.accountType === 'business';
       const minValues = isBusiness ? 3 : 5;
 
-      // Build the final list of causes
       const finalCauses: Cause[] = [];
       const removedCauseIds: string[] = [];
 
-      // Start with existing profile causes
       profile.causes.forEach(cause => {
         if (localChanges.has(cause.id)) {
           const localState = localChanges.get(cause.id);
           if (localState !== null) {
-            // Value was modified
             finalCauses.push({
               id: cause.id,
               name: cause.name,
@@ -239,16 +277,13 @@ export default function ValuesScreen() {
               description: cause.description,
             });
           } else {
-            // Value was removed
             removedCauseIds.push(cause.id);
           }
         } else {
-          // Value unchanged
           finalCauses.push(cause);
         }
       });
 
-      // Add newly selected values
       localChanges.forEach((localState, valueId) => {
         if (localState !== null && !profile.causes.find(c => c.id === valueId)) {
           finalCauses.push({
@@ -261,33 +296,26 @@ export default function ValuesScreen() {
         }
       });
 
-      // Check minimum values requirement
       if (finalCauses.length < minValues) {
-        console.log('[Values] Cannot save - below minimum values:', finalCauses.length, 'minimum:', minValues);
         return;
       }
 
-      // Remove causes that were unselected
       if (removedCauseIds.length > 0) {
         await removeCauses(removedCauseIds);
       }
 
-      // Update/add all causes
       await addCauses(finalCauses);
 
-      // Clear local changes
       setLocalChanges(new Map());
       hasUnsavedChanges.current = false;
     } catch (error) {
-      console.error('[Values] Error saving changes:', error);
+      console.error('[Browse] Error saving changes:', error);
     }
   };
 
-  // Save changes when navigating away from the tab
   useFocusEffect(
     React.useCallback(() => {
       return () => {
-        // This runs when the component is about to be unfocused
         if (hasUnsavedChanges.current) {
           savePendingChanges();
         }
@@ -296,274 +324,240 @@ export default function ValuesScreen() {
   );
 
   const handleValueTap = (valueId: string) => {
-    // Navigate directly to value details page
     router.push(`/value/${valueId}`);
   };
 
-  const handleValueAction = (action: 'view' | 'aligned' | 'unaligned' | 'deselect') => {
-    if (!selectedValueForAction) return;
-
-    const { id, name, category, description } = selectedValueForAction;
-    const isBusiness = profile.accountType === 'business';
-    const minValues = isBusiness ? 3 : 5;
-
-    if (action === 'view') {
-      setShowValueActionModal(false);
-      router.push(`/value/${id}`);
-      return;
-    }
-
-    if (action === 'deselect') {
-      // Calculate projected total
-      const currentTotal = profile.causes.length;
-      const changesAddingValues = Array.from(localChanges.values()).filter(
-        v => v !== null && !profile.causes.find(c => c.id === v.id)
-      ).length;
-      const changesRemovingValues = Array.from(localChanges.entries()).filter(
-        ([valueId, v]) => v === null && profile.causes.find(c => c.id === valueId)
-      ).length;
-      const projectedTotal = currentTotal + changesAddingValues - changesRemovingValues;
-      const wouldBeTotal = projectedTotal - 1;
-
-      if (wouldBeTotal < minValues) {
-        Alert.alert(
-          'Minimum Values Required',
-          `${isBusiness ? 'Business accounts' : 'You'} must maintain at least ${minValues} selected values.`,
-          [{ text: 'OK' }]
-        );
-        return;
-      }
-
-      setLocalChanges(prev => {
-        const next = new Map(prev);
-        next.set(id, null);
-        return next;
-      });
-      hasUnsavedChanges.current = true;
-      setShowValueActionModal(false);
-      return;
-    }
-
-    if (action === 'aligned') {
-      setLocalChanges(prev => {
-        const next = new Map(prev);
-        next.set(id, {
-          id,
-          name,
-          category,
-          type: 'support',
-          description,
-        });
-        return next;
-      });
-      hasUnsavedChanges.current = true;
-      setShowValueActionModal(false);
-      return;
-    }
-
-    if (action === 'unaligned') {
-      setLocalChanges(prev => {
-        const next = new Map(prev);
-        next.set(id, {
-          id,
-          name,
-          category,
-          type: 'avoid',
-          description,
-        });
-        return next;
-      });
-      hasUnsavedChanges.current = true;
-      setShowValueActionModal(false);
-      return;
-    }
+  // Section colors
+  const sectionColors = {
+    global: { bg: colors.primary + '15', border: colors.primary },
+    local: { bg: colors.success + '15', border: colors.success },
+    values: { bg: colors.danger + '15', border: colors.danger },
   };
 
-  // Quick-add handlers
-  const handleQuickAdd = async (cause: Cause) => {
-    if (!clerkUser?.id) {
-      Alert.alert('Error', 'You must be logged in to add to lists');
-      return;
-    }
+  // Render section blocks
+  const renderSectionBlocks = () => {
+    const globalCount = allSupport.length + allAvoid.length;
+    const localCount = userBusinesses.length;
+    const valuesCount = (profile.causes || []).length;
 
-    setSelectedValue(cause);
-    setShowModeSelectionModal(true);
-  };
+    const SectionBox = ({ section, label, count, Icon }: { section: BrowseSection; label: string; count: number; Icon: any }) => {
+      const isSelected = selectedSection === section;
+      const sectionColor = sectionColors[section];
 
-  const handleModeSelection = async (mode: ValueListMode) => {
-    setSelectedMode(mode);
-    setShowModeSelectionModal(false);
+      return (
+        <TouchableOpacity
+          style={[
+            styles.sectionBox,
+            {
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: isSelected ? sectionColor.border : colors.border,
+              borderWidth: isSelected ? 2 : 1,
+            },
+          ]}
+          onPress={() => setSelectedSection(section)}
+          activeOpacity={0.7}
+        >
+          <Icon size={20} color={isSelected ? sectionColor.border : colors.textSecondary} strokeWidth={2} />
+          <Text style={[styles.sectionLabel, { color: isSelected ? sectionColor.border : colors.text }]}>
+            {label}
+          </Text>
+          <Text style={[styles.sectionCount, { color: colors.textSecondary }]}>
+            {count}
+          </Text>
+        </TouchableOpacity>
+      );
+    };
 
-    // Preset list name and description based on value and mode
-    if (selectedValue) {
-      const painOrBenefit = mode === 'max_pain' ? 'Pain' : 'Benefit';
-      const presetName = `${selectedValue.name} Max ${painOrBenefit}`;
-      const presetDescription = `A list of brands and businesses that will inflict maximum financial ${painOrBenefit.toLowerCase()} to ${selectedValue.name}.`;
-      setNewListName(presetName);
-      setNewListDescription(presetDescription);
-    }
-
-    try {
-      const lists = await getUserLists(clerkUser!.id);
-      setUserLists(lists);
-      setShowListSelectionModal(true);
-    } catch (error) {
-      console.error('[Values] Error loading lists:', error);
-      Alert.alert('Error', 'Could not load your lists. Please try again.');
-    }
-  };
-
-  const handleAddToList = async (listId: string) => {
-    if (!selectedValue || !selectedMode) return;
-
-    try {
-      // Add the top brands for this value instead of the value card
-      const causeData = valuesMatrix[selectedValue.id];
-      if (!causeData) {
-        Alert.alert('Error', 'Value data not found');
-        return;
-      }
-
-      const brandList = selectedMode === 'maxBenefit' ? causeData.support : causeData.avoid;
-      if (!brandList || brandList.length === 0) {
-        Alert.alert('Error', 'No brands found for this value');
-        return;
-      }
-
-      // Add top 10 brands (or all if less than 10)
-      const brandsToAdd = brandList.slice(0, 10);
-      let addedCount = 0;
-
-      for (const brandName of brandsToAdd) {
-        const brand = brands?.find(b => b.name === brandName);
-        if (brand) {
-          const brandEntry: Omit<ListEntry, 'id' | 'createdAt'> = {
-            type: 'brand',
-            brandId: brand.id,
-            brandName: brand.name,
-            website: brand.website,
-          };
-          await addEntryToList(listId, brandEntry);
-          addedCount++;
-        }
-      }
-
-      setShowListSelectionModal(false);
-      setSelectedValue(null);
-      setSelectedMode(null);
-      Alert.alert('Success', `Added ${addedCount} brands from ${selectedValue.name} to list!`);
-    } catch (error) {
-      console.error('[Values] Error adding to list:', error);
-      Alert.alert('Error', 'Could not add to list. Please try again.');
-    }
-  };
-
-  const handleCreateAndAddToList = async () => {
-    if (!newListName.trim()) {
-      Alert.alert('Error', 'Please enter a list name');
-      return;
-    }
-
-    if (!clerkUser?.id || !selectedValue || !selectedMode) return;
-
-    try {
-      const listId = await createList(clerkUser.id, newListName.trim(), newListDescription.trim());
-
-      // Add the top brands for this value instead of the value card
-      const causeData = valuesMatrix[selectedValue.id];
-      if (!causeData) {
-        Alert.alert('Error', 'Value data not found');
-        return;
-      }
-
-      const brandList = selectedMode === 'maxBenefit' ? causeData.support : causeData.avoid;
-      if (!brandList || brandList.length === 0) {
-        Alert.alert('Error', 'No brands found for this value');
-        return;
-      }
-
-      // Add top 10 brands (or all if less than 10)
-      const brandsToAdd = brandList.slice(0, 10);
-      let addedCount = 0;
-
-      for (const brandName of brandsToAdd) {
-        const brand = brands?.find(b => b.name === brandName);
-        if (brand) {
-          const brandEntry: Omit<ListEntry, 'id' | 'createdAt'> = {
-            type: 'brand',
-            brandId: brand.id,
-            brandName: brand.name,
-            website: brand.website,
-          };
-          await addEntryToList(listId, brandEntry);
-          addedCount++;
-        }
-      }
-
-      setNewListName('');
-      setNewListDescription('');
-      setShowListSelectionModal(false);
-      setSelectedValue(null);
-      setSelectedMode(null);
-      Alert.alert('Success', `Created list and added ${addedCount} brands from ${selectedValue.name}!`);
-    } catch (error) {
-      console.error('[Values] Error creating list:', error);
-      Alert.alert('Error', 'Could not create list. Please try again.');
-    }
-  };
-
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={colors.background}
-      />
-      <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
-        <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <Image
-            source={require('@/assets/images/endo11.png')}
-            style={styles.headerLogo}
-            resizeMode="contain"
-          />
-          <MenuButton />
+    return (
+      <View style={styles.sectionSelector}>
+        <View style={styles.sectionRow}>
+          <View style={styles.sectionThird}>
+            <SectionBox section="global" label="Global" count={globalCount} Icon={Target} />
+          </View>
+          <View style={styles.sectionThird}>
+            <SectionBox section="local" label="Local" count={localCount} Icon={MapPin} />
+          </View>
+          <View style={styles.sectionThird}>
+            <SectionBox section="values" label="Values" count={valuesCount} Icon={Heart} />
+          </View>
         </View>
       </View>
+    );
+  };
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
-        showsVerticalScrollIndicator={false}
+  // Render sticky section header
+  const renderSectionHeader = () => {
+    const titles: Record<BrowseSection, string> = {
+      global: 'Global Recommendations',
+      local: 'Local Recommendations',
+      values: 'Browse by Values',
+    };
+
+    const icons: Record<BrowseSection, any> = {
+      global: Target,
+      local: MapPin,
+      values: Heart,
+    };
+
+    const SectionIcon = icons[selectedSection];
+    const title = titles[selectedSection];
+
+    return (
+      <View style={[styles.stickyHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <View style={styles.stickyHeaderLeft}>
+          <SectionIcon size={20} color={sectionColors[selectedSection].border} strokeWidth={2} />
+          <Text style={[styles.stickyHeaderTitle, { color: colors.text }]}>{title}</Text>
+        </View>
+
+        {/* Global section toggle */}
+        {selectedSection === 'global' && (
+          <View style={styles.globalToggle}>
+            <TouchableOpacity
+              style={[
+                styles.globalToggleButton,
+                globalSubsection === 'aligned' && { backgroundColor: colors.success + '20' },
+              ]}
+              onPress={() => setGlobalSubsection('aligned')}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.globalToggleText,
+                { color: globalSubsection === 'aligned' ? colors.success : colors.textSecondary }
+              ]}>
+                Aligned
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.globalToggleButton,
+                globalSubsection === 'unaligned' && { backgroundColor: colors.danger + '20' },
+              ]}
+              onPress={() => setGlobalSubsection('unaligned')}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.globalToggleText,
+                { color: globalSubsection === 'unaligned' ? colors.danger : colors.textSecondary }
+              ]}>
+                Unaligned
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  // Render brand card for Global section
+  const renderBrandCard = (brand: Product, index: number) => {
+    const score = scoredBrands.get(brand.id) || 0;
+    const isAligned = globalSubsection === 'aligned';
+    const scoreColor = isAligned ? colors.success : colors.danger;
+
+    return (
+      <TouchableOpacity
+        key={brand.id}
+        style={[styles.brandCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+        onPress={() => router.push(`/brand/${brand.id}`)}
+        activeOpacity={0.7}
       >
-        {/* Update Values Button - Centered */}
-        <View style={styles.centeredButtonContainer}>
-          <TouchableOpacity
-            style={[styles.centeredButton, { backgroundColor: colors.primary }]}
-            onPress={handleUpdateValues}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.centeredButtonText, { color: colors.white }]}>
-              Update Values
+        <View style={styles.brandCardRank}>
+          <Text style={[styles.brandCardRankText, { color: colors.textSecondary }]}>{index + 1}</Text>
+        </View>
+        <View style={[styles.brandCardLogoContainer, { backgroundColor: colors.white }]}>
+          <Image
+            source={{ uri: getLogoUrl(brand.website) }}
+            style={styles.brandCardLogo}
+            contentFit="contain"
+          />
+        </View>
+        <View style={styles.brandCardInfo}>
+          <Text style={[styles.brandCardName, { color: colors.text }]} numberOfLines={1}>
+            {brand.name}
+          </Text>
+          {brand.category && (
+            <Text style={[styles.brandCardCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+              {brand.category}
             </Text>
-          </TouchableOpacity>
-          <Text style={[styles.valueHintText, { color: colors.textSecondary }]}>
-            click any value to see related brands
+          )}
+        </View>
+        <View style={[styles.brandCardScore, { backgroundColor: scoreColor + '20' }]}>
+          <Text style={[styles.brandCardScoreText, { color: scoreColor }]}>{Math.round(score)}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  // Render Global content
+  const renderGlobalContent = () => {
+    const items = globalSubsection === 'aligned' ? allSupport : allAvoid;
+    const loadCount = globalSubsection === 'aligned' ? alignedLoadCount : unalignedLoadCount;
+    const setLoadCount = globalSubsection === 'aligned' ? setAlignedLoadCount : setUnalignedLoadCount;
+
+    if (items.length === 0) {
+      return (
+        <View style={styles.emptySection}>
+          <Target size={48} color={colors.textSecondary} strokeWidth={1.5} />
+          <Text style={[styles.emptySectionTitle, { color: colors.text }]}>No brands yet</Text>
+          <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+            Set your values to see personalized brand recommendations
           </Text>
         </View>
+      );
+    }
+
+    return (
+      <View style={styles.brandList}>
+        {items.slice(0, loadCount).map((brand, index) => renderBrandCard(brand, index))}
+
+        {items.length > loadCount && (
+          <TouchableOpacity
+            style={[styles.loadMoreButton, { borderColor: colors.border }]}
+            onPress={() => setLoadCount(loadCount + 10)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+              Load More ({items.length - loadCount} remaining)
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  // Render Local content
+  const renderLocalContent = () => {
+    return (
+      <LocalBusinessView
+        userBusinesses={userBusinesses}
+        userLocation={userLocation}
+        userCauses={profile.causes || []}
+        isDarkMode={isDarkMode}
+        onRequestLocation={requestLocation}
+      />
+    );
+  };
+
+  // Render Values content
+  const renderValuesContent = () => {
+    return (
+      <View style={styles.valuesContent}>
+        <Text style={[styles.valueHintText, { color: colors.textSecondary }]}>
+          Tap any value to see related brands
+        </Text>
 
         {supportCauses.length === 0 && avoidCauses.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>No Values Selected</Text>
             <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-              Tap "Update All Values" to add values
+              Complete onboarding to add values
             </Text>
           </View>
         ) : (
           <>
             {supportCauses.length > 0 && (
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  Support
-                </Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Support</Text>
                 <View style={styles.valuesGrid}>
                   {supportCauses.map(cause => {
                     const currentState = getValueState(cause.id);
@@ -577,7 +571,6 @@ export default function ValuesScreen() {
                           currentState === 'unselected' && { backgroundColor: 'transparent', borderColor: colors.neutral, borderWidth: 1.5 }
                         ]}
                         onPress={() => handleValueTap(cause.id)}
-                        onLongPress={() => router.push(`/value/${cause.id}`)}
                         activeOpacity={0.7}
                       >
                         <Text
@@ -600,9 +593,7 @@ export default function ValuesScreen() {
 
             {avoidCauses.length > 0 && (
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  Against
-                </Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Against</Text>
                 <View style={styles.valuesGrid}>
                   {avoidCauses.map(cause => {
                     const currentState = getValueState(cause.id);
@@ -616,7 +607,6 @@ export default function ValuesScreen() {
                           currentState === 'unselected' && { backgroundColor: 'transparent', borderColor: colors.neutral, borderWidth: 1.5 }
                         ]}
                         onPress={() => handleValueTap(cause.id)}
-                        onLongPress={() => router.push(`/value/${cause.id}`)}
                         activeOpacity={0.7}
                       >
                         <Text
@@ -639,11 +629,9 @@ export default function ValuesScreen() {
           </>
         )}
 
-        {/* Unselected Values Section - Collapsed by Category */}
+        {/* Unselected Values Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Unselected Values
-          </Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Unselected Values</Text>
 
           {sortedCategories.map((category) => {
             const values = unselectedValuesByCategory[category];
@@ -690,7 +678,6 @@ export default function ValuesScreen() {
                             currentState === 'avoid' && { backgroundColor: colors.danger, borderColor: colors.danger }
                           ]}
                           onPress={() => handleValueTap(value.id)}
-                          onLongPress={() => router.push(`/value/${value.id}`)}
                           activeOpacity={0.7}
                         >
                           <Text
@@ -718,314 +705,61 @@ export default function ValuesScreen() {
         <View style={[styles.infoSection, { backgroundColor: colors.backgroundSecondary }]}>
           <Text style={[styles.infoTitle, { color: colors.text }]}>About Your Values</Text>
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            Tap values to cycle through: Aligned (green) → Unaligned (red) → Unselected (grey). Long press to see brands associated with each value.
-          </Text>
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
             Your values help us recommend products and brands that match your beliefs and priorities.
           </Text>
         </View>
+      </View>
+    );
+  };
+
+  // Render section content based on selection
+  const renderSectionContent = () => {
+    switch (selectedSection) {
+      case 'global':
+        return renderGlobalContent();
+      case 'local':
+        return renderLocalContent();
+      case 'values':
+        return renderValuesContent();
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
+      />
+
+      {/* Main header */}
+      <View style={[styles.mainHeaderContainer, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
+          <Image
+            source={require('@/assets/images/endo11.png')}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
+          <MenuButton />
+        </View>
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.content, { paddingBottom: 100 }]}
+        showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[1]}
+      >
+        {/* Section blocks */}
+        {renderSectionBlocks()}
+
+        {/* Sticky section header */}
+        {renderSectionHeader()}
+
+        {/* Section content */}
+        {renderSectionContent()}
       </ScrollView>
-
-      {/* Max Pain/Max Benefit Selection Modal */}
-      <Modal
-        visible={showModeSelectionModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => {
-          setShowModeSelectionModal(false);
-          setSelectedValue(null);
-        }}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableWithoutFeedback
-            onPress={() => {
-              setShowModeSelectionModal(false);
-              setSelectedValue(null);
-            }}
-          >
-            <View style={StyleSheet.absoluteFill} />
-          </TouchableWithoutFeedback>
-          <Pressable
-            style={[styles.modeSelectionModalContainer, { backgroundColor: colors.background }]}
-            onPress={() => {}}
-          >
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                Select List Mode
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowModeSelectionModal(false);
-                  setSelectedValue(null);
-                }}
-              >
-                <X size={24} color={colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalContent}>
-              <Text style={[styles.quickAddItemName, { color: colors.primary }]}>
-                {selectedValue?.name}
-              </Text>
-
-              <Text style={[styles.modeSelectionDescription, { color: colors.textSecondary }]}>
-                Choose how you want to add this value to your list:
-              </Text>
-
-              <View style={styles.modeButtonsContainer}>
-                <TouchableOpacity
-                  style={[styles.modeButton, { backgroundColor: colors.success }]}
-                  onPress={() => handleModeSelection('maxBenefit')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.modeButtonTitle, { color: colors.white }]}>
-                    Max Benefit
-                  </Text>
-                  <Text style={[styles.modeButtonDescription, { color: colors.white }]}>
-                    Add brands aligned with this value
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.modeButton, { backgroundColor: colors.danger }]}
-                  onPress={() => handleModeSelection('maxPain')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.modeButtonTitle, { color: colors.white }]}>
-                    Max Pain
-                  </Text>
-                  <Text style={[styles.modeButtonDescription, { color: colors.white }]}>
-                    Add brands unaligned with this value
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Pressable>
-        </View>
-      </Modal>
-
-      {/* List Selection Modal */}
-      <Modal
-        visible={showListSelectionModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => {
-          setShowListSelectionModal(false);
-          setSelectedValue(null);
-          setSelectedMode(null);
-          setNewListName('');
-          setNewListDescription('');
-        }}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableWithoutFeedback
-            onPress={() => {
-              setShowListSelectionModal(false);
-              setSelectedValue(null);
-              setSelectedMode(null);
-              setNewListName('');
-              setNewListDescription('');
-            }}
-          >
-            <View style={StyleSheet.absoluteFill} />
-          </TouchableWithoutFeedback>
-          <Pressable
-            style={[styles.listSelectionModalContainer, { backgroundColor: colors.background }]}
-            onPress={() => {}}
-          >
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                Add to List
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowListSelectionModal(false);
-                  setSelectedValue(null);
-                  setSelectedMode(null);
-                  setNewListName('');
-                  setNewListDescription('');
-                }}
-              >
-                <X size={24} color={colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalScrollContent}>
-              <Text style={[styles.quickAddItemName, { color: colors.primary }]}>
-                {selectedValue?.name}
-              </Text>
-              <Text style={[styles.modeIndicator, { color: selectedMode === 'maxBenefit' ? colors.success : colors.danger }]}>
-                {selectedMode === 'maxBenefit' ? 'Max Benefit Mode' : 'Max Pain Mode'}
-              </Text>
-
-              <Text style={[styles.modalLabel, { color: colors.text, marginTop: 16 }]}>
-                Select a list:
-              </Text>
-
-              {userLists.length === 0 ? (
-                <Text style={[styles.emptyListText, { color: colors.textSecondary }]}>
-                  You don't have any lists yet. Create one below!
-                </Text>
-              ) : (
-                <View style={styles.quickAddListsContainer}>
-                  {userLists.map((list) => (
-                    <TouchableOpacity
-                      key={list.id}
-                      style={[styles.quickAddListItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                      onPress={() => handleAddToList(list.id)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={[styles.listIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
-                        <List size={18} color={colors.primary} strokeWidth={2} />
-                      </View>
-                      <View style={styles.quickAddListInfo}>
-                        <Text style={[styles.quickAddListName, { color: colors.text }]} numberOfLines={1}>
-                          {list.name}
-                        </Text>
-                        <Text style={[styles.quickAddListCount, { color: colors.textSecondary }]}>
-                          {list.entries.length} {list.entries.length === 1 ? 'item' : 'items'}
-                        </Text>
-                      </View>
-                      <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-
-              <View style={styles.dividerContainer}>
-                <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                <Text style={[styles.dividerText, { color: colors.textSecondary }]}>OR</Text>
-                <View style={[styles.divider, { backgroundColor: colors.border }]} />
-              </View>
-
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: colors.primary }]}
-                onPress={handleCreateAndAddToList}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.modalButtonText, { color: colors.white }]}>
-                  Create List
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </Pressable>
-        </View>
-      </Modal>
-
-      {/* Value Action Modal */}
-      <Modal
-        visible={showValueActionModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowValueActionModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableWithoutFeedback onPress={() => setShowValueActionModal(false)}>
-            <View style={StyleSheet.absoluteFill} />
-          </TouchableWithoutFeedback>
-          <Pressable
-            style={[styles.valueActionModalContainer, { backgroundColor: colors.background }]}
-            onPress={() => {}}
-          >
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {selectedValueForAction?.name}
-              </Text>
-              <TouchableOpacity onPress={() => setShowValueActionModal(false)}>
-                <X size={24} color={colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.valueActionContent}>
-              <Text style={[styles.valueActionCurrentState, { color: colors.textSecondary }]}>
-                Currently: {selectedValueForAction?.currentState === 'support' ? 'Support' : selectedValueForAction?.currentState === 'avoid' ? 'Against' : 'Unselected'}
-              </Text>
-
-              <TouchableOpacity
-                style={[styles.valueActionButton, { backgroundColor: colors.white, borderWidth: 2, borderColor: colors.border }]}
-                onPress={() => handleValueAction('view')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.valueActionButtonText, { color: colors.black }]}>
-                  View Value
-                </Text>
-              </TouchableOpacity>
-
-              {selectedValueForAction?.currentState === 'support' && (
-                <>
-                  <TouchableOpacity
-                    style={[styles.valueActionButton, { backgroundColor: colors.danger }]}
-                    onPress={() => handleValueAction('unaligned')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.valueActionButtonText, { color: colors.white }]}>
-                      Unaligned
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.valueActionButton, { backgroundColor: colors.neutral }]}
-                    onPress={() => handleValueAction('deselect')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.valueActionButtonText, { color: colors.white }]}>
-                      Deselect
-                    </Text>
-                  </TouchableOpacity>
-                </>
-              )}
-
-              {selectedValueForAction?.currentState === 'avoid' && (
-                <>
-                  <TouchableOpacity
-                    style={[styles.valueActionButton, { backgroundColor: colors.primary }]}
-                    onPress={() => handleValueAction('aligned')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.valueActionButtonText, { color: colors.white }]}>
-                      Aligned
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.valueActionButton, { backgroundColor: colors.neutral }]}
-                    onPress={() => handleValueAction('deselect')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.valueActionButtonText, { color: colors.white }]}>
-                      Deselect
-                    </Text>
-                  </TouchableOpacity>
-                </>
-              )}
-
-              {selectedValueForAction?.currentState === 'unselected' && (
-                <>
-                  <TouchableOpacity
-                    style={[styles.valueActionButton, { backgroundColor: colors.primary }]}
-                    onPress={() => handleValueAction('aligned')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.valueActionButtonText, { color: colors.white }]}>
-                      Aligned
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.valueActionButton, { backgroundColor: colors.danger }]}
-                    onPress={() => handleValueAction('unaligned')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.valueActionButtonText, { color: colors.white }]}>
-                      Unaligned
-                    </Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-          </Pressable>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -1038,11 +772,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
     paddingBottom: 20,
   },
-  stickyHeaderContainer: {
+  mainHeaderContainer: {
     borderBottomWidth: 1,
   },
   header: {
@@ -1059,82 +791,201 @@ const styles = StyleSheet.create({
     marginTop: 8,
     alignSelf: 'flex-start',
   },
-  // Tab Header Styles
-  tabSelector: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
+
+  // Section selector styles
+  sectionSelector: {
     paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-  },
-  tabText: {
-    fontSize: 24,
-    fontWeight: '600' as const,
-  },
-  activeTabText: {
-    fontWeight: '700' as const,
-  },
-  tabUnderline: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    borderRadius: 2,
-  },
-  // Small Action Buttons
-  smallActionButtonsContainer: {
+  sectionRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 16,
   },
-  smallActionButton: {
+  sectionThird: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+  },
+  sectionBox: {
+    padding: 12,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 4,
   },
-  smallResetButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
-  smallActionButtonText: {
+  sectionCount: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+  },
+
+  // Sticky header styles
+  stickyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  stickyHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  stickyHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  globalToggle: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  globalToggleButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  globalToggleText: {
     fontSize: 13,
     fontWeight: '600' as const,
   },
-  // Centered Button Styles
-  centeredButtonContainer: {
-    alignItems: 'center',
-    marginBottom: 16,
+
+  // Brand card styles
+  brandList: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
-  centeredButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 32,
+  brandCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
+    gap: 12,
+  },
+  brandCardRank: {
+    width: 24,
+    alignItems: 'center',
+  },
+  brandCardRankText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  brandCardLogoContainer: {
+    width: 44,
+    height: 44,
     borderRadius: 8,
-    minWidth: 180,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  centeredButtonText: {
+  brandCardLogo: {
+    width: 36,
+    height: 36,
+  },
+  brandCardInfo: {
+    flex: 1,
+  },
+  brandCardName: {
     fontSize: 15,
     fontWeight: '600' as const,
+    marginBottom: 2,
+  },
+  brandCardCategory: {
+    fontSize: 13,
+  },
+  brandCardScore: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  brandCardScoreText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  loadMoreButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 8,
+  },
+  loadMoreText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+
+  // Empty section styles
+  emptySection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 24,
+  },
+  emptySectionTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySectionText: {
+    fontSize: 14,
+    textAlign: 'center' as const,
+    lineHeight: 20,
+  },
+
+  // Values content styles
+  valuesContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   valueHintText: {
     fontSize: 13,
-    marginTop: 8,
+    marginBottom: 16,
     textAlign: 'center' as const,
   },
-  // Collapsible Category Styles
+  section: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    marginBottom: 8,
+  },
+  valuesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  valueChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  valueChipText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  unselectedValueChip: {
+    borderWidth: 1.5,
+  },
+  unselectedValueText: {
+    fontWeight: '500' as const,
+  },
+  expandedValuesGrid: {
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  categorySection: {
+    marginBottom: 20,
+  },
   collapsibleCategoryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1148,182 +999,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  categoryCount: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-  },
-  expandedValuesGrid: {
-    paddingTop: 8,
-    paddingBottom: 4,
-  },
-  // Value Machine Placeholder Styles
-  valueMachinePlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 24,
-  },
-  valueMachineTitle: {
-    fontSize: 24,
-    fontWeight: '700' as const,
-    marginBottom: 12,
-  },
-  valueMachineDescription: {
-    fontSize: 15,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 24,
-  },
-  comingSoonBadge: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-  },
-  comingSoonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  // Legacy styles
-  actionButtonsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  actionButton: {
-    flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resetButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-  },
-  actionButtonText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-  },
-  section: {
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    marginBottom: 8,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    marginBottom: 16,
-  },
-  valuesList: {
-    gap: 12,
-  },
-  valuesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  valueItemContainer: {
-    position: 'relative',
-    minWidth: 0,
-    flexDirection: 'column',
-  },
-  valueItemContainerFull: {
-    width: '100%',
-  },
-  valueChipWrapper: {
-    position: 'relative',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  valueChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  unselectedValueChip: {
-    borderWidth: 1.5,
-  },
-  valueChipText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  unselectedValueText: {
-    fontWeight: '500' as const,
-  },
-  valueChipActions: {
-    position: 'absolute',
-    right: 4,
-    top: 4,
-    flexDirection: 'row',
-    gap: 2,
-  },
-  chipActionButton: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-  },
-  valueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderRadius: 12,
-  },
-  unselectedValueRow: {
-    opacity: 0.9,
-  },
-  valueNameBox: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 2,
-    alignSelf: 'flex-start',
-  },
-  unselectedValueNameBox: {
-    borderWidth: 1.5,
-  },
-  valueNameText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  categorySection: {
-    marginBottom: 20,
-  },
-  categoryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
   categoryTitle: {
     fontSize: 16,
     fontWeight: '600' as const,
   },
-  showMoreButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginTop: 8,
-  },
-  showMoreText: {
+  categoryCount: {
     fontSize: 14,
-    fontWeight: '600' as const,
+    fontWeight: '500' as const,
   },
   emptyState: {
     flex: 1,
@@ -1339,7 +1021,7 @@ const styles = StyleSheet.create({
   },
   emptySubtitle: {
     fontSize: 15,
-    textAlign: 'center',
+    textAlign: 'center' as const,
   },
   infoSection: {
     padding: 20,
@@ -1354,461 +1036,5 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 14,
     lineHeight: 22,
-    marginBottom: 12,
-  },
-  valueRowContainer: {
-    marginBottom: 0,
-  },
-  editButton: {
-    padding: 8,
-  },
-  addButton: {
-    padding: 8,
-  },
-  editActions: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  addActions: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  cycleButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  cycleButtonText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  removeButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  removeButtonText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  addTypeButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  addTypeButtonText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  // Quick-add styles
-  valueRowActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  quickAddButton: {
-    padding: 8,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingTop: 60,
-  },
-  modeSelectionModalContainer: {
-    width: '90%',
-    maxWidth: 500,
-    borderRadius: 16,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    overflow: 'hidden',
-  },
-  listSelectionModalContainer: {
-    width: '90%',
-    maxWidth: 500,
-    maxHeight: '80%',
-    borderRadius: 16,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    overflow: 'hidden',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-  },
-  modalContent: {
-    padding: 20,
-  },
-  modalScrollContent: {
-    padding: 20,
-  },
-  quickAddItemName: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    marginBottom: 8,
-  },
-  modeSelectionDescription: {
-    fontSize: 14,
-    marginBottom: 20,
-  },
-  modeButtonsContainer: {
-    gap: 12,
-  },
-  modeButton: {
-    padding: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  modeButtonTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    marginBottom: 8,
-  },
-  modeButtonDescription: {
-    fontSize: 14,
-    textAlign: 'center' as const,
-  },
-  modeIndicator: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    marginBottom: 8,
-  },
-  modalLabel: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    marginBottom: 12,
-  },
-  emptyListText: {
-    fontSize: 14,
-    textAlign: 'center' as const,
-    paddingVertical: 20,
-  },
-  quickAddListsContainer: {
-    gap: 8,
-    marginBottom: 16,
-  },
-  quickAddListItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 12,
-  },
-  listIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickAddListInfo: {
-    flex: 1,
-  },
-  quickAddListName: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    marginBottom: 4,
-  },
-  quickAddListCount: {
-    fontSize: 13,
-  },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginVertical: 20,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  modalInput: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 10,
-    fontSize: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-  },
-  modalTextArea: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 10,
-    fontSize: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    minHeight: 80,
-    textAlignVertical: 'top' as const,
-  },
-  modalButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  modalButtonText: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-  },
-  valueActionModalContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 24,
-    marginHorizontal: 20,
-    maxWidth: 400,
-    width: '100%',
-  },
-  valueActionContent: {
-    gap: 12,
-  },
-  valueActionCurrentState: {
-    fontSize: 14,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  valueActionButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  valueActionButtonOutline: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-  },
-  valueActionButtonText: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-  },
-  // Value Machine Styles
-  vmResultsContainer: {
-    flex: 1,
-  },
-  vmResultsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  vmResultsModeToggle: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  vmResultsModeButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-  },
-  vmResultsModeButtonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  vmResetButton: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  vmResultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 8,
-    gap: 12,
-  },
-  vmResultImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-  },
-  vmResultInfo: {
-    flex: 1,
-  },
-  vmResultName: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    marginBottom: 2,
-  },
-  vmResultCategory: {
-    fontSize: 13,
-  },
-  vmResultScore: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-  },
-  vmResultScoreText: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-  },
-  vmEmptyState: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  vmEmptyTitle: {
-    fontSize: 18,
-    fontWeight: '600' as const,
-    marginBottom: 8,
-  },
-  vmEmptySubtitle: {
-    fontSize: 14,
-  },
-  vmLoadMoreButton: {
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderRadius: 8,
-    borderWidth: 1,
-    marginTop: 8,
-  },
-  vmLoadMoreText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  vmHeader: {
-    marginBottom: 16,
-  },
-  vmHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  vmSubtitle: {
-    fontSize: 14,
-  },
-  vmCategoryContainer: {
-    marginBottom: 16,
-  },
-  vmCategoryDropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  vmCategoryDropdownOpen: {
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-  },
-  vmCategoryDropdownText: {
-    fontSize: 15,
-    fontWeight: '500' as const,
-  },
-  vmCategoryDropdownList: {
-    borderWidth: 1,
-    borderTopWidth: 0,
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-    maxHeight: 350,
-    overflow: 'hidden',
-  },
-  vmCategoryDropdownScroll: {
-    maxHeight: 350,
-  },
-  vmCategoryDropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-  },
-  vmCategoryDropdownItemText: {
-    fontSize: 15,
-    fontWeight: '500' as const,
-  },
-  vmValuesPillsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  vmValuePill: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    borderWidth: 1.5,
-  },
-  vmValuePillText: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-  },
-  vmGenerateContainer: {
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  vmGenerateButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  vmGenerateButtonText: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-  },
-  vmSelectedCount: {
-    fontSize: 13,
-  },
-  vmCategoryModal: {
-    borderRadius: 20,
-    padding: 0,
-    marginHorizontal: 20,
-    maxWidth: 400,
-    width: '100%',
-    maxHeight: '70%',
-    overflow: 'hidden',
-  },
-  vmCategoryList: {
-    maxHeight: 400,
-  },
-  vmCategoryOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-  },
-  vmCategoryOptionText: {
-    fontSize: 16,
-    fontWeight: '500' as const,
   },
 });

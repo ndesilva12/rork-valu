@@ -116,8 +116,8 @@ export default function TabLayout() {
             <Tabs.Screen
               name="values"
               options={{
-                title: "Values",
-                tabBarIcon: renderTabIconWithLabel(Heart, "Values", colors.primary),
+                title: "Browse",
+                tabBarIcon: renderTabIconWithLabel(Heart, "Browse", colors.primary),
               }}
             />
             <Tabs.Screen

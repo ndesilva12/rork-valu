@@ -111,6 +111,8 @@ interface UnifiedLibraryProps {
   // External section control
   externalSelectedSection?: LibrarySectionType;
   onSectionChange?: (section: LibrarySectionType) => void;
+  // Show only endorsement section (hides section selector)
+  endorsementOnly?: boolean;
 }
 
 export default function UnifiedLibrary({
@@ -132,6 +134,7 @@ export default function UnifiedLibrary({
   followersCount = 0,
   externalSelectedSection,
   onSectionChange,
+  endorsementOnly = false,
 }: UnifiedLibraryProps) {
   const colors = (isDarkMode ? darkColors : lightColors) || lightColors;
   const library = useLibrary();
@@ -206,7 +209,11 @@ export default function UnifiedLibrary({
   // Section selection state
   // Profile views (preview/view) ALWAYS default to endorsement
   // Home tab (edit) defaults to endorsement, or aligned if endorsement is empty
+  // endorsementOnly mode always forces endorsement section
   const defaultSection: LibrarySectionType = (() => {
+    if (endorsementOnly) {
+      return 'endorsement'; // endorsementOnly always shows endorsement
+    }
     const isProfileView = mode === 'preview' || mode === 'view';
     if (isProfileView) {
       return 'endorsement'; // Profile ALWAYS shows endorsement by default
@@ -219,7 +226,8 @@ export default function UnifiedLibrary({
   const [internalSelectedSection, setInternalSelectedSection] = useState<LibrarySectionType>(defaultSection);
 
   // Use external section if provided, otherwise use internal
-  const selectedSection = externalSelectedSection ?? internalSelectedSection;
+  // endorsementOnly mode overrides everything to 'endorsement'
+  const selectedSection = endorsementOnly ? 'endorsement' : (externalSelectedSection ?? internalSelectedSection);
   const setSelectedSection = (section: LibrarySectionType) => {
     if (onSectionChange) {
       onSectionChange(section);
@@ -2261,9 +2269,10 @@ export default function UnifiedLibrary({
 
     // For profile views (preview/view modes), don't show section selector
     // Followers/following counters are now in the profile header
+    // Also hide when endorsementOnly is true (Home tab now shows only endorsements)
     const isProfileView = mode === 'preview' || mode === 'view';
 
-    if (isProfileView) {
+    if (isProfileView || endorsementOnly) {
       return null;
     }
 
