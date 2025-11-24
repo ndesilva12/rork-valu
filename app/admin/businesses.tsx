@@ -24,6 +24,29 @@ import { db } from '../../firebase';
 import { getUserLists, deleteList, removeEntryFromList, addEntryToList } from '@/services/firebase/listService';
 import { UserList, ListEntry } from '@/types/library';
 
+// Helper function to extract just the referral code from a URL or return as-is if it's just a code
+const sanitizeReferralCode = (input: string): string => {
+  const trimmed = input.trim();
+  if (!trimmed) return '';
+
+  // Check if it looks like a URL
+  if (trimmed.includes('?') || trimmed.includes('/')) {
+    // Try to extract the ref or source parameter
+    const refMatch = trimmed.match(/[?&]ref=([^&\s]+)/i);
+    if (refMatch) return refMatch[1];
+
+    const sourceMatch = trimmed.match(/[?&]source=([^&\s]+)/i);
+    if (sourceMatch) return sourceMatch[1];
+
+    // If it's a URL but no ref param found, try to get the last path segment
+    const pathMatch = trimmed.match(/\/([^/?]+)(?:\?|$)/);
+    if (pathMatch) return pathMatch[1];
+  }
+
+  // Return as-is (it's just a code)
+  return trimmed;
+};
+
 interface Affiliate {
   name: string;
   relationship: string;
@@ -1064,11 +1087,11 @@ export default function BusinessesManagement() {
                 style={styles.input}
                 placeholder="e.g., joescoffee, downtown1"
                 value={createReferralCode}
-                onChangeText={setCreateReferralCode}
+                onChangeText={(text) => setCreateReferralCode(sanitizeReferralCode(text))}
                 autoCapitalize="none"
               />
               <Text style={styles.helpText}>
-                This code will be used in URLs like: https://iendorse.app/sign-up?ref=joescoffee
+                Enter just the code (e.g., "joescoffee"). If you paste a full URL, it will be automatically extracted.
               </Text>
 
               <View style={styles.modalActions}>
@@ -1403,10 +1426,10 @@ export default function BusinessesManagement() {
                 style={styles.input}
                 placeholder="e.g., joescoffee, downtown1"
                 value={formReferralCode}
-                onChangeText={setFormReferralCode}
+                onChangeText={(text) => setFormReferralCode(sanitizeReferralCode(text))}
               />
               <Text style={styles.helpText}>
-                URL format: https://iendorse.app/sign-up?ref={formReferralCode || 'code'}
+                Enter just the code. Full URL: https://iendorse.app/sign-up?ref={formReferralCode || 'code'}
               </Text>
               {editingBusiness?.referralCount !== undefined && editingBusiness.referralCount > 0 && (
                 <View style={styles.referralStatsBox}>
