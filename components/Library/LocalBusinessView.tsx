@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { MapPin, ChevronDown, ChevronUp, MoreVertical, X } from 'lucide-react-native';
+import { MapPin, ChevronDown, ChevronUp, MoreVertical, X, UserMinus, Heart, Share2 } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { BusinessUser, isBusinessWithinRange } from '@/services/firebase/businessService';
 import { Cause } from '@/types';
@@ -135,6 +135,7 @@ export default function LocalBusinessView({
   const [localSortDirection, setLocalSortDirection] = useState<'highToLow' | 'lowToHigh'>('highToLow');
   const [searchQuery, setSearchQuery] = useState('');
   const [showMap, setShowMap] = useState(false);
+  const [actionMenuBusinessId, setActionMenuBusinessId] = useState<string | null>(null);
 
   // Mobile: fewer options to fit on one row; Desktop: more granular options
   const localDistanceOptions: LocalDistanceOption[] = isMobile
@@ -274,8 +275,79 @@ export default function LocalBusinessView({
                 {alignmentScore}
               </Text>
             </View>
+            {/* Action Menu Button */}
+            <TouchableOpacity
+              style={styles.actionMenuButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                setActionMenuBusinessId(actionMenuBusinessId === business.id ? null : business.id);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={{ transform: [{ rotate: '90deg' }] }}>
+                <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+              </View>
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
+
+        {/* Action Menu Dropdown */}
+        {actionMenuBusinessId === business.id && (
+          <View style={[styles.actionMenuDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+            <TouchableOpacity
+              style={styles.actionMenuItem}
+              onPress={() => {
+                setActionMenuBusinessId(null);
+                Alert.alert('Unendorse', `Remove ${business.businessInfo.name} from your endorsement list?`, [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Remove', style: 'destructive', onPress: () => {
+                    // TODO: Implement unendorse functionality
+                    Alert.alert('Success', 'Business removed from endorsements');
+                  }}
+                ]);
+              }}
+              activeOpacity={0.7}
+            >
+              <Heart size={16} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.actionMenuText, { color: colors.text }]}>Unendorse</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionMenuItem}
+              onPress={() => {
+                setActionMenuBusinessId(null);
+                Alert.alert('Unfollow', `Stop following ${business.businessInfo.name}?`, [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Unfollow', style: 'destructive', onPress: () => {
+                    // TODO: Implement unfollow functionality
+                    Alert.alert('Success', 'Unfollowed business');
+                  }}
+                ]);
+              }}
+              activeOpacity={0.7}
+            >
+              <UserMinus size={16} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.actionMenuText, { color: colors.text }]}>Unfollow</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionMenuItem}
+              onPress={() => {
+                setActionMenuBusinessId(null);
+                if (Platform.OS === 'web') {
+                  navigator.clipboard.writeText(`${window.location.origin}/business/${business.id}`);
+                  Alert.alert('Success', 'Link copied to clipboard');
+                } else {
+                  Alert.alert('Share', 'Share functionality coming soon');
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <Share2 size={16} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     );
   };
@@ -555,6 +627,36 @@ const styles = StyleSheet.create({
   businessScore: {
     fontSize: 17,
     fontWeight: '700',
+  },
+  actionMenuButton: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionMenuDropdown: {
+    position: 'absolute',
+    right: 8,
+    top: 64,
+    minWidth: 160,
+    borderRadius: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  actionMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  actionMenuText: {
+    fontSize: 15,
+    fontWeight: '500',
   },
   emptySection: {
     padding: 40,
