@@ -388,16 +388,21 @@ export default function UnifiedLibrary({
 
     const query = addSearchQuery.toLowerCase().trim();
 
-    // Get IDs of already endorsed items
+    // Get IDs of already endorsed items (with robust null checks)
+    const entries = endorsementList?.entries || [];
+    const safeEntries = Array.isArray(entries) ? entries.filter(e => e != null && typeof e === 'object') : [];
+
     const endorsedBrandIds = new Set(
-      endorsementList?.entries
-        ?.filter(e => e && e.type === 'brand')
-        ?.map(e => (e as any).brandId) || []
+      safeEntries
+        .filter(e => e.type === 'brand')
+        .map(e => (e as any).brandId)
+        .filter(id => id != null)
     );
     const endorsedBusinessIds = new Set(
-      endorsementList?.entries
-        ?.filter(e => e && e.type === 'business')
-        ?.map(e => (e as any).businessId) || []
+      safeEntries
+        .filter(e => e.type === 'business')
+        .map(e => (e as any).businessId)
+        .filter(id => id != null)
     );
 
     // Search brands
@@ -3195,18 +3200,16 @@ export default function UnifiedLibrary({
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={[
-                              styles.addEndorsementAddButton,
+                              styles.addEndorsementTextButton,
                               { backgroundColor: addingItemId === brand.id ? colors.success : colors.primary }
                             ]}
                             onPress={() => handleAddToEndorsement(brand, 'brand')}
                             disabled={addingItemId === brand.id}
                             activeOpacity={0.7}
                           >
-                            {addingItemId === brand.id ? (
-                              <Check size={18} color={colors.white} strokeWidth={2.5} />
-                            ) : (
-                              <Plus size={18} color={colors.white} strokeWidth={2.5} />
-                            )}
+                            <Text style={styles.addEndorsementTextButtonLabel}>
+                              {addingItemId === brand.id ? 'Added' : 'Endorse'}
+                            </Text>
                           </TouchableOpacity>
                         </View>
                       ))}
@@ -3251,18 +3254,16 @@ export default function UnifiedLibrary({
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={[
-                              styles.addEndorsementAddButton,
+                              styles.addEndorsementTextButton,
                               { backgroundColor: addingItemId === business.id ? colors.success : colors.primary }
                             ]}
                             onPress={() => handleAddToEndorsement(business, 'business')}
                             disabled={addingItemId === business.id}
                             activeOpacity={0.7}
                           >
-                            {addingItemId === business.id ? (
-                              <Check size={18} color={colors.white} strokeWidth={2.5} />
-                            ) : (
-                              <Plus size={18} color={colors.white} strokeWidth={2.5} />
-                            )}
+                            <Text style={styles.addEndorsementTextButtonLabel}>
+                              {addingItemId === business.id ? 'Added' : 'Endorse'}
+                            </Text>
                           </TouchableOpacity>
                         </View>
                       ))}
@@ -3999,5 +4000,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 12,
+  },
+  addEndorsementTextButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
+  addEndorsementTextButtonLabel: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
