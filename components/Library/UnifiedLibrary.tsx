@@ -287,6 +287,50 @@ export default function UnifiedLibrary({
     checkFollowStatus();
   }, [selectedItemForOptions, currentUserId]);
 
+  // Fetch top brands when alignedTop section is selected
+  useEffect(() => {
+    const fetchTopBrands = async () => {
+      if (selectedSection !== 'alignedTop') return;
+      if (topBrands.length > 0) return; // Only fetch once
+
+      setLoadingTopBrands(true);
+      try {
+        console.log('[UnifiedLibrary] Fetching top brands...');
+        const rankings = await getTopBrands(100); // Fetch top 100
+        setTopBrands(rankings);
+        console.log('[UnifiedLibrary] Loaded', rankings.length, 'top brands');
+      } catch (error) {
+        console.error('[UnifiedLibrary] Error fetching top brands:', error);
+      } finally {
+        setLoadingTopBrands(false);
+      }
+    };
+
+    fetchTopBrands();
+  }, [selectedSection]);
+
+  // Fetch top businesses when localTop section is selected
+  useEffect(() => {
+    const fetchTopBusinesses = async () => {
+      if (selectedSection !== 'localTop') return;
+
+      setLoadingTopBusinesses(true);
+      try {
+        console.log('[UnifiedLibrary] Fetching top businesses...');
+        // Default to 100 mile radius for local top
+        const rankings = await getTopBusinesses(100, userLocation, 100);
+        setTopBusinesses(rankings);
+        console.log('[UnifiedLibrary] Loaded', rankings.length, 'top businesses');
+      } catch (error) {
+        console.error('[UnifiedLibrary] Error fetching top businesses:', error);
+      } finally {
+        setLoadingTopBusinesses(false);
+      }
+    };
+
+    fetchTopBusinesses();
+  }, [selectedSection, userLocation]);
+
   // Share handlers - Open ShareOptionsModal first
   const handleShareList = (list: UserList) => {
     setSharingItem({ type: 'list', data: list });
@@ -1604,6 +1648,192 @@ export default function UnifiedLibrary({
     );
   };
 
+  // Render content for Top Aligned (most endorsed brands globally)
+  const renderAlignedTopContent = () => {
+    if (loadingTopBrands) {
+      return (
+        <View style={styles.listContentContainer}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+              Loading top endorsed brands...
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    if (topBrands.length === 0) {
+      return (
+        <View style={styles.emptySection}>
+          <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+            No top endorsed brands yet
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.listContentContainer}>
+        <View style={styles.brandsContainer}>
+          {topBrands.slice(0, topBrandsLoadCount).map((item, index) => (
+            <View key={item.id} style={styles.forYouItemRow}>
+              <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                {index + 1}
+              </Text>
+              <View style={styles.forYouCardWrapper}>
+                <View style={{ position: 'relative' }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.brandCard,
+                      { backgroundColor: 'transparent' },
+                    ]}
+                    onPress={() => {
+                      router.push({
+                        pathname: '/brand/[id]',
+                        params: { id: item.id },
+                      });
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.brandCardInner}>
+                      <View style={styles.brandLogoContainer}>
+                        <Image
+                          source={{ uri: item.logoUrl || getLogoUrl(item.website || '') }}
+                          style={styles.brandLogo}
+                          contentFit="cover"
+                          transition={200}
+                          cachePolicy="memory-disk"
+                        />
+                      </View>
+                      <View style={styles.brandCardContent}>
+                        <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
+                          {item.name}
+                        </Text>
+                        <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {item.endorsementCount} {item.endorsementCount === 1 ? 'endorsement' : 'endorsements'}
+                        </Text>
+                      </View>
+                      <View style={styles.brandScoreContainer}>
+                        <Text style={[styles.brandScore, { color: colors.primary }]}>
+                          {Math.round(item.score)}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          ))}
+          {topBrandsLoadCount < topBrands.length && (
+            <TouchableOpacity
+              style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
+              onPress={() => setTopBrandsLoadCount(topBrandsLoadCount + 10)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                Load More ({topBrands.length - topBrandsLoadCount} remaining)
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
+
+  // Render content for Top Local (most endorsed businesses within distance)
+  const renderLocalTopContent = () => {
+    if (loadingTopBusinesses) {
+      return (
+        <View style={styles.listContentContainer}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+              Loading top local businesses...
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    if (topBusinesses.length === 0) {
+      return (
+        <View style={styles.emptySection}>
+          <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+            No top businesses in your area yet
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.listContentContainer}>
+        <View style={styles.brandsContainer}>
+          {topBusinesses.slice(0, topBusinessesLoadCount).map((item, index) => (
+            <View key={item.id} style={styles.forYouItemRow}>
+              <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
+                {index + 1}
+              </Text>
+              <View style={styles.forYouCardWrapper}>
+                <View style={{ position: 'relative' }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.brandCard,
+                      { backgroundColor: 'transparent' },
+                    ]}
+                    onPress={() => {
+                      router.push({
+                        pathname: '/business/[id]',
+                        params: { id: item.id },
+                      });
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.brandCardInner}>
+                      <View style={styles.brandLogoContainer}>
+                        <Image
+                          source={{ uri: item.logoUrl || getLogoUrl(item.website || '') }}
+                          style={styles.brandLogo}
+                          contentFit="cover"
+                          transition={200}
+                          cachePolicy="memory-disk"
+                        />
+                      </View>
+                      <View style={styles.brandCardContent}>
+                        <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
+                          {item.name}
+                        </Text>
+                        <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {item.endorsementCount} {item.endorsementCount === 1 ? 'endorsement' : 'endorsements'}
+                        </Text>
+                      </View>
+                      <View style={styles.brandScoreContainer}>
+                        <Text style={[styles.brandScore, { color: colors.primary }]}>
+                          {Math.round(item.score)}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          ))}
+          {topBusinessesLoadCount < topBusinesses.length && (
+            <TouchableOpacity
+              style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
+              onPress={() => setTopBusinessesLoadCount(topBusinessesLoadCount + 10)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                Load More ({topBusinesses.length - topBusinessesLoadCount} remaining)
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
+
   // Render content for custom lists
   const renderCustomListContent = (list: UserList) => {
     if (!list.entries || list.entries.length === 0) {
@@ -2312,6 +2542,9 @@ export default function UnifiedLibrary({
           </View>
         );
 
+      case 'alignedTop':
+        return renderAlignedTopContent();
+
       case 'local':
         return (
           <LocalBusinessView
@@ -2322,6 +2555,9 @@ export default function UnifiedLibrary({
             onRequestLocation={onRequestLocation}
           />
         );
+
+      case 'localTop':
+        return renderLocalTopContent();
 
       default:
         return null;
@@ -3229,5 +3465,16 @@ const styles = StyleSheet.create({
   emptySectionText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 8,
   },
 });
