@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   businessList: {
-    paddingHorizontal: 12,
+    paddingHorizontal: Platform.OS === 'web' ? 4 : 8,
     paddingTop: 4,
   },
   businessCard: {

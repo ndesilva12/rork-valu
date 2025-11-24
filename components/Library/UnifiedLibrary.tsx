@@ -709,9 +709,13 @@ export default function UnifiedLibrary({
               {product.category || 'Uncategorized'}
             </Text>
           </View>
-          <View style={styles.brandScoreContainer}>
-            <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-          </View>
+          {alignmentScore !== undefined && (
+            <View style={styles.brandScoreContainer}>
+              <Text style={[styles.brandScore, { color: scoreColor }]}>
+                {Math.round(alignmentScore)}
+              </Text>
+            </View>
+          )}
           {(mode === 'edit' || mode === 'view') && (
             <TouchableOpacity
               style={[styles.quickAddButton, { backgroundColor: colors.background }]}
@@ -2648,7 +2652,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   listContentContainer: {
-    marginHorizontal: Platform.OS === 'web' ? 2 : 8,
+    marginHorizontal: Platform.OS === 'web' ? 0 : 4,
     marginBottom: 8,
     paddingTop: 8,
   },
@@ -3100,14 +3104,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 16,
-    paddingHorizontal: 16,
+    paddingHorizontal: Platform.OS === 'web' ? 8 : 16,
     borderBottomWidth: 1,
   },
   sectionHeaderTitleContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     gap: 8,
   },
   sectionHeaderIcon: {
