@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Tag, Trophy, Target, MapPin } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Heart, Building2, Users, Globe, Shield, User as UserIcon, Tag, Trophy, Target, MapPin, MoreVertical, UserPlus, UserMinus, Share2 } from 'lucide-react-native';
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import * as Location from 'expo-location';
 import MenuButton from '@/components/MenuButton';
@@ -23,6 +23,9 @@ import { getAllUserBusinesses, BusinessUser } from '@/services/firebase/business
 import { calculateBrandScore, normalizeBrandScores } from '@/lib/scoring';
 import { getLogoUrl } from '@/lib/logo';
 import LocalBusinessView from '@/components/Library/LocalBusinessView';
+import { useLibrary } from '@/contexts/LibraryContext';
+import { followEntity, unfollowEntity } from '@/services/firebase/followService';
+import { addEntryToList, removeEntryFromList } from '@/services/firebase/listService';
 
 // ===== Types =====
 type BrowseSection = 'global' | 'local' | 'values';
@@ -100,6 +103,7 @@ export default function BrowseScreen() {
   const router = useRouter();
   const { profile, isDarkMode, removeCauses, clerkUser, addCauses } = useUser();
   const { brands, valuesMatrix, values: firebaseValues } = useData();
+  const library = useLibrary();
   const colors = isDarkMode ? darkColors : lightColors;
 
   // Section state
@@ -114,6 +118,7 @@ export default function BrowseScreen() {
   const [globalSubsection, setGlobalSubsection] = useState<'aligned' | 'unaligned'>('aligned');
   const [alignedLoadCount, setAlignedLoadCount] = useState(10);
   const [unalignedLoadCount, setUnalignedLoadCount] = useState(10);
+  const [actionMenuBrandId, setActionMenuBrandId] = useState<string | null>(null);
 
   // Local section state
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -160,6 +165,108 @@ export default function BrowseScreen() {
       console.error('[Browse] Error getting location:', error);
       Alert.alert('Error', 'Could not get your location. Please try again.');
     }
+  };
+
+  // Brand action handlers
+  const handleEndorseBrand = async (brandId: string, brandName: string) => {
+    if (!clerkUser?.id) return;
+
+    try {
+      // Find the endorsement list
+      const endorsementList = library.userLists.find(list => list.isEndorsed);
+      if (!endorsementList) {
+        Alert.alert('Error', 'Could not find endorsement list');
+        return;
+      }
+
+      // Check if already endorsed
+      const existingEntry = endorsementList.entries.find(
+        (e: any) => e.type === 'brand' && e.brandId === brandId
+      );
+
+      if (existingEntry) {
+        Alert.alert('Already Endorsed', `${brandName} is already in your endorsements`);
+        return;
+      }
+
+      // Add to endorsement list
+      await addEntryToList(endorsementList.id, {
+        type: 'brand',
+        brandId: brandId,
+      });
+
+      // Reload the library to reflect changes
+      await library.loadUserLists(clerkUser.id);
+
+      Alert.alert('Success', `${brandName} added to endorsements`);
+    } catch (error) {
+      console.error('Error endorsing brand:', error);
+      Alert.alert('Error', 'Failed to endorse brand');
+    }
+  };
+
+  const handleUnendorseBrand = async (brandId: string, brandName: string) => {
+    if (!clerkUser?.id) return;
+
+    try {
+      // Find the endorsement list
+      const endorsementList = library.userLists.find(list => list.isEndorsed);
+      if (!endorsementList) {
+        Alert.alert('Error', 'Could not find endorsement list');
+        return;
+      }
+
+      // Find the entry for this brand
+      const entry = endorsementList.entries.find(
+        (e: any) => e.type === 'brand' && e.brandId === brandId
+      );
+
+      if (!entry) {
+        Alert.alert('Not Endorsed', `${brandName} is not in your endorsements`);
+        return;
+      }
+
+      // Remove the entry
+      await removeEntryFromList(endorsementList.id, entry.id);
+
+      // Reload the library to reflect changes
+      await library.loadUserLists(clerkUser.id);
+
+      Alert.alert('Success', `${brandName} removed from endorsements`);
+    } catch (error) {
+      console.error('Error removing brand from endorsements:', error);
+      Alert.alert('Error', 'Failed to remove brand from endorsements');
+    }
+  };
+
+  const handleFollowBrand = async (brandId: string, brandName: string) => {
+    if (!clerkUser?.id) return;
+
+    try {
+      await followEntity(clerkUser.id, 'brand', brandId);
+      Alert.alert('Success', `Now following ${brandName}`);
+    } catch (error) {
+      console.error('Error following brand:', error);
+      Alert.alert('Error', 'Failed to follow brand');
+    }
+  };
+
+  const handleShareBrand = (brandId: string, brandName: string) => {
+    if (Platform.OS === 'web') {
+      navigator.clipboard.writeText(`${window.location.origin}/brand/${brandId}`);
+      Alert.alert('Success', 'Link copied to clipboard');
+    } else {
+      Alert.alert('Share', 'Share functionality coming soon');
+    }
+  };
+
+  // Check if brand is endorsed
+  const isBrandEndorsed = (brandId: string): boolean => {
+    const endorsementList = library.userLists.find(list => list.isEndorsed);
+    if (!endorsementList) return false;
+    return endorsementList.entries.some(
+      (e: any) => e.type === 'brand' && e.brandId === brandId
+    );
   };
 
   // Compute brand scores for Global section
@@ -448,43 +555,113 @@ export default function BrowseScreen() {
     );
   };
 
-  // Render brand card for Global section
+  // Render brand card for Global section (matching Local list style)
   const renderBrandCard = (brand: Product, index: number) => {
     const score = scoredBrands.get(brand.id) || 0;
-    const isAligned = globalSubsection === 'aligned';
-    const scoreColor = isAligned ? colors.success : colors.danger;
+    const scoreColor = score >= 50 ? colors.primary : colors.danger;
+    const isEndorsed = isBrandEndorsed(brand.id);
 
     return (
-      <TouchableOpacity
-        key={brand.id}
-        style={[styles.brandCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-        onPress={() => router.push(`/brand/${brand.id}`)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.brandCardRank}>
-          <Text style={[styles.brandCardRankText, { color: colors.textSecondary }]}>{index + 1}</Text>
-        </View>
-        <View style={[styles.brandCardLogoContainer, { backgroundColor: colors.white }]}>
-          <Image
-            source={{ uri: getLogoUrl(brand.website) }}
-            style={styles.brandCardLogo}
-            contentFit="contain"
-          />
-        </View>
-        <View style={styles.brandCardInfo}>
-          <Text style={[styles.brandCardName, { color: colors.text }]} numberOfLines={1}>
-            {brand.name}
-          </Text>
-          {brand.category && (
-            <Text style={[styles.brandCardCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-              {brand.category}
-            </Text>
-          )}
-        </View>
-        <View style={[styles.brandCardScore, { backgroundColor: scoreColor + '20' }]}>
-          <Text style={[styles.brandCardScoreText, { color: scoreColor }]}>{Math.round(score)}</Text>
-        </View>
-      </TouchableOpacity>
+      <View key={brand.id} style={{ position: 'relative', marginBottom: 4 }}>
+        <TouchableOpacity
+          style={[
+            styles.brandCard,
+            { backgroundColor: 'transparent' },
+          ]}
+          onPress={() => router.push(`/brand/${brand.id}`)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.brandCardInner}>
+            <View style={styles.brandLogoContainer}>
+              <Image
+                source={{ uri: getLogoUrl(brand.website) }}
+                style={styles.brandLogo}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+              />
+            </View>
+            <View style={styles.brandCardContent}>
+              <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={2}>
+                {brand.name}
+              </Text>
+              <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                {brand.category || 'Brand'}
+              </Text>
+            </View>
+            <View style={styles.brandScoreContainer}>
+              <Text style={[styles.brandScore, { color: scoreColor }]}>
+                {Math.round(score)}
+              </Text>
+            </View>
+            {/* Action Menu Button */}
+            <TouchableOpacity
+              style={styles.actionMenuButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                setActionMenuBrandId(actionMenuBrandId === brand.id ? null : brand.id);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={{ transform: [{ rotate: '90deg' }] }}>
+                <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+
+        {/* Action Menu Dropdown */}
+        {actionMenuBrandId === brand.id && (
+          <View style={[styles.actionMenuDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+            <TouchableOpacity
+              style={styles.actionMenuItem}
+              onPress={() => {
+                setActionMenuBrandId(null);
+                if (isEndorsed) {
+                  Alert.alert('Unendorse', `Remove ${brand.name} from your endorsement list?`, [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Remove', style: 'destructive', onPress: () => {
+                      handleUnendorseBrand(brand.id, brand.name);
+                    }}
+                  ]);
+                } else {
+                  handleEndorseBrand(brand.id, brand.name);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <Heart size={16} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.actionMenuText, { color: colors.text }]}>
+                {isEndorsed ? 'Unendorse' : 'Endorse'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionMenuItem}
+              onPress={() => {
+                setActionMenuBrandId(null);
+                handleFollowBrand(brand.id, brand.name);
+              }}
+              activeOpacity={0.7}
+            >
+              <UserPlus size={16} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.actionMenuText, { color: colors.text }]}>Follow</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionMenuItem}
+              onPress={() => {
+                setActionMenuBrandId(null);
+                handleShareBrand(brand.id, brand.name);
+              }}
+              activeOpacity={0.7}
+            >
+              <Share2 size={16} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     );
   };
 
@@ -852,59 +1029,90 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
 
-  // Brand card styles
+  // Brand card styles (matching Local list style)
   brandList: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingHorizontal: Platform.OS === 'web' ? 4 : 8,
+    paddingTop: 4,
   },
   brandCard: {
+    borderRadius: 0,
+    height: 64,
+    overflow: 'visible',
+    backgroundColor: 'transparent',
+  },
+  brandCardInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 8,
-    gap: 12,
+    height: '100%',
+    overflow: 'visible',
+    backgroundColor: 'transparent',
   },
-  brandCardRank: {
-    width: 24,
-    alignItems: 'center',
-  },
-  brandCardRankText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  brandCardLogoContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
+  brandLogoContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 0,
     overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
   },
-  brandCardLogo: {
-    width: 36,
-    height: 36,
+  brandLogo: {
+    width: '100%',
+    height: '100%',
   },
-  brandCardInfo: {
+  brandCardContent: {
     flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
-  brandCardName: {
-    fontSize: 15,
-    fontWeight: '600' as const,
+  brandName: {
+    fontSize: 13,
+    fontWeight: '700' as const,
     marginBottom: 2,
   },
-  brandCardCategory: {
-    fontSize: 13,
+  brandCategory: {
+    fontSize: 11,
+    opacity: 0.7,
+    flexShrink: 1,
   },
-  brandCardScore: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+  brandScoreContainer: {
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  brandCardScoreText: {
-    fontSize: 14,
+  brandScore: {
+    fontSize: 17,
     fontWeight: '700' as const,
+  },
+  actionMenuButton: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionMenuDropdown: {
+    position: 'absolute',
+    right: 8,
+    top: 64,
+    minWidth: 160,
+    borderRadius: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  actionMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  actionMenuText: {
+    fontSize: 15,
+    fontWeight: '500' as const,
   },
   loadMoreButton: {
     paddingVertical: 12,
