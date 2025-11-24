@@ -77,6 +77,7 @@ export default function ProfileScreen() {
   const [followingCount, setFollowingCount] = useState(0);
   const [followModalVisible, setFollowModalVisible] = useState(false);
   const [followModalMode, setFollowModalMode] = useState<'followers' | 'following'>('followers');
+  const [selectedStatSection, setSelectedStatSection] = useState<'endorsements' | 'followers' | 'following'>('endorsements');
 
   // Library context
   const library = useLibrary();
@@ -438,31 +439,45 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          {/* Followers/Following Counters */}
+          {/* Following/Followers/Endorsements Counters */}
           {!editing && (
             <View style={styles.followStatsContainer}>
               <TouchableOpacity
                 style={styles.followStatButton}
                 onPress={() => {
-                  setFollowModalMode('followers');
-                  setFollowModalVisible(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.followStatCount, { color: colors.text }]}>{followersCount}</Text>
-                <Text style={[styles.followStatLabel, { color: colors.textSecondary }]}>Followers</Text>
-              </TouchableOpacity>
-              <View style={[styles.followStatDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity
-                style={styles.followStatButton}
-                onPress={() => {
+                  setSelectedStatSection('following');
                   setFollowModalMode('following');
                   setFollowModalVisible(true);
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.followStatCount, { color: colors.text }]}>{followingCount}</Text>
-                <Text style={[styles.followStatLabel, { color: colors.textSecondary }]}>Following</Text>
+                <Text style={[styles.followStatCount, { color: selectedStatSection === 'following' ? colors.primary : colors.text }]}>{followingCount}</Text>
+                <Text style={[styles.followStatLabel, { color: selectedStatSection === 'following' ? colors.primary : colors.textSecondary }]}>Following</Text>
+              </TouchableOpacity>
+              <View style={[styles.followStatDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.followStatButton}
+                onPress={() => {
+                  setSelectedStatSection('followers');
+                  setFollowModalMode('followers');
+                  setFollowModalVisible(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.followStatCount, { color: selectedStatSection === 'followers' ? colors.primary : colors.text }]}>{followersCount}</Text>
+                <Text style={[styles.followStatLabel, { color: selectedStatSection === 'followers' ? colors.primary : colors.textSecondary }]}>Followers</Text>
+              </TouchableOpacity>
+              <View style={[styles.followStatDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.followStatButton}
+                onPress={() => {
+                  setSelectedStatSection('endorsements');
+                  setFollowModalVisible(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.followStatCount, { color: selectedStatSection === 'endorsements' ? colors.primary : colors.text }]}>{allSupportFull.length}</Text>
+                <Text style={[styles.followStatLabel, { color: selectedStatSection === 'endorsements' ? colors.primary : colors.textSecondary }]}>Endorsements</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -625,7 +640,10 @@ export default function ProfileScreen() {
         visible={followModalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setFollowModalVisible(false)}
+        onRequestClose={() => {
+          setFollowModalVisible(false);
+          setSelectedStatSection('endorsements');
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
@@ -634,7 +652,10 @@ export default function ProfileScreen() {
                 {followModalMode === 'followers' ? 'Followers' : 'Following'}
               </Text>
               <TouchableOpacity
-                onPress={() => setFollowModalVisible(false)}
+                onPress={() => {
+                  setFollowModalVisible(false);
+                  setSelectedStatSection('endorsements');
+                }}
                 style={[styles.modalCloseButton, { backgroundColor: colors.backgroundSecondary }]}
               >
                 <X size={24} color={colors.text} />

@@ -523,8 +523,16 @@ export default function UserProfileScreen() {
             </Text>
           )}
 
-          {/* Follower/Following Counts - Clickable to show lists */}
+          {/* Following/Followers/Endorsements Counts - Clickable to show lists */}
           <View style={styles.followStatsContainer}>
+            <TouchableOpacity
+              style={styles.followStat}
+              onPress={() => setSelectedLibrarySection('following')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.followStatNumber, { color: selectedLibrarySection === 'following' ? colors.primary : colors.text }]}>{followingCount}</Text>
+              <Text style={[styles.followStatLabel, { color: selectedLibrarySection === 'following' ? colors.primary : colors.textSecondary }]}>Following</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.followStat}
               onPress={() => setSelectedLibrarySection('followers')}
@@ -535,11 +543,11 @@ export default function UserProfileScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.followStat}
-              onPress={() => setSelectedLibrarySection('following')}
+              onPress={() => setSelectedLibrarySection('endorsement')}
               activeOpacity={0.7}
             >
-              <Text style={[styles.followStatNumber, { color: selectedLibrarySection === 'following' ? colors.primary : colors.text }]}>{followingCount}</Text>
-              <Text style={[styles.followStatLabel, { color: selectedLibrarySection === 'following' ? colors.primary : colors.textSecondary }]}>Following</Text>
+              <Text style={[styles.followStatNumber, { color: selectedLibrarySection === 'endorsement' ? colors.primary : colors.text }]}>{allSupportFull.length}</Text>
+              <Text style={[styles.followStatLabel, { color: selectedLibrarySection === 'endorsement' ? colors.primary : colors.textSecondary }]}>Endorsements</Text>
             </TouchableOpacity>
           </View>
 
