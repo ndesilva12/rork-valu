@@ -757,7 +757,7 @@ export default function UnifiedLibrary({
           <View style={styles.brandLogoContainer}>
             <Image
               source={{ uri: getLogoUrl(product.website || '') }}
-              style={styles.brandLogo}
+              style={[styles.brandLogo, { backgroundColor: '#FFFFFF' }]}
               contentFit="cover"
               transition={200}
               cachePolicy="memory-disk"
@@ -891,7 +891,7 @@ export default function UnifiedLibrary({
                 <View style={styles.brandLogoContainer}>
                   <Image
                     source={{ uri: logoUrl }}
-                    style={styles.brandLogo}
+                    style={[styles.brandLogo, { backgroundColor: '#FFFFFF' }]}
                     contentFit="cover"
                     transition={200}
                     cachePolicy="memory-disk"
@@ -961,7 +961,7 @@ export default function UnifiedLibrary({
                 <View style={styles.brandLogoContainer}>
                   <Image
                     source={{ uri: logoUrl }}
-                    style={styles.brandLogo}
+                    style={[styles.brandLogo, { backgroundColor: '#FFFFFF' }]}
                     contentFit="cover"
                     transition={200}
                     cachePolicy="memory-disk"
