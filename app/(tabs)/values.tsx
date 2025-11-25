@@ -565,7 +565,7 @@ export default function BrowseScreen() {
         {selectedSection === 'values' && (
           <TouchableOpacity
             style={[styles.updateValuesButton, { backgroundColor: colors.primary }]}
-            onPress={() => router.push('/onboarding/values')}
+            onPress={() => router.push('/onboarding')}
             activeOpacity={0.7}
           >
             <Text style={styles.updateValuesButtonText}>Update Values</Text>
