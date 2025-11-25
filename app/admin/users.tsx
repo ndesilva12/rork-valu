@@ -22,8 +22,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { collection, getDocs, doc, updateDoc, deleteDoc, query, where, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getCustomFields, CustomField } from '@/services/firebase/customFieldsService';
-import { getUserLists, deleteList, removeEntryFromList, addEntryToList, updateEntryInList } from '@/services/firebase/listService';
+import { getUserLists, deleteList, removeEntryFromList, addEntryToList, updateEntryInList, getEndorsementList, createList, ensureEndorsementList } from '@/services/firebase/listService';
 import { UserList, ListEntry } from '@/types/library';
+import { getFollowing, getFollowers, followEntity, unfollowEntity, Follow, FollowableType } from '@/services/firebase/followService';
 import { Picker } from '@react-native-picker/picker';
 import { pickAndUploadImage } from '@/lib/imageUpload';
 
@@ -147,6 +148,24 @@ export default function UsersManagement() {
   const [editingEntryDateId, setEditingEntryDateId] = useState<string | null>(null);
   const [editingEntryDateValue, setEditingEntryDateValue] = useState('');
 
+  // Followers/Following management state
+  const [userFollowers, setUserFollowers] = useState<Follow[]>([]);
+  const [userFollowing, setUserFollowing] = useState<Follow[]>([]);
+  const [loadingFollows, setLoadingFollows] = useState(false);
+  const [expandedFollowSection, setExpandedFollowSection] = useState<'followers' | 'following' | null>(null);
+  const [addingFollowType, setAddingFollowType] = useState<'follower' | 'following' | null>(null);
+  const [newFollowId, setNewFollowId] = useState('');
+  const [newFollowEntityType, setNewFollowEntityType] = useState<FollowableType>('user');
+
+  // Endorsement management state
+  const [endorsementList, setEndorsementList] = useState<UserList | null>(null);
+  const [loadingEndorsements, setLoadingEndorsements] = useState(false);
+  const [expandedEndorsements, setExpandedEndorsements] = useState(false);
+  const [addingEndorsement, setAddingEndorsement] = useState(false);
+  const [newEndorsementType, setNewEndorsementType] = useState<'brand' | 'business'>('brand');
+  const [newEndorsementId, setNewEndorsementId] = useState('');
+  const [newEndorsementName, setNewEndorsementName] = useState('');
+
   useEffect(() => {
     loadUsers();
     loadCustomFields();
@@ -257,9 +276,11 @@ export default function UsersManagement() {
 
     setShowModal(true);
 
-    // Load user's lists
+    // Load user's lists, follows, and endorsements
     if (user.userId) {
       loadUserLists(user.userId);
+      loadUserFollows(user.userId);
+      loadUserEndorsements(user.userId);
     }
   };
 
@@ -277,6 +298,309 @@ export default function UsersManagement() {
       }
     } finally {
       setLoadingLists(false);
+    }
+  };
+
+  // Load followers and following for a user
+  const loadUserFollows = async (userId: string) => {
+    setLoadingFollows(true);
+    try {
+      const [followers, following] = await Promise.all([
+        getFollowers(userId, 'user'),
+        getFollowing(userId),
+      ]);
+      setUserFollowers(followers);
+      setUserFollowing(following);
+    } catch (error) {
+      console.error('[Admin] Error loading follows:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Error loading followers/following');
+      } else {
+        Alert.alert('Error', 'Could not load followers/following');
+      }
+    } finally {
+      setLoadingFollows(false);
+    }
+  };
+
+  // Add a new follower to the user (someone follows this user)
+  const handleAddFollower = async () => {
+    if (!editingUser || !newFollowId.trim()) {
+      if (Platform.OS === 'web') {
+        window.alert('Please enter a User ID');
+      } else {
+        Alert.alert('Error', 'Please enter a User ID');
+      }
+      return;
+    }
+
+    try {
+      // The newFollowId is the person who will follow the editingUser
+      await followEntity(newFollowId.trim(), editingUser.userId, 'user');
+      await loadUserFollows(editingUser.userId);
+      setNewFollowId('');
+      setAddingFollowType(null);
+
+      if (Platform.OS === 'web') {
+        window.alert(`User ${newFollowId.trim()} now follows this user`);
+      } else {
+        Alert.alert('Success', `User ${newFollowId.trim()} now follows this user`);
+      }
+    } catch (error: any) {
+      console.error('[Admin] Error adding follower:', error);
+      if (Platform.OS === 'web') {
+        window.alert(`Error: ${error.message || 'Could not add follower'}`);
+      } else {
+        Alert.alert('Error', error.message || 'Could not add follower');
+      }
+    }
+  };
+
+  // Add a new following (this user follows someone/something)
+  const handleAddFollowing = async () => {
+    if (!editingUser || !newFollowId.trim()) {
+      if (Platform.OS === 'web') {
+        window.alert('Please enter an ID');
+      } else {
+        Alert.alert('Error', 'Please enter an ID');
+      }
+      return;
+    }
+
+    try {
+      // The editingUser will follow the newFollowId entity
+      await followEntity(editingUser.userId, newFollowId.trim(), newFollowEntityType);
+      await loadUserFollows(editingUser.userId);
+      setNewFollowId('');
+      setNewFollowEntityType('user');
+      setAddingFollowType(null);
+
+      if (Platform.OS === 'web') {
+        window.alert(`This user now follows ${newFollowEntityType} ${newFollowId.trim()}`);
+      } else {
+        Alert.alert('Success', `This user now follows ${newFollowEntityType} ${newFollowId.trim()}`);
+      }
+    } catch (error: any) {
+      console.error('[Admin] Error adding following:', error);
+      if (Platform.OS === 'web') {
+        window.alert(`Error: ${error.message || 'Could not add following'}`);
+      } else {
+        Alert.alert('Error', error.message || 'Could not add following');
+      }
+    }
+  };
+
+  // Remove a follower (someone stops following this user)
+  const handleRemoveFollower = async (followerUserId: string) => {
+    if (!editingUser) return;
+
+    const confirmRemove = Platform.OS === 'web'
+      ? window.confirm(`Remove ${followerUserId} as a follower of this user?`)
+      : await new Promise((resolve) => {
+          Alert.alert(
+            'Remove Follower',
+            `Remove ${followerUserId} as a follower of this user?`,
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Remove', style: 'destructive', onPress: () => resolve(true) },
+            ]
+          );
+        });
+
+    if (!confirmRemove) return;
+
+    try {
+      await unfollowEntity(followerUserId, editingUser.userId, 'user');
+      await loadUserFollows(editingUser.userId);
+
+      if (Platform.OS === 'web') {
+        window.alert('Follower removed');
+      } else {
+        Alert.alert('Success', 'Follower removed');
+      }
+    } catch (error) {
+      console.error('[Admin] Error removing follower:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Error removing follower');
+      } else {
+        Alert.alert('Error', 'Could not remove follower');
+      }
+    }
+  };
+
+  // Remove a following (this user stops following someone/something)
+  const handleRemoveFollowing = async (follow: Follow) => {
+    if (!editingUser) return;
+
+    const confirmRemove = Platform.OS === 'web'
+      ? window.confirm(`Stop this user from following ${follow.followedType} ${follow.followedId}?`)
+      : await new Promise((resolve) => {
+          Alert.alert(
+            'Remove Following',
+            `Stop this user from following ${follow.followedType} ${follow.followedId}?`,
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Remove', style: 'destructive', onPress: () => resolve(true) },
+            ]
+          );
+        });
+
+    if (!confirmRemove) return;
+
+    try {
+      await unfollowEntity(editingUser.userId, follow.followedId, follow.followedType);
+      await loadUserFollows(editingUser.userId);
+
+      if (Platform.OS === 'web') {
+        window.alert('Following removed');
+      } else {
+        Alert.alert('Success', 'Following removed');
+      }
+    } catch (error) {
+      console.error('[Admin] Error removing following:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Error removing following');
+      } else {
+        Alert.alert('Error', 'Could not remove following');
+      }
+    }
+  };
+
+  // Load endorsement list for a user
+  const loadUserEndorsements = async (userId: string) => {
+    setLoadingEndorsements(true);
+    try {
+      const endorsements = await getEndorsementList(userId);
+      setEndorsementList(endorsements);
+    } catch (error) {
+      console.error('[Admin] Error loading endorsements:', error);
+      setEndorsementList(null);
+    } finally {
+      setLoadingEndorsements(false);
+    }
+  };
+
+  // Create endorsement list for user if it doesn't exist
+  const handleCreateEndorsementList = async () => {
+    if (!editingUser) return;
+
+    try {
+      const userName = editingUser.fullName || editingUser.userDetails?.name || editingUser.email;
+      await ensureEndorsementList(editingUser.userId, userName);
+      await loadUserEndorsements(editingUser.userId);
+      await loadUserLists(editingUser.userId);
+
+      if (Platform.OS === 'web') {
+        window.alert('Endorsement list created');
+      } else {
+        Alert.alert('Success', 'Endorsement list created');
+      }
+    } catch (error: any) {
+      console.error('[Admin] Error creating endorsement list:', error);
+      if (Platform.OS === 'web') {
+        window.alert(`Error: ${error.message || 'Could not create endorsement list'}`);
+      } else {
+        Alert.alert('Error', error.message || 'Could not create endorsement list');
+      }
+    }
+  };
+
+  // Add endorsement (brand or business) to user's endorsement list
+  const handleAddEndorsement = async () => {
+    if (!editingUser || !endorsementList) {
+      if (Platform.OS === 'web') {
+        window.alert('No endorsement list found. Please create one first.');
+      } else {
+        Alert.alert('Error', 'No endorsement list found. Please create one first.');
+      }
+      return;
+    }
+
+    if (!newEndorsementId.trim()) {
+      if (Platform.OS === 'web') {
+        window.alert('Please enter an ID');
+      } else {
+        Alert.alert('Error', 'Please enter an ID');
+      }
+      return;
+    }
+
+    try {
+      const entry: ListEntry = newEndorsementType === 'brand'
+        ? {
+            type: 'brand',
+            brandId: newEndorsementId.trim(),
+            name: newEndorsementName.trim() || newEndorsementId.trim(),
+            website: '',
+            logoUrl: '',
+          }
+        : {
+            type: 'business',
+            businessId: newEndorsementId.trim(),
+            name: newEndorsementName.trim() || newEndorsementId.trim(),
+            website: '',
+            logoUrl: '',
+          };
+
+      await addEntryToList(endorsementList.id, entry);
+      await loadUserEndorsements(editingUser.userId);
+      await loadUserLists(editingUser.userId);
+
+      setNewEndorsementId('');
+      setNewEndorsementName('');
+      setAddingEndorsement(false);
+
+      if (Platform.OS === 'web') {
+        window.alert('Endorsement added successfully');
+      } else {
+        Alert.alert('Success', 'Endorsement added successfully');
+      }
+    } catch (error: any) {
+      console.error('[Admin] Error adding endorsement:', error);
+      if (Platform.OS === 'web') {
+        window.alert(`Error: ${error.message || 'Could not add endorsement'}`);
+      } else {
+        Alert.alert('Error', error.message || 'Could not add endorsement');
+      }
+    }
+  };
+
+  // Remove endorsement from user's endorsement list
+  const handleRemoveEndorsement = async (entryId: string, entryName: string) => {
+    if (!editingUser || !endorsementList) return;
+
+    const confirmRemove = Platform.OS === 'web'
+      ? window.confirm(`Remove endorsement for "${entryName}"?`)
+      : await new Promise((resolve) => {
+          Alert.alert(
+            'Remove Endorsement',
+            `Remove endorsement for "${entryName}"?`,
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Remove', style: 'destructive', onPress: () => resolve(true) },
+            ]
+          );
+        });
+
+    if (!confirmRemove) return;
+
+    try {
+      await removeEntryFromList(endorsementList.id, entryId);
+      await loadUserEndorsements(editingUser.userId);
+      await loadUserLists(editingUser.userId);
+
+      if (Platform.OS === 'web') {
+        window.alert('Endorsement removed');
+      } else {
+        Alert.alert('Success', 'Endorsement removed');
+      }
+    } catch (error) {
+      console.error('[Admin] Error removing endorsement:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Error removing endorsement');
+      } else {
+        Alert.alert('Error', 'Could not remove endorsement');
+      }
     }
   };
 
@@ -1323,6 +1647,267 @@ export default function UsersManagement() {
                 </>
               )}
 
+              {/* FOLLOWERS / FOLLOWING MANAGEMENT */}
+              <Text style={styles.sectionTitle}>👥 Followers & Following</Text>
+              <Text style={styles.helpText}>
+                Manage who follows this user and who this user follows. You can add/remove followers and following relationships.
+              </Text>
+
+              {loadingFollows ? (
+                <ActivityIndicator size="large" color="#007AFF" style={{ marginVertical: 20 }} />
+              ) : (
+                <>
+                  {/* Followers Section */}
+                  <View style={styles.followCard}>
+                    <TouchableOpacity
+                      style={styles.followHeader}
+                      onPress={() => setExpandedFollowSection(expandedFollowSection === 'followers' ? null : 'followers')}
+                    >
+                      <Text style={styles.followTitle}>Followers ({userFollowers.length})</Text>
+                      <Text style={styles.expandIcon}>{expandedFollowSection === 'followers' ? '▼' : '▶'}</Text>
+                    </TouchableOpacity>
+
+                    {expandedFollowSection === 'followers' && (
+                      <View style={styles.followContent}>
+                        <TouchableOpacity
+                          style={styles.addFollowButton}
+                          onPress={() => setAddingFollowType(addingFollowType === 'follower' ? null : 'follower')}
+                        >
+                          <Text style={styles.addFollowButtonText}>
+                            {addingFollowType === 'follower' ? 'Cancel' : '+ Add Follower'}
+                          </Text>
+                        </TouchableOpacity>
+
+                        {addingFollowType === 'follower' && (
+                          <View style={styles.addFollowForm}>
+                            <Text style={styles.label}>User ID (who will follow this user)</Text>
+                            <TextInput
+                              style={styles.input}
+                              placeholder="Enter user ID..."
+                              value={newFollowId}
+                              onChangeText={setNewFollowId}
+                              autoCapitalize="none"
+                            />
+                            <TouchableOpacity style={styles.submitFollowButton} onPress={handleAddFollower}>
+                              <Text style={styles.submitFollowButtonText}>Add Follower</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+
+                        {userFollowers.length === 0 ? (
+                          <Text style={styles.emptyFollowText}>No followers</Text>
+                        ) : (
+                          userFollowers.map((follower) => (
+                            <View key={follower.id} style={styles.followRow}>
+                              <View style={styles.followInfo}>
+                                <Text style={styles.followId}>{follower.followerId}</Text>
+                                <Text style={styles.followDate}>
+                                  Since: {follower.createdAt?.toLocaleDateString() || 'Unknown'}
+                                </Text>
+                              </View>
+                              <TouchableOpacity
+                                style={styles.removeFollowButton}
+                                onPress={() => handleRemoveFollower(follower.followerId)}
+                              >
+                                <Text style={styles.removeFollowButtonText}>Remove</Text>
+                              </TouchableOpacity>
+                            </View>
+                          ))
+                        )}
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Following Section */}
+                  <View style={styles.followCard}>
+                    <TouchableOpacity
+                      style={styles.followHeader}
+                      onPress={() => setExpandedFollowSection(expandedFollowSection === 'following' ? null : 'following')}
+                    >
+                      <Text style={styles.followTitle}>Following ({userFollowing.length})</Text>
+                      <Text style={styles.expandIcon}>{expandedFollowSection === 'following' ? '▼' : '▶'}</Text>
+                    </TouchableOpacity>
+
+                    {expandedFollowSection === 'following' && (
+                      <View style={styles.followContent}>
+                        <TouchableOpacity
+                          style={styles.addFollowButton}
+                          onPress={() => setAddingFollowType(addingFollowType === 'following' ? null : 'following')}
+                        >
+                          <Text style={styles.addFollowButtonText}>
+                            {addingFollowType === 'following' ? 'Cancel' : '+ Add Following'}
+                          </Text>
+                        </TouchableOpacity>
+
+                        {addingFollowType === 'following' && (
+                          <View style={styles.addFollowForm}>
+                            <Text style={styles.label}>Entity Type</Text>
+                            <View style={styles.pickerWrapper}>
+                              <Picker
+                                selectedValue={newFollowEntityType}
+                                onValueChange={(value) => setNewFollowEntityType(value)}
+                                style={styles.picker}
+                              >
+                                <Picker.Item label="User" value="user" />
+                                <Picker.Item label="Brand" value="brand" />
+                                <Picker.Item label="Business" value="business" />
+                              </Picker>
+                            </View>
+
+                            <Text style={styles.label}>
+                              {newFollowEntityType === 'user' ? 'User ID' :
+                               newFollowEntityType === 'brand' ? 'Brand ID' : 'Business ID'}
+                            </Text>
+                            <TextInput
+                              style={styles.input}
+                              placeholder={`Enter ${newFollowEntityType} ID...`}
+                              value={newFollowId}
+                              onChangeText={setNewFollowId}
+                              autoCapitalize="none"
+                            />
+                            <TouchableOpacity style={styles.submitFollowButton} onPress={handleAddFollowing}>
+                              <Text style={styles.submitFollowButtonText}>Add Following</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+
+                        {userFollowing.length === 0 ? (
+                          <Text style={styles.emptyFollowText}>Not following anyone</Text>
+                        ) : (
+                          userFollowing.map((following) => (
+                            <View key={following.id} style={styles.followRow}>
+                              <View style={styles.followInfo}>
+                                <Text style={styles.followId}>{following.followedId}</Text>
+                                <Text style={styles.followType}>({following.followedType})</Text>
+                                <Text style={styles.followDate}>
+                                  Since: {following.createdAt?.toLocaleDateString() || 'Unknown'}
+                                </Text>
+                              </View>
+                              <TouchableOpacity
+                                style={styles.removeFollowButton}
+                                onPress={() => handleRemoveFollowing(following)}
+                              >
+                                <Text style={styles.removeFollowButtonText}>Remove</Text>
+                              </TouchableOpacity>
+                            </View>
+                          ))
+                        )}
+                      </View>
+                    )}
+                  </View>
+                </>
+              )}
+
+              {/* ENDORSEMENTS MANAGEMENT */}
+              <Text style={styles.sectionTitle}>⭐ Endorsements</Text>
+              <Text style={styles.helpText}>
+                Manage this user's endorsements. Add or remove brands/businesses they endorse.
+              </Text>
+
+              {loadingEndorsements ? (
+                <ActivityIndicator size="large" color="#007AFF" style={{ marginVertical: 20 }} />
+              ) : !endorsementList ? (
+                <View style={styles.endorsementCard}>
+                  <Text style={styles.noEndorsementText}>This user has no endorsement list.</Text>
+                  <TouchableOpacity style={styles.createEndorsementButton} onPress={handleCreateEndorsementList}>
+                    <Text style={styles.createEndorsementButtonText}>Create Endorsement List</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.endorsementCard}>
+                  <TouchableOpacity
+                    style={styles.endorsementHeader}
+                    onPress={() => setExpandedEndorsements(!expandedEndorsements)}
+                  >
+                    <Text style={styles.endorsementTitle}>
+                      Endorsements ({endorsementList.entries?.length || 0})
+                    </Text>
+                    <Text style={styles.expandIcon}>{expandedEndorsements ? '▼' : '▶'}</Text>
+                  </TouchableOpacity>
+
+                  {expandedEndorsements && (
+                    <View style={styles.endorsementContent}>
+                      <TouchableOpacity
+                        style={styles.addEndorsementButton}
+                        onPress={() => setAddingEndorsement(!addingEndorsement)}
+                      >
+                        <Text style={styles.addEndorsementButtonText}>
+                          {addingEndorsement ? 'Cancel' : '+ Add Endorsement'}
+                        </Text>
+                      </TouchableOpacity>
+
+                      {addingEndorsement && (
+                        <View style={styles.addEndorsementForm}>
+                          <Text style={styles.label}>Type</Text>
+                          <View style={styles.pickerWrapper}>
+                            <Picker
+                              selectedValue={newEndorsementType}
+                              onValueChange={(value) => setNewEndorsementType(value)}
+                              style={styles.picker}
+                            >
+                              <Picker.Item label="Brand" value="brand" />
+                              <Picker.Item label="Business" value="business" />
+                            </Picker>
+                          </View>
+
+                          <Text style={styles.label}>
+                            {newEndorsementType === 'brand' ? 'Brand ID' : 'Business ID'}
+                          </Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder={newEndorsementType === 'brand' ? 'e.g., nike, starbucks' : 'Firebase Business ID'}
+                            value={newEndorsementId}
+                            onChangeText={setNewEndorsementId}
+                            autoCapitalize="none"
+                          />
+
+                          <Text style={styles.label}>Display Name (Optional)</Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Name to display in list"
+                            value={newEndorsementName}
+                            onChangeText={setNewEndorsementName}
+                          />
+
+                          <TouchableOpacity style={styles.submitEndorsementButton} onPress={handleAddEndorsement}>
+                            <Text style={styles.submitEndorsementButtonText}>Add Endorsement</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+
+                      {endorsementList.entries && endorsementList.entries.length > 0 ? (
+                        endorsementList.entries.map((entry) => {
+                          const entryId = entry.id || '';
+                          const entryName = (entry as any).brandName || (entry as any).businessName || (entry as any).name || (entry as any).brandId || (entry as any).businessId || 'Unknown';
+                          const entryType = entry.type || 'unknown';
+                          const daysEndorsed = calculateDaysFromDate(entry.createdAt);
+
+                          return (
+                            <View key={entryId} style={styles.endorsementRow}>
+                              <View style={styles.endorsementInfo}>
+                                <Text style={styles.endorsementName}>{entryName}</Text>
+                                <Text style={styles.endorsementType}>({entryType})</Text>
+                                <Text style={styles.endorsementDays}>
+                                  Endorsed for {daysEndorsed} {daysEndorsed === 1 ? 'day' : 'days'}
+                                </Text>
+                              </View>
+                              <TouchableOpacity
+                                style={styles.removeEndorsementButton}
+                                onPress={() => handleRemoveEndorsement(entryId, entryName)}
+                              >
+                                <Text style={styles.removeEndorsementButtonText}>Remove</Text>
+                              </TouchableOpacity>
+                            </View>
+                          );
+                        })
+                      ) : (
+                        <Text style={styles.emptyEndorsementText}>No endorsements yet</Text>
+                      )}
+                    </View>
+                  )}
+                </View>
+              )}
+
               {/* LIBRARY / LIST MANAGEMENT */}
               <Text style={styles.sectionTitle}>📚 Library / List Management</Text>
               <Text style={styles.helpText}>
@@ -2258,5 +2843,239 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginTop: 4,
     alignSelf: 'flex-start',
+  },
+  // Followers/Following management styles
+  followCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+  },
+  followHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  followTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  expandIcon: {
+    fontSize: 14,
+    color: '#6c757d',
+  },
+  followContent: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#dee2e6',
+  },
+  addFollowButton: {
+    backgroundColor: '#28a745',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 4,
+    marginBottom: 12,
+  },
+  addFollowButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  addFollowForm: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 4,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+  },
+  submitFollowButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 10,
+    borderRadius: 4,
+    marginTop: 8,
+  },
+  submitFollowButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  followRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+    borderRadius: 4,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  followInfo: {
+    flex: 1,
+  },
+  followId: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#000',
+  },
+  followType: {
+    fontSize: 12,
+    color: '#007bff',
+    marginTop: 2,
+  },
+  followDate: {
+    fontSize: 11,
+    color: '#6c757d',
+    marginTop: 2,
+  },
+  removeFollowButton: {
+    backgroundColor: '#dc3545',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  removeFollowButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  emptyFollowText: {
+    fontSize: 14,
+    color: '#6c757d',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 12,
+  },
+  // Endorsement management styles
+  endorsementCard: {
+    backgroundColor: '#fff9e6',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#ffc107',
+  },
+  noEndorsementText: {
+    fontSize: 14,
+    color: '#6c757d',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  createEndorsementButton: {
+    backgroundColor: '#ffc107',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  createEndorsementButtonText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  endorsementHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  endorsementTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  endorsementContent: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#ffd54f',
+  },
+  addEndorsementButton: {
+    backgroundColor: '#28a745',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 4,
+    marginBottom: 12,
+  },
+  addEndorsementButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  addEndorsementForm: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 4,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+  },
+  submitEndorsementButton: {
+    backgroundColor: '#ffc107',
+    paddingVertical: 10,
+    borderRadius: 4,
+    marginTop: 8,
+  },
+  submitEndorsementButtonText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  endorsementRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+    borderRadius: 4,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  endorsementInfo: {
+    flex: 1,
+  },
+  endorsementName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#000',
+  },
+  endorsementType: {
+    fontSize: 12,
+    color: '#007bff',
+    marginTop: 2,
+  },
+  endorsementDays: {
+    fontSize: 11,
+    color: '#28a745',
+    marginTop: 2,
+  },
+  removeEndorsementButton: {
+    backgroundColor: '#dc3545',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  removeEndorsementButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  emptyEndorsementText: {
+    fontSize: 14,
+    color: '#6c757d',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 12,
   },
 });
