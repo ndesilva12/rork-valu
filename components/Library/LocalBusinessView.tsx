@@ -150,18 +150,18 @@ export default function LocalBusinessView({
   // Check endorsement status from library
   useEffect(() => {
     if (!library.userLists) {
+      console.log('[LocalBusinessView] No userLists, clearing endorsedBusinessIds');
       setEndorsedBusinessIds(new Set());
       return;
     }
     const endorsementList = library.userLists.find(list => list.isEndorsed);
-    if (endorsementList) {
-      const endorsedIds = new Set<string>(
-        endorsementList.entries
-          .filter((e: any) => e.type === 'business' && e.businessId)
-          .map((e: any) => e.businessId)
-      );
+    if (endorsementList && endorsementList.entries) {
+      const businessEntries = endorsementList.entries.filter((e: any) => e && e.type === 'business' && e.businessId);
+      const endorsedIds = new Set<string>(businessEntries.map((e: any) => e.businessId));
+      console.log('[LocalBusinessView] Found endorsed business IDs:', Array.from(endorsedIds));
       setEndorsedBusinessIds(endorsedIds);
     } else {
+      console.log('[LocalBusinessView] No endorsement list or entries, clearing endorsedBusinessIds');
       setEndorsedBusinessIds(new Set());
     }
   }, [library.userLists]);

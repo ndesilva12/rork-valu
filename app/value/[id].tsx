@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { ArrowLeft, TrendingUp, TrendingDown, ExternalLink, Plus, X, List } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, TrendingDown, ExternalLink, X, List, MoreVertical, Heart, UserPlus, UserMinus, Share2 } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -20,10 +20,12 @@ import {
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
-import { useRef, useState } from 'react';
+import { useLibrary } from '@/contexts/LibraryContext';
+import { useRef, useState, useCallback } from 'react';
 import { getLogoUrl } from '@/lib/logo';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
-import { getUserLists, addEntryToList, createList } from '@/services/firebase/listService';
+import { getUserLists, addEntryToList, createList, removeEntryFromList } from '@/services/firebase/listService';
+import { followEntity, unfollowEntity, isFollowing as checkIsFollowing } from '@/services/firebase/followService';
 
 interface ValueDriver {
   id: string;
@@ -41,17 +43,20 @@ interface ValueDriver {
 export default function ValueDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { profile, isDarkMode } = useUser();
+  const { profile, isDarkMode, clerkUser } = useUser();
   const { brands, valuesMatrix, values: firebaseValues } = useData();
+  const library = useLibrary();
   const colors = isDarkMode ? darkColors : lightColors;
   const scrollViewRef = useRef<ScrollView>(null);
   const { width } = useWindowDimensions();
   const isLargeScreen = Platform.OS === 'web' && width >= 768;
 
-  // Quick-add state
-  const [showModeSelectionModal, setShowModeSelectionModal] = useState(false);
+  // Action menu state
+  const [actionMenuBrandId, setActionMenuBrandId] = useState<string | null>(null);
+  const [followedBrands, setFollowedBrands] = useState<Set<string>>(new Set());
+
+  // Quick-add state (keeping for list selection modal)
   const [showListSelectionModal, setShowListSelectionModal] = useState(false);
-  const [selectedMode, setSelectedMode] = useState<ValueListMode | null>(null);
   const [userLists, setUserLists] = useState<UserList[]>([]);
   const [newListName, setNewListName] = useState('');
   const [newListDescription, setNewListDescription] = useState('');
@@ -176,47 +181,134 @@ export default function ValueDetailScreen() {
     }
   };
 
-  // Quick-add handlers
-  const handleQuickAddValue = async () => {
-    if (!profile.id) {
-      Alert.alert('Error', 'You must be logged in to add to lists');
-      return;
-    }
-
-    setQuickAddBrandId(null);
-    setQuickAddBrandName(null);
-    setShowModeSelectionModal(true);
+  // Check if brand is endorsed
+  const isBrandEndorsed = (brandId: string): boolean => {
+    if (!library?.userLists) return false;
+    const endorsementList = library.userLists.find(list => list.isEndorsed);
+    if (!endorsementList) return false;
+    return endorsementList.entries?.some(
+      (e: any) => e && e.type === 'brand' && e.brandId === brandId
+    ) || false;
   };
 
-  const handleQuickAddBrand = async (brandId: string, brandName: string) => {
-    if (!profile.id) {
-      Alert.alert('Error', 'You must be logged in to add to lists');
-      return;
-    }
+  // Action menu handlers
+  const handleEndorseBrand = async (brandId: string, brandName: string) => {
+    if (!clerkUser?.id) return;
 
     try {
-      const lists = await getUserLists(profile.id);
-      setUserLists(lists);
-      setQuickAddBrandId(brandId);
-      setQuickAddBrandName(brandName);
-      setShowListSelectionModal(true);
+      if (!library?.userLists) {
+        Alert.alert('Error', 'Library not loaded yet. Please try again.');
+        return;
+      }
+      const endorsementList = library.userLists.find(list => list.isEndorsed);
+      if (!endorsementList) {
+        Alert.alert('Error', 'Could not find endorsement list');
+        return;
+      }
+
+      const existingEntry = endorsementList.entries.find(
+        (e: any) => e.type === 'brand' && e.brandId === brandId
+      );
+
+      if (existingEntry) {
+        Alert.alert('Already Endorsed', `${brandName} is already in your endorsements`);
+        return;
+      }
+
+      const brand = brands?.find(b => b.id === brandId);
+
+      await addEntryToList(endorsementList.id, {
+        type: 'brand',
+        brandId: brandId,
+        brandName: brandName,
+        name: brandName,
+        website: brand?.website || '',
+        logoUrl: brand?.exampleImageUrl || getLogoUrl(brand?.website || ''),
+      });
+
+      await library.loadUserLists(clerkUser.id, true);
+      Alert.alert('Success', `${brandName} added to endorsements`);
     } catch (error) {
-      console.error('[ValueDetail] Error loading lists:', error);
-      Alert.alert('Error', 'Could not load your lists. Please try again.');
+      console.error('Error endorsing brand:', error);
+      Alert.alert('Error', 'Failed to endorse brand');
     }
   };
 
-  const handleModeSelection = async (mode: ValueListMode) => {
-    setSelectedMode(mode);
-    setShowModeSelectionModal(false);
+  const handleUnendorseBrand = async (brandId: string, brandName: string) => {
+    if (!clerkUser?.id) return;
 
     try {
-      const lists = await getUserLists(profile.id);
-      setUserLists(lists);
-      setShowListSelectionModal(true);
+      if (!library?.userLists) {
+        Alert.alert('Error', 'Library not loaded yet. Please try again.');
+        return;
+      }
+      const endorsementList = library.userLists.find(list => list.isEndorsed);
+      if (!endorsementList) {
+        Alert.alert('Error', 'Could not find endorsement list');
+        return;
+      }
+
+      const entry = endorsementList.entries.find(
+        (e: any) => e.type === 'brand' && e.brandId === brandId
+      );
+
+      if (!entry) {
+        Alert.alert('Not Endorsed', `${brandName} is not in your endorsements`);
+        return;
+      }
+
+      await removeEntryFromList(endorsementList.id, entry.id);
+      await library.loadUserLists(clerkUser.id, true);
+      Alert.alert('Success', `${brandName} removed from endorsements`);
     } catch (error) {
-      console.error('[ValueDetail] Error loading lists:', error);
-      Alert.alert('Error', 'Could not load your lists. Please try again.');
+      console.error('Error removing brand from endorsements:', error);
+      Alert.alert('Error', 'Failed to remove brand from endorsements');
+    }
+  };
+
+  const handleFollowBrand = async (brandId: string, brandName: string) => {
+    if (!clerkUser?.id) return;
+
+    const isCurrentlyFollowing = followedBrands.has(brandId);
+
+    try {
+      if (isCurrentlyFollowing) {
+        await unfollowEntity(clerkUser.id, brandId, 'brand');
+        setFollowedBrands(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(brandId);
+          return newSet;
+        });
+        Alert.alert('Success', `Unfollowed ${brandName}`);
+      } else {
+        await followEntity(clerkUser.id, brandId, 'brand');
+        setFollowedBrands(prev => new Set(prev).add(brandId));
+        Alert.alert('Success', `Now following ${brandName}`);
+      }
+    } catch (error) {
+      console.error('Error following/unfollowing brand:', error);
+      Alert.alert('Error', `Failed to ${isCurrentlyFollowing ? 'unfollow' : 'follow'} brand`);
+    }
+  };
+
+  const checkBrandFollowStatus = useCallback(async (brandId: string) => {
+    if (!clerkUser?.id) return;
+    try {
+      const isFollowing = await checkIsFollowing(clerkUser.id, brandId, 'brand');
+      if (isFollowing) {
+        setFollowedBrands(prev => new Set(prev).add(brandId));
+      }
+    } catch (error) {
+      console.error('Error checking follow status:', error);
+    }
+  }, [clerkUser?.id]);
+
+  const handleShareBrand = (brandId: string, brandName: string) => {
+    if (Platform.OS === 'web') {
+      navigator.clipboard.writeText(`${window.location.origin}/brand/${brandId}`);
+      Alert.alert('Success', 'Link copied to clipboard');
+    } else {
+      Alert.alert('Share', 'Share functionality coming soon');
     }
   };
 
@@ -373,15 +465,6 @@ export default function ValueDetailScreen() {
               <ArrowLeft size={24} color={colors.text} strokeWidth={2} />
             </TouchableOpacity>
           ),
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={handleQuickAddValue}
-              style={[styles.headerAddButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-              activeOpacity={0.7}
-            >
-              <Plus size={20} color={colors.primary} strokeWidth={2.5} />
-            </TouchableOpacity>
-          ),
         }}
       />
       
@@ -421,52 +504,127 @@ export default function ValueDetailScreen() {
           </Text>
           {drivers.supports.length > 0 ? (
             <View style={styles.driversContainer}>
-              {drivers.supports.map((driver, index) => (
-                <TouchableOpacity
-                  key={`${id}-support-${driver.name}-${index}`}
-                  style={[styles.driverCard, styles.supportingCard, { backgroundColor: colors.backgroundSecondary }]}
-                  onPress={() => {
-                    // Always pass brand name so we can find it even if ID doesn't match
-                    router.push(`/brand/${driver.id}?name=${encodeURIComponent(driver.name)}`);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.cardContent}>
-                    <View style={styles.leftContent}>
-                      {driver.imageUrl ? (
-                        <Image source={{ uri: driver.imageUrl }} style={styles.brandLogo} />
-                      ) : null}
-                      <View style={styles.brandInfo}>
-                        <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={1}>{driver.name}</Text>
-                        <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>{driver.description}</Text>
+              {drivers.supports.map((driver, index) => {
+                const isEndorsed = isBrandEndorsed(driver.id);
+                const isFollowed = followedBrands.has(driver.id);
+                const menuKey = `support-${driver.id}`;
+
+                return (
+                <View key={`${id}-support-${driver.name}-${index}`} style={{ position: 'relative', zIndex: actionMenuBrandId === menuKey ? 9999 : 1 }}>
+                  <TouchableOpacity
+                    style={[styles.driverCard, styles.supportingCard, { backgroundColor: colors.backgroundSecondary }]}
+                    onPress={() => {
+                      router.push(`/brand/${driver.id}?name=${encodeURIComponent(driver.name)}`);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.cardContent}>
+                      <View style={styles.leftContent}>
+                        {driver.imageUrl ? (
+                          <Image source={{ uri: driver.imageUrl }} style={styles.brandLogo} />
+                        ) : null}
+                        <View style={styles.brandInfo}>
+                          <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={1}>{driver.name}</Text>
+                          <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>{driver.description}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.cardActions}>
+                        <TouchableOpacity
+                          style={[styles.actionMenuButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            const isOpening = actionMenuBrandId !== menuKey;
+                            setActionMenuBrandId(isOpening ? menuKey : null);
+                            if (isOpening) {
+                              checkBrandFollowStatus(driver.id);
+                            }
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <View style={{ transform: [{ rotate: '90deg' }] }}>
+                            <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                          </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.shopButton, { backgroundColor: colors.primaryLight }]}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleShopPress(driver.websiteUrl || '');
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.shopButtonText, { color: colors.white }]}>Shop</Text>
+                          <ExternalLink size={14} color={colors.white} strokeWidth={2.5} />
+                        </TouchableOpacity>
                       </View>
                     </View>
-                    <View style={styles.cardActions}>
+                  </TouchableOpacity>
+
+                  {/* Action Menu Dropdown */}
+                  {actionMenuBrandId === menuKey && (
+                    <View style={[
+                      styles.actionMenuDropdown,
+                      {
+                        backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
+                        borderColor: colors.border,
+                        ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
+                      }
+                    ]}>
                       <TouchableOpacity
-                        style={[styles.addBrandButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          handleQuickAddBrand(driver.id, driver.name);
+                        style={styles.actionMenuItem}
+                        onPress={() => {
+                          setActionMenuBrandId(null);
+                          if (isEndorsed) {
+                            Alert.alert('Unendorse', `Remove ${driver.name} from your endorsement list?`, [
+                              { text: 'Cancel', style: 'cancel' },
+                              { text: 'Remove', style: 'destructive', onPress: () => handleUnendorseBrand(driver.id, driver.name) }
+                            ]);
+                          } else {
+                            handleEndorseBrand(driver.id, driver.name);
+                          }
                         }}
                         activeOpacity={0.7}
                       >
-                        <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+                        <Heart size={16} color={colors.text} strokeWidth={2} />
+                        <Text style={[styles.actionMenuText, { color: colors.text }]}>
+                          {isEndorsed ? 'Unendorse' : 'Endorse'}
+                        </Text>
                       </TouchableOpacity>
+
                       <TouchableOpacity
-                        style={[styles.shopButton, { backgroundColor: colors.primaryLight }]}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          handleShopPress(driver.websiteUrl || '');
+                        style={styles.actionMenuItem}
+                        onPress={() => {
+                          setActionMenuBrandId(null);
+                          handleFollowBrand(driver.id, driver.name);
                         }}
                         activeOpacity={0.7}
                       >
-                        <Text style={[styles.shopButtonText, { color: colors.white }]}>Shop</Text>
-                        <ExternalLink size={14} color={colors.white} strokeWidth={2.5} />
+                        {isFollowed ? (
+                          <UserMinus size={16} color={colors.text} strokeWidth={2} />
+                        ) : (
+                          <UserPlus size={16} color={colors.text} strokeWidth={2} />
+                        )}
+                        <Text style={[styles.actionMenuText, { color: colors.text }]}>
+                          {isFollowed ? 'Unfollow' : 'Follow'}
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.actionMenuItem}
+                        onPress={() => {
+                          setActionMenuBrandId(null);
+                          handleShareBrand(driver.id, driver.name);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Share2 size={16} color={colors.text} strokeWidth={2} />
+                        <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
                       </TouchableOpacity>
                     </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
+                  )}
+                </View>
+              );
+              })}
             </View>
           ) : (
             <View style={[styles.emptyState, { backgroundColor: colors.backgroundSecondary }]}>
@@ -485,52 +643,127 @@ export default function ValueDetailScreen() {
           </Text>
           {drivers.opposes.length > 0 ? (
             <View style={styles.driversContainer}>
-              {drivers.opposes.map((driver, index) => (
-                <TouchableOpacity
-                  key={`${id}-oppose-${driver.name}-${index}`}
-                  style={[styles.driverCard, styles.opposingCard, { backgroundColor: colors.backgroundSecondary }]}
-                  onPress={() => {
-                    // Always pass brand name so we can find it even if ID doesn't match
-                    router.push(`/brand/${driver.id}?name=${encodeURIComponent(driver.name)}`);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.cardContent}>
-                    <View style={styles.leftContent}>
-                      {driver.imageUrl ? (
-                        <Image source={{ uri: driver.imageUrl }} style={styles.brandLogo} />
-                      ) : null}
-                      <View style={styles.brandInfo}>
-                        <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={1}>{driver.name}</Text>
-                        <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>{driver.description}</Text>
+              {drivers.opposes.map((driver, index) => {
+                const isEndorsed = isBrandEndorsed(driver.id);
+                const isFollowed = followedBrands.has(driver.id);
+                const menuKey = `oppose-${driver.id}`;
+
+                return (
+                <View key={`${id}-oppose-${driver.name}-${index}`} style={{ position: 'relative', zIndex: actionMenuBrandId === menuKey ? 9999 : 1 }}>
+                  <TouchableOpacity
+                    style={[styles.driverCard, styles.opposingCard, { backgroundColor: colors.backgroundSecondary }]}
+                    onPress={() => {
+                      router.push(`/brand/${driver.id}?name=${encodeURIComponent(driver.name)}`);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.cardContent}>
+                      <View style={styles.leftContent}>
+                        {driver.imageUrl ? (
+                          <Image source={{ uri: driver.imageUrl }} style={styles.brandLogo} />
+                        ) : null}
+                        <View style={styles.brandInfo}>
+                          <Text style={[styles.brandName, { color: colors.text }]} numberOfLines={1}>{driver.name}</Text>
+                          <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>{driver.description}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.cardActions}>
+                        <TouchableOpacity
+                          style={[styles.actionMenuButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            const isOpening = actionMenuBrandId !== menuKey;
+                            setActionMenuBrandId(isOpening ? menuKey : null);
+                            if (isOpening) {
+                              checkBrandFollowStatus(driver.id);
+                            }
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <View style={{ transform: [{ rotate: '90deg' }] }}>
+                            <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                          </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.shopButton, { backgroundColor: colors.danger }]}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleShopPress(driver.websiteUrl || '');
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.shopButtonText, { color: colors.white }]}>Shop</Text>
+                          <ExternalLink size={14} color={colors.white} strokeWidth={2.5} />
+                        </TouchableOpacity>
                       </View>
                     </View>
-                    <View style={styles.cardActions}>
+                  </TouchableOpacity>
+
+                  {/* Action Menu Dropdown */}
+                  {actionMenuBrandId === menuKey && (
+                    <View style={[
+                      styles.actionMenuDropdown,
+                      {
+                        backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
+                        borderColor: colors.border,
+                        ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
+                      }
+                    ]}>
                       <TouchableOpacity
-                        style={[styles.addBrandButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          handleQuickAddBrand(driver.id, driver.name);
+                        style={styles.actionMenuItem}
+                        onPress={() => {
+                          setActionMenuBrandId(null);
+                          if (isEndorsed) {
+                            Alert.alert('Unendorse', `Remove ${driver.name} from your endorsement list?`, [
+                              { text: 'Cancel', style: 'cancel' },
+                              { text: 'Remove', style: 'destructive', onPress: () => handleUnendorseBrand(driver.id, driver.name) }
+                            ]);
+                          } else {
+                            handleEndorseBrand(driver.id, driver.name);
+                          }
                         }}
                         activeOpacity={0.7}
                       >
-                        <Plus size={18} color={colors.primary} strokeWidth={2.5} />
+                        <Heart size={16} color={colors.text} strokeWidth={2} />
+                        <Text style={[styles.actionMenuText, { color: colors.text }]}>
+                          {isEndorsed ? 'Unendorse' : 'Endorse'}
+                        </Text>
                       </TouchableOpacity>
+
                       <TouchableOpacity
-                        style={[styles.shopButton, { backgroundColor: colors.danger }]}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          handleShopPress(driver.websiteUrl || '');
+                        style={styles.actionMenuItem}
+                        onPress={() => {
+                          setActionMenuBrandId(null);
+                          handleFollowBrand(driver.id, driver.name);
                         }}
                         activeOpacity={0.7}
                       >
-                        <Text style={[styles.shopButtonText, { color: colors.white }]}>Shop</Text>
-                        <ExternalLink size={14} color={colors.white} strokeWidth={2.5} />
+                        {isFollowed ? (
+                          <UserMinus size={16} color={colors.text} strokeWidth={2} />
+                        ) : (
+                          <UserPlus size={16} color={colors.text} strokeWidth={2} />
+                        )}
+                        <Text style={[styles.actionMenuText, { color: colors.text }]}>
+                          {isFollowed ? 'Unfollow' : 'Follow'}
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.actionMenuItem}
+                        onPress={() => {
+                          setActionMenuBrandId(null);
+                          handleShareBrand(driver.id, driver.name);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Share2 size={16} color={colors.text} strokeWidth={2} />
+                        <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
                       </TouchableOpacity>
                     </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
+                  )}
+                </View>
+              );
+              })}
             </View>
           ) : (
             <View style={[styles.emptyState, { backgroundColor: colors.backgroundSecondary }]}>
@@ -541,85 +774,7 @@ export default function ValueDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* Max Pain/Max Benefit Selection Modal */}
-      <Modal
-        visible={showModeSelectionModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => {
-          setShowModeSelectionModal(false);
-          setSelectedMode(null);
-        }}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableWithoutFeedback
-            onPress={() => {
-              setShowModeSelectionModal(false);
-              setSelectedMode(null);
-            }}
-          >
-            <View style={StyleSheet.absoluteFill} />
-          </TouchableWithoutFeedback>
-          <Pressable
-            style={[styles.modeSelectionModalContainer, { backgroundColor: colors.background }]}
-            onPress={() => {}}
-          >
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                Select List Mode
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowModeSelectionModal(false);
-                  setSelectedMode(null);
-                }}
-              >
-                <X size={24} color={colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalContent}>
-              <Text style={[styles.quickAddItemName, { color: colors.primary }]}>
-                {userCause?.name}
-              </Text>
-
-              <Text style={[styles.modeSelectionDescription, { color: colors.textSecondary }]}>
-                Choose how you want to add this value to your list:
-              </Text>
-
-              <View style={styles.modeButtonsContainer}>
-                <TouchableOpacity
-                  style={[styles.modeButton, { backgroundColor: colors.success }]}
-                  onPress={() => handleModeSelection('maxBenefit')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.modeButtonTitle, { color: colors.white }]}>
-                    Max Benefit
-                  </Text>
-                  <Text style={[styles.modeButtonDescription, { color: colors.white }]}>
-                    Add brands aligned with this value
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.modeButton, { backgroundColor: colors.danger }]}
-                  onPress={() => handleModeSelection('maxPain')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.modeButtonTitle, { color: colors.white }]}>
-                    Max Pain
-                  </Text>
-                  <Text style={[styles.modeButtonDescription, { color: colors.white }]}>
-                    Add brands unaligned with this value
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Pressable>
-        </View>
-      </Modal>
-
-      {/* List Selection Modal */}
+      {/* List Selection Modal (kept for potential future use) */}
       <Modal
         visible={showListSelectionModal}
         animationType="slide"
@@ -904,13 +1059,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  addBrandButton: {
+  actionMenuButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
+  },
+  actionMenuDropdown: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    minWidth: 160,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 8,
+    marginTop: 4,
+    zIndex: 10000,
+  },
+  actionMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  actionMenuText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
   },
   modalOverlay: {
     flex: 1,

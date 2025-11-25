@@ -139,6 +139,25 @@ export default function BrowseScreen() {
     fetchUserBusinesses();
   }, [fetchUserBusinesses]);
 
+  // Auto-fetch location on mount if permission already granted
+  useEffect(() => {
+    const checkAndGetLocation = async () => {
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const location = await Location.getCurrentPositionAsync({});
+          setUserLocation({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          });
+        }
+      } catch (error) {
+        console.error('[Browse] Error auto-fetching location:', error);
+      }
+    };
+    checkAndGetLocation();
+  }, []);
+
   // Request location permission
   const requestLocation = async () => {
     try {
@@ -194,10 +213,17 @@ export default function BrowseScreen() {
         return;
       }
 
-      // Add to endorsement list
+      // Find the brand to get all info
+      const brand = brands?.find(b => b.id === brandId);
+
+      // Add to endorsement list with all relevant data
       await addEntryToList(endorsementList.id, {
         type: 'brand',
         brandId: brandId,
+        brandName: brandName,
+        name: brandName,
+        website: brand?.website || '',
+        logoUrl: brand?.exampleImageUrl || getLogoUrl(brand?.website || ''),
       });
 
       // Reload the library to reflect changes (force refresh)
@@ -263,7 +289,7 @@ export default function BrowseScreen() {
         });
         Alert.alert('Success', `Unfollowed ${brandName}`);
       } else {
-        await followEntity(clerkUser.id, 'brand', brandId);
+        await followEntity(clerkUser.id, brandId, 'brand');
         setFollowedBrands(prev => new Set(prev).add(brandId));
         Alert.alert('Success', `Now following ${brandName}`);
       }
