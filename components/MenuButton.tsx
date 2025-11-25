@@ -72,7 +72,7 @@ export default function MenuButton({ onShowExplainers }: MenuButtonProps = {}) {
 
   const handleUpdateValues = () => {
     setIsMenuVisible(false);
-    router.push('/onboarding/values');
+    router.push('/onboarding');
   };
 
   return (
