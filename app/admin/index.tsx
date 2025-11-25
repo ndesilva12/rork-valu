@@ -145,6 +145,18 @@ export default function AdminDashboard() {
             </Text>
           </TouchableOpacity>
 
+          {/* Endorsement History Management */}
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => router.push('/admin/endorsements')}
+          >
+            <Text style={styles.cardIcon}>📅</Text>
+            <Text style={styles.cardTitle}>Endorsement History</Text>
+            <Text style={styles.cardDescription}>
+              View and edit cumulative endorsement days, backdate periods
+            </Text>
+          </TouchableOpacity>
+
           {/* Transactions */}
           <TouchableOpacity
             style={styles.card}
