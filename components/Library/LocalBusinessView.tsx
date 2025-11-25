@@ -153,12 +153,12 @@ export default function LocalBusinessView({
 
   // Check endorsement status from library
   useEffect(() => {
-    if (!library.userLists) {
+    if (!library.state?.userLists) {
       console.log('[LocalBusinessView] No userLists, clearing endorsedBusinessIds');
       setEndorsedBusinessIds(new Set());
       return;
     }
-    const endorsementList = library.userLists.find(list => list.isEndorsed);
+    const endorsementList = library.state.userLists.find(list => list.isEndorsed);
     if (endorsementList && endorsementList.entries) {
       const businessEntries = endorsementList.entries.filter((e: any) => e && e.type === 'business' && e.businessId);
       const endorsedIds = new Set<string>(businessEntries.map((e: any) => e.businessId));
@@ -168,7 +168,7 @@ export default function LocalBusinessView({
       console.log('[LocalBusinessView] No endorsement list or entries, clearing endorsedBusinessIds');
       setEndorsedBusinessIds(new Set());
     }
-  }, [library.userLists]);
+  }, [library.state?.userLists]);
 
   // Check follow status for displayed businesses
   const checkFollowStatus = useCallback(async (businessId: string) => {
@@ -218,11 +218,11 @@ export default function LocalBusinessView({
 
     try {
       // Find the endorsement list
-      if (!library.userLists) {
+      if (!library.state?.userLists) {
         Alert.alert('Error', 'Library not loaded. Please try again.');
         return;
       }
-      const endorsementList = library.userLists.find(list => list.isEndorsed);
+      const endorsementList = library.state.userLists.find(list => list.isEndorsed);
       if (!endorsementList) {
         Alert.alert('Error', 'Could not find endorsement list. Please create one first.');
         return;
@@ -259,11 +259,11 @@ export default function LocalBusinessView({
 
     try {
       // Find the endorsement list
-      if (!library.userLists) {
+      if (!library.state?.userLists) {
         Alert.alert('Error', 'Library not loaded. Please try again.');
         return;
       }
-      const endorsementList = library.userLists.find(list => list.isEndorsed);
+      const endorsementList = library.state.userLists.find(list => list.isEndorsed);
       if (!endorsementList) {
         Alert.alert('Error', 'Could not find endorsement list');
         return;

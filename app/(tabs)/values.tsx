@@ -202,13 +202,13 @@ export default function BrowseScreen() {
 
     try {
       // Find the endorsement list
-      console.log('[Browse] library?.userLists:', library?.userLists?.length, 'lists');
-      if (!library?.userLists) {
+      console.log('[Browse] library?.state?.userLists:', library?.state?.userLists?.length, 'lists');
+      if (!library?.state?.userLists) {
         console.log('[Browse] No userLists - showing alert');
         Alert.alert('Error', 'Library not loaded yet. Please try again.');
         return;
       }
-      const endorsementList = library.userLists.find(list => list.isEndorsed);
+      const endorsementList = library.state.userLists.find(list => list.isEndorsed);
       console.log('[Browse] endorsementList:', endorsementList?.id);
       if (!endorsementList) {
         console.log('[Browse] No endorsement list found');
@@ -262,11 +262,11 @@ export default function BrowseScreen() {
 
     try {
       // Find the endorsement list
-      if (!library?.userLists) {
+      if (!library?.state?.userLists) {
         Alert.alert('Error', 'Library not loaded yet. Please try again.');
         return;
       }
-      const endorsementList = library.userLists.find(list => list.isEndorsed);
+      const endorsementList = library.state.userLists.find(list => list.isEndorsed);
       if (!endorsementList) {
         Alert.alert('Error', 'Could not find endorsement list');
         return;
@@ -349,8 +349,8 @@ export default function BrowseScreen() {
 
   // Check if brand is endorsed
   const isBrandEndorsed = (brandId: string): boolean => {
-    if (!library?.userLists) return false;
-    const endorsementList = library.userLists.find(list => list.isEndorsed);
+    if (!library?.state?.userLists) return false;
+    const endorsementList = library.state.userLists.find(list => list.isEndorsed);
     if (!endorsementList) return false;
     return endorsementList.entries?.some(
       (e: any) => e && e.type === 'brand' && e.brandId === brandId
