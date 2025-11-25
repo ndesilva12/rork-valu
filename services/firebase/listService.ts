@@ -14,6 +14,11 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { UserList, ListEntry } from '@/types/library';
+import {
+  startEndorsementPeriod,
+  endEndorsementPeriod,
+  updateCurrentPosition,
+} from './endorsementHistoryService';
 
 const LISTS_COLLECTION = 'userLists';
 
@@ -272,6 +277,40 @@ export const addEntryToList = async (
       updatedAt: serverTimestamp(),
     });
 
+    // Track endorsement history if this is an endorsement list
+    if (list.isEndorsed && list.userId) {
+      try {
+        const position = updatedEntries.length; // New item added at the end
+        let entityId = '';
+        let entityName = '';
+
+        if (entry.type === 'brand' && 'brandId' in entry) {
+          entityId = entry.brandId;
+          entityName = (entry as any).brandName || 'Unknown Brand';
+        } else if (entry.type === 'business' && 'businessId' in entry) {
+          entityId = entry.businessId;
+          entityName = (entry as any).businessName || 'Unknown Business';
+        } else if (entry.type === 'value' && 'valueId' in entry) {
+          entityId = entry.valueId;
+          entityName = (entry as any).valueName || 'Unknown Value';
+        }
+
+        if (entityId && (entry.type === 'brand' || entry.type === 'business' || entry.type === 'value')) {
+          await startEndorsementPeriod(
+            list.userId,
+            entry.type as 'brand' | 'business' | 'value',
+            entityId,
+            entityName,
+            position
+          );
+          console.log('[listService] Started endorsement period for', entityName);
+        }
+      } catch (historyError) {
+        console.error('[listService] Error tracking endorsement history:', historyError);
+        // Don't fail the main operation if history tracking fails
+      }
+    }
+
     // Return the newly created entry for optimistic updates
     return newEntry;
   } catch (error) {
@@ -291,6 +330,9 @@ export const removeEntryFromList = async (
       throw new Error('List not found');
     }
 
+    // Find the entry being removed (for endorsement history tracking)
+    const removedEntry = list.entries.find((entry) => entry.id === entryId);
+
     const updatedEntries = list.entries.filter((entry) => entry.id !== entryId);
 
     const listRef = doc(db, LISTS_COLLECTION, listId);
@@ -298,6 +340,34 @@ export const removeEntryFromList = async (
       entries: updatedEntries,
       updatedAt: serverTimestamp(),
     });
+
+    // Track endorsement history if this is an endorsement list
+    if (list.isEndorsed && list.userId && removedEntry) {
+      try {
+        let entityId = '';
+        const entryType = removedEntry.type;
+
+        if (entryType === 'brand' && 'brandId' in removedEntry) {
+          entityId = removedEntry.brandId;
+        } else if (entryType === 'business' && 'businessId' in removedEntry) {
+          entityId = removedEntry.businessId;
+        } else if (entryType === 'value' && 'valueId' in removedEntry) {
+          entityId = removedEntry.valueId;
+        }
+
+        if (entityId && (entryType === 'brand' || entryType === 'business' || entryType === 'value')) {
+          await endEndorsementPeriod(
+            list.userId,
+            entryType as 'brand' | 'business' | 'value',
+            entityId
+          );
+          console.log('[listService] Ended endorsement period for entry', entryId);
+        }
+      } catch (historyError) {
+        console.error('[listService] Error tracking endorsement history:', historyError);
+        // Don't fail the main operation if history tracking fails
+      }
+    }
   } catch (error) {
     console.error('Error removing entry from list:', error);
     throw error;
@@ -348,11 +418,51 @@ export const reorderListEntries = async (
   entries: ListEntry[]
 ): Promise<void> => {
   try {
+    const list = await getList(listId);
+    if (!list) {
+      throw new Error('List not found');
+    }
+
     const listRef = doc(db, LISTS_COLLECTION, listId);
     await updateDoc(listRef, {
       entries,
       updatedAt: serverTimestamp(),
     });
+
+    // Track position changes for endorsement lists
+    if (list.isEndorsed && list.userId) {
+      try {
+        // Update positions for all entries in the new order
+        for (let i = 0; i < entries.length; i++) {
+          const entry = entries[i];
+          const newPosition = i + 1; // 1-indexed position
+
+          let entityId = '';
+          const entryType = entry.type;
+
+          if (entryType === 'brand' && 'brandId' in entry) {
+            entityId = entry.brandId;
+          } else if (entryType === 'business' && 'businessId' in entry) {
+            entityId = entry.businessId;
+          } else if (entryType === 'value' && 'valueId' in entry) {
+            entityId = entry.valueId;
+          }
+
+          if (entityId && (entryType === 'brand' || entryType === 'business' || entryType === 'value')) {
+            await updateCurrentPosition(
+              list.userId,
+              entryType as 'brand' | 'business' | 'value',
+              entityId,
+              newPosition
+            );
+          }
+        }
+        console.log('[listService] Updated positions for', entries.length, 'entries');
+      } catch (historyError) {
+        console.error('[listService] Error tracking position changes:', historyError);
+        // Don't fail the main operation if history tracking fails
+      }
+    }
   } catch (error) {
     console.error('Error reordering list entries:', error);
     throw error;
