@@ -150,7 +150,8 @@ export default function BusinessesAcceptingDiscounts() {
     if (userLocation) {
       const beforeFilter = processed.length;
       processed = processed.filter((business) => {
-        if (!business.distance) return false;
+        // Check for undefined/null, not falsy (since 0 is a valid distance)
+        if (business.distance === undefined || business.distance === null) return false;
         return business.distance <= distanceFilter;
       });
       console.log('[BusinessesAcceptingDiscounts] Distance filtering:', {
