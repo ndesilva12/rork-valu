@@ -268,8 +268,22 @@ export default function BrandsManagement() {
             continue;
           }
 
-          // Parse money flow fields if present
-          const parseMoneyFlowField = (field: string): { name: string; relationship: string }[] => {
+          // Parse numbered columns for affiliates, partnerships, ownership
+          // Supports: affiliate1_name, affiliate1_relationship, affiliate2_name, etc.
+          const parseNumberedFields = (prefix: string): { name: string; relationship: string }[] => {
+            const results: { name: string; relationship: string }[] = [];
+            for (let n = 1; n <= 10; n++) {
+              const name = brandData[`${prefix}${n}_name`];
+              const relationship = brandData[`${prefix}${n}_relationship`] || '';
+              if (name) {
+                results.push({ name, relationship });
+              }
+            }
+            return results;
+          };
+
+          // Also support legacy format (semicolon/pipe separated)
+          const parseLegacyField = (field: string): { name: string; relationship: string }[] => {
             if (!field) return [];
             return field.split(';').map(entry => {
               const [name, relationship] = entry.split('|').map(s => s.trim());
@@ -277,9 +291,21 @@ export default function BrandsManagement() {
             }).filter(item => item.name);
           };
 
-          const affiliates = parseMoneyFlowField(brandData.affiliates || '');
-          const partnerships = parseMoneyFlowField(brandData.partnerships || '');
-          const ownership = parseMoneyFlowField(brandData.ownership || '');
+          // Try numbered columns first, fall back to legacy format
+          let affiliates = parseNumberedFields('affiliate');
+          if (affiliates.length === 0 && brandData.affiliates) {
+            affiliates = parseLegacyField(brandData.affiliates);
+          }
+
+          let partnerships = parseNumberedFields('partnership');
+          if (partnerships.length === 0 && brandData.partnerships) {
+            partnerships = parseLegacyField(brandData.partnerships);
+          }
+
+          let ownership = parseNumberedFields('owner');
+          if (ownership.length === 0 && brandData.ownership) {
+            ownership = parseLegacyField(brandData.ownership);
+          }
 
           const brandRef = doc(db, 'brands', brandData.id);
           await setDoc(brandRef, {
@@ -747,21 +773,23 @@ export default function BrandsManagement() {
               <Text style={styles.helpText}>
                 Paste CSV data below. First row must be headers.
                 {'\n\n'}
-                <Text style={styles.boldText}>Basic Format:</Text> id,name,category,description,website,location
-                {'\n'}
-                <Text style={styles.boldText}>All Available Fields:</Text> id,name,category,description,website,location,affiliates,partnerships,ownership,ownershipSources
+                <Text style={styles.boldText}>Basic Columns:</Text> id, name, category, description, website, location
                 {'\n\n'}
-                <Text style={styles.boldText}>Field Details:</Text>
-                {'\n'}• affiliates, partnerships, ownership: Use semicolons (;) to separate entries, pipe (|) for name|relationship
-                {'\n'}• Example: "Taylor Swift|$5M endorsement;LeBron James|Brand Ambassador"
+                <Text style={styles.boldText}>Spreadsheet-Friendly Format (Recommended):</Text>
+                {'\n'}Use numbered columns for relationships - easy to build in Excel/Sheets:
+                {'\n'}• affiliate1_name, affiliate1_relationship, affiliate2_name, affiliate2_relationship, ...
+                {'\n'}• partnership1_name, partnership1_relationship, partnership2_name, ...
+                {'\n'}• owner1_name, owner1_relationship, owner2_name, ...
+                {'\n'}(Supports up to 10 of each type)
                 {'\n\n'}
-                <Text style={styles.boldText}>Basic Example:</Text>
-                {'\n'}id,name,category,description,website,location
-                {'\n'}Apple,Apple Inc.,Technology,Electronics manufacturer,https://apple.com,Cupertino CA
+                <Text style={styles.boldText}>Example Headers:</Text>
+                {'\n'}id,name,category,website,affiliate1_name,affiliate1_relationship,owner1_name,owner1_relationship
                 {'\n\n'}
-                <Text style={styles.boldText}>Full Example with Money Flow:</Text>
-                {'\n'}id,name,category,description,website,location,affiliates,partnerships,ownership,ownershipSources
-                {'\n'}Nike,Nike Inc.,Sportswear,Athletic apparel,https://nike.com,Beaverton OR,LeBron James|Athlete Endorser;Serena Williams|Brand Ambassador,Apple|Tech Partnership/2016;NBA|League Partner/2015,Vanguard|~8%;BlackRock|~6%,Stakes from Q3 2025 SEC filings
+                <Text style={styles.boldText}>Example Row:</Text>
+                {'\n'}Nike,Nike Inc.,Sportswear,https://nike.com,LeBron James,Athlete Endorser,Vanguard,~8%
+                {'\n\n'}
+                <Text style={styles.boldText}>Also Supports Legacy Format:</Text>
+                {'\n'}affiliates,partnerships,ownership columns with semicolons (;) and pipes (|)
               </Text>
 
               <TextInput
