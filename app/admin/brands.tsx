@@ -239,6 +239,28 @@ export default function BrandsManagement() {
     }
   };
 
+  // Parse CSV line handling quoted fields (e.g., "New York, NY, USA")
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
   const handleBulkCreate = async () => {
     if (!bulkData.trim()) {
       Alert.alert('Error', 'Please enter CSV data');
@@ -247,7 +269,7 @@ export default function BrandsManagement() {
 
     try {
       const lines = bulkData.trim().split('\n');
-      const headers = lines[0].split(',').map(h => h.trim());
+      const headers = parseCSVLine(lines[0]);
       let successCount = 0;
       let errorCount = 0;
 
@@ -255,7 +277,7 @@ export default function BrandsManagement() {
         if (!lines[i].trim()) continue;
 
         try {
-          const values = lines[i].split(',').map(v => v.trim());
+          const values = parseCSVLine(lines[i]);
           const brandData: any = {};
 
           headers.forEach((header, index) => {
