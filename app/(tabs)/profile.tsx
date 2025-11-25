@@ -27,6 +27,7 @@ import { useRouter } from 'expo-router';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { User, Globe, MapPin, Facebook, Instagram, Twitter, Linkedin, ExternalLink, Camera, Eye, EyeOff, ChevronDown, ChevronRight, MoreVertical, Plus, Edit, Trash2, Lock, X } from 'lucide-react-native';
 import { pickAndUploadImage } from '@/lib/imageUpload';
+import { Button, Card, StatusBadge, SectionDivider } from '@/components/ui';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
@@ -359,6 +360,13 @@ export default function ProfileScreen() {
             <View style={styles.titleContainer}>
               <View style={styles.nameRow}>
                 <Text style={[styles.profileName, { color: colors.text }]}>{userName}</Text>
+                <StatusBadge
+                  label={profile.isPublicProfile !== false ? 'Public' : 'Private'}
+                  variant={profile.isPublicProfile !== false ? 'success' : 'neutral'}
+                  size="sm"
+                  isDarkMode={isDarkMode}
+                  dot
+                />
                 {!editing && (
                   <TouchableOpacity
                     onPress={() => setEditing(true)}
@@ -590,20 +598,24 @@ export default function ProfileScreen() {
 
               {/* Action Buttons */}
               <View style={styles.editActions}>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.cancelButton, { borderColor: colors.border }]}
-                  onPress={handleCancel}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.actionButtonText, { color: colors.text }]}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.saveButton, { backgroundColor: colors.primary }]}
-                  onPress={handleSave}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.actionButtonText, { color: colors.white }]}>Save Changes</Text>
-                </TouchableOpacity>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    title="Cancel"
+                    onPress={handleCancel}
+                    variant="outline"
+                    isDarkMode={isDarkMode}
+                    fullWidth
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    title="Save Changes"
+                    onPress={handleSave}
+                    variant="primary"
+                    isDarkMode={isDarkMode}
+                    fullWidth
+                  />
+                </View>
               </View>
             </View>
           )}
@@ -612,10 +624,10 @@ export default function ProfileScreen() {
         {/* Library with integrated sections */}
         <View style={styles.contentSection}>
           {library.state.isLoading ? (
-            <View style={[styles.loadingContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            <Card variant="filled" padding="lg" isDarkMode={isDarkMode} style={styles.loadingCard}>
               <ActivityIndicator size="large" color={colors.primary} />
               <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading your lists...</Text>
-            </View>
+            </Card>
           ) : (
             <UnifiedLibrary
               mode="preview"
@@ -953,6 +965,10 @@ const styles = StyleSheet.create({
   loadingContainer: {
     padding: 40,
     borderRadius: 12,
+    alignItems: 'center',
+    gap: 12,
+  },
+  loadingCard: {
     alignItems: 'center',
     gap: 12,
   },
