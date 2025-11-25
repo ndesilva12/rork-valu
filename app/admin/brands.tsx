@@ -23,6 +23,7 @@ import { collection, getDocs, doc, setDoc, deleteDoc, query, limit } from 'fireb
 import { db } from '../../firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { pickAndUploadImage } from '@/lib/imageUpload';
+import { getLogoUrl } from '@/lib/logo';
 import { Upload } from 'lucide-react-native';
 
 interface Affiliate {
@@ -308,12 +309,17 @@ export default function BrandsManagement() {
           }
 
           const brandRef = doc(db, 'brands', brandData.id);
+
+          // Generate logo URL from website using logo.dev API
+          const logoUrl = brandData.website ? getLogoUrl(brandData.website) : '';
+
           await setDoc(brandRef, {
             name: brandData.name,
             category: brandData.category || '',
             description: brandData.description || '',
             website: brandData.website || '',
             location: brandData.location || '',
+            exampleImageUrl: logoUrl,
             affiliates,
             partnerships,
             ownership,
