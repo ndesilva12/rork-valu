@@ -2054,7 +2054,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingTop: Platform.OS === 'web' ? 50 : 16,
+    paddingBottom: 16,
     borderBottomWidth: 1,
   },
   modalTitle: {
