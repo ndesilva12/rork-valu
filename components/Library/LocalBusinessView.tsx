@@ -467,6 +467,7 @@ export default function LocalBusinessView({
               style={styles.actionMenuButton}
               onPress={(e) => {
                 e.stopPropagation();
+                console.log('[LocalBusinessView] Opening options modal for business:', business.businessInfo.name);
                 setSelectedBusinessForOptions(businessData);
                 setShowItemOptionsModal(true);
               }}
@@ -621,6 +622,7 @@ export default function LocalBusinessView({
               icon: Heart,
               label: endorsedBusinessIds.has(selectedBusinessForOptions.business.id) ? 'Unendorse' : 'Endorse',
               onPress: () => {
+                console.log('[LocalBusinessView] Endorse option pressed');
                 const biz = selectedBusinessForOptions.business;
                 if (endorsedBusinessIds.has(biz.id)) {
                   Alert.alert('Unendorse', `Remove ${biz.businessInfo.name} from your endorsement list?`, [
@@ -640,6 +642,7 @@ export default function LocalBusinessView({
               icon: followedBusinessIds.has(selectedBusinessForOptions.business.id) ? UserMinus : UserPlus,
               label: followedBusinessIds.has(selectedBusinessForOptions.business.id) ? 'Unfollow' : 'Follow',
               onPress: () => {
+                console.log('[LocalBusinessView] Follow option pressed');
                 const biz = selectedBusinessForOptions.business;
                 if (followedBusinessIds.has(biz.id)) {
                   Alert.alert('Unfollow', `Stop following ${biz.businessInfo.name}?`, [
@@ -655,6 +658,7 @@ export default function LocalBusinessView({
               icon: Share2,
               label: 'Share',
               onPress: () => {
+                console.log('[LocalBusinessView] Share option pressed');
                 const biz = selectedBusinessForOptions.business;
                 if (Platform.OS === 'web') {
                   navigator.clipboard.writeText(`${window.location.origin}/business/${biz.id}`);

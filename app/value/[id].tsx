@@ -533,6 +533,7 @@ export default function ValueDetailScreen() {
                           style={[styles.actionMenuButton, { backgroundColor: colors.background, borderColor: colors.border }]}
                           onPress={(e) => {
                             e.stopPropagation();
+                            console.log('[ValuePage] Opening options modal for supporting driver:', driver.name);
                             setSelectedDriverForOptions(driver);
                             setShowItemOptionsModal(true);
                           }}
@@ -600,6 +601,7 @@ export default function ValueDetailScreen() {
                           style={[styles.actionMenuButton, { backgroundColor: colors.background, borderColor: colors.border }]}
                           onPress={(e) => {
                             e.stopPropagation();
+                            console.log('[ValuePage] Opening options modal for opposing driver:', driver.name);
                             setSelectedDriverForOptions(driver);
                             setShowItemOptionsModal(true);
                           }}
@@ -781,6 +783,7 @@ export default function ValueDetailScreen() {
               icon: Heart,
               label: isBrandEndorsed(selectedDriverForOptions.id) ? 'Unendorse' : 'Endorse',
               onPress: () => {
+                console.log('[ValuePage] Endorse option pressed');
                 const driver = selectedDriverForOptions;
                 if (isBrandEndorsed(driver.id)) {
                   Alert.alert('Unendorse', `Remove ${driver.name} from your endorsement list?`, [
@@ -795,12 +798,18 @@ export default function ValueDetailScreen() {
             {
               icon: followedBrands.has(selectedDriverForOptions.id) ? UserMinus : UserPlus,
               label: followedBrands.has(selectedDriverForOptions.id) ? 'Unfollow' : 'Follow',
-              onPress: () => handleFollowBrand(selectedDriverForOptions.id, selectedDriverForOptions.name),
+              onPress: () => {
+                console.log('[ValuePage] Follow option pressed');
+                handleFollowBrand(selectedDriverForOptions.id, selectedDriverForOptions.name);
+              },
             },
             {
               icon: Share2,
               label: 'Share',
-              onPress: () => handleShareBrand(selectedDriverForOptions.id, selectedDriverForOptions.name),
+              onPress: () => {
+                console.log('[ValuePage] Share option pressed');
+                handleShareBrand(selectedDriverForOptions.id, selectedDriverForOptions.name);
+              },
             },
           ]}
         />

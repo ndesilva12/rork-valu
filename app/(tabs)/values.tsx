@@ -193,6 +193,7 @@ export default function BrowseScreen() {
 
   // Brand action handlers
   const handleEndorseBrand = async (brandId: string, brandName: string) => {
+    console.log('[Browse] handleEndorseBrand called:', brandId, brandName);
     if (!clerkUser?.id) return;
 
     try {
@@ -279,6 +280,7 @@ export default function BrowseScreen() {
   };
 
   const handleFollowBrand = async (brandId: string, brandName: string) => {
+    console.log('[Browse] handleFollowBrand called:', brandId, brandName);
     if (!clerkUser?.id) return;
 
     const isCurrentlyFollowing = followedBrands.has(brandId);
@@ -320,6 +322,7 @@ export default function BrowseScreen() {
   }, [selectedBrandForOptions, clerkUser?.id]);
 
   const handleShareBrand = (brandId: string, brandName: string) => {
+    console.log('[Browse] handleShareBrand called:', brandId, brandName);
     if (Platform.OS === 'web') {
       navigator.clipboard.writeText(`${window.location.origin}/brand/${brandId}`);
       Alert.alert('Success', 'Link copied to clipboard');
@@ -678,6 +681,7 @@ export default function BrowseScreen() {
               style={styles.actionMenuButton}
               onPress={(e) => {
                 e.stopPropagation();
+                console.log('[Browse] Opening options modal for brand:', brand.name);
                 setSelectedBrandForOptions(brand);
                 setShowItemOptionsModal(true);
               }}
@@ -981,6 +985,7 @@ export default function BrowseScreen() {
               icon: Heart,
               label: isBrandEndorsed(selectedBrandForOptions.id) ? 'Unendorse' : 'Endorse',
               onPress: () => {
+                console.log('[Browse] Endorse option pressed');
                 const brand = selectedBrandForOptions;
                 if (isBrandEndorsed(brand.id)) {
                   Alert.alert('Unendorse', `Remove ${brand.name} from your endorsement list?`, [
@@ -995,12 +1000,18 @@ export default function BrowseScreen() {
             {
               icon: followedBrands.has(selectedBrandForOptions.id) ? UserMinus : UserPlus,
               label: followedBrands.has(selectedBrandForOptions.id) ? 'Unfollow' : 'Follow',
-              onPress: () => handleFollowBrand(selectedBrandForOptions.id, selectedBrandForOptions.name),
+              onPress: () => {
+                console.log('[Browse] Follow option pressed');
+                handleFollowBrand(selectedBrandForOptions.id, selectedBrandForOptions.name);
+              },
             },
             {
               icon: Share2,
               label: 'Share',
-              onPress: () => handleShareBrand(selectedBrandForOptions.id, selectedBrandForOptions.name),
+              onPress: () => {
+                console.log('[Browse] Share option pressed');
+                handleShareBrand(selectedBrandForOptions.id, selectedBrandForOptions.name);
+              },
             },
           ]}
         />
