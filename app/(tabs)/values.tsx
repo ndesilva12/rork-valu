@@ -26,6 +26,7 @@ import LocalBusinessView from '@/components/Library/LocalBusinessView';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { followEntity, unfollowEntity, isFollowing as checkIsFollowing } from '@/services/firebase/followService';
 import { addEntryToList, removeEntryFromList } from '@/services/firebase/listService';
+import ItemOptionsModal from '@/components/ItemOptionsModal';
 
 // ===== Types =====
 type BrowseSection = 'global' | 'local' | 'values';
@@ -118,8 +119,11 @@ export default function BrowseScreen() {
   const [globalSubsection, setGlobalSubsection] = useState<'aligned' | 'unaligned'>('aligned');
   const [alignedLoadCount, setAlignedLoadCount] = useState(10);
   const [unalignedLoadCount, setUnalignedLoadCount] = useState(10);
-  const [actionMenuBrandId, setActionMenuBrandId] = useState<string | null>(null);
   const [followedBrands, setFollowedBrands] = useState<Set<string>>(new Set());
+
+  // Item options modal state
+  const [showItemOptionsModal, setShowItemOptionsModal] = useState(false);
+  const [selectedBrandForOptions, setSelectedBrandForOptions] = useState<Product | null>(null);
 
   // Local section state
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -138,6 +142,25 @@ export default function BrowseScreen() {
   useEffect(() => {
     fetchUserBusinesses();
   }, [fetchUserBusinesses]);
+
+  // Auto-fetch location on mount if permission already granted
+  useEffect(() => {
+    const checkAndGetLocation = async () => {
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const location = await Location.getCurrentPositionAsync({});
+          setUserLocation({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          });
+        }
+      } catch (error) {
+        console.error('[Browse] Error auto-fetching location:', error);
+      }
+    };
+    checkAndGetLocation();
+  }, []);
 
   // Request location permission
   const requestLocation = async () => {
@@ -170,16 +193,25 @@ export default function BrowseScreen() {
 
   // Brand action handlers
   const handleEndorseBrand = async (brandId: string, brandName: string) => {
-    if (!clerkUser?.id) return;
+    console.log('[Browse] handleEndorseBrand called:', brandId, brandName);
+    console.log('[Browse] clerkUser?.id:', clerkUser?.id);
+    if (!clerkUser?.id) {
+      console.log('[Browse] No clerkUser.id - returning early');
+      return;
+    }
 
     try {
       // Find the endorsement list
-      if (!library?.userLists) {
+      console.log('[Browse] library?.state?.userLists:', library?.state?.userLists?.length, 'lists');
+      if (!library?.state?.userLists) {
+        console.log('[Browse] No userLists - showing alert');
         Alert.alert('Error', 'Library not loaded yet. Please try again.');
         return;
       }
-      const endorsementList = library.userLists.find(list => list.isEndorsed);
+      const endorsementList = library.state.userLists.find(list => list.isEndorsed);
+      console.log('[Browse] endorsementList:', endorsementList?.id);
       if (!endorsementList) {
+        console.log('[Browse] No endorsement list found');
         Alert.alert('Error', 'Could not find endorsement list');
         return;
       }
@@ -188,24 +220,39 @@ export default function BrowseScreen() {
       const existingEntry = endorsementList.entries.find(
         (e: any) => e.type === 'brand' && e.brandId === brandId
       );
+      console.log('[Browse] existingEntry:', existingEntry);
 
       if (existingEntry) {
+        console.log('[Browse] Already endorsed');
         Alert.alert('Already Endorsed', `${brandName} is already in your endorsements`);
         return;
       }
 
-      // Add to endorsement list
+      // Find the brand to get all info
+      const brand = brands?.find(b => b.id === brandId);
+      console.log('[Browse] Found brand:', brand?.name);
+
+      // Add to endorsement list with all relevant data
+      console.log('[Browse] Calling addEntryToList...');
       await addEntryToList(endorsementList.id, {
         type: 'brand',
         brandId: brandId,
+        brandName: brandName,
+        name: brandName,
+        website: brand?.website || '',
+        logoUrl: brand?.exampleImageUrl || getLogoUrl(brand?.website || ''),
       });
+      console.log('[Browse] addEntryToList completed');
 
       // Reload the library to reflect changes (force refresh)
+      console.log('[Browse] Reloading library...');
       await library.loadUserLists(clerkUser.id, true);
+      console.log('[Browse] Library reloaded');
 
       Alert.alert('Success', `${brandName} added to endorsements`);
+      console.log('[Browse] Success alert shown');
     } catch (error) {
-      console.error('Error endorsing brand:', error);
+      console.error('[Browse] Error endorsing brand:', error);
       Alert.alert('Error', 'Failed to endorse brand');
     }
   };
@@ -215,11 +262,11 @@ export default function BrowseScreen() {
 
     try {
       // Find the endorsement list
-      if (!library?.userLists) {
+      if (!library?.state?.userLists) {
         Alert.alert('Error', 'Library not loaded yet. Please try again.');
         return;
       }
-      const endorsementList = library.userLists.find(list => list.isEndorsed);
+      const endorsementList = library.state.userLists.find(list => list.isEndorsed);
       if (!endorsementList) {
         Alert.alert('Error', 'Could not find endorsement list');
         return;
@@ -249,6 +296,7 @@ export default function BrowseScreen() {
   };
 
   const handleFollowBrand = async (brandId: string, brandName: string) => {
+    console.log('[Browse] handleFollowBrand called:', brandId, brandName);
     if (!clerkUser?.id) return;
 
     const isCurrentlyFollowing = followedBrands.has(brandId);
@@ -263,7 +311,7 @@ export default function BrowseScreen() {
         });
         Alert.alert('Success', `Unfollowed ${brandName}`);
       } else {
-        await followEntity(clerkUser.id, 'brand', brandId);
+        await followEntity(clerkUser.id, brandId, 'brand');
         setFollowedBrands(prev => new Set(prev).add(brandId));
         Alert.alert('Success', `Now following ${brandName}`);
       }
@@ -273,20 +321,24 @@ export default function BrowseScreen() {
     }
   };
 
-  // Check follow status when action menu opens
-  const checkBrandFollowStatus = useCallback(async (brandId: string) => {
-    if (!clerkUser?.id) return;
-    try {
-      const isFollowing = await checkIsFollowing(clerkUser.id, brandId, 'brand');
-      if (isFollowing) {
-        setFollowedBrands(prev => new Set(prev).add(brandId));
+  // Check follow status when modal opens
+  useEffect(() => {
+    const checkFollowStatus = async () => {
+      if (!selectedBrandForOptions || !clerkUser?.id) return;
+      try {
+        const isFollowing = await checkIsFollowing(clerkUser.id, selectedBrandForOptions.id, 'brand');
+        if (isFollowing) {
+          setFollowedBrands(prev => new Set(prev).add(selectedBrandForOptions.id));
+        }
+      } catch (error) {
+        console.error('Error checking follow status:', error);
       }
-    } catch (error) {
-      console.error('Error checking follow status:', error);
-    }
-  }, [clerkUser?.id]);
+    };
+    checkFollowStatus();
+  }, [selectedBrandForOptions, clerkUser?.id]);
 
   const handleShareBrand = (brandId: string, brandName: string) => {
+    console.log('[Browse] handleShareBrand called:', brandId, brandName);
     if (Platform.OS === 'web') {
       navigator.clipboard.writeText(`${window.location.origin}/brand/${brandId}`);
       Alert.alert('Success', 'Link copied to clipboard');
@@ -297,8 +349,8 @@ export default function BrowseScreen() {
 
   // Check if brand is endorsed
   const isBrandEndorsed = (brandId: string): boolean => {
-    if (!library?.userLists) return false;
-    const endorsementList = library.userLists.find(list => list.isEndorsed);
+    if (!library?.state?.userLists) return false;
+    const endorsementList = library.state.userLists.find(list => list.isEndorsed);
     if (!endorsementList) return false;
     return endorsementList.entries?.some(
       (e: any) => e && e.type === 'brand' && e.brandId === brandId
@@ -606,10 +658,9 @@ export default function BrowseScreen() {
   const renderBrandCard = (brand: Product, index: number) => {
     const score = scoredBrands.get(brand.id) || 0;
     const scoreColor = score >= 50 ? colors.primary : colors.danger;
-    const isEndorsed = isBrandEndorsed(brand.id);
 
     return (
-      <View key={brand.id} style={{ position: 'relative', marginBottom: 4, zIndex: actionMenuBrandId === brand.id ? 9999 : 1, overflow: 'visible' }}>
+      <View key={brand.id} style={{ position: 'relative', marginBottom: 4 }}>
         <TouchableOpacity
           style={[
             styles.brandCard,
@@ -641,16 +692,14 @@ export default function BrowseScreen() {
                 {Math.round(score)}
               </Text>
             </View>
-            {/* Action Menu Button */}
+            {/* Action Menu Button - Opens Modal */}
             <TouchableOpacity
               style={styles.actionMenuButton}
               onPress={(e) => {
                 e.stopPropagation();
-                const isOpening = actionMenuBrandId !== brand.id;
-                setActionMenuBrandId(isOpening ? brand.id : null);
-                if (isOpening) {
-                  checkBrandFollowStatus(brand.id);
-                }
+                console.log('[Browse] Opening options modal for brand:', brand.name);
+                setSelectedBrandForOptions(brand);
+                setShowItemOptionsModal(true);
               }}
               activeOpacity={0.7}
             >
@@ -660,71 +709,6 @@ export default function BrowseScreen() {
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
-
-        {/* Action Menu Dropdown */}
-        {actionMenuBrandId === brand.id && (
-          <View style={[
-            styles.actionMenuDropdown,
-            {
-              backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
-              borderColor: colors.border,
-              ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
-            }
-          ]}>
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={() => {
-                setActionMenuBrandId(null);
-                if (isEndorsed) {
-                  Alert.alert('Unendorse', `Remove ${brand.name} from your endorsement list?`, [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Remove', style: 'destructive', onPress: () => {
-                      handleUnendorseBrand(brand.id, brand.name);
-                    }}
-                  ]);
-                } else {
-                  handleEndorseBrand(brand.id, brand.name);
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <Heart size={16} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.actionMenuText, { color: colors.text }]}>
-                {isEndorsed ? 'Unendorse' : 'Endorse'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={() => {
-                setActionMenuBrandId(null);
-                handleFollowBrand(brand.id, brand.name);
-              }}
-              activeOpacity={0.7}
-            >
-              {followedBrands.has(brand.id) ? (
-                <UserMinus size={16} color={colors.text} strokeWidth={2} />
-              ) : (
-                <UserPlus size={16} color={colors.text} strokeWidth={2} />
-              )}
-              <Text style={[styles.actionMenuText, { color: colors.text }]}>
-                {followedBrands.has(brand.id) ? 'Unfollow' : 'Follow'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={() => {
-                setActionMenuBrandId(null);
-                handleShareBrand(brand.id, brand.name);
-              }}
-              activeOpacity={0.7}
-            >
-              <Share2 size={16} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
     );
   };
@@ -1001,6 +985,50 @@ export default function BrowseScreen() {
         {/* Section content */}
         {renderSectionContent()}
       </ScrollView>
+
+      {/* Item Options Modal */}
+      {selectedBrandForOptions && (
+        <ItemOptionsModal
+          visible={showItemOptionsModal}
+          onClose={() => {
+            setShowItemOptionsModal(false);
+            setSelectedBrandForOptions(null);
+          }}
+          itemName={selectedBrandForOptions.name}
+          isDarkMode={isDarkMode}
+          options={[
+            {
+              icon: Heart,
+              label: isBrandEndorsed(selectedBrandForOptions.id) ? 'Unendorse' : 'Endorse',
+              onPress: () => {
+                console.log('[Browse] Endorse option pressed');
+                const brand = selectedBrandForOptions;
+                if (isBrandEndorsed(brand.id)) {
+                  handleUnendorseBrand(brand.id, brand.name);
+                } else {
+                  handleEndorseBrand(brand.id, brand.name);
+                }
+              },
+            },
+            {
+              icon: followedBrands.has(selectedBrandForOptions.id) ? UserMinus : UserPlus,
+              label: followedBrands.has(selectedBrandForOptions.id) ? 'Unfollow' : 'Follow',
+              onPress: () => {
+                console.log('[Browse] Follow option pressed');
+                handleFollowBrand(selectedBrandForOptions.id, selectedBrandForOptions.name);
+              },
+            },
+            {
+              icon: Share2,
+              label: 'Share',
+              onPress: () => {
+                console.log('[Browse] Share option pressed');
+                handleShareBrand(selectedBrandForOptions.id, selectedBrandForOptions.name);
+              },
+            },
+          ]}
+        />
+      )}
     </View>
   );
 }
@@ -1163,31 +1191,6 @@ const styles = StyleSheet.create({
     padding: 8,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  actionMenuDropdown: {
-    position: 'absolute',
-    right: 8,
-    top: 64,
-    minWidth: 160,
-    borderRadius: 8,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
-    zIndex: 99999,
-  },
-  actionMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  actionMenuText: {
-    fontSize: 15,
-    fontWeight: '500' as const,
   },
   loadMoreButton: {
     paddingVertical: 12,

@@ -8,8 +8,7 @@ import {
   Text,
   StyleSheet,
   Modal,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
+  Pressable,
   Platform,
 } from 'react-native';
 import { Plus, UserPlus, Share2, Trash2 } from 'lucide-react-native';
@@ -39,6 +38,24 @@ export default function ItemOptionsModal({
 }: ItemOptionsModalProps) {
   const colors = isDarkMode ? darkColors : lightColors;
 
+  const handleOptionPress = (option: ItemOption) => {
+    console.log('[ItemOptionsModal] Option pressed:', option.label);
+    option.onPress();
+    onClose();
+  };
+
+  const handleOverlayPress = () => {
+    console.log('[ItemOptionsModal] Overlay pressed, closing modal');
+    onClose();
+  };
+
+  const handleContainerPress = (e: any) => {
+    console.log('[ItemOptionsModal] Container pressed, stopping propagation');
+    e.stopPropagation();
+  };
+
+  if (!visible) return null;
+
   return (
     <Modal
       visible={visible}
@@ -46,56 +63,60 @@ export default function ItemOptionsModal({
       transparent={true}
       onRequestClose={onClose}
     >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.overlay}>
-          <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-            <View style={[styles.container, { backgroundColor: colors.background }]}>
-              {itemName && (
-                <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
-                  {itemName}
-                </Text>
-              )}
+      <Pressable
+        style={styles.overlay}
+        onPress={handleOverlayPress}
+      >
+        <Pressable
+          style={[styles.container, { backgroundColor: colors.background }]}
+          onPress={handleContainerPress}
+        >
+          {itemName && (
+            <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
+              {itemName}
+            </Text>
+          )}
 
-              {/* Options */}
-              <View style={styles.optionsContainer}>
-                {options.map((option, index) => {
-                  const Icon = option.icon;
-                  const textColor = option.isDanger ? colors.danger : colors.text;
+          {/* Options */}
+          <View style={styles.optionsContainer}>
+            {options.map((option, index) => {
+              const Icon = option.icon;
+              const textColor = option.isDanger ? colors.danger : colors.text;
 
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      style={[
-                        styles.optionButton,
-                        { backgroundColor: colors.backgroundSecondary },
-                      ]}
-                      onPress={() => {
-                        option.onPress();
-                        onClose();
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Icon size={20} color={textColor} strokeWidth={2} />
-                      <Text style={[styles.optionText, { color: textColor }]}>
-                        {option.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+              return (
+                <Pressable
+                  key={index}
+                  style={({ pressed }) => [
+                    styles.optionButton,
+                    { backgroundColor: colors.backgroundSecondary },
+                    pressed && styles.optionButtonPressed,
+                    Platform.OS === 'web' && ({ cursor: 'pointer' } as any),
+                  ]}
+                  onPress={() => handleOptionPress(option)}
+                >
+                  <Icon size={20} color={textColor} strokeWidth={2} />
+                  <Text style={[styles.optionText, { color: textColor }]}>
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
 
-              {/* Cancel Button */}
-              <TouchableOpacity
-                style={[styles.cancelButton, { borderColor: colors.border }]}
-                onPress={onClose}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.cancelText, { color: colors.text }]}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
+          {/* Cancel Button */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.cancelButton,
+              { borderColor: colors.border },
+              pressed && styles.cancelButtonPressed,
+              Platform.OS === 'web' && ({ cursor: 'pointer' } as any),
+            ]}
+            onPress={onClose}
+          >
+            <Text style={[styles.cancelText, { color: colors.text }]}>Cancel</Text>
+          </Pressable>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
@@ -136,6 +157,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 16,
   },
+  optionButtonPressed: {
+    opacity: 0.7,
+  },
   optionText: {
     fontSize: 16,
     fontWeight: '600',
@@ -145,6 +169,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
+  },
+  cancelButtonPressed: {
+    opacity: 0.7,
   },
   cancelText: {
     fontSize: 16,

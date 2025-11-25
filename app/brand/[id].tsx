@@ -553,8 +553,11 @@ export default function BrandDetailScreen() {
   const AlignmentIcon = brandScore >= 60 ? TrendingUp : TrendingDown;
   const alignmentLabel = brandScore >= 60 ? 'Aligned' : brandScore < 40 ? 'Not Aligned' : 'Neutral';
 
-  // Calculate which values match with this brand
-  const matchingValues: string[] = [];
+  // Calculate which values match with this brand - split into aligned and unaligned
+  const alignedValues: { id: string; userStance: string; brandStance: string }[] = [];
+  const unalignedValues: { id: string; userStance: string; brandStance: string }[] = [];
+  const matchingValues: string[] = []; // Legacy - all shared values
+
   if (brand && brand.name && profile.causes && valuesMatrix) {
     profile.causes.forEach(cause => {
       const valueData = valuesMatrix[cause.id];
@@ -565,6 +568,17 @@ export default function BrandDetailScreen() {
 
       if (isInSupport || isInOppose) {
         matchingValues.push(cause.id);
+
+        const brandStance = isInSupport ? 'support' : 'oppose';
+        const userStance = cause.type;
+
+        if (userStance === brandStance) {
+          // Both have same stance
+          alignedValues.push({ id: cause.id, userStance, brandStance });
+        } else {
+          // Conflicting stances
+          unalignedValues.push({ id: cause.id, userStance, brandStance });
+        }
       }
     });
   }
@@ -832,23 +846,29 @@ export default function BrandDetailScreen() {
                 Why
               </Text>
             </View>
-            {matchingValues.length > 0 && (
-              <View style={styles.valueTagsContainer}>
-                {matchingValues.map((valueId) => {
+
+            {/* Aligned Values Section */}
+            {alignedValues.length > 0 && (
+              <View style={styles.whySubsection}>
+                <View style={styles.whySubsectionHeader}>
+                  <TrendingUp size={16} color={colors.success} strokeWidth={2} />
+                  <Text style={[styles.whySubsectionTitle, { color: colors.success }]}>
+                    Aligned ({alignedValues.length})
+                  </Text>
+                </View>
+                <View style={styles.valueTagsContainer}>
+                  {alignedValues.map((item) => {
                     const allValues = Object.values(AVAILABLE_VALUES).flat();
-                    const value = allValues.find(v => v.id === valueId);
+                    const value = allValues.find(v => v.id === item.id);
                     if (!value) return null;
-                    
-                    const userCause = profile.causes.find(c => c.id === valueId);
-                    if (!userCause) return null;
-                    
-                    const tagColor = userCause.type === 'support' ? colors.success : colors.danger;
-                    
+
+                    const tagColor = item.userStance === 'support' ? colors.success : colors.danger;
+
                     return (
                       <TouchableOpacity
-                        key={valueId}
+                        key={item.id}
                         style={[styles.valueTag, { backgroundColor: tagColor + '15' }]}
-                        onPress={() => router.push(`/value/${valueId}`)}
+                        onPress={() => router.push(`/value/${item.id}`)}
                         activeOpacity={0.7}
                       >
                         <Text style={[styles.valueTagText, { color: tagColor }]}>
@@ -857,7 +877,47 @@ export default function BrandDetailScreen() {
                       </TouchableOpacity>
                     );
                   })}
+                </View>
               </View>
+            )}
+
+            {/* Unaligned Values Section */}
+            {unalignedValues.length > 0 && (
+              <View style={[styles.whySubsection, alignedValues.length > 0 && { marginTop: 16 }]}>
+                <View style={styles.whySubsectionHeader}>
+                  <TrendingDown size={16} color={colors.danger} strokeWidth={2} />
+                  <Text style={[styles.whySubsectionTitle, { color: colors.danger }]}>
+                    Not Aligned ({unalignedValues.length})
+                  </Text>
+                </View>
+                <View style={styles.valueTagsContainer}>
+                  {unalignedValues.map((item) => {
+                    const allValues = Object.values(AVAILABLE_VALUES).flat();
+                    const value = allValues.find(v => v.id === item.id);
+                    if (!value) return null;
+
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={[styles.valueTag, { backgroundColor: colors.danger + '15' }]}
+                        onPress={() => router.push(`/value/${item.id}`)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.valueTagText, { color: colors.danger }]}>
+                          {value.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            {/* Show message if no shared values */}
+            {alignedValues.length === 0 && unalignedValues.length === 0 && (
+              <Text style={[styles.noValuesText, { color: colors.textSecondary }]}>
+                No shared values to compare
+              </Text>
             )}
           </View>
 
@@ -1539,6 +1599,24 @@ const styles = StyleSheet.create({
   valueTagText: {
     fontSize: 13,
     fontWeight: '600' as const,
+  },
+  whySubsection: {
+    marginTop: 8,
+  },
+  whySubsectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  whySubsectionTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  noValuesText: {
+    fontSize: 14,
+    textAlign: 'center' as const,
+    paddingVertical: 12,
   },
   errorContainer: {
     flex: 1,

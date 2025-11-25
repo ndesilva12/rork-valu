@@ -256,19 +256,9 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
       {/* Selection Container */}
       {selectedBusiness && (() => {
         const acceptsStand = selectedBusiness.business.businessInfo.acceptsStandDiscounts;
-        const acceptsQR = selectedBusiness.business.businessInfo.acceptsQRCode ?? true;
-        const acceptsPromo = selectedBusiness.business.businessInfo.acceptsValueCode ?? true;
         const discountPercent = selectedBusiness.business.businessInfo.customerDiscountPercent || 0;
         const donationPercent = selectedBusiness.business.businessInfo.donationPercent || 0;
-
-        let acceptanceMethod = '';
-        if (acceptsQR && acceptsPromo) {
-          acceptanceMethod = 'QR Code / Promo Code';
-        } else if (acceptsQR) {
-          acceptanceMethod = 'QR Code';
-        } else if (acceptsPromo) {
-          acceptanceMethod = 'Promo Code';
-        }
+        const acceptanceMethod = 'QR Code';
 
         return (
           <View style={styles.selectionContainer}>

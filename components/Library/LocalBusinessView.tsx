@@ -3,7 +3,7 @@
  * Displays local businesses with distance filtering and sorting
  * Integrated into the UnifiedLibrary as a section
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { MapPin, ChevronDown, ChevronUp, MoreVertical, X, UserMinus, Heart, Share2 } from 'lucide-react-native';
+import { MapPin, ChevronDown, ChevronUp, MoreVertical, X, UserMinus, UserPlus, Heart, Share2 } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { BusinessUser, isBusinessWithinRange } from '@/services/firebase/businessService';
 import { Cause } from '@/types';
@@ -27,8 +27,9 @@ import { getLogoUrl } from '@/lib/logo';
 import BusinessMapView from '@/components/BusinessMapView';
 import { useUser } from '@/contexts/UserContext';
 import { useLibrary } from '@/contexts/LibraryContext';
-import { unfollowEntity } from '@/services/firebase/followService';
-import { removeEntryFromList } from '@/services/firebase/listService';
+import { unfollowEntity, followEntity, isFollowing as checkIsFollowing } from '@/services/firebase/followService';
+import { addEntryToList, removeEntryFromList } from '@/services/firebase/listService';
+import ItemOptionsModal from '@/components/ItemOptionsModal';
 
 // Helper function to extract Town, State from full address
 const shortenAddress = (fullAddress: string | undefined): string => {
@@ -141,7 +142,65 @@ export default function LocalBusinessView({
   const [localSortDirection, setLocalSortDirection] = useState<'highToLow' | 'lowToHigh'>('highToLow');
   const [searchQuery, setSearchQuery] = useState('');
   const [showMap, setShowMap] = useState(false);
-  const [actionMenuBusinessId, setActionMenuBusinessId] = useState<string | null>(null);
+
+  // Item options modal state
+  const [showItemOptionsModal, setShowItemOptionsModal] = useState(false);
+  const [selectedBusinessForOptions, setSelectedBusinessForOptions] = useState<BusinessWithScore | null>(null);
+
+  // Track endorsement and follow status for each business
+  const [endorsedBusinessIds, setEndorsedBusinessIds] = useState<Set<string>>(new Set());
+  const [followedBusinessIds, setFollowedBusinessIds] = useState<Set<string>>(new Set());
+
+  // Check endorsement status from library
+  useEffect(() => {
+    if (!library.state?.userLists) {
+      console.log('[LocalBusinessView] No userLists, clearing endorsedBusinessIds');
+      setEndorsedBusinessIds(new Set());
+      return;
+    }
+    const endorsementList = library.state.userLists.find(list => list.isEndorsed);
+    if (endorsementList && endorsementList.entries) {
+      const businessEntries = endorsementList.entries.filter((e: any) => e && e.type === 'business' && e.businessId);
+      const endorsedIds = new Set<string>(businessEntries.map((e: any) => e.businessId));
+      console.log('[LocalBusinessView] Found endorsed business IDs:', Array.from(endorsedIds));
+      setEndorsedBusinessIds(endorsedIds);
+    } else {
+      console.log('[LocalBusinessView] No endorsement list or entries, clearing endorsedBusinessIds');
+      setEndorsedBusinessIds(new Set());
+    }
+  }, [library.state?.userLists]);
+
+  // Check follow status for displayed businesses
+  const checkFollowStatus = useCallback(async (businessId: string) => {
+    if (!clerkUser?.id) return false;
+    try {
+      const isFollowing = await checkIsFollowing(clerkUser.id, businessId, 'business');
+      return isFollowing;
+    } catch (error) {
+      console.error('Error checking follow status:', error);
+      return false;
+    }
+  }, [clerkUser?.id]);
+
+  // Check follow status when modal opens
+  useEffect(() => {
+    const checkFollowForOpenModal = async () => {
+      if (selectedBusinessForOptions && clerkUser?.id) {
+        const businessId = selectedBusinessForOptions.business.id;
+        const isFollowing = await checkFollowStatus(businessId);
+        setFollowedBusinessIds(prev => {
+          const newSet = new Set(prev);
+          if (isFollowing) {
+            newSet.add(businessId);
+          } else {
+            newSet.delete(businessId);
+          }
+          return newSet;
+        });
+      }
+    };
+    checkFollowForOpenModal();
+  }, [selectedBusinessForOptions, clerkUser?.id, checkFollowStatus]);
 
   // Mobile: fewer options to fit on one row; Desktop: more granular options
   const localDistanceOptions: LocalDistanceOption[] = isMobile
@@ -154,12 +213,57 @@ export default function LocalBusinessView({
     console.log('[LocalBusinessView] showMap state set to true');
   };
 
+  const handleEndorse = async (businessId: string, businessName: string, logoUrl: string) => {
+    if (!clerkUser?.id) return;
+
+    try {
+      // Find the endorsement list
+      if (!library.state?.userLists) {
+        Alert.alert('Error', 'Library not loaded. Please try again.');
+        return;
+      }
+      const endorsementList = library.state.userLists.find(list => list.isEndorsed);
+      if (!endorsementList) {
+        Alert.alert('Error', 'Could not find endorsement list. Please create one first.');
+        return;
+      }
+
+      // Add entry to endorsement list
+      await addEntryToList(endorsementList.id, {
+        type: 'business',
+        businessId: businessId,
+        name: businessName,
+        website: '',
+        logoUrl: logoUrl || '',
+      });
+
+      // Update local state
+      setEndorsedBusinessIds(prev => new Set(prev).add(businessId));
+
+      // Reload the library to reflect changes
+      await library.loadUserLists(clerkUser.id);
+
+      Alert.alert('Success', `${businessName} added to endorsements`);
+    } catch (error: any) {
+      console.error('Error endorsing business:', error);
+      if (error.message?.includes('already in the list')) {
+        Alert.alert('Info', `${businessName} is already in your endorsement list`);
+      } else {
+        Alert.alert('Error', 'Failed to add business to endorsements');
+      }
+    }
+  };
+
   const handleUnendorse = async (businessId: string, businessName: string) => {
     if (!clerkUser?.id) return;
 
     try {
       // Find the endorsement list
-      const endorsementList = library.userLists.find(list => list.isEndorsed);
+      if (!library.state?.userLists) {
+        Alert.alert('Error', 'Library not loaded. Please try again.');
+        return;
+      }
+      const endorsementList = library.state.userLists.find(list => list.isEndorsed);
       if (!endorsementList) {
         Alert.alert('Error', 'Could not find endorsement list');
         return;
@@ -178,6 +282,13 @@ export default function LocalBusinessView({
       // Remove the entry
       await removeEntryFromList(endorsementList.id, entry.id);
 
+      // Update local state
+      setEndorsedBusinessIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(businessId);
+        return newSet;
+      });
+
       // Reload the library to reflect changes
       await library.loadUserLists(clerkUser.id);
 
@@ -188,11 +299,35 @@ export default function LocalBusinessView({
     }
   };
 
+  const handleFollow = async (businessId: string, businessName: string) => {
+    if (!clerkUser?.id) return;
+
+    try {
+      await followEntity(clerkUser.id, businessId, 'business');
+
+      // Update local state
+      setFollowedBusinessIds(prev => new Set(prev).add(businessId));
+
+      Alert.alert('Success', `Now following ${businessName}`);
+    } catch (error) {
+      console.error('Error following business:', error);
+      Alert.alert('Error', 'Failed to follow business');
+    }
+  };
+
   const handleUnfollow = async (businessId: string, businessName: string) => {
     if (!clerkUser?.id) return;
 
     try {
-      await unfollowEntity(clerkUser.id, 'business', businessId);
+      await unfollowEntity(clerkUser.id, businessId, 'business');
+
+      // Update local state
+      setFollowedBusinessIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(businessId);
+        return newSet;
+      });
+
       Alert.alert('Success', `Unfollowed ${businessName}`);
     } catch (error) {
       console.error('Error unfollowing business:', error);
@@ -273,7 +408,7 @@ export default function LocalBusinessView({
     const discountText = getDiscountDisplay(business);
 
     return (
-      <View key={business.id} style={{ position: 'relative', marginBottom: 4, zIndex: actionMenuBusinessId === business.id ? 1000 : 1 }}>
+      <View key={business.id} style={{ position: 'relative', marginBottom: 4 }}>
         <TouchableOpacity
           style={[
             styles.businessCard,
@@ -327,12 +462,14 @@ export default function LocalBusinessView({
                 {alignmentScore}
               </Text>
             </View>
-            {/* Action Menu Button */}
+            {/* Action Menu Button - Opens Modal */}
             <TouchableOpacity
               style={styles.actionMenuButton}
               onPress={(e) => {
                 e.stopPropagation();
-                setActionMenuBusinessId(actionMenuBusinessId === business.id ? null : business.id);
+                console.log('[LocalBusinessView] Opening options modal for business:', business.businessInfo.name);
+                setSelectedBusinessForOptions(businessData);
+                setShowItemOptionsModal(true);
               }}
               activeOpacity={0.7}
             >
@@ -342,62 +479,6 @@ export default function LocalBusinessView({
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
-
-        {/* Action Menu Dropdown */}
-        {actionMenuBusinessId === business.id && (
-          <View style={[styles.actionMenuDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={() => {
-                setActionMenuBusinessId(null);
-                Alert.alert('Unendorse', `Remove ${business.businessInfo.name} from your endorsement list?`, [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Remove', style: 'destructive', onPress: () => {
-                    handleUnendorse(business.id, business.businessInfo.name);
-                  }}
-                ]);
-              }}
-              activeOpacity={0.7}
-            >
-              <Heart size={16} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.actionMenuText, { color: colors.text }]}>Unendorse</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={() => {
-                setActionMenuBusinessId(null);
-                Alert.alert('Unfollow', `Stop following ${business.businessInfo.name}?`, [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Unfollow', style: 'destructive', onPress: () => {
-                    handleUnfollow(business.id, business.businessInfo.name);
-                  }}
-                ]);
-              }}
-              activeOpacity={0.7}
-            >
-              <UserMinus size={16} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.actionMenuText, { color: colors.text }]}>Unfollow</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={() => {
-                setActionMenuBusinessId(null);
-                if (Platform.OS === 'web') {
-                  navigator.clipboard.writeText(`${window.location.origin}/business/${business.id}`);
-                  Alert.alert('Success', 'Link copied to clipboard');
-                } else {
-                  Alert.alert('Share', 'Share functionality coming soon');
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <Share2 size={16} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
     );
   };
@@ -525,6 +606,65 @@ export default function LocalBusinessView({
           />
         </View>
       </Modal>
+
+      {/* Item Options Modal */}
+      {selectedBusinessForOptions && (
+        <ItemOptionsModal
+          visible={showItemOptionsModal}
+          onClose={() => {
+            setShowItemOptionsModal(false);
+            setSelectedBusinessForOptions(null);
+          }}
+          itemName={selectedBusinessForOptions.business.businessInfo.name || 'Business'}
+          isDarkMode={isDarkMode}
+          options={[
+            {
+              icon: Heart,
+              label: endorsedBusinessIds.has(selectedBusinessForOptions.business.id) ? 'Unendorse' : 'Endorse',
+              onPress: () => {
+                console.log('[LocalBusinessView] Endorse option pressed');
+                const biz = selectedBusinessForOptions.business;
+                if (endorsedBusinessIds.has(biz.id)) {
+                  handleUnendorse(biz.id, biz.businessInfo.name);
+                } else {
+                  handleEndorse(
+                    biz.id,
+                    biz.businessInfo.name,
+                    biz.businessInfo.logoUrl || getLogoUrl(biz.businessInfo.website || '')
+                  );
+                }
+              },
+            },
+            {
+              icon: followedBusinessIds.has(selectedBusinessForOptions.business.id) ? UserMinus : UserPlus,
+              label: followedBusinessIds.has(selectedBusinessForOptions.business.id) ? 'Unfollow' : 'Follow',
+              onPress: () => {
+                console.log('[LocalBusinessView] Follow option pressed');
+                const biz = selectedBusinessForOptions.business;
+                if (followedBusinessIds.has(biz.id)) {
+                  handleUnfollow(biz.id, biz.businessInfo.name);
+                } else {
+                  handleFollow(biz.id, biz.businessInfo.name);
+                }
+              },
+            },
+            {
+              icon: Share2,
+              label: 'Share',
+              onPress: () => {
+                console.log('[LocalBusinessView] Share option pressed');
+                const biz = selectedBusinessForOptions.business;
+                if (Platform.OS === 'web') {
+                  navigator.clipboard.writeText(`${window.location.origin}/business/${biz.id}`);
+                  Alert.alert('Success', 'Link copied to clipboard');
+                } else {
+                  Alert.alert('Share', 'Share functionality coming soon');
+                }
+              },
+            },
+          ]}
+        />
+      )}
     </View>
   );
 }
@@ -682,31 +822,6 @@ const styles = StyleSheet.create({
     padding: 8,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  actionMenuDropdown: {
-    position: 'absolute',
-    right: 8,
-    top: 64,
-    minWidth: 160,
-    borderRadius: 8,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 1000,
-  },
-  actionMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  actionMenuText: {
-    fontSize: 15,
-    fontWeight: '500',
   },
   emptySection: {
     padding: 40,

@@ -809,6 +809,35 @@ export default function UnifiedLibrary({
     }
   };
 
+  // Alias for handleAddToLibrary - used by action menu
+  const handleEndorseItem = handleAddToLibrary;
+
+  // Toggle follow status for brand or business
+  const handleToggleFollow = async (itemId: string, itemType: 'brand' | 'business') => {
+    if (!currentUserId) {
+      Alert.alert('Error', 'You must be logged in to follow');
+      return;
+    }
+
+    try {
+      const isCurrentlyFollowing = await checkIsFollowing(currentUserId, itemId, itemType);
+
+      if (isCurrentlyFollowing) {
+        await unfollowEntity(currentUserId, itemId, itemType);
+        Alert.alert('Success', 'Unfollowed successfully');
+      } else {
+        await followEntity(currentUserId, itemId, itemType);
+        Alert.alert('Success', 'Now following');
+      }
+
+      // Update the isFollowingSelectedItem state
+      setIsFollowingSelectedItem(!isCurrentlyFollowing);
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+      Alert.alert('Error', 'Failed to update follow status');
+    }
+  };
+
   const handleSelectList = async (listId: string) => {
     if (!selectedItemToAdd) return;
 
@@ -1157,11 +1186,16 @@ export default function UnifiedLibrary({
           const alignmentScore = scoredBrands.get(entry.businessId) || 50;
           const scoreColor = alignmentScore >= 50 ? colors.primary : colors.danger;
 
-          // Get business name from multiple possible fields
-          const businessName = (entry as any).businessName || (entry as any).name || 'Unknown Business';
-          const businessCategory = (entry as any).businessCategory || (entry as any).category;
-          // Use uploaded logoUrl first, then legacy logo field, fallback to generated logo from website
-          const logoUrl = (entry as any).logoUrl || (entry as any).logo || ((entry as any).website ? getLogoUrl((entry as any).website) : getLogoUrl(''));
+          // Look up full business data from userBusinesses or allBusinesses
+          const fullBusiness = userBusinesses.find(b => b.id === entry.businessId)
+            || allBusinesses.find(b => b.id === entry.businessId);
+
+          // Get business name from multiple possible fields - prefer actual business data
+          const businessName = fullBusiness?.businessInfo?.name || (entry as any).businessName || (entry as any).name || 'Unknown Business';
+          const businessCategory = fullBusiness?.businessInfo?.category || (entry as any).businessCategory || (entry as any).category;
+          // Use actual business logoUrl first, then entry data, fallback to generated logo from website
+          const businessWebsite = fullBusiness?.businessInfo?.website || (entry as any).website || '';
+          const logoUrl = fullBusiness?.businessInfo?.logoUrl || (entry as any).logoUrl || (entry as any).logo || (businessWebsite ? getLogoUrl(businessWebsite) : getLogoUrl(''));
 
           return (
             <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 99999 : 1, overflow: 'visible' }}>
@@ -1639,7 +1673,7 @@ export default function UnifiedLibrary({
                 </View>
                 <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
                   <Text style={{ fontWeight: '600', color: colors.text }}>1. </Text>
-                  The add button (search)
+                  Search for businesses using the add button
                 </Text>
               </View>
 
@@ -1649,7 +1683,7 @@ export default function UnifiedLibrary({
                 </View>
                 <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
                   <Text style={{ fontWeight: '600', color: colors.text }}>2. </Text>
-                  Our value-based recommendations (Browse tab)
+                  Browse our value-based recommendations
                 </Text>
               </View>
 
@@ -1659,7 +1693,7 @@ export default function UnifiedLibrary({
                 </View>
                 <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
                   <Text style={{ fontWeight: '600', color: colors.text }}>3. </Text>
-                  Your friends (Explore tab)
+                  Explore your friends' endorsement lists
                 </Text>
               </View>
             </View>
@@ -2787,6 +2821,57 @@ export default function UnifiedLibrary({
     );
   };
 
+  // Render empty endorsement state with explainer
+  const renderEmptyEndorsementExplainer = () => {
+    // Check if this is the user's own profile
+    const isOwnProfile = mode === 'edit' ||
+      (mode === 'preview' && currentUserId && viewingUserId === currentUserId) ||
+      (!viewingUserId && currentUserId);
+
+    if (isOwnProfile) {
+      // Show helpful explainer for user's own empty endorsement list
+      return (
+        <View style={styles.emptyEndorsementContainer}>
+          <View style={[styles.emptyEndorsementIconCircle, { backgroundColor: colors.primary + '20' }]}>
+            <Heart size={32} color={colors.primary} strokeWidth={2} />
+          </View>
+          <Text style={[styles.emptyEndorsementTitle, { color: colors.text }]}>
+            Build Your Endorsement List
+          </Text>
+          <View style={styles.emptyEndorsementSteps}>
+            <View style={styles.emptyEndorsementStep}>
+              <Search size={18} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
+                Search for businesses using the add button
+              </Text>
+            </View>
+            <View style={styles.emptyEndorsementStep}>
+              <BookOpen size={18} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
+                Browse our value-based recommendations
+              </Text>
+            </View>
+            <View style={styles.emptyEndorsementStep}>
+              <Compass size={18} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
+                Explore your friends' endorsement lists
+              </Text>
+            </View>
+          </View>
+        </View>
+      );
+    }
+
+    // For viewing others' empty endorsement lists, show simple message
+    return (
+      <View style={styles.emptySection}>
+        <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+          No endorsements yet
+        </Text>
+      </View>
+    );
+  };
+
   // Render content for selected section
   const renderSectionContent = () => {
     // Profile views can ONLY show endorsement, following, or followers
@@ -2795,24 +2880,12 @@ export default function UnifiedLibrary({
 
     if (isProfileView && !allowedProfileSections.includes(selectedSection)) {
       // Invalid section for profile view - show endorsement instead
-      return endorsementList ? renderEndorsementContent() : (
-        <View style={styles.emptySection}>
-          <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
-            No endorsements yet
-          </Text>
-        </View>
-      );
+      return endorsementList ? renderEndorsementContent() : renderEmptyEndorsementExplainer();
     }
 
     switch (selectedSection) {
       case 'endorsement':
-        return endorsementList ? renderEndorsementContent() : (
-          <View style={styles.emptySection}>
-            <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
-              No endorsements yet
-            </Text>
-          </View>
-        );
+        return endorsementList ? renderEndorsementContent() : renderEmptyEndorsementExplainer();
 
       case 'aligned':
         return alignedItems.length > 0 ? renderAlignedContent() : (
@@ -4004,6 +4077,39 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptySectionText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  // Empty endorsement explainer styles
+  emptyEndorsementContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyEndorsementIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyEndorsementTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  emptyEndorsementSteps: {
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  emptyEndorsementStep: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  emptyEndorsementStepText: {
     fontSize: 14,
     fontWeight: '500',
   },

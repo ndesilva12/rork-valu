@@ -759,10 +759,9 @@ export default function DiscountScreen() {
           /* Individual View */
           /* Individual Code: Value Code & QR Generator */
           <>
-            {/* Promo Code Section */}
+            {/* QR Code Section */}
             <View style={[styles.promoSection, { borderColor: colors.primary, backgroundColor: colors.backgroundSecondary }]}>
-              <Text style={[styles.promoLabel, { color: colors.textSecondary }]}>Your Promo Code</Text>
-              <Text style={[styles.promoCode, { color: colors.primary }]}>{profile.promoCode || 'UP00000'}</Text>
+              <Text style={[styles.promoLabel, { color: colors.textSecondary }]}>Your QR Code</Text>
 
               {/* Get Discount Code Button */}
               <TouchableOpacity
@@ -866,17 +865,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 1,
-  },
-  promoCode: {
-    fontSize: 36,
-    fontWeight: '700' as const,
-    marginBottom: 12,
-    letterSpacing: 2,
-  },
-  promoDescription: {
-    fontSize: 15,
-    textAlign: 'center',
-    lineHeight: 22,
   },
   discountButton: {
     padding: 20,
