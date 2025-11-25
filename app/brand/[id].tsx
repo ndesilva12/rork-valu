@@ -702,7 +702,7 @@ export default function BrandDetailScreen() {
                 </View>
               )}
             </View>
-            <View style={[styles.scoreContainer, { position: 'relative', zIndex: showActionMenu ? 1000 : 1 }]}>
+            <View style={[styles.scoreContainer, { position: 'relative', zIndex: showActionMenu ? 99999 : 1, overflow: 'visible' }]}>
               <View style={[styles.scoreCircle, { borderColor: scoreColor, backgroundColor: colors.background }]}>
                 <Text style={[styles.scoreNumber, { color: scoreColor }]}>
                   {Math.round(brandScore)}
@@ -719,7 +719,14 @@ export default function BrandDetailScreen() {
               </TouchableOpacity>
               {/* Inline Action Menu Dropdown */}
               {showActionMenu && (
-                <View style={[styles.actionMenuDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <View style={[
+                  styles.actionMenuDropdown,
+                  {
+                    backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
+                    borderColor: colors.border,
+                    ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
+                  }
+                ]}>
                   <TouchableOpacity
                     style={styles.actionMenuDropdownItem}
                     onPress={() => {
@@ -1368,11 +1375,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 1000,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+    zIndex: 99999,
   },
   actionMenuDropdownItem: {
     flexDirection: 'row',

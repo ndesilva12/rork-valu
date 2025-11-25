@@ -12,28 +12,29 @@ export interface BusinessUser {
 }
 
 /**
- * Get all businesses that accept Upright discounts from Firebase
+ * Get all businesses that accept Endorse discounts from Firebase
+ * Includes businesses with acceptsStandDiscounts=true OR customerDiscountPercent > 0
  * @returns Array of business users
  */
 export async function getBusinessesAcceptingDiscounts(): Promise<BusinessUser[]> {
   try {
-    console.log('[Firebase businessService] 🔄 Fetching businesses accepting Upright discounts');
+    console.log('[Firebase businessService] 🔄 Fetching businesses accepting Endorse discounts');
 
     if (!db) {
       console.error('[Firebase businessService] ❌ db is null or undefined!');
       throw new Error('Firebase db not initialized');
     }
 
-    // Query users collection for businesses accepting Upright discounts
+    // Query all business accounts and filter client-side for those offering discounts
+    // (Firestore doesn't support OR conditions across different fields)
     const usersRef = collection(db, 'users');
     const q = query(
       usersRef,
-      where('accountType', '==', 'business'),
-      where('businessInfo.acceptsStandDiscounts', '==', true)
+      where('accountType', '==', 'business')
     );
 
     const querySnapshot = await getDocs(q);
-    console.log('[Firebase businessService] 📦 Found', querySnapshot.size, 'businesses');
+    console.log('[Firebase businessService] 📦 Found', querySnapshot.size, 'business accounts total');
 
     const businesses: BusinessUser[] = [];
 
@@ -42,18 +43,31 @@ export async function getBusinessesAcceptingDiscounts(): Promise<BusinessUser[]>
 
       // Validate that businessInfo exists and has required fields
       if (data.businessInfo && data.businessInfo.name) {
-        businesses.push({
-          id: doc.id,
-          email: data.email,
-          businessInfo: data.businessInfo as BusinessInfo,
-          causes: data.causes as Cause[] || [], // Include causes for alignment scoring
-        });
+        const businessInfo = data.businessInfo;
+
+        // Include if: acceptsStandDiscounts is true OR customerDiscountPercent > 0
+        const acceptsDiscounts = businessInfo.acceptsStandDiscounts === true;
+        const hasDiscount = (businessInfo.customerDiscountPercent || 0) > 0;
+        const hasCustomDiscount = businessInfo.customDiscount && businessInfo.customDiscount.trim();
+
+        if (acceptsDiscounts || hasDiscount || hasCustomDiscount) {
+          businesses.push({
+            id: doc.id,
+            email: data.email,
+            businessInfo: businessInfo as BusinessInfo,
+            causes: data.causes as Cause[] || [], // Include causes for alignment scoring
+          });
+          console.log('[Firebase businessService] ✅ Including business:', businessInfo.name,
+            '| acceptsDiscounts:', acceptsDiscounts,
+            '| discountPercent:', businessInfo.customerDiscountPercent || 0,
+            '| hasCustomDiscount:', !!hasCustomDiscount);
+        }
       } else {
         console.warn('[Firebase businessService] ⚠️ Business missing businessInfo:', doc.id);
       }
     });
 
-    console.log('[Firebase businessService] ✅ Returning', businesses.length, 'valid businesses');
+    console.log('[Firebase businessService] ✅ Returning', businesses.length, 'businesses offering discounts');
     console.log('[Firebase businessService] Sample business causes:', businesses[0]?.causes?.length || 0);
     return businesses;
   } catch (error) {

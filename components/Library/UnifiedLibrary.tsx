@@ -883,7 +883,14 @@ export default function UnifiedLibrary({
     });
 
     return (
-      <View style={[styles.actionMenuDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+      <View style={[
+        styles.actionMenuDropdown,
+        {
+          backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
+          borderColor: colors.border,
+          ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
+        }
+      ]}>
         <TouchableOpacity
           style={styles.actionMenuItem}
           onPress={() => {
@@ -957,7 +964,7 @@ export default function UnifiedLibrary({
     } as ListEntry;
 
     return (
-      <View style={{ position: 'relative', zIndex: activeActionMenuId === pseudoEntry.id ? 1000 : 1 }}>
+      <View style={{ position: 'relative', zIndex: activeActionMenuId === pseudoEntry.id ? 99999 : 1, overflow: 'visible' }}>
         <TouchableOpacity
           style={[
             styles.brandCard,
@@ -996,7 +1003,7 @@ export default function UnifiedLibrary({
               </Text>
             </View>
           )}
-          {(mode === 'edit' || mode === 'view') && (
+          {(mode === 'edit' || mode === 'view' || mode === 'preview') && (
             <TouchableOpacity
               style={[styles.quickAddButton, { backgroundColor: colors.background }]}
               onPress={(e) => {
@@ -1084,7 +1091,7 @@ export default function UnifiedLibrary({
           const navigationId = fullBrand?.id || entry.brandId;
 
           return (
-            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 1000 : 1 }}>
+            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 99999 : 1, overflow: 'visible' }}>
               <TouchableOpacity
                 style={[
                   styles.brandCard,
@@ -1121,7 +1128,7 @@ export default function UnifiedLibrary({
                   <View style={styles.brandScoreContainer}>
                     <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
                   </View>
-                  {(mode === 'edit' || mode === 'view') && (
+                  {(mode === 'edit' || mode === 'view' || mode === 'preview') && (
                     <TouchableOpacity
                       style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                       onPress={(e) => {
@@ -1157,7 +1164,7 @@ export default function UnifiedLibrary({
           const logoUrl = (entry as any).logoUrl || (entry as any).logo || ((entry as any).website ? getLogoUrl((entry as any).website) : getLogoUrl(''));
 
           return (
-            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 1000 : 1 }}>
+            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 99999 : 1, overflow: 'visible' }}>
               <TouchableOpacity
                 style={[
                   styles.brandCard,
@@ -1194,7 +1201,7 @@ export default function UnifiedLibrary({
                   <View style={styles.brandScoreContainer}>
                     <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
                   </View>
-                  {(mode === 'edit' || mode === 'view') && (
+                  {(mode === 'edit' || mode === 'view' || mode === 'preview') && (
                     <TouchableOpacity
                       style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                       onPress={(e) => {
@@ -1224,7 +1231,7 @@ export default function UnifiedLibrary({
           const valueName = (entry as any).valueName || (entry as any).name || 'Unknown Value';
 
           return (
-            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 1000 : 1 }}>
+            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 99999 : 1, overflow: 'visible' }}>
               <View style={[
                 styles.brandCard,
                 { backgroundColor: 'transparent' },
@@ -1248,7 +1255,7 @@ export default function UnifiedLibrary({
                       {entry.mode === 'maxPain' ? 'Avoid' : 'Support'}
                     </Text>
                   </View>
-                  {(mode === 'edit' || mode === 'view') && (
+                  {(mode === 'edit' || mode === 'view' || mode === 'preview') && (
                     <TouchableOpacity
                       style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                       onPress={(e) => {
@@ -1275,7 +1282,7 @@ export default function UnifiedLibrary({
         if ('url' in entry) {
           const linkTitle = (entry as any).title || (entry as any).name || 'Link';
           return (
-            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 1000 : 1 }}>
+            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 99999 : 1, overflow: 'visible' }}>
               <TouchableOpacity
                 style={[
                   styles.brandCard,
@@ -1297,7 +1304,7 @@ export default function UnifiedLibrary({
                     )}
                   </View>
                   <ExternalLink size={16} color={colors.textSecondary} strokeWidth={2} />
-                  {(mode === 'edit' || mode === 'view') && (
+                  {(mode === 'edit' || mode === 'view' || mode === 'preview') && (
                     <TouchableOpacity
                       style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                       onPress={(e) => {
@@ -1324,7 +1331,7 @@ export default function UnifiedLibrary({
         if ('content' in entry) {
           const textContent = (entry as any).content || (entry as any).text || 'No content';
           return (
-            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 1000 : 1 }}>
+            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 99999 : 1, overflow: 'visible' }}>
               <View style={[
                 styles.brandCard,
                 { backgroundColor: 'transparent', borderColor: 'transparent' }
@@ -1335,7 +1342,7 @@ export default function UnifiedLibrary({
                       {textContent}
                     </Text>
                   </View>
-                  {(mode === 'edit' || mode === 'view') && (
+                  {(mode === 'edit' || mode === 'view' || mode === 'preview') && (
                     <TouchableOpacity
                       style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                       onPress={(e) => {
@@ -3669,11 +3676,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 1000,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+    zIndex: 99999,
   },
   actionMenuItem: {
     flexDirection: 'row',
