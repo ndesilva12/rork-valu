@@ -26,25 +26,25 @@ const slides = [
   {
     icon: DollarSign,
     title: 'Vote With Your Money',
-    description: 'We give you the best ways to vote with your money based on your values.',
+    description: 'We recommend businesses that benefit your values.',
     color: '#10B981', // green
   },
   {
     icon: Heart,
-    title: 'Endorse Businesses',
-    description: 'Build your list of endorsements of brands and local businesses you support.',
+    title: 'Give Your Endorsement',
+    description: 'Endorse businesses by adding them to your list.',
     color: '#EF4444', // red
   },
   {
     icon: Sparkles,
-    title: 'Discover & Connect',
-    description: 'Find your friends in order to discover new brands or gift ideas.',
+    title: 'Earn Benefits',
+    description: 'Get discounts from businesses you endorse.',
     color: '#8B5CF6', // purple
   },
   {
     icon: Gift,
-    title: 'Earn Rewards',
-    description: 'Collect discounts at businesses in exchange for your endorsement, following or simply being on our app!',
+    title: 'Discover & Gift',
+    description: "Give gifts from places your friends already love.",
     color: '#F59E0B', // orange
   },
 ];

@@ -44,6 +44,9 @@ import {
   Search,
   X,
   Check,
+  BookOpen,
+  Compass,
+  Heart,
 } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { UserList, ListEntry } from '@/types/library';
@@ -1528,10 +1531,49 @@ export default function UnifiedLibrary({
     if (!endorsementList.entries || endorsementList.entries.length === 0) {
       return (
         <View style={styles.listContentContainer}>
-          <View style={[styles.placeholderContainer, { backgroundColor: colors.backgroundSecondary }]}>
-            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-              Your endorsement list is empty. Start adding items!
+          <View style={[styles.emptyEndorsementContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            {/* Heart Icon */}
+            <View style={[styles.emptyEndorsementIconCircle, { backgroundColor: `${colors.primary}20` }]}>
+              <Heart size={48} color={colors.primary} strokeWidth={1.5} />
+            </View>
+
+            {/* Title */}
+            <Text style={[styles.emptyEndorsementTitle, { color: colors.text }]}>
+              Build Your Endorsement List
             </Text>
+
+            {/* Steps */}
+            <View style={styles.emptyEndorsementSteps}>
+              <View style={styles.emptyEndorsementStep}>
+                <View style={[styles.emptyEndorsementStepIcon, { backgroundColor: `${colors.primary}15` }]}>
+                  <Search size={20} color={colors.primary} strokeWidth={2} />
+                </View>
+                <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
+                  <Text style={{ fontWeight: '600', color: colors.text }}>1. </Text>
+                  The add button (search)
+                </Text>
+              </View>
+
+              <View style={styles.emptyEndorsementStep}>
+                <View style={[styles.emptyEndorsementStepIcon, { backgroundColor: `${colors.primary}15` }]}>
+                  <BookOpen size={20} color={colors.primary} strokeWidth={2} />
+                </View>
+                <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
+                  <Text style={{ fontWeight: '600', color: colors.text }}>2. </Text>
+                  Our value-based recommendations (Browse tab)
+                </Text>
+              </View>
+
+              <View style={styles.emptyEndorsementStep}>
+                <View style={[styles.emptyEndorsementStepIcon, { backgroundColor: `${colors.primary}15` }]}>
+                  <Compass size={20} color={colors.primary} strokeWidth={2} />
+                </View>
+                <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
+                  <Text style={{ fontWeight: '600', color: colors.text }}>3. </Text>
+                  Your friends (Explore tab)
+                </Text>
+              </View>
+            </View>
           </View>
         </View>
       );
@@ -3597,6 +3639,50 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontSize: 15,
     textAlign: 'center',
+  },
+  // Empty endorsement list explainer styles
+  emptyEndorsementContainer: {
+    padding: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    marginHorizontal: 8,
+  },
+  emptyEndorsementIconCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  emptyEndorsementTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  emptyEndorsementSteps: {
+    width: '100%',
+    gap: 16,
+  },
+  emptyEndorsementStep: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  emptyEndorsementStepIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyEndorsementStepText: {
+    fontSize: 15,
+    flex: 1,
+    lineHeight: 20,
   },
   // List detail view styles
   backButton: {
