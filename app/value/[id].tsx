@@ -13,7 +13,6 @@ import {
   useWindowDimensions,
   Modal,
   TouchableWithoutFeedback,
-  Pressable,
   TextInput,
   Alert,
 } from 'react-native';
@@ -21,11 +20,12 @@ import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 import { useLibrary } from '@/contexts/LibraryContext';
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { getLogoUrl } from '@/lib/logo';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
 import { getUserLists, addEntryToList, createList, removeEntryFromList } from '@/services/firebase/listService';
 import { followEntity, unfollowEntity, isFollowing as checkIsFollowing } from '@/services/firebase/followService';
+import ItemOptionsModal from '@/components/ItemOptionsModal';
 
 interface ValueDriver {
   id: string;
@@ -51,8 +51,9 @@ export default function ValueDetailScreen() {
   const { width } = useWindowDimensions();
   const isLargeScreen = Platform.OS === 'web' && width >= 768;
 
-  // Action menu state
-  const [actionMenuBrandId, setActionMenuBrandId] = useState<string | null>(null);
+  // Item options modal state
+  const [showItemOptionsModal, setShowItemOptionsModal] = useState(false);
+  const [selectedDriverForOptions, setSelectedDriverForOptions] = useState<ValueDriver | null>(null);
   const [followedBrands, setFollowedBrands] = useState<Set<string>>(new Set());
 
   // Quick-add state (keeping for list selection modal)
@@ -291,17 +292,21 @@ export default function ValueDetailScreen() {
     }
   };
 
-  const checkBrandFollowStatus = useCallback(async (brandId: string) => {
-    if (!clerkUser?.id) return;
-    try {
-      const isFollowing = await checkIsFollowing(clerkUser.id, brandId, 'brand');
-      if (isFollowing) {
-        setFollowedBrands(prev => new Set(prev).add(brandId));
+  // Check follow status when modal opens
+  useEffect(() => {
+    const checkFollowStatus = async () => {
+      if (!selectedDriverForOptions || !clerkUser?.id) return;
+      try {
+        const isFollowing = await checkIsFollowing(clerkUser.id, selectedDriverForOptions.id, 'brand');
+        if (isFollowing) {
+          setFollowedBrands(prev => new Set(prev).add(selectedDriverForOptions.id));
+        }
+      } catch (error) {
+        console.error('Error checking follow status:', error);
       }
-    } catch (error) {
-      console.error('Error checking follow status:', error);
-    }
-  }, [clerkUser?.id]);
+    };
+    checkFollowStatus();
+  }, [selectedDriverForOptions, clerkUser?.id]);
 
   const handleShareBrand = (brandId: string, brandName: string) => {
     if (Platform.OS === 'web') {
@@ -504,13 +509,8 @@ export default function ValueDetailScreen() {
           </Text>
           {drivers.supports.length > 0 ? (
             <View style={styles.driversContainer}>
-              {drivers.supports.map((driver, index) => {
-                const isEndorsed = isBrandEndorsed(driver.id);
-                const isFollowed = followedBrands.has(driver.id);
-                const menuKey = `support-${driver.id}`;
-
-                return (
-                <View key={`${id}-support-${driver.name}-${index}`} style={{ position: 'relative', zIndex: actionMenuBrandId === menuKey ? 9999 : 1 }}>
+              {drivers.supports.map((driver, index) => (
+                <View key={`${id}-support-${driver.name}-${index}`} style={{ position: 'relative' }}>
                   <TouchableOpacity
                     style={[styles.driverCard, styles.supportingCard, { backgroundColor: colors.backgroundSecondary }]}
                     onPress={() => {
@@ -533,11 +533,8 @@ export default function ValueDetailScreen() {
                           style={[styles.actionMenuButton, { backgroundColor: colors.background, borderColor: colors.border }]}
                           onPress={(e) => {
                             e.stopPropagation();
-                            const isOpening = actionMenuBrandId !== menuKey;
-                            setActionMenuBrandId(isOpening ? menuKey : null);
-                            if (isOpening) {
-                              checkBrandFollowStatus(driver.id);
-                            }
+                            setSelectedDriverForOptions(driver);
+                            setShowItemOptionsModal(true);
                           }}
                           activeOpacity={0.7}
                         >
@@ -559,84 +556,8 @@ export default function ValueDetailScreen() {
                       </View>
                     </View>
                   </TouchableOpacity>
-
-                  {/* Action Menu Dropdown */}
-                  {actionMenuBrandId === menuKey && (
-                    <View
-                      style={[
-                        styles.actionMenuDropdown,
-                        {
-                          backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
-                          borderColor: colors.border,
-                          ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
-                        }
-                      ]}
-                      pointerEvents="box-none"
-                    >
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.actionMenuItem,
-                          pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
-                        ]}
-                        onPress={() => {
-                          console.log('[ValueDetail] Endorse button pressed for brand:', driver.id);
-                          setActionMenuBrandId(null);
-                          if (isEndorsed) {
-                            Alert.alert('Unendorse', `Remove ${driver.name} from your endorsement list?`, [
-                              { text: 'Cancel', style: 'cancel' },
-                              { text: 'Remove', style: 'destructive', onPress: () => handleUnendorseBrand(driver.id, driver.name) }
-                            ]);
-                          } else {
-                            handleEndorseBrand(driver.id, driver.name);
-                          }
-                        }}
-                      >
-                        <Heart size={16} color={colors.text} strokeWidth={2} />
-                        <Text style={[styles.actionMenuText, { color: colors.text }]}>
-                          {isEndorsed ? 'Unendorse' : 'Endorse'}
-                        </Text>
-                      </Pressable>
-
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.actionMenuItem,
-                          pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
-                        ]}
-                        onPress={() => {
-                          console.log('[ValueDetail] Follow button pressed for brand:', driver.id);
-                          setActionMenuBrandId(null);
-                          handleFollowBrand(driver.id, driver.name);
-                        }}
-                      >
-                        {isFollowed ? (
-                          <UserMinus size={16} color={colors.text} strokeWidth={2} />
-                        ) : (
-                          <UserPlus size={16} color={colors.text} strokeWidth={2} />
-                        )}
-                        <Text style={[styles.actionMenuText, { color: colors.text }]}>
-                          {isFollowed ? 'Unfollow' : 'Follow'}
-                        </Text>
-                      </Pressable>
-
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.actionMenuItem,
-                          pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
-                        ]}
-                        onPress={() => {
-                          console.log('[ValueDetail] Share button pressed for brand:', driver.id);
-                          setActionMenuBrandId(null);
-                          handleShareBrand(driver.id, driver.name);
-                        }}
-                      >
-                        <Share2 size={16} color={colors.text} strokeWidth={2} />
-                        <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
-                      </Pressable>
-                    </View>
-                  )}
                 </View>
-              );
-              })}
+              ))}
             </View>
           ) : (
             <View style={[styles.emptyState, { backgroundColor: colors.backgroundSecondary }]}>
@@ -655,13 +576,8 @@ export default function ValueDetailScreen() {
           </Text>
           {drivers.opposes.length > 0 ? (
             <View style={styles.driversContainer}>
-              {drivers.opposes.map((driver, index) => {
-                const isEndorsed = isBrandEndorsed(driver.id);
-                const isFollowed = followedBrands.has(driver.id);
-                const menuKey = `oppose-${driver.id}`;
-
-                return (
-                <View key={`${id}-oppose-${driver.name}-${index}`} style={{ position: 'relative', zIndex: actionMenuBrandId === menuKey ? 9999 : 1 }}>
+              {drivers.opposes.map((driver, index) => (
+                <View key={`${id}-oppose-${driver.name}-${index}`} style={{ position: 'relative' }}>
                   <TouchableOpacity
                     style={[styles.driverCard, styles.opposingCard, { backgroundColor: colors.backgroundSecondary }]}
                     onPress={() => {
@@ -684,11 +600,8 @@ export default function ValueDetailScreen() {
                           style={[styles.actionMenuButton, { backgroundColor: colors.background, borderColor: colors.border }]}
                           onPress={(e) => {
                             e.stopPropagation();
-                            const isOpening = actionMenuBrandId !== menuKey;
-                            setActionMenuBrandId(isOpening ? menuKey : null);
-                            if (isOpening) {
-                              checkBrandFollowStatus(driver.id);
-                            }
+                            setSelectedDriverForOptions(driver);
+                            setShowItemOptionsModal(true);
                           }}
                           activeOpacity={0.7}
                         >
@@ -710,84 +623,8 @@ export default function ValueDetailScreen() {
                       </View>
                     </View>
                   </TouchableOpacity>
-
-                  {/* Action Menu Dropdown */}
-                  {actionMenuBrandId === menuKey && (
-                    <View
-                      style={[
-                        styles.actionMenuDropdown,
-                        {
-                          backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
-                          borderColor: colors.border,
-                          ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
-                        }
-                      ]}
-                      pointerEvents="box-none"
-                    >
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.actionMenuItem,
-                          pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
-                        ]}
-                        onPress={() => {
-                          console.log('[ValueDetail] Endorse button pressed for brand:', driver.id);
-                          setActionMenuBrandId(null);
-                          if (isEndorsed) {
-                            Alert.alert('Unendorse', `Remove ${driver.name} from your endorsement list?`, [
-                              { text: 'Cancel', style: 'cancel' },
-                              { text: 'Remove', style: 'destructive', onPress: () => handleUnendorseBrand(driver.id, driver.name) }
-                            ]);
-                          } else {
-                            handleEndorseBrand(driver.id, driver.name);
-                          }
-                        }}
-                      >
-                        <Heart size={16} color={colors.text} strokeWidth={2} />
-                        <Text style={[styles.actionMenuText, { color: colors.text }]}>
-                          {isEndorsed ? 'Unendorse' : 'Endorse'}
-                        </Text>
-                      </Pressable>
-
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.actionMenuItem,
-                          pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
-                        ]}
-                        onPress={() => {
-                          console.log('[ValueDetail] Follow button pressed for brand:', driver.id);
-                          setActionMenuBrandId(null);
-                          handleFollowBrand(driver.id, driver.name);
-                        }}
-                      >
-                        {isFollowed ? (
-                          <UserMinus size={16} color={colors.text} strokeWidth={2} />
-                        ) : (
-                          <UserPlus size={16} color={colors.text} strokeWidth={2} />
-                        )}
-                        <Text style={[styles.actionMenuText, { color: colors.text }]}>
-                          {isFollowed ? 'Unfollow' : 'Follow'}
-                        </Text>
-                      </Pressable>
-
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.actionMenuItem,
-                          pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
-                        ]}
-                        onPress={() => {
-                          console.log('[ValueDetail] Share button pressed for brand:', driver.id);
-                          setActionMenuBrandId(null);
-                          handleShareBrand(driver.id, driver.name);
-                        }}
-                      >
-                        <Share2 size={16} color={colors.text} strokeWidth={2} />
-                        <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
-                      </Pressable>
-                    </View>
-                  )}
                 </View>
-              );
-              })}
+              ))}
             </View>
           ) : (
             <View style={[styles.emptyState, { backgroundColor: colors.backgroundSecondary }]}>
@@ -928,6 +765,46 @@ export default function ValueDetailScreen() {
           </Pressable>
         </View>
       </Modal>
+
+      {/* Item Options Modal */}
+      {selectedDriverForOptions && (
+        <ItemOptionsModal
+          visible={showItemOptionsModal}
+          onClose={() => {
+            setShowItemOptionsModal(false);
+            setSelectedDriverForOptions(null);
+          }}
+          itemName={selectedDriverForOptions.name}
+          isDarkMode={isDarkMode}
+          options={[
+            {
+              icon: Heart,
+              label: isBrandEndorsed(selectedDriverForOptions.id) ? 'Unendorse' : 'Endorse',
+              onPress: () => {
+                const driver = selectedDriverForOptions;
+                if (isBrandEndorsed(driver.id)) {
+                  Alert.alert('Unendorse', `Remove ${driver.name} from your endorsement list?`, [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Remove', style: 'destructive', onPress: () => handleUnendorseBrand(driver.id, driver.name) }
+                  ]);
+                } else {
+                  handleEndorseBrand(driver.id, driver.name);
+                }
+              },
+            },
+            {
+              icon: followedBrands.has(selectedDriverForOptions.id) ? UserMinus : UserPlus,
+              label: followedBrands.has(selectedDriverForOptions.id) ? 'Unfollow' : 'Follow',
+              onPress: () => handleFollowBrand(selectedDriverForOptions.id, selectedDriverForOptions.name),
+            },
+            {
+              icon: Share2,
+              label: 'Share',
+              onPress: () => handleShareBrand(selectedDriverForOptions.id, selectedDriverForOptions.name),
+            },
+          ]}
+        />
+      )}
     </View>
   );
 }
@@ -1090,29 +967,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-  },
-  actionMenuDropdown: {
-    position: 'absolute',
-    top: '100%',
-    right: 0,
-    minWidth: 160,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 8,
-    marginTop: 4,
-    zIndex: 10000,
-  },
-  actionMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
-  },
-  actionMenuText: {
-    fontSize: 14,
-    fontWeight: '500' as const,
   },
   modalOverlay: {
     flex: 1,

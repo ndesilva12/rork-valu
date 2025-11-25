@@ -9,7 +9,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Pressable,
   Alert,
   TextInput,
   Modal,
@@ -30,6 +29,7 @@ import { useUser } from '@/contexts/UserContext';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { unfollowEntity, followEntity, isFollowing as checkIsFollowing } from '@/services/firebase/followService';
 import { addEntryToList, removeEntryFromList } from '@/services/firebase/listService';
+import ItemOptionsModal from '@/components/ItemOptionsModal';
 
 // Helper function to extract Town, State from full address
 const shortenAddress = (fullAddress: string | undefined): string => {
@@ -142,7 +142,10 @@ export default function LocalBusinessView({
   const [localSortDirection, setLocalSortDirection] = useState<'highToLow' | 'lowToHigh'>('highToLow');
   const [searchQuery, setSearchQuery] = useState('');
   const [showMap, setShowMap] = useState(false);
-  const [actionMenuBusinessId, setActionMenuBusinessId] = useState<string | null>(null);
+
+  // Item options modal state
+  const [showItemOptionsModal, setShowItemOptionsModal] = useState(false);
+  const [selectedBusinessForOptions, setSelectedBusinessForOptions] = useState<BusinessWithScore | null>(null);
 
   // Track endorsement and follow status for each business
   const [endorsedBusinessIds, setEndorsedBusinessIds] = useState<Set<string>>(new Set());
@@ -179,24 +182,25 @@ export default function LocalBusinessView({
     }
   }, [clerkUser?.id]);
 
-  // Check follow status when action menu opens
+  // Check follow status when modal opens
   useEffect(() => {
-    const checkFollowForOpenMenu = async () => {
-      if (actionMenuBusinessId && clerkUser?.id) {
-        const isFollowing = await checkFollowStatus(actionMenuBusinessId);
+    const checkFollowForOpenModal = async () => {
+      if (selectedBusinessForOptions && clerkUser?.id) {
+        const businessId = selectedBusinessForOptions.business.id;
+        const isFollowing = await checkFollowStatus(businessId);
         setFollowedBusinessIds(prev => {
           const newSet = new Set(prev);
           if (isFollowing) {
-            newSet.add(actionMenuBusinessId);
+            newSet.add(businessId);
           } else {
-            newSet.delete(actionMenuBusinessId);
+            newSet.delete(businessId);
           }
           return newSet;
         });
       }
     };
-    checkFollowForOpenMenu();
-  }, [actionMenuBusinessId, clerkUser?.id, checkFollowStatus]);
+    checkFollowForOpenModal();
+  }, [selectedBusinessForOptions, clerkUser?.id, checkFollowStatus]);
 
   // Mobile: fewer options to fit on one row; Desktop: more granular options
   const localDistanceOptions: LocalDistanceOption[] = isMobile
@@ -404,7 +408,7 @@ export default function LocalBusinessView({
     const discountText = getDiscountDisplay(business);
 
     return (
-      <View key={business.id} style={{ position: 'relative', marginBottom: 4, zIndex: actionMenuBusinessId === business.id ? 1000 : 1 }}>
+      <View key={business.id} style={{ position: 'relative', marginBottom: 4 }}>
         <TouchableOpacity
           style={[
             styles.businessCard,
@@ -458,12 +462,13 @@ export default function LocalBusinessView({
                 {alignmentScore}
               </Text>
             </View>
-            {/* Action Menu Button */}
+            {/* Action Menu Button - Opens Modal */}
             <TouchableOpacity
               style={styles.actionMenuButton}
               onPress={(e) => {
                 e.stopPropagation();
-                setActionMenuBusinessId(actionMenuBusinessId === business.id ? null : business.id);
+                setSelectedBusinessForOptions(businessData);
+                setShowItemOptionsModal(true);
               }}
               activeOpacity={0.7}
             >
@@ -473,112 +478,6 @@ export default function LocalBusinessView({
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
-
-        {/* Action Menu Dropdown */}
-        {actionMenuBusinessId === business.id && (() => {
-          const isEndorsed = endorsedBusinessIds.has(business.id);
-          const isFollowed = followedBusinessIds.has(business.id);
-
-          return (
-            <View
-              style={[
-                styles.actionMenuDropdown,
-                {
-                  backgroundColor: colors.backgroundSecondary,
-                  borderColor: colors.border,
-                  ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
-                }
-              ]}
-              pointerEvents="box-none"
-            >
-              {/* Endorse/Unendorse button */}
-              <Pressable
-                style={({ pressed }) => [
-                  styles.actionMenuItem,
-                  pressed && { opacity: 0.7, backgroundColor: colors.background }
-                ]}
-                onPress={() => {
-                  console.log('[LocalBusinessView] Endorse button pressed for business:', business.id);
-                  setActionMenuBusinessId(null);
-                  if (isEndorsed) {
-                    Alert.alert('Unendorse', `Remove ${business.businessInfo.name} from your endorsement list?`, [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Remove', style: 'destructive', onPress: () => {
-                        handleUnendorse(business.id, business.businessInfo.name);
-                      }}
-                    ]);
-                  } else {
-                    handleEndorse(
-                      business.id,
-                      business.businessInfo.name,
-                      business.businessInfo.logoUrl || getLogoUrl(business.businessInfo.website || '')
-                    );
-                  }
-                }}
-              >
-                <Heart
-                  size={16}
-                  color={isEndorsed ? colors.primary : colors.text}
-                  strokeWidth={2}
-                />
-                <Text style={[styles.actionMenuText, { color: colors.text }]}>
-                  {isEndorsed ? 'Unendorse' : 'Endorse'}
-                </Text>
-              </Pressable>
-
-              {/* Follow/Unfollow button */}
-              <Pressable
-                style={({ pressed }) => [
-                  styles.actionMenuItem,
-                  pressed && { opacity: 0.7, backgroundColor: colors.background }
-                ]}
-                onPress={() => {
-                  console.log('[LocalBusinessView] Follow button pressed for business:', business.id);
-                  setActionMenuBusinessId(null);
-                  if (isFollowed) {
-                    Alert.alert('Unfollow', `Stop following ${business.businessInfo.name}?`, [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Unfollow', style: 'destructive', onPress: () => {
-                        handleUnfollow(business.id, business.businessInfo.name);
-                      }}
-                    ]);
-                  } else {
-                    handleFollow(business.id, business.businessInfo.name);
-                  }
-                }}
-              >
-                {isFollowed ? (
-                  <UserMinus size={16} color={colors.text} strokeWidth={2} />
-                ) : (
-                  <UserPlus size={16} color={colors.text} strokeWidth={2} />
-                )}
-                <Text style={[styles.actionMenuText, { color: colors.text }]}>
-                  {isFollowed ? 'Unfollow' : 'Follow'}
-                </Text>
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.actionMenuItem,
-                  pressed && { opacity: 0.7, backgroundColor: colors.background }
-                ]}
-                onPress={() => {
-                  console.log('[LocalBusinessView] Share button pressed for business:', business.id);
-                  setActionMenuBusinessId(null);
-                  if (Platform.OS === 'web') {
-                    navigator.clipboard.writeText(`${window.location.origin}/business/${business.id}`);
-                    Alert.alert('Success', 'Link copied to clipboard');
-                  } else {
-                    Alert.alert('Share', 'Share functionality coming soon');
-                  }
-                }}
-              >
-                <Share2 size={16} color={colors.text} strokeWidth={2} />
-                <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
-              </Pressable>
-            </View>
-          );
-        })()}
       </View>
     );
   };
@@ -706,6 +605,68 @@ export default function LocalBusinessView({
           />
         </View>
       </Modal>
+
+      {/* Item Options Modal */}
+      {selectedBusinessForOptions && (
+        <ItemOptionsModal
+          visible={showItemOptionsModal}
+          onClose={() => {
+            setShowItemOptionsModal(false);
+            setSelectedBusinessForOptions(null);
+          }}
+          itemName={selectedBusinessForOptions.business.businessInfo.name || 'Business'}
+          isDarkMode={isDarkMode}
+          options={[
+            {
+              icon: Heart,
+              label: endorsedBusinessIds.has(selectedBusinessForOptions.business.id) ? 'Unendorse' : 'Endorse',
+              onPress: () => {
+                const biz = selectedBusinessForOptions.business;
+                if (endorsedBusinessIds.has(biz.id)) {
+                  Alert.alert('Unendorse', `Remove ${biz.businessInfo.name} from your endorsement list?`, [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Remove', style: 'destructive', onPress: () => handleUnendorse(biz.id, biz.businessInfo.name) }
+                  ]);
+                } else {
+                  handleEndorse(
+                    biz.id,
+                    biz.businessInfo.name,
+                    biz.businessInfo.logoUrl || getLogoUrl(biz.businessInfo.website || '')
+                  );
+                }
+              },
+            },
+            {
+              icon: followedBusinessIds.has(selectedBusinessForOptions.business.id) ? UserMinus : UserPlus,
+              label: followedBusinessIds.has(selectedBusinessForOptions.business.id) ? 'Unfollow' : 'Follow',
+              onPress: () => {
+                const biz = selectedBusinessForOptions.business;
+                if (followedBusinessIds.has(biz.id)) {
+                  Alert.alert('Unfollow', `Stop following ${biz.businessInfo.name}?`, [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Unfollow', style: 'destructive', onPress: () => handleUnfollow(biz.id, biz.businessInfo.name) }
+                  ]);
+                } else {
+                  handleFollow(biz.id, biz.businessInfo.name);
+                }
+              },
+            },
+            {
+              icon: Share2,
+              label: 'Share',
+              onPress: () => {
+                const biz = selectedBusinessForOptions.business;
+                if (Platform.OS === 'web') {
+                  navigator.clipboard.writeText(`${window.location.origin}/business/${biz.id}`);
+                  Alert.alert('Success', 'Link copied to clipboard');
+                } else {
+                  Alert.alert('Share', 'Share functionality coming soon');
+                }
+              },
+            },
+          ]}
+        />
+      )}
     </View>
   );
 }
@@ -863,32 +824,6 @@ const styles = StyleSheet.create({
     padding: 8,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  actionMenuDropdown: {
-    position: 'absolute',
-    right: 8,
-    top: 64,
-    minWidth: 160,
-    borderRadius: 8,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 1000,
-  },
-  actionMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
-  },
-  actionMenuText: {
-    fontSize: 15,
-    fontWeight: '500',
   },
   emptySection: {
     padding: 40,

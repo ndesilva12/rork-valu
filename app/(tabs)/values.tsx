@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Pressable,
   Platform,
   StatusBar,
   Alert,
@@ -27,6 +26,7 @@ import LocalBusinessView from '@/components/Library/LocalBusinessView';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { followEntity, unfollowEntity, isFollowing as checkIsFollowing } from '@/services/firebase/followService';
 import { addEntryToList, removeEntryFromList } from '@/services/firebase/listService';
+import ItemOptionsModal from '@/components/ItemOptionsModal';
 
 // ===== Types =====
 type BrowseSection = 'global' | 'local' | 'values';
@@ -119,8 +119,11 @@ export default function BrowseScreen() {
   const [globalSubsection, setGlobalSubsection] = useState<'aligned' | 'unaligned'>('aligned');
   const [alignedLoadCount, setAlignedLoadCount] = useState(10);
   const [unalignedLoadCount, setUnalignedLoadCount] = useState(10);
-  const [actionMenuBrandId, setActionMenuBrandId] = useState<string | null>(null);
   const [followedBrands, setFollowedBrands] = useState<Set<string>>(new Set());
+
+  // Item options modal state
+  const [showItemOptionsModal, setShowItemOptionsModal] = useState(false);
+  const [selectedBrandForOptions, setSelectedBrandForOptions] = useState<Product | null>(null);
 
   // Local section state
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -300,18 +303,21 @@ export default function BrowseScreen() {
     }
   };
 
-  // Check follow status when action menu opens
-  const checkBrandFollowStatus = useCallback(async (brandId: string) => {
-    if (!clerkUser?.id) return;
-    try {
-      const isFollowing = await checkIsFollowing(clerkUser.id, brandId, 'brand');
-      if (isFollowing) {
-        setFollowedBrands(prev => new Set(prev).add(brandId));
+  // Check follow status when modal opens
+  useEffect(() => {
+    const checkFollowStatus = async () => {
+      if (!selectedBrandForOptions || !clerkUser?.id) return;
+      try {
+        const isFollowing = await checkIsFollowing(clerkUser.id, selectedBrandForOptions.id, 'brand');
+        if (isFollowing) {
+          setFollowedBrands(prev => new Set(prev).add(selectedBrandForOptions.id));
+        }
+      } catch (error) {
+        console.error('Error checking follow status:', error);
       }
-    } catch (error) {
-      console.error('Error checking follow status:', error);
-    }
-  }, [clerkUser?.id]);
+    };
+    checkFollowStatus();
+  }, [selectedBrandForOptions, clerkUser?.id]);
 
   const handleShareBrand = (brandId: string, brandName: string) => {
     if (Platform.OS === 'web') {
@@ -633,10 +639,9 @@ export default function BrowseScreen() {
   const renderBrandCard = (brand: Product, index: number) => {
     const score = scoredBrands.get(brand.id) || 0;
     const scoreColor = score >= 50 ? colors.primary : colors.danger;
-    const isEndorsed = isBrandEndorsed(brand.id);
 
     return (
-      <View key={brand.id} style={{ position: 'relative', marginBottom: 4, zIndex: actionMenuBrandId === brand.id ? 9999 : 1, overflow: 'visible' }}>
+      <View key={brand.id} style={{ position: 'relative', marginBottom: 4 }}>
         <TouchableOpacity
           style={[
             styles.brandCard,
@@ -668,16 +673,13 @@ export default function BrowseScreen() {
                 {Math.round(score)}
               </Text>
             </View>
-            {/* Action Menu Button */}
+            {/* Action Menu Button - Opens Modal */}
             <TouchableOpacity
               style={styles.actionMenuButton}
               onPress={(e) => {
                 e.stopPropagation();
-                const isOpening = actionMenuBrandId !== brand.id;
-                setActionMenuBrandId(isOpening ? brand.id : null);
-                if (isOpening) {
-                  checkBrandFollowStatus(brand.id);
-                }
+                setSelectedBrandForOptions(brand);
+                setShowItemOptionsModal(true);
               }}
               activeOpacity={0.7}
             >
@@ -687,83 +689,6 @@ export default function BrowseScreen() {
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
-
-        {/* Action Menu Dropdown */}
-        {actionMenuBrandId === brand.id && (
-          <View
-            style={[
-              styles.actionMenuDropdown,
-              {
-                backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
-                borderColor: colors.border,
-                ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
-              }
-            ]}
-            pointerEvents="box-none"
-          >
-            <Pressable
-              style={({ pressed }) => [
-                styles.actionMenuItem,
-                pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
-              ]}
-              onPress={() => {
-                console.log('[Browse] Endorse button pressed for brand:', brand.id);
-                setActionMenuBrandId(null);
-                if (isEndorsed) {
-                  Alert.alert('Unendorse', `Remove ${brand.name} from your endorsement list?`, [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Remove', style: 'destructive', onPress: () => {
-                      handleUnendorseBrand(brand.id, brand.name);
-                    }}
-                  ]);
-                } else {
-                  handleEndorseBrand(brand.id, brand.name);
-                }
-              }}
-            >
-              <Heart size={16} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.actionMenuText, { color: colors.text }]}>
-                {isEndorsed ? 'Unendorse' : 'Endorse'}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.actionMenuItem,
-                pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
-              ]}
-              onPress={() => {
-                console.log('[Browse] Follow button pressed for brand:', brand.id);
-                setActionMenuBrandId(null);
-                handleFollowBrand(brand.id, brand.name);
-              }}
-            >
-              {followedBrands.has(brand.id) ? (
-                <UserMinus size={16} color={colors.text} strokeWidth={2} />
-              ) : (
-                <UserPlus size={16} color={colors.text} strokeWidth={2} />
-              )}
-              <Text style={[styles.actionMenuText, { color: colors.text }]}>
-                {followedBrands.has(brand.id) ? 'Unfollow' : 'Follow'}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.actionMenuItem,
-                pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
-              ]}
-              onPress={() => {
-                console.log('[Browse] Share button pressed for brand:', brand.id);
-                setActionMenuBrandId(null);
-                handleShareBrand(brand.id, brand.name);
-              }}
-            >
-              <Share2 size={16} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
-            </Pressable>
-          </View>
-        )}
       </View>
     );
   };
@@ -1040,6 +965,46 @@ export default function BrowseScreen() {
         {/* Section content */}
         {renderSectionContent()}
       </ScrollView>
+
+      {/* Item Options Modal */}
+      {selectedBrandForOptions && (
+        <ItemOptionsModal
+          visible={showItemOptionsModal}
+          onClose={() => {
+            setShowItemOptionsModal(false);
+            setSelectedBrandForOptions(null);
+          }}
+          itemName={selectedBrandForOptions.name}
+          isDarkMode={isDarkMode}
+          options={[
+            {
+              icon: Heart,
+              label: isBrandEndorsed(selectedBrandForOptions.id) ? 'Unendorse' : 'Endorse',
+              onPress: () => {
+                const brand = selectedBrandForOptions;
+                if (isBrandEndorsed(brand.id)) {
+                  Alert.alert('Unendorse', `Remove ${brand.name} from your endorsement list?`, [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Remove', style: 'destructive', onPress: () => handleUnendorseBrand(brand.id, brand.name) }
+                  ]);
+                } else {
+                  handleEndorseBrand(brand.id, brand.name);
+                }
+              },
+            },
+            {
+              icon: followedBrands.has(selectedBrandForOptions.id) ? UserMinus : UserPlus,
+              label: followedBrands.has(selectedBrandForOptions.id) ? 'Unfollow' : 'Follow',
+              onPress: () => handleFollowBrand(selectedBrandForOptions.id, selectedBrandForOptions.name),
+            },
+            {
+              icon: Share2,
+              label: 'Share',
+              onPress: () => handleShareBrand(selectedBrandForOptions.id, selectedBrandForOptions.name),
+            },
+          ]}
+        />
+      )}
     </View>
   );
 }
@@ -1202,32 +1167,6 @@ const styles = StyleSheet.create({
     padding: 8,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  actionMenuDropdown: {
-    position: 'absolute',
-    right: 8,
-    top: 64,
-    minWidth: 160,
-    borderRadius: 8,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
-    zIndex: 99999,
-  },
-  actionMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
-  },
-  actionMenuText: {
-    fontSize: 15,
-    fontWeight: '500' as const,
   },
   loadMoreButton: {
     paddingVertical: 12,
