@@ -187,8 +187,8 @@ export default function OnboardingScreen() {
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      console.log('[Onboarding] Redirecting to home');
-      router.replace('/(tabs)/home');
+      console.log('[Onboarding] Redirecting to browse tab (Global section)');
+      router.replace('/(tabs)/values');
     }
   };
 

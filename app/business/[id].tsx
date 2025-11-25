@@ -962,19 +962,19 @@ export default function BusinessDetailScreen() {
                           <View style={styles.emptyEndorsementStep}>
                             <Search size={18} color={colors.primary} strokeWidth={2} />
                             <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
-                              The add button (search)
+                              Search for businesses using the add button
                             </Text>
                           </View>
                           <View style={styles.emptyEndorsementStep}>
                             <BookOpen size={18} color={colors.primary} strokeWidth={2} />
                             <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
-                              Our value-based recommendations (Browse tab)
+                              Browse our value-based recommendations
                             </Text>
                           </View>
                           <View style={styles.emptyEndorsementStep}>
                             <Compass size={18} color={colors.primary} strokeWidth={2} />
                             <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
-                              Your friends (Explore tab)
+                              Explore your friends' endorsement lists
                             </Text>
                           </View>
                         </View>

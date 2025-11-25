@@ -494,7 +494,6 @@ export default function LocalBusinessView({
                   size={16}
                   color={isEndorsed ? colors.primary : colors.text}
                   strokeWidth={2}
-                  fill={isEndorsed ? colors.primary : 'none'}
                 />
                 <Text style={[styles.actionMenuText, { color: colors.text }]}>
                   {isEndorsed ? 'Unendorse' : 'Endorse'}
