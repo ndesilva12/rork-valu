@@ -479,7 +479,7 @@ export default function LocalBusinessView({
           const isFollowed = followedBusinessIds.has(business.id);
 
           return (
-            <View style={[styles.actionMenuDropdown, { backgroundColor: '#FFFFFF', borderColor: colors.border }]}>
+            <View style={[styles.actionMenuDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
               {/* Endorse/Unendorse button */}
               <TouchableOpacity
                 style={styles.actionMenuItem}

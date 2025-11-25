@@ -809,6 +809,35 @@ export default function UnifiedLibrary({
     }
   };
 
+  // Alias for handleAddToLibrary - used by action menu
+  const handleEndorseItem = handleAddToLibrary;
+
+  // Toggle follow status for brand or business
+  const handleToggleFollow = async (itemId: string, itemType: 'brand' | 'business') => {
+    if (!currentUserId) {
+      Alert.alert('Error', 'You must be logged in to follow');
+      return;
+    }
+
+    try {
+      const isCurrentlyFollowing = await checkIsFollowing(currentUserId, itemId, itemType);
+
+      if (isCurrentlyFollowing) {
+        await unfollowEntity(currentUserId, itemId, itemType);
+        Alert.alert('Success', 'Unfollowed successfully');
+      } else {
+        await followEntity(currentUserId, itemId, itemType);
+        Alert.alert('Success', 'Now following');
+      }
+
+      // Update the isFollowingSelectedItem state
+      setIsFollowingSelectedItem(!isCurrentlyFollowing);
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+      Alert.alert('Error', 'Failed to update follow status');
+    }
+  };
+
   const handleSelectList = async (listId: string) => {
     if (!selectedItemToAdd) return;
 
