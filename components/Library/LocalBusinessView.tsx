@@ -149,6 +149,10 @@ export default function LocalBusinessView({
 
   // Check endorsement status from library
   useEffect(() => {
+    if (!library.userLists) {
+      setEndorsedBusinessIds(new Set());
+      return;
+    }
     const endorsementList = library.userLists.find(list => list.isEndorsed);
     if (endorsementList) {
       const endorsedIds = new Set<string>(
@@ -209,6 +213,10 @@ export default function LocalBusinessView({
 
     try {
       // Find the endorsement list
+      if (!library.userLists) {
+        Alert.alert('Error', 'Library not loaded. Please try again.');
+        return;
+      }
       const endorsementList = library.userLists.find(list => list.isEndorsed);
       if (!endorsementList) {
         Alert.alert('Error', 'Could not find endorsement list. Please create one first.');
@@ -246,6 +254,10 @@ export default function LocalBusinessView({
 
     try {
       // Find the endorsement list
+      if (!library.userLists) {
+        Alert.alert('Error', 'Library not loaded. Please try again.');
+        return;
+      }
       const endorsementList = library.userLists.find(list => list.isEndorsed);
       if (!endorsementList) {
         Alert.alert('Error', 'Could not find endorsement list');
