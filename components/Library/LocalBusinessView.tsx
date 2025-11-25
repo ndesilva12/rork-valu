@@ -625,10 +625,17 @@ export default function LocalBusinessView({
                 console.log('[LocalBusinessView] Endorse option pressed');
                 const biz = selectedBusinessForOptions.business;
                 if (endorsedBusinessIds.has(biz.id)) {
-                  Alert.alert('Unendorse', `Remove ${biz.businessInfo.name} from your endorsement list?`, [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Remove', style: 'destructive', onPress: () => handleUnendorse(biz.id, biz.businessInfo.name) }
-                  ]);
+                  // Use window.confirm on web since Alert.alert with buttons doesn't work
+                  if (Platform.OS === 'web') {
+                    if (window.confirm(`Remove ${biz.businessInfo.name} from your endorsement list?`)) {
+                      handleUnendorse(biz.id, biz.businessInfo.name);
+                    }
+                  } else {
+                    Alert.alert('Unendorse', `Remove ${biz.businessInfo.name} from your endorsement list?`, [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Remove', style: 'destructive', onPress: () => handleUnendorse(biz.id, biz.businessInfo.name) }
+                    ]);
+                  }
                 } else {
                   handleEndorse(
                     biz.id,
@@ -645,10 +652,17 @@ export default function LocalBusinessView({
                 console.log('[LocalBusinessView] Follow option pressed');
                 const biz = selectedBusinessForOptions.business;
                 if (followedBusinessIds.has(biz.id)) {
-                  Alert.alert('Unfollow', `Stop following ${biz.businessInfo.name}?`, [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Unfollow', style: 'destructive', onPress: () => handleUnfollow(biz.id, biz.businessInfo.name) }
-                  ]);
+                  // Use window.confirm on web since Alert.alert with buttons doesn't work
+                  if (Platform.OS === 'web') {
+                    if (window.confirm(`Stop following ${biz.businessInfo.name}?`)) {
+                      handleUnfollow(biz.id, biz.businessInfo.name);
+                    }
+                  } else {
+                    Alert.alert('Unfollow', `Stop following ${biz.businessInfo.name}?`, [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Unfollow', style: 'destructive', onPress: () => handleUnfollow(biz.id, biz.businessInfo.name) }
+                    ]);
+                  }
                 } else {
                   handleFollow(biz.id, biz.businessInfo.name);
                 }

@@ -1004,10 +1004,17 @@ export default function BrowseScreen() {
                 console.log('[Browse] Endorse option pressed');
                 const brand = selectedBrandForOptions;
                 if (isBrandEndorsed(brand.id)) {
-                  Alert.alert('Unendorse', `Remove ${brand.name} from your endorsement list?`, [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Remove', style: 'destructive', onPress: () => handleUnendorseBrand(brand.id, brand.name) }
-                  ]);
+                  // Use window.confirm on web since Alert.alert with buttons doesn't work
+                  if (Platform.OS === 'web') {
+                    if (window.confirm(`Remove ${brand.name} from your endorsement list?`)) {
+                      handleUnendorseBrand(brand.id, brand.name);
+                    }
+                  } else {
+                    Alert.alert('Unendorse', `Remove ${brand.name} from your endorsement list?`, [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Remove', style: 'destructive', onPress: () => handleUnendorseBrand(brand.id, brand.name) }
+                    ]);
+                  }
                 } else {
                   handleEndorseBrand(brand.id, brand.name);
                 }

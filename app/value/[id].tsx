@@ -786,10 +786,17 @@ export default function ValueDetailScreen() {
                 console.log('[ValuePage] Endorse option pressed');
                 const driver = selectedDriverForOptions;
                 if (isBrandEndorsed(driver.id)) {
-                  Alert.alert('Unendorse', `Remove ${driver.name} from your endorsement list?`, [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Remove', style: 'destructive', onPress: () => handleUnendorseBrand(driver.id, driver.name) }
-                  ]);
+                  // Use window.confirm on web since Alert.alert with buttons doesn't work
+                  if (Platform.OS === 'web') {
+                    if (window.confirm(`Remove ${driver.name} from your endorsement list?`)) {
+                      handleUnendorseBrand(driver.id, driver.name);
+                    }
+                  } else {
+                    Alert.alert('Unendorse', `Remove ${driver.name} from your endorsement list?`, [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Remove', style: 'destructive', onPress: () => handleUnendorseBrand(driver.id, driver.name) }
+                    ]);
+                  }
                 } else {
                   handleEndorseBrand(driver.id, driver.name);
                 }
