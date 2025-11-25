@@ -702,7 +702,7 @@ export default function BrandDetailScreen() {
                 </View>
               )}
             </View>
-            <View style={styles.scoreContainer}>
+            <View style={[styles.scoreContainer, { position: 'relative', zIndex: showActionMenu ? 1000 : 1 }]}>
               <View style={[styles.scoreCircle, { borderColor: scoreColor, backgroundColor: colors.background }]}>
                 <Text style={[styles.scoreNumber, { color: scoreColor }]}>
                   {Math.round(brandScore)}
@@ -710,13 +710,57 @@ export default function BrandDetailScreen() {
               </View>
               <TouchableOpacity
                 style={[styles.actionMenuButton, { backgroundColor: colors.backgroundSecondary }]}
-                onPress={() => setShowActionMenu(true)}
+                onPress={() => setShowActionMenu(!showActionMenu)}
                 activeOpacity={0.7}
               >
                 <View style={{ transform: [{ rotate: '90deg' }] }}>
                   <MoreVertical size={18} color={colors.text} strokeWidth={2} />
                 </View>
               </TouchableOpacity>
+              {/* Inline Action Menu Dropdown */}
+              {showActionMenu && (
+                <View style={[styles.actionMenuDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                  <TouchableOpacity
+                    style={styles.actionMenuDropdownItem}
+                    onPress={() => {
+                      setShowActionMenu(false);
+                      handleEndorse();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <UserPlus size={16} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.actionMenuDropdownText, { color: colors.text }]}>
+                      {isEndorsingBrand ? 'Unendorse' : 'Endorse'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.actionMenuDropdownItem}
+                    onPress={() => {
+                      setShowActionMenu(false);
+                      handleFollow();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <UserPlus size={16} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.actionMenuDropdownText, { color: colors.text }]}>
+                      {isFollowingBrand ? 'Unfollow' : 'Follow'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.actionMenuDropdownItem}
+                    onPress={() => {
+                      setShowActionMenu(false);
+                      handleShare();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Share2 size={16} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.actionMenuDropdownText, { color: colors.text }]}>Share</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </View>
 
@@ -1084,65 +1128,6 @@ export default function BrandDetailScreen() {
         </View>
       </Modal>
 
-      {/* Action Menu Modal */}
-      <Modal
-        visible={showActionMenu}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowActionMenu(false)}
-      >
-        <Pressable
-          style={styles.actionMenuOverlay}
-          onPress={() => setShowActionMenu(false)}
-        >
-          <Pressable
-            style={[styles.actionMenuContainer, { backgroundColor: colors.background }]}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={[styles.actionMenuHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.actionMenuTitle, { color: colors.text }]}>Actions</Text>
-              <TouchableOpacity onPress={() => setShowActionMenu(false)}>
-                <X size={24} color={colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.actionMenuItem, { borderBottomColor: colors.border }]}
-              onPress={handleEndorse}
-              activeOpacity={0.7}
-            >
-              <UserPlus size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>
-                {isEndorsingBrand ? 'Unendorse' : 'Endorse'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionMenuItem, { borderBottomColor: colors.border }]}
-              onPress={() => {
-                setShowActionMenu(false);
-                handleFollow();
-              }}
-              activeOpacity={0.7}
-            >
-              <UserPlus size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>
-                {isFollowingBrand ? 'Unfollow' : 'Follow'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={handleShare}
-              activeOpacity={0.7}
-            >
-              <Share2 size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Share</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
       {/* Followers Modal */}
       <Modal
         visible={showFollowersModal}
@@ -1374,6 +1359,31 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  actionMenuDropdown: {
+    position: 'absolute',
+    right: 0,
+    top: 44,
+    minWidth: 160,
+    borderRadius: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  actionMenuDropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  actionMenuDropdownText: {
+    fontSize: 15,
+    fontWeight: '500' as const,
   },
   alignmentCard: {
     padding: 16,

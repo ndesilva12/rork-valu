@@ -63,7 +63,6 @@ import { followEntity, unfollowEntity, isFollowing as checkIsFollowing } from '@
 import AddToLibraryModal from '@/components/AddToLibraryModal';
 import EditListModal from '@/components/EditListModal';
 import ShareOptionsModal from '@/components/ShareOptionsModal';
-import ItemOptionsModal from '@/components/ItemOptionsModal';
 import ConfirmModal from '@/components/ConfirmModal';
 import FollowingFollowersList from '@/components/FollowingFollowersList';
 import LocalBusinessView from '@/components/Library/LocalBusinessView';
@@ -163,8 +162,8 @@ export default function UnifiedLibrary({
   const [showShareOptionsModal, setShowShareOptionsModal] = useState(false);
   const [sharingItem, setSharingItem] = useState<{type: 'list' | 'entry', data: UserList | ListEntry} | null>(null);
 
-  // Item Options Modal state
-  const [showItemOptionsModal, setShowItemOptionsModal] = useState(false);
+  // Action Menu Dropdown state (replaces modal)
+  const [activeActionMenuId, setActiveActionMenuId] = useState<string | null>(null);
   const [selectedItemForOptions, setSelectedItemForOptions] = useState<ListEntry | null>(null);
   const [isFollowingSelectedItem, setIsFollowingSelectedItem] = useState(false);
   const [checkingFollowStatus, setCheckingFollowStatus] = useState(false);
@@ -765,7 +764,7 @@ export default function UnifiedLibrary({
 
       const itemName = getItemName(entry);
       Alert.alert('Success', `${itemName} endorsed!`);
-      setShowItemOptionsModal(false);
+      setActiveActionMenuId(null);
       setSelectedItemForOptions(null);
     } catch (error: any) {
       console.error('Error endorsing item:', error);
@@ -802,7 +801,7 @@ export default function UnifiedLibrary({
 
       const itemName = getItemName(entry);
       Alert.alert('Success', `${itemName} unendorsed!`);
-      setShowItemOptionsModal(false);
+      setActiveActionMenuId(null);
       setSelectedItemForOptions(null);
     } catch (error: any) {
       console.error('Error unendorsing item:', error);
@@ -873,6 +872,70 @@ export default function UnifiedLibrary({
     }
   };
 
+  // Render action menu dropdown for entries
+  const renderActionMenuDropdown = (entry: ListEntry) => {
+    if (activeActionMenuId !== entry.id) return null;
+
+    const isEndorsed = endorsementList?.entries?.some(e => {
+      const entryId = entry.brandId || entry.businessId || entry.valueId;
+      const endorsedId = e?.brandId || e?.businessId || e?.valueId;
+      return endorsedId === entryId;
+    });
+
+    return (
+      <View style={[styles.actionMenuDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+        <TouchableOpacity
+          style={styles.actionMenuItem}
+          onPress={() => {
+            setActiveActionMenuId(null);
+            if (isEndorsed) {
+              handleRemoveFromLibrary(entry);
+            } else {
+              handleEndorseItem(entry);
+            }
+          }}
+          activeOpacity={0.7}
+        >
+          <Heart size={16} color={colors.text} strokeWidth={2} />
+          <Text style={[styles.actionMenuText, { color: colors.text }]}>
+            {isEndorsed ? 'Unendorse' : 'Endorse'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionMenuItem}
+          onPress={() => {
+            setActiveActionMenuId(null);
+            const itemId = entry.brandId || entry.businessId;
+            const itemType = entry.type === 'brand' ? 'brand' : 'business';
+            if (itemId && (itemType === 'brand' || itemType === 'business')) {
+              handleToggleFollow(itemId, itemType);
+            }
+          }}
+          activeOpacity={0.7}
+        >
+          <UserPlus size={16} color={colors.text} strokeWidth={2} />
+          <Text style={[styles.actionMenuText, { color: colors.text }]}>
+            {isFollowingSelectedItem ? 'Unfollow' : 'Follow'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionMenuItem}
+          onPress={() => {
+            setActiveActionMenuId(null);
+            setSharingItem({ type: 'entry', data: entry });
+            setShowShareOptionsModal(true);
+          }}
+          activeOpacity={0.7}
+        >
+          <Share2 size={16} color={colors.text} strokeWidth={2} />
+          <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   // Render brand card with score (for Product type)
   const renderBrandCard = (product: Product, type: 'support' | 'avoid') => {
     const isSupport = type === 'support';
@@ -881,8 +944,20 @@ export default function UnifiedLibrary({
       ? (alignmentScore >= 50 ? colors.primary : colors.danger)
       : colors.textSecondary;
 
+    // Create a pseudo-entry for action menu
+    const pseudoEntry: ListEntry = {
+      type: 'brand',
+      id: `brand_${product.id}`,
+      brandId: product.id,
+      brandName: product.name || 'Unknown Brand',
+      brandCategory: product.category,
+      website: product.website,
+      logoUrl: getLogoUrl(product.website || ''),
+      createdAt: new Date()
+    } as ListEntry;
+
     return (
-      <View style={{ position: 'relative' }}>
+      <View style={{ position: 'relative', zIndex: activeActionMenuId === pseudoEntry.id ? 1000 : 1 }}>
         <TouchableOpacity
           style={[
             styles.brandCard,
@@ -926,17 +1001,8 @@ export default function UnifiedLibrary({
               style={[styles.quickAddButton, { backgroundColor: colors.background }]}
               onPress={(e) => {
                 e.stopPropagation();
-                setSelectedItemForOptions({
-                  type: 'brand',
-                  id: product.id,
-                  brandId: product.id,
-                  brandName: product.name || 'Unknown Brand',
-                  brandCategory: product.category,
-                  website: product.website,
-                  logoUrl: getLogoUrl(product.website || ''),
-                  createdAt: new Date()
-                } as ListEntry);
-                setShowItemOptionsModal(true);
+                setSelectedItemForOptions(pseudoEntry);
+                setActiveActionMenuId(activeActionMenuId === pseudoEntry.id ? null : pseudoEntry.id);
               }}
               activeOpacity={0.7}
             >
@@ -947,6 +1013,7 @@ export default function UnifiedLibrary({
           )}
         </View>
       </TouchableOpacity>
+      {renderActionMenuDropdown(pseudoEntry)}
       </View>
     );
   };
@@ -1017,59 +1084,62 @@ export default function UnifiedLibrary({
           const navigationId = fullBrand?.id || entry.brandId;
 
           return (
-            <TouchableOpacity
-              style={[
-                styles.brandCard,
-                { backgroundColor: 'transparent' },
-              ]}
-              onPress={() => {
-                router.push({
-                  pathname: '/brand/[id]',
-                  params: { id: navigationId },
-                });
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={styles.brandCardInner}>
-                <View style={styles.brandLogoContainer}>
-                  <Image
-                    source={{ uri: logoUrl }}
-                    style={[styles.brandLogo, { backgroundColor: '#FFFFFF' }]}
-                    contentFit="cover"
-                    transition={200}
-                    cachePolicy="memory-disk"
-                  />
+            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 1000 : 1 }}>
+              <TouchableOpacity
+                style={[
+                  styles.brandCard,
+                  { backgroundColor: 'transparent' },
+                ]}
+                onPress={() => {
+                  router.push({
+                    pathname: '/brand/[id]',
+                    params: { id: navigationId },
+                  });
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.brandCardInner}>
+                  <View style={styles.brandLogoContainer}>
+                    <Image
+                      source={{ uri: logoUrl }}
+                      style={[styles.brandLogo, { backgroundColor: '#FFFFFF' }]}
+                      contentFit="cover"
+                      transition={200}
+                      cachePolicy="memory-disk"
+                    />
+                  </View>
+                  <View style={styles.brandCardContent}>
+                    <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
+                      {brandName}
+                    </Text>
+                    <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {isEndorsementSection
+                        ? `endorsed for ${calculateDaysEndorsed(entry.createdAt)} ${calculateDaysEndorsed(entry.createdAt) === 1 ? 'day' : 'days'}`
+                        : brandCategory}
+                    </Text>
+                  </View>
+                  <View style={styles.brandScoreContainer}>
+                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                  </View>
+                  {(mode === 'edit' || mode === 'view') && (
+                    <TouchableOpacity
+                      style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        setSelectedItemForOptions(entry);
+                        setActiveActionMenuId(activeActionMenuId === entry.id ? null : entry.id);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={{ transform: [{ rotate: '90deg' }] }}>
+                        <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                      </View>
+                    </TouchableOpacity>
+                  )}
                 </View>
-                <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
-                    {brandName}
-                  </Text>
-                  <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {isEndorsementSection
-                      ? `endorsed for ${calculateDaysEndorsed(entry.createdAt)} ${calculateDaysEndorsed(entry.createdAt) === 1 ? 'day' : 'days'}`
-                      : brandCategory}
-                  </Text>
-                </View>
-                <View style={styles.brandScoreContainer}>
-                  <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-                </View>
-                {(mode === 'edit' || mode === 'view') && (
-                  <TouchableOpacity
-                    style={[styles.quickAddButton, { backgroundColor: colors.background }]}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      setSelectedItemForOptions(entry);
-                      setShowItemOptionsModal(true);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={{ transform: [{ rotate: '90deg' }] }}>
-                      <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
-                    </View>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+              {renderActionMenuDropdown(entry)}
+            </View>
           );
         }
         break;
@@ -1087,59 +1157,62 @@ export default function UnifiedLibrary({
           const logoUrl = (entry as any).logoUrl || (entry as any).logo || ((entry as any).website ? getLogoUrl((entry as any).website) : getLogoUrl(''));
 
           return (
-            <TouchableOpacity
-              style={[
-                styles.brandCard,
-                { backgroundColor: 'transparent' },
-              ]}
-              onPress={() => {
-                router.push({
-                  pathname: '/business/[id]',
-                  params: { id: entry.businessId },
-                });
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={styles.brandCardInner}>
-                <View style={styles.brandLogoContainer}>
-                  <Image
-                    source={{ uri: logoUrl }}
-                    style={[styles.brandLogo, { backgroundColor: '#FFFFFF' }]}
-                    contentFit="cover"
-                    transition={200}
-                    cachePolicy="memory-disk"
-                  />
+            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 1000 : 1 }}>
+              <TouchableOpacity
+                style={[
+                  styles.brandCard,
+                  { backgroundColor: 'transparent' },
+                ]}
+                onPress={() => {
+                  router.push({
+                    pathname: '/business/[id]',
+                    params: { id: entry.businessId },
+                  });
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.brandCardInner}>
+                  <View style={styles.brandLogoContainer}>
+                    <Image
+                      source={{ uri: logoUrl }}
+                      style={[styles.brandLogo, { backgroundColor: '#FFFFFF' }]}
+                      contentFit="cover"
+                      transition={200}
+                      cachePolicy="memory-disk"
+                    />
+                  </View>
+                  <View style={styles.brandCardContent}>
+                    <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
+                      {businessName}
+                    </Text>
+                    <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {isEndorsementSection
+                        ? `endorsed for ${calculateDaysEndorsed(entry.createdAt)} ${calculateDaysEndorsed(entry.createdAt) === 1 ? 'day' : 'days'}`
+                        : (businessCategory || 'Business')}
+                    </Text>
+                  </View>
+                  <View style={styles.brandScoreContainer}>
+                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                  </View>
+                  {(mode === 'edit' || mode === 'view') && (
+                    <TouchableOpacity
+                      style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        setSelectedItemForOptions(entry);
+                        setActiveActionMenuId(activeActionMenuId === entry.id ? null : entry.id);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={{ transform: [{ rotate: '90deg' }] }}>
+                        <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                      </View>
+                    </TouchableOpacity>
+                  )}
                 </View>
-                <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
-                    {businessName}
-                  </Text>
-                  <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {isEndorsementSection
-                      ? `endorsed for ${calculateDaysEndorsed(entry.createdAt)} ${calculateDaysEndorsed(entry.createdAt) === 1 ? 'day' : 'days'}`
-                      : (businessCategory || 'Business')}
-                  </Text>
-                </View>
-                <View style={styles.brandScoreContainer}>
-                  <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-                </View>
-                {(mode === 'edit' || mode === 'view') && (
-                  <TouchableOpacity
-                    style={[styles.quickAddButton, { backgroundColor: colors.background }]}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      setSelectedItemForOptions(entry);
-                      setShowItemOptionsModal(true);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={{ transform: [{ rotate: '90deg' }] }}>
-                      <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
-                    </View>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+              {renderActionMenuDropdown(entry)}
+            </View>
           );
         }
         break;
@@ -1151,45 +1224,48 @@ export default function UnifiedLibrary({
           const valueName = (entry as any).valueName || (entry as any).name || 'Unknown Value';
 
           return (
-            <View style={[
-              styles.brandCard,
-              { backgroundColor: 'transparent' },
-            ]}>
-              <View style={styles.brandCardInner}>
-                <View style={[
-                  styles.brandLogoContainer,
-                  {
-                    backgroundColor: isSupport ? colors.primary + '20' : colors.danger + '20',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }
-                ]}>
-                  <Target size={32} color={iconColor} strokeWidth={2} />
+            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 1000 : 1 }}>
+              <View style={[
+                styles.brandCard,
+                { backgroundColor: 'transparent' },
+              ]}>
+                <View style={styles.brandCardInner}>
+                  <View style={[
+                    styles.brandLogoContainer,
+                    {
+                      backgroundColor: isSupport ? colors.primary + '20' : colors.danger + '20',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }
+                  ]}>
+                    <Target size={32} color={iconColor} strokeWidth={2} />
+                  </View>
+                  <View style={styles.brandCardContent}>
+                    <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
+                      {valueName}
+                    </Text>
+                    <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {entry.mode === 'maxPain' ? 'Avoid' : 'Support'}
+                    </Text>
+                  </View>
+                  {(mode === 'edit' || mode === 'view') && (
+                    <TouchableOpacity
+                      style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        setSelectedItemForOptions(entry);
+                        setActiveActionMenuId(activeActionMenuId === entry.id ? null : entry.id);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={{ transform: [{ rotate: '90deg' }] }}>
+                        <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                      </View>
+                    </TouchableOpacity>
+                  )}
                 </View>
-                <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
-                    {valueName}
-                  </Text>
-                  <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {entry.mode === 'maxPain' ? 'Avoid' : 'Support'}
-                  </Text>
-                </View>
-                {(mode === 'edit' || mode === 'view') && (
-                  <TouchableOpacity
-                    style={[styles.quickAddButton, { backgroundColor: colors.background }]}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      setSelectedItemForOptions(entry);
-                      setShowItemOptionsModal(true);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={{ transform: [{ rotate: '90deg' }] }}>
-                      <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
-                    </View>
-                  </TouchableOpacity>
-                )}
               </View>
+              {renderActionMenuDropdown(entry)}
             </View>
           );
         }
@@ -1199,44 +1275,47 @@ export default function UnifiedLibrary({
         if ('url' in entry) {
           const linkTitle = (entry as any).title || (entry as any).name || 'Link';
           return (
-            <TouchableOpacity
-              style={[
-                styles.brandCard,
-                { backgroundColor: 'transparent', borderColor: 'transparent' }
-              ]}
-              onPress={() => canInteract && Linking.openURL(entry.url)}
-              activeOpacity={0.7}
-              disabled={!canInteract}
-            >
-              <View style={styles.brandCardInner}>
-                <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={1}>
-                    {linkTitle}
-                  </Text>
-                  {(entry as any).description && (
-                    <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={2}>
-                      {(entry as any).description}
+            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 1000 : 1 }}>
+              <TouchableOpacity
+                style={[
+                  styles.brandCard,
+                  { backgroundColor: 'transparent', borderColor: 'transparent' }
+                ]}
+                onPress={() => canInteract && Linking.openURL(entry.url)}
+                activeOpacity={0.7}
+                disabled={!canInteract}
+              >
+                <View style={styles.brandCardInner}>
+                  <View style={styles.brandCardContent}>
+                    <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={1}>
+                      {linkTitle}
                     </Text>
+                    {(entry as any).description && (
+                      <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={2}>
+                        {(entry as any).description}
+                      </Text>
+                    )}
+                  </View>
+                  <ExternalLink size={16} color={colors.textSecondary} strokeWidth={2} />
+                  {(mode === 'edit' || mode === 'view') && (
+                    <TouchableOpacity
+                      style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        setSelectedItemForOptions(entry);
+                        setActiveActionMenuId(activeActionMenuId === entry.id ? null : entry.id);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={{ transform: [{ rotate: '90deg' }] }}>
+                        <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                      </View>
+                    </TouchableOpacity>
                   )}
                 </View>
-                <ExternalLink size={16} color={colors.textSecondary} strokeWidth={2} />
-                {(mode === 'edit' || mode === 'view') && (
-                  <TouchableOpacity
-                    style={[styles.quickAddButton, { backgroundColor: colors.background }]}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      setSelectedItemForOptions(entry);
-                      setShowItemOptionsModal(true);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={{ transform: [{ rotate: '90deg' }] }}>
-                      <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
-                    </View>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+              {renderActionMenuDropdown(entry)}
+            </View>
           );
         }
         break;
@@ -1245,32 +1324,35 @@ export default function UnifiedLibrary({
         if ('content' in entry) {
           const textContent = (entry as any).content || (entry as any).text || 'No content';
           return (
-            <View style={[
-              styles.brandCard,
-              { backgroundColor: 'transparent', borderColor: 'transparent' }
-            ]}>
-              <View style={styles.brandCardInner}>
-                <View style={styles.brandCardContent}>
-                  <Text style={[styles.brandName, { color: colors.white }]}>
-                    {textContent}
-                  </Text>
+            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 1000 : 1 }}>
+              <View style={[
+                styles.brandCard,
+                { backgroundColor: 'transparent', borderColor: 'transparent' }
+              ]}>
+                <View style={styles.brandCardInner}>
+                  <View style={styles.brandCardContent}>
+                    <Text style={[styles.brandName, { color: colors.white }]}>
+                      {textContent}
+                    </Text>
+                  </View>
+                  {(mode === 'edit' || mode === 'view') && (
+                    <TouchableOpacity
+                      style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        setSelectedItemForOptions(entry);
+                        setActiveActionMenuId(activeActionMenuId === entry.id ? null : entry.id);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={{ transform: [{ rotate: '90deg' }] }}>
+                        <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                      </View>
+                    </TouchableOpacity>
+                  )}
                 </View>
-                {(mode === 'edit' || mode === 'view') && (
-                  <TouchableOpacity
-                    style={[styles.quickAddButton, { backgroundColor: colors.background }]}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      setSelectedItemForOptions(entry);
-                      setShowItemOptionsModal(true);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={{ transform: [{ rotate: '90deg' }] }}>
-                      <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
-                    </View>
-                  </TouchableOpacity>
-                )}
               </View>
+              {renderActionMenuDropdown(entry)}
             </View>
           );
         }
@@ -3063,57 +3145,6 @@ export default function UnifiedLibrary({
         isDarkMode={isDarkMode}
       />
 
-      <ItemOptionsModal
-        visible={showItemOptionsModal}
-        onClose={() => {
-          setShowItemOptionsModal(false);
-          setSelectedItemForOptions(null);
-        }}
-        options={(() => {
-          if (!selectedItemForOptions) return [];
-
-          const options = [];
-          const canFollow = selectedItemForOptions.type === 'brand' || selectedItemForOptions.type === 'business';
-          const isEndorsed = isItemEndorsed(selectedItemForOptions);
-
-          // Endorse/Unendorse option (adds to or removes from endorsement list)
-          if (isEndorsed) {
-            options.push({
-              icon: UserPlus,
-              label: 'Unendorse',
-              onPress: () => handleRemoveFromLibrary(selectedItemForOptions),
-              isDanger: true,
-            });
-          } else {
-            options.push({
-              icon: UserPlus,
-              label: 'Endorse',
-              onPress: () => handleAddToLibrary(selectedItemForOptions),
-            });
-          }
-
-          // Follow/Unfollow option (for brands and businesses)
-          if (canFollow) {
-            options.push({
-              icon: UserPlus,
-              label: isFollowingSelectedItem ? 'Unfollow' : 'Follow',
-              onPress: () => handleFollow(selectedItemForOptions, isFollowingSelectedItem),
-            });
-          }
-
-          // Share option (always available)
-          options.push({
-            icon: Share2,
-            label: 'Share',
-            onPress: () => handleShareItem(selectedItemForOptions),
-          });
-
-          return options;
-        })()}
-        itemName={selectedItemForOptions ? getItemName(selectedItemForOptions) : undefined}
-        isDarkMode={isDarkMode}
-      />
-
       <ConfirmModal
         visible={showConfirmModal}
         onClose={() => {
@@ -3628,6 +3659,32 @@ const styles = StyleSheet.create({
     marginRight: 8,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  // Action menu dropdown styles
+  actionMenuDropdown: {
+    position: 'absolute',
+    right: 8,
+    top: 64,
+    minWidth: 160,
+    borderRadius: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  actionMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  actionMenuText: {
+    fontSize: 15,
+    fontWeight: '500' as const,
   },
   placeholderContainer: {
     padding: 40,

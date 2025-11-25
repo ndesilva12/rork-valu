@@ -611,7 +611,7 @@ export default function BusinessDetailScreen() {
                 </View>
               )}
             </View>
-            <View style={styles.scoreContainer}>
+            <View style={[styles.scoreContainer, { position: 'relative', zIndex: showActionMenu ? 1000 : 1 }]}>
               <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.background }]}>
                 <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
                   {alignmentData.alignmentStrength}
@@ -619,13 +619,57 @@ export default function BusinessDetailScreen() {
               </View>
               <TouchableOpacity
                 style={[styles.actionMenuButton, { backgroundColor: colors.backgroundSecondary }]}
-                onPress={() => setShowActionMenu(true)}
+                onPress={() => setShowActionMenu(!showActionMenu)}
                 activeOpacity={0.7}
               >
                 <View style={{ transform: [{ rotate: '90deg' }] }}>
                   <MoreVertical size={18} color={colors.text} strokeWidth={2} />
                 </View>
               </TouchableOpacity>
+              {/* Inline Action Menu Dropdown */}
+              {showActionMenu && (
+                <View style={[styles.actionMenuDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                  <TouchableOpacity
+                    style={styles.actionMenuDropdownItem}
+                    onPress={() => {
+                      setShowActionMenu(false);
+                      handleEndorse();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <UserPlus size={16} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.actionMenuDropdownText, { color: colors.text }]}>
+                      {isEndorsingBusiness ? 'Unendorse' : 'Endorse'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.actionMenuDropdownItem}
+                    onPress={() => {
+                      setShowActionMenu(false);
+                      handleFollow();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <UserPlus size={16} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.actionMenuDropdownText, { color: colors.text }]}>
+                      {isFollowingBusiness ? 'Unfollow' : 'Follow'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.actionMenuDropdownItem}
+                    onPress={() => {
+                      setShowActionMenu(false);
+                      handleShare();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Share2 size={16} color={colors.text} strokeWidth={2} />
+                    <Text style={[styles.actionMenuDropdownText, { color: colors.text }]}>Share</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </View>
 
@@ -926,7 +970,14 @@ export default function BusinessDetailScreen() {
                     {visibleEndorsements.map((item, index) => (
                       <View
                         key={`${item.type}-${item.id}-${index}`}
-                        style={[styles.endorsementItem, { borderBottomColor: colors.border }]}
+                        style={[
+                          styles.endorsementItem,
+                          {
+                            borderBottomColor: colors.border,
+                            position: 'relative',
+                            zIndex: endorsementActionMenuTarget?.id === item.id ? 1000 : 1
+                          }
+                        ]}
                       >
                         <TouchableOpacity
                           style={styles.endorsementItemContent}
@@ -968,11 +1019,104 @@ export default function BusinessDetailScreen() {
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.endorsementActionButton, { backgroundColor: colors.background }]}
-                          onPress={() => setEndorsementActionMenuTarget(item)}
+                          onPress={() => setEndorsementActionMenuTarget(
+                            endorsementActionMenuTarget?.id === item.id ? null : item
+                          )}
                           activeOpacity={0.7}
                         >
                           <MoreVertical size={18} color={colors.text} strokeWidth={2} />
                         </TouchableOpacity>
+                        {/* Inline Endorsement Action Dropdown */}
+                        {endorsementActionMenuTarget?.id === item.id && (
+                          <View style={[styles.endorsementActionDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                            <TouchableOpacity
+                              style={styles.actionMenuDropdownItem}
+                              onPress={async () => {
+                                if (!library.state.endorsementList?.id || !clerkUser?.id) {
+                                  Alert.alert('Error', 'Unable to endorse. Please make sure you are logged in.');
+                                  setEndorsementActionMenuTarget(null);
+                                  return;
+                                }
+                                try {
+                                  if (item.type === 'brand') {
+                                    await library.addEntry(library.state.endorsementList.id, {
+                                      type: 'brand',
+                                      brandId: item.id,
+                                      brandName: item.name,
+                                      website: '',
+                                      logoUrl: '',
+                                    });
+                                  } else {
+                                    await library.addEntry(library.state.endorsementList.id, {
+                                      type: 'business',
+                                      businessId: item.id,
+                                      businessName: item.name,
+                                      website: '',
+                                      logoUrl: '',
+                                    });
+                                  }
+                                  Alert.alert('Success', `${item.name} endorsed!`);
+                                  await library.loadUserLists(clerkUser.id, true);
+                                } catch (error: any) {
+                                  Alert.alert('Error', error?.message || 'Failed to endorse');
+                                }
+                                setEndorsementActionMenuTarget(null);
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <UserPlus size={16} color={colors.text} strokeWidth={2} />
+                              <Text style={[styles.actionMenuDropdownText, { color: colors.text }]}>Endorse</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              style={styles.actionMenuDropdownItem}
+                              onPress={async () => {
+                                if (!clerkUser?.id) {
+                                  Alert.alert('Error', 'You must be logged in to follow');
+                                  setEndorsementActionMenuTarget(null);
+                                  return;
+                                }
+                                try {
+                                  const entityType = item.type === 'brand' ? 'brand' : 'business';
+                                  await followEntity(clerkUser.id, item.id, entityType);
+                                  Alert.alert('Success', `Now following ${item.name}`);
+                                } catch (error: any) {
+                                  Alert.alert('Error', error?.message || 'Failed to follow');
+                                }
+                                setEndorsementActionMenuTarget(null);
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <UserPlus size={16} color={colors.text} strokeWidth={2} />
+                              <Text style={[styles.actionMenuDropdownText, { color: colors.text }]}>Follow</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              style={styles.actionMenuDropdownItem}
+                              onPress={async () => {
+                                try {
+                                  const targetType = item.type;
+                                  const targetId = item.id;
+                                  const message = `Check out ${item.name} on Endorse Money!`;
+                                  const url = Platform.OS === 'web'
+                                    ? `${window.location.origin}/${targetType}/${targetId}`
+                                    : `iendorse://${targetType}/${targetId}`;
+                                  await Share.share({
+                                    message: `${message}\n${url}`,
+                                    title: item.name,
+                                  });
+                                } catch (error) {
+                                  console.error('Error sharing:', error);
+                                }
+                                setEndorsementActionMenuTarget(null);
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <Share2 size={16} color={colors.text} strokeWidth={2} />
+                              <Text style={[styles.actionMenuDropdownText, { color: colors.text }]}>Share</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
                     ))}
 
@@ -1201,65 +1345,6 @@ export default function BusinessDetailScreen() {
         </View>
       </Modal>
 
-      {/* Action Menu Modal */}
-      <Modal
-        visible={showActionMenu}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowActionMenu(false)}
-      >
-        <Pressable
-          style={styles.actionMenuOverlay}
-          onPress={() => setShowActionMenu(false)}
-        >
-          <Pressable
-            style={[styles.actionMenuContainer, { backgroundColor: colors.background }]}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={[styles.actionMenuHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.actionMenuTitle, { color: colors.text }]}>Actions</Text>
-              <TouchableOpacity onPress={() => setShowActionMenu(false)}>
-                <X size={24} color={colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.actionMenuItem, { borderBottomColor: colors.border }]}
-              onPress={handleEndorse}
-              activeOpacity={0.7}
-            >
-              <UserPlus size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>
-                {isEndorsingBusiness ? 'Unendorse' : 'Endorse'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionMenuItem, { borderBottomColor: colors.border }]}
-              onPress={() => {
-                setShowActionMenu(false);
-                handleFollow();
-              }}
-              activeOpacity={0.7}
-            >
-              <UserPlus size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>
-                {isFollowingBusiness ? 'Unfollow' : 'Follow'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={handleShare}
-              activeOpacity={0.7}
-            >
-              <Share2 size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Share</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
       {/* Followers Modal */}
       <Modal
         visible={showFollowersModal}
@@ -1315,128 +1400,6 @@ export default function BusinessDetailScreen() {
         </View>
       </Modal>
 
-      {/* Endorsement Action Menu Modal */}
-      <Modal
-        visible={endorsementActionMenuTarget !== null}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setEndorsementActionMenuTarget(null)}
-      >
-        <Pressable
-          style={styles.actionMenuOverlay}
-          onPress={() => setEndorsementActionMenuTarget(null)}
-        >
-          <Pressable
-            style={[styles.actionMenuContainer, { backgroundColor: colors.background }]}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={[styles.actionMenuHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.actionMenuTitle, { color: colors.text }]} numberOfLines={1}>
-                {endorsementActionMenuTarget?.name || 'Actions'}
-              </Text>
-              <TouchableOpacity onPress={() => setEndorsementActionMenuTarget(null)}>
-                <X size={24} color={colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.actionMenuItem, { borderBottomColor: colors.border }]}
-              onPress={async () => {
-                if (!endorsementActionMenuTarget || !library.state.endorsementList?.id || !clerkUser?.id) {
-                  Alert.alert('Error', 'Unable to endorse. Please make sure you are logged in.');
-                  setEndorsementActionMenuTarget(null);
-                  return;
-                }
-
-                try {
-                  // Add to user's endorsement list
-                  if (endorsementActionMenuTarget.type === 'brand') {
-                    await library.addEntry(library.state.endorsementList.id, {
-                      type: 'brand',
-                      brandId: endorsementActionMenuTarget.id,
-                      brandName: endorsementActionMenuTarget.name,
-                      website: '',
-                      logoUrl: '',
-                    });
-                  } else {
-                    await library.addEntry(library.state.endorsementList.id, {
-                      type: 'business',
-                      businessId: endorsementActionMenuTarget.id,
-                      businessName: endorsementActionMenuTarget.name,
-                      website: '',
-                      logoUrl: '',
-                    });
-                  }
-                  Alert.alert('Success', `${endorsementActionMenuTarget.name} endorsed!`);
-                  await library.loadUserLists(clerkUser.id, true);
-                } catch (error: any) {
-                  Alert.alert('Error', error?.message || 'Failed to endorse');
-                }
-                setEndorsementActionMenuTarget(null);
-              }}
-              activeOpacity={0.7}
-            >
-              <UserPlus size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Endorse</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionMenuItem, { borderBottomColor: colors.border }]}
-              onPress={async () => {
-                if (!endorsementActionMenuTarget || !clerkUser?.id) {
-                  Alert.alert('Error', 'You must be logged in to follow');
-                  setEndorsementActionMenuTarget(null);
-                  return;
-                }
-
-                try {
-                  const entityType = endorsementActionMenuTarget.type === 'brand' ? 'brand' : 'business';
-                  await followEntity(clerkUser.id, endorsementActionMenuTarget.id, entityType);
-                  Alert.alert('Success', `Now following ${endorsementActionMenuTarget.name}`);
-                } catch (error: any) {
-                  Alert.alert('Error', error?.message || 'Failed to follow');
-                }
-                setEndorsementActionMenuTarget(null);
-              }}
-              activeOpacity={0.7}
-            >
-              <UserPlus size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Follow</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={async () => {
-                if (!endorsementActionMenuTarget) {
-                  setEndorsementActionMenuTarget(null);
-                  return;
-                }
-
-                try {
-                  const targetType = endorsementActionMenuTarget.type;
-                  const targetId = endorsementActionMenuTarget.id;
-                  const message = `Check out ${endorsementActionMenuTarget.name} on Endorse Money!`;
-                  const url = Platform.OS === 'web'
-                    ? `${window.location.origin}/${targetType}/${targetId}`
-                    : `iendorse://${targetType}/${targetId}`;
-
-                  await Share.share({
-                    message: `${message}\n${url}`,
-                    title: endorsementActionMenuTarget.name,
-                  });
-                } catch (error) {
-                  console.error('Error sharing:', error);
-                }
-                setEndorsementActionMenuTarget(null);
-              }}
-              activeOpacity={0.7}
-            >
-              <Share2 size={20} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.actionMenuItemText, { color: colors.text }]}>Share</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </View>
   );
 }
@@ -1683,6 +1646,45 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  actionMenuDropdown: {
+    position: 'absolute',
+    right: 0,
+    top: 44,
+    minWidth: 160,
+    borderRadius: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  actionMenuDropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  actionMenuDropdownText: {
+    fontSize: 15,
+    fontWeight: '500' as const,
+  },
+  endorsementActionDropdown: {
+    position: 'absolute',
+    right: 0,
+    top: 44,
+    minWidth: 140,
+    borderRadius: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 1000,
   },
   alignmentCard: {
     padding: 20,
