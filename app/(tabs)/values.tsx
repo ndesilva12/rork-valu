@@ -194,16 +194,24 @@ export default function BrowseScreen() {
   // Brand action handlers
   const handleEndorseBrand = async (brandId: string, brandName: string) => {
     console.log('[Browse] handleEndorseBrand called:', brandId, brandName);
-    if (!clerkUser?.id) return;
+    console.log('[Browse] clerkUser?.id:', clerkUser?.id);
+    if (!clerkUser?.id) {
+      console.log('[Browse] No clerkUser.id - returning early');
+      return;
+    }
 
     try {
       // Find the endorsement list
+      console.log('[Browse] library?.userLists:', library?.userLists?.length, 'lists');
       if (!library?.userLists) {
+        console.log('[Browse] No userLists - showing alert');
         Alert.alert('Error', 'Library not loaded yet. Please try again.');
         return;
       }
       const endorsementList = library.userLists.find(list => list.isEndorsed);
+      console.log('[Browse] endorsementList:', endorsementList?.id);
       if (!endorsementList) {
+        console.log('[Browse] No endorsement list found');
         Alert.alert('Error', 'Could not find endorsement list');
         return;
       }
@@ -212,16 +220,20 @@ export default function BrowseScreen() {
       const existingEntry = endorsementList.entries.find(
         (e: any) => e.type === 'brand' && e.brandId === brandId
       );
+      console.log('[Browse] existingEntry:', existingEntry);
 
       if (existingEntry) {
+        console.log('[Browse] Already endorsed');
         Alert.alert('Already Endorsed', `${brandName} is already in your endorsements`);
         return;
       }
 
       // Find the brand to get all info
       const brand = brands?.find(b => b.id === brandId);
+      console.log('[Browse] Found brand:', brand?.name);
 
       // Add to endorsement list with all relevant data
+      console.log('[Browse] Calling addEntryToList...');
       await addEntryToList(endorsementList.id, {
         type: 'brand',
         brandId: brandId,
@@ -230,13 +242,17 @@ export default function BrowseScreen() {
         website: brand?.website || '',
         logoUrl: brand?.exampleImageUrl || getLogoUrl(brand?.website || ''),
       });
+      console.log('[Browse] addEntryToList completed');
 
       // Reload the library to reflect changes (force refresh)
+      console.log('[Browse] Reloading library...');
       await library.loadUserLists(clerkUser.id, true);
+      console.log('[Browse] Library reloaded');
 
       Alert.alert('Success', `${brandName} added to endorsements`);
+      console.log('[Browse] Success alert shown');
     } catch (error) {
-      console.error('Error endorsing brand:', error);
+      console.error('[Browse] Error endorsing brand:', error);
       Alert.alert('Error', 'Failed to endorse brand');
     }
   };
