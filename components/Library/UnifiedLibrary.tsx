@@ -64,6 +64,7 @@ import AddToLibraryModal from '@/components/AddToLibraryModal';
 import EditListModal from '@/components/EditListModal';
 import ShareOptionsModal from '@/components/ShareOptionsModal';
 import ConfirmModal from '@/components/ConfirmModal';
+import ItemOptionsModal from '@/components/ItemOptionsModal';
 import FollowingFollowersList from '@/components/FollowingFollowersList';
 import LocalBusinessView from '@/components/Library/LocalBusinessView';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -162,8 +163,8 @@ export default function UnifiedLibrary({
   const [showShareOptionsModal, setShowShareOptionsModal] = useState(false);
   const [sharingItem, setSharingItem] = useState<{type: 'list' | 'entry', data: UserList | ListEntry} | null>(null);
 
-  // Action Menu Dropdown state (replaces modal)
-  const [activeActionMenuId, setActiveActionMenuId] = useState<string | null>(null);
+  // Action Menu Modal state
+  const [showActionOptionsModal, setShowActionOptionsModal] = useState(false);
   const [selectedItemForOptions, setSelectedItemForOptions] = useState<ListEntry | null>(null);
   const [isFollowingSelectedItem, setIsFollowingSelectedItem] = useState(false);
   const [checkingFollowStatus, setCheckingFollowStatus] = useState(false);
@@ -764,7 +765,6 @@ export default function UnifiedLibrary({
 
       const itemName = getItemName(entry);
       Alert.alert('Success', `${itemName} endorsed!`);
-      setActiveActionMenuId(null);
       setSelectedItemForOptions(null);
     } catch (error: any) {
       console.error('Error endorsing item:', error);
@@ -801,7 +801,6 @@ export default function UnifiedLibrary({
 
       const itemName = getItemName(entry);
       Alert.alert('Success', `${itemName} unendorsed!`);
-      setActiveActionMenuId(null);
       setSelectedItemForOptions(null);
     } catch (error: any) {
       console.error('Error unendorsing item:', error);
@@ -901,75 +900,71 @@ export default function UnifiedLibrary({
     }
   };
 
-  // Render action menu dropdown for entries
-  const renderActionMenuDropdown = (entry: ListEntry) => {
-    if (activeActionMenuId !== entry.id) return null;
+  // Open action options modal for an entry
+  const handleOpenActionModal = async (entry: ListEntry) => {
+    setSelectedItemForOptions(entry);
+    setShowActionOptionsModal(true);
+
+    // Check follow status for the item
+    if (currentUserId) {
+      const itemId = entry.brandId || entry.businessId;
+      const itemType = entry.type === 'brand' ? 'brand' : 'business';
+      if (itemId && (itemType === 'brand' || itemType === 'business')) {
+        setCheckingFollowStatus(true);
+        try {
+          const following = await checkIsFollowing(currentUserId, itemId, itemType);
+          setIsFollowingSelectedItem(following);
+        } catch (error) {
+          console.error('[UnifiedLibrary] Error checking follow status:', error);
+        } finally {
+          setCheckingFollowStatus(false);
+        }
+      }
+    }
+  };
+
+  // Get action options for the modal
+  const getActionModalOptions = () => {
+    if (!selectedItemForOptions) return [];
 
     const isEndorsed = endorsementList?.entries?.some(e => {
-      const entryId = entry.brandId || entry.businessId || entry.valueId;
+      const entryId = selectedItemForOptions.brandId || selectedItemForOptions.businessId || selectedItemForOptions.valueId;
       const endorsedId = e?.brandId || e?.businessId || e?.valueId;
       return endorsedId === entryId;
     });
 
-    return (
-      <View style={[
-        styles.actionMenuDropdown,
-        {
-          backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
-          borderColor: colors.border,
-          ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
-        }
-      ]}>
-        <TouchableOpacity
-          style={styles.actionMenuItem}
-          onPress={() => {
-            setActiveActionMenuId(null);
-            if (isEndorsed) {
-              handleRemoveFromLibrary(entry);
-            } else {
-              handleEndorseItem(entry);
-            }
-          }}
-          activeOpacity={0.7}
-        >
-          <Heart size={16} color={colors.text} strokeWidth={2} />
-          <Text style={[styles.actionMenuText, { color: colors.text }]}>
-            {isEndorsed ? 'Unendorse' : 'Endorse'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionMenuItem}
-          onPress={() => {
-            setActiveActionMenuId(null);
-            const itemId = entry.brandId || entry.businessId;
-            const itemType = entry.type === 'brand' ? 'brand' : 'business';
-            if (itemId && (itemType === 'brand' || itemType === 'business')) {
-              handleToggleFollow(itemId, itemType);
-            }
-          }}
-          activeOpacity={0.7}
-        >
-          <UserPlus size={16} color={colors.text} strokeWidth={2} />
-          <Text style={[styles.actionMenuText, { color: colors.text }]}>
-            {isFollowingSelectedItem ? 'Unfollow' : 'Follow'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionMenuItem}
-          onPress={() => {
-            setActiveActionMenuId(null);
-            setSharingItem({ type: 'entry', data: entry });
-            setShowShareOptionsModal(true);
-          }}
-          activeOpacity={0.7}
-        >
-          <Share2 size={16} color={colors.text} strokeWidth={2} />
-          <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
-        </TouchableOpacity>
-      </View>
-    );
+    return [
+      {
+        icon: Heart,
+        label: isEndorsed ? 'Unendorse' : 'Endorse',
+        onPress: () => {
+          if (isEndorsed) {
+            handleRemoveFromLibrary(selectedItemForOptions);
+          } else {
+            handleEndorseItem(selectedItemForOptions);
+          }
+        },
+      },
+      {
+        icon: UserPlus,
+        label: isFollowingSelectedItem ? 'Unfollow' : 'Follow',
+        onPress: () => {
+          const itemId = selectedItemForOptions.brandId || selectedItemForOptions.businessId;
+          const itemType = selectedItemForOptions.type === 'brand' ? 'brand' : 'business';
+          if (itemId && (itemType === 'brand' || itemType === 'business')) {
+            handleToggleFollow(itemId, itemType);
+          }
+        },
+      },
+      {
+        icon: Share2,
+        label: 'Share',
+        onPress: () => {
+          setSharingItem({ type: 'entry', data: selectedItemForOptions });
+          setShowShareOptionsModal(true);
+        },
+      },
+    ];
   };
 
   // Render brand card with score (for Product type)
@@ -993,7 +988,7 @@ export default function UnifiedLibrary({
     } as ListEntry;
 
     return (
-      <View style={{ position: 'relative', zIndex: activeActionMenuId === pseudoEntry.id ? 99999 : 1, overflow: 'visible' }}>
+      <View>
         <TouchableOpacity
           style={[
             styles.brandCard,
@@ -1037,8 +1032,7 @@ export default function UnifiedLibrary({
               style={[styles.quickAddButton, { backgroundColor: colors.background }]}
               onPress={(e) => {
                 e.stopPropagation();
-                setSelectedItemForOptions(pseudoEntry);
-                setActiveActionMenuId(activeActionMenuId === pseudoEntry.id ? null : pseudoEntry.id);
+                handleOpenActionModal(pseudoEntry);
               }}
               activeOpacity={0.7}
             >
@@ -1049,7 +1043,6 @@ export default function UnifiedLibrary({
           )}
         </View>
       </TouchableOpacity>
-      {renderActionMenuDropdown(pseudoEntry)}
       </View>
     );
   };
@@ -1120,7 +1113,7 @@ export default function UnifiedLibrary({
           const navigationId = fullBrand?.id || entry.brandId;
 
           return (
-            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 99999 : 1, overflow: 'visible' }}>
+            <View>
               <TouchableOpacity
                 style={[
                   styles.brandCard,
@@ -1162,8 +1155,7 @@ export default function UnifiedLibrary({
                       style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                       onPress={(e) => {
                         e.stopPropagation();
-                        setSelectedItemForOptions(entry);
-                        setActiveActionMenuId(activeActionMenuId === entry.id ? null : entry.id);
+                        handleOpenActionModal(entry);
                       }}
                       activeOpacity={0.7}
                     >
@@ -1174,7 +1166,6 @@ export default function UnifiedLibrary({
                   )}
                 </View>
               </TouchableOpacity>
-              {renderActionMenuDropdown(entry)}
             </View>
           );
         }
@@ -1198,7 +1189,7 @@ export default function UnifiedLibrary({
           const logoUrl = fullBusiness?.businessInfo?.logoUrl || (entry as any).logoUrl || (entry as any).logo || (businessWebsite ? getLogoUrl(businessWebsite) : getLogoUrl(''));
 
           return (
-            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 99999 : 1, overflow: 'visible' }}>
+            <View>
               <TouchableOpacity
                 style={[
                   styles.brandCard,
@@ -1240,8 +1231,7 @@ export default function UnifiedLibrary({
                       style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                       onPress={(e) => {
                         e.stopPropagation();
-                        setSelectedItemForOptions(entry);
-                        setActiveActionMenuId(activeActionMenuId === entry.id ? null : entry.id);
+                        handleOpenActionModal(entry);
                       }}
                       activeOpacity={0.7}
                     >
@@ -1252,7 +1242,6 @@ export default function UnifiedLibrary({
                   )}
                 </View>
               </TouchableOpacity>
-              {renderActionMenuDropdown(entry)}
             </View>
           );
         }
@@ -1265,7 +1254,7 @@ export default function UnifiedLibrary({
           const valueName = (entry as any).valueName || (entry as any).name || 'Unknown Value';
 
           return (
-            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 99999 : 1, overflow: 'visible' }}>
+            <View>
               <View style={[
                 styles.brandCard,
                 { backgroundColor: 'transparent' },
@@ -1294,8 +1283,7 @@ export default function UnifiedLibrary({
                       style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                       onPress={(e) => {
                         e.stopPropagation();
-                        setSelectedItemForOptions(entry);
-                        setActiveActionMenuId(activeActionMenuId === entry.id ? null : entry.id);
+                        handleOpenActionModal(entry);
                       }}
                       activeOpacity={0.7}
                     >
@@ -1306,7 +1294,6 @@ export default function UnifiedLibrary({
                   )}
                 </View>
               </View>
-              {renderActionMenuDropdown(entry)}
             </View>
           );
         }
@@ -1316,7 +1303,7 @@ export default function UnifiedLibrary({
         if ('url' in entry) {
           const linkTitle = (entry as any).title || (entry as any).name || 'Link';
           return (
-            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 99999 : 1, overflow: 'visible' }}>
+            <View>
               <TouchableOpacity
                 style={[
                   styles.brandCard,
@@ -1343,8 +1330,7 @@ export default function UnifiedLibrary({
                       style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                       onPress={(e) => {
                         e.stopPropagation();
-                        setSelectedItemForOptions(entry);
-                        setActiveActionMenuId(activeActionMenuId === entry.id ? null : entry.id);
+                        handleOpenActionModal(entry);
                       }}
                       activeOpacity={0.7}
                     >
@@ -1355,7 +1341,6 @@ export default function UnifiedLibrary({
                   )}
                 </View>
               </TouchableOpacity>
-              {renderActionMenuDropdown(entry)}
             </View>
           );
         }
@@ -1365,7 +1350,7 @@ export default function UnifiedLibrary({
         if ('content' in entry) {
           const textContent = (entry as any).content || (entry as any).text || 'No content';
           return (
-            <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 99999 : 1, overflow: 'visible' }}>
+            <View>
               <View style={[
                 styles.brandCard,
                 { backgroundColor: 'transparent', borderColor: 'transparent' }
@@ -1381,8 +1366,7 @@ export default function UnifiedLibrary({
                       style={[styles.quickAddButton, { backgroundColor: colors.background }]}
                       onPress={(e) => {
                         e.stopPropagation();
-                        setSelectedItemForOptions(entry);
-                        setActiveActionMenuId(activeActionMenuId === entry.id ? null : entry.id);
+                        handleOpenActionModal(entry);
                       }}
                       activeOpacity={0.7}
                     >
@@ -1393,7 +1377,6 @@ export default function UnifiedLibrary({
                   )}
                 </View>
               </View>
-              {renderActionMenuDropdown(entry)}
             </View>
           );
         }
@@ -3244,6 +3227,18 @@ export default function UnifiedLibrary({
         isDarkMode={isDarkMode}
         isLoading={isConfirmLoading}
         isDanger={confirmModalData?.isDanger}
+      />
+
+      {/* Action Options Modal for list entries */}
+      <ItemOptionsModal
+        visible={showActionOptionsModal}
+        onClose={() => {
+          setShowActionOptionsModal(false);
+          setSelectedItemForOptions(null);
+        }}
+        options={getActionModalOptions()}
+        isDarkMode={isDarkMode}
+        itemName={selectedItemForOptions ? getItemName(selectedItemForOptions) : undefined}
       />
 
       {/* Add to Endorsement Search Modal */}
