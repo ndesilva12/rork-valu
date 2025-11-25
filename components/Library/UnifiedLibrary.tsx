@@ -1157,11 +1157,16 @@ export default function UnifiedLibrary({
           const alignmentScore = scoredBrands.get(entry.businessId) || 50;
           const scoreColor = alignmentScore >= 50 ? colors.primary : colors.danger;
 
-          // Get business name from multiple possible fields
-          const businessName = (entry as any).businessName || (entry as any).name || 'Unknown Business';
-          const businessCategory = (entry as any).businessCategory || (entry as any).category;
-          // Use uploaded logoUrl first, then legacy logo field, fallback to generated logo from website
-          const logoUrl = (entry as any).logoUrl || (entry as any).logo || ((entry as any).website ? getLogoUrl((entry as any).website) : getLogoUrl(''));
+          // Look up full business data from userBusinesses or allBusinesses
+          const fullBusiness = userBusinesses.find(b => b.id === entry.businessId)
+            || allBusinesses.find(b => b.id === entry.businessId);
+
+          // Get business name from multiple possible fields - prefer actual business data
+          const businessName = fullBusiness?.businessInfo?.name || (entry as any).businessName || (entry as any).name || 'Unknown Business';
+          const businessCategory = fullBusiness?.businessInfo?.category || (entry as any).businessCategory || (entry as any).category;
+          // Use actual business logoUrl first, then entry data, fallback to generated logo from website
+          const businessWebsite = fullBusiness?.businessInfo?.website || (entry as any).website || '';
+          const logoUrl = fullBusiness?.businessInfo?.logoUrl || (entry as any).logoUrl || (entry as any).logo || (businessWebsite ? getLogoUrl(businessWebsite) : getLogoUrl(''));
 
           return (
             <View style={{ position: 'relative', zIndex: activeActionMenuId === entry.id ? 99999 : 1, overflow: 'visible' }}>

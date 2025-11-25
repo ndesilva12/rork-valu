@@ -45,7 +45,7 @@ export default function BusinessDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { profile, isDarkMode, clerkUser } = useUser();
-  const { values } = useData();
+  const { values, brands } = useData();
   const library = useLibrary();
   const colors = isDarkMode ? darkColors : lightColors;
   const scrollViewRef = useRef<ScrollView>(null);
@@ -493,6 +493,8 @@ export default function BusinessDetailScreen() {
   let alignmentData = {
     isAligned: false,
     matchingValues: [] as string[],
+    alignedValues: [] as { id: string; userStance: string; bizStance: string }[],
+    unalignedValues: [] as { id: string; userStance: string; bizStance: string }[],
     alignmentStrength: 50
   };
 
@@ -517,7 +519,31 @@ export default function BusinessDetailScreen() {
     similarityScore = currentBusinessScore?.alignmentScore || 50;
     similarityLabel = getSimilarityLabel(similarityScore);
 
-    // Find values that both user and business have
+    // Create maps of user and business values with their stances
+    const userValueMap = new Map(profile.causes.map(c => [c.id, c.type]));
+    const bizValueMap = new Map((business.causes || []).map(c => [c.id, c.type]));
+
+    // Find all value IDs that either user or business has
+    const allValueIds = new Set([...userValueMap.keys(), ...bizValueMap.keys()]);
+
+    const alignedValues: { id: string; userStance: string; bizStance: string }[] = [];
+    const unalignedValues: { id: string; userStance: string; bizStance: string }[] = [];
+
+    allValueIds.forEach(valueId => {
+      const userStance = userValueMap.get(valueId);
+      const bizStance = bizValueMap.get(valueId);
+
+      if (userStance && bizStance) {
+        // Both have this value - check if same stance
+        if (userStance === bizStance) {
+          alignedValues.push({ id: valueId, userStance, bizStance });
+        } else {
+          unalignedValues.push({ id: valueId, userStance, bizStance });
+        }
+      }
+    });
+
+    // Legacy: values that both have (regardless of stance)
     const userValueIds = new Set(profile.causes.map(c => c.id));
     const bizValueIds = new Set((business.causes || []).map(c => c.id));
     matchingValues = [...userValueIds].filter(id => bizValueIds.has(id));
@@ -527,6 +553,8 @@ export default function BusinessDetailScreen() {
     alignmentData = {
       isAligned,
       matchingValues,
+      alignedValues,
+      unalignedValues,
       alignmentStrength: similarityScore
     };
   }
@@ -906,32 +934,79 @@ export default function BusinessDetailScreen() {
                 Why
               </Text>
             </View>
-            {alignmentData.matchingValues.length > 0 && (
-              <View style={styles.valueTagsContainer}>
-                {alignmentData.matchingValues.map((valueId) => {
-                  const allValues = Object.values(AVAILABLE_VALUES).flat();
-                  const value = allValues.find(v => v.id === valueId);
-                  if (!value) return null;
 
-                  const userCause = profile.causes.find(c => c.id === valueId);
-                  if (!userCause) return null;
+            {/* Aligned Values Section */}
+            {alignmentData.alignedValues.length > 0 && (
+              <View style={styles.whySubsection}>
+                <View style={styles.whySubsectionHeader}>
+                  <TrendingUp size={16} color={colors.success} strokeWidth={2} />
+                  <Text style={[styles.whySubsectionTitle, { color: colors.success }]}>
+                    Aligned ({alignmentData.alignedValues.length})
+                  </Text>
+                </View>
+                <View style={styles.valueTagsContainer}>
+                  {alignmentData.alignedValues.map((item) => {
+                    const allValues = Object.values(AVAILABLE_VALUES).flat();
+                    const value = allValues.find(v => v.id === item.id);
+                    if (!value) return null;
 
-                  const tagColor = userCause.type === 'support' ? colors.success : colors.danger;
+                    const tagColor = item.userStance === 'support' ? colors.success : colors.danger;
+                    const stanceLabel = item.userStance === 'support' ? 'Both support' : 'Both oppose';
 
-                  return (
-                    <TouchableOpacity
-                      key={valueId}
-                      style={[styles.valueTag, { backgroundColor: tagColor + '15' }]}
-                      onPress={() => router.push(`/value/${valueId}`)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.valueTagText, { color: tagColor }]}>
-                        {value.name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={[styles.valueTag, { backgroundColor: tagColor + '15' }]}
+                        onPress={() => router.push(`/value/${item.id}`)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.valueTagText, { color: tagColor }]}>
+                          {value.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
+            )}
+
+            {/* Unaligned Values Section */}
+            {alignmentData.unalignedValues.length > 0 && (
+              <View style={[styles.whySubsection, alignmentData.alignedValues.length > 0 && { marginTop: 16 }]}>
+                <View style={styles.whySubsectionHeader}>
+                  <TrendingDown size={16} color={colors.danger} strokeWidth={2} />
+                  <Text style={[styles.whySubsectionTitle, { color: colors.danger }]}>
+                    Not Aligned ({alignmentData.unalignedValues.length})
+                  </Text>
+                </View>
+                <View style={styles.valueTagsContainer}>
+                  {alignmentData.unalignedValues.map((item) => {
+                    const allValues = Object.values(AVAILABLE_VALUES).flat();
+                    const value = allValues.find(v => v.id === item.id);
+                    if (!value) return null;
+
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={[styles.valueTag, { backgroundColor: colors.danger + '15' }]}
+                        onPress={() => router.push(`/value/${item.id}`)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.valueTagText, { color: colors.danger }]}>
+                          {value.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            {/* Show message if no shared values */}
+            {alignmentData.alignedValues.length === 0 && alignmentData.unalignedValues.length === 0 && (
+              <Text style={[styles.noValuesText, { color: colors.textSecondary }]}>
+                No shared values to compare
+              </Text>
             )}
           </View>
 
@@ -1037,7 +1112,18 @@ export default function BusinessDetailScreen() {
                       </Text>
                     </View>
 
-                    {visibleEndorsements.map((item, index) => (
+                    {visibleEndorsements.map((item, index) => {
+                      // Look up actual logo from real data source
+                      let realLogoUrl = item.logoUrl;
+                      if (item.type === 'business') {
+                        const fullBusiness = allBusinesses.find(b => b.id === item.id);
+                        realLogoUrl = fullBusiness?.businessInfo?.logoUrl || item.logoUrl || (fullBusiness?.businessInfo?.website ? getLogoUrl(fullBusiness.businessInfo.website) : getLogoUrl(item.website || ''));
+                      } else if (item.type === 'brand') {
+                        const fullBrand = brands.find(b => b.id === item.id);
+                        realLogoUrl = fullBrand?.exampleImageUrl || item.logoUrl || (fullBrand?.website ? getLogoUrl(fullBrand.website) : getLogoUrl(item.website || ''));
+                      }
+
+                      return (
                       <View
                         key={`${item.type}-${item.id}-${index}`}
                         style={[
@@ -1061,21 +1147,12 @@ export default function BusinessDetailScreen() {
                           activeOpacity={0.7}
                         >
                           <View style={[styles.endorsementLogo, { backgroundColor: '#FFFFFF' }]}>
-                            {item.logoUrl ? (
-                              <Image
-                                source={{ uri: item.logoUrl }}
-                                style={styles.endorsementLogoImage}
-                                contentFit="cover"
-                                cachePolicy="memory-disk"
-                              />
-                            ) : (
-                              <Image
-                                source={{ uri: getLogoUrl(item.website || '') }}
-                                style={styles.endorsementLogoImage}
-                                contentFit="cover"
-                                cachePolicy="memory-disk"
-                              />
-                            )}
+                            <Image
+                              source={{ uri: realLogoUrl || getLogoUrl('') }}
+                              style={styles.endorsementLogoImage}
+                              contentFit="cover"
+                              cachePolicy="memory-disk"
+                            />
                           </View>
                           <View style={styles.endorsementInfo}>
                             <Text style={[styles.endorsementName, { color: colors.text }]} numberOfLines={1}>
@@ -1188,7 +1265,8 @@ export default function BusinessDetailScreen() {
                           </View>
                         )}
                       </View>
-                    ))}
+                    );
+                    })}
 
                     {hasMore && (
                       <TouchableOpacity
@@ -1857,6 +1935,24 @@ const styles = StyleSheet.create({
   valueTagText: {
     fontSize: 13,
     fontWeight: '600' as const,
+  },
+  whySubsection: {
+    marginTop: 8,
+  },
+  whySubsectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  whySubsectionTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  noValuesText: {
+    fontSize: 14,
+    textAlign: 'center' as const,
+    paddingVertical: 12,
   },
   errorContainer: {
     flex: 1,
