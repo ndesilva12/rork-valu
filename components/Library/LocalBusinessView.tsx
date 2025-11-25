@@ -9,6 +9,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Pressable,
   Alert,
   TextInput,
   Modal,
@@ -479,11 +480,25 @@ export default function LocalBusinessView({
           const isFollowed = followedBusinessIds.has(business.id);
 
           return (
-            <View style={[styles.actionMenuDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+            <View
+              style={[
+                styles.actionMenuDropdown,
+                {
+                  backgroundColor: colors.backgroundSecondary,
+                  borderColor: colors.border,
+                  ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
+                }
+              ]}
+              pointerEvents="box-none"
+            >
               {/* Endorse/Unendorse button */}
-              <TouchableOpacity
-                style={styles.actionMenuItem}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.actionMenuItem,
+                  pressed && { opacity: 0.7, backgroundColor: colors.background }
+                ]}
                 onPress={() => {
+                  console.log('[LocalBusinessView] Endorse button pressed for business:', business.id);
                   setActionMenuBusinessId(null);
                   if (isEndorsed) {
                     Alert.alert('Unendorse', `Remove ${business.businessInfo.name} from your endorsement list?`, [
@@ -500,7 +515,6 @@ export default function LocalBusinessView({
                     );
                   }
                 }}
-                activeOpacity={0.7}
               >
                 <Heart
                   size={16}
@@ -510,12 +524,16 @@ export default function LocalBusinessView({
                 <Text style={[styles.actionMenuText, { color: colors.text }]}>
                   {isEndorsed ? 'Unendorse' : 'Endorse'}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
 
               {/* Follow/Unfollow button */}
-              <TouchableOpacity
-                style={styles.actionMenuItem}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.actionMenuItem,
+                  pressed && { opacity: 0.7, backgroundColor: colors.background }
+                ]}
                 onPress={() => {
+                  console.log('[LocalBusinessView] Follow button pressed for business:', business.id);
                   setActionMenuBusinessId(null);
                   if (isFollowed) {
                     Alert.alert('Unfollow', `Stop following ${business.businessInfo.name}?`, [
@@ -528,7 +546,6 @@ export default function LocalBusinessView({
                     handleFollow(business.id, business.businessInfo.name);
                   }
                 }}
-                activeOpacity={0.7}
               >
                 {isFollowed ? (
                   <UserMinus size={16} color={colors.text} strokeWidth={2} />
@@ -538,11 +555,15 @@ export default function LocalBusinessView({
                 <Text style={[styles.actionMenuText, { color: colors.text }]}>
                   {isFollowed ? 'Unfollow' : 'Follow'}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
 
-              <TouchableOpacity
-                style={styles.actionMenuItem}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.actionMenuItem,
+                  pressed && { opacity: 0.7, backgroundColor: colors.background }
+                ]}
                 onPress={() => {
+                  console.log('[LocalBusinessView] Share button pressed for business:', business.id);
                   setActionMenuBusinessId(null);
                   if (Platform.OS === 'web') {
                     navigator.clipboard.writeText(`${window.location.origin}/business/${business.id}`);
@@ -551,11 +572,10 @@ export default function LocalBusinessView({
                     Alert.alert('Share', 'Share functionality coming soon');
                   }
                 }}
-                activeOpacity={0.7}
               >
                 <Share2 size={16} color={colors.text} strokeWidth={2} />
                 <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           );
         })()}
@@ -864,6 +884,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
+    ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
   },
   actionMenuText: {
     fontSize: 15,

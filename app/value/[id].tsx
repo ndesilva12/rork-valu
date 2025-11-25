@@ -562,17 +562,24 @@ export default function ValueDetailScreen() {
 
                   {/* Action Menu Dropdown */}
                   {actionMenuBrandId === menuKey && (
-                    <View style={[
-                      styles.actionMenuDropdown,
-                      {
-                        backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
-                        borderColor: colors.border,
-                        ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
-                      }
-                    ]}>
-                      <TouchableOpacity
-                        style={styles.actionMenuItem}
+                    <View
+                      style={[
+                        styles.actionMenuDropdown,
+                        {
+                          backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
+                          borderColor: colors.border,
+                          ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
+                        }
+                      ]}
+                      pointerEvents="box-none"
+                    >
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.actionMenuItem,
+                          pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
+                        ]}
                         onPress={() => {
+                          console.log('[ValueDetail] Endorse button pressed for brand:', driver.id);
                           setActionMenuBrandId(null);
                           if (isEndorsed) {
                             Alert.alert('Unendorse', `Remove ${driver.name} from your endorsement list?`, [
@@ -583,21 +590,23 @@ export default function ValueDetailScreen() {
                             handleEndorseBrand(driver.id, driver.name);
                           }
                         }}
-                        activeOpacity={0.7}
                       >
                         <Heart size={16} color={colors.text} strokeWidth={2} />
                         <Text style={[styles.actionMenuText, { color: colors.text }]}>
                           {isEndorsed ? 'Unendorse' : 'Endorse'}
                         </Text>
-                      </TouchableOpacity>
+                      </Pressable>
 
-                      <TouchableOpacity
-                        style={styles.actionMenuItem}
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.actionMenuItem,
+                          pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
+                        ]}
                         onPress={() => {
+                          console.log('[ValueDetail] Follow button pressed for brand:', driver.id);
                           setActionMenuBrandId(null);
                           handleFollowBrand(driver.id, driver.name);
                         }}
-                        activeOpacity={0.7}
                       >
                         {isFollowed ? (
                           <UserMinus size={16} color={colors.text} strokeWidth={2} />
@@ -607,19 +616,22 @@ export default function ValueDetailScreen() {
                         <Text style={[styles.actionMenuText, { color: colors.text }]}>
                           {isFollowed ? 'Unfollow' : 'Follow'}
                         </Text>
-                      </TouchableOpacity>
+                      </Pressable>
 
-                      <TouchableOpacity
-                        style={styles.actionMenuItem}
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.actionMenuItem,
+                          pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
+                        ]}
                         onPress={() => {
+                          console.log('[ValueDetail] Share button pressed for brand:', driver.id);
                           setActionMenuBrandId(null);
                           handleShareBrand(driver.id, driver.name);
                         }}
-                        activeOpacity={0.7}
                       >
                         <Share2 size={16} color={colors.text} strokeWidth={2} />
                         <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
-                      </TouchableOpacity>
+                      </Pressable>
                     </View>
                   )}
                 </View>
@@ -701,17 +713,24 @@ export default function ValueDetailScreen() {
 
                   {/* Action Menu Dropdown */}
                   {actionMenuBrandId === menuKey && (
-                    <View style={[
-                      styles.actionMenuDropdown,
-                      {
-                        backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
-                        borderColor: colors.border,
-                        ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
-                      }
-                    ]}>
-                      <TouchableOpacity
-                        style={styles.actionMenuItem}
+                    <View
+                      style={[
+                        styles.actionMenuDropdown,
+                        {
+                          backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
+                          borderColor: colors.border,
+                          ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
+                        }
+                      ]}
+                      pointerEvents="box-none"
+                    >
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.actionMenuItem,
+                          pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
+                        ]}
                         onPress={() => {
+                          console.log('[ValueDetail] Endorse button pressed for brand:', driver.id);
                           setActionMenuBrandId(null);
                           if (isEndorsed) {
                             Alert.alert('Unendorse', `Remove ${driver.name} from your endorsement list?`, [
@@ -722,21 +741,23 @@ export default function ValueDetailScreen() {
                             handleEndorseBrand(driver.id, driver.name);
                           }
                         }}
-                        activeOpacity={0.7}
                       >
                         <Heart size={16} color={colors.text} strokeWidth={2} />
                         <Text style={[styles.actionMenuText, { color: colors.text }]}>
                           {isEndorsed ? 'Unendorse' : 'Endorse'}
                         </Text>
-                      </TouchableOpacity>
+                      </Pressable>
 
-                      <TouchableOpacity
-                        style={styles.actionMenuItem}
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.actionMenuItem,
+                          pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
+                        ]}
                         onPress={() => {
+                          console.log('[ValueDetail] Follow button pressed for brand:', driver.id);
                           setActionMenuBrandId(null);
                           handleFollowBrand(driver.id, driver.name);
                         }}
-                        activeOpacity={0.7}
                       >
                         {isFollowed ? (
                           <UserMinus size={16} color={colors.text} strokeWidth={2} />
@@ -746,19 +767,22 @@ export default function ValueDetailScreen() {
                         <Text style={[styles.actionMenuText, { color: colors.text }]}>
                           {isFollowed ? 'Unfollow' : 'Follow'}
                         </Text>
-                      </TouchableOpacity>
+                      </Pressable>
 
-                      <TouchableOpacity
-                        style={styles.actionMenuItem}
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.actionMenuItem,
+                          pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
+                        ]}
                         onPress={() => {
+                          console.log('[ValueDetail] Share button pressed for brand:', driver.id);
                           setActionMenuBrandId(null);
                           handleShareBrand(driver.id, driver.name);
                         }}
-                        activeOpacity={0.7}
                       >
                         <Share2 size={16} color={colors.text} strokeWidth={2} />
                         <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
-                      </TouchableOpacity>
+                      </Pressable>
                     </View>
                   )}
                 </View>
@@ -1084,6 +1108,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 12,
     paddingHorizontal: 12,
+    ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
   },
   actionMenuText: {
     fontSize: 14,

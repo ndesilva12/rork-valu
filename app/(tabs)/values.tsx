@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   Platform,
   StatusBar,
   Alert,
@@ -689,17 +690,24 @@ export default function BrowseScreen() {
 
         {/* Action Menu Dropdown */}
         {actionMenuBrandId === brand.id && (
-          <View style={[
-            styles.actionMenuDropdown,
-            {
-              backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
-              borderColor: colors.border,
-              ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
-            }
-          ]}>
-            <TouchableOpacity
-              style={styles.actionMenuItem}
+          <View
+            style={[
+              styles.actionMenuDropdown,
+              {
+                backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
+                borderColor: colors.border,
+                ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
+              }
+            ]}
+            pointerEvents="box-none"
+          >
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionMenuItem,
+                pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
+              ]}
               onPress={() => {
+                console.log('[Browse] Endorse button pressed for brand:', brand.id);
                 setActionMenuBrandId(null);
                 if (isEndorsed) {
                   Alert.alert('Unendorse', `Remove ${brand.name} from your endorsement list?`, [
@@ -712,21 +720,23 @@ export default function BrowseScreen() {
                   handleEndorseBrand(brand.id, brand.name);
                 }
               }}
-              activeOpacity={0.7}
             >
               <Heart size={16} color={colors.text} strokeWidth={2} />
               <Text style={[styles.actionMenuText, { color: colors.text }]}>
                 {isEndorsed ? 'Unendorse' : 'Endorse'}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
-              style={styles.actionMenuItem}
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionMenuItem,
+                pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
+              ]}
               onPress={() => {
+                console.log('[Browse] Follow button pressed for brand:', brand.id);
                 setActionMenuBrandId(null);
                 handleFollowBrand(brand.id, brand.name);
               }}
-              activeOpacity={0.7}
             >
               {followedBrands.has(brand.id) ? (
                 <UserMinus size={16} color={colors.text} strokeWidth={2} />
@@ -736,19 +746,22 @@ export default function BrowseScreen() {
               <Text style={[styles.actionMenuText, { color: colors.text }]}>
                 {followedBrands.has(brand.id) ? 'Unfollow' : 'Follow'}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
-              style={styles.actionMenuItem}
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionMenuItem,
+                pressed && { opacity: 0.7, backgroundColor: colors.backgroundSecondary }
+              ]}
               onPress={() => {
+                console.log('[Browse] Share button pressed for brand:', brand.id);
                 setActionMenuBrandId(null);
                 handleShareBrand(brand.id, brand.name);
               }}
-              activeOpacity={0.7}
             >
               <Share2 size={16} color={colors.text} strokeWidth={2} />
               <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         )}
       </View>
@@ -1210,6 +1223,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
+    ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
   },
   actionMenuText: {
     fontSize: 15,
