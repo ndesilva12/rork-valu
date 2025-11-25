@@ -273,7 +273,7 @@ export default function LocalBusinessView({
     const discountText = getDiscountDisplay(business);
 
     return (
-      <View key={business.id} style={{ position: 'relative', marginBottom: 4 }}>
+      <View key={business.id} style={{ position: 'relative', marginBottom: 4, zIndex: actionMenuBusinessId === business.id ? 1000 : 1 }}>
         <TouchableOpacity
           style={[
             styles.businessCard,

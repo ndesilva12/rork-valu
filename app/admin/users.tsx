@@ -15,6 +15,7 @@ import {
   Modal,
   ActivityIndicator,
   Platform,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,6 +25,7 @@ import { getCustomFields, CustomField } from '@/services/firebase/customFieldsSe
 import { getUserLists, deleteList, removeEntryFromList, addEntryToList, updateEntryInList } from '@/services/firebase/listService';
 import { UserList, ListEntry } from '@/types/library';
 import { Picker } from '@react-native-picker/picker';
+import { pickAndUploadImage } from '@/lib/imageUpload';
 
 interface SocialMedia {
   facebook?: string;
@@ -112,6 +114,11 @@ export default function UsersManagement() {
   const [formLocation, setFormLocation] = useState('');
   const [formLatitude, setFormLatitude] = useState('');
   const [formLongitude, setFormLongitude] = useState('');
+  const [formProfileImageUrl, setFormProfileImageUrl] = useState('');
+
+  // Upload states
+  const [editProfileUploading, setEditProfileUploading] = useState(false);
+  const [createProfileUploading, setCreateProfileUploading] = useState(false);
 
   // Form state - Social Media
   const [formFacebook, setFormFacebook] = useState('');
@@ -207,6 +214,7 @@ export default function UsersManagement() {
     setFormLocation(details.location || '');
     setFormLatitude(details.latitude?.toString() || '');
     setFormLongitude(details.longitude?.toString() || '');
+    setFormProfileImageUrl((details as any).profileImage || '');
 
     // Social media
     const social = details.socialMedia || {};
@@ -530,6 +538,9 @@ export default function UsersManagement() {
       }
       if (formLongitude && !isNaN(parseFloat(formLongitude))) {
         userDetails.longitude = parseFloat(formLongitude);
+      }
+      if (formProfileImageUrl?.trim()) {
+        userDetails.profileImage = formProfileImageUrl.trim();
       }
       if (Object.keys(socialMedia).length > 0) {
         userDetails.socialMedia = socialMedia;
@@ -1075,6 +1086,39 @@ export default function UsersManagement() {
                 keyboardType="numeric"
               />
 
+              <Text style={styles.label}>Profile Image</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="https://example.com/photo.jpg"
+                  value={formProfileImageUrl}
+                  onChangeText={setFormProfileImageUrl}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={[styles.uploadButton, editProfileUploading && { opacity: 0.5 }]}
+                  onPress={async () => {
+                    if (!editingUser?.userId) return;
+                    setEditProfileUploading(true);
+                    const url = await pickAndUploadImage(editingUser.userId, 'profile', [1, 1]);
+                    if (url) {
+                      setFormProfileImageUrl(url);
+                    }
+                    setEditProfileUploading(false);
+                  }}
+                  disabled={editProfileUploading}
+                >
+                  {editProfileUploading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.uploadButtonText}>Upload</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+              {formProfileImageUrl ? (
+                <Image source={{ uri: formProfileImageUrl }} style={{ width: 80, height: 80, borderRadius: 40, marginBottom: 12, alignSelf: 'center' }} />
+              ) : null}
+
               {/* SOCIAL MEDIA */}
               <Text style={styles.sectionTitle}>📱 Social Media</Text>
 
@@ -1537,14 +1581,41 @@ export default function UsersManagement() {
                 onChangeText={setCreateLocation}
               />
 
-              <Text style={styles.label}>Profile Image URL</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="https://example.com/profile.jpg"
-                value={createProfileImageUrl}
-                onChangeText={setCreateProfileImageUrl}
-                autoCapitalize="none"
-              />
+              <Text style={styles.label}>Profile Image</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="https://example.com/profile.jpg"
+                  value={createProfileImageUrl}
+                  onChangeText={setCreateProfileImageUrl}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={[styles.uploadButton, createProfileUploading && { opacity: 0.5 }]}
+                  onPress={async () => {
+                    if (!createUserId.trim()) {
+                      Alert.alert('User ID Required', 'Please enter a User ID first to upload images.');
+                      return;
+                    }
+                    setCreateProfileUploading(true);
+                    const url = await pickAndUploadImage(createUserId.trim(), 'profile', [1, 1]);
+                    if (url) {
+                      setCreateProfileImageUrl(url);
+                    }
+                    setCreateProfileUploading(false);
+                  }}
+                  disabled={createProfileUploading}
+                >
+                  {createProfileUploading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.uploadButtonText}>Upload</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+              {createProfileImageUrl ? (
+                <Image source={{ uri: createProfileImageUrl }} style={{ width: 80, height: 80, borderRadius: 40, marginBottom: 12, alignSelf: 'center' }} />
+              ) : null}
 
               <Text style={styles.sectionTitle}>💡 Values (Optional)</Text>
               <Text style={styles.helpText}>
@@ -1926,6 +1997,19 @@ const styles = StyleSheet.create({
     height: 100,
     paddingTop: 12,
     textAlignVertical: 'top',
+  },
+  uploadButton: {
+    backgroundColor: '#28a745',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   pickerWrapper: {
     borderWidth: 1,

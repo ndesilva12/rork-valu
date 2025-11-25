@@ -16,12 +16,30 @@ import {
   Modal,
   ActivityIndicator,
   TouchableWithoutFeedback,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { collection, getDocs, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { X, CheckCircle, Edit2, Trash2, AlertCircle, ExternalLink } from 'lucide-react-native';
+import { X, CheckCircle, Edit2, Trash2, AlertCircle, ExternalLink, Upload, Link, Image as ImageIcon } from 'lucide-react-native';
+import { pickAndUploadImage } from '@/lib/imageUpload';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+interface Affiliate {
+  name: string;
+  relationship: string;
+}
+
+interface Partnership {
+  name: string;
+  relationship: string;
+}
+
+interface Ownership {
+  name: string;
+  relationship: string;
+}
 
 interface BrandData {
   id: string;
@@ -30,11 +48,21 @@ interface BrandData {
   description?: string;
   website?: string;
   location?: string;
+  exampleImageUrl?: string; // Logo/profile image
+  coverImageUrl?: string; // Cover/banner image
+  // Social media links
+  twitterUrl?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  linkedinUrl?: string;
+  tiktokUrl?: string;
+  youtubeUrl?: string;
   status?: 'auto-created' | 'in-progress' | 'verified';
   createdFrom?: string[]; // Which values reference this brand
-  affiliates?: any[];
-  partnerships?: any[];
-  ownership?: any[];
+  affiliates?: Affiliate[];
+  partnerships?: Partnership[];
+  ownership?: Ownership[];
+  ownershipSources?: string;
 }
 
 interface ValueReference {
@@ -53,13 +81,33 @@ export default function IncompleteBrandsManagement() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'auto-created' | 'in-progress' | 'verified'>('auto-created');
   const [valueReferences, setValueReferences] = useState<Record<string, ValueReference[]>>({});
 
-  // Form state
+  // Form state - Basic info
   const [formName, setFormName] = useState('');
   const [formCategory, setFormCategory] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formWebsite, setFormWebsite] = useState('');
   const [formLocation, setFormLocation] = useState('');
   const [formStatus, setFormStatus] = useState<'auto-created' | 'in-progress' | 'verified'>('in-progress');
+
+  // Form state - Images
+  const [formLogoUrl, setFormLogoUrl] = useState('');
+  const [formCoverUrl, setFormCoverUrl] = useState('');
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
+
+  // Form state - Social media links
+  const [formTwitter, setFormTwitter] = useState('');
+  const [formFacebook, setFormFacebook] = useState('');
+  const [formInstagram, setFormInstagram] = useState('');
+  const [formLinkedin, setFormLinkedin] = useState('');
+  const [formTiktok, setFormTiktok] = useState('');
+  const [formYoutube, setFormYoutube] = useState('');
+
+  // Form state - Money flow
+  const [formAffiliates, setFormAffiliates] = useState('');
+  const [formPartnerships, setFormPartnerships] = useState('');
+  const [formOwnership, setFormOwnership] = useState('');
+  const [formOwnershipSources, setFormOwnershipSources] = useState('');
 
   useEffect(() => {
     loadData();
@@ -148,10 +196,19 @@ export default function IncompleteBrandsManagement() {
           description: data.description || '',
           website: data.website || '',
           location: data.location || '',
+          exampleImageUrl: data.exampleImageUrl || '',
+          coverImageUrl: data.coverImageUrl || '',
+          twitterUrl: data.twitterUrl || '',
+          facebookUrl: data.facebookUrl || '',
+          instagramUrl: data.instagramUrl || '',
+          linkedinUrl: data.linkedinUrl || '',
+          tiktokUrl: data.tiktokUrl || '',
+          youtubeUrl: data.youtubeUrl || '',
           status: status as any,
           affiliates: data.affiliates || [],
           partnerships: data.partnerships || [],
           ownership: data.ownership || [],
+          ownershipSources: data.ownershipSources || '',
         };
       });
 
@@ -166,18 +223,57 @@ export default function IncompleteBrandsManagement() {
 
   const openEditModal = (brand: BrandData) => {
     setEditingBrand(brand);
+    // Basic info
     setFormName(brand.name);
     setFormCategory(brand.category || '');
     setFormDescription(brand.description || '');
     setFormWebsite(brand.website || '');
     setFormLocation(brand.location || '');
     setFormStatus(brand.status || 'in-progress');
+
+    // Images
+    setFormLogoUrl(brand.exampleImageUrl || '');
+    setFormCoverUrl(brand.coverImageUrl || '');
+
+    // Social media links
+    setFormTwitter(brand.twitterUrl || '');
+    setFormFacebook(brand.facebookUrl || '');
+    setFormInstagram(brand.instagramUrl || '');
+    setFormLinkedin(brand.linkedinUrl || '');
+    setFormTiktok(brand.tiktokUrl || '');
+    setFormYoutube(brand.youtubeUrl || '');
+
+    // Money flow - format as text
+    setFormAffiliates(
+      brand.affiliates?.map((a) => `${a.name}|${a.relationship}`).join('\n') || ''
+    );
+    setFormPartnerships(
+      brand.partnerships?.map((p) => `${p.name}|${p.relationship}`).join('\n') || ''
+    );
+    setFormOwnership(
+      brand.ownership?.map((o) => `${o.name}|${o.relationship}`).join('\n') || ''
+    );
+    setFormOwnershipSources(brand.ownershipSources || '');
+
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
     setEditingBrand(null);
+  };
+
+  // Helper to parse money flow text into structured data
+  const parseMoneyFlowSection = (text: string): { name: string; relationship: string }[] => {
+    return text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line)
+      .map((line) => {
+        const [name, relationship] = line.split('|').map((s) => s.trim());
+        return { name: name || '', relationship: relationship || '' };
+      })
+      .filter((item) => item.name);
   };
 
   const handleSave = async () => {
@@ -190,13 +286,34 @@ export default function IncompleteBrandsManagement() {
       const brandRef = doc(db, 'brands', editingBrand.id);
 
       await updateDoc(brandRef, {
+        // Basic info
         name: formName.trim(),
         category: formCategory.trim() || 'Uncategorized',
         description: formDescription.trim(),
         website: formWebsite.trim(),
         location: formLocation.trim(),
         status: formStatus,
+        // Images
+        exampleImageUrl: formLogoUrl.trim(),
+        coverImageUrl: formCoverUrl.trim(),
+        // Social media links
+        twitterUrl: formTwitter.trim(),
+        facebookUrl: formFacebook.trim(),
+        instagramUrl: formInstagram.trim(),
+        linkedinUrl: formLinkedin.trim(),
+        tiktokUrl: formTiktok.trim(),
+        youtubeUrl: formYoutube.trim(),
+        // Money flow
+        affiliates: parseMoneyFlowSection(formAffiliates),
+        partnerships: parseMoneyFlowSection(formPartnerships),
+        ownership: parseMoneyFlowSection(formOwnership),
+        ownershipSources: formOwnershipSources.trim(),
       });
+
+      // Clear the DataContext cache so changes are visible immediately
+      await AsyncStorage.removeItem('@brands_cache');
+      await AsyncStorage.removeItem('@data_cache_timestamp');
+      console.log('[IncompleteBrandsAdmin] Cleared brands cache after save');
 
       Alert.alert('Success', `Brand "${formName}" updated successfully!`);
       closeModal();
@@ -491,6 +608,9 @@ export default function IncompleteBrandsManagement() {
                 </View>
 
                 <ScrollView style={styles.modalBody}>
+                  {/* ===== BASIC INFO SECTION ===== */}
+                  <Text style={styles.sectionTitle}>📋 Basic Information</Text>
+
                   <Text style={styles.label}>Name *</Text>
                   <TextInput
                     style={styles.input}
@@ -543,7 +663,7 @@ export default function IncompleteBrandsManagement() {
                       ]}
                       onPress={() => setFormStatus('auto-created')}
                     >
-                      <Text style={styles.statusButtonText}>Auto-Created</Text>
+                      <Text style={[styles.statusButtonText, formStatus === 'auto-created' && styles.statusButtonTextActive]}>Auto-Created</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[
@@ -552,7 +672,7 @@ export default function IncompleteBrandsManagement() {
                       ]}
                       onPress={() => setFormStatus('in-progress')}
                     >
-                      <Text style={styles.statusButtonText}>In Progress</Text>
+                      <Text style={[styles.statusButtonText, formStatus === 'in-progress' && styles.statusButtonTextActive]}>In Progress</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[
@@ -561,9 +681,198 @@ export default function IncompleteBrandsManagement() {
                       ]}
                       onPress={() => setFormStatus('verified')}
                     >
-                      <Text style={styles.statusButtonText}>Verified</Text>
+                      <Text style={[styles.statusButtonText, formStatus === 'verified' && styles.statusButtonTextActive]}>Verified</Text>
                     </TouchableOpacity>
                   </View>
+
+                  {/* ===== IMAGES SECTION ===== */}
+                  <Text style={styles.sectionTitle}>🖼️ Images</Text>
+
+                  <Text style={styles.label}>Logo / Profile Image</Text>
+                  <View style={styles.imageInputRow}>
+                    <TextInput
+                      style={[styles.input, { flex: 1 }]}
+                      value={formLogoUrl}
+                      onChangeText={setFormLogoUrl}
+                      placeholder="https://example.com/logo.png"
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity
+                      style={[styles.uploadButton, logoUploading && styles.uploadButtonDisabled]}
+                      onPress={async () => {
+                        if (!editingBrand) return;
+                        setLogoUploading(true);
+                        try {
+                          const url = await pickAndUploadImage(editingBrand.id, 'business', [1, 1]);
+                          if (url) setFormLogoUrl(url);
+                        } catch (error) {
+                          Alert.alert('Error', 'Failed to upload image');
+                        }
+                        setLogoUploading(false);
+                      }}
+                      disabled={logoUploading}
+                    >
+                      {logoUploading ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <>
+                          <Upload size={16} color="#fff" strokeWidth={2} />
+                          <Text style={styles.uploadButtonText}>Upload</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                  {formLogoUrl ? (
+                    <View style={styles.imagePreview}>
+                      <Image source={{ uri: formLogoUrl }} style={styles.previewImageSmall} />
+                    </View>
+                  ) : null}
+
+                  <Text style={styles.label}>Cover / Banner Image</Text>
+                  <View style={styles.imageInputRow}>
+                    <TextInput
+                      style={[styles.input, { flex: 1 }]}
+                      value={formCoverUrl}
+                      onChangeText={setFormCoverUrl}
+                      placeholder="https://example.com/cover.png"
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity
+                      style={[styles.uploadButton, coverUploading && styles.uploadButtonDisabled]}
+                      onPress={async () => {
+                        if (!editingBrand) return;
+                        setCoverUploading(true);
+                        try {
+                          const url = await pickAndUploadImage(editingBrand.id, 'cover', [16, 9]);
+                          if (url) setFormCoverUrl(url);
+                        } catch (error) {
+                          Alert.alert('Error', 'Failed to upload image');
+                        }
+                        setCoverUploading(false);
+                      }}
+                      disabled={coverUploading}
+                    >
+                      {coverUploading ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <>
+                          <Upload size={16} color="#fff" strokeWidth={2} />
+                          <Text style={styles.uploadButtonText}>Upload</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                  {formCoverUrl ? (
+                    <View style={styles.imagePreview}>
+                      <Image source={{ uri: formCoverUrl }} style={styles.previewImageWide} />
+                    </View>
+                  ) : null}
+
+                  {/* ===== SOCIAL MEDIA LINKS SECTION ===== */}
+                  <Text style={styles.sectionTitle}>🔗 Social Media Links</Text>
+
+                  <Text style={styles.label}>Twitter / X</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={formTwitter}
+                    onChangeText={setFormTwitter}
+                    placeholder="https://twitter.com/brandname"
+                    autoCapitalize="none"
+                  />
+
+                  <Text style={styles.label}>Facebook</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={formFacebook}
+                    onChangeText={setFormFacebook}
+                    placeholder="https://facebook.com/brandname"
+                    autoCapitalize="none"
+                  />
+
+                  <Text style={styles.label}>Instagram</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={formInstagram}
+                    onChangeText={setFormInstagram}
+                    placeholder="https://instagram.com/brandname"
+                    autoCapitalize="none"
+                  />
+
+                  <Text style={styles.label}>LinkedIn</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={formLinkedin}
+                    onChangeText={setFormLinkedin}
+                    placeholder="https://linkedin.com/company/brandname"
+                    autoCapitalize="none"
+                  />
+
+                  <Text style={styles.label}>TikTok</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={formTiktok}
+                    onChangeText={setFormTiktok}
+                    placeholder="https://tiktok.com/@brandname"
+                    autoCapitalize="none"
+                  />
+
+                  <Text style={styles.label}>YouTube</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={formYoutube}
+                    onChangeText={setFormYoutube}
+                    placeholder="https://youtube.com/@brandname"
+                    autoCapitalize="none"
+                  />
+
+                  {/* ===== MONEY FLOW SECTION ===== */}
+                  <Text style={styles.sectionTitle}>💰 Money Flow</Text>
+                  <Text style={styles.helpText}>
+                    Enter one item per line in format: Name|Relationship
+                  </Text>
+
+                  <Text style={styles.label}>Affiliates</Text>
+                  <TextInput
+                    style={[styles.input, styles.textAreaLarge]}
+                    value={formAffiliates}
+                    onChangeText={setFormAffiliates}
+                    placeholder="Taylor Swift|Multi-million endorsement&#10;LeBron James|$5M endorsement"
+                    multiline
+                    numberOfLines={4}
+                  />
+
+                  <Text style={styles.label}>Partnerships</Text>
+                  <TextInput
+                    style={[styles.input, styles.textAreaLarge]}
+                    value={formPartnerships}
+                    onChangeText={setFormPartnerships}
+                    placeholder="TSMC|Silicon Supply Chain/2010&#10;Foxconn|Manufacturing/2005"
+                    multiline
+                    numberOfLines={4}
+                  />
+
+                  <Text style={styles.label}>Ownership</Text>
+                  <TextInput
+                    style={[styles.input, styles.textAreaLarge]}
+                    value={formOwnership}
+                    onChangeText={setFormOwnership}
+                    placeholder="Vanguard Group|~9.5%&#10;BlackRock|~7.2%"
+                    multiline
+                    numberOfLines={4}
+                  />
+
+                  <Text style={styles.label}>Ownership Sources (citations)</Text>
+                  <TextInput
+                    style={[styles.input, styles.textArea]}
+                    value={formOwnershipSources}
+                    onChangeText={setFormOwnershipSources}
+                    placeholder="HQ: Official site; Stakes: Q3 2025 13F filings via SEC/Yahoo Finance"
+                    multiline
+                    numberOfLines={3}
+                  />
+
+                  {/* Add some bottom padding */}
+                  <View style={{ height: 24 }} />
                 </ScrollView>
 
                 <View style={styles.modalFooter}>
@@ -868,6 +1177,65 @@ const styles = StyleSheet.create({
   statusButtonText: {
     fontSize: 14,
     color: '#333',
+  },
+  statusButtonTextActive: {
+    color: '#fff',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  helpText: {
+    fontSize: 13,
+    color: '#666',
+    fontStyle: 'italic',
+    marginBottom: 8,
+  },
+  imageInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  uploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#28a745',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  uploadButtonDisabled: {
+    opacity: 0.6,
+  },
+  uploadButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  imagePreview: {
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  previewImageSmall: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+  },
+  previewImageWide: {
+    width: '100%',
+    height: 120,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+    resizeMode: 'cover',
+  },
+  textAreaLarge: {
+    minHeight: 100,
+    textAlignVertical: 'top',
   },
   modalFooter: {
     flexDirection: 'row',

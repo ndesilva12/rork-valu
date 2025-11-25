@@ -155,6 +155,13 @@ export default function BusinessesManagement() {
   const [formLogoUrl, setFormLogoUrl] = useState('');
   const [formCoverImageUrl, setFormCoverImageUrl] = useState('');
 
+  // Edit modal upload states
+  const [editLogoUploading, setEditLogoUploading] = useState(false);
+  const [editCoverUploading, setEditCoverUploading] = useState(false);
+  const [editGallery1Uploading, setEditGallery1Uploading] = useState(false);
+  const [editGallery2Uploading, setEditGallery2Uploading] = useState(false);
+  const [editGallery3Uploading, setEditGallery3Uploading] = useState(false);
+
   // Form state - Gallery Images
   const [formGalleryImage1Url, setFormGalleryImage1Url] = useState('');
   const [formGalleryImage1Caption, setFormGalleryImage1Caption] = useState('');
@@ -1244,32 +1251,107 @@ export default function BusinessesManagement() {
                 onChangeText={setFormWebsite}
               />
 
-              <Text style={styles.label}>Logo URL</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="https://example.com/logo.png"
-                value={formLogoUrl}
-                onChangeText={setFormLogoUrl}
-              />
+              <Text style={styles.label}>Logo Image</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="https://example.com/logo.png"
+                  value={formLogoUrl}
+                  onChangeText={setFormLogoUrl}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={[styles.uploadButton, editLogoUploading && { opacity: 0.5 }]}
+                  onPress={async () => {
+                    if (!editingBusiness?.userId) return;
+                    setEditLogoUploading(true);
+                    const url = await pickAndUploadImage(editingBusiness.userId, 'business', [1, 1]);
+                    if (url) {
+                      setFormLogoUrl(url);
+                    }
+                    setEditLogoUploading(false);
+                  }}
+                  disabled={editLogoUploading}
+                >
+                  {editLogoUploading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.uploadButtonText}>Upload</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+              {formLogoUrl ? (
+                <Image source={{ uri: formLogoUrl }} style={{ width: 60, height: 60, borderRadius: 8, marginBottom: 12 }} />
+              ) : null}
 
-              <Text style={styles.label}>Cover Image URL</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="https://example.com/cover.jpg"
-                value={formCoverImageUrl}
-                onChangeText={setFormCoverImageUrl}
-              />
+              <Text style={styles.label}>Cover Image</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="https://example.com/cover.jpg"
+                  value={formCoverImageUrl}
+                  onChangeText={setFormCoverImageUrl}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={[styles.uploadButton, editCoverUploading && { opacity: 0.5 }]}
+                  onPress={async () => {
+                    if (!editingBusiness?.userId) return;
+                    setEditCoverUploading(true);
+                    const url = await pickAndUploadImage(editingBusiness.userId, 'cover', [16, 9]);
+                    if (url) {
+                      setFormCoverImageUrl(url);
+                    }
+                    setEditCoverUploading(false);
+                  }}
+                  disabled={editCoverUploading}
+                >
+                  {editCoverUploading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.uploadButtonText}>Upload</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+              {formCoverImageUrl ? (
+                <Image source={{ uri: formCoverImageUrl }} style={{ width: '100%', height: 100, borderRadius: 8, marginBottom: 12 }} />
+              ) : null}
 
               {/* GALLERY IMAGES */}
               <Text style={styles.sectionTitle}>🖼️ Gallery Images (up to 3)</Text>
 
-              <Text style={styles.label}>Gallery Image 1 URL</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="https://example.com/gallery1.jpg"
-                value={formGalleryImage1Url}
-                onChangeText={setFormGalleryImage1Url}
-              />
+              <Text style={styles.label}>Gallery Image 1</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="https://example.com/gallery1.jpg"
+                  value={formGalleryImage1Url}
+                  onChangeText={setFormGalleryImage1Url}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={[styles.uploadButton, editGallery1Uploading && { opacity: 0.5 }]}
+                  onPress={async () => {
+                    if (!editingBusiness?.userId) return;
+                    setEditGallery1Uploading(true);
+                    const url = await pickAndUploadImage(editingBusiness.userId, 'gallery', [16, 9]);
+                    if (url) {
+                      setFormGalleryImage1Url(url);
+                    }
+                    setEditGallery1Uploading(false);
+                  }}
+                  disabled={editGallery1Uploading}
+                >
+                  {editGallery1Uploading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.uploadButtonText}>Upload</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+              {formGalleryImage1Url ? (
+                <Image source={{ uri: formGalleryImage1Url }} style={{ width: '100%', height: 80, borderRadius: 8, marginBottom: 8 }} />
+              ) : null}
               <Text style={styles.label}>Gallery Image 1 Caption</Text>
               <TextInput
                 style={styles.input}
@@ -1278,13 +1360,38 @@ export default function BusinessesManagement() {
                 onChangeText={setFormGalleryImage1Caption}
               />
 
-              <Text style={styles.label}>Gallery Image 2 URL</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="https://example.com/gallery2.jpg"
-                value={formGalleryImage2Url}
-                onChangeText={setFormGalleryImage2Url}
-              />
+              <Text style={styles.label}>Gallery Image 2</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="https://example.com/gallery2.jpg"
+                  value={formGalleryImage2Url}
+                  onChangeText={setFormGalleryImage2Url}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={[styles.uploadButton, editGallery2Uploading && { opacity: 0.5 }]}
+                  onPress={async () => {
+                    if (!editingBusiness?.userId) return;
+                    setEditGallery2Uploading(true);
+                    const url = await pickAndUploadImage(editingBusiness.userId, 'gallery', [16, 9]);
+                    if (url) {
+                      setFormGalleryImage2Url(url);
+                    }
+                    setEditGallery2Uploading(false);
+                  }}
+                  disabled={editGallery2Uploading}
+                >
+                  {editGallery2Uploading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.uploadButtonText}>Upload</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+              {formGalleryImage2Url ? (
+                <Image source={{ uri: formGalleryImage2Url }} style={{ width: '100%', height: 80, borderRadius: 8, marginBottom: 8 }} />
+              ) : null}
               <Text style={styles.label}>Gallery Image 2 Caption</Text>
               <TextInput
                 style={styles.input}
@@ -1293,13 +1400,38 @@ export default function BusinessesManagement() {
                 onChangeText={setFormGalleryImage2Caption}
               />
 
-              <Text style={styles.label}>Gallery Image 3 URL</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="https://example.com/gallery3.jpg"
-                value={formGalleryImage3Url}
-                onChangeText={setFormGalleryImage3Url}
-              />
+              <Text style={styles.label}>Gallery Image 3</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="https://example.com/gallery3.jpg"
+                  value={formGalleryImage3Url}
+                  onChangeText={setFormGalleryImage3Url}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={[styles.uploadButton, editGallery3Uploading && { opacity: 0.5 }]}
+                  onPress={async () => {
+                    if (!editingBusiness?.userId) return;
+                    setEditGallery3Uploading(true);
+                    const url = await pickAndUploadImage(editingBusiness.userId, 'gallery', [16, 9]);
+                    if (url) {
+                      setFormGalleryImage3Url(url);
+                    }
+                    setEditGallery3Uploading(false);
+                  }}
+                  disabled={editGallery3Uploading}
+                >
+                  {editGallery3Uploading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.uploadButtonText}>Upload</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+              {formGalleryImage3Url ? (
+                <Image source={{ uri: formGalleryImage3Url }} style={{ width: '100%', height: 80, borderRadius: 8, marginBottom: 8 }} />
+              ) : null}
               <Text style={styles.label}>Gallery Image 3 Caption</Text>
               <TextInput
                 style={styles.input}

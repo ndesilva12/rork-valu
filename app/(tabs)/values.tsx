@@ -199,8 +199,8 @@ export default function BrowseScreen() {
         brandId: brandId,
       });
 
-      // Reload the library to reflect changes
-      await library.loadUserLists(clerkUser.id);
+      // Reload the library to reflect changes (force refresh)
+      await library.loadUserLists(clerkUser.id, true);
 
       Alert.alert('Success', `${brandName} added to endorsements`);
     } catch (error) {
@@ -237,8 +237,8 @@ export default function BrowseScreen() {
       // Remove the entry
       await removeEntryFromList(endorsementList.id, entry.id);
 
-      // Reload the library to reflect changes
-      await library.loadUserLists(clerkUser.id);
+      // Reload the library to reflect changes (force refresh)
+      await library.loadUserLists(clerkUser.id, true);
 
       Alert.alert('Success', `${brandName} removed from endorsements`);
     } catch (error) {
@@ -582,7 +582,7 @@ export default function BrowseScreen() {
     const isEndorsed = isBrandEndorsed(brand.id);
 
     return (
-      <View key={brand.id} style={{ position: 'relative', marginBottom: 4 }}>
+      <View key={brand.id} style={{ position: 'relative', marginBottom: 4, zIndex: actionMenuBrandId === brand.id ? 1000 : 1 }}>
         <TouchableOpacity
           style={[
             styles.brandCard,

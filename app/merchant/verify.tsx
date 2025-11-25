@@ -44,9 +44,35 @@ export default function MerchantVerify() {
   const [isExpired, setIsExpired] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [requirementError, setRequirementError] = useState<string | null>(null);
+  const [customDiscount, setCustomDiscount] = useState<string | null>(null);
+  const [loadingBusinessInfo, setLoadingBusinessInfo] = useState(true);
 
   // Check if merchant is logged in as business account
   const isBusiness = profile.accountType === 'business';
+
+  // Fetch business info to check for custom discount
+  useEffect(() => {
+    const fetchBusinessInfo = async () => {
+      if (!clerkUser) return;
+
+      try {
+        const businessId = getBusinessId() || clerkUser.id;
+        const businessDocRef = doc(db, 'users', businessId);
+        const businessDoc = await getDoc(businessDocRef);
+        const businessData = businessDoc.data();
+
+        if (businessData?.businessInfo?.customDiscount) {
+          setCustomDiscount(businessData.businessInfo.customDiscount);
+        }
+      } catch (error) {
+        console.error('[MerchantVerify] Error fetching business info:', error);
+      } finally {
+        setLoadingBusinessInfo(false);
+      }
+    };
+
+    fetchBusinessInfo();
+  }, [clerkUser, getBusinessId]);
 
   // Verify QR code hasn't expired
   useEffect(() => {
@@ -126,11 +152,19 @@ export default function MerchantVerify() {
         <View style={styles.centered}>
           <Text style={[styles.successTitle, { color: '#28a745' }]}>✓ Transaction Recorded</Text>
           <Text style={[styles.message, { color: colors.textSecondary }]}>
-            Discount applied successfully for {customerName}
+            {customDiscount ? 'Custom discount applied' : 'Discount applied'} successfully for {customerName}
           </Text>
-          <Text style={[styles.amountText, { color: colors.text }]}>
-            Purchase Amount: ${purchaseAmount}
-          </Text>
+          {customDiscount ? (
+            <View style={[styles.customDiscountBox, { backgroundColor: colors.card }]}>
+              <Text style={[styles.customDiscountText, { color: colors.text }]}>
+                {customDiscount}
+              </Text>
+            </View>
+          ) : (
+            <Text style={[styles.amountText, { color: colors.text }]}>
+              Purchase Amount: ${purchaseAmount}
+            </Text>
+          )}
           <TouchableOpacity
             style={[styles.button, { backgroundColor: colors.primary }]}
             onPress={() => router.back()}
@@ -143,7 +177,8 @@ export default function MerchantVerify() {
   }
 
   const handleConfirmTransaction = async () => {
-    if (!purchaseAmount || parseFloat(purchaseAmount) <= 0) {
+    // For custom discounts, no purchase amount is required
+    if (!customDiscount && (!purchaseAmount || parseFloat(purchaseAmount) <= 0)) {
       Alert.alert('Error', 'Please enter a valid purchase amount');
       return;
     }
@@ -255,24 +290,41 @@ export default function MerchantVerify() {
         isTeamMember: isTeamMember()
       });
 
-      await setDoc(transactionRef, {
+      // Handle custom discount vs percentage discount
+      const transactionData: any = {
         transactionId: transactionCode,
         customerId: customerUserId,
         customerName: customerName,
         customerEmail: customerEmail,
         merchantId: businessId, // Use business ID (works for both owner and team)
         merchantName: merchantName,
-        purchaseAmount: parseFloat(purchaseAmount),
-        discountPercent: merchantDiscount,
-        endorseFeePercent: endorseFeePercent,
-        discountAmount: (parseFloat(purchaseAmount) * merchantDiscount) / 100,
-        endorseFeeAmount: (parseFloat(purchaseAmount) * endorseFeePercent) / 100,
         status: 'completed',
         createdAt: serverTimestamp(),
         verifiedAt: serverTimestamp(),
         verifiedBy: clerkUser.id, // Track who confirmed the transaction (Phase 0)
         verifiedByName: verifiedByName, // Name of person who confirmed
-      });
+      };
+
+      if (customDiscount) {
+        // Custom discount - no amount tracking
+        transactionData.isCustomDiscount = true;
+        transactionData.customDiscountDescription = customDiscount;
+        transactionData.purchaseAmount = 0;
+        transactionData.discountPercent = 0;
+        transactionData.endorseFeePercent = 0;
+        transactionData.discountAmount = 0;
+        transactionData.endorseFeeAmount = 0;
+      } else {
+        // Percentage discount - track amounts
+        transactionData.isCustomDiscount = false;
+        transactionData.purchaseAmount = parseFloat(purchaseAmount);
+        transactionData.discountPercent = merchantDiscount;
+        transactionData.endorseFeePercent = endorseFeePercent;
+        transactionData.discountAmount = (parseFloat(purchaseAmount) * merchantDiscount) / 100;
+        transactionData.endorseFeeAmount = (parseFloat(purchaseAmount) * endorseFeePercent) / 100;
+      }
+
+      await setDoc(transactionRef, transactionData);
 
       console.log('[MerchantVerify] ✅ Transaction recorded successfully:', transactionCode);
       setIsVerified(true);
@@ -308,64 +360,89 @@ export default function MerchantVerify() {
           </Text>
         </View>
 
-        {/* Discount Info */}
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Your Offer</Text>
-          <Text style={[styles.discountText, { color: colors.text }]}>
-            {profile.businessInfo?.customerDiscountPercent || 10}% Discount
-          </Text>
-        </View>
-
-        {/* Purchase Amount Input */}
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Purchase Amount (Original)</Text>
-          <View style={styles.inputContainer}>
-            <Text style={styles.dollarSign}>$</Text>
-            <TextInput
-              style={[styles.input, { color: colors.text, borderColor: colors.border }]}
-              placeholder="0.00"
-              placeholderTextColor={colors.textSecondary}
-              value={purchaseAmount}
-              onChangeText={setPurchaseAmount}
-              keyboardType="decimal-pad"
-              autoFocus
-            />
+        {/* Custom Discount View OR Percentage Discount View */}
+        {loadingBusinessInfo ? (
+          <View style={[styles.card, { backgroundColor: colors.card, alignItems: 'center' }]}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={[styles.customerDetail, { color: colors.textSecondary, marginTop: 8 }]}>
+              Loading discount info...
+            </Text>
           </View>
+        ) : customDiscount ? (
+          /* Custom Discount View */
+          <View style={[styles.card, { backgroundColor: colors.card }]}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Your Custom Discount</Text>
+            <View style={[styles.customDiscountBox, { backgroundColor: colors.backgroundSecondary }]}>
+              <Text style={[styles.customDiscountText, { color: colors.text }]}>
+                {customDiscount}
+              </Text>
+            </View>
+            <Text style={[styles.customerDetail, { color: colors.textSecondary, marginTop: 12, textAlign: 'center' }]}>
+              Confirm to apply this custom discount for the customer.
+            </Text>
+          </View>
+        ) : (
+          /* Percentage Discount View */
+          <>
+            <View style={[styles.card, { backgroundColor: colors.card }]}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Your Offer</Text>
+              <Text style={[styles.discountText, { color: colors.text }]}>
+                {profile.businessInfo?.customerDiscountPercent || 10}% Discount
+              </Text>
+            </View>
 
-          {purchaseAmount && parseFloat(purchaseAmount) > 0 && (
-            <>
-              {/* Divider */}
-              <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-              {/* Final Amount - Prominent Display */}
-              <View style={[styles.finalAmountContainer, { backgroundColor: colors.backgroundSecondary }]}>
-                <Text style={[styles.finalAmountLabel, { color: colors.text }]}>
-                  Final Purchase Amount:
-                </Text>
-                <Text style={[styles.finalAmountValue, { color: colors.primary }]}>
-                  ${(parseFloat(purchaseAmount) - (parseFloat(purchaseAmount) * (profile.businessInfo?.customerDiscountPercent || 0)) / 100).toFixed(2)}
-                </Text>
+            {/* Purchase Amount Input */}
+            <View style={[styles.card, { backgroundColor: colors.card }]}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Purchase Amount (Original)</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.dollarSign}>$</Text>
+                <TextInput
+                  style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+                  placeholder="0.00"
+                  placeholderTextColor={colors.textSecondary}
+                  value={purchaseAmount}
+                  onChangeText={setPurchaseAmount}
+                  keyboardType="decimal-pad"
+                  autoFocus
+                />
               </View>
 
-              {/* Divider */}
-              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              {purchaseAmount && parseFloat(purchaseAmount) > 0 && (
+                <>
+                  {/* Divider */}
+                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-              {/* Breakdown */}
-              <View style={styles.calculationBox}>
-                <Text style={[styles.calculationText, { color: colors.textSecondary }]}>
-                  Discount Amount: ${((parseFloat(purchaseAmount) * (profile.businessInfo?.customerDiscountPercent || 0)) / 100).toFixed(2)}
-                </Text>
+                  {/* Final Amount - Prominent Display */}
+                  <View style={[styles.finalAmountContainer, { backgroundColor: colors.backgroundSecondary }]}>
+                    <Text style={[styles.finalAmountLabel, { color: colors.text }]}>
+                      Final Purchase Amount:
+                    </Text>
+                    <Text style={[styles.finalAmountValue, { color: colors.primary }]}>
+                      ${(parseFloat(purchaseAmount) - (parseFloat(purchaseAmount) * (profile.businessInfo?.customerDiscountPercent || 0)) / 100).toFixed(2)}
+                    </Text>
+                  </View>
 
-                <Text style={[styles.feeLabel, { color: colors.text }]}>
-                  iEndorse Fee: 2.5%
-                </Text>
-                <Text style={[styles.feeValue, { color: colors.primary }]}>
-                  ${((parseFloat(purchaseAmount) * 2.5) / 100).toFixed(2)}
-                </Text>
-              </View>
-            </>
-          )}
-        </View>
+                  {/* Divider */}
+                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+                  {/* Breakdown */}
+                  <View style={styles.calculationBox}>
+                    <Text style={[styles.calculationText, { color: colors.textSecondary }]}>
+                      Discount Amount: ${((parseFloat(purchaseAmount) * (profile.businessInfo?.customerDiscountPercent || 0)) / 100).toFixed(2)}
+                    </Text>
+
+                    <Text style={[styles.feeLabel, { color: colors.text }]}>
+                      iEndorse Fee: 2.5%
+                    </Text>
+                    <Text style={[styles.feeValue, { color: colors.primary }]}>
+                      ${((parseFloat(purchaseAmount) * 2.5) / 100).toFixed(2)}
+                    </Text>
+                  </View>
+                </>
+              )}
+            </View>
+          </>
+        )}
 
         {/* Requirement Error Message */}
         {requirementError && (
@@ -381,16 +458,20 @@ export default function MerchantVerify() {
           style={[
             styles.confirmButton,
             {
-              backgroundColor: purchaseAmount && !isProcessing ? colors.primary : '#ccc',
+              backgroundColor: (customDiscount || purchaseAmount) && !isProcessing && !loadingBusinessInfo
+                ? colors.primary
+                : '#ccc',
             },
           ]}
           onPress={handleConfirmTransaction}
-          disabled={!purchaseAmount || isProcessing}
+          disabled={(!customDiscount && !purchaseAmount) || isProcessing || loadingBusinessInfo}
         >
           {isProcessing ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Confirm Transaction</Text>
+            <Text style={styles.buttonText}>
+              {customDiscount ? 'Confirm Custom Discount' : 'Confirm Transaction'}
+            </Text>
           )}
         </TouchableOpacity>
 
@@ -562,5 +643,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  customDiscountBox: {
+    padding: 16,
+    borderRadius: 12,
+    marginVertical: 8,
+  },
+  customDiscountText: {
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 26,
+    textAlign: 'center',
   },
 });

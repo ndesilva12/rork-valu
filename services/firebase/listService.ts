@@ -226,7 +226,7 @@ export const updateListMetadata = async (
 export const addEntryToList = async (
   listId: string,
   entry: Omit<ListEntry, 'id' | 'createdAt'>
-): Promise<void> => {
+): Promise<ListEntry> => {
   try {
     const list = await getList(listId);
     if (!list) {
@@ -271,6 +271,9 @@ export const addEntryToList = async (
       entries: updatedEntries,
       updatedAt: serverTimestamp(),
     });
+
+    // Return the newly created entry for optimistic updates
+    return newEntry;
   } catch (error) {
     console.error('Error adding entry to list:', error);
     throw error;

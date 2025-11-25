@@ -41,9 +41,10 @@ export default function ValueCodeSettings() {
   const [endorsementMinDays, setEndorsementMinDays] = useState(businessInfo.endorsementMinDays || 0);
   const [showEndorsementTypeDropdown, setShowEndorsementTypeDropdown] = useState(false);
 
-  // Following settings
-  const [followingEnabled, setFollowingEnabled] = useState(businessInfo.followsEnabled || false);
-  const [followingMinDays, setFollowingMinDays] = useState(businessInfo.followsMinDays || 0);
+  // Endorsement discount percentage (must be >= base discount)
+  const [endorsementDiscountPercent, setEndorsementDiscountPercent] = useState(
+    businessInfo.endorsementDiscountPercent || businessInfo.customerDiscountPercent || 5
+  );
 
   // Custom discount
   const [customDiscountText, setCustomDiscountText] = useState(businessInfo.customDiscount || '');
@@ -95,18 +96,12 @@ export default function ValueCodeSettings() {
     });
   };
 
-  const handleToggleFollowing = async (value: boolean) => {
-    setFollowingEnabled(value);
+  const handleChangeEndorsementDiscountPercent = async (newValue: number) => {
+    // Endorsement discount must be >= base discount
+    const clamped = Math.max(discountPercent, Math.min(50, newValue));
+    setEndorsementDiscountPercent(clamped);
     await setBusinessInfo({
-      followsEnabled: value,
-    });
-  };
-
-  const handleChangeFollowingMinDays = async (newDays: number) => {
-    const clamped = Math.max(0, Math.min(365, newDays));
-    setFollowingMinDays(clamped);
-    await setBusinessInfo({
-      followsMinDays: clamped,
+      endorsementDiscountPercent: clamped,
     });
   };
 
@@ -160,10 +155,10 @@ export default function ValueCodeSettings() {
             <>
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-              {/* ROW 1: Discount */}
+              {/* ROW 1: All User Discount */}
               <View style={[styles.discountRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <View style={styles.rowContentCentered}>
-                  <Text style={[styles.discountRowTitle, { color: colors.text }]}>Discount</Text>
+                  <Text style={[styles.discountRowTitle, { color: colors.text }]}>All User Discount</Text>
                   <View style={styles.inlineCounter}>
                     <TouchableOpacity
                       style={[styles.smallButton, { borderColor: colors.border }]}
@@ -192,7 +187,7 @@ export default function ValueCodeSettings() {
               </Text>
 
               {/* ROW 2: Endorsement */}
-              <View style={[styles.discountRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <View style={[styles.discountRow, { backgroundColor: colors.background, borderColor: colors.border, zIndex: showEndorsementTypeDropdown ? 1000 : 1 }]}>
                 <View style={styles.rowContentSpaced}>
                   <Text style={[styles.discountRowTitle, { color: colors.text }]}>Endorsement</Text>
                   <Switch
@@ -205,111 +200,95 @@ export default function ValueCodeSettings() {
                 </View>
 
                 {endorsementEnabled && (
-                  <View style={styles.expandedOptionsSpaced}>
-                    {/* Type Dropdown */}
-                    <View style={styles.optionGroupCentered}>
-                      <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>Type</Text>
-                      <TouchableOpacity
-                        style={[styles.dropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                        onPress={() => setShowEndorsementTypeDropdown(!showEndorsementTypeDropdown)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.dropdownText, { color: colors.text }]}>
-                          {getEndorsementTypeLabel(endorsementType)}
+                  <>
+                    {/* Endorsement Discount Percentage */}
+                    <View style={[styles.endorsementDiscountRow, { borderTopColor: colors.border }]}>
+                      <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>Discount</Text>
+                      <View style={styles.inlineCounter}>
+                        <TouchableOpacity
+                          style={[styles.smallButton, { borderColor: colors.border }]}
+                          onPress={() => handleChangeEndorsementDiscountPercent(endorsementDiscountPercent - 0.5)}
+                          activeOpacity={0.7}
+                        >
+                          <Minus size={16} color={colors.text} strokeWidth={2} />
+                        </TouchableOpacity>
+                        <Text style={[styles.counterValue, { color: colors.primary }]}>
+                          {endorsementDiscountPercent.toFixed(1)}%
                         </Text>
-                        <ChevronDown size={16} color={colors.textSecondary} strokeWidth={2} />
-                      </TouchableOpacity>
-                      {showEndorsementTypeDropdown && (
-                        <View style={[styles.dropdownList, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                          {(['any', 'top10', 'top5'] as EndorsementType[]).map((type) => (
-                            <TouchableOpacity
-                              key={type}
-                              style={[
-                                styles.dropdownItem,
-                                { borderBottomColor: colors.border },
-                                endorsementType === type && { backgroundColor: colors.primary + '15' }
-                              ]}
-                              onPress={() => handleChangeEndorsementType(type)}
-                              activeOpacity={0.7}
-                            >
-                              <Text style={[
-                                styles.dropdownItemText,
-                                { color: endorsementType === type ? colors.primary : colors.text }
-                              ]}>
-                                {getEndorsementTypeLabel(type)}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
+                        <TouchableOpacity
+                          style={[styles.smallButton, { borderColor: colors.border }]}
+                          onPress={() => handleChangeEndorsementDiscountPercent(endorsementDiscountPercent + 0.5)}
+                          activeOpacity={0.7}
+                        >
+                          <Plus size={16} color={colors.text} strokeWidth={2} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    <View style={styles.expandedOptionsSpaced}>
+                      {/* Type Dropdown */}
+                      <View style={[styles.optionGroupCentered, { zIndex: 1000 }]}>
+                        <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>Type</Text>
+                        <TouchableOpacity
+                          style={[styles.dropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                          onPress={() => setShowEndorsementTypeDropdown(!showEndorsementTypeDropdown)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.dropdownText, { color: colors.text }]}>
+                            {getEndorsementTypeLabel(endorsementType)}
+                          </Text>
+                          <ChevronDown size={16} color={colors.textSecondary} strokeWidth={2} />
+                        </TouchableOpacity>
+                        {showEndorsementTypeDropdown && (
+                          <View style={[styles.dropdownList, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                            {(['any', 'top10', 'top5'] as EndorsementType[]).map((type) => (
+                              <TouchableOpacity
+                                key={type}
+                                style={[
+                                  styles.dropdownItem,
+                                  { borderBottomColor: colors.border },
+                                  endorsementType === type && { backgroundColor: colors.primary + '15' }
+                                ]}
+                                onPress={() => handleChangeEndorsementType(type)}
+                                activeOpacity={0.7}
+                              >
+                                <Text style={[
+                                  styles.dropdownItemText,
+                                  { color: endorsementType === type ? colors.primary : colors.text }
+                                ]}>
+                                  {getEndorsementTypeLabel(type)}
+                                </Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        )}
+                      </View>
+
+                      {/* Minimum Days */}
+                      <View style={styles.optionGroupCentered}>
+                        <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>Min Days</Text>
+                        <View style={styles.inlineCounterSmall}>
+                          <TouchableOpacity
+                            style={[styles.smallButtonCompact, { borderColor: colors.border }]}
+                            onPress={() => handleChangeEndorsementMinDays(endorsementMinDays - 1)}
+                            activeOpacity={0.7}
+                          >
+                            <Minus size={14} color={colors.text} strokeWidth={2} />
+                          </TouchableOpacity>
+                          <Text style={[styles.counterValueSmall, { color: colors.primary }]}>
+                            {endorsementMinDays}
+                          </Text>
+                          <TouchableOpacity
+                            style={[styles.smallButtonCompact, { borderColor: colors.border }]}
+                            onPress={() => handleChangeEndorsementMinDays(endorsementMinDays + 1)}
+                            activeOpacity={0.7}
+                          >
+                            <Plus size={14} color={colors.text} strokeWidth={2} />
+                          </TouchableOpacity>
                         </View>
-                      )}
-                    </View>
-
-                    {/* Minimum Days */}
-                    <View style={styles.optionGroupCentered}>
-                      <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>Min Days</Text>
-                      <View style={styles.inlineCounterSmall}>
-                        <TouchableOpacity
-                          style={[styles.smallButtonCompact, { borderColor: colors.border }]}
-                          onPress={() => handleChangeEndorsementMinDays(endorsementMinDays - 1)}
-                          activeOpacity={0.7}
-                        >
-                          <Minus size={14} color={colors.text} strokeWidth={2} />
-                        </TouchableOpacity>
-                        <Text style={[styles.counterValueSmall, { color: colors.primary }]}>
-                          {endorsementMinDays}
-                        </Text>
-                        <TouchableOpacity
-                          style={[styles.smallButtonCompact, { borderColor: colors.border }]}
-                          onPress={() => handleChangeEndorsementMinDays(endorsementMinDays + 1)}
-                          activeOpacity={0.7}
-                        >
-                          <Plus size={14} color={colors.text} strokeWidth={2} />
-                        </TouchableOpacity>
                       </View>
                     </View>
-                  </View>
-                )}
-              </View>
-
-              {/* ROW 3: Following */}
-              <View style={[styles.discountRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <View style={styles.rowContentSpaced}>
-                  <Text style={[styles.discountRowTitle, { color: colors.text }]}>Following</Text>
-                  <Switch
-                    value={followingEnabled}
-                    onValueChange={handleToggleFollowing}
-                    trackColor={{ false: '#D1D5DB', true: '#000000' }}
-                    thumbColor='#FFFFFF'
-                    ios_backgroundColor='#E5E7EB'
-                  />
-                </View>
-
-                {followingEnabled && (
-                  <View style={styles.expandedOptionsCentered}>
-                    {/* Minimum Days - centered since it's the only item */}
-                    <View style={styles.optionGroupCentered}>
-                      <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>Min Days</Text>
-                      <View style={styles.inlineCounterSmall}>
-                        <TouchableOpacity
-                          style={[styles.smallButtonCompact, { borderColor: colors.border }]}
-                          onPress={() => handleChangeFollowingMinDays(followingMinDays - 1)}
-                          activeOpacity={0.7}
-                        >
-                          <Minus size={14} color={colors.text} strokeWidth={2} />
-                        </TouchableOpacity>
-                        <Text style={[styles.counterValueSmall, { color: colors.primary }]}>
-                          {followingMinDays}
-                        </Text>
-                        <TouchableOpacity
-                          style={[styles.smallButtonCompact, { borderColor: colors.border }]}
-                          onPress={() => handleChangeFollowingMinDays(followingMinDays + 1)}
-                          activeOpacity={0.7}
-                        >
-                          <Plus size={14} color={colors.text} strokeWidth={2} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </View>
+                  </>
                 )}
               </View>
 
@@ -419,6 +398,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 16,
     marginBottom: 12,
+  },
+  endorsementDiscountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 16,
+    marginTop: 16,
+    borderTopWidth: 1,
   },
   rowContentCentered: {
     flexDirection: 'row',
