@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, MapPin, Navigation, Percent, X, Plus, ChevronRight, List, UserPlus, MoreVertical, Share2, Users, Star } from 'lucide-react-native';
+import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, MapPin, Navigation, Percent, X, Plus, ChevronRight, List, UserPlus, MoreVertical, Share2, Users, Star, Heart, Search, BookOpen, Compass } from 'lucide-react-native';
 import {
   View,
   Text,
@@ -946,6 +946,42 @@ export default function BusinessDetailScreen() {
                 const endorsements = getEndorsements();
 
                 if (endorsements.length === 0) {
+                  // Check if this is the business owner viewing their own profile
+                  const isOwnBusiness = clerkUser?.id === id;
+
+                  if (isOwnBusiness) {
+                    return (
+                      <View style={styles.emptyEndorsementContainer}>
+                        <View style={[styles.emptyEndorsementIconCircle, { backgroundColor: colors.primary + '20' }]}>
+                          <Heart size={32} color={colors.primary} strokeWidth={2} />
+                        </View>
+                        <Text style={[styles.emptyEndorsementTitle, { color: colors.text }]}>
+                          Build Your Endorsement List
+                        </Text>
+                        <View style={styles.emptyEndorsementSteps}>
+                          <View style={styles.emptyEndorsementStep}>
+                            <Search size={18} color={colors.primary} strokeWidth={2} />
+                            <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
+                              The add button (search)
+                            </Text>
+                          </View>
+                          <View style={styles.emptyEndorsementStep}>
+                            <BookOpen size={18} color={colors.primary} strokeWidth={2} />
+                            <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
+                              Our value-based recommendations (Browse tab)
+                            </Text>
+                          </View>
+                          <View style={styles.emptyEndorsementStep}>
+                            <Compass size={18} color={colors.primary} strokeWidth={2} />
+                            <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
+                              Your friends (Explore tab)
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  }
+
                   return (
                     <View style={styles.endorsementsLoading}>
                       <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
@@ -2014,6 +2050,39 @@ const styles = StyleSheet.create({
   },
   endorsementsLoading: {
     padding: 24,
+  },
+  // Empty endorsement explainer styles
+  emptyEndorsementContainer: {
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyEndorsementIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyEndorsementTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  emptyEndorsementSteps: {
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  emptyEndorsementStep: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  emptyEndorsementStepText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
   },
   endorsementsHeader: {
     paddingHorizontal: 16,

@@ -2787,6 +2787,57 @@ export default function UnifiedLibrary({
     );
   };
 
+  // Render empty endorsement state with explainer
+  const renderEmptyEndorsementExplainer = () => {
+    // Check if this is the user's own profile
+    const isOwnProfile = mode === 'edit' ||
+      (mode === 'preview' && currentUserId && viewingUserId === currentUserId) ||
+      (!viewingUserId && currentUserId);
+
+    if (isOwnProfile) {
+      // Show helpful explainer for user's own empty endorsement list
+      return (
+        <View style={styles.emptyEndorsementContainer}>
+          <View style={[styles.emptyEndorsementIconCircle, { backgroundColor: colors.primary + '20' }]}>
+            <Heart size={32} color={colors.primary} strokeWidth={2} />
+          </View>
+          <Text style={[styles.emptyEndorsementTitle, { color: colors.text }]}>
+            Build Your Endorsement List
+          </Text>
+          <View style={styles.emptyEndorsementSteps}>
+            <View style={styles.emptyEndorsementStep}>
+              <Search size={18} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
+                The add button (search)
+              </Text>
+            </View>
+            <View style={styles.emptyEndorsementStep}>
+              <BookOpen size={18} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
+                Our value-based recommendations (Browse tab)
+              </Text>
+            </View>
+            <View style={styles.emptyEndorsementStep}>
+              <Compass size={18} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
+                Your friends (Explore tab)
+              </Text>
+            </View>
+          </View>
+        </View>
+      );
+    }
+
+    // For viewing others' empty endorsement lists, show simple message
+    return (
+      <View style={styles.emptySection}>
+        <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+          No endorsements yet
+        </Text>
+      </View>
+    );
+  };
+
   // Render content for selected section
   const renderSectionContent = () => {
     // Profile views can ONLY show endorsement, following, or followers
@@ -2795,24 +2846,12 @@ export default function UnifiedLibrary({
 
     if (isProfileView && !allowedProfileSections.includes(selectedSection)) {
       // Invalid section for profile view - show endorsement instead
-      return endorsementList ? renderEndorsementContent() : (
-        <View style={styles.emptySection}>
-          <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
-            No endorsements yet
-          </Text>
-        </View>
-      );
+      return endorsementList ? renderEndorsementContent() : renderEmptyEndorsementExplainer();
     }
 
     switch (selectedSection) {
       case 'endorsement':
-        return endorsementList ? renderEndorsementContent() : (
-          <View style={styles.emptySection}>
-            <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
-              No endorsements yet
-            </Text>
-          </View>
-        );
+        return endorsementList ? renderEndorsementContent() : renderEmptyEndorsementExplainer();
 
       case 'aligned':
         return alignedItems.length > 0 ? renderAlignedContent() : (
@@ -4004,6 +4043,39 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptySectionText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  // Empty endorsement explainer styles
+  emptyEndorsementContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyEndorsementIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyEndorsementTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  emptyEndorsementSteps: {
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  emptyEndorsementStep: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  emptyEndorsementStepText: {
     fontSize: 14,
     fontWeight: '500',
   },
