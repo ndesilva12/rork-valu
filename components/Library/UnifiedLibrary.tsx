@@ -446,14 +446,14 @@ export default function UnifiedLibrary({
             type: 'brand',
             brandId: item.id,
             name: item.name,
-            logo: item.exampleImageUrl || getLogoUrl(item.website || ''),
+            logoUrl: item.exampleImageUrl || getLogoUrl(item.website || ''),
             createdAt: new Date(),
           }
         : {
             type: 'business',
             businessId: item.id,
             name: item.businessInfo?.name || 'Business',
-            logo: item.businessInfo?.logo || getLogoUrl(item.businessInfo?.website || ''),
+            logoUrl: item.businessInfo?.logoUrl || getLogoUrl(item.businessInfo?.website || ''),
             createdAt: new Date(),
           };
 
@@ -1009,7 +1009,7 @@ export default function UnifiedLibrary({
           const brandName = fullBrand?.name || entry.brandName || 'Unknown Brand';
           const brandCategory = fullBrand?.category || entry.brandCategory || 'Uncategorized';
           const website = fullBrand?.website || entry.website || '';
-          const logoUrl = entry.logoUrl || getLogoUrl(website);
+          const logoUrl = entry.logoUrl || (entry as any).logo || getLogoUrl(website);
           const alignmentScore = scoredBrands.get(entry.brandId) || 50;
           const scoreColor = alignmentScore >= 50 ? colors.primary : colors.danger;
 
@@ -1083,8 +1083,8 @@ export default function UnifiedLibrary({
           // Get business name from multiple possible fields
           const businessName = (entry as any).businessName || (entry as any).name || 'Unknown Business';
           const businessCategory = (entry as any).businessCategory || (entry as any).category;
-          // Use uploaded logoUrl first, fallback to generated logo from website
-          const logoUrl = (entry as any).logoUrl || ((entry as any).website ? getLogoUrl((entry as any).website) : getLogoUrl(''));
+          // Use uploaded logoUrl first, then legacy logo field, fallback to generated logo from website
+          const logoUrl = (entry as any).logoUrl || (entry as any).logo || ((entry as any).website ? getLogoUrl((entry as any).website) : getLogoUrl(''));
 
           return (
             <TouchableOpacity

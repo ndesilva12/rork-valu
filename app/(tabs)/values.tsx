@@ -582,7 +582,7 @@ export default function BrowseScreen() {
     const isEndorsed = isBrandEndorsed(brand.id);
 
     return (
-      <View key={brand.id} style={{ position: 'relative', marginBottom: 4 }}>
+      <View key={brand.id} style={{ position: 'relative', marginBottom: 4, zIndex: actionMenuBrandId === brand.id ? 1000 : 1 }}>
         <TouchableOpacity
           style={[
             styles.brandCard,

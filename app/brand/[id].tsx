@@ -1271,6 +1271,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 2,
     borderColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: '#FFFFFF',
   },
   titleContainer: {
     flex: 1,
