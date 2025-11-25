@@ -99,19 +99,9 @@ export default function BusinessMapView({ businesses, userLocation, distanceRadi
 
           // Stand discount information
           const acceptsStand = business.businessInfo.acceptsStandDiscounts;
-          const acceptsQR = business.businessInfo.acceptsQRCode ?? true;
-          const acceptsPromo = business.businessInfo.acceptsValueCode ?? true;
           const discountPercent = business.businessInfo.customerDiscountPercent || 0;
           const donationPercent = business.businessInfo.donationPercent || 0;
-
-          let acceptanceMethod = '';
-          if (acceptsQR && acceptsPromo) {
-            acceptanceMethod = 'QR Code / Promo Code';
-          } else if (acceptsQR) {
-            acceptanceMethod = 'QR Code';
-          } else if (acceptsPromo) {
-            acceptanceMethod = 'Promo Code';
-          }
+          const acceptanceMethod = 'QR Code';
 
           L.marker([location.latitude, location.longitude], {
             icon: L.divIcon({

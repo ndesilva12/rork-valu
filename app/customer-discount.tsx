@@ -183,10 +183,7 @@ export default function CustomerDiscount() {
         {/* Info Box */}
         <View style={[styles.infoBox, { backgroundColor: colors.card }]}>
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            💡 Your promo code: <Text style={{ fontWeight: 'bold' }}>{profile.promoCode}</Text>
-          </Text>
-          <Text style={[styles.infoSubtext, { color: colors.textSecondary }]}>
-            This code is unique to you and can be used as an alternative to the QR code.
+            💡 Show this QR code to participating merchants to receive your discount.
           </Text>
         </View>
       </View>
