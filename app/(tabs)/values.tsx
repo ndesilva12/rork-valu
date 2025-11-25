@@ -24,7 +24,7 @@ import { calculateBrandScore, normalizeBrandScores } from '@/lib/scoring';
 import { getLogoUrl } from '@/lib/logo';
 import LocalBusinessView from '@/components/Library/LocalBusinessView';
 import { useLibrary } from '@/contexts/LibraryContext';
-import { followEntity, unfollowEntity } from '@/services/firebase/followService';
+import { followEntity, unfollowEntity, isFollowing as checkIsFollowing } from '@/services/firebase/followService';
 import { addEntryToList, removeEntryFromList } from '@/services/firebase/listService';
 
 // ===== Types =====
@@ -119,6 +119,7 @@ export default function BrowseScreen() {
   const [alignedLoadCount, setAlignedLoadCount] = useState(10);
   const [unalignedLoadCount, setUnalignedLoadCount] = useState(10);
   const [actionMenuBrandId, setActionMenuBrandId] = useState<string | null>(null);
+  const [followedBrands, setFollowedBrands] = useState<Set<string>>(new Set());
 
   // Local section state
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -250,14 +251,40 @@ export default function BrowseScreen() {
   const handleFollowBrand = async (brandId: string, brandName: string) => {
     if (!clerkUser?.id) return;
 
+    const isCurrentlyFollowing = followedBrands.has(brandId);
+
     try {
-      await followEntity(clerkUser.id, 'brand', brandId);
-      Alert.alert('Success', `Now following ${brandName}`);
+      if (isCurrentlyFollowing) {
+        await unfollowEntity(clerkUser.id, brandId, 'brand');
+        setFollowedBrands(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(brandId);
+          return newSet;
+        });
+        Alert.alert('Success', `Unfollowed ${brandName}`);
+      } else {
+        await followEntity(clerkUser.id, 'brand', brandId);
+        setFollowedBrands(prev => new Set(prev).add(brandId));
+        Alert.alert('Success', `Now following ${brandName}`);
+      }
     } catch (error) {
-      console.error('Error following brand:', error);
-      Alert.alert('Error', 'Failed to follow brand');
+      console.error('Error following/unfollowing brand:', error);
+      Alert.alert('Error', `Failed to ${isCurrentlyFollowing ? 'unfollow' : 'follow'} brand`);
     }
   };
+
+  // Check follow status when action menu opens
+  const checkBrandFollowStatus = useCallback(async (brandId: string) => {
+    if (!clerkUser?.id) return;
+    try {
+      const isFollowing = await checkIsFollowing(clerkUser.id, brandId, 'brand');
+      if (isFollowing) {
+        setFollowedBrands(prev => new Set(prev).add(brandId));
+      }
+    } catch (error) {
+      console.error('Error checking follow status:', error);
+    }
+  }, [clerkUser?.id]);
 
   const handleShareBrand = (brandId: string, brandName: string) => {
     if (Platform.OS === 'web') {
@@ -582,7 +609,7 @@ export default function BrowseScreen() {
     const isEndorsed = isBrandEndorsed(brand.id);
 
     return (
-      <View key={brand.id} style={{ position: 'relative', marginBottom: 4, zIndex: actionMenuBrandId === brand.id ? 1000 : 1 }}>
+      <View key={brand.id} style={{ position: 'relative', marginBottom: 4, zIndex: actionMenuBrandId === brand.id ? 9999 : 1, overflow: 'visible' }}>
         <TouchableOpacity
           style={[
             styles.brandCard,
@@ -619,7 +646,11 @@ export default function BrowseScreen() {
               style={styles.actionMenuButton}
               onPress={(e) => {
                 e.stopPropagation();
-                setActionMenuBrandId(actionMenuBrandId === brand.id ? null : brand.id);
+                const isOpening = actionMenuBrandId !== brand.id;
+                setActionMenuBrandId(isOpening ? brand.id : null);
+                if (isOpening) {
+                  checkBrandFollowStatus(brand.id);
+                }
               }}
               activeOpacity={0.7}
             >
@@ -632,7 +663,14 @@ export default function BrowseScreen() {
 
         {/* Action Menu Dropdown */}
         {actionMenuBrandId === brand.id && (
-          <View style={[styles.actionMenuDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+          <View style={[
+            styles.actionMenuDropdown,
+            {
+              backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
+              borderColor: colors.border,
+              ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(0,0,0,0.25)' } : {}),
+            }
+          ]}>
             <TouchableOpacity
               style={styles.actionMenuItem}
               onPress={() => {
@@ -664,8 +702,14 @@ export default function BrowseScreen() {
               }}
               activeOpacity={0.7}
             >
-              <UserPlus size={16} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.actionMenuText, { color: colors.text }]}>Follow</Text>
+              {followedBrands.has(brand.id) ? (
+                <UserMinus size={16} color={colors.text} strokeWidth={2} />
+              ) : (
+                <UserPlus size={16} color={colors.text} strokeWidth={2} />
+              )}
+              <Text style={[styles.actionMenuText, { color: colors.text }]}>
+                {followedBrands.has(brand.id) ? 'Unfollow' : 'Follow'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1063,6 +1107,7 @@ const styles = StyleSheet.create({
   brandList: {
     paddingHorizontal: Platform.OS === 'web' ? 4 : 8,
     paddingTop: 4,
+    overflow: 'visible',
   },
   brandCard: {
     borderRadius: 0,
@@ -1127,11 +1172,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 1000,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+    zIndex: 99999,
   },
   actionMenuItem: {
     flexDirection: 'row',
