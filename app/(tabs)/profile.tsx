@@ -1078,6 +1078,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'web' ? 50 : 16,
     paddingBottom: Platform.OS === 'ios' ? 34 : 16,
     maxHeight: '80%',
   },
