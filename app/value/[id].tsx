@@ -15,6 +15,7 @@ import {
   TouchableWithoutFeedback,
   TextInput,
   Alert,
+  Pressable,
 } from 'react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
@@ -786,17 +787,7 @@ export default function ValueDetailScreen() {
                 console.log('[ValuePage] Endorse option pressed');
                 const driver = selectedDriverForOptions;
                 if (isBrandEndorsed(driver.id)) {
-                  // Use window.confirm on web since Alert.alert with buttons doesn't work
-                  if (Platform.OS === 'web') {
-                    if (window.confirm(`Remove ${driver.name} from your endorsement list?`)) {
-                      handleUnendorseBrand(driver.id, driver.name);
-                    }
-                  } else {
-                    Alert.alert('Unendorse', `Remove ${driver.name} from your endorsement list?`, [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Remove', style: 'destructive', onPress: () => handleUnendorseBrand(driver.id, driver.name) }
-                    ]);
-                  }
+                  handleUnendorseBrand(driver.id, driver.name);
                 } else {
                   handleEndorseBrand(driver.id, driver.name);
                 }
