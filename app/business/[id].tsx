@@ -142,13 +142,46 @@ export default function BusinessDetailScreen() {
     const endorsementList = businessOwnerLists.find(list => list.isEndorsed === true);
 
     if (!endorsementList) {
+      console.log('[BusinessDetail] No endorsement list found in businessOwnerLists:', businessOwnerLists.length, 'lists');
       return [];
     }
 
+    console.log('[BusinessDetail] Found endorsement list with', endorsementList.entries?.length || 0, 'entries');
+
     const endorsements: { type: 'brand' | 'business'; id: string; name: string; logoUrl?: string; website?: string }[] = [];
 
-    endorsementList.entries.forEach((entry: any) => {
-      if (entry.type === 'brand' && entry.brandId) {
+    // Filter out null/undefined entries
+    const validEntries = (endorsementList.entries || []).filter((e: any) => e != null);
+
+    validEntries.forEach((entry: any) => {
+      // Handle brand entries - check for brandId or fallback to id
+      if (entry.type === 'brand') {
+        const brandId = entry.brandId || entry.id;
+        if (brandId) {
+          endorsements.push({
+            type: 'brand',
+            id: brandId,
+            name: entry.brandName || entry.name || brandId,
+            logoUrl: entry.logoUrl || '',
+            website: entry.website || '',
+          });
+        }
+      }
+      // Handle business entries - check for businessId or fallback to id
+      else if (entry.type === 'business') {
+        const businessId = entry.businessId || entry.id;
+        if (businessId) {
+          endorsements.push({
+            type: 'business',
+            id: businessId,
+            name: entry.businessName || entry.name || 'Unknown Business',
+            logoUrl: entry.logoUrl || '',
+            website: entry.website || '',
+          });
+        }
+      }
+      // Handle entries without explicit type - try to infer
+      else if (entry.brandId) {
         endorsements.push({
           type: 'brand',
           id: entry.brandId,
@@ -156,7 +189,7 @@ export default function BusinessDetailScreen() {
           logoUrl: entry.logoUrl || '',
           website: entry.website || '',
         });
-      } else if (entry.type === 'business' && entry.businessId) {
+      } else if (entry.businessId) {
         endorsements.push({
           type: 'business',
           id: entry.businessId,
@@ -167,6 +200,7 @@ export default function BusinessDetailScreen() {
       }
     });
 
+    console.log('[BusinessDetail] Extracted', endorsements.length, 'endorsements');
     return endorsements;
   };
 
@@ -1338,7 +1372,7 @@ export default function BusinessDetailScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalContent}>
+            <ScrollView style={styles.listModalContent}>
               <Text style={[styles.quickAddItemName, { color: colors.primary }]}>
                 {business?.businessInfo.name}
               </Text>
@@ -1931,7 +1965,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700' as const,
   },
-  modalContent: {
+  listModalContent: {
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
