@@ -443,14 +443,14 @@ export default function UnifiedLibrary({
             type: 'brand',
             brandId: item.id,
             name: item.name,
-            logo: getLogoUrl(item.website),
+            logo: item.exampleImageUrl || getLogoUrl(item.website || ''),
             createdAt: new Date(),
           }
         : {
             type: 'business',
             businessId: item.id,
             name: item.businessInfo?.name || 'Business',
-            logo: item.businessInfo?.logo || getLogoUrl(item.businessInfo?.website),
+            logo: item.businessInfo?.logo || getLogoUrl(item.businessInfo?.website || ''),
             createdAt: new Date(),
           };
 
@@ -458,6 +458,10 @@ export default function UnifiedLibrary({
       console.log('[UnifiedLibrary] Added', type, 'to endorsement list:', entry.name);
       // Track this item as added
       setAddedItemIds(prev => new Set(prev).add(itemId));
+      // Force reload library to ensure state is synced
+      if (currentUserId) {
+        await library.loadUserLists(currentUserId, true);
+      }
     } catch (error) {
       console.error('[UnifiedLibrary] Error adding to endorsement:', error);
       Alert.alert('Error', 'Failed to add to endorsements. Please try again.');
@@ -3192,7 +3196,7 @@ export default function UnifiedLibrary({
                           >
                             <View style={styles.addEndorsementResultLogo}>
                               <Image
-                                source={{ uri: getLogoUrl(brand.website) }}
+                                source={{ uri: brand.exampleImageUrl || getLogoUrl(brand.website || '') }}
                                 style={styles.addEndorsementResultLogoImage}
                                 contentFit="cover"
                                 transition={200}
