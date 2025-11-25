@@ -3,7 +3,7 @@
  * Displays local businesses with distance filtering and sorting
  * Integrated into the UnifiedLibrary as a section
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { MapPin, ChevronDown, ChevronUp, MoreVertical, X, UserMinus, Heart, Share2 } from 'lucide-react-native';
+import { MapPin, ChevronDown, ChevronUp, MoreVertical, X, UserMinus, UserPlus, Heart, Share2 } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { BusinessUser, isBusinessWithinRange } from '@/services/firebase/businessService';
 import { Cause } from '@/types';
@@ -27,8 +27,8 @@ import { getLogoUrl } from '@/lib/logo';
 import BusinessMapView from '@/components/BusinessMapView';
 import { useUser } from '@/contexts/UserContext';
 import { useLibrary } from '@/contexts/LibraryContext';
-import { unfollowEntity } from '@/services/firebase/followService';
-import { removeEntryFromList } from '@/services/firebase/listService';
+import { unfollowEntity, followEntity, isFollowing as checkIsFollowing } from '@/services/firebase/followService';
+import { addEntryToList, removeEntryFromList } from '@/services/firebase/listService';
 
 // Helper function to extract Town, State from full address
 const shortenAddress = (fullAddress: string | undefined): string => {
@@ -143,6 +143,56 @@ export default function LocalBusinessView({
   const [showMap, setShowMap] = useState(false);
   const [actionMenuBusinessId, setActionMenuBusinessId] = useState<string | null>(null);
 
+  // Track endorsement and follow status for each business
+  const [endorsedBusinessIds, setEndorsedBusinessIds] = useState<Set<string>>(new Set());
+  const [followedBusinessIds, setFollowedBusinessIds] = useState<Set<string>>(new Set());
+
+  // Check endorsement status from library
+  useEffect(() => {
+    const endorsementList = library.userLists.find(list => list.isEndorsed);
+    if (endorsementList) {
+      const endorsedIds = new Set<string>(
+        endorsementList.entries
+          .filter((e: any) => e.type === 'business' && e.businessId)
+          .map((e: any) => e.businessId)
+      );
+      setEndorsedBusinessIds(endorsedIds);
+    } else {
+      setEndorsedBusinessIds(new Set());
+    }
+  }, [library.userLists]);
+
+  // Check follow status for displayed businesses
+  const checkFollowStatus = useCallback(async (businessId: string) => {
+    if (!clerkUser?.id) return false;
+    try {
+      const isFollowing = await checkIsFollowing(clerkUser.id, businessId, 'business');
+      return isFollowing;
+    } catch (error) {
+      console.error('Error checking follow status:', error);
+      return false;
+    }
+  }, [clerkUser?.id]);
+
+  // Check follow status when action menu opens
+  useEffect(() => {
+    const checkFollowForOpenMenu = async () => {
+      if (actionMenuBusinessId && clerkUser?.id) {
+        const isFollowing = await checkFollowStatus(actionMenuBusinessId);
+        setFollowedBusinessIds(prev => {
+          const newSet = new Set(prev);
+          if (isFollowing) {
+            newSet.add(actionMenuBusinessId);
+          } else {
+            newSet.delete(actionMenuBusinessId);
+          }
+          return newSet;
+        });
+      }
+    };
+    checkFollowForOpenMenu();
+  }, [actionMenuBusinessId, clerkUser?.id, checkFollowStatus]);
+
   // Mobile: fewer options to fit on one row; Desktop: more granular options
   const localDistanceOptions: LocalDistanceOption[] = isMobile
     ? [50, 10, 1]
@@ -152,6 +202,43 @@ export default function LocalBusinessView({
     console.log('[LocalBusinessView] Map button pressed, opening map...');
     setShowMap(true);
     console.log('[LocalBusinessView] showMap state set to true');
+  };
+
+  const handleEndorse = async (businessId: string, businessName: string, logoUrl: string) => {
+    if (!clerkUser?.id) return;
+
+    try {
+      // Find the endorsement list
+      const endorsementList = library.userLists.find(list => list.isEndorsed);
+      if (!endorsementList) {
+        Alert.alert('Error', 'Could not find endorsement list. Please create one first.');
+        return;
+      }
+
+      // Add entry to endorsement list
+      await addEntryToList(endorsementList.id, {
+        type: 'business',
+        businessId: businessId,
+        name: businessName,
+        website: '',
+        logoUrl: logoUrl || '',
+      });
+
+      // Update local state
+      setEndorsedBusinessIds(prev => new Set(prev).add(businessId));
+
+      // Reload the library to reflect changes
+      await library.loadUserLists(clerkUser.id);
+
+      Alert.alert('Success', `${businessName} added to endorsements`);
+    } catch (error: any) {
+      console.error('Error endorsing business:', error);
+      if (error.message?.includes('already in the list')) {
+        Alert.alert('Info', `${businessName} is already in your endorsement list`);
+      } else {
+        Alert.alert('Error', 'Failed to add business to endorsements');
+      }
+    }
   };
 
   const handleUnendorse = async (businessId: string, businessName: string) => {
@@ -178,6 +265,13 @@ export default function LocalBusinessView({
       // Remove the entry
       await removeEntryFromList(endorsementList.id, entry.id);
 
+      // Update local state
+      setEndorsedBusinessIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(businessId);
+        return newSet;
+      });
+
       // Reload the library to reflect changes
       await library.loadUserLists(clerkUser.id);
 
@@ -188,11 +282,35 @@ export default function LocalBusinessView({
     }
   };
 
+  const handleFollow = async (businessId: string, businessName: string) => {
+    if (!clerkUser?.id) return;
+
+    try {
+      await followEntity(clerkUser.id, businessId, 'business');
+
+      // Update local state
+      setFollowedBusinessIds(prev => new Set(prev).add(businessId));
+
+      Alert.alert('Success', `Now following ${businessName}`);
+    } catch (error) {
+      console.error('Error following business:', error);
+      Alert.alert('Error', 'Failed to follow business');
+    }
+  };
+
   const handleUnfollow = async (businessId: string, businessName: string) => {
     if (!clerkUser?.id) return;
 
     try {
-      await unfollowEntity(clerkUser.id, 'business', businessId);
+      await unfollowEntity(clerkUser.id, businessId, 'business');
+
+      // Update local state
+      setFollowedBusinessIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(businessId);
+        return newSet;
+      });
+
       Alert.alert('Success', `Unfollowed ${businessName}`);
     } catch (error) {
       console.error('Error unfollowing business:', error);
@@ -344,60 +462,92 @@ export default function LocalBusinessView({
         </TouchableOpacity>
 
         {/* Action Menu Dropdown */}
-        {actionMenuBusinessId === business.id && (
-          <View style={[styles.actionMenuDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={() => {
-                setActionMenuBusinessId(null);
-                Alert.alert('Unendorse', `Remove ${business.businessInfo.name} from your endorsement list?`, [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Remove', style: 'destructive', onPress: () => {
-                    handleUnendorse(business.id, business.businessInfo.name);
-                  }}
-                ]);
-              }}
-              activeOpacity={0.7}
-            >
-              <Heart size={16} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.actionMenuText, { color: colors.text }]}>Unendorse</Text>
-            </TouchableOpacity>
+        {actionMenuBusinessId === business.id && (() => {
+          const isEndorsed = endorsedBusinessIds.has(business.id);
+          const isFollowed = followedBusinessIds.has(business.id);
 
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={() => {
-                setActionMenuBusinessId(null);
-                Alert.alert('Unfollow', `Stop following ${business.businessInfo.name}?`, [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Unfollow', style: 'destructive', onPress: () => {
-                    handleUnfollow(business.id, business.businessInfo.name);
-                  }}
-                ]);
-              }}
-              activeOpacity={0.7}
-            >
-              <UserMinus size={16} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.actionMenuText, { color: colors.text }]}>Unfollow</Text>
-            </TouchableOpacity>
+          return (
+            <View style={[styles.actionMenuDropdown, { backgroundColor: '#FFFFFF', borderColor: colors.border }]}>
+              {/* Endorse/Unendorse button */}
+              <TouchableOpacity
+                style={styles.actionMenuItem}
+                onPress={() => {
+                  setActionMenuBusinessId(null);
+                  if (isEndorsed) {
+                    Alert.alert('Unendorse', `Remove ${business.businessInfo.name} from your endorsement list?`, [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Remove', style: 'destructive', onPress: () => {
+                        handleUnendorse(business.id, business.businessInfo.name);
+                      }}
+                    ]);
+                  } else {
+                    handleEndorse(
+                      business.id,
+                      business.businessInfo.name,
+                      business.businessInfo.logoUrl || getLogoUrl(business.businessInfo.website || '')
+                    );
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Heart
+                  size={16}
+                  color={isEndorsed ? colors.primary : colors.text}
+                  strokeWidth={2}
+                  fill={isEndorsed ? colors.primary : 'none'}
+                />
+                <Text style={[styles.actionMenuText, { color: colors.text }]}>
+                  {isEndorsed ? 'Unendorse' : 'Endorse'}
+                </Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={() => {
-                setActionMenuBusinessId(null);
-                if (Platform.OS === 'web') {
-                  navigator.clipboard.writeText(`${window.location.origin}/business/${business.id}`);
-                  Alert.alert('Success', 'Link copied to clipboard');
-                } else {
-                  Alert.alert('Share', 'Share functionality coming soon');
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <Share2 size={16} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+              {/* Follow/Unfollow button */}
+              <TouchableOpacity
+                style={styles.actionMenuItem}
+                onPress={() => {
+                  setActionMenuBusinessId(null);
+                  if (isFollowed) {
+                    Alert.alert('Unfollow', `Stop following ${business.businessInfo.name}?`, [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Unfollow', style: 'destructive', onPress: () => {
+                        handleUnfollow(business.id, business.businessInfo.name);
+                      }}
+                    ]);
+                  } else {
+                    handleFollow(business.id, business.businessInfo.name);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                {isFollowed ? (
+                  <UserMinus size={16} color={colors.text} strokeWidth={2} />
+                ) : (
+                  <UserPlus size={16} color={colors.text} strokeWidth={2} />
+                )}
+                <Text style={[styles.actionMenuText, { color: colors.text }]}>
+                  {isFollowed ? 'Unfollow' : 'Follow'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionMenuItem}
+                onPress={() => {
+                  setActionMenuBusinessId(null);
+                  if (Platform.OS === 'web') {
+                    navigator.clipboard.writeText(`${window.location.origin}/business/${business.id}`);
+                    Alert.alert('Success', 'Link copied to clipboard');
+                  } else {
+                    Alert.alert('Share', 'Share functionality coming soon');
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Share2 size={16} color={colors.text} strokeWidth={2} />
+                <Text style={[styles.actionMenuText, { color: colors.text }]}>Share</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })()}
       </View>
     );
   };
