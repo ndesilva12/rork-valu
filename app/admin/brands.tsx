@@ -15,12 +15,15 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { collection, getDocs, doc, setDoc, deleteDoc, query, limit } from 'firebase/firestore';
 import { db } from '../../firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { pickAndUploadImage } from '@/lib/imageUpload';
+import { Upload } from 'lucide-react-native';
 
 interface Affiliate {
   name: string;
@@ -46,6 +49,8 @@ interface BrandData {
   location?: string;
   latitude?: number;
   longitude?: number;
+  exampleImageUrl?: string; // Logo/profile image
+  coverImageUrl?: string; // Cover/banner image
   affiliates?: Affiliate[];
   partnerships?: Partnership[];
   ownership?: Ownership[];
@@ -71,6 +76,10 @@ export default function BrandsManagement() {
   const [formDescription, setFormDescription] = useState('');
   const [formWebsite, setFormWebsite] = useState('');
   const [formLocation, setFormLocation] = useState('');
+  const [formLogoUrl, setFormLogoUrl] = useState('');
+  const [formCoverUrl, setFormCoverUrl] = useState('');
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
   const [formAffiliates, setFormAffiliates] = useState('');
   const [formPartnerships, setFormPartnerships] = useState('');
   const [formOwnership, setFormOwnership] = useState('');
@@ -97,6 +106,8 @@ export default function BrandsManagement() {
           location: data.location || '',
           latitude: data.latitude,
           longitude: data.longitude,
+          exampleImageUrl: data.exampleImageUrl || '',
+          coverImageUrl: data.coverImageUrl || '',
           affiliates: data.affiliates || [],
           partnerships: data.partnerships || [],
           ownership: data.ownership || [],
@@ -121,6 +132,8 @@ export default function BrandsManagement() {
     setFormDescription('');
     setFormWebsite('');
     setFormLocation('');
+    setFormLogoUrl('');
+    setFormCoverUrl('');
     setFormAffiliates('');
     setFormPartnerships('');
     setFormOwnership('');
@@ -136,6 +149,8 @@ export default function BrandsManagement() {
     setFormDescription(brand.description || '');
     setFormWebsite(brand.website || '');
     setFormLocation(brand.location || '');
+    setFormLogoUrl(brand.exampleImageUrl || '');
+    setFormCoverUrl(brand.coverImageUrl || '');
 
     // Format money flow sections
     setFormAffiliates(
@@ -182,6 +197,8 @@ export default function BrandsManagement() {
         description: formDescription.trim(),
         website: formWebsite.trim(),
         location: formLocation.trim(),
+        exampleImageUrl: formLogoUrl.trim(),
+        coverImageUrl: formCoverUrl.trim(),
         affiliates: parseMoneyFlowSection(formAffiliates),
         partnerships: parseMoneyFlowSection(formPartnerships),
         ownership: parseMoneyFlowSection(formOwnership),
@@ -195,6 +212,8 @@ export default function BrandsManagement() {
         description: brandData.description,
         website: brandData.website,
         location: brandData.location,
+        exampleImageUrl: brandData.exampleImageUrl,
+        coverImageUrl: brandData.coverImageUrl,
         affiliates: brandData.affiliates,
         partnerships: brandData.partnerships,
         ownership: brandData.ownership,
@@ -569,6 +588,94 @@ export default function BrandsManagement() {
                 value={formLocation}
                 onChangeText={setFormLocation}
               />
+
+              <Text style={styles.sectionTitle}>🖼️ Images</Text>
+
+              <Text style={styles.label}>Logo / Profile Image</Text>
+              <View style={styles.imageInputRow}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="https://example.com/logo.png"
+                  value={formLogoUrl}
+                  onChangeText={setFormLogoUrl}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={[styles.uploadButton, logoUploading && styles.uploadButtonDisabled]}
+                  onPress={async () => {
+                    if (!formId.trim()) {
+                      Alert.alert('ID Required', 'Please enter a Brand ID first');
+                      return;
+                    }
+                    setLogoUploading(true);
+                    try {
+                      const url = await pickAndUploadImage(formId.trim(), 'business', [1, 1]);
+                      if (url) setFormLogoUrl(url);
+                    } catch (error) {
+                      Alert.alert('Error', 'Failed to upload image');
+                    }
+                    setLogoUploading(false);
+                  }}
+                  disabled={logoUploading}
+                >
+                  {logoUploading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Upload size={16} color="#fff" strokeWidth={2} />
+                      <Text style={styles.uploadButtonText}>Upload</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+              {formLogoUrl ? (
+                <View style={styles.imagePreview}>
+                  <Image source={{ uri: formLogoUrl }} style={styles.previewImageSmall} />
+                </View>
+              ) : null}
+
+              <Text style={styles.label}>Cover / Banner Image</Text>
+              <View style={styles.imageInputRow}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="https://example.com/cover.png"
+                  value={formCoverUrl}
+                  onChangeText={setFormCoverUrl}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={[styles.uploadButton, coverUploading && styles.uploadButtonDisabled]}
+                  onPress={async () => {
+                    if (!formId.trim()) {
+                      Alert.alert('ID Required', 'Please enter a Brand ID first');
+                      return;
+                    }
+                    setCoverUploading(true);
+                    try {
+                      const url = await pickAndUploadImage(formId.trim(), 'cover', [16, 9]);
+                      if (url) setFormCoverUrl(url);
+                    } catch (error) {
+                      Alert.alert('Error', 'Failed to upload image');
+                    }
+                    setCoverUploading(false);
+                  }}
+                  disabled={coverUploading}
+                >
+                  {coverUploading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Upload size={16} color="#fff" strokeWidth={2} />
+                      <Text style={styles.uploadButtonText}>Upload</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+              {formCoverUrl ? (
+                <View style={styles.imagePreview}>
+                  <Image source={{ uri: formCoverUrl }} style={styles.previewImageWide} />
+                </View>
+              ) : null}
 
               <Text style={styles.sectionTitle}>💰 Money Flow Sections</Text>
 
@@ -1007,5 +1114,43 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  imageInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  uploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#28a745',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  uploadButtonDisabled: {
+    opacity: 0.6,
+  },
+  uploadButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  imagePreview: {
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  previewImageSmall: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+  },
+  previewImageWide: {
+    width: '100%',
+    height: 120,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
   },
 });
