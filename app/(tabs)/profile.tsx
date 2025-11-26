@@ -285,7 +285,7 @@ export default function ProfileScreen() {
         <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
           <View style={[styles.header, { backgroundColor: colors.background }]}>
             <Image
-              source={require('@/assets/images/endorsements.png')}
+              source={require('@/assets/images/endorsements12.png')}
               style={styles.headerLogo}
               resizeMode="contain"
             />
@@ -314,7 +314,7 @@ export default function ProfileScreen() {
       <View style={[styles.stickyHeaderContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <Image
-            source={require('@/assets/images/endorsements.png')}
+            source={require('@/assets/images/endorsements12.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -450,7 +450,7 @@ export default function ProfileScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.followStatCount, { color: selectedStatSection === 'endorsements' ? colors.primary : colors.text }]}>{allSupportFull.length}</Text>
+                <Text style={[styles.followStatCount, { color: selectedStatSection === 'endorsements' ? colors.primary : colors.text }]}>{library.state.endorsementList?.entries?.length || 0}</Text>
                 <Text style={[styles.followStatLabel, { color: selectedStatSection === 'endorsements' ? colors.primary : colors.textSecondary }]}>Endorsements</Text>
               </TouchableOpacity>
               <View style={[styles.followStatDivider, { backgroundColor: colors.border }]} />

@@ -306,6 +306,17 @@ export default function UserProfileScreen() {
   const isOwnProfile = userId === clerkUser?.id;
   const profileImageUrl = userDetails?.profileImage;
 
+  // Get endorsement list and count
+  const userEndorsementList = useMemo(() => {
+    let endorsementList = userLists.find(list => list.name === userName);
+    if (!endorsementList && userLists.length > 0) {
+      const sortedByAge = [...userLists].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+      endorsementList = sortedByAge[0];
+    }
+    return endorsementList || null;
+  }, [userLists, userName]);
+  const endorsementCount = userEndorsementList?.entries?.length || 0;
+
   // Calculate similarity score between current user and viewed user
   let similarityScore = 0;
   let similarityLabel = 'Different';
@@ -589,7 +600,7 @@ export default function UserProfileScreen() {
               onPress={() => setSelectedLibrarySection('endorsement')}
               activeOpacity={0.7}
             >
-              <Text style={[styles.followStatNumber, { color: selectedLibrarySection === 'endorsement' ? colors.primary : colors.text }]}>{allSupportFull.length}</Text>
+              <Text style={[styles.followStatNumber, { color: selectedLibrarySection === 'endorsement' ? colors.primary : colors.text }]}>{endorsementCount}</Text>
               <Text style={[styles.followStatLabel, { color: selectedLibrarySection === 'endorsement' ? colors.primary : colors.textSecondary }]}>Endorsements</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -617,15 +628,7 @@ export default function UserProfileScreen() {
               currentUserId={clerkUser?.id}
               viewingUserId={userId}
               userLists={userLists}
-              endorsementList={(() => {
-                // Find THE ONE endorsement list (matching name or oldest)
-                let endorsementList = userLists.find(list => list.name === userName);
-                if (!endorsementList && userLists.length > 0) {
-                  const sortedByAge = [...userLists].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-                  endorsementList = sortedByAge[0];
-                }
-                return endorsementList || null;
-              })()}
+              endorsementList={userEndorsementList}
               alignedItems={isOwnProfile ? allSupportFull : []}
               unalignedItems={isOwnProfile ? allAvoidFull : []}
               isDarkMode={isDarkMode}
