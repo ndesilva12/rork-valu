@@ -16,6 +16,7 @@ import {
   getEndorsementList,
   ensureEndorsementList,
   resolveList,
+  getList,
 } from '@/services/firebase/listService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -226,10 +227,11 @@ const LibraryContext = createContext<LibraryContextValue | undefined>(undefined)
 interface LibraryProviderProps {
   children: React.ReactNode;
   userId: string | undefined;
+  userName?: string; // User's name for endorsement list creation
   autoLoad?: boolean; // Automatically load lists when userId changes
 }
 
-export function LibraryProvider({ children, userId, autoLoad = true }: LibraryProviderProps) {
+export function LibraryProvider({ children, userId, userName, autoLoad = true }: LibraryProviderProps) {
   const [state, dispatch] = useReducer(libraryReducer, initialState);
 
   // Load user lists when userId changes
@@ -261,8 +263,10 @@ export function LibraryProvider({ children, userId, autoLoad = true }: LibraryPr
 
       // Get or create endorsement list
       let endorsementList = await getEndorsementList(uid);
-      if (!endorsementList) {
-        endorsementList = await ensureEndorsementList(uid);
+      if (!endorsementList && userName) {
+        // ensureEndorsementList returns a list ID (string), so we need to fetch the full list
+        const listId = await ensureEndorsementList(uid, userName);
+        endorsementList = await getList(listId);
       }
       dispatch({ type: 'SET_ENDORSEMENT_LIST', payload: endorsementList });
 
@@ -289,7 +293,7 @@ export function LibraryProvider({ children, userId, autoLoad = true }: LibraryPr
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }, [state.hasSetDefaultExpansion]);
+  }, [state.hasSetDefaultExpansion, userName]);
 
   const createNewList = useCallback(async (
     uid: string,

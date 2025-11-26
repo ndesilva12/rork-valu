@@ -94,11 +94,20 @@ if (!publishableKey) {
 }
 
 function RootLayoutNav() {
-  const { isDarkMode, clerkUser } = useUser();
+  const { isDarkMode, clerkUser, profile } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
+  // Construct userName for endorsement list creation
+  const fullNameFromFirebase = profile?.userDetails?.name;
+  const fullNameFromClerk = clerkUser?.unsafeMetadata?.fullName as string;
+  const firstNameLastName = clerkUser?.firstName && clerkUser?.lastName
+    ? `${clerkUser.firstName} ${clerkUser.lastName}`
+    : '';
+  const firstName = clerkUser?.firstName;
+  const userName = fullNameFromFirebase || fullNameFromClerk || firstNameLastName || firstName || 'My Endorsements';
+
   return (
-    <LibraryProvider userId={clerkUser?.id} autoLoad={true}>
+    <LibraryProvider userId={clerkUser?.id} userName={userName} autoLoad={true}>
       <Stack
         screenOptions={{
           headerBackTitle: "Back",
