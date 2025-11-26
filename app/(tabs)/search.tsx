@@ -2198,9 +2198,9 @@ const styles = StyleSheet.create({
   emptyState: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: 32,
-    paddingTop: 60,
+    paddingTop: 24,
   },
   emptyIconContainer: {
     width: 96,
