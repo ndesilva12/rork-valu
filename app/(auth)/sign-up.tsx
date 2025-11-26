@@ -357,7 +357,7 @@ export default function SignUpScreen() {
             </Text>
             <Text style={styles.taglineLine}>
               <Text style={[styles.taglineFirstWord, { color: colors.text }]}>browse </Text>
-              <Text style={[styles.taglineRest, { color: colors.text }]}>friends and family for ideas.</Text>
+              <Text style={[styles.taglineRest, { color: colors.text }]}>friends for gift ideas.</Text>
             </Text>
             <Text style={styles.taglineLine}>
               <Text style={[styles.taglineFirstWord, { color: colors.text }]}>earn </Text>
@@ -550,8 +550,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   logo: {
-    width: 180,
-    height: 180,
+    width: 220,
+    height: 220,
     tintColor: undefined,
   },
   taglineContainer: {
