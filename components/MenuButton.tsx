@@ -110,7 +110,7 @@ export default function MenuButton({ onShowExplainers }: MenuButtonProps = {}) {
           >
             <View style={styles.logoContainer}>
               <Image
-                source={require('@/assets/images/endo11.png')}
+                source={require('@/assets/images/endorsementa.png')}
                 style={styles.menuLogo}
                 resizeMode="contain"
               />

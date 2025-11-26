@@ -300,7 +300,7 @@ export default function SignUpScreen() {
           >
             <View style={styles.logoContainer}>
               <Image
-                source={require('@/assets/images/endo11.png')}
+                source={require('@/assets/images/endorsementa.png')}
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -345,7 +345,7 @@ export default function SignUpScreen() {
         >
           <View style={styles.logoContainer}>
             <Image
-              source={require('@/assets/images/endo11.png')}
+              source={require('@/assets/images/endorsementa.png')}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -360,7 +360,7 @@ export default function SignUpScreen() {
               <Text style={[styles.taglineRest, { color: colors.text }]}>friends for gift ideas.</Text>
             </Text>
             <Text style={styles.taglineLine}>
-              <Text style={[styles.taglineFirstWord, { color: colors.text }]}>earn </Text>
+              <Text style={[styles.taglineFirstWord, { color: colors.primary }]}>earn </Text>
               <Text style={[styles.taglineRest, { color: colors.text }]}>discounts for your endorsements.</Text>
             </Text>
           </View>
