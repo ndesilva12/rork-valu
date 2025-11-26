@@ -157,6 +157,18 @@ export default function AdminDashboard() {
             </Text>
           </TouchableOpacity>
 
+          {/* Brand Requests */}
+          <TouchableOpacity
+            style={[styles.card, styles.highlightCard]}
+            onPress={() => router.push('/admin/brand-requests')}
+          >
+            <Text style={styles.cardIcon}>📝</Text>
+            <Text style={styles.cardTitle}>Brand Requests</Text>
+            <Text style={styles.cardDescription}>
+              View and manage user-submitted brand/business suggestions
+            </Text>
+          </TouchableOpacity>
+
           {/* Transactions */}
           <TouchableOpacity
             style={styles.card}

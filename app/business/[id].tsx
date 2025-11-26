@@ -28,7 +28,7 @@ import { BusinessInfo, Cause } from '@/types';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateAlignmentScore } from '@/services/firebase/businessService';
 import { getUserLists, addEntryToList } from '@/services/firebase/listService';
-import { calculateSimilarityScore, getSimilarityLabel, normalizeSimilarityScores } from '@/lib/scoring';
+import { calculateSimilarityScore, getSimilarityLabel, normalizeSimilarityScores, normalizeBusinessScoresWithBrands, calculateBrandScore } from '@/lib/scoring';
 import { getAllUserBusinesses } from '@/services/firebase/businessService';
 import { followEntity, unfollowEntity, isFollowing as checkIsFollowing, getFollowersCount, getFollowingCount } from '@/services/firebase/followService';
 import FollowingFollowersList from '@/components/FollowingFollowersList';
@@ -45,7 +45,7 @@ export default function BusinessDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { profile, isDarkMode, clerkUser } = useUser();
-  const { values, brands } = useData();
+  const { values, brands, valuesMatrix } = useData();
   const library = useLibrary();
   const colors = isDarkMode ? darkColors : lightColors;
   const scrollViewRef = useRef<ScrollView>(null);
@@ -511,8 +511,16 @@ export default function BusinessDetailScreen() {
       alignmentScore: calculateSimilarityScore(profile.causes || [], b.causes || [])
     }));
 
-    // Normalize similarity scores to 1-99 range with median at 50 (matching home tab)
-    const normalizedBusinesses = normalizeSimilarityScores(businessesWithScores);
+    // Calculate raw brand scores for reference distribution
+    const rawBrandScores = brands && valuesMatrix
+      ? brands.map(brand => calculateBrandScore(brand.name, profile.causes || [], valuesMatrix))
+      : [];
+
+    // Normalize similarity scores using brand scores as reference distribution
+    // This allows businesses to be compared on the same scale as brands
+    const normalizedBusinesses = rawBrandScores.length > 0
+      ? normalizeBusinessScoresWithBrands(businessesWithScores, rawBrandScores)
+      : normalizeSimilarityScores(businessesWithScores);
 
     // Find the score for the current business
     const currentBusinessScore = normalizedBusinesses.find(b => b.id === business.id);

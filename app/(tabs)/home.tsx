@@ -93,12 +93,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
-import { calculateBrandScore, calculateSimilarityScore, normalizeBrandScores, normalizeSimilarityScores } from '@/lib/scoring';
+import { calculateBrandScore, calculateSimilarityScore, normalizeBrandScores, normalizeSimilarityScores, normalizeBusinessScoresWithBrands } from '@/lib/scoring';
 import { getAllUserBusinesses, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 import { followEntity, unfollowEntity, isFollowing, getFollowingCount, getFollowersCount } from '@/services/firebase/followService';
 import BusinessMapView from '@/components/BusinessMapView';
 import { UserList, ListEntry, ValueListMode } from '@/types/library';
 import { getUserLists, createList, deleteList, addEntryToList, removeEntryFromList, updateListMetadata, reorderListEntries, getEndorsementList, ensureEndorsementList } from '@/services/firebase/listService';
+import { submitBrandRequest } from '@/services/firebase/brandRequestService';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { UnifiedLibrary } from '@/components/Library';
@@ -197,6 +198,9 @@ export default function HomeScreen() {
   const [showMyListOptionsModal, setShowMyListOptionsModal] = useState(false);
   const [addItemType, setAddItemType] = useState<'brand' | 'business' | 'value' | 'link' | 'text' | null>(null);
   const [addItemSearchQuery, setAddItemSearchQuery] = useState('');
+  const [showAddItemRequest, setShowAddItemRequest] = useState(false);
+  const [addItemRequestInput, setAddItemRequestInput] = useState('');
+  const [showAddItemRequestSuccess, setShowAddItemRequestSuccess] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [linkTitle, setLinkTitle] = useState('');
   const [textContent, setTextContent] = useState('');
@@ -667,6 +671,7 @@ export default function HomeScreen() {
         allAvoidFull: [],
         scoredBrands: new Map(),
         brandDistances: new Map(),
+        rawBrandScores: [],
       };
     }
 
@@ -675,6 +680,9 @@ export default function HomeScreen() {
       const score = calculateBrandScore(brand.name, profile.causes || [], valuesMatrix);
       return { brand, score };
     });
+
+    // Store raw scores for business score normalization
+    const rawBrandScores = brandsWithScores.map(b => b.score);
 
     // Normalize scores to 1-99 range for better visual separation
     const normalizedBrands = normalizeBrandScores(brandsWithScores);
@@ -709,6 +717,7 @@ export default function HomeScreen() {
       allAvoidFull: unalignedBrands,
       scoredBrands: scoredMap,
       brandDistances: new Map(),
+      rawBrandScores,
     };
   }, [brands, profile.causes, valuesMatrix]);
 
@@ -752,8 +761,11 @@ export default function HomeScreen() {
     // Filter by distance
     const businessesInRange = businessesWithScores.filter((b) => b.isWithinRange);
 
-    // Normalize similarity scores to 1-99 range with median at 50
-    const normalizedBusinesses = normalizeSimilarityScores(businessesInRange);
+    // Normalize similarity scores using brand scores as reference distribution
+    // This allows businesses to be compared on the same scale as brands
+    const normalizedBusinesses = recommendedBrands.rawBrandScores.length > 0
+      ? normalizeBusinessScoresWithBrands(businessesInRange, recommendedBrands.rawBrandScores)
+      : normalizeSimilarityScores(businessesInRange);
 
     // Separate into aligned (>= 60) and unaligned (< 40)
     const alignedBusinesses = normalizedBusinesses
@@ -778,9 +790,9 @@ export default function HomeScreen() {
       alignedBusinesses,
       unalignedBusinesses,
     };
-  }, [mainView, userLocation, userBusinesses, localDistance, profile.causes, localSortDirection]);
+  }, [mainView, userLocation, userBusinesses, localDistance, profile.causes, localSortDirection, recommendedBrands.rawBrandScores]);
 
-  // Normalize all business scores for library display (matching business details page approach)
+  // Normalize all business scores for library display using brand scores as reference
   const businessScoresMap = useMemo(() => {
     if (!profile.causes || userBusinesses.length === 0) {
       return new Map<string, number>();
@@ -792,8 +804,11 @@ export default function HomeScreen() {
       alignmentScore: calculateSimilarityScore(profile.causes || [], b.causes || [])
     }));
 
-    // Normalize similarity scores to 1-99 range with median at 50 (matching business details page)
-    const normalizedBusinesses = normalizeSimilarityScores(businessesWithScores);
+    // Normalize similarity scores using brand scores as reference distribution
+    // This allows businesses to be compared on the same scale as brands
+    const normalizedBusinesses = recommendedBrands.rawBrandScores.length > 0
+      ? normalizeBusinessScoresWithBrands(businessesWithScores, recommendedBrands.rawBrandScores)
+      : normalizeSimilarityScores(businessesWithScores);
 
     // Create map of business ID to normalized score for quick lookup
     const scoresMap = new Map<string, number>();
@@ -802,7 +817,7 @@ export default function HomeScreen() {
     });
 
     return scoresMap;
-  }, [userBusinesses, profile.causes]);
+  }, [userBusinesses, profile.causes, recommendedBrands.rawBrandScores]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
@@ -4269,6 +4284,9 @@ export default function HomeScreen() {
           setAddItemType(null);
           setAddItemSearchQuery('');
           setLinkUrl('');
+          setShowAddItemRequest(false);
+          setAddItemRequestInput('');
+          setShowAddItemRequestSuccess(false);
           setLinkTitle('');
           setTextContent('');
         }}
@@ -4280,6 +4298,9 @@ export default function HomeScreen() {
               setAddItemType(null);
               setAddItemSearchQuery('');
               setLinkUrl('');
+              setShowAddItemRequest(false);
+              setAddItemRequestInput('');
+              setShowAddItemRequestSuccess(false);
               setLinkTitle('');
               setTextContent('');
             }}
@@ -4287,7 +4308,7 @@ export default function HomeScreen() {
             <View style={StyleSheet.absoluteFill} />
           </TouchableWithoutFeedback>
           <Pressable
-            style={[styles.createListModalContainer, { backgroundColor: colors.background }]}
+            style={[styles.createListModalContainer, styles.addItemModalFixed, { backgroundColor: colors.background }]}
             onPress={() => {}}
           >
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
@@ -4301,8 +4322,10 @@ export default function HomeScreen() {
                     setAddItemSearchQuery('');
                     setLinkUrl('');
                     setLinkTitle('');
-                    setTextContent('');
-                  
+                    setShowAddItemRequest(false);
+                    setAddItemRequestInput('');
+                    setShowAddItemRequestSuccess(false);
+
                     setShowAddItemModal(false);
                   }
                 }}
@@ -4311,7 +4334,21 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalContent}>
+            {/* Fixed search input for brand/business/value */}
+            {(addItemType === 'brand' || addItemType === 'business' || addItemType === 'value') && (
+              <View style={styles.fixedSearchInputContainer}>
+                <TextInput
+                  style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                  placeholder={`Search ${addItemType}s...`}
+                  placeholderTextColor={colors.textSecondary}
+                  value={addItemSearchQuery}
+                  onChangeText={setAddItemSearchQuery}
+                  autoFocus
+                />
+              </View>
+            )}
+
+            <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalContentInner}>
               {!addItemType ? (
                 // Show 5 type selection buttons
                 <>
@@ -4361,94 +4398,184 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                 </>
               ) : addItemType === 'brand' ? (
-                // Brand search interface
-                <>
-                  <TextInput
-                    style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
-                    placeholder="Search brands..."
-                    placeholderTextColor={colors.textSecondary}
-                    value={addItemSearchQuery}
-                    onChangeText={setAddItemSearchQuery}
-                    autoFocus
-                  />
-                  <View style={styles.searchResultsContainer}>
-                    {brands?.filter(b => b.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(brand => (
-                      <TouchableOpacity
-                        key={brand.id}
-                        style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                        onPress={() => handleAddItemSubmit({ brandId: brand.id, name: brand.name, website: brand.website, logoUrl: getLogoUrl(brand.website || '') })}
-                        activeOpacity={0.7}
-                      >
-                        <Image
-                          source={{ uri: getLogoUrl(brand.website || '') }}
-                          style={styles.searchResultLogo}
-                          contentFit="cover"
-                        />
-                        <Text style={[styles.searchResultText, { color: colors.text }]}>{brand.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </>
-              ) : addItemType === 'business' ? (
-                // Business search interface
-                <>
-                  <TextInput
-                    style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
-                    placeholder="Search businesses..."
-                    placeholderTextColor={colors.textSecondary}
-                    value={addItemSearchQuery}
-                    onChangeText={setAddItemSearchQuery}
-                    autoFocus
-                  />
-                  <View style={styles.searchResultsContainer}>
-                    {userBusinesses?.filter(b => b.businessInfo?.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(business => (
-                      <TouchableOpacity
-                        key={business.id}
-                        style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                        onPress={() => handleAddItemSubmit({ businessId: business.id, name: business.businessInfo.name, website: business.businessInfo.website, logoUrl: business.businessInfo.logoUrl || (business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : '') })}
-                        activeOpacity={0.7}
-                      >
-                        <Image
-                          source={{ uri: business.businessInfo.logoUrl || (business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : getLogoUrl('')) }}
-                          style={styles.searchResultLogo}
-                          contentFit="cover"
-                        />
-                        <Text style={[styles.searchResultText, { color: colors.text }]}>{business.businessInfo.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </>
-              ) : addItemType === 'value' ? (
-                // Value search interface (with mode selection)
-                <>
-                  <TextInput
-                    style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
-                    placeholder="Search values..."
-                    placeholderTextColor={colors.textSecondary}
-                    value={addItemSearchQuery}
-                    onChangeText={setAddItemSearchQuery}
-                    autoFocus
-                  />
-                  <View style={styles.searchResultsContainer}>
-                    {values?.filter(v => v.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(value => (
-                      <View key={value.id}>
+                // Brand search results
+                <View style={styles.searchResultsContainer}>
+                  {(() => {
+                    const filteredBrands = brands?.filter(b => b.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10) || [];
+                    if (filteredBrands.length > 0) {
+                      return filteredBrands.map(brand => (
                         <TouchableOpacity
+                          key={brand.id}
                           style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                          onPress={() => {
-                            // Show mode selection
-                            setQuickAddItem({ type: 'value', id: value.id, name: value.name });
-                            setShowAddItemModal(false);
-                            setShowValueModeModal(true);
-                          }}
+                          onPress={() => handleAddItemSubmit({ brandId: brand.id, name: brand.name, website: brand.website, logoUrl: getLogoUrl(brand.website || '') })}
                           activeOpacity={0.7}
                         >
-                          <Text style={[styles.searchResultText, { color: colors.text }]}>{value.name}</Text>
-                          <Text style={[styles.searchResultSubtext, { color: colors.textSecondary }]}>Select mode</Text>
+                          <Image
+                            source={{ uri: getLogoUrl(brand.website || '') }}
+                            style={styles.searchResultLogo}
+                            contentFit="cover"
+                          />
+                          <Text style={[styles.searchResultText, { color: colors.text }]}>{brand.name}</Text>
                         </TouchableOpacity>
-                      </View>
-                    ))}
-                  </View>
-                </>
+                      ));
+                    } else if (addItemSearchQuery.trim().length > 0) {
+                      // Show request button when no results
+                      return (
+                        <View style={styles.addItemEmptyState}>
+                          {showAddItemRequestSuccess ? (
+                            <>
+                              <Text style={[styles.addItemEmptyTitle, { color: colors.primary }]}>Request Submitted!</Text>
+                              <Text style={[styles.addItemEmptySubtitle, { color: colors.textSecondary }]}>
+                                Thank you for your suggestion. We'll review it soon.
+                              </Text>
+                            </>
+                          ) : showAddItemRequest ? (
+                            <>
+                              <Text style={[styles.addItemEmptyTitle, { color: colors.text }]}>Request a Brand</Text>
+                              <TextInput
+                                style={[styles.addItemRequestInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                                placeholder="Enter brand name or description..."
+                                placeholderTextColor={colors.textSecondary}
+                                value={addItemRequestInput}
+                                onChangeText={setAddItemRequestInput}
+                                multiline
+                                autoFocus
+                              />
+                              <TouchableOpacity
+                                style={[styles.addItemRequestSubmitButton, { backgroundColor: colors.primary }]}
+                                onPress={async () => {
+                                  if (addItemRequestInput.trim() && user?.uid) {
+                                    await submitBrandRequest(user.uid, addItemRequestInput.trim(), 'brand');
+                                    setShowAddItemRequest(false);
+                                    setAddItemRequestInput('');
+                                    setShowAddItemRequestSuccess(true);
+                                    setTimeout(() => setShowAddItemRequestSuccess(false), 3000);
+                                  }
+                                }}
+                              >
+                                <Text style={styles.addItemRequestSubmitText}>Submit Request</Text>
+                              </TouchableOpacity>
+                            </>
+                          ) : (
+                            <>
+                              <Text style={[styles.addItemEmptyTitle, { color: colors.text }]}>No brands found</Text>
+                              <TouchableOpacity
+                                style={[styles.addItemRequestButton, { backgroundColor: colors.primary }]}
+                                onPress={() => setShowAddItemRequest(true)}
+                              >
+                                <Text style={styles.addItemRequestButtonText}>Request</Text>
+                              </TouchableOpacity>
+                              <Text style={[styles.addItemEmptySubtitle, { color: colors.textSecondary }]}>
+                                Submit a brand that we should add
+                              </Text>
+                            </>
+                          )}
+                        </View>
+                      );
+                    }
+                    return null;
+                  })()}
+                </View>
+              ) : addItemType === 'business' ? (
+                // Business search results
+                <View style={styles.searchResultsContainer}>
+                  {(() => {
+                    const filteredBusinesses = userBusinesses?.filter(b => b.businessInfo?.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10) || [];
+                    if (filteredBusinesses.length > 0) {
+                      return filteredBusinesses.map(business => (
+                        <TouchableOpacity
+                          key={business.id}
+                          style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                          onPress={() => handleAddItemSubmit({ businessId: business.id, name: business.businessInfo.name, website: business.businessInfo.website, logoUrl: business.businessInfo.logoUrl || (business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : '') })}
+                          activeOpacity={0.7}
+                        >
+                          <Image
+                            source={{ uri: business.businessInfo.logoUrl || (business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : getLogoUrl('')) }}
+                            style={styles.searchResultLogo}
+                            contentFit="cover"
+                          />
+                          <Text style={[styles.searchResultText, { color: colors.text }]}>{business.businessInfo.name}</Text>
+                        </TouchableOpacity>
+                      ));
+                    } else if (addItemSearchQuery.trim().length > 0) {
+                      // Show request button when no results
+                      return (
+                        <View style={styles.addItemEmptyState}>
+                          {showAddItemRequestSuccess ? (
+                            <>
+                              <Text style={[styles.addItemEmptyTitle, { color: colors.primary }]}>Request Submitted!</Text>
+                              <Text style={[styles.addItemEmptySubtitle, { color: colors.textSecondary }]}>
+                                Thank you for your suggestion. We'll review it soon.
+                              </Text>
+                            </>
+                          ) : showAddItemRequest ? (
+                            <>
+                              <Text style={[styles.addItemEmptyTitle, { color: colors.text }]}>Request a Business</Text>
+                              <TextInput
+                                style={[styles.addItemRequestInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                                placeholder="Enter business name or description..."
+                                placeholderTextColor={colors.textSecondary}
+                                value={addItemRequestInput}
+                                onChangeText={setAddItemRequestInput}
+                                multiline
+                                autoFocus
+                              />
+                              <TouchableOpacity
+                                style={[styles.addItemRequestSubmitButton, { backgroundColor: colors.primary }]}
+                                onPress={async () => {
+                                  if (addItemRequestInput.trim() && user?.uid) {
+                                    await submitBrandRequest(user.uid, addItemRequestInput.trim(), 'business');
+                                    setShowAddItemRequest(false);
+                                    setAddItemRequestInput('');
+                                    setShowAddItemRequestSuccess(true);
+                                    setTimeout(() => setShowAddItemRequestSuccess(false), 3000);
+                                  }
+                                }}
+                              >
+                                <Text style={styles.addItemRequestSubmitText}>Submit Request</Text>
+                              </TouchableOpacity>
+                            </>
+                          ) : (
+                            <>
+                              <Text style={[styles.addItemEmptyTitle, { color: colors.text }]}>No businesses found</Text>
+                              <TouchableOpacity
+                                style={[styles.addItemRequestButton, { backgroundColor: colors.primary }]}
+                                onPress={() => setShowAddItemRequest(true)}
+                              >
+                                <Text style={styles.addItemRequestButtonText}>Request</Text>
+                              </TouchableOpacity>
+                              <Text style={[styles.addItemEmptySubtitle, { color: colors.textSecondary }]}>
+                                Submit a business that we should add
+                              </Text>
+                            </>
+                          )}
+                        </View>
+                      );
+                    }
+                    return null;
+                  })()}
+                </View>
+              ) : addItemType === 'value' ? (
+                // Value search results (with mode selection)
+                <View style={styles.searchResultsContainer}>
+                  {values?.filter(v => v.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(value => (
+                    <View key={value.id}>
+                      <TouchableOpacity
+                        style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                        onPress={() => {
+                          // Show mode selection
+                          setQuickAddItem({ type: 'value', id: value.id, name: value.name });
+                          setShowAddItemModal(false);
+                          setShowValueModeModal(true);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.searchResultText, { color: colors.text }]}>{value.name}</Text>
+                        <Text style={[styles.searchResultSubtext, { color: colors.textSecondary }]}>Select mode</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
               ) : addItemType === 'link' ? (
                 // Link input interface
                 <>
@@ -5785,6 +5912,18 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignSelf: 'center',
   },
+  addItemModalFixed: {
+    height: 420,
+    maxHeight: 420,
+  },
+  fixedSearchInputContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  modalContentInner: {
+    flexGrow: 1,
+  },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -5798,6 +5937,7 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
   },
   modalContent: {
+    flex: 1,
     padding: 16,
   },
   modalLabel: {
@@ -6421,6 +6561,53 @@ const styles = StyleSheet.create({
   searchResultSubtext: {
     fontSize: 12,
     fontWeight: '400' as const,
+  },
+  // Add item request styles
+  addItemEmptyState: {
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+  },
+  addItemEmptyTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  addItemEmptySubtitle: {
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  addItemRequestButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  addItemRequestButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  addItemRequestInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    minHeight: 60,
+    textAlignVertical: 'top',
+    marginBottom: 12,
+  },
+  addItemRequestSubmitButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  addItemRequestSubmitText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   // Explainer overlay styles
   explainerOverlay: {

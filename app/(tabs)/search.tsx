@@ -37,6 +37,7 @@ import { UserProfile } from '@/types';
 import { copyListToLibrary, getEndorsementList } from '@/services/firebase/listService';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { followEntity, unfollowEntity, isFollowing, getFollowing } from '@/services/firebase/followService';
+import { submitBrandRequest } from '@/services/firebase/brandRequestService';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 
@@ -347,6 +348,11 @@ export default function SearchScreen() {
   const [lookingUp, setLookingUp] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
 
+  // Brand request form state
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [requestBrandName, setRequestBrandName] = useState('');
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
+  const [showRequestSuccess, setShowRequestSuccess] = useState(false);
 
   // Fetch Firebase businesses and public users on mount
   useEffect(() => {
@@ -786,8 +792,36 @@ export default function SearchScreen() {
             isUser: true, // Flag to identify users
           } as Product & { userId: string; isUser: boolean }));
 
-        // Combine product, business, and user results
-        const combinedResults = [...(productResults || []), ...businessResults, ...userResults];
+        // Search Firebase brands (from DataContext)
+        const brandResults = firebaseBrands
+          .filter(brand => {
+            const searchLower = text.toLowerCase();
+            return (
+              brand.name?.toLowerCase().includes(searchLower) ||
+              brand.category?.toLowerCase().includes(searchLower) ||
+              brand.description?.toLowerCase().includes(searchLower)
+            );
+          })
+          .map(brand => ({
+            id: `firebase-brand-${brand.id}`,
+            brandId: brand.id, // Store original brand ID
+            name: brand.name,
+            brand: brand.name,
+            category: brand.category || 'Brand',
+            description: brand.description || '',
+            alignmentScore: 50, // Default score for brands
+            exampleImageUrl: brand.exampleImageUrl || (brand.website ? getLogoUrl(brand.website) : ''),
+            website: brand.website || '',
+            location: brand.location || '',
+            valueAlignments: [],
+            keyReasons: [brand.category ? `Category: ${brand.category}` : 'Brand'],
+            moneyFlow: { company: brand.name, shareholders: [], overallAlignment: 0 },
+            relatedValues: [],
+            isFirebaseBrand: true, // Flag to identify Firebase brands
+          } as Product & { brandId: string; isFirebaseBrand: boolean }));
+
+        // Combine product, business, brand, and user results
+        const combinedResults = [...(productResults || []), ...businessResults, ...brandResults, ...userResults];
         setResults(combinedResults);
       } else {
         setResults([]);
@@ -798,7 +832,49 @@ export default function SearchScreen() {
     }
   };
 
-  const handleProductPress = (product: Product | (Product & { firebaseId: string; isFirebaseBusiness: boolean }) | (Product & { userId: string; isUser: boolean })) => {
+  // Handle brand request submission
+  const handleSubmitBrandRequest = async () => {
+    if (!requestBrandName.trim()) {
+      Alert.alert('Error', 'Please enter a brand or business name');
+      return;
+    }
+
+    if (!clerkUser?.id) {
+      Alert.alert('Error', 'Please sign in to submit a request');
+      return;
+    }
+
+    setIsSubmittingRequest(true);
+    try {
+      const userName = clerkUser?.firstName
+        ? `${clerkUser.firstName} ${clerkUser.lastName || ''}`.trim()
+        : clerkUser?.username || 'Anonymous';
+      const userEmail = clerkUser?.primaryEmailAddress?.emailAddress;
+
+      await submitBrandRequest(
+        requestBrandName.trim(),
+        clerkUser.id,
+        userName,
+        userEmail
+      );
+
+      setShowRequestSuccess(true);
+      setRequestBrandName('');
+      setShowRequestForm(false);
+
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => {
+        setShowRequestSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Error submitting brand request:', error);
+      Alert.alert('Error', 'Failed to submit request. Please try again.');
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+  };
+
+  const handleProductPress = (product: Product | (Product & { firebaseId: string; isFirebaseBusiness: boolean }) | (Product & { userId: string; isUser: boolean }) | (Product & { brandId: string; isFirebaseBrand: boolean })) => {
     if (query.trim().length > 0) {
       addToSearchHistory(query);
     }
@@ -820,15 +896,30 @@ export default function SearchScreen() {
         pathname: '/business/[id]',
         params: { id: fbBusiness.firebaseId },
       });
-    } else {
+      return;
+    }
+
+    // Check if this is a Firebase brand
+    const fbBrand = product as Product & { brandId?: string; isFirebaseBrand?: boolean };
+    if (fbBrand.isFirebaseBrand && fbBrand.brandId) {
       router.push({
         pathname: '/brand/[id]',
         params: {
-          id: product.id,
-          name: product.brand || product.name, // Pass brand name as fallback for brand lookup
+          id: fbBrand.brandId,
+          name: product.brand || product.name,
         },
       });
+      return;
     }
+
+    // Default: route to brand page
+    router.push({
+      pathname: '/brand/[id]',
+      params: {
+        id: product.id,
+        name: product.brand || product.name, // Pass brand name as fallback for brand lookup
+      },
+    });
   };
 
   const handleGridCardPress = (product: Product & { matchingValues?: string[] }) => {
@@ -1417,8 +1508,65 @@ export default function SearchScreen() {
         )
       ) : results.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>No results found</Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>Try searching for a different product or brand</Text>
+          {showRequestSuccess ? (
+            <>
+              <Text style={[styles.emptyTitle, { color: colors.primary }]}>Request Submitted!</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                Thank you for your suggestion. We'll review it soon.
+              </Text>
+            </>
+          ) : showRequestForm ? (
+            <>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>Request a Brand</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                Enter the name of the brand or business you'd like us to add
+              </Text>
+              <TextInput
+                style={[styles.requestInput, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
+                placeholder="Brand or business name"
+                placeholderTextColor={colors.textSecondary}
+                value={requestBrandName}
+                onChangeText={setRequestBrandName}
+                autoFocus
+              />
+              <View style={styles.requestButtonRow}>
+                <TouchableOpacity
+                  style={[styles.requestCancelButton, { borderColor: colors.border }]}
+                  onPress={() => {
+                    setShowRequestForm(false);
+                    setRequestBrandName('');
+                  }}
+                >
+                  <Text style={[styles.requestCancelText, { color: colors.textSecondary }]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.requestSubmitButton, { backgroundColor: colors.primary, opacity: isSubmittingRequest ? 0.6 : 1 }]}
+                  onPress={handleSubmitBrandRequest}
+                  disabled={isSubmittingRequest}
+                >
+                  <Text style={styles.requestSubmitText}>
+                    {isSubmittingRequest ? 'Submitting...' : 'Submit'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>No results found</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                Try searching for a different product or brand
+              </Text>
+              <TouchableOpacity
+                style={[styles.requestButton, { backgroundColor: colors.primary }]}
+                onPress={() => setShowRequestForm(true)}
+              >
+                <Text style={styles.requestButtonText}>Request</Text>
+              </TouchableOpacity>
+              <Text style={[styles.requestSubtext, { color: colors.textSecondary }]}>
+                Submit a brand or business that we should add
+              </Text>
+            </>
+          )}
         </View>
       ) : (
         <FlatList
@@ -2050,9 +2198,9 @@ const styles = StyleSheet.create({
   emptyState: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: 32,
-    paddingTop: 60,
+    paddingTop: 24,
   },
   emptyIconContainer: {
     width: 96,
@@ -2072,6 +2220,59 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  requestButton: {
+    marginTop: 24,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  requestButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  requestSubtext: {
+    marginTop: 8,
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  requestInput: {
+    width: '100%',
+    marginTop: 16,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+  },
+  requestButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+    width: '100%',
+  },
+  requestCancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  requestCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  requestSubmitButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  requestSubmitText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   listContent: {
     paddingHorizontal: Platform.OS === 'web' ? 4 : 8,

@@ -547,15 +547,16 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 0,
   },
   logo: {
-    width: 220,
-    height: 220,
+    width: 260,
+    height: 260,
     tintColor: undefined,
   },
   taglineContainer: {
     alignItems: 'center',
+    marginTop: -60,
     marginBottom: 32,
     paddingHorizontal: 8,
   },

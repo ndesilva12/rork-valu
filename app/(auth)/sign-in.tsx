@@ -342,15 +342,16 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 0,
   },
   logo: {
-    width: 220,
-    height: 220,
+    width: 260,
+    height: 260,
     tintColor: undefined,
   },
   taglineContainer: {
     alignItems: 'center',
+    marginTop: -60,
     marginBottom: 32,
     paddingHorizontal: 8,
   },
@@ -401,6 +402,7 @@ const styles = StyleSheet.create({
   linkContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'baseline',
     marginTop: 16,
   },
   linkText: {
@@ -409,8 +411,8 @@ const styles = StyleSheet.create({
   },
   link: {
     color: darkColors.primary,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '700',
   },
   errorText: {
     color: '#EF4444',

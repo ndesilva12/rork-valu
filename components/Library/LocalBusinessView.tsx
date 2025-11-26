@@ -21,7 +21,8 @@ import { MapPin, ChevronDown, ChevronUp, MoreVertical, X, UserMinus, UserPlus, H
 import { lightColors, darkColors } from '@/constants/colors';
 import { BusinessUser, isBusinessWithinRange } from '@/services/firebase/businessService';
 import { Cause } from '@/types';
-import { calculateSimilarityScore } from '@/lib/scoring';
+import { calculateSimilarityScore, calculateBrandScore, normalizeBusinessScoresWithBrands } from '@/lib/scoring';
+import { useData } from '@/contexts/DataContext';
 import { formatDistance } from '@/lib/distance';
 import { getLogoUrl } from '@/lib/logo';
 import BusinessMapView from '@/components/BusinessMapView';
@@ -132,6 +133,7 @@ export default function LocalBusinessView({
   onRequestLocation,
 }: LocalBusinessViewProps) {
   const colors = (isDarkMode ? darkColors : lightColors) || lightColors;
+  const { brands, valuesMatrix } = useData();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
@@ -369,7 +371,16 @@ export default function LocalBusinessView({
     });
 
     const businessesInRange = businessesWithScores.filter((b) => b.isWithinRange);
-    const normalizedBusinesses = normalizeSimilarityScores(businessesInRange);
+
+    // Calculate raw brand scores for reference distribution
+    const rawBrandScores = brands && valuesMatrix && userCauses.length > 0
+      ? brands.map(brand => calculateBrandScore(brand.name, userCauses, valuesMatrix))
+      : [];
+
+    // Normalize using brand scores as reference distribution
+    const normalizedBusinesses = rawBrandScores.length > 0
+      ? normalizeBusinessScoresWithBrands(businessesInRange, rawBrandScores)
+      : normalizeSimilarityScores(businessesInRange);
 
     // Apply search filter
     let filteredBusinesses = normalizedBusinesses;
@@ -395,7 +406,7 @@ export default function LocalBusinessView({
       alignedBusinesses: filteredBusinesses.filter((b) => b.alignmentScore >= 60),
       unalignedBusinesses: filteredBusinesses.filter((b) => b.alignmentScore < 40),
     };
-  }, [userLocation, userBusinesses, localDistance, userCauses, localSortDirection, searchQuery]);
+  }, [userLocation, userBusinesses, localDistance, userCauses, localSortDirection, searchQuery, brands, valuesMatrix]);
 
   const renderLocalBusinessCard = (
     businessData: BusinessWithScore,
