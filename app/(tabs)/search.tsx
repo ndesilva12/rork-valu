@@ -786,8 +786,36 @@ export default function SearchScreen() {
             isUser: true, // Flag to identify users
           } as Product & { userId: string; isUser: boolean }));
 
-        // Combine product, business, and user results
-        const combinedResults = [...(productResults || []), ...businessResults, ...userResults];
+        // Search Firebase brands (from DataContext)
+        const brandResults = firebaseBrands
+          .filter(brand => {
+            const searchLower = text.toLowerCase();
+            return (
+              brand.name?.toLowerCase().includes(searchLower) ||
+              brand.category?.toLowerCase().includes(searchLower) ||
+              brand.description?.toLowerCase().includes(searchLower)
+            );
+          })
+          .map(brand => ({
+            id: `firebase-brand-${brand.id}`,
+            brandId: brand.id, // Store original brand ID
+            name: brand.name,
+            brand: brand.name,
+            category: brand.category || 'Brand',
+            description: brand.description || '',
+            alignmentScore: 50, // Default score for brands
+            exampleImageUrl: brand.exampleImageUrl || (brand.website ? getLogoUrl(brand.website) : ''),
+            website: brand.website || '',
+            location: brand.location || '',
+            valueAlignments: [],
+            keyReasons: [brand.category ? `Category: ${brand.category}` : 'Brand'],
+            moneyFlow: { company: brand.name, shareholders: [], overallAlignment: 0 },
+            relatedValues: [],
+            isFirebaseBrand: true, // Flag to identify Firebase brands
+          } as Product & { brandId: string; isFirebaseBrand: boolean }));
+
+        // Combine product, business, brand, and user results
+        const combinedResults = [...(productResults || []), ...businessResults, ...brandResults, ...userResults];
         setResults(combinedResults);
       } else {
         setResults([]);
@@ -798,7 +826,7 @@ export default function SearchScreen() {
     }
   };
 
-  const handleProductPress = (product: Product | (Product & { firebaseId: string; isFirebaseBusiness: boolean }) | (Product & { userId: string; isUser: boolean })) => {
+  const handleProductPress = (product: Product | (Product & { firebaseId: string; isFirebaseBusiness: boolean }) | (Product & { userId: string; isUser: boolean }) | (Product & { brandId: string; isFirebaseBrand: boolean })) => {
     if (query.trim().length > 0) {
       addToSearchHistory(query);
     }
@@ -820,15 +848,30 @@ export default function SearchScreen() {
         pathname: '/business/[id]',
         params: { id: fbBusiness.firebaseId },
       });
-    } else {
+      return;
+    }
+
+    // Check if this is a Firebase brand
+    const fbBrand = product as Product & { brandId?: string; isFirebaseBrand?: boolean };
+    if (fbBrand.isFirebaseBrand && fbBrand.brandId) {
       router.push({
         pathname: '/brand/[id]',
         params: {
-          id: product.id,
-          name: product.brand || product.name, // Pass brand name as fallback for brand lookup
+          id: fbBrand.brandId,
+          name: product.brand || product.name,
         },
       });
+      return;
     }
+
+    // Default: route to brand page
+    router.push({
+      pathname: '/brand/[id]',
+      params: {
+        id: product.id,
+        name: product.brand || product.name, // Pass brand name as fallback for brand lookup
+      },
+    });
   };
 
   const handleGridCardPress = (product: Product & { matchingValues?: string[] }) => {
