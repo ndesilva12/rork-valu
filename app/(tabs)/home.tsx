@@ -657,7 +657,7 @@ export default function HomeScreen() {
     checkFollowStatus();
   }, [cardMenuData, clerkUser?.id]);
 
-  const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands, brandDistances } = useMemo(() => {
+  const { topSupport, topAvoid, allSupport, allSupportFull, allAvoidFull, scoredBrands, brandDistances, rawBrandScores } = useMemo(() => {
     // Only use brands from Firebase (NOT businesses)
     // Businesses are handled separately in the Local view
     const currentBrands = brands || [];
@@ -763,8 +763,8 @@ export default function HomeScreen() {
 
     // Normalize similarity scores using brand scores as reference distribution
     // This allows businesses to be compared on the same scale as brands
-    const normalizedBusinesses = recommendedBrands.rawBrandScores.length > 0
-      ? normalizeBusinessScoresWithBrands(businessesInRange, recommendedBrands.rawBrandScores)
+    const normalizedBusinesses = rawBrandScores.length > 0
+      ? normalizeBusinessScoresWithBrands(businessesInRange, rawBrandScores)
       : normalizeSimilarityScores(businessesInRange);
 
     // Separate into aligned (>= 60) and unaligned (< 40)
@@ -790,7 +790,7 @@ export default function HomeScreen() {
       alignedBusinesses,
       unalignedBusinesses,
     };
-  }, [mainView, userLocation, userBusinesses, localDistance, profile.causes, localSortDirection, recommendedBrands.rawBrandScores]);
+  }, [mainView, userLocation, userBusinesses, localDistance, profile.causes, localSortDirection, rawBrandScores]);
 
   // Normalize all business scores for library display using brand scores as reference
   const businessScoresMap = useMemo(() => {
@@ -806,8 +806,8 @@ export default function HomeScreen() {
 
     // Normalize similarity scores using brand scores as reference distribution
     // This allows businesses to be compared on the same scale as brands
-    const normalizedBusinesses = recommendedBrands.rawBrandScores.length > 0
-      ? normalizeBusinessScoresWithBrands(businessesWithScores, recommendedBrands.rawBrandScores)
+    const normalizedBusinesses = rawBrandScores.length > 0
+      ? normalizeBusinessScoresWithBrands(businessesWithScores, rawBrandScores)
       : normalizeSimilarityScores(businessesWithScores);
 
     // Create map of business ID to normalized score for quick lookup
@@ -817,7 +817,7 @@ export default function HomeScreen() {
     });
 
     return scoresMap;
-  }, [userBusinesses, profile.causes, recommendedBrands.rawBrandScores]);
+  }, [userBusinesses, profile.causes, rawBrandScores]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
