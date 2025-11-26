@@ -404,7 +404,18 @@ export default function BrandDetailScreen() {
   const handleShopPress = async () => {
     if (!brand) return;
     try {
-      const websiteUrl = brand.website || `https://${brand?.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '')}.com`;
+      let websiteUrl = brand.website;
+
+      // If no website or website is an internal app path, generate from brand name
+      if (!websiteUrl || websiteUrl.startsWith('/') || websiteUrl.includes('iendorse')) {
+        websiteUrl = `https://${brand.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '')}.com`;
+      } else {
+        // Ensure URL has proper http/https protocol
+        if (!websiteUrl.startsWith('http://') && !websiteUrl.startsWith('https://')) {
+          websiteUrl = `https://${websiteUrl}`;
+        }
+      }
+
       const canOpen = await Linking.canOpenURL(websiteUrl);
       if (canOpen) {
         await Linking.openURL(websiteUrl);

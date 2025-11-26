@@ -212,8 +212,11 @@ export default function FollowingFollowersList({
 
       const enrichedFollows = await Promise.all(enrichedPromises);
 
+      // Filter out non-existent entities (those with default 'Unknown' name)
+      const validFollows = enrichedFollows.filter(follow => follow.name !== 'Unknown');
+
       // Sort by score (alignment or similarity) - highest first, then by name
-      enrichedFollows.sort((a, b) => {
+      validFollows.sort((a, b) => {
         const scoreA = a.alignmentScore ?? a.similarityScore;
         const scoreB = b.alignmentScore ?? b.similarityScore;
 
@@ -225,7 +228,7 @@ export default function FollowingFollowersList({
         return a.name.localeCompare(b.name);
       });
 
-      setFollows(enrichedFollows);
+      setFollows(validFollows);
     } catch (error) {
       console.error('[FollowingFollowersList] Error loading follows:', error);
     } finally {

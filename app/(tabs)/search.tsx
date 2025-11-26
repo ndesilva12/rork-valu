@@ -640,14 +640,12 @@ export default function SearchScreen() {
   }, [commentText, selectedProductId, clerkUser, getProductInteraction]);
 
   const handleShare = useCallback(async (product: Product) => {
-    // All brands now default to score of 50
-    const normalizedScore = 50;
-    const url = `https://yourapp.com/product/${product.id}`;
-    const message = `Check out ${product.name} by ${product.brand}! Alignment score: ${normalizedScore}`;
+    const shareUrl = `${Platform.OS === 'web' ? window.location.origin : 'https://iendorse.app'}/brand/${product.id}`;
+    const message = `Check out ${product.name} on Endorse!`;
 
     try {
       if (Platform.OS === 'web') {
-        const textToCopy = `${message}\n${url}`;
+        const textToCopy = `${message}\n${shareUrl}`;
 
         const textArea = document.createElement('textarea');
         textArea.value = textToCopy;
@@ -669,7 +667,7 @@ export default function SearchScreen() {
         }
       } else {
         await RNShare.share({
-          message: `${message}\n${url}`,
+          message: `${message}\n${shareUrl}`,
           title: product.name,
         });
       }
@@ -680,7 +678,18 @@ export default function SearchScreen() {
 
   const handleVisitBrand = useCallback(async (product: Product) => {
     try {
-      const websiteUrl = product.website || `https://${product.brand.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '')}.com`;
+      let websiteUrl = product.website;
+
+      // If no website or website is an internal app path, generate from brand name
+      if (!websiteUrl || websiteUrl.startsWith('/') || websiteUrl.includes('iendorse')) {
+        websiteUrl = `https://${product.brand.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '')}.com`;
+      } else {
+        // Ensure URL has proper http/https protocol
+        if (!websiteUrl.startsWith('http://') && !websiteUrl.startsWith('https://')) {
+          websiteUrl = `https://${websiteUrl}`;
+        }
+      }
+
       const canOpen = await Linking.canOpenURL(websiteUrl);
       if (canOpen) {
         await Linking.openURL(websiteUrl);
