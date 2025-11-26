@@ -191,7 +191,7 @@ export default function SignInScreen() {
         >
           <View style={styles.logoContainer}>
             <Image
-              source={require('@/assets/images/endorsements.png')}
+              source={require('@/assets/images/endorsements12.png')}
               style={styles.logo}
               resizeMode="contain"
             />
