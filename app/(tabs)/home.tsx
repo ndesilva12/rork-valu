@@ -4348,7 +4348,7 @@ export default function HomeScreen() {
               </View>
             )}
 
-            <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalContentInner}>
+            <ScrollView style={styles.addItemScrollContainer} contentContainerStyle={styles.modalContentInner} keyboardShouldPersistTaps="handled">
               {!addItemType ? (
                 // Show 5 type selection buttons
                 <>
@@ -5915,14 +5915,26 @@ const styles = StyleSheet.create({
   addItemModalFixed: {
     height: 420,
     maxHeight: 420,
+    minHeight: 420,
+    flexDirection: 'column' as const,
   },
   fixedSearchInputContainer: {
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
+    flexShrink: 0,
+    flexGrow: 0,
+  },
+  addItemScrollContainer: {
+    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
+    paddingHorizontal: 16,
   },
   modalContentInner: {
     flexGrow: 1,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   modalHeader: {
     flexDirection: 'row',
