@@ -402,6 +402,7 @@ const styles = StyleSheet.create({
   linkContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'baseline',
     marginTop: 16,
   },
   linkText: {
@@ -410,8 +411,8 @@ const styles = StyleSheet.create({
   },
   link: {
     color: darkColors.primary,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '700',
   },
   errorText: {
     color: '#EF4444',
