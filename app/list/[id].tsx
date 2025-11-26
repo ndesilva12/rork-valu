@@ -306,7 +306,7 @@ export default function SharedListScreen() {
           activeOpacity={0.8}
         >
           <Image
-            source={require('@/assets/images/endorse3.png')}
+            source={require('@/assets/images/endorsement.png')}
             style={styles.brandingLogo}
             contentFit="contain"
           />
