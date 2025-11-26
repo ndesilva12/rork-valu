@@ -4,7 +4,7 @@ module.exports = {
     slug: "upright",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/endorsementb.png",
+    icon: "./assets/images/endorsement.png",
     scheme: "myapp",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
@@ -12,7 +12,7 @@ module.exports = {
       googlePlacesApiKey: process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || '',
     },
     splash: {
-      image: "./assets/images/endorsementb.png",
+      image: "./assets/images/endorsement.png",
       resizeMode: "contain",
       backgroundColor: "#ffffff"
     },
@@ -36,7 +36,7 @@ module.exports = {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/images/endorsementb.png",
+        foregroundImage: "./assets/images/endorsement.png",
         backgroundColor: "#ffffff"
       },
       package: "app.rork.playbook",
@@ -53,7 +53,7 @@ module.exports = {
     web: {
       bundler: "metro",
       output: "static",
-      favicon: "./assets/images/endorsementb.png",
+      favicon: "./assets/images/endorsement.png",
       name: "Endorse",
       shortName: "Endorse",
       description: "Endorse - Vote With Your Money",
