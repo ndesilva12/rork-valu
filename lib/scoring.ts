@@ -310,3 +310,72 @@ export function getSimilarityLabel(score: number): string {
   if (score >= 20) return 'Slightly Similar';
   return 'Different';
 }
+
+/**
+ * Normalize business similarity scores using brand scores as the reference distribution
+ * This places businesses within the same 1-99 scale as brands, providing meaningful
+ * comparison between brand alignment scores and business similarity scores.
+ *
+ * @param businessesWithScores - Array of businesses with similarity scores
+ * @param brandScores - Array of all brand raw scores (before normalization)
+ * @returns Array with normalized scores (1-99, based on brand distribution)
+ */
+export function normalizeBusinessScoresWithBrands<T extends { alignmentScore: number }>(
+  businessesWithScores: T[],
+  brandScores: number[]
+): T[] {
+  if (businessesWithScores.length === 0) return businessesWithScores;
+
+  // Combine all scores for distribution calculation
+  const businessRawScores = businessesWithScores.map(b => b.alignmentScore);
+  const allScores = [...brandScores, ...businessRawScores].sort((a, b) => a - b);
+
+  if (allScores.length === 0) {
+    return businessesWithScores.map(b => ({ ...b, alignmentScore: 50 }));
+  }
+
+  if (allScores.length === 1) {
+    return businessesWithScores.map(b => ({ ...b, alignmentScore: 50 }));
+  }
+
+  const minScore = allScores[0];
+  const maxScore = allScores[allScores.length - 1];
+
+  // If all scores are the same, return 50 for all
+  if (minScore === maxScore) {
+    return businessesWithScores.map(b => ({ ...b, alignmentScore: 50 }));
+  }
+
+  // Find the median of the combined distribution
+  const medianIndex = Math.floor(allScores.length / 2);
+  const medianScore = allScores.length % 2 === 0
+    ? (allScores[medianIndex - 1] + allScores[medianIndex]) / 2
+    : allScores[medianIndex];
+
+  // Normalize each business score using the combined distribution
+  return businessesWithScores.map(business => {
+    const score = business.alignmentScore;
+    let normalized: number;
+
+    if (score <= medianScore) {
+      // Below median: map to 1-50 range
+      if (medianScore === minScore) {
+        normalized = 50;
+      } else {
+        normalized = 1 + ((score - minScore) / (medianScore - minScore)) * 49;
+      }
+    } else {
+      // Above median: map to 50-99 range
+      if (maxScore === medianScore) {
+        normalized = 50;
+      } else {
+        normalized = 50 + ((score - medianScore) / (maxScore - medianScore)) * 49;
+      }
+    }
+
+    return {
+      ...business,
+      alignmentScore: Math.round(normalized)
+    };
+  });
+}

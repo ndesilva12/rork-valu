@@ -93,7 +93,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AVAILABLE_VALUES } from '@/mocks/causes';
 import { getLogoUrl } from '@/lib/logo';
 import { calculateDistance, formatDistance } from '@/lib/distance';
-import { calculateBrandScore, calculateSimilarityScore, normalizeBrandScores, normalizeSimilarityScores } from '@/lib/scoring';
+import { calculateBrandScore, calculateSimilarityScore, normalizeBrandScores, normalizeSimilarityScores, normalizeBusinessScoresWithBrands } from '@/lib/scoring';
 import { getAllUserBusinesses, isBusinessWithinRange, BusinessUser } from '@/services/firebase/businessService';
 import { followEntity, unfollowEntity, isFollowing, getFollowingCount, getFollowersCount } from '@/services/firebase/followService';
 import BusinessMapView from '@/components/BusinessMapView';
@@ -671,6 +671,7 @@ export default function HomeScreen() {
         allAvoidFull: [],
         scoredBrands: new Map(),
         brandDistances: new Map(),
+        rawBrandScores: [],
       };
     }
 
@@ -679,6 +680,9 @@ export default function HomeScreen() {
       const score = calculateBrandScore(brand.name, profile.causes || [], valuesMatrix);
       return { brand, score };
     });
+
+    // Store raw scores for business score normalization
+    const rawBrandScores = brandsWithScores.map(b => b.score);
 
     // Normalize scores to 1-99 range for better visual separation
     const normalizedBrands = normalizeBrandScores(brandsWithScores);
@@ -713,6 +717,7 @@ export default function HomeScreen() {
       allAvoidFull: unalignedBrands,
       scoredBrands: scoredMap,
       brandDistances: new Map(),
+      rawBrandScores,
     };
   }, [brands, profile.causes, valuesMatrix]);
 
@@ -756,8 +761,11 @@ export default function HomeScreen() {
     // Filter by distance
     const businessesInRange = businessesWithScores.filter((b) => b.isWithinRange);
 
-    // Normalize similarity scores to 1-99 range with median at 50
-    const normalizedBusinesses = normalizeSimilarityScores(businessesInRange);
+    // Normalize similarity scores using brand scores as reference distribution
+    // This allows businesses to be compared on the same scale as brands
+    const normalizedBusinesses = recommendedBrands.rawBrandScores.length > 0
+      ? normalizeBusinessScoresWithBrands(businessesInRange, recommendedBrands.rawBrandScores)
+      : normalizeSimilarityScores(businessesInRange);
 
     // Separate into aligned (>= 60) and unaligned (< 40)
     const alignedBusinesses = normalizedBusinesses
@@ -782,9 +790,9 @@ export default function HomeScreen() {
       alignedBusinesses,
       unalignedBusinesses,
     };
-  }, [mainView, userLocation, userBusinesses, localDistance, profile.causes, localSortDirection]);
+  }, [mainView, userLocation, userBusinesses, localDistance, profile.causes, localSortDirection, recommendedBrands.rawBrandScores]);
 
-  // Normalize all business scores for library display (matching business details page approach)
+  // Normalize all business scores for library display using brand scores as reference
   const businessScoresMap = useMemo(() => {
     if (!profile.causes || userBusinesses.length === 0) {
       return new Map<string, number>();
@@ -796,8 +804,11 @@ export default function HomeScreen() {
       alignmentScore: calculateSimilarityScore(profile.causes || [], b.causes || [])
     }));
 
-    // Normalize similarity scores to 1-99 range with median at 50 (matching business details page)
-    const normalizedBusinesses = normalizeSimilarityScores(businessesWithScores);
+    // Normalize similarity scores using brand scores as reference distribution
+    // This allows businesses to be compared on the same scale as brands
+    const normalizedBusinesses = recommendedBrands.rawBrandScores.length > 0
+      ? normalizeBusinessScoresWithBrands(businessesWithScores, recommendedBrands.rawBrandScores)
+      : normalizeSimilarityScores(businessesWithScores);
 
     // Create map of business ID to normalized score for quick lookup
     const scoresMap = new Map<string, number>();
@@ -806,7 +817,7 @@ export default function HomeScreen() {
     });
 
     return scoresMap;
-  }, [userBusinesses, profile.causes]);
+  }, [userBusinesses, profile.causes, recommendedBrands.rawBrandScores]);
 
   const categorizedBrands = useMemo(() => {
     const categorized = new Map<string, Product[]>();
