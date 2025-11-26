@@ -216,7 +216,7 @@ export default function OnboardingScreen() {
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <Image
-              source={require('@/assets/images/endo11.png')}
+              source={require('@/assets/images/endorsementa.png')}
               style={styles.logo}
               resizeMode="contain"
             />

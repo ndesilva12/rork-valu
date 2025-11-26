@@ -191,16 +191,27 @@ export default function SignInScreen() {
         >
           <View style={styles.logoContainer}>
             <Image
-              source={require('@/assets/images/endo11.png')}
+              source={require('@/assets/images/endorsementa.png')}
               style={styles.logo}
               resizeMode="contain"
             />
-            <Text style={[styles.tagline, { color: colors.primary }]}>Vote With Your Money</Text>
           </View>
           {!showForgotPassword ? (
             <>
-              <Text style={[styles.title, { color: colors.text }]}>Welcome back</Text>
-              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Sign in to your account</Text>
+              <View style={styles.taglineContainer}>
+                <Text style={styles.taglineLine}>
+                  <Text style={[styles.taglineFirstWord, { color: colors.text }]}>build </Text>
+                  <Text style={[styles.taglineRest, { color: colors.text }]}>your endorsement list.</Text>
+                </Text>
+                <Text style={styles.taglineLine}>
+                  <Text style={[styles.taglineFirstWord, { color: colors.text }]}>browse </Text>
+                  <Text style={[styles.taglineRest, { color: colors.text }]}>friends for gift ideas.</Text>
+                </Text>
+                <Text style={styles.taglineLine}>
+                  <Text style={[styles.taglineFirstWord, { color: colors.primary }]}>earn </Text>
+                  <Text style={[styles.taglineRest, { color: colors.text }]}>discounts for your endorsements.</Text>
+                </Text>
+              </View>
 
               {error ? <Text style={styles.errorText}>{error}</Text> : null}
               <View style={styles.inputContainer}>
@@ -331,31 +342,31 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   logo: {
     width: 220,
     height: 220,
     tintColor: undefined,
   },
-  tagline: {
-    fontSize: 18,
-    fontFamily: 'Poppins_600SemiBold',
-    fontWeight: '600',
-    letterSpacing: 0.5,
-    marginTop: -75,
-    marginBottom: 24,
+  taglineContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+    paddingHorizontal: 8,
   },
-  title: {
+  taglineLine: {
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  taglineFirstWord: {
     fontSize: 28,
     fontWeight: '700',
-    color: darkColors.text,
-    marginBottom: 6,
+    letterSpacing: -0.5,
   },
-  subtitle: {
-    fontSize: 15,
-    color: darkColors.textSecondary,
-    marginBottom: 24,
+  taglineRest: {
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: 0.2,
   },
   inputContainer: {
     marginBottom: 16,
