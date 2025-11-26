@@ -64,6 +64,7 @@ export default function ValueDetailScreen() {
   const [newListDescription, setNewListDescription] = useState('');
   const [quickAddBrandId, setQuickAddBrandId] = useState<string | null>(null);
   const [quickAddBrandName, setQuickAddBrandName] = useState<string | null>(null);
+  const [selectedMode, setSelectedMode] = useState<ValueListMode | null>(null);
 
   const panResponder = useRef(
     PanResponder.create({

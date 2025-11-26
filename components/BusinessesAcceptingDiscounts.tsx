@@ -228,8 +228,9 @@ export default function BusinessesAcceptingDiscounts() {
   const renderBusinessCard = ({ item }: { item: BusinessUser }) => {
     const { businessInfo, distance } = item;
 
-    // Get discount percentage
+    // Get discount percentages
     const discountPercent = businessInfo.customerDiscountPercent || 0;
+    const requirementDiscountPercent = businessInfo.valueCodeDiscount || 0;
     const hasCustomDiscount = businessInfo.customDiscount && businessInfo.customDiscount.trim();
     const requirements = getRequirementsSummary(businessInfo);
 
@@ -262,6 +263,9 @@ export default function BusinessesAcceptingDiscounts() {
             <Text style={[styles.discountPercentText, { color: colors.primary }]}>
               {discountPercent.toFixed(0)}% off
             </Text>
+            <Text style={[styles.allUsersLabel, { color: colors.textSecondary }]}>
+              All Users
+            </Text>
             {hasCustomDiscount && (
               <Text style={[styles.customDiscountBadge, { color: colors.primary }]}>
                 + Custom
@@ -276,6 +280,11 @@ export default function BusinessesAcceptingDiscounts() {
             <Text style={[styles.requirementsText, { color: colors.textSecondary }]}>
               Requires: {requirements.join(' • ')}
             </Text>
+            {requirementDiscountPercent > 0 && (
+              <Text style={[styles.requirementDiscountText, { color: colors.primary }]}>
+                {requirementDiscountPercent.toFixed(0)}% off
+              </Text>
+            )}
           </View>
         )}
       </TouchableOpacity>
@@ -562,11 +571,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700' as const,
   },
+  allUsersLabel: {
+    fontSize: 10,
+    fontWeight: '500' as const,
+  },
   customDiscountBadge: {
     fontSize: 11,
     fontWeight: '600' as const,
   },
   requirementsRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between',
+    alignItems: 'center',
     borderTopWidth: 1,
     paddingTop: 10,
     marginTop: 10,
@@ -574,6 +590,12 @@ const styles = StyleSheet.create({
   requirementsText: {
     fontSize: 12,
     fontWeight: '500' as const,
+    flex: 1,
+  },
+  requirementDiscountText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    marginLeft: 12,
   },
   emptyContainer: {
     padding: 40,
