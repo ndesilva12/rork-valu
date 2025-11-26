@@ -132,9 +132,6 @@ export default function UsersManagement() {
   // Form state - Other fields
   const [formCauses, setFormCauses] = useState('');
   const [formSearchHistory, setFormSearchHistory] = useState('');
-  const [formPromoCode, setFormPromoCode] = useState('');
-  const [formDonationAmount, setFormDonationAmount] = useState('');
-  const [formSelectedCharities, setFormSelectedCharities] = useState('');
   const [formConsentGivenAt, setFormConsentGivenAt] = useState('');
   const [formConsentVersion, setFormConsentVersion] = useState('');
 
@@ -251,17 +248,6 @@ export default function UsersManagement() {
 
     // Search history (one per line)
     setFormSearchHistory(user.searchHistory?.join('\n') || '');
-
-    // Promo code
-    setFormPromoCode(user.promoCode || '');
-
-    // Donation amount
-    setFormDonationAmount(user.donationAmount?.toString() || '');
-
-    // Selected charities (formatted as id|name|description|category)
-    setFormSelectedCharities(
-      user.selectedCharities?.map((c) => `${c.id}|${c.name}|${c.description}|${c.category}`).join('\n') || ''
-    );
 
     // Consent
     setFormConsentGivenAt(user.consentGivenAt || '');
@@ -816,23 +802,6 @@ export default function UsersManagement() {
       .filter((item) => item.id && item.name);
   };
 
-  const parseCharities = (text: string): Charity[] => {
-    return text
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line)
-      .map((line) => {
-        const [id, name, description, category] = line.split('|').map((s) => s.trim());
-        return {
-          id: id || '',
-          name: name || '',
-          description: description || '',
-          category: category || '',
-        };
-      })
-      .filter((item) => item.id && item.name);
-  };
-
   const handleSave = async () => {
     if (!editingUser) {
       console.log('[Admin Users] No editing user found');
@@ -879,9 +848,6 @@ export default function UsersManagement() {
       // Parse causes - only include valid ones
       const causes = parseCauses(formCauses);
 
-      // Parse charities - only include valid ones
-      const charities = parseCharities(formSelectedCharities);
-
       // Build update object - only include fields that have values
       const updatedData: Record<string, any> = {};
 
@@ -903,21 +869,6 @@ export default function UsersManagement() {
       // Only include search history if there are items
       if (searchHistory.length > 0) {
         updatedData.searchHistory = searchHistory;
-      }
-
-      // Only include promo code if not empty
-      if (formPromoCode?.trim()) {
-        updatedData.promoCode = formPromoCode.trim();
-      }
-
-      // Only include donation amount if valid number
-      if (formDonationAmount && !isNaN(parseFloat(formDonationAmount))) {
-        updatedData.donationAmount = parseFloat(formDonationAmount);
-      }
-
-      // Only include charities if there are valid ones
-      if (charities.length > 0) {
-        updatedData.selectedCharities = charities;
       }
 
       // Only include consent fields if not empty
@@ -1299,9 +1250,6 @@ export default function UsersManagement() {
                   <Text style={styles.previewText}>
                     {user.causes?.length || 0} causes • {user.searchHistory?.length || 0} searches
                   </Text>
-                  {user.promoCode && (
-                    <Text style={styles.previewText}>💳 Promo: {user.promoCode}</Text>
-                  )}
                   {user.referralSource && (
                     <Text style={[styles.previewText, styles.referralSourceTag]}>📍 Source: {user.referralSource}</Text>
                   )}
@@ -1518,40 +1466,6 @@ export default function UsersManagement() {
                 placeholder="nike&#10;starbucks&#10;apple"
                 value={formSearchHistory}
                 onChangeText={setFormSearchHistory}
-                multiline
-                numberOfLines={5}
-              />
-
-              {/* PROMO & DONATIONS */}
-              <Text style={styles.sectionTitle}>💰 Promo & Donations</Text>
-
-              <Text style={styles.label}>Promo Code</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g., SAVE20"
-                value={formPromoCode}
-                onChangeText={setFormPromoCode}
-              />
-
-              <Text style={styles.label}>Donation Amount</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="0.00"
-                value={formDonationAmount}
-                onChangeText={setFormDonationAmount}
-                keyboardType="numeric"
-              />
-
-              {/* SELECTED CHARITIES */}
-              <Text style={styles.sectionTitle}>🏥 Selected Charities</Text>
-              <Text style={styles.helpText}>
-                Format: id|name|description|category (one per line)
-              </Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="redcross|Red Cross|Humanitarian aid|Health&#10;unicef|UNICEF|Children's welfare|Children"
-                value={formSelectedCharities}
-                onChangeText={setFormSelectedCharities}
                 multiline
                 numberOfLines={5}
               />
