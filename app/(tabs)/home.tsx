@@ -4287,7 +4287,7 @@ export default function HomeScreen() {
             <View style={StyleSheet.absoluteFill} />
           </TouchableWithoutFeedback>
           <Pressable
-            style={[styles.createListModalContainer, { backgroundColor: colors.background }]}
+            style={[styles.createListModalContainer, styles.addItemModalFixed, { backgroundColor: colors.background }]}
             onPress={() => {}}
           >
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
@@ -4301,8 +4301,7 @@ export default function HomeScreen() {
                     setAddItemSearchQuery('');
                     setLinkUrl('');
                     setLinkTitle('');
-                    setTextContent('');
-                  
+
                     setShowAddItemModal(false);
                   }
                 }}
@@ -4311,7 +4310,21 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalContent}>
+            {/* Fixed search input for brand/business/value */}
+            {(addItemType === 'brand' || addItemType === 'business' || addItemType === 'value') && (
+              <View style={styles.fixedSearchInputContainer}>
+                <TextInput
+                  style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
+                  placeholder={`Search ${addItemType}s...`}
+                  placeholderTextColor={colors.textSecondary}
+                  value={addItemSearchQuery}
+                  onChangeText={setAddItemSearchQuery}
+                  autoFocus
+                />
+              </View>
+            )}
+
+            <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalContentInner}>
               {!addItemType ? (
                 // Show 5 type selection buttons
                 <>
@@ -4361,94 +4374,64 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                 </>
               ) : addItemType === 'brand' ? (
-                // Brand search interface
-                <>
-                  <TextInput
-                    style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
-                    placeholder="Search brands..."
-                    placeholderTextColor={colors.textSecondary}
-                    value={addItemSearchQuery}
-                    onChangeText={setAddItemSearchQuery}
-                    autoFocus
-                  />
-                  <View style={styles.searchResultsContainer}>
-                    {brands?.filter(b => b.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(brand => (
-                      <TouchableOpacity
-                        key={brand.id}
-                        style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                        onPress={() => handleAddItemSubmit({ brandId: brand.id, name: brand.name, website: brand.website, logoUrl: getLogoUrl(brand.website || '') })}
-                        activeOpacity={0.7}
-                      >
-                        <Image
-                          source={{ uri: getLogoUrl(brand.website || '') }}
-                          style={styles.searchResultLogo}
-                          contentFit="cover"
-                        />
-                        <Text style={[styles.searchResultText, { color: colors.text }]}>{brand.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </>
+                // Brand search results
+                <View style={styles.searchResultsContainer}>
+                  {brands?.filter(b => b.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(brand => (
+                    <TouchableOpacity
+                      key={brand.id}
+                      style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                      onPress={() => handleAddItemSubmit({ brandId: brand.id, name: brand.name, website: brand.website, logoUrl: getLogoUrl(brand.website || '') })}
+                      activeOpacity={0.7}
+                    >
+                      <Image
+                        source={{ uri: getLogoUrl(brand.website || '') }}
+                        style={styles.searchResultLogo}
+                        contentFit="cover"
+                      />
+                      <Text style={[styles.searchResultText, { color: colors.text }]}>{brand.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               ) : addItemType === 'business' ? (
-                // Business search interface
-                <>
-                  <TextInput
-                    style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
-                    placeholder="Search businesses..."
-                    placeholderTextColor={colors.textSecondary}
-                    value={addItemSearchQuery}
-                    onChangeText={setAddItemSearchQuery}
-                    autoFocus
-                  />
-                  <View style={styles.searchResultsContainer}>
-                    {userBusinesses?.filter(b => b.businessInfo?.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(business => (
+                // Business search results
+                <View style={styles.searchResultsContainer}>
+                  {userBusinesses?.filter(b => b.businessInfo?.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(business => (
+                    <TouchableOpacity
+                      key={business.id}
+                      style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+                      onPress={() => handleAddItemSubmit({ businessId: business.id, name: business.businessInfo.name, website: business.businessInfo.website, logoUrl: business.businessInfo.logoUrl || (business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : '') })}
+                      activeOpacity={0.7}
+                    >
+                      <Image
+                        source={{ uri: business.businessInfo.logoUrl || (business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : getLogoUrl('')) }}
+                        style={styles.searchResultLogo}
+                        contentFit="cover"
+                      />
+                      <Text style={[styles.searchResultText, { color: colors.text }]}>{business.businessInfo.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : addItemType === 'value' ? (
+                // Value search results (with mode selection)
+                <View style={styles.searchResultsContainer}>
+                  {values?.filter(v => v.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(value => (
+                    <View key={value.id}>
                       <TouchableOpacity
-                        key={business.id}
                         style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                        onPress={() => handleAddItemSubmit({ businessId: business.id, name: business.businessInfo.name, website: business.businessInfo.website, logoUrl: business.businessInfo.logoUrl || (business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : '') })}
+                        onPress={() => {
+                          // Show mode selection
+                          setQuickAddItem({ type: 'value', id: value.id, name: value.name });
+                          setShowAddItemModal(false);
+                          setShowValueModeModal(true);
+                        }}
                         activeOpacity={0.7}
                       >
-                        <Image
-                          source={{ uri: business.businessInfo.logoUrl || (business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : getLogoUrl('')) }}
-                          style={styles.searchResultLogo}
-                          contentFit="cover"
-                        />
-                        <Text style={[styles.searchResultText, { color: colors.text }]}>{business.businessInfo.name}</Text>
+                        <Text style={[styles.searchResultText, { color: colors.text }]}>{value.name}</Text>
+                        <Text style={[styles.searchResultSubtext, { color: colors.textSecondary }]}>Select mode</Text>
                       </TouchableOpacity>
-                    ))}
-                  </View>
-                </>
-              ) : addItemType === 'value' ? (
-                // Value search interface (with mode selection)
-                <>
-                  <TextInput
-                    style={[styles.modalInput, { backgroundColor: colors.backgroundSecondary, color: colors.text, borderColor: colors.border }]}
-                    placeholder="Search values..."
-                    placeholderTextColor={colors.textSecondary}
-                    value={addItemSearchQuery}
-                    onChangeText={setAddItemSearchQuery}
-                    autoFocus
-                  />
-                  <View style={styles.searchResultsContainer}>
-                    {values?.filter(v => v.name?.toLowerCase().includes(addItemSearchQuery.toLowerCase())).slice(0, 10).map(value => (
-                      <View key={value.id}>
-                        <TouchableOpacity
-                          style={[styles.searchResultItem, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                          onPress={() => {
-                            // Show mode selection
-                            setQuickAddItem({ type: 'value', id: value.id, name: value.name });
-                            setShowAddItemModal(false);
-                            setShowValueModeModal(true);
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={[styles.searchResultText, { color: colors.text }]}>{value.name}</Text>
-                          <Text style={[styles.searchResultSubtext, { color: colors.textSecondary }]}>Select mode</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </View>
-                </>
+                    </View>
+                  ))}
+                </View>
               ) : addItemType === 'link' ? (
                 // Link input interface
                 <>
@@ -5785,6 +5768,18 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignSelf: 'center',
   },
+  addItemModalFixed: {
+    height: 420,
+    maxHeight: 420,
+  },
+  fixedSearchInputContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  modalContentInner: {
+    flexGrow: 1,
+  },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -5798,6 +5793,7 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
   },
   modalContent: {
+    flex: 1,
     padding: 16,
   },
   modalLabel: {
