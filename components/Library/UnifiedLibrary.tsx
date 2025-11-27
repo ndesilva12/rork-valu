@@ -1893,10 +1893,6 @@ export default function UnifiedLibrary({
               {...attributes}
               {...listeners}
             >
-              {/* Drag handle/indicator */}
-              <View style={[styles.dragHandle, { backgroundColor: colors.backgroundSecondary }]}>
-                <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-              </View>
               <View style={styles.forYouItemRow}>
                 <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
                   {index + 1}
@@ -1904,6 +1900,10 @@ export default function UnifiedLibrary({
                 <View style={styles.forYouCardWrapper}>
                   {renderListEntry(entry, true)}
                 </View>
+              </View>
+              {/* Drag handle/indicator - on far right */}
+              <View style={[styles.dragHandle, { backgroundColor: colors.backgroundSecondary }]}>
+                <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
               </View>
             </View>
           );
