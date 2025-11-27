@@ -1073,15 +1073,17 @@ export default function UnifiedLibrary({
 
   // Helper function to get card background color based on position
   const getEntryCardBackgroundColor = (index: number): string => {
+    // Use app blue with different opacities
+    // Light mode: rgb(3, 68, 102), Dark mode: rgb(0, 170, 250)
     if (index < 5) {
-      // Top 5: Success/aligned color
-      return colors.successLight;
+      // Top 5: 25% opacity
+      return isDarkMode ? 'rgba(0, 170, 250, 0.25)' : 'rgba(3, 68, 102, 0.25)';
     } else if (index < 10) {
-      // 6-10: Neutral/secondary color
-      return colors.neutralLight;
+      // 6-10: 10% opacity
+      return isDarkMode ? 'rgba(0, 170, 250, 0.10)' : 'rgba(3, 68, 102, 0.10)';
     }
-    // 11+: Normal background
-    return colors.backgroundSecondary;
+    // 11+: 5% opacity (very light)
+    return isDarkMode ? 'rgba(0, 170, 250, 0.05)' : 'rgba(3, 68, 102, 0.05)';
   };
 
   // EXACT copy of Home tab's renderListEntry with score calculation
@@ -3753,17 +3755,18 @@ const styles = StyleSheet.create({
   },
   // New endorsement entry card styles
   endorsementEntryWrapper: {
-    marginBottom: 8,
+    marginBottom: 4,
   },
   endorsementEntryCard: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
     overflow: 'hidden',
+    minHeight: 64,
   },
   endorsementEntryCardImage: {
-    width: 56,
-    height: 56,
+    width: 64,
+    height: 64,
     borderTopLeftRadius: 12,
     borderBottomLeftRadius: 12,
     borderTopRightRadius: 0,

@@ -2287,14 +2287,6 @@ export default function HomeScreen() {
             <Text style={[styles.listDetailTitle, { color: colors.text }]}>{list.name}</Text>
 
             <View style={styles.listHeaderButtons}>
-              <TouchableOpacity
-                style={styles.listOptionsButton}
-                onPress={() => setShowEditDropdown(!showEditDropdown)}
-                activeOpacity={0.7}
-              >
-                <MoreVertical size={24} color={colors.text} strokeWidth={2} />
-              </TouchableOpacity>
-
               {/* Add button - hidden for values-generated lists */}
               {!isValuesGeneratedList && (
                 <TouchableOpacity
@@ -2305,9 +2297,17 @@ export default function HomeScreen() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Plus size={28} color={colors.white} strokeWidth={2.5} />
+                  <Plus size={32} color={colors.white} strokeWidth={2.5} />
                 </TouchableOpacity>
               )}
+
+              <TouchableOpacity
+                style={styles.listOptionsButton}
+                onPress={() => setShowEditDropdown(!showEditDropdown)}
+                activeOpacity={0.7}
+              >
+                <MoreVertical size={24} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
             </View>
           </View>
           )}
@@ -6223,9 +6223,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   addItemButtonLarge: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
