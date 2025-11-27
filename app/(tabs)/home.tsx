@@ -2305,7 +2305,7 @@ export default function HomeScreen() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Plus size={24} color={colors.white} strokeWidth={2.5} />
+                  <Plus size={28} color={colors.white} strokeWidth={2.5} />
                 </TouchableOpacity>
               )}
             </View>
