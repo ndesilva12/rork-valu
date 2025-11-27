@@ -398,10 +398,34 @@ export default function UnifiedLibrary({
     fetchBusinesses();
   }, [showAddEndorsementModal]);
 
+  // Helper to calculate days from createdAt (fallback for entries without history)
+  const calculateDaysFromCreatedAt = (createdAt: Date | string | undefined): number => {
+    if (!createdAt) return 0;
+
+    let date: Date;
+    if (createdAt instanceof Date) {
+      date = createdAt;
+    } else if (typeof createdAt === 'string') {
+      date = new Date(createdAt);
+    } else if (typeof createdAt === 'object' && 'seconds' in createdAt) {
+      // Firestore Timestamp
+      date = new Date((createdAt as any).seconds * 1000);
+    } else {
+      return 0;
+    }
+
+    if (isNaN(date.getTime())) return 0;
+
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
   // Fetch cumulative days endorsed for all endorsement entries
   useEffect(() => {
     const fetchCumulativeDays = async () => {
-      if (!currentUserId || !endorsementList?.entries?.length) return;
+      if (!endorsementList?.entries?.length) return;
 
       const entries = endorsementList.entries.filter(e => e != null);
       const daysMap: Record<string, number> = {};
@@ -416,11 +440,28 @@ export default function UnifiedLibrary({
 
             if (!entityId) return;
 
-            const entityType = entry.type === 'brand' ? 'brand' : 'business';
-            const result = await getCumulativeDays(currentUserId, entityType, entityId);
-            daysMap[entityId] = result.totalDaysEndorsed;
+            // Try to get cumulative days from history service if user is logged in
+            if (currentUserId) {
+              const entityType = entry.type === 'brand' ? 'brand' : 'business';
+              const result = await getCumulativeDays(currentUserId, entityType, entityId);
+              // Use history days if available, otherwise fall back to createdAt calculation
+              if (result.totalDaysEndorsed > 0) {
+                daysMap[entityId] = result.totalDaysEndorsed;
+                return;
+              }
+            }
+
+            // Fallback: calculate from entry's createdAt date
+            daysMap[entityId] = calculateDaysFromCreatedAt(entry.createdAt);
           } catch (error) {
             console.error('[UnifiedLibrary] Error fetching cumulative days:', error);
+            // Fallback on error: calculate from createdAt
+            const entityId = entry.type === 'brand'
+              ? (entry as any).brandId
+              : (entry as any).businessId;
+            if (entityId) {
+              daysMap[entityId] = calculateDaysFromCreatedAt(entry.createdAt);
+            }
           }
         })
       );
@@ -3741,6 +3782,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 6,
+    flex: 1,
   },
   forYouItemNumber: {
     fontSize: 12,
@@ -4067,7 +4109,8 @@ const styles = StyleSheet.create({
   reorderEntryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
+    width: '100%',
   },
   reorderArrowButton: {
     width: 36,
