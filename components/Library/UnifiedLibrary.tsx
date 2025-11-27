@@ -1413,7 +1413,7 @@ export default function UnifiedLibrary({
           <View style={[styles.listProfileImageContainer, { backgroundColor: 'transparent', borderColor: colors.border }]}>
             {useAppIcon ? (
               <Image
-                source={require('@/assets/images/endorsement12.png')}
+                source={require('@/assets/images/endorsementicon.png')}
                 style={styles.listProfileImage}
                 contentFit="cover"
                 transition={200}
@@ -2219,7 +2219,7 @@ export default function UnifiedLibrary({
           <View style={[styles.listDetailImageContainer, { backgroundColor: 'transparent', borderColor: colors.border }]}>
             {useAppIcon ? (
               <Image
-                source={require('@/assets/images/endorsement12.png')}
+                source={require('@/assets/images/endorsementicon.png')}
                 style={styles.listDetailImage}
                 contentFit="cover"
                 transition={200}
