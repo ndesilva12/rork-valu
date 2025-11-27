@@ -50,6 +50,23 @@ export async function getTopBrands(limit: number = 50): Promise<RankedItem[]> {
   try {
     console.log('[TopRankings] Fetching top brands...');
 
+    // Fetch all brands from the brands collection to get accurate names and logos
+    const brandsRef = collection(db, 'brands');
+    const brandsSnapshot = await getDocs(brandsRef);
+    const brandsMap = new Map<string, { name: string; category?: string; website?: string; logoUrl?: string }>();
+
+    brandsSnapshot.forEach((doc) => {
+      const brandData = doc.data();
+      brandsMap.set(doc.id, {
+        name: brandData.name || brandData.brand || 'Unknown Brand',
+        category: brandData.category,
+        website: brandData.website,
+        logoUrl: brandData.logoUrl || brandData.logo,
+      });
+    });
+
+    console.log(`[TopRankings] Loaded ${brandsMap.size} brands from database`);
+
     // Fetch all user lists from Firebase (stored in 'userLists' collection)
     const listsRef = collection(db, 'userLists');
     const listsQuery = query(listsRef);
@@ -80,6 +97,9 @@ export async function getTopBrands(limit: number = 50): Promise<RankedItem[]> {
         const position = index + 1; // Position is 1-indexed
         const weight = getPositionWeight(position);
 
+        // Look up brand details from the brands collection first, then fall back to entry data
+        const brandDetails = brandsMap.get(entry.brandId);
+
         const existing = brandScores.get(entry.brandId);
         if (existing) {
           existing.score += weight;
@@ -88,10 +108,10 @@ export async function getTopBrands(limit: number = 50): Promise<RankedItem[]> {
           brandScores.set(entry.brandId, {
             score: weight,
             count: 1,
-            name: entry.brandName || 'Unknown Brand',
-            category: entry.brandCategory,
-            website: entry.website,
-            logoUrl: entry.logoUrl,
+            name: brandDetails?.name || entry.brandName || 'Unknown Brand',
+            category: brandDetails?.category || entry.brandCategory,
+            website: brandDetails?.website || entry.website,
+            logoUrl: brandDetails?.logoUrl || entry.logoUrl,
           });
         }
       });
@@ -134,6 +154,26 @@ export async function getTopBusinesses(
   try {
     console.log('[TopRankings] Fetching top businesses...');
 
+    // Fetch all business accounts from users collection to get accurate names and logos
+    const usersRef = collection(db, 'users');
+    const usersSnapshot = await getDocs(usersRef);
+    const businessesMap = new Map<string, { name: string; category?: string; website?: string; logoUrl?: string; location?: { latitude: number; longitude: number } }>();
+
+    usersSnapshot.forEach((doc) => {
+      const userData = doc.data();
+      if (userData.accountType === 'business' && userData.businessInfo) {
+        businessesMap.set(doc.id, {
+          name: userData.businessInfo.name || 'Unknown Business',
+          category: userData.businessInfo.category,
+          website: userData.businessInfo.website,
+          logoUrl: userData.businessInfo.logoUrl,
+          location: userData.businessInfo.location,
+        });
+      }
+    });
+
+    console.log(`[TopRankings] Loaded ${businessesMap.size} businesses from database`);
+
     // Fetch all user lists from Firebase (stored in 'userLists' collection)
     const listsRef = collection(db, 'userLists');
     const listsQuery = query(listsRef);
@@ -165,6 +205,9 @@ export async function getTopBusinesses(
         const position = index + 1; // Position is 1-indexed
         const weight = getPositionWeight(position);
 
+        // Look up business details from the users collection first, then fall back to entry data
+        const businessDetails = businessesMap.get(entry.businessId);
+
         const existing = businessScores.get(entry.businessId);
         if (existing) {
           existing.score += weight;
@@ -173,11 +216,11 @@ export async function getTopBusinesses(
           businessScores.set(entry.businessId, {
             score: weight,
             count: 1,
-            name: (entry as any).businessName || 'Unknown Business',
-            category: (entry as any).businessCategory,
-            website: (entry as any).website,
-            logoUrl: (entry as any).logoUrl,
-            location: (entry as any).location,
+            name: businessDetails?.name || (entry as any).businessName || 'Unknown Business',
+            category: businessDetails?.category || (entry as any).businessCategory,
+            website: businessDetails?.website || (entry as any).website,
+            logoUrl: businessDetails?.logoUrl || (entry as any).logoUrl,
+            location: businessDetails?.location || (entry as any).location,
           });
         }
       });

@@ -1279,38 +1279,50 @@ export default function SearchScreen() {
       }
     };
 
+    const handleActionPress = () => {
+      if (item.type === 'business') {
+        router.push({ pathname: '/business/[id]', params: { id: item.id } });
+      } else if (item.type === 'brand') {
+        router.push({ pathname: '/brand/[id]', params: { id: item.id } });
+      }
+    };
+
     const logoUrl = item.logoUrl || getLogoUrl(item.website || '');
 
     return (
       <TouchableOpacity
-        style={[styles.userCard, { backgroundColor: 'transparent', borderColor: 'transparent' }]}
+        style={[styles.topBusinessCard, { backgroundColor: 'transparent', borderColor: 'transparent' }]}
         onPress={handlePress}
         activeOpacity={0.7}
       >
-        <View style={styles.userCardContent}>
+        <View style={styles.topBusinessCardContent}>
           <Text style={[styles.topBusinessRank, { color: colors.textSecondary }]}>
             {index + 1}
           </Text>
-          <View style={[styles.userCardImage, { backgroundColor: '#FFFFFF' }]}>
+          <View style={[styles.topBusinessImage, { backgroundColor: '#FFFFFF' }]}>
             <Image
               source={{ uri: logoUrl }}
-              style={styles.userCardImage}
+              style={styles.topBusinessImage}
               contentFit="cover"
               transition={200}
               cachePolicy="memory-disk"
             />
           </View>
-          <View style={styles.userCardInfo}>
-            <Text style={[styles.userCardName, { color: colors.text }]} numberOfLines={1}>
+          <View style={styles.topBusinessInfo}>
+            <Text style={[styles.topBusinessName, { color: colors.text }]} numberOfLines={1}>
               {item.name}
             </Text>
-            <Text style={[styles.userCardLocation, { color: colors.textSecondary }]} numberOfLines={1}>
-              {item.category || (item.type === 'brand' ? 'Brand' : 'Business')}
-            </Text>
-            <Text style={[styles.userCardBio, { color: colors.primary }]} numberOfLines={1}>
-              {item.endorsementCount} {item.endorsementCount === 1 ? 'endorsement' : 'endorsements'}
+            <Text style={[styles.topBusinessCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+              {item.category || (item.type === 'brand' ? 'Brand' : 'Business')} • {item.endorsementCount} {item.endorsementCount === 1 ? 'endorsement' : 'endorsements'}
             </Text>
           </View>
+          <TouchableOpacity
+            style={styles.topBusinessActionButton}
+            onPress={handleActionPress}
+            activeOpacity={0.7}
+          >
+            <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
@@ -2625,6 +2637,40 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     minWidth: 24,
     textAlign: 'center' as const,
+  },
+  topBusinessCard: {
+    borderRadius: 12,
+    borderWidth: 0,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 4,
+  },
+  topBusinessCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  topBusinessImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+  },
+  topBusinessInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  topBusinessName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  topBusinessCategory: {
+    fontSize: 13,
+  },
+  topBusinessActionButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   userCardImage: {
     width: 60,
