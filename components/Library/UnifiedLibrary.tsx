@@ -2851,15 +2851,6 @@ export default function UnifiedLibrary({
         {/* Action buttons for endorsed section */}
         {isEndorsed && canEdit && (
           <View style={styles.endorsedHeaderActions}>
-            {/* Add button */}
-            <TouchableOpacity
-              onPress={() => setShowAddEndorsementModal(true)}
-              style={[styles.addEndorsementButton, { backgroundColor: colors.primary }]}
-              activeOpacity={0.7}
-            >
-              <Plus size={20} color={colors.white} strokeWidth={2.5} />
-            </TouchableOpacity>
-
             {/* Action menu button - only show if there are items to reorder */}
             {canReorder && (
               <View>
@@ -2896,6 +2887,15 @@ export default function UnifiedLibrary({
                 )}
               </View>
             )}
+
+            {/* Add button - on far right */}
+            <TouchableOpacity
+              onPress={() => setShowAddEndorsementModal(true)}
+              style={[styles.addEndorsementButton, { backgroundColor: colors.primary }]}
+              activeOpacity={0.7}
+            >
+              <Plus size={28} color={colors.white} strokeWidth={2.5} />
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -4271,9 +4271,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   addEndorsementButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
