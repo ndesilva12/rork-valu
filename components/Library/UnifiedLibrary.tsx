@@ -71,10 +71,12 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { reorderListEntries } from '@/services/firebase/listService';
 import { getTopBrands, getTopBusinesses } from '@/services/firebase/topRankingsService';
+import { getCumulativeDays } from '@/services/firebase/endorsementHistoryService';
 import {
   DndContext,
   closestCenter,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -207,6 +209,9 @@ export default function UnifiedLibrary({
   const [reorderingListId, setReorderingListId] = useState<string | null>(null);
   const [localEntries, setLocalEntries] = useState<ListEntry[]>([]);
 
+  // Cumulative days endorsed state (keyed by entityId)
+  const [cumulativeDaysMap, setCumulativeDaysMap] = useState<Record<string, number>>({});
+
   // Scroll ref for sticky header and scroll-to-top
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -250,11 +255,18 @@ export default function UnifiedLibrary({
     setInternalSelectedSection(section);
   };
 
-  // Drag-and-drop sensors for list reordering (desktop only)
+  // Drag-and-drop sensors for list reordering
+  // PointerSensor for desktop (mouse), TouchSensor for mobile (long press)
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8, // Drag only after moving 8px (prevents accidental drags)
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 300, // Long press for 300ms to start drag
+        tolerance: 5, // Allow 5px of movement during the delay
       },
     })
   );
@@ -385,6 +397,39 @@ export default function UnifiedLibrary({
 
     fetchBusinesses();
   }, [showAddEndorsementModal]);
+
+  // Fetch cumulative days endorsed for all endorsement entries
+  useEffect(() => {
+    const fetchCumulativeDays = async () => {
+      if (!currentUserId || !endorsementList?.entries?.length) return;
+
+      const entries = endorsementList.entries.filter(e => e != null);
+      const daysMap: Record<string, number> = {};
+
+      // Fetch cumulative days for each entry
+      await Promise.all(
+        entries.map(async (entry) => {
+          try {
+            const entityId = entry.type === 'brand'
+              ? (entry as any).brandId
+              : (entry as any).businessId;
+
+            if (!entityId) return;
+
+            const entityType = entry.type === 'brand' ? 'brand' : 'business';
+            const result = await getCumulativeDays(currentUserId, entityType, entityId);
+            daysMap[entityId] = result.totalDaysEndorsed;
+          } catch (error) {
+            console.error('[UnifiedLibrary] Error fetching cumulative days:', error);
+          }
+        })
+      );
+
+      setCumulativeDaysMap(daysMap);
+    };
+
+    fetchCumulativeDays();
+  }, [currentUserId, endorsementList?.entries]);
 
   // Search results for add endorsement modal
   const addSearchResults = useMemo(() => {
@@ -1047,28 +1092,12 @@ export default function UnifiedLibrary({
     );
   };
 
-  // Helper function to calculate days endorsed from createdAt
-  const calculateDaysEndorsed = (createdAt: Date | string | undefined): number => {
-    if (!createdAt) return 0;
-
-    let date: Date;
-    if (createdAt instanceof Date) {
-      date = createdAt;
-    } else if (typeof createdAt === 'string') {
-      date = new Date(createdAt);
-    } else if (typeof createdAt === 'object' && 'seconds' in createdAt) {
-      // Firestore Timestamp
-      date = new Date((createdAt as any).seconds * 1000);
-    } else {
-      return 0;
-    }
-
-    if (isNaN(date.getTime())) return 0;
-
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+  // Helper function to get cumulative days endorsed for an entry
+  const getCumulativeDaysForEntry = (entry: ListEntry): number => {
+    const entityId = entry.type === 'brand'
+      ? (entry as any).brandId
+      : (entry as any).businessId;
+    return cumulativeDaysMap[entityId] || 0;
   };
 
   // Helper function to get card background color based on position
@@ -1159,7 +1188,7 @@ export default function UnifiedLibrary({
                     </Text>
                   </View>
                   <Text style={[styles.endorsementEntryCardCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                    endorsed for {calculateDaysEndorsed(entry.createdAt)} {calculateDaysEndorsed(entry.createdAt) === 1 ? 'day' : 'days'}
+                    endorsed for {getCumulativeDaysForEntry(entry)} {getCumulativeDaysForEntry(entry) === 1 ? 'day' : 'days'}
                   </Text>
                 </View>
                 {(mode === 'edit' || mode === 'view' || mode === 'preview') && (
@@ -1285,7 +1314,7 @@ export default function UnifiedLibrary({
                     </Text>
                   </View>
                   <Text style={[styles.endorsementEntryCardCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                    endorsed for {calculateDaysEndorsed(entry.createdAt)} {calculateDaysEndorsed(entry.createdAt) === 1 ? 'day' : 'days'}
+                    endorsed for {getCumulativeDaysForEntry(entry)} {getCumulativeDaysForEntry(entry) === 1 ? 'day' : 'days'}
                   </Text>
                 </View>
                 {(mode === 'edit' || mode === 'view' || mode === 'preview') && (
@@ -1811,7 +1840,7 @@ export default function UnifiedLibrary({
       return (
         <View style={[styles.reorderControls, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
           <Text style={[styles.reorderTitle, { color: colors.text }]}>
-            {isLargeScreen ? 'Drag items to reorder' : 'Use arrows to reorder'}
+            {isLargeScreen ? 'Drag items to reorder' : 'Long press & drag to reorder'}
           </Text>
           <View style={styles.reorderButtons}>
             <TouchableOpacity
@@ -1839,27 +1868,34 @@ export default function UnifiedLibrary({
       const isLast = index === entriesToDisplay.length - 1;
 
       if (isReordering) {
-        // Mobile: Show up/down arrows
-        if (!isLargeScreen) {
+        // Sortable entry for both mobile (long press) and desktop (drag handle)
+        const SortableEntry = () => {
+          const {
+            attributes,
+            listeners,
+            setNodeRef,
+            transform,
+            transition,
+            isDragging,
+          } = useSortable({ id: entry.id });
+
+          const style = {
+            transform: CSS.Transform.toString(transform),
+            transition,
+            opacity: isDragging ? 0.8 : 1,
+            zIndex: isDragging ? 1000 : 1,
+          };
+
           return (
-            <View style={styles.reorderEntryRow}>
-              <View style={styles.reorderControls}>
-                <TouchableOpacity
-                  style={[styles.reorderArrowButton, { backgroundColor: colors.backgroundSecondary }]}
-                  onPress={() => handleMoveUp(index)}
-                  disabled={isFirst}
-                  activeOpacity={0.7}
-                >
-                  <ArrowUp size={20} color={isFirst ? colors.textSecondary : colors.text} strokeWidth={2} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.reorderArrowButton, { backgroundColor: colors.backgroundSecondary }]}
-                  onPress={() => handleMoveDown(index)}
-                  disabled={isLast}
-                  activeOpacity={0.7}
-                >
-                  <ArrowDown size={20} color={isLast ? colors.textSecondary : colors.text} strokeWidth={2} />
-                </TouchableOpacity>
+            <View
+              ref={setNodeRef}
+              style={[styles.reorderEntryRow, style]}
+              {...attributes}
+              {...listeners}
+            >
+              {/* Drag handle/indicator */}
+              <View style={[styles.dragHandle, { backgroundColor: colors.backgroundSecondary }]}>
+                <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
               </View>
               <View style={styles.forYouItemRow}>
                 <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
@@ -1871,47 +1907,9 @@ export default function UnifiedLibrary({
               </View>
             </View>
           );
-        }
-        // Desktop: Show drag handle
-        else {
-          const SortableEntry = () => {
-            const {
-              attributes,
-              listeners,
-              setNodeRef,
-              transform,
-              transition,
-            } = useSortable({ id: entry.id });
+        };
 
-            const style = {
-              transform: CSS.Transform.toString(transform),
-              transition,
-            };
-
-            return (
-              <View ref={setNodeRef} style={[styles.reorderEntryRow, style]}>
-                <TouchableOpacity
-                  {...attributes}
-                  {...listeners}
-                  style={[styles.dragHandle, { backgroundColor: colors.backgroundSecondary }]}
-                  activeOpacity={0.7}
-                >
-                  <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                </TouchableOpacity>
-                <View style={styles.forYouItemRow}>
-                  <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
-                    {index + 1}
-                  </Text>
-                  <View style={styles.forYouCardWrapper}>
-                    {renderListEntry(entry, true)}
-                  </View>
-                </View>
-              </View>
-            );
-          };
-
-          return <SortableEntry key={entry.id} />;
-        }
+        return <SortableEntry key={entry.id} />;
       }
 
       // Normal (non-reorder) mode - render card directly with index for styling
@@ -1923,7 +1921,8 @@ export default function UnifiedLibrary({
     };
 
     const filteredEntries = entriesToDisplay.filter(entry => entry != null);
-    const displayedEntries = filteredEntries.slice(0, endorsementLoadCount);
+    // Show all entries when reordering, otherwise respect the load count limit
+    const displayedEntries = isReordering ? filteredEntries : filteredEntries.slice(0, endorsementLoadCount);
 
     // Separate top 5, items 6-10, and the rest
     const top5Entries = displayedEntries.slice(0, 5);
@@ -1934,8 +1933,8 @@ export default function UnifiedLibrary({
     const next5Content = next5Entries.map((entry, index) => renderEntryWithControls(entry, index + 5));
     const remainingContent = remainingEntries.map((entry, index) => renderEntryWithControls(entry, index + 10));
 
-    // Wrap with DndContext for desktop drag-and-drop
-    const contentWithDnd = isReordering && isLargeScreen ? (
+    // Wrap with DndContext for drag-and-drop (desktop and mobile via long press)
+    const contentWithDnd = isReordering ? (
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
