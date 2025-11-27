@@ -268,6 +268,18 @@ export default function UserProfileScreen() {
     };
   }, [brands, userBusinesses, userProfile, valuesMatrix]);
 
+  // Get endorsement list and count - must be before early returns to follow hooks rules
+  const userEndorsementList = useMemo(() => {
+    const userName = userProfile?.userDetails?.name || 'User';
+    let endorsementList = userLists.find(list => list.name === userName);
+    if (!endorsementList && userLists.length > 0) {
+      const sortedByAge = [...userLists].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+      endorsementList = sortedByAge[0];
+    }
+    return endorsementList || null;
+  }, [userLists, userProfile]);
+  const endorsementCount = userEndorsementList?.entries?.length || 0;
+
   if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -305,17 +317,6 @@ export default function UserProfileScreen() {
   const userName = userDetails?.name || 'User';
   const isOwnProfile = userId === clerkUser?.id;
   const profileImageUrl = userDetails?.profileImage;
-
-  // Get endorsement list and count
-  const userEndorsementList = useMemo(() => {
-    let endorsementList = userLists.find(list => list.name === userName);
-    if (!endorsementList && userLists.length > 0) {
-      const sortedByAge = [...userLists].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-      endorsementList = sortedByAge[0];
-    }
-    return endorsementList || null;
-  }, [userLists, userName]);
-  const endorsementCount = userEndorsementList?.entries?.length || 0;
 
   // Calculate similarity score between current user and viewed user
   let similarityScore = 0;
