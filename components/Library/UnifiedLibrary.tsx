@@ -1076,11 +1076,11 @@ export default function UnifiedLibrary({
     // Use app blue with different opacities
     // Light mode: rgb(3, 68, 102), Dark mode: rgb(0, 170, 250)
     if (index < 5) {
-      // Top 5: 30% opacity
-      return isDarkMode ? 'rgba(0, 170, 250, 0.30)' : 'rgba(3, 68, 102, 0.30)';
+      // Top 5: 45% opacity
+      return isDarkMode ? 'rgba(0, 170, 250, 0.45)' : 'rgba(3, 68, 102, 0.45)';
     } else if (index < 10) {
-      // 6-10: 20% opacity
-      return isDarkMode ? 'rgba(0, 170, 250, 0.20)' : 'rgba(3, 68, 102, 0.20)';
+      // 6-10: 25% opacity
+      return isDarkMode ? 'rgba(0, 170, 250, 0.25)' : 'rgba(3, 68, 102, 0.25)';
     }
     // 11+: 10% opacity
     return isDarkMode ? 'rgba(0, 170, 250, 0.10)' : 'rgba(3, 68, 102, 0.10)';

@@ -4279,8 +4279,9 @@ export default function HomeScreen() {
       {/* Add Item Selection Modal - Shows 5 type options */}
       <Modal
         visible={showAddItemModal}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
+        statusBarTranslucent={true}
         onRequestClose={() => {
           setShowAddItemModal(false);
           setAddItemType(null);
@@ -5917,15 +5918,13 @@ const styles = StyleSheet.create({
   },
   addItemModalFixed: {
     position: 'absolute' as const,
-    top: 60,
-    left: 0,
-    right: 0,
-    bottom: 40,
-    height: 'auto' as any,
-    maxHeight: 'none' as any,
-    minHeight: 'auto' as any,
+    top: 80,
+    left: 16,
+    right: 16,
+    height: '80%' as any,
+    maxHeight: '80%' as any,
+    minHeight: '80%' as any,
     flexDirection: 'column' as const,
-    marginHorizontal: 16,
     alignSelf: 'center',
   },
   fixedSearchInputContainer: {
