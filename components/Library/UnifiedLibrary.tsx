@@ -75,6 +75,7 @@ import {
   DndContext,
   closestCenter,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -250,11 +251,18 @@ export default function UnifiedLibrary({
     setInternalSelectedSection(section);
   };
 
-  // Drag-and-drop sensors for list reordering (desktop only)
+  // Drag-and-drop sensors for list reordering
+  // PointerSensor for desktop (mouse), TouchSensor for mobile (long press)
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8, // Drag only after moving 8px (prevents accidental drags)
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 300, // Long press for 300ms to start drag
+        tolerance: 5, // Allow 5px of movement during the delay
       },
     })
   );
@@ -1811,7 +1819,7 @@ export default function UnifiedLibrary({
       return (
         <View style={[styles.reorderControls, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
           <Text style={[styles.reorderTitle, { color: colors.text }]}>
-            {isLargeScreen ? 'Drag items to reorder' : 'Use arrows to reorder'}
+            {isLargeScreen ? 'Drag items to reorder' : 'Long press & drag to reorder'}
           </Text>
           <View style={styles.reorderButtons}>
             <TouchableOpacity
@@ -1839,27 +1847,34 @@ export default function UnifiedLibrary({
       const isLast = index === entriesToDisplay.length - 1;
 
       if (isReordering) {
-        // Mobile: Show up/down arrows
-        if (!isLargeScreen) {
+        // Sortable entry for both mobile (long press) and desktop (drag handle)
+        const SortableEntry = () => {
+          const {
+            attributes,
+            listeners,
+            setNodeRef,
+            transform,
+            transition,
+            isDragging,
+          } = useSortable({ id: entry.id });
+
+          const style = {
+            transform: CSS.Transform.toString(transform),
+            transition,
+            opacity: isDragging ? 0.8 : 1,
+            zIndex: isDragging ? 1000 : 1,
+          };
+
           return (
-            <View style={styles.reorderEntryRow}>
-              <View style={styles.reorderControls}>
-                <TouchableOpacity
-                  style={[styles.reorderArrowButton, { backgroundColor: colors.backgroundSecondary }]}
-                  onPress={() => handleMoveUp(index)}
-                  disabled={isFirst}
-                  activeOpacity={0.7}
-                >
-                  <ArrowUp size={20} color={isFirst ? colors.textSecondary : colors.text} strokeWidth={2} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.reorderArrowButton, { backgroundColor: colors.backgroundSecondary }]}
-                  onPress={() => handleMoveDown(index)}
-                  disabled={isLast}
-                  activeOpacity={0.7}
-                >
-                  <ArrowDown size={20} color={isLast ? colors.textSecondary : colors.text} strokeWidth={2} />
-                </TouchableOpacity>
+            <View
+              ref={setNodeRef}
+              style={[styles.reorderEntryRow, style]}
+              {...attributes}
+              {...listeners}
+            >
+              {/* Drag handle/indicator */}
+              <View style={[styles.dragHandle, { backgroundColor: colors.backgroundSecondary }]}>
+                <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
               </View>
               <View style={styles.forYouItemRow}>
                 <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
@@ -1867,43 +1882,6 @@ export default function UnifiedLibrary({
                 </Text>
                 <View style={styles.forYouCardWrapper}>
                   {renderListEntry(entry, true)}
-                </View>
-              </View>
-            </View>
-          );
-        }
-        // Desktop: Show drag handle
-        else {
-          const SortableEntry = () => {
-            const {
-              attributes,
-              listeners,
-              setNodeRef,
-              transform,
-              transition,
-            } = useSortable({ id: entry.id });
-
-            const style = {
-              transform: CSS.Transform.toString(transform),
-              transition,
-            };
-
-            return (
-              <View ref={setNodeRef} style={[styles.reorderEntryRow, style]}>
-                <TouchableOpacity
-                  {...attributes}
-                  {...listeners}
-                  style={[styles.dragHandle, { backgroundColor: colors.backgroundSecondary }]}
-                  activeOpacity={0.7}
-                >
-                  <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                </TouchableOpacity>
-                <View style={styles.forYouItemRow}>
-                  <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
-                    {index + 1}
-                  </Text>
-                  <View style={styles.forYouCardWrapper}>
-                    {renderListEntry(entry, true)}
                   </View>
                 </View>
               </View>
@@ -1934,8 +1912,8 @@ export default function UnifiedLibrary({
     const next5Content = next5Entries.map((entry, index) => renderEntryWithControls(entry, index + 5));
     const remainingContent = remainingEntries.map((entry, index) => renderEntryWithControls(entry, index + 10));
 
-    // Wrap with DndContext for desktop drag-and-drop
-    const contentWithDnd = isReordering && isLargeScreen ? (
+    // Wrap with DndContext for drag-and-drop (desktop and mobile via long press)
+    const contentWithDnd = isReordering ? (
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
