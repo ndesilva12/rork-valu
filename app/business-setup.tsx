@@ -148,7 +148,7 @@ export default function BusinessSetupScreen() {
         {/* Logo */}
         <View style={styles.logoContainer}>
           <Image
-            source={require('@/assets/images/endorsementblue1.png')}
+            source={require('@/assets/images/endowide.png')}
             style={styles.logo}
             resizeMode="contain"
           />

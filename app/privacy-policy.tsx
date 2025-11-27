@@ -36,7 +36,7 @@ export default function PrivacyPolicyScreen() {
           <ChevronLeft size={28} color={colors.text} strokeWidth={2} />
         </TouchableOpacity>
         <Image
-          source={require('@/assets/images/endorsementblue1.png')}
+          source={require('@/assets/images/endowide.png')}
           style={styles.headerLogo}
           resizeMode="contain"
         />
