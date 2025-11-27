@@ -5558,6 +5558,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     paddingTop: 60,
+    position: 'relative' as const,
   },
   modalContent: {
     borderTopLeftRadius: 20,
@@ -5915,10 +5916,17 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   addItemModalFixed: {
-    height: 420,
-    maxHeight: 420,
-    minHeight: 420,
+    position: 'absolute' as const,
+    top: 60,
+    left: 0,
+    right: 0,
+    bottom: 40,
+    height: 'auto' as any,
+    maxHeight: 'none' as any,
+    minHeight: 'auto' as any,
     flexDirection: 'column' as const,
+    marginHorizontal: 16,
+    alignSelf: 'center',
   },
   fixedSearchInputContainer: {
     paddingHorizontal: 16,
