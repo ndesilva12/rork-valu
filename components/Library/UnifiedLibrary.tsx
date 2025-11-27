@@ -71,6 +71,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { reorderListEntries } from '@/services/firebase/listService';
 import { getTopBrands, getTopBusinesses } from '@/services/firebase/topRankingsService';
+import { getCumulativeDays } from '@/services/firebase/endorsementHistoryService';
 import {
   DndContext,
   closestCenter,
@@ -207,6 +208,9 @@ export default function UnifiedLibrary({
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [reorderingListId, setReorderingListId] = useState<string | null>(null);
   const [localEntries, setLocalEntries] = useState<ListEntry[]>([]);
+
+  // Cumulative days endorsed state (keyed by entityId)
+  const [cumulativeDaysMap, setCumulativeDaysMap] = useState<Record<string, number>>({});
 
   // Scroll ref for sticky header and scroll-to-top
   const scrollViewRef = useRef<ScrollView>(null);
@@ -393,6 +397,39 @@ export default function UnifiedLibrary({
 
     fetchBusinesses();
   }, [showAddEndorsementModal]);
+
+  // Fetch cumulative days endorsed for all endorsement entries
+  useEffect(() => {
+    const fetchCumulativeDays = async () => {
+      if (!currentUserId || !endorsementList?.entries?.length) return;
+
+      const entries = endorsementList.entries.filter(e => e != null);
+      const daysMap: Record<string, number> = {};
+
+      // Fetch cumulative days for each entry
+      await Promise.all(
+        entries.map(async (entry) => {
+          try {
+            const entityId = entry.type === 'brand'
+              ? (entry as any).brandId
+              : (entry as any).businessId;
+
+            if (!entityId) return;
+
+            const entityType = entry.type === 'brand' ? 'brand' : 'business';
+            const result = await getCumulativeDays(currentUserId, entityType, entityId);
+            daysMap[entityId] = result.totalDaysEndorsed;
+          } catch (error) {
+            console.error('[UnifiedLibrary] Error fetching cumulative days:', error);
+          }
+        })
+      );
+
+      setCumulativeDaysMap(daysMap);
+    };
+
+    fetchCumulativeDays();
+  }, [currentUserId, endorsementList?.entries]);
 
   // Search results for add endorsement modal
   const addSearchResults = useMemo(() => {
@@ -1055,28 +1092,12 @@ export default function UnifiedLibrary({
     );
   };
 
-  // Helper function to calculate days endorsed from createdAt
-  const calculateDaysEndorsed = (createdAt: Date | string | undefined): number => {
-    if (!createdAt) return 0;
-
-    let date: Date;
-    if (createdAt instanceof Date) {
-      date = createdAt;
-    } else if (typeof createdAt === 'string') {
-      date = new Date(createdAt);
-    } else if (typeof createdAt === 'object' && 'seconds' in createdAt) {
-      // Firestore Timestamp
-      date = new Date((createdAt as any).seconds * 1000);
-    } else {
-      return 0;
-    }
-
-    if (isNaN(date.getTime())) return 0;
-
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+  // Helper function to get cumulative days endorsed for an entry
+  const getCumulativeDaysForEntry = (entry: ListEntry): number => {
+    const entityId = entry.type === 'brand'
+      ? (entry as any).brandId
+      : (entry as any).businessId;
+    return cumulativeDaysMap[entityId] || 0;
   };
 
   // Helper function to get card background color based on position
@@ -1167,7 +1188,7 @@ export default function UnifiedLibrary({
                     </Text>
                   </View>
                   <Text style={[styles.endorsementEntryCardCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                    endorsed for {calculateDaysEndorsed(entry.createdAt)} {calculateDaysEndorsed(entry.createdAt) === 1 ? 'day' : 'days'}
+                    endorsed for {getCumulativeDaysForEntry(entry)} {getCumulativeDaysForEntry(entry) === 1 ? 'day' : 'days'}
                   </Text>
                 </View>
                 {(mode === 'edit' || mode === 'view' || mode === 'preview') && (
@@ -1293,7 +1314,7 @@ export default function UnifiedLibrary({
                     </Text>
                   </View>
                   <Text style={[styles.endorsementEntryCardCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                    endorsed for {calculateDaysEndorsed(entry.createdAt)} {calculateDaysEndorsed(entry.createdAt) === 1 ? 'day' : 'days'}
+                    endorsed for {getCumulativeDaysForEntry(entry)} {getCumulativeDaysForEntry(entry) === 1 ? 'day' : 'days'}
                   </Text>
                 </View>
                 {(mode === 'edit' || mode === 'view' || mode === 'preview') && (
