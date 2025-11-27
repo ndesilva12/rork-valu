@@ -1435,7 +1435,7 @@ export default function SearchScreen() {
       <View style={[styles.stickyHeader, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={styles.header}>
           <Image
-            source={require('@/assets/images/endorsements12.png')}
+            source={require('@/assets/images/endorsementblue1.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
