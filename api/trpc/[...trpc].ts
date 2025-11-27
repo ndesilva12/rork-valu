@@ -2,25 +2,25 @@ import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { appRouter } from '../../backend/trpc/app-router';
 import { createContext } from '../../backend/trpc/create-context';
 
-// Use Edge Runtime which supports ES Modules natively
+// Use Node.js Runtime for compatibility with @clerk/backend
 export const config = {
-  runtime: 'edge',
+  runtime: 'nodejs',
 };
 
 export default async function handler(request: Request) {
   try {
-    console.log('[Edge API] Handling request:', request.method, request.url);
+    console.log('[tRPC API] Handling request:', request.method, request.url);
 
     const response = await fetchRequestHandler({
       endpoint: '/api/trpc',
       req: request,
       router: appRouter,
       createContext: async (opts) => {
-        console.log('[Edge API] Creating context');
+        console.log('[tRPC API] Creating context');
         return createContext(opts);
       },
       onError: ({ error, path }) => {
-        console.error('[Edge API] tRPC Error:', {
+        console.error('[tRPC API] tRPC Error:', {
           path,
           message: error.message,
           code: error.code,
@@ -29,10 +29,10 @@ export default async function handler(request: Request) {
       },
     });
 
-    console.log('[Edge API] Response status:', response.status);
+    console.log('[tRPC API] Response status:', response.status);
     return response;
   } catch (error: any) {
-    console.error('[Edge API] Fatal error:', {
+    console.error('[tRPC API] Fatal error:', {
       message: error.message,
       stack: error.stack,
     });
