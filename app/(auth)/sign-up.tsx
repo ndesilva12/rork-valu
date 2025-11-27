@@ -300,7 +300,7 @@ export default function SignUpScreen() {
           >
             <View style={styles.logoContainer}>
               <Image
-                source={require('@/assets/images/endorsements12.png')}
+                source={require('@/assets/images/endorsementblue.png')}
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -345,7 +345,7 @@ export default function SignUpScreen() {
         >
           <View style={styles.logoContainer}>
             <Image
-              source={require('@/assets/images/endorsements12.png')}
+              source={require('@/assets/images/endorsementblue.png')}
               style={styles.logo}
               resizeMode="contain"
             />
