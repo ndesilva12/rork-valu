@@ -5,6 +5,7 @@ import { saveProfileProcedure } from "./routes/user/save-profile/route";
 import { autocompleteProcedure } from "./routes/location/autocomplete/route";
 import { placeDetailsProcedure } from "./routes/location/place-details/route";
 import { getArticlesProcedure } from "./routes/news/get-articles/route";
+import { impersonateProcedure } from "./routes/admin/impersonate/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -20,6 +21,9 @@ export const appRouter = createTRPCRouter({
   }),
   news: createTRPCRouter({
     getArticles: getArticlesProcedure,
+  }),
+  admin: createTRPCRouter({
+    impersonate: impersonateProcedure,
   }),
 });
 

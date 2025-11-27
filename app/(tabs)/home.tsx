@@ -292,6 +292,19 @@ export default function HomeScreen() {
     return business?.businessInfo?.name || 'Unknown Business';
   };
 
+  // Helper function to get card background color based on position
+  const getEntryCardBackgroundColor = (index: number): string => {
+    if (index < 5) {
+      // Top 5: Success/aligned color
+      return colors.successLight;
+    } else if (index < 10) {
+      // 6-10: Neutral/secondary color
+      return colors.neutralLight;
+    }
+    // 11+: Normal background
+    return colors.backgroundSecondary;
+  };
+
   // Drag-and-drop sensors for list reordering
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -2271,8 +2284,9 @@ export default function HomeScreen() {
           {/* Title row with Action Menu and optional Add button */}
           {!isEditMode && (
           <View style={styles.listDetailTitleRow}>
-            <View style={styles.listDetailTitleContainer}>
-              <Text style={[styles.listDetailTitle, { color: colors.text }]}>{list.name}</Text>
+            <Text style={[styles.listDetailTitle, { color: colors.text }]}>{list.name}</Text>
+
+            <View style={styles.listHeaderButtons}>
               <TouchableOpacity
                 style={styles.listOptionsButton}
                 onPress={() => setShowEditDropdown(!showEditDropdown)}
@@ -2280,21 +2294,21 @@ export default function HomeScreen() {
               >
                 <MoreVertical size={24} color={colors.text} strokeWidth={2} />
               </TouchableOpacity>
-            </View>
 
-            {/* Add button - hidden for values-generated lists */}
-            {!isValuesGeneratedList && (
-              <TouchableOpacity
-                style={[styles.addItemButton, { backgroundColor: colors.primary }]}
-                onPress={() => {
-                  setSelectedList(list);
-                  setShowAddItemModal(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <Plus size={20} color={colors.white} strokeWidth={2.5} />
-              </TouchableOpacity>
-            )}
+              {/* Add button - hidden for values-generated lists */}
+              {!isValuesGeneratedList && (
+                <TouchableOpacity
+                  style={[styles.addItemButtonLarge, { backgroundColor: colors.primary }]}
+                  onPress={() => {
+                    setSelectedList(list);
+                    setShowAddItemModal(true);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Plus size={34} color={colors.white} strokeWidth={2.5} />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
           )}
 
@@ -2441,199 +2455,187 @@ export default function HomeScreen() {
                         const brandScore = scoredBrands.get(entry.brandId) || 0;
                         const brand = allSupportFull.find(b => b.id === entry.brandId) || allAvoidFull.find(b => b.id === entry.brandId);
                         const isAligned = allSupportFull.some(b => b.id === entry.brandId);
-                        const titleColor = colors.white;
+                        const cardBgColor = getEntryCardBackgroundColor(entryIndex);
 
                         return (
-                          <View
+                          <TouchableOpacity
                             key={entry.id}
                             ref={setNodeRef as any}
-                            style={[styles.listEntryRow, style as any]}
+                            style={[
+                              styles.listEntryCard,
+                              { backgroundColor: cardBgColor },
+                              style as any
+                            ]}
+                            onPress={() => !isEditMode && router.push(`/brand/${entry.brandId}`)}
+                            activeOpacity={0.7}
+                            disabled={isEditMode}
                           >
-                      <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
-                        {entryIndex + 1}
-                      </Text>
-                      <View style={styles.listEntryWrapper}>
-                        <TouchableOpacity
-                          style={[
-                            styles.brandCard,
-                            { backgroundColor: 'transparent' },
-                          ]}
-                          onPress={() => !isEditMode && router.push(`/brand/${entry.brandId}`)}
-                          activeOpacity={0.7}
-                          disabled={isEditMode}
-                        >
-                          <View style={styles.brandCardInner}>
-                          <View style={styles.brandLogoContainer}>
                             <Image
                               source={{ uri: entry.logoUrl || getLogoUrl(entry.website || (entry.type === 'brand' && 'brandId' in entry ? getBrandWebsite(entry.brandId) : '') || '') }}
-                              style={styles.brandLogo}
+                              style={styles.listEntryCardImage}
                               contentFit="cover"
                               transition={200}
                               cachePolicy="memory-disk"
                             />
-                          </View>
-                          <View style={styles.brandCardContent}>
-                            <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>
-                              {entry.brandName || getBrandName(entry.brandId)}
-                            </Text>
-                            <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                              Brand
-                            </Text>
-                          </View>
-                          {!isEditMode && (
-                            <View style={styles.brandScoreContainer}>
-                              <Text style={[styles.brandScore, { color: titleColor }]}>{brandScore}</Text>
+                            <View style={styles.listEntryCardContent}>
+                              <View style={styles.listEntryCardFirstLine}>
+                                <Text style={[styles.listEntryCardNumber, { color: colors.text }]}>{entryIndex + 1}.</Text>
+                                <Text style={[styles.listEntryCardName, { color: colors.text }]} numberOfLines={1}>
+                                  {entry.brandName || getBrandName(entry.brandId)}
+                                </Text>
+                              </View>
+                              <Text style={[styles.listEntryCardCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                                Brand
+                              </Text>
                             </View>
-                          )}
-                          {!isEditMode && (
-                            <TouchableOpacity
-                              style={styles.listEntryOptionsButton}
-                              onPress={() => setActiveItemOptionsMenu(activeItemOptionsMenu === entry.id ? null : entry.id)}
-                              activeOpacity={0.7}
-                            >
-                              <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
-                            </TouchableOpacity>
-                          )}
-                          {isEditMode && isMobileScreen && (
-                            <View style={styles.listCardRearrangeButtons}>
+                            {!isEditMode && (
+                              <View style={styles.listEntryCardScore}>
+                                <Text style={[styles.listEntryCardScoreText, { color: colors.text }]}>{brandScore}</Text>
+                              </View>
+                            )}
+                            {!isEditMode && (
                               <TouchableOpacity
-                                onPress={() => handleMoveEntryUp(entryIndex)}
-                                disabled={entryIndex === 0}
-                                style={styles.rearrangeButton}
+                                style={styles.listEntryOptionsButton}
+                                onPress={(e) => {
+                                  e.stopPropagation();
+                                  setActiveItemOptionsMenu(activeItemOptionsMenu === entry.id ? null : entry.id);
+                                }}
                                 activeOpacity={0.7}
                               >
-                                <ChevronUp
-                                  size={20}
-                                  color={entryIndex === 0 ? colors.textSecondary : colors.text}
-                                  strokeWidth={2}
-                                />
+                                <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
                               </TouchableOpacity>
-                              <TouchableOpacity
-                                onPress={() => handleMoveEntryDown(entryIndex)}
-                                disabled={entryIndex === list.entries.length - 1}
-                                style={styles.rearrangeButton}
-                                activeOpacity={0.7}
+                            )}
+                            {isEditMode && isMobileScreen && (
+                              <View style={styles.listCardRearrangeButtons}>
+                                <TouchableOpacity
+                                  onPress={() => handleMoveEntryUp(entryIndex)}
+                                  disabled={entryIndex === 0}
+                                  style={styles.rearrangeButton}
+                                  activeOpacity={0.7}
+                                >
+                                  <ChevronUp
+                                    size={20}
+                                    color={entryIndex === 0 ? colors.textSecondary : colors.text}
+                                    strokeWidth={2}
+                                  />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  onPress={() => handleMoveEntryDown(entryIndex)}
+                                  disabled={entryIndex === list.entries.length - 1}
+                                  style={styles.rearrangeButton}
+                                  activeOpacity={0.7}
+                                >
+                                  <ChevronDown
+                                    size={20}
+                                    color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
+                                    strokeWidth={2}
+                                  />
+                                </TouchableOpacity>
+                              </View>
+                            )}
+                            {isEditMode && !isMobileScreen && (
+                              <View
+                                {...attributes}
+                                {...listeners}
+                                style={styles.dragHandle}
                               >
-                                <ChevronDown
-                                  size={20}
-                                  color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
-                                  strokeWidth={2}
-                                />
-                              </TouchableOpacity>
-                            </View>
-                          )}
-                          {isEditMode && !isMobileScreen && (
-                            <View
-                              {...attributes}
-                              {...listeners}
-                              style={styles.dragHandle}
-                            >
-                              <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                            </View>
-                          )}
-                        </View>
-                      </TouchableOpacity>
-                      </View>
-                    </View>
-                  );
+                                <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                              </View>
+                            )}
+                          </TouchableOpacity>
+                        );
                 } else if (entry.type === 'business' && 'businessId' in entry) {
                   // Get normalized business score (matching business details page)
                   const alignmentScore = businessScoresMap.get(entry.businessId) || 50;
                   const isAligned = alignmentScore >= 50;
-                  const titleColor = colors.white;
+                  const cardBgColor = getEntryCardBackgroundColor(entryIndex);
 
                   return (
-                    <View
+                    <TouchableOpacity
                       key={entry.id}
                       ref={setNodeRef as any}
-                      style={[styles.listEntryRow, style as any]}
+                      style={[
+                        styles.listEntryCard,
+                        { backgroundColor: cardBgColor },
+                        style as any
+                      ]}
+                      onPress={() => !isEditMode && handleBusinessPress(entry.businessId)}
+                      activeOpacity={0.7}
+                      disabled={isEditMode}
                     >
-                      <Text style={[styles.listEntryNumber, { color: colors.textSecondary }]}>
-                        {entryIndex + 1}
-                      </Text>
-                      <View style={styles.listEntryWrapper}>
-                      <TouchableOpacity
-                        style={[
-                          styles.brandCard,
-                          { backgroundColor: 'transparent' },
-                        ]}
-                        onPress={() => !isEditMode && handleBusinessPress(entry.businessId)}
-                        activeOpacity={0.7}
-                        disabled={isEditMode}
-                      >
-                        <View style={styles.brandCardInner}>
-                          <View style={styles.brandLogoContainer}>
-                            <Image
-                              source={{ uri: entry.logoUrl || getLogoUrl(entry.website || (entry.type === 'brand' && 'brandId' in entry ? getBrandWebsite(entry.brandId) : '') || '') }}
-                              style={styles.brandLogo}
-                              contentFit="cover"
-                              transition={200}
-                              cachePolicy="memory-disk"
-                            />
-                          </View>
-                          <View style={styles.brandCardContent}>
-                            <Text style={[styles.brandName, { color: titleColor }]} numberOfLines={2}>
-                              {entry.businessName || getBusinessName(entry.businessId)}
-                            </Text>
-                            <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                              Business
-                            </Text>
-                          </View>
-                          {!isEditMode && (
-                            <View style={styles.brandScoreContainer}>
-                              <Text style={[styles.brandScore, { color: titleColor }]}>{alignmentScore}</Text>
-                            </View>
-                          )}
-                          {!isEditMode && (
-                            <TouchableOpacity
-                              style={styles.listEntryOptionsButton}
-                              onPress={() => setActiveItemOptionsMenu(activeItemOptionsMenu === entry.id ? null : entry.id)}
-                              activeOpacity={0.7}
-                            >
-                              <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
-                            </TouchableOpacity>
-                          )}
-                          {isEditMode && isMobileScreen && (
-                            <View style={styles.listCardRearrangeButtons}>
-                              <TouchableOpacity
-                                onPress={() => handleMoveEntryUp(entryIndex)}
-                                disabled={entryIndex === 0}
-                                style={styles.rearrangeButton}
-                                activeOpacity={0.7}
-                              >
-                                <ChevronUp
-                                  size={20}
-                                  color={entryIndex === 0 ? colors.textSecondary : colors.text}
-                                  strokeWidth={2}
-                                />
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                onPress={() => handleMoveEntryDown(entryIndex)}
-                                disabled={entryIndex === list.entries.length - 1}
-                                style={styles.rearrangeButton}
-                                activeOpacity={0.7}
-                              >
-                                <ChevronDown
-                                  size={20}
-                                  color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
-                                  strokeWidth={2}
-                                />
-                              </TouchableOpacity>
-                            </View>
-                          )}
-                          {isEditMode && !isMobileScreen && (
-                            <View
-                              {...attributes}
-                              {...listeners}
-                              style={styles.dragHandle}
-                            >
-                              <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
-                            </View>
-                          )}
+                      <Image
+                        source={{ uri: entry.logoUrl || getLogoUrl(entry.website || '') }}
+                        style={styles.listEntryCardImage}
+                        contentFit="cover"
+                        transition={200}
+                        cachePolicy="memory-disk"
+                      />
+                      <View style={styles.listEntryCardContent}>
+                        <View style={styles.listEntryCardFirstLine}>
+                          <Text style={[styles.listEntryCardNumber, { color: colors.text }]}>{entryIndex + 1}.</Text>
+                          <Text style={[styles.listEntryCardName, { color: colors.text }]} numberOfLines={1}>
+                            {entry.businessName || getBusinessName(entry.businessId)}
+                          </Text>
                         </View>
-                      </TouchableOpacity>
+                        <Text style={[styles.listEntryCardCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                          Business
+                        </Text>
                       </View>
-                    </View>
+                      {!isEditMode && (
+                        <View style={styles.listEntryCardScore}>
+                          <Text style={[styles.listEntryCardScoreText, { color: colors.text }]}>{alignmentScore}</Text>
+                        </View>
+                      )}
+                      {!isEditMode && (
+                        <TouchableOpacity
+                          style={styles.listEntryOptionsButton}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            setActiveItemOptionsMenu(activeItemOptionsMenu === entry.id ? null : entry.id);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                        </TouchableOpacity>
+                      )}
+                      {isEditMode && isMobileScreen && (
+                        <View style={styles.listCardRearrangeButtons}>
+                          <TouchableOpacity
+                            onPress={() => handleMoveEntryUp(entryIndex)}
+                            disabled={entryIndex === 0}
+                            style={styles.rearrangeButton}
+                            activeOpacity={0.7}
+                          >
+                            <ChevronUp
+                              size={20}
+                              color={entryIndex === 0 ? colors.textSecondary : colors.text}
+                              strokeWidth={2}
+                            />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => handleMoveEntryDown(entryIndex)}
+                            disabled={entryIndex === list.entries.length - 1}
+                            style={styles.rearrangeButton}
+                            activeOpacity={0.7}
+                          >
+                            <ChevronDown
+                              size={20}
+                              color={entryIndex === list.entries.length - 1 ? colors.textSecondary : colors.text}
+                              strokeWidth={2}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                      {isEditMode && !isMobileScreen && (
+                        <View
+                          {...attributes}
+                          {...listeners}
+                          style={styles.dragHandle}
+                        >
+                          <GripVertical size={20} color={colors.textSecondary} strokeWidth={2} />
+                        </View>
+                      )}
+                    </TouchableOpacity>
                   );
                 } else if (entry.type === 'value' && 'valueId' in entry && 'mode' in entry) {
                   const isMaxPain = entry.mode === 'maxPain';
@@ -4277,8 +4279,9 @@ export default function HomeScreen() {
       {/* Add Item Selection Modal - Shows 5 type options */}
       <Modal
         visible={showAddItemModal}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
+        statusBarTranslucent={true}
         onRequestClose={() => {
           setShowAddItemModal(false);
           setAddItemType(null);
@@ -4877,7 +4880,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: Platform.OS === 'web' ? 16 : 12,
-    paddingTop: 8,
+    paddingTop: 4,
   },
   webContent: {
     maxWidth: 768,
@@ -4896,12 +4899,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Platform.OS === 'web' ? 16 : 12,
     paddingTop: Platform.OS === 'web' ? 0 : 56,
-    paddingBottom: 4,
+    paddingBottom: 0,
   },
   headerLogo: {
     width: 161,
     height: 47,
-    marginTop: 8,
+    marginTop: 4,
     alignSelf: 'flex-start',
   },
   headerActions: {
@@ -5556,6 +5559,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     paddingTop: 60,
+    position: 'relative' as const,
   },
   modalContent: {
     borderTopLeftRadius: 20,
@@ -5913,10 +5917,15 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   addItemModalFixed: {
-    height: 420,
-    maxHeight: 420,
-    minHeight: 420,
+    position: 'absolute' as const,
+    top: 80,
+    left: 16,
+    right: 16,
+    height: '80%' as any,
+    maxHeight: '80%' as any,
+    minHeight: '80%' as any,
     flexDirection: 'column' as const,
+    alignSelf: 'center',
   },
   fixedSearchInputContainer: {
     paddingHorizontal: 16,
@@ -6157,6 +6166,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
+  listHeaderButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   listDetailTitleContainerHorizontal: {
     flex: 1,
     flexDirection: 'row',
@@ -6207,6 +6221,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  addItemButtonLarge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -6428,9 +6454,50 @@ const styles = StyleSheet.create({
   listEntryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 10,
-    borderWidth: 1,
-    overflow: 'visible',
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 0,
+  },
+  listEntryCardImage: {
+    width: 56,
+    height: 56,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  listEntryCardContent: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    justifyContent: 'center',
+  },
+  listEntryCardFirstLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  listEntryCardNumber: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  listEntryCardName: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    flex: 1,
+  },
+  listEntryCardCategory: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  listEntryCardScore: {
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  listEntryCardScoreText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
   },
   listEntryContent: {
     gap: 3,

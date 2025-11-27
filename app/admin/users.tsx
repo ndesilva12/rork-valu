@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
   Platform,
   Image,
+  Linking,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,6 +28,7 @@ import { UserList, ListEntry } from '@/types/library';
 import { getFollowing, getFollowers, followEntity, unfollowEntity, Follow, FollowableType } from '@/services/firebase/followService';
 import { Picker } from '@react-native-picker/picker';
 import { pickAndUploadImage } from '@/lib/imageUpload';
+import { trpc } from '@/lib/trpc';
 
 interface SocialMedia {
   facebook?: string;
@@ -162,6 +164,69 @@ export default function UsersManagement() {
   const [newEndorsementType, setNewEndorsementType] = useState<'brand' | 'business'>('brand');
   const [newEndorsementId, setNewEndorsementId] = useState('');
   const [newEndorsementName, setNewEndorsementName] = useState('');
+
+  // Impersonation state
+  const [impersonatingUserId, setImpersonatingUserId] = useState<string | null>(null);
+
+  // Impersonation mutation
+  const impersonateMutation = trpc.admin.impersonate.useMutation({
+    onSuccess: (data) => {
+      setImpersonatingUserId(null);
+      if (data.signInUrl) {
+        const message = `Impersonation link generated for ${data.targetUserName} (${data.targetUserEmail}).\n\nThe link will expire in 5 minutes.\n\nClick OK to open the sign-in link in a new tab. You will be logged in as this user.`;
+
+        if (Platform.OS === 'web') {
+          if (window.confirm(message)) {
+            window.open(data.signInUrl, '_blank');
+          }
+        } else {
+          Alert.alert(
+            'Impersonation Ready',
+            message,
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Open Link', onPress: () => Linking.openURL(data.signInUrl) }
+            ]
+          );
+        }
+      }
+    },
+    onError: (error) => {
+      setImpersonatingUserId(null);
+      const errorMessage = error.message || 'Failed to generate impersonation link';
+      if (Platform.OS === 'web') {
+        window.alert(`Error: ${errorMessage}`);
+      } else {
+        Alert.alert('Impersonation Error', errorMessage);
+      }
+    },
+  });
+
+  const handleImpersonate = (user: UserData) => {
+    const confirmMessage = `Are you sure you want to impersonate "${user.userDetails?.name || user.email}"?\n\nThis will generate a one-time sign-in link that lets you log in as this user.`;
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(confirmMessage)) {
+        setImpersonatingUserId(user.userId);
+        impersonateMutation.mutate({ targetUserId: user.userId });
+      }
+    } else {
+      Alert.alert(
+        'Impersonate User',
+        confirmMessage,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Impersonate',
+            onPress: () => {
+              setImpersonatingUserId(user.userId);
+              impersonateMutation.mutate({ targetUserId: user.userId });
+            }
+          }
+        ]
+      );
+    }
+  };
 
   useEffect(() => {
     loadUsers();
@@ -1235,6 +1300,15 @@ export default function UsersManagement() {
                       onPress={() => openEditModal(user)}
                     >
                       <Text style={styles.editButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.impersonateButton}
+                      onPress={() => handleImpersonate(user)}
+                      disabled={impersonatingUserId === user.userId}
+                    >
+                      <Text style={styles.impersonateButtonText}>
+                        {impersonatingUserId === user.userId ? '...' : 'Login'}
+                      </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.deleteButton}
@@ -2404,6 +2478,17 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   editButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  impersonateButton: {
+    backgroundColor: '#6f42c1',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  impersonateButtonText: {
     color: '#fff',
     fontSize: 13,
     fontWeight: '600',

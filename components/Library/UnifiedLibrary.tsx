@@ -1071,8 +1071,23 @@ export default function UnifiedLibrary({
     return diffDays;
   };
 
+  // Helper function to get card background color based on position
+  const getEntryCardBackgroundColor = (index: number): string => {
+    // Use app blue with different opacities
+    // Light mode: rgb(3, 68, 102), Dark mode: rgb(0, 170, 250)
+    if (index < 5) {
+      // Top 5: 45% opacity
+      return isDarkMode ? 'rgba(0, 170, 250, 0.45)' : 'rgba(3, 68, 102, 0.45)';
+    } else if (index < 10) {
+      // 6-10: 25% opacity
+      return isDarkMode ? 'rgba(0, 170, 250, 0.25)' : 'rgba(3, 68, 102, 0.25)';
+    }
+    // 11+: 10% opacity
+    return isDarkMode ? 'rgba(0, 170, 250, 0.10)' : 'rgba(3, 68, 102, 0.10)';
+  };
+
   // EXACT copy of Home tab's renderListEntry with score calculation
-  const renderListEntry = (entry: ListEntry, isEndorsementSection: boolean = false) => {
+  const renderListEntry = (entry: ListEntry, isEndorsementSection: boolean = false, entryIndex?: number) => {
     if (!entry) return null;
 
     switch (entry.type) {
@@ -1112,6 +1127,58 @@ export default function UnifiedLibrary({
           // Use fullBrand.id if found, otherwise use entry.brandId for navigation
           const navigationId = fullBrand?.id || entry.brandId;
 
+          // Endorsement section: render as card with position-based background
+          if (isEndorsementSection && entryIndex !== undefined) {
+            const cardBgColor = getEntryCardBackgroundColor(entryIndex);
+            return (
+              <TouchableOpacity
+                style={[
+                  styles.endorsementEntryCard,
+                  { backgroundColor: cardBgColor },
+                ]}
+                onPress={() => {
+                  router.push({
+                    pathname: '/brand/[id]',
+                    params: { id: navigationId },
+                  });
+                }}
+                activeOpacity={0.7}
+              >
+                <Image
+                  source={{ uri: logoUrl }}
+                  style={styles.endorsementEntryCardImage}
+                  contentFit="cover"
+                  transition={200}
+                  cachePolicy="memory-disk"
+                />
+                <View style={styles.endorsementEntryCardContent}>
+                  <View style={styles.endorsementEntryCardFirstLine}>
+                    <Text style={[styles.endorsementEntryCardNumber, { color: colors.text }]}>{entryIndex + 1}.</Text>
+                    <Text style={[styles.endorsementEntryCardName, { color: colors.text }]} numberOfLines={1}>
+                      {brandName}
+                    </Text>
+                  </View>
+                  <Text style={[styles.endorsementEntryCardCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                    endorsed for {calculateDaysEndorsed(entry.createdAt)} {calculateDaysEndorsed(entry.createdAt) === 1 ? 'day' : 'days'}
+                  </Text>
+                </View>
+                {(mode === 'edit' || mode === 'view' || mode === 'preview') && (
+                  <TouchableOpacity
+                    style={styles.endorsementEntryOptionsButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleOpenActionModal(entry);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+            );
+          }
+
+          // Non-endorsement section: render original style
           return (
             <View>
               <TouchableOpacity
@@ -1142,9 +1209,7 @@ export default function UnifiedLibrary({
                       {brandName}
                     </Text>
                     <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {isEndorsementSection
-                        ? `endorsed for ${calculateDaysEndorsed(entry.createdAt)} ${calculateDaysEndorsed(entry.createdAt) === 1 ? 'day' : 'days'}`
-                        : brandCategory}
+                      {brandCategory}
                     </Text>
                   </View>
                   <View style={styles.brandScoreContainer}>
@@ -1188,6 +1253,58 @@ export default function UnifiedLibrary({
           const businessWebsite = fullBusiness?.businessInfo?.website || (entry as any).website || '';
           const logoUrl = fullBusiness?.businessInfo?.logoUrl || (entry as any).logoUrl || (entry as any).logo || (businessWebsite ? getLogoUrl(businessWebsite) : getLogoUrl(''));
 
+          // Endorsement section: render as card with position-based background
+          if (isEndorsementSection && entryIndex !== undefined) {
+            const cardBgColor = getEntryCardBackgroundColor(entryIndex);
+            return (
+              <TouchableOpacity
+                style={[
+                  styles.endorsementEntryCard,
+                  { backgroundColor: cardBgColor },
+                ]}
+                onPress={() => {
+                  router.push({
+                    pathname: '/business/[id]',
+                    params: { id: entry.businessId },
+                  });
+                }}
+                activeOpacity={0.7}
+              >
+                <Image
+                  source={{ uri: logoUrl }}
+                  style={styles.endorsementEntryCardImage}
+                  contentFit="cover"
+                  transition={200}
+                  cachePolicy="memory-disk"
+                />
+                <View style={styles.endorsementEntryCardContent}>
+                  <View style={styles.endorsementEntryCardFirstLine}>
+                    <Text style={[styles.endorsementEntryCardNumber, { color: colors.text }]}>{entryIndex + 1}.</Text>
+                    <Text style={[styles.endorsementEntryCardName, { color: colors.text }]} numberOfLines={1}>
+                      {businessName}
+                    </Text>
+                  </View>
+                  <Text style={[styles.endorsementEntryCardCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                    endorsed for {calculateDaysEndorsed(entry.createdAt)} {calculateDaysEndorsed(entry.createdAt) === 1 ? 'day' : 'days'}
+                  </Text>
+                </View>
+                {(mode === 'edit' || mode === 'view' || mode === 'preview') && (
+                  <TouchableOpacity
+                    style={styles.endorsementEntryOptionsButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleOpenActionModal(entry);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+            );
+          }
+
+          // Non-endorsement section: render original style
           return (
             <View>
               <TouchableOpacity
@@ -1218,9 +1335,7 @@ export default function UnifiedLibrary({
                       {businessName}
                     </Text>
                     <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {isEndorsementSection
-                        ? `endorsed for ${calculateDaysEndorsed(entry.createdAt)} ${calculateDaysEndorsed(entry.createdAt) === 1 ? 'day' : 'days'}`
-                        : (businessCategory || 'Business')}
+                      {businessCategory || 'Business'}
                     </Text>
                   </View>
                   <View style={styles.brandScoreContainer}>
@@ -1799,17 +1914,10 @@ export default function UnifiedLibrary({
         }
       }
 
-      // Normal (non-reorder) mode
+      // Normal (non-reorder) mode - render card directly with index for styling
       return (
-        <View key={entry.id}>
-          <View style={styles.forYouItemRow}>
-            <Text style={[styles.forYouItemNumber, { color: colors.textSecondary }]}>
-              {index + 1}
-            </Text>
-            <View style={styles.forYouCardWrapper}>
-              {renderListEntry(entry, true)}
-            </View>
-          </View>
+        <View key={entry.id} style={styles.endorsementEntryWrapper}>
+          {renderListEntry(entry, true, index)}
         </View>
       );
     };
@@ -1844,19 +1952,9 @@ export default function UnifiedLibrary({
       </DndContext>
     ) : (
       <>
-        {/* Top 5 endorsements with 15% opacity background */}
-        {top5Content.length > 0 && (
-          <View style={[styles.top5Container, { backgroundColor: isDarkMode ? 'rgba(0, 170, 250, 0.15)' : 'rgba(3, 68, 102, 0.15)', borderColor: 'transparent' }]}>
-            {top5Content}
-          </View>
-        )}
-        {/* Items 6-10 with 8% opacity background */}
-        {next5Content.length > 0 && (
-          <View style={[styles.top5Container, { backgroundColor: isDarkMode ? 'rgba(0, 170, 250, 0.08)' : 'rgba(3, 68, 102, 0.08)', borderColor: 'transparent' }]}>
-            {next5Content}
-          </View>
-        )}
-        {/* Remaining endorsements (11+) - no background */}
+        {/* All entries render as individual cards with position-based colors */}
+        {top5Content}
+        {next5Content}
         {remainingContent}
       </>
     );
@@ -2753,15 +2851,6 @@ export default function UnifiedLibrary({
         {/* Action buttons for endorsed section */}
         {isEndorsed && canEdit && (
           <View style={styles.endorsedHeaderActions}>
-            {/* Add button */}
-            <TouchableOpacity
-              onPress={() => setShowAddEndorsementModal(true)}
-              style={[styles.addEndorsementButton, { backgroundColor: colors.primary }]}
-              activeOpacity={0.7}
-            >
-              <Plus size={20} color={colors.white} strokeWidth={2.5} />
-            </TouchableOpacity>
-
             {/* Action menu button - only show if there are items to reorder */}
             {canReorder && (
               <View>
@@ -2798,6 +2887,15 @@ export default function UnifiedLibrary({
                 )}
               </View>
             )}
+
+            {/* Add button - on far right */}
+            <TouchableOpacity
+              onPress={() => setShowAddEndorsementModal(true)}
+              style={[styles.addEndorsementButton, { backgroundColor: colors.primary }]}
+              activeOpacity={0.7}
+            >
+              <Plus size={24} color={colors.white} strokeWidth={2.5} />
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -3244,8 +3342,9 @@ export default function UnifiedLibrary({
       {/* Add to Endorsement Search Modal */}
       <Modal
         visible={showAddEndorsementModal}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
+        statusBarTranslucent={true}
         onRequestClose={() => {
           setShowAddEndorsementModal(false);
           setAddSearchQuery('');
@@ -3655,6 +3754,53 @@ const styles = StyleSheet.create({
   forYouCardWrapper: {
     flex: 1,
   },
+  // New endorsement entry card styles
+  endorsementEntryWrapper: {
+    marginBottom: 2,
+  },
+  endorsementEntryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    overflow: 'hidden',
+    minHeight: 72,
+  },
+  endorsementEntryCardImage: {
+    width: 72,
+    height: 72,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  endorsementEntryCardContent: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    justifyContent: 'center',
+  },
+  endorsementEntryCardFirstLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  endorsementEntryCardNumber: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  endorsementEntryCardName: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    flex: 1,
+  },
+  endorsementEntryCardCategory: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  endorsementEntryOptionsButton: {
+    padding: 8,
+    marginRight: 4,
+  },
   loadMoreButton: {
     paddingVertical: 14,
     paddingHorizontal: 20,
@@ -4007,7 +4153,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
+    paddingVertical: 10,
     paddingHorizontal: Platform.OS === 'web' ? 8 : 16,
     borderBottomWidth: 1,
   },
@@ -4126,9 +4272,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   addEndorsementButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -4136,24 +4282,29 @@ const styles = StyleSheet.create({
   addEndorsementModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
+    paddingTop: 60,
   },
   addEndorsementModalOverlayLarge: {
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
+    paddingTop: 80,
   },
   addEndorsementModalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderRadius: 24,
+    height: '85%',
     maxHeight: '85%',
-    minHeight: '60%',
+    minHeight: '85%',
+    marginHorizontal: 8,
   },
   addEndorsementModalContentLarge: {
     width: '50%',
     maxWidth: 600,
-    minHeight: '75%',
-    maxHeight: '85%',
+    height: '80%',
+    minHeight: '80%',
+    maxHeight: '80%',
     borderRadius: 24,
+    marginHorizontal: 0,
   },
   addEndorsementModalHeader: {
     flexDirection: 'row',
