@@ -1076,14 +1076,14 @@ export default function UnifiedLibrary({
     // Use app blue with different opacities
     // Light mode: rgb(3, 68, 102), Dark mode: rgb(0, 170, 250)
     if (index < 5) {
-      // Top 5: 25% opacity
-      return isDarkMode ? 'rgba(0, 170, 250, 0.25)' : 'rgba(3, 68, 102, 0.25)';
+      // Top 5: 30% opacity
+      return isDarkMode ? 'rgba(0, 170, 250, 0.30)' : 'rgba(3, 68, 102, 0.30)';
     } else if (index < 10) {
-      // 6-10: 10% opacity
-      return isDarkMode ? 'rgba(0, 170, 250, 0.10)' : 'rgba(3, 68, 102, 0.10)';
+      // 6-10: 20% opacity
+      return isDarkMode ? 'rgba(0, 170, 250, 0.20)' : 'rgba(3, 68, 102, 0.20)';
     }
-    // 11+: 5% opacity (very light)
-    return isDarkMode ? 'rgba(0, 170, 250, 0.05)' : 'rgba(3, 68, 102, 0.05)';
+    // 11+: 10% opacity
+    return isDarkMode ? 'rgba(0, 170, 250, 0.10)' : 'rgba(3, 68, 102, 0.10)';
   };
 
   // EXACT copy of Home tab's renderListEntry with score calculation
@@ -3755,18 +3755,18 @@ const styles = StyleSheet.create({
   },
   // New endorsement entry card styles
   endorsementEntryWrapper: {
-    marginBottom: 4,
+    marginBottom: 2,
   },
   endorsementEntryCard: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
     overflow: 'hidden',
-    minHeight: 64,
+    minHeight: 72,
   },
   endorsementEntryCardImage: {
-    width: 64,
-    height: 64,
+    width: 72,
+    height: 72,
     borderTopLeftRadius: 12,
     borderBottomLeftRadius: 12,
     borderTopRightRadius: 0,
