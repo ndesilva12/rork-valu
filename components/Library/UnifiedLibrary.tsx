@@ -1882,14 +1882,13 @@ export default function UnifiedLibrary({
                 </Text>
                 <View style={styles.forYouCardWrapper}>
                   {renderListEntry(entry, true)}
-                  </View>
                 </View>
               </View>
-            );
-          };
+            </View>
+          );
+        };
 
-          return <SortableEntry key={entry.id} />;
-        }
+        return <SortableEntry key={entry.id} />;
       }
 
       // Normal (non-reorder) mode - render card directly with index for styling
