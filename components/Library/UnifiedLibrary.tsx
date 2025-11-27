@@ -2894,7 +2894,7 @@ export default function UnifiedLibrary({
               style={[styles.addEndorsementButton, { backgroundColor: colors.primary }]}
               activeOpacity={0.7}
             >
-              <Plus size={28} color={colors.white} strokeWidth={2.5} />
+              <Plus size={24} color={colors.white} strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
         )}
@@ -3342,8 +3342,9 @@ export default function UnifiedLibrary({
       {/* Add to Endorsement Search Modal */}
       <Modal
         visible={showAddEndorsementModal}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
+        statusBarTranslucent={true}
         onRequestClose={() => {
           setShowAddEndorsementModal(false);
           setAddSearchQuery('');
@@ -4271,9 +4272,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   addEndorsementButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -4281,24 +4282,29 @@ const styles = StyleSheet.create({
   addEndorsementModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
+    paddingTop: 60,
   },
   addEndorsementModalOverlayLarge: {
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
+    paddingTop: 80,
   },
   addEndorsementModalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderRadius: 24,
+    height: '85%',
     maxHeight: '85%',
-    minHeight: '60%',
+    minHeight: '85%',
+    marginHorizontal: 8,
   },
   addEndorsementModalContentLarge: {
     width: '50%',
     maxWidth: 600,
-    minHeight: '75%',
-    maxHeight: '85%',
+    height: '80%',
+    minHeight: '80%',
+    maxHeight: '80%',
     borderRadius: 24,
+    marginHorizontal: 0,
   },
   addEndorsementModalHeader: {
     flexDirection: 'row',
