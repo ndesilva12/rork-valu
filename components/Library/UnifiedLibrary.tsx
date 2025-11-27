@@ -1900,7 +1900,8 @@ export default function UnifiedLibrary({
     };
 
     const filteredEntries = entriesToDisplay.filter(entry => entry != null);
-    const displayedEntries = filteredEntries.slice(0, endorsementLoadCount);
+    // Show all entries when reordering, otherwise respect the load count limit
+    const displayedEntries = isReordering ? filteredEntries : filteredEntries.slice(0, endorsementLoadCount);
 
     // Separate top 5, items 6-10, and the rest
     const top5Entries = displayedEntries.slice(0, 5);
