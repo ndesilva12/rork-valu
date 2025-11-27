@@ -384,17 +384,21 @@ export default function SearchScreen() {
     fetchData();
   }, []);
 
-  // Fetch top businesses (combined brands and businesses) when tab is active
+  // Fetch top businesses (combined brands and businesses) on mount and when tab changes
   useEffect(() => {
     const fetchTopBusinessItems = async () => {
+      // Always fetch on mount, then only when topBusinesses tab is active
       if (activeTab !== 'topBusinesses') return;
 
+      console.log('[Search] Fetching top businesses...');
       try {
         // Fetch both top brands and top businesses
         const [topBrands, topBusinessesList] = await Promise.all([
           getTopBrands(25),
           getTopBusinesses(25),
         ]);
+
+        console.log('[Search] Got top brands:', topBrands.length, 'top businesses:', topBusinessesList.length);
 
         // Combine and sort by score
         const combined: TopBusinessItem[] = [
@@ -408,6 +412,7 @@ export default function SearchScreen() {
           })),
         ].sort((a, b) => b.score - a.score);
 
+        console.log('[Search] Combined top items:', combined.length);
         setTopBusinessItems(combined);
       } catch (error) {
         console.error('Error fetching top businesses:', error);

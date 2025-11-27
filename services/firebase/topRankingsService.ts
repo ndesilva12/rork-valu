@@ -50,8 +50,8 @@ export async function getTopBrands(limit: number = 50): Promise<RankedItem[]> {
   try {
     console.log('[TopRankings] Fetching top brands...');
 
-    // Fetch all user lists from Firebase
-    const listsRef = collection(db, 'lists');
+    // Fetch all user lists from Firebase (stored in 'userLists' collection)
+    const listsRef = collection(db, 'userLists');
     const listsQuery = query(listsRef);
     const listsSnapshot = await getDocs(listsQuery);
 
@@ -134,8 +134,8 @@ export async function getTopBusinesses(
   try {
     console.log('[TopRankings] Fetching top businesses...');
 
-    // Fetch all user lists from Firebase
-    const listsRef = collection(db, 'lists');
+    // Fetch all user lists from Firebase (stored in 'userLists' collection)
+    const listsRef = collection(db, 'userLists');
     const listsQuery = query(listsRef);
     const listsSnapshot = await getDocs(listsQuery);
 
