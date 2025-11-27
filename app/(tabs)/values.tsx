@@ -583,8 +583,8 @@ export default function BrowseScreen() {
   // Render sticky section header
   const renderSectionHeader = () => {
     const titles: Record<BrowseSection, string> = {
-      global: 'Global Recommendations',
-      local: 'Local Recommendations',
+      global: 'Recommendations',
+      local: 'Recommendations',
       values: 'Browse by Values',
     };
 

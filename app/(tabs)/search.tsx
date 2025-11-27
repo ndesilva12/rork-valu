@@ -37,6 +37,7 @@ import { UserProfile } from '@/types';
 import { copyListToLibrary, getEndorsementList } from '@/services/firebase/listService';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { followEntity, unfollowEntity, isFollowing, getFollowing } from '@/services/firebase/followService';
+import { getTopBrands, getTopBusinesses } from '@/services/firebase/topRankingsService';
 import { submitBrandRequest } from '@/services/firebase/brandRequestService';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
@@ -58,6 +59,18 @@ interface FollowingItem {
   location?: string;
   category?: string;
   website?: string;
+}
+
+// Top business item interface (combined brands and businesses)
+interface TopBusinessItem {
+  id: string;
+  type: 'brand' | 'business';
+  name: string;
+  category?: string;
+  website?: string;
+  logoUrl?: string;
+  score: number;
+  endorsementCount: number;
 }
 
 interface ProductInteraction {
@@ -340,7 +353,8 @@ export default function SearchScreen() {
   const [firebaseBusinesses, setFirebaseBusinesses] = useState<BusinessUser[]>([]);
   const [publicUsers, setPublicUsers] = useState<Array<{ id: string; profile: UserProfile }>>([]);
   const [followingItems, setFollowingItems] = useState<FollowingItem[]>([]);
-  const [activeTab, setActiveTab] = useState<'explore' | 'following'>('explore');
+  const [topBusinessItems, setTopBusinessItems] = useState<TopBusinessItem[]>([]);
+  const [activeTab, setActiveTab] = useState<'topBusinesses' | 'topUsers'>('topBusinesses');
   const [scannerVisible, setScannerVisible] = useState(false);
   const [scannedProduct, setScannedProduct] = useState<Product | null>(null);
   const [scannedInfo, setScannedInfo] = useState<{productName: string; brandName: string; imageUrl?: string; notInDatabase: boolean} | null>(null);
@@ -369,6 +383,38 @@ export default function SearchScreen() {
     };
     fetchData();
   }, []);
+
+  // Fetch top businesses (combined brands and businesses) when tab is active
+  useEffect(() => {
+    const fetchTopBusinessItems = async () => {
+      if (activeTab !== 'topBusinesses') return;
+
+      try {
+        // Fetch both top brands and top businesses
+        const [topBrands, topBusinessesList] = await Promise.all([
+          getTopBrands(25),
+          getTopBusinesses(25),
+        ]);
+
+        // Combine and sort by score
+        const combined: TopBusinessItem[] = [
+          ...topBrands.map(brand => ({
+            ...brand,
+            type: 'brand' as const,
+          })),
+          ...topBusinessesList.map(business => ({
+            ...business,
+            type: 'business' as const,
+          })),
+        ].sort((a, b) => b.score - a.score);
+
+        setTopBusinessItems(combined);
+      } catch (error) {
+        console.error('Error fetching top businesses:', error);
+      }
+    };
+    fetchTopBusinessItems();
+  }, [activeTab]);
 
   // Fetch all following items when tab changes or user logs in
   useEffect(() => {
@@ -1218,6 +1264,53 @@ export default function SearchScreen() {
     );
   };
 
+  // Render function for top business items (brands and businesses)
+  const renderTopBusinessItem = ({ item, index }: { item: TopBusinessItem; index: number }) => {
+    const handlePress = () => {
+      if (item.type === 'business') {
+        router.push({ pathname: '/business/[id]', params: { id: item.id } });
+      } else if (item.type === 'brand') {
+        router.push({ pathname: '/brand/[id]', params: { id: item.id } });
+      }
+    };
+
+    const logoUrl = item.logoUrl || getLogoUrl(item.website || '');
+
+    return (
+      <TouchableOpacity
+        style={[styles.userCard, { backgroundColor: 'transparent', borderColor: 'transparent' }]}
+        onPress={handlePress}
+        activeOpacity={0.7}
+      >
+        <View style={styles.userCardContent}>
+          <Text style={[styles.topBusinessRank, { color: colors.textSecondary }]}>
+            {index + 1}
+          </Text>
+          <View style={[styles.userCardImage, { backgroundColor: '#FFFFFF' }]}>
+            <Image
+              source={{ uri: logoUrl }}
+              style={styles.userCardImage}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
+            />
+          </View>
+          <View style={styles.userCardInfo}>
+            <Text style={[styles.userCardName, { color: colors.text }]} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Text style={[styles.userCardLocation, { color: colors.textSecondary }]} numberOfLines={1}>
+              {item.category || (item.type === 'brand' ? 'Brand' : 'Business')}
+            </Text>
+            <Text style={[styles.userCardBio, { color: colors.primary }]} numberOfLines={1}>
+              {item.endorsementCount} {item.endorsementCount === 1 ? 'endorsement' : 'endorsements'}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   const renderSectionTitle = () => {
     if (query.trim().length > 0) return null;
 
@@ -1226,35 +1319,35 @@ export default function SearchScreen() {
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === 'explore' && styles.activeTab,
-            activeTab === 'explore' && { borderBottomColor: colors.primary }
+            activeTab === 'topBusinesses' && styles.activeTab,
+            activeTab === 'topBusinesses' && { borderBottomColor: colors.primary }
           ]}
-          onPress={() => setActiveTab('explore')}
+          onPress={() => setActiveTab('topBusinesses')}
           activeOpacity={0.7}
         >
           <Text style={[
             styles.tabText,
-            { color: activeTab === 'explore' ? colors.primary : colors.textSecondary },
-            activeTab === 'explore' && styles.activeTabText
+            { color: activeTab === 'topBusinesses' ? colors.primary : colors.textSecondary },
+            activeTab === 'topBusinesses' && styles.activeTabText
           ]}>
-            Explore
+            Top Businesses
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === 'following' && styles.activeTab,
-            activeTab === 'following' && { borderBottomColor: colors.primary }
+            activeTab === 'topUsers' && styles.activeTab,
+            activeTab === 'topUsers' && { borderBottomColor: colors.primary }
           ]}
-          onPress={() => setActiveTab('following')}
+          onPress={() => setActiveTab('topUsers')}
           activeOpacity={0.7}
         >
           <Text style={[
             styles.tabText,
-            { color: activeTab === 'following' ? colors.primary : colors.textSecondary },
-            activeTab === 'following' && styles.activeTabText
+            { color: activeTab === 'topUsers' ? colors.primary : colors.textSecondary },
+            activeTab === 'topUsers' && styles.activeTabText
           ]}>
-            Following
+            Top Users
           </Text>
         </TouchableOpacity>
       </View>
@@ -1474,9 +1567,29 @@ export default function SearchScreen() {
       {renderSectionTitle()}
 
       {query.trim().length === 0 ? (
-        activeTab === 'explore' ? (
+        activeTab === 'topBusinesses' ? (
           <FlatList
-            key="explore-list"
+            key="top-businesses-list"
+            data={topBusinessItems}
+            renderItem={renderTopBusinessItem}
+            keyExtractor={item => `${item.type}-${item.id}`}
+            contentContainerStyle={[styles.userListContainer, { paddingBottom: 100 }]}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <View style={[styles.emptyIconContainer, { backgroundColor: colors.backgroundSecondary }]}>
+                  <SearchIcon size={48} color={colors.primary} strokeWidth={1.5} />
+                </View>
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>No Endorsements Yet</Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                  Be the first to endorse a business or brand!
+                </Text>
+              </View>
+            }
+          />
+        ) : (
+          <FlatList
+            key="top-users-list"
             data={publicUsers}
             renderItem={renderUserCard}
             keyExtractor={item => item.id}
@@ -1490,26 +1603,6 @@ export default function SearchScreen() {
                 <Text style={[styles.emptyTitle, { color: colors.text }]}>No Users Yet</Text>
                 <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
                   Be one of the first to make your profile public!
-                </Text>
-              </View>
-            }
-          />
-        ) : (
-          <FlatList
-            key="following-list"
-            data={followingItems}
-            renderItem={renderFollowingItem}
-            keyExtractor={item => item.id}
-            contentContainerStyle={[styles.userListContainer, { paddingBottom: 100 }]}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <View style={[styles.emptyIconContainer, { backgroundColor: colors.backgroundSecondary }]}>
-                  <SearchIcon size={48} color={colors.primary} strokeWidth={1.5} />
-                </View>
-                <Text style={[styles.emptyTitle, { color: colors.text }]}>Not Following Anyone</Text>
-                <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                  Explore users and follow them to see them here!
                 </Text>
               </View>
             }
@@ -2521,6 +2614,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
+  },
+  topBusinessRank: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    minWidth: 24,
+    textAlign: 'center' as const,
   },
   userCardImage: {
     width: 60,
