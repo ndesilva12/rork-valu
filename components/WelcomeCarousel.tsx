@@ -26,7 +26,7 @@ const slides = [
   {
     icon: DollarSign,
     title: 'Vote With Your Money',
-    description: 'We recommend businesses that benefit your values.',
+    description: 'We recommend businesses that support your values.',
     color: '#10B981', // green
   },
   {
@@ -38,13 +38,13 @@ const slides = [
   {
     icon: Sparkles,
     title: 'Earn Benefits',
-    description: 'Get discounts from businesses you endorse.',
+    description: 'Look for discounts from businesses you endorse.',
     color: '#8B5CF6', // purple
   },
   {
     icon: Gift,
     title: 'Discover & Gift',
-    description: "Give gifts from places your friends already love.",
+    description: 'Discover or gift from trusted places your friends already love.',
     color: '#F59E0B', // orange
   },
 ];

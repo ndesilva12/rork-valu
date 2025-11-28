@@ -26,6 +26,7 @@ import { getCustomFields, CustomField } from '@/services/firebase/customFieldsSe
 import { getUserLists, deleteList, removeEntryFromList, addEntryToList, updateEntryInList, getEndorsementList, createList, ensureEndorsementList } from '@/services/firebase/listService';
 import { UserList, ListEntry } from '@/types/library';
 import { getFollowing, getFollowers, followEntity, unfollowEntity, Follow, FollowableType } from '@/services/firebase/followService';
+import { makeAllProfilesPublic } from '@/services/firebase/userService';
 import { Picker } from '@react-native-picker/picker';
 import { pickAndUploadImage } from '@/lib/imageUpload';
 import { trpc } from '@/lib/trpc';
@@ -1264,6 +1265,34 @@ export default function UsersManagement() {
         </TouchableOpacity>
         <TouchableOpacity style={styles.bulkButton} onPress={() => setShowBulkModal(true)}>
           <Text style={styles.bulkButtonText}>Bulk Create</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.bulkButton, { backgroundColor: '#28a745' }]}
+          onPress={async () => {
+            Alert.alert(
+              'Make All Profiles Public',
+              'This will update all user profiles to be public so they appear in the Top Users section. Continue?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Continue',
+                  onPress: async () => {
+                    try {
+                      const result = await makeAllProfilesPublic();
+                      Alert.alert(
+                        'Migration Complete',
+                        `Total users: ${result.totalUsers}\nUpdated to public: ${result.updatedUsers}\nAlready public: ${result.alreadyPublic}`
+                      );
+                    } catch (error) {
+                      Alert.alert('Error', 'Failed to make profiles public: ' + (error as Error).message);
+                    }
+                  },
+                },
+              ]
+            );
+          }}
+        >
+          <Text style={styles.bulkButtonText}>Make All Public</Text>
         </TouchableOpacity>
       </View>
 

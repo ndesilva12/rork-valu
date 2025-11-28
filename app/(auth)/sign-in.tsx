@@ -1,10 +1,13 @@
 import { useSignIn, useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { Text, TextInput, TouchableOpacity, View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator, Dimensions } from 'react-native';
 import React from 'react';
 import { darkColors, lightColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useUser } from '@/contexts/UserContext';
+import { Users, Target, ListChecks, Search, Gift, QrCode, Sparkles, ChevronDown, ChevronUp } from 'lucide-react-native';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 export default function SignInScreen() {
   const { signIn, setActive, isLoaded } = useSignIn();
   const { isSignedIn, isLoaded: authLoaded } = useAuth();
@@ -20,6 +23,7 @@ export default function SignInScreen() {
   const [resetCode, setResetCode] = React.useState('');
   const [newPassword, setNewPassword] = React.useState('');
   const [resetStep, setResetStep] = React.useState<'email' | 'code' | 'password'>('email');
+  const [showLearnMore, setShowLearnMore] = React.useState(false);
 
   React.useEffect(() => {
     if (authLoaded && isSignedIn) {
@@ -189,13 +193,15 @@ export default function SignInScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.logoContainer}>
+          {/* Hero Section */}
+          <View style={styles.heroSection}>
             <Image
               source={require('@/assets/images/endowide.png')}
               style={styles.logo}
               resizeMode="contain"
             />
           </View>
+
           {!showForgotPassword ? (
             <>
               <View style={styles.taglineContainer}>
@@ -205,7 +211,7 @@ export default function SignInScreen() {
                 </Text>
                 <Text style={styles.taglineLine}>
                   <Text style={[styles.taglineFirstWord, { color: colors.text }]}>browse </Text>
-                  <Text style={[styles.taglineRest, { color: colors.text }]}>friends for gift ideas.</Text>
+                  <Text style={[styles.taglineRest, { color: colors.text }]}>people you trust.</Text>
                 </Text>
                 <Text style={styles.taglineLine}>
                   <Text style={[styles.taglineFirstWord, { color: colors.primary }]}>earn </Text>
@@ -255,6 +261,140 @@ export default function SignInScreen() {
                   <Text style={[styles.link, { color: colors.primary }]}>Sign up</Text>
                 </TouchableOpacity>
               </View>
+
+              {/* Learn More Toggle */}
+              <TouchableOpacity
+                style={styles.learnMoreToggle}
+                onPress={() => setShowLearnMore(!showLearnMore)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.taglineLine}>
+                  <Text style={[styles.learnMoreFirstWord, { color: colors.textSecondary }]}>
+                    {showLearnMore ? 'hide ' : 'learn '}
+                  </Text>
+                  <Text style={[styles.learnMoreRest, { color: colors.textSecondary }]}>
+                    {showLearnMore ? 'details.' : 'more.'}
+                  </Text>
+                </Text>
+                {showLearnMore ? (
+                  <ChevronUp size={24} color={colors.textSecondary} strokeWidth={2} />
+                ) : (
+                  <ChevronDown size={24} color={colors.textSecondary} strokeWidth={2} />
+                )}
+              </TouchableOpacity>
+
+              {/* Expandable Landing Content */}
+              {showLearnMore && (
+                <View style={styles.landingContent}>
+                  {/* Tagline */}
+                  <Text style={[styles.landingTagline, { color: colors.primary }]}>
+                    the personal business directory that pays
+                  </Text>
+
+                  {/* Who We Are Section */}
+                  <View style={[styles.landingSection, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                    <View style={styles.sectionHeader}>
+                      <Users size={24} color={colors.primary} strokeWidth={2} />
+                      <Text style={[styles.sectionTitle, { color: colors.text }]}>WHO WE ARE</Text>
+                    </View>
+                    <Text style={[styles.sectionText, { color: colors.textSecondary }]}>
+                      Babson grads and MIT data engineers.
+                    </Text>
+                  </View>
+
+                  {/* Our Mission Section */}
+                  <View style={[styles.landingSection, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                    <View style={styles.sectionHeader}>
+                      <Target size={24} color={colors.primary} strokeWidth={2} />
+                      <Text style={[styles.sectionTitle, { color: colors.text }]}>OUR MISSION</Text>
+                    </View>
+
+                    <View style={styles.missionPoint}>
+                      <Sparkles size={18} color={colors.success} strokeWidth={2} style={styles.missionIcon} />
+                      <View style={styles.missionTextContainer}>
+                        <Text style={[styles.missionTitle, { color: colors.text }]}>Decentralize Endorsement Marketing</Text>
+                        <Text style={[styles.sectionText, { color: colors.textSecondary }]}>
+                          Endorsement deals are effective but require content creation and only work for huge audiences. We make endorsements as simple as a public list, reducing costs and redirecting influence from celebrity networks to real people with stronger trust. A referral from a trusted friend means more than one from a celebrity.
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.missionPoint}>
+                      <Sparkles size={18} color={colors.success} strokeWidth={2} style={styles.missionIcon} />
+                      <View style={styles.missionTextContainer}>
+                        <Text style={[styles.missionTitle, { color: colors.text }]}>Align Spending With Your Principles</Text>
+                        <Text style={[styles.sectionText, { color: colors.textSecondary }]}>
+                          In a world where real change feels out of reach, remember: you vote every day with your money. We provide AI tools that recommend and organize brands based on your values, interests, causes, ideology, or politics. Be thoughtful with your money - and your endorsements!
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* How It Works Section */}
+                  <View style={[styles.landingSection, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                    <View style={styles.sectionHeader}>
+                      <ListChecks size={24} color={colors.primary} strokeWidth={2} />
+                      <Text style={[styles.sectionTitle, { color: colors.text }]}>HOW IT WORKS</Text>
+                    </View>
+
+                    <View style={styles.stepContainer}>
+                      <View style={[styles.stepNumber, { backgroundColor: colors.primary }]}>
+                        <Text style={styles.stepNumberText}>1</Text>
+                      </View>
+                      <View style={styles.stepContent}>
+                        <ListChecks size={20} color={colors.text} strokeWidth={2} />
+                        <Text style={[styles.stepText, { color: colors.text }]}>
+                          Users build their endorsement list of brands and businesses they support.
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.stepContainer}>
+                      <View style={[styles.stepNumber, { backgroundColor: colors.primary }]}>
+                        <Text style={styles.stepNumberText}>2</Text>
+                      </View>
+                      <View style={styles.stepContent}>
+                        <Search size={20} color={colors.text} strokeWidth={2} />
+                        <Text style={[styles.stepText, { color: colors.text }]}>
+                          Users browse their friend's endorsements to discover new businesses or gift ideas.
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.stepContainer}>
+                      <View style={[styles.stepNumber, { backgroundColor: colors.primary }]}>
+                        <Text style={styles.stepNumberText}>3</Text>
+                      </View>
+                      <View style={styles.stepContent}>
+                        <QrCode size={20} color={colors.text} strokeWidth={2} />
+                        <Text style={[styles.stepText, { color: colors.text }]}>
+                          Businesses offer deals for placement on endorsement lists - verified by QR/promo code.
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* How To Get In Section */}
+                  <View style={[styles.landingSection, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                    <View style={styles.sectionHeader}>
+                      <Gift size={24} color={colors.primary} strokeWidth={2} />
+                      <Text style={[styles.sectionTitle, { color: colors.text }]}>HOW TO GET IN</Text>
+                    </View>
+                    <Text style={[styles.sectionText, { color: colors.textSecondary }]}>
+                      It's free! Create an account at iendorse.app. Build your list of brands and local businesses you love.
+                    </Text>
+                    <Text style={[styles.sectionText, { color: colors.textSecondary, marginTop: 12 }]}>
+                      <Text style={{ fontWeight: '600', color: colors.text }}>For individuals:</Text> See what deals businesses offer in exchange for your endorsement.
+                    </Text>
+                    <Text style={[styles.sectionText, { color: colors.textSecondary, marginTop: 8 }]}>
+                      <Text style={{ fontWeight: '600', color: colors.text }}>For businesses:</Text> Set deals you want to offer for user endorsements - based on rank placement or time on list.
+                    </Text>
+                    <Text style={[styles.sectionText, { color: colors.textSecondary, marginTop: 12 }]}>
+                      Share your lists with friends or family looking for the right gift or discovering new, trusted places!
+                    </Text>
+                  </View>
+                </View>
+              )}
             </>
           ) : (
             <>
@@ -340,7 +480,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
-  logoContainer: {
+  heroSection: {
     alignItems: 'center',
     marginBottom: 0,
   },
@@ -351,7 +491,7 @@ const styles = StyleSheet.create({
   },
   taglineContainer: {
     alignItems: 'center',
-    marginTop: -60,
+    marginTop: -50,
     marginBottom: 32,
     paddingHorizontal: 8,
   },
@@ -435,5 +575,100 @@ const styles = StyleSheet.create({
   forgotPasswordText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  // Landing page styles
+  learnMoreToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 24,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  learnMoreFirstWord: {
+    fontSize: 28,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  learnMoreRest: {
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: 0.2,
+  },
+  landingContent: {
+    marginTop: 16,
+    gap: 16,
+  },
+  landingTagline: {
+    fontSize: 17,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  landingSection: {
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  sectionText: {
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  missionPoint: {
+    flexDirection: 'row',
+    marginTop: 12,
+    gap: 10,
+  },
+  missionIcon: {
+    marginTop: 2,
+  },
+  missionTextContainer: {
+    flex: 1,
+  },
+  missionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  stepContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 14,
+    gap: 12,
+  },
+  stepNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNumberText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  stepContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  stepText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 22,
   },
 });
