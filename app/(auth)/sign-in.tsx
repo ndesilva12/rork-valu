@@ -200,9 +200,6 @@ export default function SignInScreen() {
               style={styles.logo}
               resizeMode="contain"
             />
-            <Text style={[styles.heroSubtitle, { color: colors.primary }]}>
-              the personal business directory that pays
-            </Text>
           </View>
 
           {!showForgotPassword ? (
@@ -214,7 +211,7 @@ export default function SignInScreen() {
                 </Text>
                 <Text style={styles.taglineLine}>
                   <Text style={[styles.taglineFirstWord, { color: colors.text }]}>browse </Text>
-                  <Text style={[styles.taglineRest, { color: colors.text }]}>friends for gift ideas.</Text>
+                  <Text style={[styles.taglineRest, { color: colors.text }]}>people you trust.</Text>
                 </Text>
                 <Text style={styles.taglineLine}>
                   <Text style={[styles.taglineFirstWord, { color: colors.primary }]}>earn </Text>
@@ -267,23 +264,33 @@ export default function SignInScreen() {
 
               {/* Learn More Toggle */}
               <TouchableOpacity
-                style={[styles.learnMoreToggle, { borderColor: colors.border }]}
+                style={styles.learnMoreToggle}
                 onPress={() => setShowLearnMore(!showLearnMore)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.learnMoreToggleText, { color: colors.textSecondary }]}>
-                  {showLearnMore ? 'Hide' : 'Learn More'}
+                <Text style={styles.taglineLine}>
+                  <Text style={[styles.learnMoreFirstWord, { color: colors.textSecondary }]}>
+                    {showLearnMore ? 'hide ' : 'learn '}
+                  </Text>
+                  <Text style={[styles.learnMoreRest, { color: colors.textSecondary }]}>
+                    {showLearnMore ? 'details.' : 'more.'}
+                  </Text>
                 </Text>
                 {showLearnMore ? (
-                  <ChevronUp size={18} color={colors.textSecondary} strokeWidth={2} />
+                  <ChevronUp size={24} color={colors.textSecondary} strokeWidth={2} />
                 ) : (
-                  <ChevronDown size={18} color={colors.textSecondary} strokeWidth={2} />
+                  <ChevronDown size={24} color={colors.textSecondary} strokeWidth={2} />
                 )}
               </TouchableOpacity>
 
               {/* Expandable Landing Content */}
               {showLearnMore && (
                 <View style={styles.landingContent}>
+                  {/* Tagline */}
+                  <Text style={[styles.landingTagline, { color: colors.primary }]}>
+                    the personal business directory that pays
+                  </Text>
+
                   {/* Who We Are Section */}
                   <View style={[styles.landingSection, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
                     <View style={styles.sectionHeader}>
@@ -482,17 +489,9 @@ const styles = StyleSheet.create({
     height: 260,
     tintColor: undefined,
   },
-  heroSubtitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginTop: -50,
-    marginBottom: 10,
-    letterSpacing: 0.5,
-  },
   taglineContainer: {
     alignItems: 'center',
-    marginTop: 0,
+    marginTop: -50,
     marginBottom: 32,
     paddingHorizontal: 8,
   },
@@ -584,15 +583,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 24,
     paddingVertical: 12,
-    gap: 6,
+    gap: 8,
   },
-  learnMoreToggleText: {
+  learnMoreFirstWord: {
+    fontSize: 28,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  learnMoreRest: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '400',
+    letterSpacing: 0.2,
   },
   landingContent: {
     marginTop: 16,
     gap: 16,
+  },
+  landingTagline: {
+    fontSize: 17,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    marginBottom: 8,
   },
   landingSection: {
     borderRadius: 16,
