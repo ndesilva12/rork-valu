@@ -1,9 +1,14 @@
 /**
  * Migration script to make all user profiles public
  *
- * Run with: node scripts/makeAllProfilesPublic.js
+ * This script updates all existing user profiles to have isPublicProfile = true
+ * so they appear in the Top Users section and can be viewed by other users.
+ *
+ * Run with: npx ts-node --esm scripts/makeAllProfilesPublic.ts
+ * Or: node --loader ts-node/esm scripts/makeAllProfilesPublic.ts
  */
 
+// Use require for CommonJS compatibility
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, getDocs, doc, updateDoc } = require('firebase/firestore');
 
@@ -19,16 +24,11 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-console.log('Firebase config:', {
-  projectId: firebaseConfig.projectId,
-  authDomain: firebaseConfig.authDomain,
-});
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 async function makeAllProfilesPublic() {
-  console.log('\nStarting profile visibility migration...');
+  console.log('Starting profile visibility migration...');
   console.log('This will make all user profiles public.\n');
 
   try {
@@ -49,7 +49,7 @@ async function makeAllProfilesPublic() {
 
       if (currentlyPublic) {
         alreadyPublic++;
-        console.log('[SKIP] User ' + userId + ' - already public');
+        console.log(`[SKIP] User ${userId} - already public`);
         continue;
       }
 
@@ -60,17 +60,17 @@ async function makeAllProfilesPublic() {
       });
 
       updatedUsers++;
-      const userName = (userData.userDetails && userData.userDetails.name) || userData.fullName || userData.email || 'Unknown';
-      console.log('[UPDATED] User ' + userId + ' (' + userName + ') - now public');
+      const userName = userData.userDetails?.name || userData.fullName || userData.email || 'Unknown';
+      console.log(`[UPDATED] User ${userId} (${userName}) - now public`);
     }
 
-    console.log('\n========================================');
-    console.log('Migration complete!');
-    console.log('========================================');
-    console.log('Total users processed: ' + totalUsers);
-    console.log('Users updated to public: ' + updatedUsers);
-    console.log('Users already public: ' + alreadyPublic);
-    console.log('\nAll user profiles are now public and will appear in the Top Users section.');
+    console.log(`\n========================================`);
+    console.log(`Migration complete!`);
+    console.log(`========================================`);
+    console.log(`Total users processed: ${totalUsers}`);
+    console.log(`Users updated to public: ${updatedUsers}`);
+    console.log(`Users already public: ${alreadyPublic}`);
+    console.log(`\nAll user profiles are now public and will appear in the Top Users section.`);
 
   } catch (error) {
     console.error('Error during migration:', error);
@@ -80,11 +80,11 @@ async function makeAllProfilesPublic() {
 
 // Run the migration
 makeAllProfilesPublic()
-  .then(function() {
+  .then(() => {
     console.log('\nMigration script completed successfully');
     process.exit(0);
   })
-  .catch(function(error) {
+  .catch((error) => {
     console.error('Migration script failed:', error);
     process.exit(1);
   });

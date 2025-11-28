@@ -454,3 +454,57 @@ export async function getAllPublicUsers(): Promise<Array<{ id: string; profile: 
     throw error;
   }
 }
+
+/**
+ * Make all user profiles public
+ * This is an admin function to migrate existing users who don't have isPublicProfile set
+ * @returns Object with counts of updated and already public users
+ */
+export async function makeAllProfilesPublic(): Promise<{
+  totalUsers: number;
+  updatedUsers: number;
+  alreadyPublic: number;
+}> {
+  try {
+    console.log('[Firebase] Starting profile visibility migration...');
+
+    const usersRef = collection(db, 'users');
+    const usersSnapshot = await getDocs(usersRef);
+
+    let totalUsers = 0;
+    let updatedUsers = 0;
+    let alreadyPublic = 0;
+
+    for (const userDoc of usersSnapshot.docs) {
+      totalUsers++;
+      const userId = userDoc.id;
+      const userData = userDoc.data();
+
+      // Check current visibility status
+      const currentlyPublic = userData.isPublicProfile === true;
+
+      if (currentlyPublic) {
+        alreadyPublic++;
+        continue;
+      }
+
+      // Update user to be public
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        isPublicProfile: true,
+      });
+
+      updatedUsers++;
+      const userName = userData.userDetails?.name || userData.fullName || userData.email || 'Unknown';
+      console.log(`[Firebase] Updated user ${userId} (${userName}) to public`);
+    }
+
+    console.log('[Firebase] ✅ Migration complete!');
+    console.log(`[Firebase] Total: ${totalUsers}, Updated: ${updatedUsers}, Already public: ${alreadyPublic}`);
+
+    return { totalUsers, updatedUsers, alreadyPublic };
+  } catch (error) {
+    console.error('[Firebase] ❌ Error making profiles public:', error);
+    throw error;
+  }
+}
