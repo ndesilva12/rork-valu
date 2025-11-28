@@ -458,6 +458,7 @@ export async function getAllPublicUsers(): Promise<Array<{ id: string; profile: 
 /**
  * Make all user profiles public
  * This is an admin function to migrate existing users who don't have isPublicProfile set
+ * Also ensures accountType is set to 'individual' for users without a business account
  * @returns Object with counts of updated and already public users
  */
 export async function makeAllProfilesPublic(): Promise<{
@@ -482,21 +483,32 @@ export async function makeAllProfilesPublic(): Promise<{
 
       // Check current visibility status
       const currentlyPublic = userData.isPublicProfile === true;
+      const hasAccountType = userData.accountType === 'individual' || userData.accountType === 'business';
 
-      if (currentlyPublic) {
+      if (currentlyPublic && hasAccountType) {
         alreadyPublic++;
         continue;
       }
 
-      // Update user to be public
+      // Update user to be public and ensure accountType is set
       const userRef = doc(db, 'users', userId);
-      await updateDoc(userRef, {
-        isPublicProfile: true,
-      });
+      const updates: Record<string, any> = {};
 
-      updatedUsers++;
-      const userName = userData.userDetails?.name || userData.fullName || userData.email || 'Unknown';
-      console.log(`[Firebase] Updated user ${userId} (${userName}) to public`);
+      if (!currentlyPublic) {
+        updates.isPublicProfile = true;
+      }
+
+      // Set accountType to 'individual' if not already set (and not a business)
+      if (!hasAccountType) {
+        updates.accountType = 'individual';
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await updateDoc(userRef, updates);
+        updatedUsers++;
+        const userName = userData.userDetails?.name || userData.fullName || userData.email || 'Unknown';
+        console.log(`[Firebase] Updated user ${userId} (${userName}):`, updates);
+      }
     }
 
     console.log('[Firebase] ✅ Migration complete!');
