@@ -443,24 +443,8 @@ export default function HomeScreen() {
 
           const hasEntries = personalList.entries && personalList.entries.length > 0;
 
-          // Load explainer state from AsyncStorage
-          // Only show explainer once after onboarding (when user first signs in)
-          const explainerShownKey = `libraryExplainerShown_${clerkUser.id}`;
-          const explainerShown = await AsyncStorage.getItem(explainerShownKey);
-          const hasSeenExplainer = explainerShown === 'true';
-
-          // Show explainer only if:
-          // 1. User has never seen it before (first time after onboarding)
-          // 2. List is empty
-          const shouldShowExplainers = !hasSeenExplainer && !hasEntries;
-
-          if (shouldShowExplainers) {
-            setShowWelcomeCarousel(true); // Start with first explainer
-            // Mark as shown so it won't appear again
-            await AsyncStorage.setItem(explainerShownKey, 'true');
-          } else {
-            setActiveExplainerStep(0);
-          }
+          // Carousel only shows as part of onboarding flow (via hasSeenIntro === false)
+          setActiveExplainerStep(0);
 
           // If personal list has entries, default to it. Otherwise, default to aligned.
           if (hasEntries) {
@@ -477,31 +461,8 @@ export default function HomeScreen() {
     loadPersonalList();
   }, [clerkUser?.id, clerkUser?.unsafeMetadata?.fullName, clerkUser?.firstName, clerkUser?.lastName, profile?.userDetails?.name]);
 
-  // Check if we should show the welcome carousel (only once for new users)
-  useEffect(() => {
-    const checkWelcomeCarousel = async () => {
-      if (!clerkUser?.id) return;
-
-      const welcomeCarouselKey = `welcomeCarouselShown_${clerkUser.id}`;
-      const hasSeenCarousel = await AsyncStorage.getItem(welcomeCarouselKey);
-
-      // Show carousel only if user has never seen it
-      if (hasSeenCarousel === null) {
-        setShowWelcomeCarousel(true);
-      }
-    };
-
-    checkWelcomeCarousel();
-  }, [clerkUser?.id]);
-
-  // Handle carousel completion
-  const handleCarouselComplete = async () => {
-    if (clerkUser?.id) {
-      const welcomeCarouselKey = `welcomeCarouselShown_${clerkUser.id}`;
-      await AsyncStorage.setItem(welcomeCarouselKey, 'true');
-      setShowWelcomeCarousel(false);
-    }
-  };
+  // Carousel completion is handled by handleWelcomeComplete (triggered from onboarding flow)
+  // No separate AsyncStorage check needed - carousel only shows via hasSeenIntro === false
 
   // Function to fetch user businesses
   const fetchUserBusinesses = useCallback(async () => {
@@ -4856,10 +4817,10 @@ export default function HomeScreen() {
         isDarkMode={isDarkMode}
       />
 
-      {/* Welcome Carousel - Show only once for new users */}
+      {/* Welcome Carousel - Shows only during onboarding flow */}
       <WelcomeCarousel
         visible={showWelcomeCarousel}
-        onComplete={handleCarouselComplete}
+        onComplete={handleWelcomeComplete}
         isDarkMode={isDarkMode}
       />
     </View>
