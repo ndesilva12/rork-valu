@@ -144,32 +144,22 @@ export const [UserProvider, useUser] = createContextHook(() => {
             setProfile(parsedProfile);
             setHasCompletedOnboarding(parsedProfile.causes.length > 0);
 
-            // Sync to Firebase
-            try {
-              if (isFirstTime) {
-                // Get referral source from Clerk unsafeMetadata (set during signup from QR code URL params)
-                const referralSource = (clerkUser.unsafeMetadata as any)?.referralSource as string | undefined;
-                const userData = {
-                  email: clerkUser.primaryEmailAddress?.emailAddress,
-                  firstName: clerkUser.firstName || undefined,
-                  lastName: clerkUser.lastName || undefined,
-                  fullName: clerkUser.fullName || undefined,
-                  imageUrl: clerkUser.imageUrl || undefined,
-                  referralSource: referralSource || undefined,
-                };
-                await createUser(clerkUser.id, userData, parsedProfile);
-                console.log('[UserContext] ✅ New user created in Firebase', referralSource ? `(from: ${referralSource})` : '');
-              } else {
+            // Only sync to Firebase if user has completed onboarding (has causes)
+            // This prevents creating Firebase docs for users who quit during onboarding
+            if (parsedProfile.causes.length > 0) {
+              try {
                 await saveUserProfile(clerkUser.id, parsedProfile);
                 console.log('[UserContext] ✅ Profile synced to Firebase');
+              } catch (syncError) {
+                console.error('[UserContext] Failed to sync to Firebase:', syncError);
               }
-            } catch (syncError) {
-              console.error('[UserContext] Failed to sync to Firebase:', syncError);
+            } else {
+              console.log('[UserContext] Skipping Firebase sync - user has not completed onboarding yet');
             }
           } else if (mounted) {
             console.log('[UserContext] ⚠️ CREATING NEW PROFILE (no Firebase, no AsyncStorage)');
-            console.log('[UserContext]   - This should only happen for brand new users!');
-            console.log('[UserContext]   - If this is an existing user, something went wrong');
+            console.log('[UserContext]   - This is a brand new user in onboarding');
+            console.log('[UserContext]   - Firebase doc will be created when onboarding completes');
             const newProfile: UserProfile = {
               id: clerkUser.id,
               causes: [],
@@ -181,25 +171,10 @@ export const [UserProvider, useUser] = createContextHook(() => {
             setProfile(newProfile);
             setHasCompletedOnboarding(false);
 
-            // Create user in Firebase
-            try {
-              // Get referral source from Clerk unsafeMetadata (set during signup from QR code URL params)
-              const referralSource = (clerkUser.unsafeMetadata as any)?.referralSource as string | undefined;
-              const userData = {
-                email: clerkUser.primaryEmailAddress?.emailAddress,
-                firstName: clerkUser.firstName || undefined,
-                lastName: clerkUser.lastName || undefined,
-                fullName: clerkUser.fullName || undefined,
-                imageUrl: clerkUser.imageUrl || undefined,
-                referralSource: referralSource || undefined,
-              };
-              await createUser(clerkUser.id, userData, newProfile);
-              console.log('[UserContext] ✅ New user created in Firebase', referralSource ? `(from: ${referralSource})` : '');
-            } catch (createError) {
-              console.error('[UserContext] Failed to create user in Firebase:', createError);
-            }
+            // Don't create Firebase user doc yet - wait until onboarding completes
+            // This allows users to quit onboarding without creating an account
 
-            // Save to local storage
+            // Save to local storage for session persistence
             await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
           }
         }
@@ -291,6 +266,24 @@ export const [UserProvider, useUser] = createContextHook(() => {
       console.log('[UserContext] 🔄 Calling saveUserProfile...');
       await saveUserProfile(clerkUser.id, newProfile);
       console.log('[UserContext] ✅ Profile synced to Firebase successfully');
+
+      // For new users completing onboarding, also save user metadata
+      if (isNewUser === true && causes.length > 0) {
+        try {
+          // Get referral source from Clerk unsafeMetadata (set during signup from QR code URL params)
+          const referralSource = (clerkUser.unsafeMetadata as any)?.referralSource as string | undefined;
+          await updateUserMetadata(clerkUser.id, {
+            email: clerkUser.primaryEmailAddress?.emailAddress,
+            firstName: clerkUser.firstName || undefined,
+            lastName: clerkUser.lastName || undefined,
+            fullName: clerkUser.fullName || clerkUser.unsafeMetadata?.fullName as string || undefined,
+            imageUrl: clerkUser.imageUrl || undefined,
+          });
+          console.log('[UserContext] ✅ User metadata saved to Firebase', referralSource ? `(from: ${referralSource})` : '');
+        } catch (metadataError) {
+          console.error('[UserContext] Failed to save user metadata:', metadataError);
+        }
+      }
 
       // Mark user as no longer new after completing onboarding
       if (isNewUser === true && causes.length > 0) {

@@ -1,5 +1,6 @@
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Heart, Shield, Users, Building2, Globe, User, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Trophy, Search, MapPin, ChevronRight, AlertCircle, Check } from 'lucide-react-native';
+import { Heart, Shield, Users, Building2, Globe, User, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Trophy, Search, MapPin, ChevronRight, AlertCircle, Check, LogOut } from 'lucide-react-native';
+import { useAuth } from '@clerk/clerk-expo';
 import { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -22,7 +23,6 @@ import { useData } from '@/contexts/DataContext';
 import { Cause, CauseCategory, AlignmentType } from '@/types';
 import { searchPlaces, PlaceSearchResult, getPlacePhotoUrl } from '@/services/firebase/placesService';
 import { submitBusinessClaim, getClaimsByUser, BusinessClaim } from '@/services/firebase/businessClaimService';
-import { createUser } from '@/services/firebase/userService';
 import * as Location from 'expo-location';
 import debounce from 'lodash/debounce';
 
@@ -100,10 +100,39 @@ type OnboardingStep = 'claim_business' | 'select_values';
 export default function OnboardingScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ accountType?: string }>();
-  const { addCauses, profile, isDarkMode, clerkUser, isLoading, setAccountType } = useUser();
+  const { signOut } = useAuth();
+  const { addCauses, profile, isDarkMode, clerkUser, isLoading, setAccountType, clearAllStoredData } = useUser();
   const { values: firebaseValues } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
   const insets = useSafeAreaInsets();
+
+  // Handler to exit onboarding and sign out
+  const handleExitOnboarding = async () => {
+    Alert.alert(
+      'Exit Onboarding',
+      'Are you sure you want to exit? Your progress will not be saved.',
+      [
+        { text: 'Stay', style: 'cancel' },
+        {
+          text: 'Exit',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Clear any local data that was saved
+              await clearAllStoredData();
+              // Sign out of Clerk
+              await signOut();
+              // Navigate to sign-in
+              router.replace('/(auth)/sign-in');
+            } catch (error) {
+              console.error('[Onboarding] Error signing out:', error);
+              router.replace('/(auth)/sign-in');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   // Determine if this is a business user - check query param first, then profile
   // Query param is passed from sign-up to handle the race condition where profile isn't loaded yet
@@ -286,17 +315,7 @@ export default function OnboardingScreen() {
 
     setIsSubmittingClaim(true);
     try {
-      // Ensure user exists in Firebase
-      await createUser(clerkUser.id, {
-        email: clerkUser.primaryEmailAddress?.emailAddress,
-        firstName: clerkUser.firstName || undefined,
-        lastName: clerkUser.lastName || undefined,
-        fullName: clerkUser.fullName || undefined,
-        imageUrl: clerkUser.imageUrl || undefined,
-      }, {
-        accountType: 'business',
-      });
-
+      // Submit the claim - user document will be created when onboarding completes
       await submitBusinessClaim({
         userId: clerkUser.id,
         userEmail: clerkUser.primaryEmailAddress?.emailAddress || '',
@@ -311,15 +330,13 @@ export default function OnboardingScreen() {
         verificationDetails: verificationDetails.trim(),
       });
 
-      await setAccountType('business');
+      console.log('[Onboarding] Business claim submitted successfully');
       setHasSubmittedClaim(true);
 
-      Alert.alert(
-        'Claim Submitted!',
-        'Your business claim has been submitted for review. Now, let\'s set up your values.',
-        [{ text: 'Continue', onPress: () => setCurrentStep('select_values') }]
-      );
+      // Navigate directly to values selection - no Alert needed for web compatibility
+      setCurrentStep('select_values');
     } catch (error: any) {
+      console.error('[Onboarding] Error submitting claim:', error);
       Alert.alert('Error', error?.message || 'Failed to submit claim. Please try again.');
     } finally {
       setIsSubmittingClaim(false);
@@ -427,12 +444,22 @@ export default function OnboardingScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('@/assets/images/endorseofficial.png')}
-                style={styles.logo}
-                resizeMode="contain"
-              />
+            <View style={styles.headerRow}>
+              <View style={styles.logoContainer}>
+                <Image
+                  source={require('@/assets/images/endorseofficial.png')}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
+              </View>
+              <TouchableOpacity
+                style={[styles.exitButton, { backgroundColor: colors.backgroundSecondary }]}
+                onPress={handleExitOnboarding}
+                activeOpacity={0.7}
+              >
+                <LogOut size={18} color={colors.textSecondary} strokeWidth={2} />
+                <Text style={[styles.exitButtonText, { color: colors.textSecondary }]}>Exit</Text>
+              </TouchableOpacity>
             </View>
             <View style={[styles.stepIndicator, { backgroundColor: colors.backgroundSecondary }]}>
               <Text style={[styles.stepText, { color: colors.primary }]}>Step 1 of 2</Text>
@@ -639,12 +666,22 @@ export default function OnboardingScreen() {
       />
       <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 + insets.bottom }, Platform.OS === 'web' && styles.webContent]}>
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Image
-              source={require('@/assets/images/endorseofficial.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+          <View style={styles.headerRow}>
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('@/assets/images/endorseofficial.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </View>
+            <TouchableOpacity
+              style={[styles.exitButton, { backgroundColor: colors.backgroundSecondary }]}
+              onPress={handleExitOnboarding}
+              activeOpacity={0.7}
+            >
+              <LogOut size={18} color={colors.textSecondary} strokeWidth={2} />
+              <Text style={[styles.exitButtonText, { color: colors.textSecondary }]}>Exit</Text>
+            </TouchableOpacity>
           </View>
           {isBusinessUser && (
             <View style={[styles.stepIndicator, { backgroundColor: colors.backgroundSecondary }]}>
@@ -786,12 +823,30 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     alignItems: 'center',
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    width: '100%',
+    marginBottom: 16,
+  },
+  exitButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  exitButtonText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
   logoContainer: {
     width: 200,
     height: 80,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
   },
   logo: {
     width: '100%',

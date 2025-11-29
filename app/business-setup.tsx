@@ -20,7 +20,6 @@ import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { searchPlaces, PlaceSearchResult, getPlacePhotoUrl } from '@/services/firebase/placesService';
 import { submitBusinessClaim, getClaimsByUser, BusinessClaim } from '@/services/firebase/businessClaimService';
-import { createUser } from '@/services/firebase/userService';
 import { getLogoUrl } from '@/lib/logo';
 import * as Location from 'expo-location';
 import debounce from 'lodash/debounce';
@@ -53,45 +52,14 @@ export default function BusinessSetupScreen() {
   const [existingClaims, setExistingClaims] = useState<BusinessClaim[]>([]);
   const [isLoadingClaims, setIsLoadingClaims] = useState(true);
 
-  // Initialize business user - ensure user exists in Firebase and account type is set
+  // Check if user is ready - don't create user doc here, it will be created when onboarding completes
   useEffect(() => {
-    const initializeBusinessUser = async () => {
-      if (!clerkUser?.id || isProfileLoading) {
-        return;
-      }
-
-      console.log('[BusinessSetup] Initializing business user:', clerkUser.id);
-      console.log('[BusinessSetup] Current profile:', profile?.accountType);
-
-      try {
-        // Ensure user exists in Firebase with business account type
-        if (!profile?.accountType || profile.accountType !== 'business') {
-          console.log('[BusinessSetup] Setting account type to business');
-
-          // First ensure the user document exists
-          await createUser(clerkUser.id, {
-            email: clerkUser.primaryEmailAddress?.emailAddress,
-            firstName: clerkUser.firstName || undefined,
-            lastName: clerkUser.lastName || undefined,
-            fullName: clerkUser.fullName || undefined,
-            imageUrl: clerkUser.imageUrl || undefined,
-          }, {
-            accountType: 'business',
-          });
-
-          // Then set the account type in context
-          await setAccountType('business');
-          console.log('[BusinessSetup] Business user initialized');
-        } else {
-          console.log('[BusinessSetup] User already has business account type');
-        }
-      } catch (error) {
-        console.error('[BusinessSetup] Error initializing business user:', error);
-      }
-      setIsInitializing(false);
-    };
-
-    initializeBusinessUser();
+    if (!clerkUser?.id || isProfileLoading) {
+      return;
+    }
+    console.log('[BusinessSetup] User ready:', clerkUser.id);
+    console.log('[BusinessSetup] Current profile:', profile?.accountType);
+    setIsInitializing(false);
   }, [clerkUser?.id, isProfileLoading]);
 
   // Get user location on mount
@@ -197,24 +165,19 @@ export default function BusinessSetupScreen() {
         verificationDetails: verificationDetails.trim(),
       });
 
+      console.log('[BusinessSetup] Business claim submitted successfully');
+
       // Handle differently based on where user came from
       if (isFromSettings) {
-        // User came from settings - don't change account type yet, wait for admin approval
-        Alert.alert(
-          'Claim Submitted!',
-          'Your business claim has been submitted for review. Once approved, your account will be converted to a business account with access to discount settings and business features.',
-          [{ text: 'Done', onPress: () => router.replace('/(tabs)/profile') }]
-        );
+        // User came from settings - navigate back to profile
+        // Account will be converted when admin approves the claim
+        router.replace('/(tabs)/profile');
       } else {
-        // User came from onboarding flow - set account type to business
-        await setAccountType('business');
-        Alert.alert(
-          'Claim Submitted!',
-          'Your business claim has been submitted for review. We will verify your ownership and notify you via email once approved. Now, let\'s set up your values.',
-          [{ text: 'Continue', onPress: () => router.replace('/onboarding') }]
-        );
+        // User came from onboarding flow - go back to onboarding to continue with values
+        router.replace('/onboarding?accountType=business');
       }
     } catch (error: any) {
+      console.error('[BusinessSetup] Error submitting claim:', error);
       Alert.alert('Error', error?.message || 'Failed to submit claim. Please try again.');
     } finally {
       setIsSubmitting(false);
