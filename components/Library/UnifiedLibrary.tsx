@@ -234,8 +234,8 @@ export default function UnifiedLibrary({
   const [placesSearchDebounce, setPlacesSearchDebounce] = useState<NodeJS.Timeout | null>(null);
 
   // Endorsement list filter state
-  type EndorsementFilterType = 'all' | 'brand' | 'business' | 'place';
-  const [endorsementFilter, setEndorsementFilter] = useState<EndorsementFilterType>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [localFilter, setLocalFilter] = useState<'all' | 'local'>('all');
 
   // Section selection state
   // Profile views (preview/view) ALWAYS default to endorsement
@@ -2115,48 +2115,131 @@ export default function UnifiedLibrary({
 
     // Apply filter to entries
     const allEntries = isReordering ? localEntries : endorsementList.entries;
-    const filteredEntries = endorsementFilter === 'all'
+
+    // Helper to get category from entry
+    const getEntryCategory = (entry: ListEntry): string | undefined => {
+      if (entry.type === 'brand') return (entry as any).brandCategory;
+      if (entry.type === 'business') return (entry as any).businessCategory;
+      if (entry.type === 'place') return (entry as any).placeCategory;
+      return undefined;
+    };
+
+    // Helper to check if entry is local (has location data)
+    const isLocalEntry = (entry: ListEntry): boolean => {
+      // Places always have location data
+      if (entry.type === 'place') return true;
+      // Businesses may have location
+      if (entry.type === 'business' && (entry as any).location) return true;
+      return false;
+    };
+
+    // Apply local filter first
+    const localFilteredEntries = localFilter === 'all'
       ? allEntries
-      : allEntries.filter(entry => entry && entry.type === endorsementFilter);
+      : allEntries.filter(entry => entry && isLocalEntry(entry));
+
+    // Then apply category filter
+    const filteredEntries = categoryFilter === 'all'
+      ? localFilteredEntries
+      : localFilteredEntries.filter(entry => {
+          const category = getEntryCategory(entry);
+          return category && category.toLowerCase() === categoryFilter.toLowerCase();
+        });
     const entriesToDisplay = filteredEntries;
 
-    // Get unique entry types for filter buttons
-    const entryTypes = new Set(allEntries.filter(e => e).map(e => e.type));
+    // Check if there are local entries to show the local filter
+    const hasLocalEntries = allEntries.some(e => e && isLocalEntry(e));
+    const hasNonLocalEntries = allEntries.some(e => e && !isLocalEntry(e));
+    const showLocalFilter = hasLocalEntries && hasNonLocalEntries;
+
+    // Get unique categories for filter buttons (based on current local filter)
+    const categoriesFromEntries = localFilteredEntries
+      .map(getEntryCategory)
+      .filter((c): c is string => !!c);
+    const uniqueCategories = [...new Set(categoriesFromEntries)].sort();
 
     // Render filter buttons
     const renderFilterButtons = () => {
       if (isReordering || allEntries.length < 2) return null;
 
-      const filters: { key: EndorsementFilterType; label: string }[] = [
-        { key: 'all', label: 'All' },
-        ...(entryTypes.has('brand') ? [{ key: 'brand' as const, label: 'Brands' }] : []),
-        ...(entryTypes.has('business') ? [{ key: 'business' as const, label: 'Businesses' }] : []),
-        ...(entryTypes.has('place') ? [{ key: 'place' as const, label: 'Places' }] : []),
-      ];
+      // Show category filter if there are categories to filter by
+      const showCategoryFilter = uniqueCategories.length > 1;
 
-      // Only show filter if there are multiple types
-      if (filters.length <= 2) return null;
+      if (!showLocalFilter && !showCategoryFilter) return null;
 
       return (
         <View style={styles.filterButtonsContainer}>
+          {/* Local/All filter row + Category filters combined */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterButtonsScroll}>
-            {filters.map(filter => (
+            {/* All filter */}
+            <TouchableOpacity
+              key="all"
+              style={[
+                styles.filterButton,
+                localFilter === 'all' && categoryFilter === 'all'
+                  ? { backgroundColor: colors.primary }
+                  : { backgroundColor: colors.backgroundSecondary, borderWidth: 1, borderColor: colors.border }
+              ]}
+              onPress={() => {
+                setLocalFilter('all');
+                setCategoryFilter('all');
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.filterButtonText,
+                { color: localFilter === 'all' && categoryFilter === 'all' ? '#FFFFFF' : colors.text }
+              ]}>
+                All
+              </Text>
+            </TouchableOpacity>
+
+            {/* Local filter */}
+            {showLocalFilter && (
               <TouchableOpacity
-                key={filter.key}
+                key="local"
                 style={[
                   styles.filterButton,
-                  endorsementFilter === filter.key
+                  localFilter === 'local' && categoryFilter === 'all'
                     ? { backgroundColor: colors.primary }
                     : { backgroundColor: colors.backgroundSecondary, borderWidth: 1, borderColor: colors.border }
                 ]}
-                onPress={() => setEndorsementFilter(filter.key)}
+                onPress={() => {
+                  setLocalFilter('local');
+                  setCategoryFilter('all');
+                }}
                 activeOpacity={0.7}
               >
                 <Text style={[
                   styles.filterButtonText,
-                  { color: endorsementFilter === filter.key ? '#FFFFFF' : colors.text }
+                  { color: localFilter === 'local' && categoryFilter === 'all' ? '#FFFFFF' : colors.text }
                 ]}>
-                  {filter.label}
+                  Local
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Category filters */}
+            {showCategoryFilter && uniqueCategories.map(category => (
+              <TouchableOpacity
+                key={category}
+                style={[
+                  styles.filterButton,
+                  categoryFilter.toLowerCase() === category.toLowerCase()
+                    ? { backgroundColor: colors.primary }
+                    : { backgroundColor: colors.backgroundSecondary, borderWidth: 1, borderColor: colors.border }
+                ]}
+                onPress={() => {
+                  setLocalFilter('all'); // Reset local filter when selecting category
+                  setCategoryFilter(category);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.filterButtonText,
+                  { color: categoryFilter.toLowerCase() === category.toLowerCase() ? '#FFFFFF' : colors.text }
+                ]}>
+                  {category}
                 </Text>
               </TouchableOpacity>
             ))}
