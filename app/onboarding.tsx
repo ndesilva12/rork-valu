@@ -393,25 +393,32 @@ export default function OnboardingScreen() {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // Different welcome message for business vs individual users
-      const welcomeTitle = isBusinessUser ? 'Welcome to Endorse!' : 'Welcome to Endorse!';
       const welcomeMessage = isBusinessUser
         ? 'Set discounts in the Money tab and endorse other businesses in the List tab.'
         : 'Endorse businesses you support and look for discounts.';
 
-      Alert.alert(
-        welcomeTitle,
-        welcomeMessage,
-        [
-          {
-            text: 'Got it!',
-            onPress: () => {
-              console.log('[Onboarding] Redirecting to browse tab');
-              router.replace('/(tabs)/values');
+      if (Platform.OS === 'web') {
+        // Use browser alert on web, then navigate
+        window.alert(`Welcome to Endorse!\n\n${welcomeMessage}`);
+        console.log('[Onboarding] Redirecting to browse tab');
+        router.replace('/(tabs)/values');
+      } else {
+        // Use native Alert on mobile
+        Alert.alert(
+          'Welcome to Endorse!',
+          welcomeMessage,
+          [
+            {
+              text: 'Got it!',
+              onPress: () => {
+                console.log('[Onboarding] Redirecting to browse tab');
+                router.replace('/(tabs)/values');
+              },
             },
-          },
-        ],
-        { cancelable: false }
-      );
+          ],
+          { cancelable: false }
+        );
+      }
     }
   };
 
