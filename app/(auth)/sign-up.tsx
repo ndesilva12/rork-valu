@@ -134,23 +134,49 @@ export default function SignUpScreen() {
           console.log('[Sign Up] Setting active session:', result.createdSessionId);
           await setActive({ session: result.createdSessionId });
           console.log('[Sign Up] Session activated, waiting before redirect');
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 1500));
         }
-        console.log('[Sign Up] Redirecting to home (index will handle routing)');
-        router.replace('/');
+        // Set account type before redirecting
+        console.log('[Sign Up] Setting account type (auto-complete):', selectedAccountType);
+        try {
+          await setAccountType(selectedAccountType);
+        } catch (e) {
+          console.error('[Sign Up] Failed to set account type:', e);
+        }
+        // Navigate based on account type
+        if (selectedAccountType === 'business') {
+          console.log('[Sign Up] Redirecting to business setup (auto-complete)');
+          router.replace('/business-setup');
+        } else {
+          console.log('[Sign Up] Redirecting to onboarding (auto-complete)');
+          router.replace('/onboarding');
+        }
         return;
       }
-      
+
       if (result.verifications.emailAddress.status === 'verified') {
         console.log('[Sign Up] Email already verified but status not complete');
         if (result.createdSessionId) {
           console.log('[Sign Up] Setting active session:', result.createdSessionId);
           await setActive({ session: result.createdSessionId });
           console.log('[Sign Up] Session activated, waiting before redirect');
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 1500));
         }
-        console.log('[Sign Up] Redirecting to home (index will handle routing)');
-        router.replace('/');
+        // Set account type before redirecting
+        console.log('[Sign Up] Setting account type (pre-verified):', selectedAccountType);
+        try {
+          await setAccountType(selectedAccountType);
+        } catch (e) {
+          console.error('[Sign Up] Failed to set account type:', e);
+        }
+        // Navigate based on account type
+        if (selectedAccountType === 'business') {
+          console.log('[Sign Up] Redirecting to business setup (pre-verified)');
+          router.replace('/business-setup');
+        } else {
+          console.log('[Sign Up] Redirecting to onboarding (pre-verified)');
+          router.replace('/onboarding');
+        }
         return;
       }
       

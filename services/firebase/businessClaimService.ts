@@ -179,6 +179,63 @@ export const getClaimByUserAndPlace = async (
 };
 
 /**
+ * Get all approved claims (for admin - shows claimed businesses)
+ */
+export const getApprovedClaims = async (): Promise<BusinessClaim[]> => {
+  try {
+    const claimsRef = collection(db, 'businessClaims');
+    const q = query(
+      claimsRef,
+      where('status', '==', 'approved'),
+      orderBy('reviewedAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as BusinessClaim[];
+  } catch (error) {
+    console.error('[BusinessClaimService] Error getting approved claims:', error);
+    return [];
+  }
+};
+
+/**
+ * Revoke a business claim (detach user from business)
+ * This changes the status back to 'pending' or deletes the claim entirely
+ */
+export const revokeClaim = async (
+  claimId: string,
+  revokedBy: string,
+  reason: string,
+  deleteCompletely: boolean = false
+): Promise<void> => {
+  try {
+    if (deleteCompletely) {
+      // Delete the claim entirely
+      const claimRef = doc(db, 'businessClaims', claimId);
+      await deleteDoc(claimRef);
+      console.log('[BusinessClaimService] Claim deleted (revoked):', claimId);
+    } else {
+      // Change status to rejected
+      const claimRef = doc(db, 'businessClaims', claimId);
+      await updateDoc(claimRef, {
+        status: 'rejected',
+        reviewedAt: Timestamp.now(),
+        reviewedBy: revokedBy,
+        reviewNotes: `Claim revoked: ${reason}`,
+        revokedAt: Timestamp.now(),
+      });
+      console.log('[BusinessClaimService] Claim revoked:', claimId);
+    }
+  } catch (error) {
+    console.error('[BusinessClaimService] Error revoking claim:', error);
+    throw error;
+  }
+};
+
+/**
  * Get approved claim for a place
  */
 export const getApprovedClaimForPlace = async (

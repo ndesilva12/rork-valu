@@ -107,6 +107,18 @@ export default function AdminDashboard() {
             </Text>
           </TouchableOpacity>
 
+          {/* Brand Categories */}
+          <TouchableOpacity
+            style={[styles.card, styles.highlightCard]}
+            onPress={() => router.push('/admin/brand-categories')}
+          >
+            <Text style={styles.cardIcon}>🏷️</Text>
+            <Text style={styles.cardTitle}>Brand Categories</Text>
+            <Text style={styles.cardDescription}>
+              Quickly categorize brands for filtering. Assign categories with one tap.
+            </Text>
+          </TouchableOpacity>
+
           {/* Incomplete Brands */}
           <TouchableOpacity
             style={[styles.card, styles.highlightCard]}
@@ -176,6 +188,18 @@ export default function AdminDashboard() {
             <Text style={styles.cardTitle}>Business Claims</Text>
             <Text style={styles.cardDescription}>
               Review and approve business ownership claims. Contact claimants via email/phone.
+            </Text>
+          </TouchableOpacity>
+
+          {/* Claimed Businesses */}
+          <TouchableOpacity
+            style={[styles.card, styles.highlightCard]}
+            onPress={() => router.push('/admin/claimed-businesses')}
+          >
+            <Text style={styles.cardIcon}>✅</Text>
+            <Text style={styles.cardTitle}>Claimed Businesses</Text>
+            <Text style={styles.cardDescription}>
+              View all claimed businesses and detach users to release businesses for new claims.
             </Text>
           </TouchableOpacity>
 

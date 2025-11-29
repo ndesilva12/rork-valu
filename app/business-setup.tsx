@@ -195,10 +195,13 @@ export default function BusinessSetupScreen() {
         verificationDetails: verificationDetails.trim(),
       });
 
+      // Mark business onboarding as complete (they've submitted a claim)
+      await setAccountType('business');
+
       Alert.alert(
         'Claim Submitted!',
-        'Your business claim has been submitted for review. We will verify your ownership and notify you via email once approved.',
-        [{ text: 'OK', onPress: () => router.replace('/') }]
+        'Your business claim has been submitted for review. We will verify your ownership and notify you via email once approved. Now, let\'s set up your values.',
+        [{ text: 'Continue', onPress: () => router.replace('/onboarding') }]
       );
     } catch (error: any) {
       Alert.alert('Error', error?.message || 'Failed to submit claim. Please try again.');

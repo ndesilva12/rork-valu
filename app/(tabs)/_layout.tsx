@@ -1,23 +1,65 @@
-import { Tabs, useSegments } from "expo-router";
+import { Tabs, useSegments, useRouter } from "expo-router";
 import { BookOpen, DollarSign, Heart, Compass, User, Home } from "lucide-react-native";
-import React from "react";
-import { Platform, useWindowDimensions, StyleSheet, StatusBar, View, Text } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Platform, useWindowDimensions, StyleSheet, StatusBar, View, Text, ActivityIndicator } from "react-native";
 import { lightColors, darkColors } from "@/constants/colors";
 import { useUser } from "@/contexts/UserContext";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useIsStandalone } from "@/hooks/useIsStandalone";
+import { getClaimsByUser } from "@/services/firebase/businessClaimService";
 
 export default function TabLayout() {
+  const router = useRouter();
   const isStandalone = useIsStandalone();
-  const { isDarkMode } = useUser();
+  const { isDarkMode, profile, clerkUser, isLoading: isProfileLoading } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const [isCheckingBusinessClaims, setIsCheckingBusinessClaims] = useState(true);
+  const [hasBusinessClaim, setHasBusinessClaim] = useState(false);
+
+  // Check if business user has submitted a claim
+  useEffect(() => {
+    const checkBusinessClaims = async () => {
+      // Only check for business accounts
+      if (profile?.accountType !== 'business' || !clerkUser?.id) {
+        setIsCheckingBusinessClaims(false);
+        return;
+      }
+
+      try {
+        const claims = await getClaimsByUser(clerkUser.id);
+        setHasBusinessClaim(claims.length > 0);
+
+        // If no claims, redirect to business-setup
+        if (claims.length === 0) {
+          console.log('[TabLayout] Business user has no claims, redirecting to business-setup');
+          router.replace('/business-setup');
+        }
+      } catch (error) {
+        console.error('[TabLayout] Error checking business claims:', error);
+      } finally {
+        setIsCheckingBusinessClaims(false);
+      }
+    };
+
+    if (!isProfileLoading && clerkUser?.id) {
+      checkBusinessClaims();
+    }
+  }, [profile?.accountType, clerkUser?.id, isProfileLoading]);
 
   const isTabletOrLarger = Platform.OS === 'web' && width >= 768;
   const tabBarHeight = isTabletOrLarger ? 64 : 64;
 
-  // Use safe area insets to avoid content going under system UI (status bar / home indicator)
-  const insets = useSafeAreaInsets();
+  // Show loading while checking business claims
+  if (isProfileLoading || (profile?.accountType === 'business' && isCheckingBusinessClaims)) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ marginTop: 12, color: colors.textSecondary }}>Loading...</Text>
+      </SafeAreaView>
+    );
+  }
 
   // On web (PWA or regular browser), don't use SafeAreaView edges - let browser/CSS handle it
   // On native mobile, use top and bottom safe areas normally
