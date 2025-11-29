@@ -71,13 +71,6 @@ export interface Brand {
 // TODO: Remove this once all code is migrated
 export type Product = Brand;
 
-export interface Charity {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-}
-
 export type AccountType = 'individual' | 'business';
 
 // Team Member Types (Phase 0)
@@ -183,9 +176,7 @@ export interface UserProfile {
   causes: Cause[];
   searchHistory: string[];
   promoCode?: string;
-  donationAmount?: number; // Total donations committed through transactions
   totalSavings?: number; // Total discount amount saved through transactions
-  selectedCharities?: Charity[];
   businessInfo?: BusinessInfo; // Only for business accounts (owner)
   valueCodeCustomers?: ValueCodeCustomer[]; // Only for business accounts
   userDetails?: UserDetails; // Only for individual accounts

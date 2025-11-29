@@ -65,7 +65,11 @@ export default function BusinessClaimsAdmin() {
       setClaims(allClaims);
     } catch (error) {
       console.error('[BusinessClaimsAdmin] Error loading claims:', error);
-      Alert.alert('Error', 'Failed to load claims');
+      if (Platform.OS === 'web') {
+        window.alert('Failed to load claims');
+      } else {
+        Alert.alert('Error', 'Failed to load claims');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -124,13 +128,21 @@ export default function BusinessClaimsAdmin() {
         Linking.openURL(`mailto:${selectedClaim.userEmail}?subject=${subject}&body=${body}`);
       }
 
-      Alert.alert('Success', 'Claim approved and account converted to business');
+      if (Platform.OS === 'web') {
+        window.alert('Claim approved and account converted to business');
+      } else {
+        Alert.alert('Success', 'Claim approved and account converted to business');
+      }
       setSelectedClaim(null);
       setReviewNotes('');
       loadClaims();
     } catch (error) {
       console.error('[BusinessClaimsAdmin] Error approving claim:', error);
-      Alert.alert('Error', 'Failed to approve claim');
+      if (Platform.OS === 'web') {
+        window.alert('Failed to approve claim');
+      } else {
+        Alert.alert('Error', 'Failed to approve claim');
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -140,7 +152,11 @@ export default function BusinessClaimsAdmin() {
     if (!selectedClaim || !user?.primaryEmailAddress?.emailAddress) return;
 
     if (!reviewNotes.trim()) {
-      Alert.alert('Required', 'Please provide a reason for rejection');
+      if (Platform.OS === 'web') {
+        window.alert('Please provide a reason for rejection');
+      } else {
+        Alert.alert('Required', 'Please provide a reason for rejection');
+      }
       return;
     }
 
@@ -165,13 +181,21 @@ export default function BusinessClaimsAdmin() {
         Linking.openURL(`mailto:${selectedClaim.userEmail}?subject=${subject}&body=${body}`);
       }
 
-      Alert.alert('Success', 'Claim rejected');
+      if (Platform.OS === 'web') {
+        window.alert('Claim rejected');
+      } else {
+        Alert.alert('Success', 'Claim rejected');
+      }
       setSelectedClaim(null);
       setReviewNotes('');
       loadClaims();
     } catch (error) {
       console.error('[BusinessClaimsAdmin] Error rejecting claim:', error);
-      Alert.alert('Error', 'Failed to reject claim');
+      if (Platform.OS === 'web') {
+        window.alert('Failed to reject claim');
+      } else {
+        Alert.alert('Error', 'Failed to reject claim');
+      }
     } finally {
       setIsProcessing(false);
     }

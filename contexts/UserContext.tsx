@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
-import { Cause, UserProfile, Charity, AccountType, BusinessInfo, UserDetails, BusinessMembership } from '@/types';
+import { Cause, UserProfile, AccountType, BusinessInfo, UserDetails, BusinessMembership } from '@/types';
 import { saveUserProfile, getUserProfile, createUser, updateUserMetadata, aggregateUserTransactions, aggregateBusinessTransactions, updateUserProfileFields } from '@/services/firebase/userService';
 import { createList, getUserLists } from '@/services/firebase/listService';
 import { hasPermission as checkTeamPermission, initializeBusinessOwner } from '@/services/firebase/businessTeamService';
@@ -23,8 +23,6 @@ export const [UserProvider, useUser] = createContextHook(() => {
     causes: [],
     searchHistory: [],
     promoCode: generatePromoCode(), // Always generate a promo code immediately
-    donationAmount: 0,
-    selectedCharities: [],
   });
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -37,7 +35,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
       if (!clerkUser) {
         console.log('[UserContext] ❌ No clerk user, resetting state');
         if (mounted) {
-          setProfile({ causes: [], searchHistory: [], donationAmount: 0, selectedCharities: [] });
+          setProfile({ causes: [], searchHistory: [] });
           setHasCompletedOnboarding(false);
           setIsNewUser(null);
           setIsLoading(false);
@@ -113,8 +111,6 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
           // Ensure required fields are initialized
           firebaseProfile.id = clerkUser.id;
-          firebaseProfile.donationAmount = firebaseProfile.donationAmount ?? 0;
-          firebaseProfile.selectedCharities = firebaseProfile.selectedCharities ?? [];
 
           setProfile(firebaseProfile);
           setHasCompletedOnboarding(firebaseProfile.causes.length > 0);
@@ -138,68 +134,39 @@ export const [UserProvider, useUser] = createContextHook(() => {
             }
 
             parsedProfile.id = clerkUser.id;
-            parsedProfile.donationAmount = parsedProfile.donationAmount ?? 0;
-            parsedProfile.selectedCharities = parsedProfile.selectedCharities ?? [];
 
             setProfile(parsedProfile);
             setHasCompletedOnboarding(parsedProfile.causes.length > 0);
 
-            // Sync to Firebase
-            try {
-              if (isFirstTime) {
-                // Get referral source from Clerk unsafeMetadata (set during signup from QR code URL params)
-                const referralSource = (clerkUser.unsafeMetadata as any)?.referralSource as string | undefined;
-                const userData = {
-                  email: clerkUser.primaryEmailAddress?.emailAddress,
-                  firstName: clerkUser.firstName || undefined,
-                  lastName: clerkUser.lastName || undefined,
-                  fullName: clerkUser.fullName || undefined,
-                  imageUrl: clerkUser.imageUrl || undefined,
-                  referralSource: referralSource || undefined,
-                };
-                await createUser(clerkUser.id, userData, parsedProfile);
-                console.log('[UserContext] ✅ New user created in Firebase', referralSource ? `(from: ${referralSource})` : '');
-              } else {
+            // Only sync to Firebase if user has completed onboarding (has causes)
+            // This prevents creating Firebase docs for users who quit during onboarding
+            if (parsedProfile.causes.length > 0) {
+              try {
                 await saveUserProfile(clerkUser.id, parsedProfile);
                 console.log('[UserContext] ✅ Profile synced to Firebase');
+              } catch (syncError) {
+                console.error('[UserContext] Failed to sync to Firebase:', syncError);
               }
-            } catch (syncError) {
-              console.error('[UserContext] Failed to sync to Firebase:', syncError);
+            } else {
+              console.log('[UserContext] Skipping Firebase sync - user has not completed onboarding yet');
             }
           } else if (mounted) {
             console.log('[UserContext] ⚠️ CREATING NEW PROFILE (no Firebase, no AsyncStorage)');
-            console.log('[UserContext]   - This should only happen for brand new users!');
-            console.log('[UserContext]   - If this is an existing user, something went wrong');
+            console.log('[UserContext]   - This is a brand new user in onboarding');
+            console.log('[UserContext]   - Firebase doc will be created when onboarding completes');
             const newProfile: UserProfile = {
               id: clerkUser.id,
               causes: [],
               searchHistory: [],
               promoCode: generatePromoCode(),
-              donationAmount: 0,
-              selectedCharities: [],
             };
             setProfile(newProfile);
             setHasCompletedOnboarding(false);
 
-            // Create user in Firebase
-            try {
-              // Get referral source from Clerk unsafeMetadata (set during signup from QR code URL params)
-              const referralSource = (clerkUser.unsafeMetadata as any)?.referralSource as string | undefined;
-              const userData = {
-                email: clerkUser.primaryEmailAddress?.emailAddress,
-                firstName: clerkUser.firstName || undefined,
-                lastName: clerkUser.lastName || undefined,
-                fullName: clerkUser.fullName || undefined,
-                imageUrl: clerkUser.imageUrl || undefined,
-                referralSource: referralSource || undefined,
-              };
-              await createUser(clerkUser.id, userData, newProfile);
-              console.log('[UserContext] ✅ New user created in Firebase', referralSource ? `(from: ${referralSource})` : '');
-            } catch (createError) {
-              console.error('[UserContext] Failed to create user in Firebase:', createError);
-            }
+            // Don't create Firebase user doc yet - wait until onboarding completes
+            // This allows users to quit onboarding without creating an account
 
-            // Save to local storage
+            // Save to local storage for session persistence
             await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
           }
         }
@@ -219,13 +186,11 @@ export const [UserProvider, useUser] = createContextHook(() => {
       } catch (error) {
         console.error('[UserContext] Failed to load profile:', error);
         if (mounted) {
-          const defaultProfile = {
+          const defaultProfile: UserProfile = {
             id: clerkUser.id,
             causes: [],
             searchHistory: [],
             promoCode: generatePromoCode(),
-            donationAmount: 0,
-            selectedCharities: [],
           };
           setProfile(defaultProfile);
           setHasCompletedOnboarding(false);
@@ -291,6 +256,24 @@ export const [UserProvider, useUser] = createContextHook(() => {
       console.log('[UserContext] 🔄 Calling saveUserProfile...');
       await saveUserProfile(clerkUser.id, newProfile);
       console.log('[UserContext] ✅ Profile synced to Firebase successfully');
+
+      // For new users completing onboarding, also save user metadata
+      if (isNewUser === true && causes.length > 0) {
+        try {
+          // Get referral source from Clerk unsafeMetadata (set during signup from QR code URL params)
+          const referralSource = (clerkUser.unsafeMetadata as any)?.referralSource as string | undefined;
+          await updateUserMetadata(clerkUser.id, {
+            email: clerkUser.primaryEmailAddress?.emailAddress,
+            firstName: clerkUser.firstName || undefined,
+            lastName: clerkUser.lastName || undefined,
+            fullName: clerkUser.fullName || clerkUser.unsafeMetadata?.fullName as string || undefined,
+            imageUrl: clerkUser.imageUrl || undefined,
+          });
+          console.log('[UserContext] ✅ User metadata saved to Firebase', referralSource ? `(from: ${referralSource})` : '');
+        } catch (metadataError) {
+          console.error('[UserContext] Failed to save user metadata:', metadataError);
+        }
+      }
 
       // Mark user as no longer new after completing onboarding
       if (isNewUser === true && causes.length > 0) {
@@ -429,32 +412,6 @@ export const [UserProvider, useUser] = createContextHook(() => {
     }
   }, [profile, clerkUser]);
 
-  const updateSelectedCharities = useCallback(async (charities: Charity[]) => {
-    if (!clerkUser) {
-      console.error('[UserContext] Cannot update charities: User not logged in');
-      return;
-    }
-
-    console.log('[UserContext] Updating selected charities:', charities.length);
-
-    let newProfile: UserProfile | null = null;
-    setProfile((prevProfile) => {
-      newProfile = { ...prevProfile, selectedCharities: charities };
-      return newProfile;
-    });
-
-    if (!newProfile) return;
-
-    try {
-      const storageKey = `${PROFILE_KEY}_${clerkUser.id}`;
-      await AsyncStorage.setItem(storageKey, JSON.stringify(newProfile));
-      await saveUserProfile(clerkUser.id, newProfile);
-      console.log('[UserContext] ✅ Selected charities saved and synced to Firebase');
-    } catch (error) {
-      console.error('[UserContext] ❌ Failed to save selected charities:', error);
-    }
-  }, [clerkUser]);
-
   const resetProfile = useCallback(async () => {
     if (!clerkUser) {
       console.error('[UserContext] Cannot reset profile: User not logged in');
@@ -466,8 +423,6 @@ export const [UserProvider, useUser] = createContextHook(() => {
         causes: [],
         searchHistory: [],
         promoCode: profile.promoCode || generatePromoCode(),
-        donationAmount: 0,
-        selectedCharities: [],
       };
       setProfile(emptyProfile);
       setHasCompletedOnboarding(false);
@@ -488,8 +443,6 @@ export const [UserProvider, useUser] = createContextHook(() => {
         causes: [],
         searchHistory: [],
         promoCode: generatePromoCode(),
-        donationAmount: 0,
-        selectedCharities: [],
       });
       setHasCompletedOnboarding(false);
       console.log('[UserContext] All data cleared successfully');
@@ -660,18 +613,17 @@ export const [UserProvider, useUser] = createContextHook(() => {
         console.log('[UserContext] ✅ Business transaction totals refreshed:', businessMetrics);
       } else {
         // For individual accounts, aggregate user transactions
-        const { totalSavings, totalDonations } = await aggregateUserTransactions(clerkUser.id);
+        const { totalSavings } = await aggregateUserTransactions(clerkUser.id);
 
         const newProfile = {
           ...profile,
           totalSavings,
-          donationAmount: totalDonations,
         };
         setProfile(newProfile);
 
         // Save to Firebase
         await saveUserProfile(clerkUser.id, newProfile);
-        console.log('[UserContext] ✅ User transaction totals refreshed:', { totalSavings, totalDonations });
+        console.log('[UserContext] ✅ User transaction totals refreshed:', { totalSavings });
       }
     } catch (error) {
       console.error('[UserContext] ❌ Failed to refresh transaction totals:', error);
@@ -740,7 +692,6 @@ export const [UserProvider, useUser] = createContextHook(() => {
     removeCauses,
     toggleCauseType,
     addToSearchHistory,
-    updateSelectedCharities,
     resetProfile,
     clearAllStoredData,
     isDarkMode,
@@ -755,5 +706,5 @@ export const [UserProvider, useUser] = createContextHook(() => {
     isBusinessOwner,
     isTeamMember,
     markIntroAsSeen,
-  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, removeCauses, toggleCauseType, addToSearchHistory, updateSelectedCharities, resetProfile, clearAllStoredData, isDarkMode, clerkUser, setAccountType, setBusinessInfo, setUserDetails, refreshTransactionTotals, hasPermission, getBusinessId, isBusinessOwner, isTeamMember, markIntroAsSeen]);
+  }), [profile, isLoading, isClerkLoaded, hasCompletedOnboarding, isNewUser, addCauses, removeCauses, toggleCauseType, addToSearchHistory, resetProfile, clearAllStoredData, isDarkMode, clerkUser, setAccountType, setBusinessInfo, setUserDetails, refreshTransactionTotals, hasPermission, getBusinessId, isBusinessOwner, isTeamMember, markIntroAsSeen]);
 });
