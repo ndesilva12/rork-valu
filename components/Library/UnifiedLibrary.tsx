@@ -233,6 +233,10 @@ export default function UnifiedLibrary({
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const [placesSearchDebounce, setPlacesSearchDebounce] = useState<NodeJS.Timeout | null>(null);
 
+  // Endorsement list filter state
+  type EndorsementFilterType = 'all' | 'brand' | 'business' | 'place';
+  const [endorsementFilter, setEndorsementFilter] = useState<EndorsementFilterType>('all');
+
   // Section selection state
   // Profile views (preview/view) ALWAYS default to endorsement
   // Home tab (edit) defaults to endorsement, or aligned if endorsement is empty
@@ -2108,7 +2112,58 @@ export default function UnifiedLibrary({
 
     // Determine if we're in reorder mode for this list
     const isReordering = isReorderMode && reorderingListId === endorsementList.id;
-    const entriesToDisplay = isReordering ? localEntries : endorsementList.entries;
+
+    // Apply filter to entries
+    const allEntries = isReordering ? localEntries : endorsementList.entries;
+    const filteredEntries = endorsementFilter === 'all'
+      ? allEntries
+      : allEntries.filter(entry => entry && entry.type === endorsementFilter);
+    const entriesToDisplay = filteredEntries;
+
+    // Get unique entry types for filter buttons
+    const entryTypes = new Set(allEntries.filter(e => e).map(e => e.type));
+
+    // Render filter buttons
+    const renderFilterButtons = () => {
+      if (isReordering || allEntries.length < 2) return null;
+
+      const filters: { key: EndorsementFilterType; label: string }[] = [
+        { key: 'all', label: 'All' },
+        ...(entryTypes.has('brand') ? [{ key: 'brand' as const, label: 'Brands' }] : []),
+        ...(entryTypes.has('business') ? [{ key: 'business' as const, label: 'Businesses' }] : []),
+        ...(entryTypes.has('place') ? [{ key: 'place' as const, label: 'Places' }] : []),
+      ];
+
+      // Only show filter if there are multiple types
+      if (filters.length <= 2) return null;
+
+      return (
+        <View style={styles.filterButtonsContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterButtonsScroll}>
+            {filters.map(filter => (
+              <TouchableOpacity
+                key={filter.key}
+                style={[
+                  styles.filterButton,
+                  endorsementFilter === filter.key
+                    ? { backgroundColor: colors.primary }
+                    : { backgroundColor: colors.backgroundSecondary, borderWidth: 1, borderColor: colors.border }
+                ]}
+                onPress={() => setEndorsementFilter(filter.key)}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.filterButtonText,
+                  { color: endorsementFilter === filter.key ? '#FFFFFF' : colors.text }
+                ]}>
+                  {filter.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      );
+    };
 
     // Render Save/Cancel buttons when in reorder mode
     const renderReorderControls = () => {
@@ -2238,6 +2293,7 @@ export default function UnifiedLibrary({
     return (
       <View style={styles.listContentContainer}>
         {renderReorderControls()}
+        {renderFilterButtons()}
         <View style={styles.brandsContainer}>
           {contentWithDnd}
           {!isReordering && endorsementLoadCount < endorsementList.entries.length && (
@@ -4458,6 +4514,24 @@ const styles = StyleSheet.create({
   reorderButtonText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  // Filter button styles
+  filterButtonsContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  filterButtonsScroll: {
+    gap: 8,
+    paddingHorizontal: 4,
+  },
+  filterButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   reorderEntryRow: {
     flexDirection: 'row',
