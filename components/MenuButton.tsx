@@ -1,5 +1,5 @@
 import { useRouter, useSegments } from 'expo-router';
-import { Menu, LogOut, User, HelpCircle, Heart } from 'lucide-react-native';
+import { Menu, LogOut, User, Heart } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   View,
@@ -16,11 +16,7 @@ import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useClerk } from '@clerk/clerk-expo';
 
-interface MenuButtonProps {
-  onShowExplainers?: () => void;
-}
-
-export default function MenuButton({ onShowExplainers }: MenuButtonProps = {}) {
+export default function MenuButton() {
   const router = useRouter();
   const segments = useSegments();
   const { isDarkMode, clerkUser, profile } = useUser();
@@ -61,13 +57,6 @@ export default function MenuButton({ onShowExplainers }: MenuButtonProps = {}) {
   const handleNavigateToSettings = () => {
     setIsMenuVisible(false);
     router.push('/settings');
-  };
-
-  const handleShowExplainers = () => {
-    setIsMenuVisible(false);
-    if (onShowExplainers) {
-      onShowExplainers();
-    }
   };
 
   const handleUpdateValues = () => {
@@ -149,20 +138,6 @@ export default function MenuButton({ onShowExplainers }: MenuButtonProps = {}) {
                   <Text style={[styles.menuItemTitle, { color: colors.text }]}>Settings</Text>
                 </View>
               </TouchableOpacity>
-
-              {/* How It Works menu item */}
-              {onShowExplainers && (
-                <TouchableOpacity
-                  style={[styles.menuItem, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
-                  onPress={handleShowExplainers}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.menuItemLeft}>
-                    <HelpCircle size={26} color={colors.primary} strokeWidth={2} />
-                    <Text style={[styles.menuItemTitle, { color: colors.text }]}>How It Works</Text>
-                  </View>
-                </TouchableOpacity>
-              )}
 
               {/* Update My Values menu item */}
               <TouchableOpacity

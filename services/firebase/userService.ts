@@ -405,10 +405,10 @@ export async function aggregateBusinessTransactions(businessId: string): Promise
 }
 
 /**
- * Get all public user profiles
- * @returns Array of public user profiles with their IDs
+ * Get all public user profiles, sorted by endorsement count (highest first)
+ * @returns Array of public user profiles with their IDs, sorted by endorsement count
  */
-export async function getAllPublicUsers(): Promise<Array<{ id: string; profile: UserProfile }>> {
+export async function getAllPublicUsers(): Promise<Array<{ id: string; profile: UserProfile; endorsementCount?: number }>> {
   try {
     console.log('[Firebase] Fetching all public users (excluding business accounts)');
 
@@ -422,10 +422,31 @@ export async function getAllPublicUsers(): Promise<Array<{ id: string; profile: 
 
     const querySnapshot = await getDocs(q);
 
-    const users: Array<{ id: string; profile: UserProfile }> = [];
+    const usersWithCounts: Array<{ id: string; profile: UserProfile; endorsementCount: number }> = [];
 
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
+    // Fetch endorsement counts for each user
+    for (const userDoc of querySnapshot.docs) {
+      const data = userDoc.data();
+      const userId = userDoc.id;
+
+      // Get endorsement list count for this user
+      let endorsementCount = 0;
+      try {
+        const listsRef = collection(db, 'userLists');
+        const listQuery = query(
+          listsRef,
+          where('userId', '==', userId),
+          where('isEndorsed', '==', true)
+        );
+        const listSnapshot = await getDocs(listQuery);
+        if (!listSnapshot.empty) {
+          const listData = listSnapshot.docs[0].data();
+          endorsementCount = listData.entries?.length || 0;
+        }
+      } catch (e) {
+        console.warn('[Firebase] Could not fetch endorsement count for user', userId);
+      }
+
       const profile: UserProfile = {
         causes: data.causes || [],
         searchHistory: data.searchHistory || [],
@@ -444,11 +465,14 @@ export async function getAllPublicUsers(): Promise<Array<{ id: string; profile: 
         unalignedListPublic: data.unalignedListPublic,
       };
 
-      users.push({ id: doc.id, profile });
-    });
+      usersWithCounts.push({ id: userId, profile, endorsementCount });
+    }
 
-    console.log('[Firebase] ✅ Fetched', users.length, 'public users');
-    return users;
+    // Sort by endorsement count (highest first)
+    usersWithCounts.sort((a, b) => b.endorsementCount - a.endorsementCount);
+
+    console.log('[Firebase] ✅ Fetched and sorted', usersWithCounts.length, 'public users by endorsement count');
+    return usersWithCounts;
   } catch (error) {
     console.error('[Firebase] ❌ Error fetching public users:', error);
     throw error;

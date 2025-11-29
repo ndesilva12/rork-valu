@@ -658,10 +658,10 @@ export default function BrandDetailScreen() {
           headerShown: false,
         }}
       />
+      <View style={Platform.OS === 'web' ? styles.webWrapper : styles.fullWidth}>
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
-        contentContainerStyle={Platform.OS === 'web' ? styles.webContent : undefined}
         showsVerticalScrollIndicator={false}
         {...panResponder.panHandlers}
       >
@@ -1143,6 +1143,7 @@ export default function BrandDetailScreen() {
           </View>
         </View>
       </ScrollView>
+      </View>
 
       {/* Add to List Modal */}
       <Modal
@@ -1267,14 +1268,20 @@ export default function BrandDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    alignItems: 'center',
+  },
+  webWrapper: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 768,
+    alignSelf: 'center',
+  },
+  fullWidth: {
+    flex: 1,
+    width: '100%',
   },
   scrollView: {
     flex: 1,
-  },
-  webContent: {
-    maxWidth: 768,
-    alignSelf: 'center' as const,
-    width: '100%',
   },
   backButtonOverlay: {
     position: 'absolute' as const,

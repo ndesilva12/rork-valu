@@ -251,7 +251,12 @@ export default function SignInScreen() {
                 )}
               </TouchableOpacity>
               <View style={styles.forgotPasswordContainer}>
-                <TouchableOpacity onPress={onForgotPasswordPress}>
+                <TouchableOpacity
+                  onPress={onForgotPasswordPress}
+                  style={styles.forgotPasswordButton}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
                   <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>Forgot password?</Text>
                 </TouchableOpacity>
               </View>
@@ -312,9 +317,9 @@ export default function SignInScreen() {
                     <View style={styles.missionPoint}>
                       <Sparkles size={18} color={colors.success} strokeWidth={2} style={styles.missionIcon} />
                       <View style={styles.missionTextContainer}>
-                        <Text style={[styles.missionTitle, { color: colors.text }]}>Decentralize Endorsement Marketing</Text>
+                        <Text style={[styles.missionTitle, { color: colors.text }]}>Decentralize Endorsements</Text>
                         <Text style={[styles.sectionText, { color: colors.textSecondary }]}>
-                          Endorsement deals are effective but require content creation and only work for huge audiences. We make endorsements as simple as a public list, reducing costs and redirecting influence from celebrity networks to real people with stronger trust. A referral from a trusted friend means more than one from a celebrity.
+                          Endorsement deals require a person that has a large audience and the ability to create content. We make endorsements as simple as a public list. This reduces the cost of creation but also widens the target from a few loosely held together celebrity networks to a much larger collection of deeply personal individual networks. A referral from a trusted friend means more than one from a celebrity. With infrastructure this seamless, businesses can compensate anyone for their endorsement by offering verifiable discounts and rewards.
                         </Text>
                       </View>
                     </View>
@@ -474,8 +479,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 24,
-    paddingTop: 12,
+    padding: 20,
+    paddingTop: 0,
     maxWidth: Platform.OS === 'web' ? 480 : '100%',
     width: '100%',
     alignSelf: 'center',
@@ -485,14 +490,14 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   logo: {
-    width: 260,
-    height: 260,
+    width: 200,
+    height: 200,
     tintColor: undefined,
   },
   taglineContainer: {
     alignItems: 'center',
-    marginTop: -50,
-    marginBottom: 32,
+    marginTop: -35,
+    marginBottom: 20,
     paddingHorizontal: 8,
   },
   taglineLine: {
@@ -500,17 +505,17 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   taglineFirstWord: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     letterSpacing: -0.5,
   },
   taglineRest: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '400',
     letterSpacing: 0.2,
   },
   inputContainer: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   label: {
     fontSize: 14,
@@ -572,8 +577,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
   },
+  forgotPasswordButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
   forgotPasswordText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   // Landing page styles
@@ -581,17 +590,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 24,
-    paddingVertical: 12,
+    marginTop: 16,
+    paddingVertical: 8,
     gap: 8,
   },
   learnMoreFirstWord: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     letterSpacing: -0.5,
   },
   learnMoreRest: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '400',
     letterSpacing: 0.2,
   },

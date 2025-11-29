@@ -406,13 +406,10 @@ export default function UserProfileScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.scrollView}
-        contentContainerStyle={Platform.OS === 'web' ? styles.webContent : undefined}
-        showsVerticalScrollIndicator={false}
-        {...panResponder.panHandlers}
-      >
+      {/* Web wrapper for centered content */}
+      <View style={Platform.OS === 'web' ? styles.webWrapper : styles.fullWidth}>
+      {/* Sticky Header Section - Does not scroll */}
+      <View style={[styles.stickyHeader, { backgroundColor: colors.background }]}>
         {/* Hero Image Container */}
         <View style={styles.heroImageContainer}>
           <Image
@@ -435,8 +432,8 @@ export default function UserProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.content}>
-          {/* Header with profile image, user info, and alignment score */}
+        {/* Header with profile image, user info, and alignment score */}
+        <View style={[styles.stickyHeaderContent, { backgroundColor: colors.background }]}>
           <View style={styles.header}>
             {profileImageUrl ? (
               <TouchableOpacity
@@ -473,69 +470,28 @@ export default function UserProfileScreen() {
 
             {/* Show alignment score only when viewing another user's profile */}
             {!isOwnProfile && (
-              <View style={{ alignItems: 'center', gap: 8 }}>
-                <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.background }]}>
-                  <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
-                    {alignmentData.alignmentStrength}
-                  </Text>
-                </View>
-                {/* Action menu button below score badge */}
-                <View style={{ position: 'relative' }}>
-                  <TouchableOpacity
-                    style={[styles.profileActionButton, { backgroundColor: colors.backgroundSecondary }]}
-                    onPress={() => setShowActionMenu(!showActionMenu)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={{ transform: [{ rotate: '90deg' }] }}>
-                      <MoreVertical size={18} color={colors.text} strokeWidth={2} />
-                    </View>
-                  </TouchableOpacity>
-
-                  {/* Action Menu Dropdown */}
-                  {showActionMenu && (
-                    <View style={[styles.profileActionDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                      <TouchableOpacity
-                        style={styles.profileActionItem}
-                        onPress={() => {
-                          setShowActionMenu(false);
-                          handleFollowUser();
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        {isFollowingUser ? (
-                          <UserMinus size={16} color={colors.text} strokeWidth={2} />
-                        ) : (
-                          <UserPlus size={16} color={colors.text} strokeWidth={2} />
-                        )}
-                        <Text style={[styles.profileActionText, { color: colors.text }]}>
-                          {isFollowingUser ? 'Unfollow' : 'Follow'}
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={styles.profileActionItem}
-                        onPress={() => {
-                          setShowActionMenu(false);
-                          const shareUrl = `${Platform.OS === 'web' ? window.location.origin : 'https://iendorse.app'}/user/${userId}`;
-                          if (Platform.OS === 'web') {
-                            navigator.clipboard.writeText(shareUrl);
-                            Alert.alert('Link Copied', 'Profile link copied to clipboard');
-                          } else {
-                            Alert.alert('Share', `Share ${userName}'s profile at ${shareUrl}`);
-                          }
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Share2 size={16} color={colors.text} strokeWidth={2} />
-                        <Text style={[styles.profileActionText, { color: colors.text }]}>Share</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
+              <View style={[styles.scoreCircle, { borderColor: alignmentColor, backgroundColor: colors.background }]}>
+                <Text style={[styles.scoreNumber, { color: alignmentColor }]}>
+                  {alignmentData.alignmentStrength}
+                </Text>
               </View>
             )}
           </View>
+        </View>
+      </View>
 
+      {/* Scrollable Content Section */}
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          Platform.OS === 'web' ? styles.webContent : undefined
+        ]}
+        showsVerticalScrollIndicator={false}
+        {...panResponder.panHandlers}
+      >
+        <View style={styles.content}>
           {userDetails?.description && (
             <Text style={[styles.userDescription, { color: colors.textSecondary }]}>
               {userDetails.description}
@@ -594,7 +550,7 @@ export default function UserProfileScreen() {
             </View>
           )}
 
-          {/* Endorsements/Following/Followers Counts - Clickable to show lists */}
+          {/* Endorsements/Following/Followers Counts with Action Menu - Clickable to show lists */}
           <View style={styles.followStatsContainer}>
             <TouchableOpacity
               style={styles.followStat}
@@ -620,6 +576,62 @@ export default function UserProfileScreen() {
               <Text style={[styles.followStatNumber, { color: selectedLibrarySection === 'followers' ? colors.primary : colors.text }]}>{followersCount}</Text>
               <Text style={[styles.followStatLabel, { color: selectedLibrarySection === 'followers' ? colors.primary : colors.textSecondary }]}>Followers</Text>
             </TouchableOpacity>
+
+            {/* Action menu button - inline with counters */}
+            {!isOwnProfile && (
+              <View style={styles.actionMenuContainer}>
+                <TouchableOpacity
+                  style={[styles.profileActionButton, { backgroundColor: colors.backgroundSecondary }]}
+                  onPress={() => setShowActionMenu(!showActionMenu)}
+                  activeOpacity={0.7}
+                >
+                  <View style={{ transform: [{ rotate: '90deg' }] }}>
+                    <MoreVertical size={18} color={colors.text} strokeWidth={2} />
+                  </View>
+                </TouchableOpacity>
+
+                {/* Action Menu Dropdown */}
+                {showActionMenu && (
+                  <View style={[styles.profileActionDropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                    <TouchableOpacity
+                      style={styles.profileActionItem}
+                      onPress={() => {
+                        setShowActionMenu(false);
+                        handleFollowUser();
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      {isFollowingUser ? (
+                        <UserMinus size={16} color={colors.text} strokeWidth={2} />
+                      ) : (
+                        <UserPlus size={16} color={colors.text} strokeWidth={2} />
+                      )}
+                      <Text style={[styles.profileActionText, { color: colors.text }]}>
+                        {isFollowingUser ? 'Unfollow' : 'Follow'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.profileActionItem}
+                      onPress={() => {
+                        setShowActionMenu(false);
+                        const shareUrl = `${Platform.OS === 'web' ? window.location.origin : 'https://iendorse.app'}/user/${userId}`;
+                        if (Platform.OS === 'web') {
+                          navigator.clipboard.writeText(shareUrl);
+                          Alert.alert('Link Copied', 'Profile link copied to clipboard');
+                        } else {
+                          Alert.alert('Share', `Share ${userName}'s profile at ${shareUrl}`);
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Share2 size={16} color={colors.text} strokeWidth={2} />
+                      <Text style={[styles.profileActionText, { color: colors.text }]}>Share</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
 
           {/* Library Section - Uses Unified Library Component */}
@@ -645,6 +657,7 @@ export default function UserProfileScreen() {
           </View>
         </View>
       </ScrollView>
+      </View>
 
       {/* Full Screen Image Modal */}
       <Modal
@@ -684,9 +697,30 @@ export default function UserProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    alignItems: 'center',
+  },
+  webWrapper: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 768,
+    alignSelf: 'center',
+  },
+  fullWidth: {
+    flex: 1,
+    width: '100%',
+  },
+  stickyHeader: {
+    zIndex: 10,
+  },
+  stickyHeaderContent: {
+    padding: 16,
+    paddingBottom: 8,
   },
   scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   webContent: {
     maxWidth: 768,
@@ -719,12 +753,13 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+    paddingTop: 0,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 0,
     gap: 10,
   },
   headerLogo: {
@@ -838,16 +873,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     marginBottom: 8,
+    marginTop: 4,
   },
   followStatsContainer: {
     flexDirection: 'row',
-    gap: 32,
+    alignItems: 'center',
+    gap: 24,
     marginTop: 8,
     paddingVertical: 8,
     marginBottom: 4,
   },
   followStat: {
     alignItems: 'center',
+  },
+  actionMenuContainer: {
+    marginLeft: 'auto' as const,
+    position: 'relative' as const,
   },
   followStatNumber: {
     fontSize: 20,

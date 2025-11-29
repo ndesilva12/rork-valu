@@ -128,9 +128,8 @@ export default function OnboardingScreen() {
     .sort();
   const categories = [...knownCategories, ...unknownCategories];
 
-  // Business accounts need minimum 3 values, personal accounts need 5
-  const isBusiness = profile.accountType === 'business';
-  const minValues = isBusiness ? 3 : 5;
+  // Minimum 3 values required for all account types
+  const minValues = 3;
 
   useEffect(() => {
     console.log('[Onboarding] Profile causes updated:', profile.causes.length);
