@@ -615,15 +615,15 @@ const styles = StyleSheet.create({
   },
   taglineLine: {
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   taglineFirstWord: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
     letterSpacing: -0.5,
   },
   taglineRest: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '400',
     letterSpacing: 0.2,
   },
