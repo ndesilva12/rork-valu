@@ -167,6 +167,18 @@ export default function AdminDashboard() {
             </Text>
           </TouchableOpacity>
 
+          {/* Business Claims */}
+          <TouchableOpacity
+            style={[styles.card, styles.highlightCard]}
+            onPress={() => router.push('/admin/business-claims')}
+          >
+            <Text style={styles.cardIcon}>🏪</Text>
+            <Text style={styles.cardTitle}>Business Claims</Text>
+            <Text style={styles.cardDescription}>
+              Review and approve business ownership claims. Contact claimants via email/phone.
+            </Text>
+          </TouchableOpacity>
+
           {/* Transactions */}
           <TouchableOpacity
             style={styles.card}

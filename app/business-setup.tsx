@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
-import { Building2, ChevronDown, MapPin, Plus, X, Star } from 'lucide-react-native';
-import { useState } from 'react';
+import { Building2, Search, MapPin, Check, AlertCircle, ChevronRight, Clock } from 'lucide-react-native';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,124 +12,182 @@ import {
   Platform,
   Alert,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image as ExpoImage } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
-import LocationAutocomplete from '@/components/LocationAutocomplete';
-import { BusinessLocation } from '@/types';
-
-// Common business categories
-const BUSINESS_CATEGORIES = [
-  'Retail',
-  'Food & Beverage',
-  'Restaurant',
-  'Cafe & Coffee Shop',
-  'Technology',
-  'Fashion & Apparel',
-  'Health & Wellness',
-  'Beauty & Personal Care',
-  'Home & Garden',
-  'Sports & Recreation',
-  'Arts & Entertainment',
-  'Professional Services',
-  'Financial Services',
-  'Education',
-  'Automotive',
-  'Travel & Hospitality',
-  'Real Estate',
-  'Non-Profit',
-  'Other',
-];
+import { searchPlaces, PlaceSearchResult, getPlacePhotoUrl } from '@/services/firebase/placesService';
+import { submitBusinessClaim, getClaimsByUser, BusinessClaim } from '@/services/firebase/businessClaimService';
+import { getLogoUrl } from '@/lib/logo';
+import * as Location from 'expo-location';
+import debounce from 'lodash/debounce';
 
 export default function BusinessSetupScreen() {
   const router = useRouter();
-  const { isDarkMode, setBusinessInfo } = useUser();
+  const { isDarkMode, clerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
-  const [businessName, setBusinessName] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
-  const [locations, setLocations] = useState<BusinessLocation[]>([
-    { address: '', latitude: 0, longitude: 0, isPrimary: true }
-  ]);
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<PlaceSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  const handleLocationSelect = (index: number, locationName: string, lat: number, lon: number) => {
-    const newLocations = [...locations];
-    newLocations[index] = {
-      address: locationName,
-      latitude: lat,
-      longitude: lon,
-      isPrimary: newLocations[index].isPrimary || false,
-    };
-    setLocations(newLocations);
+  // Selected business state
+  const [selectedPlace, setSelectedPlace] = useState<PlaceSearchResult | null>(null);
+
+  // Claim form state
+  const [businessRole, setBusinessRole] = useState('');
+  const [businessPhone, setBusinessPhone] = useState('');
+  const [businessEmail, setBusinessEmail] = useState('');
+  const [verificationDetails, setVerificationDetails] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Existing claims
+  const [existingClaims, setExistingClaims] = useState<BusinessClaim[]>([]);
+  const [isLoadingClaims, setIsLoadingClaims] = useState(true);
+
+  // Get user location on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const location = await Location.getCurrentPositionAsync({});
+          setUserLocation({
+            lat: location.coords.latitude,
+            lng: location.coords.longitude,
+          });
+        }
+      } catch (error) {
+        console.log('[BusinessSetup] Could not get location:', error);
+      }
+    })();
+  }, []);
+
+  // Load existing claims
+  useEffect(() => {
+    if (clerkUser?.id) {
+      loadExistingClaims();
+    }
+  }, [clerkUser?.id]);
+
+  const loadExistingClaims = async () => {
+    if (!clerkUser?.id) return;
+    setIsLoadingClaims(true);
+    try {
+      const claims = await getClaimsByUser(clerkUser.id);
+      setExistingClaims(claims);
+    } catch (error) {
+      console.error('[BusinessSetup] Error loading claims:', error);
+    } finally {
+      setIsLoadingClaims(false);
+    }
   };
 
-  const handleAddLocation = () => {
-    setLocations([...locations, { address: '', latitude: 0, longitude: 0, isPrimary: false }]);
+  // Debounced search
+  const debouncedSearch = useCallback(
+    debounce(async (query: string) => {
+      if (query.length < 2) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const results = await searchPlaces(query, userLocation || undefined, 50000);
+        setSearchResults(results);
+      } catch (error) {
+        console.error('[BusinessSetup] Search error:', error);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300),
+    [userLocation]
+  );
+
+  useEffect(() => {
+    debouncedSearch(searchQuery);
+    return () => debouncedSearch.cancel();
+  }, [searchQuery, debouncedSearch]);
+
+  const handleSelectPlace = (place: PlaceSearchResult) => {
+    setSelectedPlace(place);
+    setSearchQuery('');
+    setSearchResults([]);
   };
 
-  const handleRemoveLocation = (index: number) => {
-    if (locations.length === 1) {
-      Alert.alert('Required', 'You must have at least one location');
+  const handleSubmitClaim = async () => {
+    if (!selectedPlace || !clerkUser) {
+      Alert.alert('Error', 'Please select a business first');
       return;
     }
-    const newLocations = locations.filter((_, i) => i !== index);
-    // If we removed the primary location, make the first one primary
-    if (locations[index].isPrimary && newLocations.length > 0) {
-      newLocations[0].isPrimary = true;
+
+    if (!businessRole.trim()) {
+      Alert.alert('Required', 'Please enter your role at the business');
+      return;
     }
-    setLocations(newLocations);
+
+    if (!businessEmail.trim() && !businessPhone.trim()) {
+      Alert.alert('Required', 'Please provide a business email or phone number for verification');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await submitBusinessClaim({
+        userId: clerkUser.id,
+        userEmail: clerkUser.primaryEmailAddress?.emailAddress || '',
+        userName: clerkUser.fullName || clerkUser.firstName || '',
+        placeId: selectedPlace.placeId,
+        placeName: selectedPlace.name,
+        placeAddress: selectedPlace.address,
+        placeCategory: selectedPlace.category,
+        businessRole: businessRole.trim(),
+        businessPhone: businessPhone.trim(),
+        businessEmail: businessEmail.trim(),
+        verificationDetails: verificationDetails.trim(),
+      });
+
+      Alert.alert(
+        'Claim Submitted!',
+        'Your business claim has been submitted for review. We will verify your ownership and notify you via email once approved.',
+        [{ text: 'OK', onPress: () => router.replace('/') }]
+      );
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Failed to submit claim. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleSetPrimary = (index: number) => {
-    const newLocations = locations.map((loc, i) => ({
-      ...loc,
-      isPrimary: i === index,
-    }));
-    setLocations(newLocations);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return '#F59E0B';
+      case 'approved': return '#10B981';
+      case 'rejected': return '#EF4444';
+      default: return colors.textSecondary;
+    }
   };
 
-  const handleContinue = async () => {
-    if (!businessName.trim()) {
-      Alert.alert('Required', 'Please enter your business name');
-      return;
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending': return <Clock size={16} color="#F59E0B" strokeWidth={2} />;
+      case 'approved': return <Check size={16} color="#10B981" strokeWidth={2} />;
+      case 'rejected': return <AlertCircle size={16} color="#EF4444" strokeWidth={2} />;
+      default: return null;
     }
+  };
 
-    if (!selectedCategory) {
-      Alert.alert('Required', 'Please select a business category');
-      return;
+  // Get photo URL for a place
+  const getPlacePhoto = (place: PlaceSearchResult) => {
+    if (place.photoReference) {
+      return getPlacePhotoUrl(place.photoReference);
     }
-
-    // Validate all locations
-    const validLocations = locations.filter(loc =>
-      loc.address.trim() && loc.latitude !== 0 && loc.longitude !== 0
-    );
-
-    if (validLocations.length === 0) {
-      Alert.alert('Required', 'Please enter at least one business location. This is required so customers can find you on the map.');
-      return;
-    }
-
-    // Get the primary location (or first location if no primary set)
-    const primaryLocation = validLocations.find(loc => loc.isPrimary) || validLocations[0];
-
-    // Save basic business info with multiple locations
-    const businessInfo: any = {
-      name: businessName.trim(),
-      category: selectedCategory,
-      locations: validLocations, // New multiple locations array
-      // Backwards compatibility: save primary location to old fields
-      location: primaryLocation.address,
-      latitude: primaryLocation.latitude,
-      longitude: primaryLocation.longitude,
-      acceptsValueCodes: false, // Default to false, can be changed in profile later
-    };
-
-    await setBusinessInfo(businessInfo);
-
-    // Continue to value selection
-    router.push('/onboarding');
+    return null;
   };
 
   return (
@@ -144,6 +202,7 @@ export default function BusinessSetupScreen() {
           styles.content,
           Platform.OS === 'web' && styles.webContent
         ]}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Logo */}
         <View style={styles.logoContainer}>
@@ -160,188 +219,245 @@ export default function BusinessSetupScreen() {
             <Building2 size={32} color={colors.primary} strokeWidth={2} />
           </View>
           <Text style={[styles.title, { color: colors.text }]}>
-            Tell Us About Your Business
+            Claim Your Business
           </Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            This information will help us create your brand profile
+            Search for your business and claim ownership to manage your profile on iEndorse
           </Text>
         </View>
 
-        {/* Business Name Input */}
-        <View style={styles.section}>
-          <Text style={[styles.label, { color: colors.text }]}>
-            Business Name
-          </Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.backgroundSecondary,
-                borderColor: colors.border,
-                color: colors.text,
-              }
-            ]}
-            placeholder="Enter your business name"
-            placeholderTextColor={colors.textSecondary}
-            value={businessName}
-            onChangeText={setBusinessName}
-            autoCapitalize="words"
-          />
-        </View>
-
-        {/* Category Picker */}
-        <View style={styles.section}>
-          <Text style={[styles.label, { color: colors.text }]}>
-            Business Category
-          </Text>
-          <TouchableOpacity
-            style={[
-              styles.categoryPicker,
-              {
-                backgroundColor: colors.backgroundSecondary,
-                borderColor: colors.border,
-              }
-            ]}
-            onPress={() => setShowCategoryPicker(!showCategoryPicker)}
-            activeOpacity={0.7}
-          >
-            <Text style={[
-              styles.categoryPickerText,
-              { color: selectedCategory ? colors.text : colors.textSecondary }
-            ]}>
-              {selectedCategory || 'Select a category'}
+        {/* Existing Claims Section */}
+        {existingClaims.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Your Claims
             </Text>
-            <ChevronDown size={20} color={colors.textSecondary} strokeWidth={2} />
-          </TouchableOpacity>
+            {existingClaims.map((claim) => (
+              <View
+                key={claim.id}
+                style={[styles.claimCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+              >
+                <View style={styles.claimHeader}>
+                  <Text style={[styles.claimName, { color: colors.text }]} numberOfLines={1}>
+                    {claim.placeName}
+                  </Text>
+                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(claim.status) + '20' }]}>
+                    {getStatusIcon(claim.status)}
+                    <Text style={[styles.statusText, { color: getStatusColor(claim.status) }]}>
+                      {claim.status.charAt(0).toUpperCase() + claim.status.slice(1)}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[styles.claimAddress, { color: colors.textSecondary }]} numberOfLines={1}>
+                  {claim.placeAddress}
+                </Text>
+                {claim.status === 'rejected' && claim.reviewNotes && (
+                  <Text style={[styles.claimNotes, { color: colors.danger }]}>
+                    Reason: {claim.reviewNotes}
+                  </Text>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
 
-          {showCategoryPicker && (
-            <View style={[
-              styles.categoryList,
-              {
-                backgroundColor: colors.backgroundSecondary,
-                borderColor: colors.border,
-              }
-            ]}>
-              <ScrollView style={styles.categoryScrollView}>
-                {BUSINESS_CATEGORIES.map((category) => (
+        {/* Search Section */}
+        {!selectedPlace && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Find Your Business
+            </Text>
+            <View style={[styles.searchContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+              <Search size={20} color={colors.textSecondary} strokeWidth={2} />
+              <TextInput
+                style={[styles.searchInput, { color: colors.text }]}
+                placeholder="Search for your business name..."
+                placeholderTextColor={colors.textSecondary}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {isSearching && <ActivityIndicator size="small" color={colors.primary} />}
+            </View>
+
+            {/* Search Results */}
+            {searchResults.length > 0 && (
+              <View style={[styles.resultsContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                {searchResults.map((place) => (
                   <TouchableOpacity
-                    key={category}
-                    style={[
-                      styles.categoryOption,
-                      { borderBottomColor: colors.border },
-                      selectedCategory === category && { backgroundColor: colors.primary + '10' }
-                    ]}
-                    onPress={() => {
-                      setSelectedCategory(category);
-                      setShowCategoryPicker(false);
-                    }}
+                    key={place.placeId}
+                    style={[styles.resultItem, { borderBottomColor: colors.border }]}
+                    onPress={() => handleSelectPlace(place)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[
-                      styles.categoryOptionText,
-                      { color: colors.text },
-                      selectedCategory === category && { fontWeight: '600' }
-                    ]}>
-                      {category}
-                    </Text>
+                    <View style={[styles.resultLogo, { backgroundColor: '#FFFFFF' }]}>
+                      {getPlacePhoto(place) ? (
+                        <ExpoImage
+                          source={{ uri: getPlacePhoto(place)! }}
+                          style={styles.resultLogoImage}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <View style={[styles.resultLogoPlaceholder, { backgroundColor: colors.primary }]}>
+                          <Text style={styles.resultLogoText}>{place.name.charAt(0)}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.resultInfo}>
+                      <Text style={[styles.resultName, { color: colors.text }]} numberOfLines={1}>
+                        {place.name}
+                      </Text>
+                      <Text style={[styles.resultAddress, { color: colors.textSecondary }]} numberOfLines={1}>
+                        {place.address}
+                      </Text>
+                      <Text style={[styles.resultCategory, { color: colors.textSecondary }]}>
+                        {place.category}
+                      </Text>
+                    </View>
+                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
                   </TouchableOpacity>
                 ))}
-              </ScrollView>
-            </View>
-          )}
-        </View>
+              </View>
+            )}
 
-        {/* Location Inputs */}
-        <View style={styles.section}>
-          <View style={styles.labelRow}>
-            <MapPin size={18} color={colors.text} strokeWidth={2} />
-            <Text style={[styles.label, { color: colors.text }]}>
-              Business Locations
-            </Text>
-          </View>
-
-          {locations.map((location, index) => (
-            <View key={index} style={styles.locationItem}>
-              <View style={styles.locationHeader}>
-                <Text style={[styles.locationNumber, { color: colors.textSecondary }]}>
-                  Location {index + 1}
-                  {location.isPrimary && (
-                    <Text style={{ color: colors.primary }}> (Primary)</Text>
-                  )}
+            {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && (
+              <View style={[styles.noResults, { backgroundColor: colors.backgroundSecondary }]}>
+                <AlertCircle size={32} color={colors.textSecondary} strokeWidth={1.5} />
+                <Text style={[styles.noResultsText, { color: colors.text }]}>
+                  No businesses found
                 </Text>
-                <View style={styles.locationActions}>
-                  {!location.isPrimary && locations.length > 1 && (
-                    <TouchableOpacity
-                      onPress={() => handleSetPrimary(index)}
-                      style={styles.iconButton}
-                      activeOpacity={0.7}
-                    >
-                      <Star size={18} color={colors.textSecondary} strokeWidth={2} />
-                    </TouchableOpacity>
-                  )}
-                  {locations.length > 1 && (
-                    <TouchableOpacity
-                      onPress={() => handleRemoveLocation(index)}
-                      style={styles.iconButton}
-                      activeOpacity={0.7}
-                    >
-                      <X size={18} color={colors.danger} strokeWidth={2} />
-                    </TouchableOpacity>
+                <Text style={[styles.noResultsSubtext, { color: colors.textSecondary }]}>
+                  Try a different search term or check the spelling
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Selected Business + Claim Form */}
+        {selectedPlace && (
+          <>
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Selected Business
+              </Text>
+              <View style={[styles.selectedCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.primary }]}>
+                <View style={[styles.selectedLogo, { backgroundColor: '#FFFFFF' }]}>
+                  {getPlacePhoto(selectedPlace) ? (
+                    <ExpoImage
+                      source={{ uri: getPlacePhoto(selectedPlace)! }}
+                      style={styles.selectedLogoImage}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <View style={[styles.selectedLogoPlaceholder, { backgroundColor: colors.primary }]}>
+                      <Text style={styles.selectedLogoText}>{selectedPlace.name.charAt(0)}</Text>
+                    </View>
                   )}
                 </View>
+                <View style={styles.selectedInfo}>
+                  <Text style={[styles.selectedName, { color: colors.text }]}>
+                    {selectedPlace.name}
+                  </Text>
+                  <Text style={[styles.selectedAddress, { color: colors.textSecondary }]}>
+                    {selectedPlace.address}
+                  </Text>
+                  <Text style={[styles.selectedCategory, { color: colors.primary }]}>
+                    {selectedPlace.category}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setSelectedPlace(null)}
+                  style={styles.changeButton}
+                >
+                  <Text style={[styles.changeButtonText, { color: colors.primary }]}>Change</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Verification Form */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Verification Information
+              </Text>
+              <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
+                We'll use this information to verify your ownership
+              </Text>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Your Role *</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
+                  placeholder="e.g., Owner, Manager, Director"
+                  placeholderTextColor={colors.textSecondary}
+                  value={businessRole}
+                  onChangeText={setBusinessRole}
+                />
               </View>
 
-              <LocationAutocomplete
-                value={location.address}
-                onLocationSelect={(address, lat, lon) => handleLocationSelect(index, address, lat, lon)}
-                isDarkMode={isDarkMode}
-                isConfirmed={location.latitude !== 0 && location.longitude !== 0}
-              />
+              <View style={styles.formGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Business Email</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
+                  placeholder="contact@yourbusiness.com"
+                  placeholderTextColor={colors.textSecondary}
+                  value={businessEmail}
+                  onChangeText={setBusinessEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Business Phone</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
+                  placeholder="(555) 123-4567"
+                  placeholderTextColor={colors.textSecondary}
+                  value={businessPhone}
+                  onChangeText={setBusinessPhone}
+                  keyboardType="phone-pad"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Additional Verification (optional)</Text>
+                <TextInput
+                  style={[styles.textArea, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
+                  placeholder="Any additional information to help verify your ownership..."
+                  placeholderTextColor={colors.textSecondary}
+                  value={verificationDetails}
+                  onChangeText={setVerificationDetails}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+              </View>
             </View>
-          ))}
 
-          <TouchableOpacity
-            style={[styles.addLocationButton, { backgroundColor: colors.backgroundSecondary, borderColor: colors.primary }]}
-            onPress={handleAddLocation}
-            activeOpacity={0.7}
-          >
-            <Plus size={20} color={colors.primary} strokeWidth={2} />
-            <Text style={[styles.addLocationText, { color: colors.primary }]}>
-              Add Another Location
+            {/* Submit Button */}
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                { backgroundColor: businessRole.trim() && (businessEmail.trim() || businessPhone.trim()) ? colors.primary : colors.border }
+              ]}
+              onPress={handleSubmitClaim}
+              disabled={isSubmitting || !businessRole.trim() || (!businessEmail.trim() && !businessPhone.trim())}
+              activeOpacity={0.8}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={[styles.submitButtonText, { color: businessRole.trim() && (businessEmail.trim() || businessPhone.trim()) ? '#FFFFFF' : colors.textSecondary }]}>
+                  Submit Claim
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            <Text style={[styles.disclaimerText, { color: colors.textSecondary }]}>
+              By submitting, you confirm that you have the authority to claim this business. We may contact you to verify ownership.
             </Text>
-          </TouchableOpacity>
-
-          <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-            Add all your business locations so customers can find you on the map. Mark one as primary.
-          </Text>
-        </View>
-
-        {/* Info Box */}
-        <View style={[styles.infoBox, { backgroundColor: colors.background, borderColor: colors.primary }]}>
-          <Text style={[styles.infoText, { color: colors.text }]}>
-            You'll be able to add more details like your logo, description, and website in your profile settings after completing value selection.
-          </Text>
-        </View>
-
-        {/* Continue Button */}
-        <TouchableOpacity
-          style={[
-            styles.continueButton,
-            {
-              backgroundColor: businessName.trim() && selectedCategory && locations.some(loc => loc.address.trim() && loc.latitude !== 0 && loc.longitude !== 0) ? colors.primary : colors.border,
-            }
-          ]}
-          onPress={handleContinue}
-          disabled={!businessName.trim() || !selectedCategory || !locations.some(loc => loc.address.trim() && loc.latitude !== 0 && loc.longitude !== 0)}
-          activeOpacity={0.8}
-        >
-          <Text style={[
-            styles.continueButtonText,
-            { color: businessName.trim() && selectedCategory && locations.some(loc => loc.address.trim() && loc.latitude !== 0 && loc.longitude !== 0) ? colors.white : colors.textSecondary }
-          ]}>
-            Continue to Value Selection
-          </Text>
-        </TouchableOpacity>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -374,7 +490,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
   },
   iconContainer: {
     width: 72,
@@ -386,7 +502,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 26,
-    fontWeight: '700' as const,
+    fontWeight: '700',
     marginBottom: 12,
     textAlign: 'center',
   },
@@ -398,15 +514,154 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
     marginBottom: 8,
   },
-  label: {
+  sectionSubtitle: {
+    fontSize: 14,
+    marginBottom: 16,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 12,
+  },
+  searchInput: {
+    flex: 1,
     fontSize: 16,
-    fontWeight: '600' as const,
+  },
+  resultsContainer: {
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  resultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+  },
+  resultLogo: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  resultLogoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  resultLogoPlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resultLogoText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  resultInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  resultName: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  resultAddress: {
+    fontSize: 13,
+    marginBottom: 2,
+  },
+  resultCategory: {
+    fontSize: 12,
+  },
+  noResults: {
+    marginTop: 16,
+    padding: 32,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  noResultsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 12,
+  },
+  noResultsSubtext: {
+    fontSize: 14,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  selectedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+  },
+  selectedLogo: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  selectedLogoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  selectedLogoPlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectedLogoText: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  selectedInfo: {
+    flex: 1,
+  },
+  selectedName: {
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  selectedAddress: {
+    fontSize: 13,
+    marginBottom: 2,
+  },
+  selectedCategory: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  changeButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  changeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  formGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 6,
   },
   input: {
     paddingHorizontal: 16,
@@ -415,95 +670,66 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     fontSize: 16,
   },
-  helperText: {
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 8,
-  },
-  categoryPicker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  textArea: {
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-  },
-  categoryPickerText: {
     fontSize: 16,
+    minHeight: 80,
   },
-  categoryList: {
-    marginTop: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    maxHeight: 300,
-    overflow: 'hidden',
-  },
-  categoryScrollView: {
-    maxHeight: 300,
-  },
-  categoryOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-  },
-  categoryOptionText: {
-    fontSize: 15,
-  },
-  infoBox: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 32,
-  },
-  infoText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  continueButton: {
+  submitButton: {
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
+    marginBottom: 12,
   },
-  continueButtonText: {
+  submitButtonText: {
     fontSize: 16,
-    fontWeight: '600' as const,
+    fontWeight: '600',
   },
-  locationItem: {
-    marginBottom: 16,
+  disclaimerText: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
   },
-  locationHeader: {
+  // Existing claims styles
+  claimCard: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  claimHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  locationNumber: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  locationActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  iconButton: {
-    padding: 4,
-  },
-  addLocationButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  addLocationText: {
+  claimName: {
     fontSize: 15,
-    fontWeight: '600' as const,
+    fontWeight: '600',
+    flex: 1,
+    marginRight: 8,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  claimAddress: {
+    fontSize: 13,
+  },
+  claimNotes: {
+    fontSize: 12,
+    marginTop: 8,
+    fontStyle: 'italic',
   },
 });
