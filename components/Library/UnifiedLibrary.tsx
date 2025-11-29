@@ -91,6 +91,126 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
+// ===== Custom Categories =====
+// These are the predefined categories for filtering endorsements
+const CUSTOM_CATEGORIES = [
+  { id: 'technology', label: 'Technology', color: '#3B82F6' },
+  { id: 'retail', label: 'Retail', color: '#10B981' },
+  { id: 'food_beverage', label: 'Food & Beverage', color: '#F59E0B' },
+  { id: 'finance', label: 'Finance', color: '#6366F1' },
+  { id: 'automotive', label: 'Automotive', color: '#EF4444' },
+  { id: 'entertainment', label: 'Entertainment', color: '#EC4899' },
+  { id: 'health_wellness', label: 'Health & Wellness', color: '#14B8A6' },
+  { id: 'fashion', label: 'Fashion', color: '#8B5CF6' },
+  { id: 'travel', label: 'Travel', color: '#06B6D4' },
+  { id: 'other', label: 'Other', color: '#6B7280' },
+];
+
+// Map any category string to one of our custom categories
+const mapToCustomCategory = (category: string | undefined): string => {
+  if (!category) return 'other';
+  const lower = category.toLowerCase().replace(/[_\s&]+/g, ' ').trim();
+
+  // Technology
+  if (lower.includes('tech') || lower.includes('software') || lower.includes('computer') ||
+      lower.includes('electron') || lower.includes('telecom') || lower.includes('it ') ||
+      lower.includes('internet') || lower.includes('digital') || lower.includes('mobile') ||
+      lower.includes('app') || lower.includes('cloud') || lower.includes('data')) {
+    return 'technology';
+  }
+
+  // Retail
+  if (lower.includes('retail') || lower.includes('store') || lower.includes('shop') ||
+      lower.includes('supermarket') || lower.includes('department') || lower.includes('mall') ||
+      lower.includes('grocery') || lower.includes('convenience') || lower.includes('hardware store') ||
+      lower.includes('home improvement') || lower.includes('furniture')) {
+    return 'retail';
+  }
+
+  // Food & Beverage
+  if (lower.includes('food') || lower.includes('restaurant') || lower.includes('cafe') ||
+      lower.includes('coffee') || lower.includes('bakery') || lower.includes('bar') ||
+      lower.includes('beverage') || lower.includes('pizza') || lower.includes('burger') ||
+      lower.includes('fast food') || lower.includes('dining') || lower.includes('eatery') ||
+      lower.includes('bistro') || lower.includes('grill') || lower.includes('deli') ||
+      lower.includes('ice cream') || lower.includes('donut') || lower.includes('sandwich') ||
+      lower.includes('sushi') || lower.includes('thai') || lower.includes('chinese') ||
+      lower.includes('mexican') || lower.includes('italian') || lower.includes('indian') ||
+      lower.includes('brewery') || lower.includes('winery') || lower.includes('pub')) {
+    return 'food_beverage';
+  }
+
+  // Finance
+  if (lower.includes('bank') || lower.includes('financ') || lower.includes('insurance') ||
+      lower.includes('invest') || lower.includes('credit') || lower.includes('loan') ||
+      lower.includes('mortgage') || lower.includes('accounting') || lower.includes('tax')) {
+    return 'finance';
+  }
+
+  // Automotive
+  if (lower.includes('auto') || lower.includes('car') || lower.includes('vehicle') ||
+      lower.includes('motor') || lower.includes('dealer') || lower.includes('garage') ||
+      lower.includes('tire') || lower.includes('gas station') || lower.includes('fuel') ||
+      lower.includes('parking') || lower.includes('repair') || lower.includes('mechanic')) {
+    return 'automotive';
+  }
+
+  // Entertainment
+  if (lower.includes('entertainment') || lower.includes('movie') || lower.includes('theater') ||
+      lower.includes('cinema') || lower.includes('music') || lower.includes('concert') ||
+      lower.includes('game') || lower.includes('gaming') || lower.includes('casino') ||
+      lower.includes('amusement') || lower.includes('theme park') || lower.includes('bowling') ||
+      lower.includes('arcade') || lower.includes('club') || lower.includes('night') ||
+      lower.includes('media') || lower.includes('streaming') || lower.includes('studio')) {
+    return 'entertainment';
+  }
+
+  // Health & Wellness
+  if (lower.includes('health') || lower.includes('medical') || lower.includes('hospital') ||
+      lower.includes('clinic') || lower.includes('doctor') || lower.includes('dentist') ||
+      lower.includes('pharmacy') || lower.includes('drug') || lower.includes('wellness') ||
+      lower.includes('fitness') || lower.includes('gym') || lower.includes('spa') ||
+      lower.includes('yoga') || lower.includes('therapy') || lower.includes('care') ||
+      lower.includes('vitamin') || lower.includes('supplement') || lower.includes('optical') ||
+      lower.includes('veterinar') || lower.includes('pet')) {
+    return 'health_wellness';
+  }
+
+  // Fashion
+  if (lower.includes('fashion') || lower.includes('clothing') || lower.includes('apparel') ||
+      lower.includes('shoe') || lower.includes('jewelry') || lower.includes('accessori') ||
+      lower.includes('watch') || lower.includes('cosmetic') || lower.includes('beauty') ||
+      lower.includes('salon') || lower.includes('barber') || lower.includes('hair') ||
+      lower.includes('nail') || lower.includes('boutique') || lower.includes('dress') ||
+      lower.includes('wear') || lower.includes('tailor') || lower.includes('dry clean')) {
+    return 'fashion';
+  }
+
+  // Travel
+  if (lower.includes('travel') || lower.includes('hotel') || lower.includes('motel') ||
+      lower.includes('resort') || lower.includes('airline') || lower.includes('airport') ||
+      lower.includes('flight') || lower.includes('cruise') || lower.includes('tour') ||
+      lower.includes('vacation') || lower.includes('lodging') || lower.includes('hostel') ||
+      lower.includes('rental car') || lower.includes('transportation') || lower.includes('taxi') ||
+      lower.includes('rideshare') || lower.includes('bus') || lower.includes('train')) {
+    return 'travel';
+  }
+
+  // Check if it's already a custom category
+  const customIds = CUSTOM_CATEGORIES.map(c => c.id);
+  if (customIds.includes(lower.replace(/\s/g, '_'))) {
+    return lower.replace(/\s/g, '_');
+  }
+
+  return 'other';
+};
+
+// Get the display label for a custom category
+const getCustomCategoryLabel = (categoryId: string): string => {
+  const category = CUSTOM_CATEGORIES.find(c => c.id === categoryId);
+  return category?.label || 'Other';
+};
+
 // ===== Types =====
 
 type LibrarySectionType = 'endorsement' | 'aligned' | 'unaligned' | 'alignedTop' | 'following' | 'followers' | 'local' | 'localTop';
@@ -2120,30 +2240,19 @@ export default function UnifiedLibrary({
     // Apply filter to entries
     const allEntries = isReordering ? localEntries : endorsementList.entries;
 
-    // Helper to get category from entry
-    const getEntryCategory = (entry: ListEntry): string | undefined => {
-      if (entry.type === 'brand') return (entry as any).brandCategory;
-      if (entry.type === 'business') return (entry as any).businessCategory;
-      if (entry.type === 'place') return (entry as any).placeCategory;
-      return undefined;
+    // Helper to get category from entry (maps to custom categories)
+    const getEntryCategory = (entry: ListEntry): string => {
+      let rawCategory: string | undefined;
+      if (entry.type === 'brand') rawCategory = (entry as any).brandCategory;
+      else if (entry.type === 'business') rawCategory = (entry as any).businessCategory;
+      else if (entry.type === 'place') rawCategory = (entry as any).placeCategory;
+      // Map to custom category
+      return mapToCustomCategory(rawCategory);
     };
 
-    // Normalize category for display (Title Case)
-    const normalizeCategory = (category: string): string => {
-      if (!category) return category;
-      // Convert to title case and replace underscores with spaces
-      return category
-        .toLowerCase()
-        .replace(/_/g, ' ')
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-    };
-
-    // Get a canonical key for category grouping (lowercase, no spaces)
-    const getCategoryKey = (category: string): string => {
-      if (!category) return '';
-      return category.toLowerCase().replace(/[_\s&]+/g, '');
+    // Get display label for category
+    const getCategoryLabel = (categoryId: string): string => {
+      return getCustomCategoryLabel(categoryId);
     };
 
     // Helper to check if entry is local (has location data)
@@ -2160,16 +2269,12 @@ export default function UnifiedLibrary({
       ? allEntries
       : allEntries.filter(entry => entry && isLocalEntry(entry));
 
-    // Then apply category filter (use normalized comparison)
+    // Then apply category filter (uses custom category IDs)
     const filteredEntries = categoryFilter === 'all'
       ? localFilteredEntries
       : localFilteredEntries.filter(entry => {
-          const category = getEntryCategory(entry);
-          if (!category) return false;
-          // Use canonical key comparison for flexible matching
-          const entryKey = getCategoryKey(category);
-          const filterKey = getCategoryKey(categoryFilter);
-          return entryKey === filterKey || entryKey.includes(filterKey) || filterKey.includes(entryKey);
+          const categoryId = getEntryCategory(entry);
+          return categoryId === categoryFilter;
         });
     const entriesToDisplay = filteredEntries;
 
@@ -2178,25 +2283,19 @@ export default function UnifiedLibrary({
     const hasNonLocalEntries = allEntries.some(e => e && !isLocalEntry(e));
     const showLocalFilter = hasLocalEntries && hasNonLocalEntries;
 
-    // Get unique categories for filter buttons (based on current local filter)
-    // Group similar categories together and count occurrences
-    const categoryGroups = new Map<string, { display: string; count: number }>();
+    // Get categories that have entries (using custom category system)
+    const categoryCounts = new Map<string, number>();
     localFilteredEntries.forEach(entry => {
-      const category = getEntryCategory(entry);
-      if (category) {
-        const key = getCategoryKey(category);
-        const existing = categoryGroups.get(key);
-        if (existing) {
-          existing.count += 1;
-        } else {
-          categoryGroups.set(key, { display: normalizeCategory(category), count: 1 });
-        }
+      const categoryId = getEntryCategory(entry);
+      if (categoryId) {
+        categoryCounts.set(categoryId, (categoryCounts.get(categoryId) || 0) + 1);
       }
     });
-    // Sort by count descending and extract display names
-    const uniqueCategories = [...categoryGroups.entries()]
-      .sort((a, b) => b[1].count - a[1].count)
-      .map(([, value]) => value.display);
+
+    // Only show categories that have at least one entry, in predefined order
+    const uniqueCategories = CUSTOM_CATEGORIES
+      .filter(cat => categoryCounts.has(cat.id))
+      .map(cat => ({ id: cat.id, label: cat.label, count: categoryCounts.get(cat.id) || 0 }));
 
     // Render filter buttons
     const renderFilterButtons = () => {
@@ -2260,26 +2359,26 @@ export default function UnifiedLibrary({
             )}
 
             {/* Category filters */}
-            {showCategoryFilter && uniqueCategories.map(category => (
+            {showCategoryFilter && uniqueCategories.map(cat => (
               <TouchableOpacity
-                key={category}
+                key={cat.id}
                 style={[
                   styles.filterButton,
-                  categoryFilter.toLowerCase() === category.toLowerCase()
+                  categoryFilter === cat.id
                     ? { backgroundColor: colors.primary }
                     : { backgroundColor: colors.backgroundSecondary, borderWidth: 1, borderColor: colors.border }
                 ]}
                 onPress={() => {
                   setLocalFilter('all'); // Reset local filter when selecting category
-                  setCategoryFilter(category);
+                  setCategoryFilter(cat.id);
                 }}
                 activeOpacity={0.7}
               >
                 <Text style={[
                   styles.filterButtonText,
-                  { color: categoryFilter.toLowerCase() === category.toLowerCase() ? '#FFFFFF' : colors.text }
+                  { color: categoryFilter === cat.id ? '#FFFFFF' : colors.text }
                 ]}>
-                  {category}
+                  {cat.label}
                 </Text>
               </TouchableOpacity>
             ))}
