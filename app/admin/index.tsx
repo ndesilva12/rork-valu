@@ -12,6 +12,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform }
 import { useUser } from '@clerk/clerk-expo';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getApiUsageStats } from '@/services/firebase/placesService';
 
 // Admin email whitelist
 const ADMIN_EMAILS = [
@@ -23,6 +24,7 @@ export default function AdminDashboard() {
   const { user } = useUser();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [apiUsageStats, setApiUsageStats] = useState<any>(null);
 
   useEffect(() => {
     // Check if user is admin
@@ -31,7 +33,15 @@ export default function AdminDashboard() {
       setIsAdmin(ADMIN_EMAILS.includes(email));
     }
     setIsLoading(false);
+
+    // Load API usage stats
+    loadApiStats();
   }, [user]);
+
+  const loadApiStats = async () => {
+    const stats = await getApiUsageStats();
+    setApiUsageStats(stats);
+  };
 
   if (isLoading) {
     return (
@@ -205,6 +215,53 @@ export default function AdminDashboard() {
             </Text>
           </TouchableOpacity>
 
+          {/* Google Places API Usage */}
+          <View style={[styles.card, styles.apiCard]}>
+            <Text style={styles.cardIcon}>🗺️</Text>
+            <Text style={styles.cardTitle}>Google Places API Usage</Text>
+            <Text style={styles.cardDescription}>
+              Track API calls to monitor usage against free tier limits
+            </Text>
+            {apiUsageStats ? (
+              <View style={styles.apiStatsContainer}>
+                <View style={styles.apiStatRow}>
+                  <Text style={styles.apiStatLabel}>Total Calls:</Text>
+                  <Text style={styles.apiStatValue}>{apiUsageStats.totalCalls?.toLocaleString() || 0}</Text>
+                </View>
+                <View style={styles.apiStatRow}>
+                  <Text style={styles.apiStatLabel}>Search Calls:</Text>
+                  <Text style={styles.apiStatValue}>{apiUsageStats.searchCalls?.toLocaleString() || 0}</Text>
+                </View>
+                <View style={styles.apiStatRow}>
+                  <Text style={styles.apiStatLabel}>Details Calls:</Text>
+                  <Text style={styles.apiStatValue}>{apiUsageStats.detailsCalls?.toLocaleString() || 0}</Text>
+                </View>
+                {apiUsageStats.monthlyCalls && (
+                  <View style={styles.monthlySection}>
+                    <Text style={styles.monthlyTitle}>This Month:</Text>
+                    {Object.entries(apiUsageStats.monthlyCalls)
+                      .sort((a, b) => b[0].localeCompare(a[0]))
+                      .slice(0, 3)
+                      .map(([month, count]: [string, any]) => (
+                        <View key={month} style={styles.apiStatRow}>
+                          <Text style={styles.apiStatLabel}>{month}:</Text>
+                          <Text style={styles.apiStatValue}>{count?.toLocaleString() || 0}</Text>
+                        </View>
+                      ))}
+                  </View>
+                )}
+                <TouchableOpacity
+                  style={styles.refreshButton}
+                  onPress={loadApiStats}
+                >
+                  <Text style={styles.refreshButtonText}>Refresh Stats</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <Text style={styles.noStatsText}>No API usage data yet</Text>
+            )}
+          </View>
+
           {/* Database Stats */}
           <View style={[styles.card, styles.statsCard]}>
             <Text style={styles.cardIcon}>📈</Text>
@@ -349,5 +406,62 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#777',
     flex: 1,
+  },
+  // API Usage Styles
+  apiCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#4285f4',
+    backgroundColor: '#e8f0fe',
+  },
+  apiStatsContainer: {
+    marginTop: 12,
+    gap: 8,
+  },
+  apiStatRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  apiStatLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#555',
+  },
+  apiStatValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#333',
+  },
+  monthlySection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#ccc',
+    gap: 4,
+  },
+  monthlyTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 4,
+  },
+  refreshButton: {
+    marginTop: 12,
+    backgroundColor: '#4285f4',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  noStatsText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#888',
+    fontStyle: 'italic',
   },
 });

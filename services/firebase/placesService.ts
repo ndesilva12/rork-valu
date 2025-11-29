@@ -9,9 +9,64 @@
  */
 
 import { Platform } from 'react-native';
+import { db } from '@/firebase';
+import { doc, setDoc, increment, getDoc, Timestamp } from 'firebase/firestore';
 
 // Get API key from environment
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || '';
+
+// API Usage Tracking
+interface ApiUsageStats {
+  totalCalls: number;
+  searchCalls: number;
+  detailsCalls: number;
+  photoCalls: number;
+  lastUpdated: Timestamp;
+  dailyCalls: { [date: string]: number };
+  monthlyCalls: { [month: string]: number };
+}
+
+/**
+ * Track a Google Places API call
+ */
+const trackApiCall = async (callType: 'search' | 'details' | 'photo') => {
+  try {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const month = today.substring(0, 7); // YYYY-MM
+
+    const statsRef = doc(db, 'system', 'placesApiUsage');
+
+    await setDoc(statsRef, {
+      totalCalls: increment(1),
+      [`${callType}Calls`]: increment(1),
+      lastUpdated: Timestamp.now(),
+      [`dailyCalls.${today}`]: increment(1),
+      [`monthlyCalls.${month}`]: increment(1),
+    }, { merge: true });
+  } catch (error) {
+    // Don't let tracking errors break the main functionality
+    console.error('[PlacesService] Error tracking API call:', error);
+  }
+};
+
+/**
+ * Get API usage statistics
+ */
+export const getApiUsageStats = async (): Promise<ApiUsageStats | null> => {
+  try {
+    const statsRef = doc(db, 'system', 'placesApiUsage');
+    const statsDoc = await getDoc(statsRef);
+
+    if (!statsDoc.exists()) {
+      return null;
+    }
+
+    return statsDoc.data() as ApiUsageStats;
+  } catch (error) {
+    console.error('[PlacesService] Error getting API usage stats:', error);
+    return null;
+  }
+};
 
 // Types for Places API responses
 export interface PlaceSearchResult {
@@ -116,6 +171,9 @@ export const searchPlaces = async (
   if (!query || query.trim().length < 2) {
     return [];
   }
+
+  // Track API usage
+  trackApiCall('search');
 
   // Use JavaScript API on web (handles CORS)
   if (Platform.OS === 'web') {
@@ -271,6 +329,9 @@ export const getPlaceDetails = async (placeId: string): Promise<PlaceDetails | n
     console.warn('[PlacesService] Google Places API key not configured');
     return null;
   }
+
+  // Track API usage
+  trackApiCall('details');
 
   // Use JavaScript API on web
   if (Platform.OS === 'web') {
