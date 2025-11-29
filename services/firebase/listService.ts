@@ -256,6 +256,10 @@ export const addEntryToList = async (
       if (entry.type === 'link' && existingEntry.type === 'link' && 'url' in entry && 'url' in existingEntry) {
         return entry.url === existingEntry.url;
       }
+      // For places, check placeId
+      if (entry.type === 'place' && existingEntry.type === 'place' && 'placeId' in entry && 'placeId' in existingEntry) {
+        return entry.placeId === existingEntry.placeId;
+      }
       return false;
     });
 
@@ -290,15 +294,18 @@ export const addEntryToList = async (
         } else if (entry.type === 'business' && 'businessId' in entry) {
           entityId = entry.businessId;
           entityName = (entry as any).businessName || 'Unknown Business';
+        } else if (entry.type === 'place' && 'placeId' in entry) {
+          entityId = entry.placeId;
+          entityName = (entry as any).placeName || 'Unknown Place';
         } else if (entry.type === 'value' && 'valueId' in entry) {
           entityId = entry.valueId;
           entityName = (entry as any).valueName || 'Unknown Value';
         }
 
-        if (entityId && (entry.type === 'brand' || entry.type === 'business' || entry.type === 'value')) {
+        if (entityId && (entry.type === 'brand' || entry.type === 'business' || entry.type === 'place' || entry.type === 'value')) {
           await startEndorsementPeriod(
             list.userId,
-            entry.type as 'brand' | 'business' | 'value',
+            entry.type as 'brand' | 'business' | 'place' | 'value',
             entityId,
             entityName,
             position
