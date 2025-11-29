@@ -96,6 +96,12 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Business Claims collection - OPEN ACCESS
+    // Users can submit business ownership claims (Clerk handles authentication)
+    match /businessClaims/{claimId} {
+      allow read, write: if true;
+    }
+
     // Deny all other collections
     match /{document=**} {
       allow read, write: if false;
