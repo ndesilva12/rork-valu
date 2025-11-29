@@ -1573,11 +1573,14 @@ export default function SearchScreen() {
             style={{
               width: 32,
               height: 32,
+              minWidth: 32,
+              minHeight: 32,
               borderRadius: 16,
               backgroundColor: '#E5E5E5',
-              alignItems: 'center',
-              justifyContent: 'center',
+              alignItems: 'center' as const,
+              justifyContent: 'center' as const,
               flexShrink: 0,
+              flexGrow: 0,
             }}
             activeOpacity={0.7}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
