@@ -136,16 +136,16 @@ export default function SignUpScreen() {
           console.log('[Sign Up] Session activated, waiting before redirect');
           await new Promise(resolve => setTimeout(resolve, 1500));
         }
-        // Set account type before redirecting
+        // Try to set account type (may fail if context not ready)
         console.log('[Sign Up] Setting account type (auto-complete):', selectedAccountType);
         try {
           await setAccountType(selectedAccountType);
         } catch (e) {
           console.error('[Sign Up] Failed to set account type:', e);
         }
-        // All users go to onboarding (business users will see claim step first)
-        console.log('[Sign Up] Redirecting to onboarding');
-        router.replace('/onboarding');
+        // Pass account type as query param to ensure onboarding knows the user type
+        console.log('[Sign Up] Redirecting to onboarding with accountType:', selectedAccountType);
+        router.replace(`/onboarding?accountType=${selectedAccountType}`);
         return;
       }
 
@@ -157,16 +157,16 @@ export default function SignUpScreen() {
           console.log('[Sign Up] Session activated, waiting before redirect');
           await new Promise(resolve => setTimeout(resolve, 1500));
         }
-        // Set account type before redirecting
+        // Try to set account type (may fail if context not ready)
         console.log('[Sign Up] Setting account type (pre-verified):', selectedAccountType);
         try {
           await setAccountType(selectedAccountType);
         } catch (e) {
           console.error('[Sign Up] Failed to set account type:', e);
         }
-        // All users go to onboarding (business users will see claim step first)
-        console.log('[Sign Up] Redirecting to onboarding');
-        router.replace('/onboarding');
+        // Pass account type as query param to ensure onboarding knows the user type
+        console.log('[Sign Up] Redirecting to onboarding with accountType:', selectedAccountType);
+        router.replace(`/onboarding?accountType=${selectedAccountType}`);
         return;
       }
       
@@ -304,9 +304,9 @@ export default function SignUpScreen() {
           // Continue anyway - the user can set up their business later
         }
 
-        // All users go to onboarding (business users will see claim step first)
-        console.log('[Sign Up] Redirecting to onboarding');
-        router.replace('/onboarding');
+        // Pass account type as query param to ensure onboarding knows the user type
+        console.log('[Sign Up] Redirecting to onboarding with accountType:', selectedAccountType);
+        router.replace(`/onboarding?accountType=${selectedAccountType}`);
       } else {
         console.error('[Sign Up] Verification incomplete:', JSON.stringify(result, null, 2));
         setError('Verification incomplete. Please try again.');

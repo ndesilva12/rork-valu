@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Heart, Shield, Users, Building2, Globe, User, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Trophy, Search, MapPin, ChevronRight, AlertCircle, Check } from 'lucide-react-native';
 import { useState, useEffect, useCallback } from 'react';
 import {
@@ -99,13 +99,19 @@ type OnboardingStep = 'claim_business' | 'select_values';
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ accountType?: string }>();
   const { addCauses, profile, isDarkMode, clerkUser, isLoading, setAccountType } = useUser();
   const { values: firebaseValues } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
   const insets = useSafeAreaInsets();
 
-  // Determine if this is a business user
-  const isBusinessUser = profile?.accountType === 'business';
+  // Determine if this is a business user - check query param first, then profile
+  // Query param is passed from sign-up to handle the race condition where profile isn't loaded yet
+  const isBusinessUser = params.accountType === 'business' || profile?.accountType === 'business';
+
+  console.log('[Onboarding] accountType from params:', params.accountType);
+  console.log('[Onboarding] accountType from profile:', profile?.accountType);
+  console.log('[Onboarding] isBusinessUser:', isBusinessUser);
 
   // Step management for business users
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(isBusinessUser ? 'claim_business' : 'select_values');
@@ -135,6 +141,15 @@ export default function OnboardingScreen() {
     }));
   });
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  // Update step when isBusinessUser is determined (handles late-loading params)
+  useEffect(() => {
+    if (isBusinessUser && currentStep === 'select_values' && !hasSubmittedClaim) {
+      console.log('[Onboarding] Business user detected, switching to claim step');
+      setCurrentStep('claim_business');
+      setIsCheckingClaims(true);
+    }
+  }, [isBusinessUser]);
 
   // Check if business user already has claims
   useEffect(() => {
