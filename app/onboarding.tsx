@@ -108,30 +108,39 @@ export default function OnboardingScreen() {
 
   // Handler to exit onboarding and sign out
   const handleExitOnboarding = async () => {
-    Alert.alert(
-      'Exit Onboarding',
-      'Are you sure you want to exit? Your progress will not be saved.',
-      [
-        { text: 'Stay', style: 'cancel' },
-        {
-          text: 'Exit',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              // Clear any local data that was saved
-              await clearAllStoredData();
-              // Sign out of Clerk
-              await signOut();
-              // Navigate to sign-in
-              router.replace('/(auth)/sign-in');
-            } catch (error) {
-              console.error('[Onboarding] Error signing out:', error);
-              router.replace('/(auth)/sign-in');
-            }
-          },
-        },
-      ]
-    );
+    // On web, use window.confirm since Alert.alert doesn't work well
+    // On native, use Alert.alert
+    const doExit = async () => {
+      try {
+        console.log('[Onboarding] Exiting onboarding...');
+        // Clear any local data that was saved
+        await clearAllStoredData();
+        // Sign out of Clerk
+        await signOut();
+        // Navigate to sign-in
+        router.replace('/(auth)/sign-in');
+      } catch (error) {
+        console.error('[Onboarding] Error signing out:', error);
+        router.replace('/(auth)/sign-in');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      // Use browser confirm dialog on web
+      if (window.confirm('Are you sure you want to exit? Your progress will not be saved.')) {
+        await doExit();
+      }
+    } else {
+      // Use native Alert on mobile
+      Alert.alert(
+        'Exit Onboarding',
+        'Are you sure you want to exit? Your progress will not be saved.',
+        [
+          { text: 'Stay', style: 'cancel' },
+          { text: 'Exit', style: 'destructive', onPress: doExit },
+        ]
+      );
+    }
   };
 
   // Determine if this is a business user - check query param first, then profile
