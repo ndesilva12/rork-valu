@@ -593,7 +593,9 @@ export default function UnifiedLibrary({
         entry = {
           type: 'brand',
           brandId: item.id,
-          name: item.name,
+          brandName: item.name,
+          brandCategory: item.category,
+          website: item.website,
           logoUrl: item.exampleImageUrl || getLogoUrl(item.website || ''),
           createdAt: new Date(),
         };
@@ -601,7 +603,9 @@ export default function UnifiedLibrary({
         entry = {
           type: 'business',
           businessId: item.id,
-          name: item.businessInfo?.name || 'Business',
+          businessName: item.businessInfo?.name || 'Business',
+          businessCategory: item.businessInfo?.category,
+          website: item.businessInfo?.website,
           logoUrl: item.businessInfo?.logoUrl || getLogoUrl(item.businessInfo?.website || ''),
           createdAt: new Date(),
         };
@@ -2153,10 +2157,17 @@ export default function UnifiedLibrary({
     const showLocalFilter = hasLocalEntries && hasNonLocalEntries;
 
     // Get unique categories for filter buttons (based on current local filter)
-    const categoriesFromEntries = localFilteredEntries
-      .map(getEntryCategory)
-      .filter((c): c is string => !!c);
-    const uniqueCategories = [...new Set(categoriesFromEntries)].sort();
+    // Count occurrences of each category and sort by count (highest first)
+    const categoryCounts = new Map<string, number>();
+    localFilteredEntries.forEach(entry => {
+      const category = getEntryCategory(entry);
+      if (category) {
+        categoryCounts.set(category, (categoryCounts.get(category) || 0) + 1);
+      }
+    });
+    const uniqueCategories = [...categoryCounts.entries()]
+      .sort((a, b) => b[1] - a[1]) // Sort by count descending
+      .map(([category]) => category);
 
     // Render filter buttons
     const renderFilterButtons = () => {

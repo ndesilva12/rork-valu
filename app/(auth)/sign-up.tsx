@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
   },
   taglineLine: {
     textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: 2,
   },
   taglineFirstWord: {
     fontSize: 32,

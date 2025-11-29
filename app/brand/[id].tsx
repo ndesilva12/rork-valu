@@ -286,7 +286,8 @@ export default function BrandDetailScreen() {
       await addEntryToList(listId, {
         type: 'brand',
         brandId: brand.id,
-        name: brand.name,
+        brandName: brand.name,
+        brandCategory: brand.category,
         website: brand.website,
         logoUrl: getLogoUrl(brand.website || ''),
       });
@@ -499,6 +500,7 @@ export default function BrandDetailScreen() {
           type: 'brand',
           brandId: brand.id,
           brandName: brand.name,
+          brandCategory: brand.category,
           website: brand.website,
           logoUrl: getLogoUrl(brand.website || ''),
         });

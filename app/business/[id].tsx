@@ -281,6 +281,7 @@ export default function BusinessDetailScreen() {
           type: 'business',
           businessId: business.id,
           businessName: business.businessInfo.name,
+          businessCategory: business.businessInfo.category,
           website: business.businessInfo.website || '',
           logoUrl: business.businessInfo.logoUrl || (business.businessInfo.website ? getLogoUrl(business.businessInfo.website) : ''),
         });
