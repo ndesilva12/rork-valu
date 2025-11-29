@@ -251,7 +251,12 @@ export default function SignInScreen() {
                 )}
               </TouchableOpacity>
               <View style={styles.forgotPasswordContainer}>
-                <TouchableOpacity onPress={onForgotPasswordPress}>
+                <TouchableOpacity
+                  onPress={onForgotPasswordPress}
+                  style={styles.forgotPasswordButton}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
                   <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>Forgot password?</Text>
                 </TouchableOpacity>
               </View>
@@ -572,8 +577,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
   },
+  forgotPasswordButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
   forgotPasswordText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   // Landing page styles
