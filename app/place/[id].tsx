@@ -205,34 +205,10 @@ export default function PlaceDetailScreen() {
                 contentFit="cover"
                 transition={200}
               />
-              {place.photoReferences.length > 1 && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.photoThumbnails}
-                >
-                  {place.photoReferences.map((ref, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      onPress={() => setCurrentPhotoIndex(index)}
-                      style={[
-                        styles.thumbnail,
-                        currentPhotoIndex === index && styles.thumbnailActive,
-                      ]}
-                    >
-                      <Image
-                        source={{ uri: getPlacePhotoUrl(ref, 100) }}
-                        style={styles.thumbnailImage}
-                        contentFit="cover"
-                      />
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              )}
             </View>
           )}
 
-          {/* Place Info with Logo on left (like brand/business pages) */}
+          {/* Place Info with Logo on left, info in middle, photos on right */}
           <View style={styles.infoSection}>
             <View style={styles.infoHeader}>
               {/* Logo on left */}
@@ -261,7 +237,7 @@ export default function PlaceDetailScreen() {
                 </View>
               )}
 
-              {/* Name and category on right */}
+              {/* Name and category in middle */}
               <View style={styles.infoHeaderText}>
                 <Text style={[styles.placeName, { color: colors.text }]}>{place.name}</Text>
                 <View style={styles.categoryRow}>
@@ -303,6 +279,35 @@ export default function PlaceDetailScreen() {
                   </View>
                 )}
               </View>
+
+              {/* Photo thumbnails on right */}
+              {place.photoReferences.length > 1 && (
+                <View style={styles.photoThumbnailsRight}>
+                  {place.photoReferences.slice(0, 4).map((ref, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => setCurrentPhotoIndex(index)}
+                      style={[
+                        styles.thumbnailSmall,
+                        currentPhotoIndex === index && styles.thumbnailActive,
+                      ]}
+                    >
+                      <Image
+                        source={{ uri: getPlacePhotoUrl(ref, 100) }}
+                        style={styles.thumbnailImageSmall}
+                        contentFit="cover"
+                      />
+                    </TouchableOpacity>
+                  ))}
+                  {place.photoReferences.length > 4 && (
+                    <View style={[styles.thumbnailSmall, styles.morePhotos, { backgroundColor: colors.backgroundSecondary }]}>
+                      <Text style={[styles.morePhotosText, { color: colors.textSecondary }]}>
+                        +{place.photoReferences.length - 4}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
             </View>
           </View>
 
@@ -572,6 +577,31 @@ const styles = StyleSheet.create({
   thumbnailImage: {
     width: 60,
     height: 60,
+  },
+  photoThumbnailsRight: {
+    flexDirection: 'column',
+    gap: 4,
+    marginLeft: 12,
+  },
+  thumbnailSmall: {
+    borderRadius: 6,
+    overflow: 'hidden',
+    opacity: 0.7,
+  },
+  thumbnailImageSmall: {
+    width: 40,
+    height: 40,
+  },
+  morePhotos: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  morePhotosText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   infoSection: {
     paddingHorizontal: 16,
