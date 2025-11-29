@@ -165,10 +165,13 @@ export default function ReorderEndorsementsAdmin() {
   };
 
   const getEntryName = (entry: ListEntry): string => {
-    if ('brandName' in entry) return entry.brandName;
-    if ('businessName' in entry) return entry.businessName;
-    if ('valueName' in entry) return entry.valueName;
+    // Check specific type fields first
+    if ('brandName' in entry && entry.brandName) return entry.brandName;
+    if ('businessName' in entry && entry.businessName) return entry.businessName;
+    if ('valueName' in entry && entry.valueName) return entry.valueName;
     if ('title' in entry) return entry.title;
+    // Fallback to generic 'name' field (used in some entry creation flows)
+    if ('name' in entry && (entry as any).name) return (entry as any).name;
     return 'Unknown';
   };
 
@@ -187,19 +190,29 @@ export default function ReorderEndorsementsAdmin() {
   };
 
   // Drag and drop handlers for web
-  const handleDragStart = (index: number) => {
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index.toString());
     setDraggedIndex(index);
   };
 
-  const handleDragOver = (e: any, index: number) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
     setDropTargetIndex(index);
   };
 
-  const handleDragEnd = () => {
-    if (draggedIndex !== null && dropTargetIndex !== null && draggedIndex !== dropTargetIndex) {
-      moveEntry(draggedIndex, dropTargetIndex);
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetIndex: number) => {
+    e.preventDefault();
+    const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+    if (!isNaN(sourceIndex) && sourceIndex !== targetIndex) {
+      moveEntry(sourceIndex, targetIndex);
     }
+    setDraggedIndex(null);
+    setDropTargetIndex(null);
+  };
+
+  const handleDragEnd = () => {
     setDraggedIndex(null);
     setDropTargetIndex(null);
   };
@@ -344,57 +357,44 @@ export default function ReorderEndorsementsAdmin() {
               {entries.length} Endorsement{entries.length !== 1 ? 's' : ''}
             </Text>
             <Text style={styles.listHint}>
-              {Platform.OS === 'web' ? 'Drag to reorder' : 'Use arrows to reorder'}
+              {Platform.OS === 'web' ? 'Drag or use arrows to reorder' : 'Use arrows to reorder'}
             </Text>
           </View>
 
           <ScrollView style={styles.entriesList}>
-            {entries.map((entry, index) => (
-              <View
-                key={entry.id}
-                style={[
-                  styles.entryCard,
-                  draggedIndex === index && styles.entryCardDragging,
-                  dropTargetIndex === index && draggedIndex !== null && styles.entryCardDropTarget,
-                ]}
-                {...(Platform.OS === 'web' ? {
-                  draggable: true,
-                  onDragStart: () => handleDragStart(index),
-                  onDragOver: (e: any) => handleDragOver(e, index),
-                  onDragEnd: handleDragEnd,
-                } : {})}
-              >
-                {/* Drag Handle (Web only) */}
-                {Platform.OS === 'web' && (
-                  <View style={styles.dragHandle}>
-                    <GripVertical size={20} color="#999" />
+            {entries.map((entry, index) => {
+              const cardContent = (
+                <>
+                  {/* Drag Handle (Web only) */}
+                  {Platform.OS === 'web' && (
+                    <View style={styles.dragHandle}>
+                      <GripVertical size={20} color="#999" />
+                    </View>
+                  )}
+
+                  {/* Position Number */}
+                  <View style={styles.positionBadge}>
+                    <Text style={styles.positionText}>{index + 1}</Text>
                   </View>
-                )}
 
-                {/* Position Number */}
-                <View style={styles.positionBadge}>
-                  <Text style={styles.positionText}>{index + 1}</Text>
-                </View>
+                  {/* Entry Image */}
+                  {getEntryImage(entry) ? (
+                    <Image source={{ uri: getEntryImage(entry) }} style={styles.entryImage} />
+                  ) : (
+                    <View style={styles.entryImagePlaceholder}>
+                      {getEntryIcon(entry)}
+                    </View>
+                  )}
 
-                {/* Entry Image */}
-                {getEntryImage(entry) ? (
-                  <Image source={{ uri: getEntryImage(entry) }} style={styles.entryImage} />
-                ) : (
-                  <View style={styles.entryImagePlaceholder}>
-                    {getEntryIcon(entry)}
+                  {/* Entry Info */}
+                  <View style={styles.entryInfo}>
+                    <Text style={styles.entryName}>{getEntryName(entry)}</Text>
+                    <Text style={styles.entryType}>
+                      {entry.type.charAt(0).toUpperCase() + entry.type.slice(1)}
+                    </Text>
                   </View>
-                )}
 
-                {/* Entry Info */}
-                <View style={styles.entryInfo}>
-                  <Text style={styles.entryName}>{getEntryName(entry)}</Text>
-                  <Text style={styles.entryType}>
-                    {entry.type.charAt(0).toUpperCase() + entry.type.slice(1)}
-                  </Text>
-                </View>
-
-                {/* Mobile Reorder Buttons */}
-                {Platform.OS !== 'web' && (
+                  {/* Reorder Buttons - show on all platforms */}
                   <View style={styles.mobileControls}>
                     <TouchableOpacity
                       style={[styles.moveButton, index === 0 && styles.moveButtonDisabled]}
@@ -411,9 +411,55 @@ export default function ReorderEndorsementsAdmin() {
                       <ChevronDown size={20} color={index === entries.length - 1 ? '#ccc' : '#007bff'} />
                     </TouchableOpacity>
                   </View>
-                )}
-              </View>
-            ))}
+                </>
+              );
+
+              // On web, wrap with a div that has proper drag events
+              if (Platform.OS === 'web') {
+                return (
+                  <div
+                    key={entry.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDrop={(e) => handleDrop(e, index)}
+                    onDragEnd={handleDragEnd}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: draggedIndex === index ? '#f0f0f0' : '#fff',
+                      opacity: draggedIndex === index ? 0.5 : 1,
+                      padding: 12,
+                      marginBottom: 8,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderStyle: 'solid',
+                      borderColor: dropTargetIndex === index && draggedIndex !== null ? '#007bff' : '#e0e0e0',
+                      gap: 10,
+                      cursor: 'grab',
+                      userSelect: 'none',
+                    }}
+                  >
+                    {cardContent}
+                  </div>
+                );
+              }
+
+              // On mobile, use View
+              return (
+                <View
+                  key={entry.id}
+                  style={[
+                    styles.entryCard,
+                    draggedIndex === index && styles.entryCardDragging,
+                    dropTargetIndex === index && draggedIndex !== null && styles.entryCardDropTarget,
+                  ]}
+                >
+                  {cardContent}
+                </View>
+              );
+            })}
           </ScrollView>
         </View>
       )}
