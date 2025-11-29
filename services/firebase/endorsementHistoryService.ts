@@ -48,7 +48,7 @@ export interface EndorsementHistory {
 
   // User and entity identification
   userId: string;
-  entityType: 'brand' | 'business' | 'value';
+  entityType: 'brand' | 'business' | 'place' | 'value';
   entityId: string;
   entityName: string;
 
@@ -94,7 +94,7 @@ const generatePeriodId = (): string => {
  */
 export const getOrCreateEndorsementHistory = async (
   userId: string,
-  entityType: 'brand' | 'business' | 'value',
+  entityType: 'brand' | 'business' | 'place' | 'value',
   entityId: string,
   entityName: string
 ): Promise<EndorsementHistory> => {
@@ -212,7 +212,7 @@ const calculatePositionDays = (
  */
 export const startEndorsementPeriod = async (
   userId: string,
-  entityType: 'brand' | 'business' | 'value',
+  entityType: 'brand' | 'business' | 'place' | 'value',
   entityId: string,
   entityName: string,
   position: number = 1,
@@ -272,7 +272,7 @@ export const startEndorsementPeriod = async (
  */
 export const endEndorsementPeriod = async (
   userId: string,
-  entityType: 'brand' | 'business' | 'value',
+  entityType: 'brand' | 'business' | 'place' | 'value',
   entityId: string,
   endDate?: Date // Optional for backdating
 ): Promise<EndorsementHistory | null> => {
@@ -362,7 +362,7 @@ export const endEndorsementPeriod = async (
  */
 export const updateCurrentPosition = async (
   userId: string,
-  entityType: 'brand' | 'business' | 'value',
+  entityType: 'brand' | 'business' | 'place' | 'value',
   entityId: string,
   newPosition: number
 ): Promise<EndorsementHistory> => {
@@ -412,7 +412,7 @@ export const updateCurrentPosition = async (
  */
 export const getCumulativeDays = async (
   userId: string,
-  entityType: 'brand' | 'business' | 'value',
+  entityType: 'brand' | 'business' | 'place' | 'value',
   entityId: string
 ): Promise<{
   totalDaysEndorsed: number;
@@ -606,7 +606,7 @@ export const adminUpdateEndorsementHistory = async (
  */
 export const adminAddBackdatedPeriod = async (
   userId: string,
-  entityType: 'brand' | 'business' | 'value',
+  entityType: 'brand' | 'business' | 'place' | 'value',
   entityId: string,
   entityName: string,
   startDate: Date,

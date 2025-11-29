@@ -1565,18 +1565,28 @@ export default function SearchScreen() {
             autoCorrect={false}
             underlineColorAndroid="transparent"
           />
-          {query.length > 0 && (
-            <TouchableOpacity
-              onPress={() => {
-                setQuery('');
-                setResults([]);
-              }}
-              style={styles.clearButton}
-              activeOpacity={0.7}
-            >
-              <X size={Platform.OS === 'web' ? 20 : 24} color={colors.textSecondary} strokeWidth={2.5} />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            onPress={() => {
+              setQuery('');
+              setResults([]);
+            }}
+            style={{
+              width: 32,
+              height: 32,
+              minWidth: 32,
+              minHeight: 32,
+              borderRadius: 16,
+              backgroundColor: '#E5E5E5',
+              alignItems: 'center' as const,
+              justifyContent: 'center' as const,
+              flexShrink: 0,
+              flexGrow: 0,
+            }}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <X size={18} color="#666666" strokeWidth={2.5} />
+          </TouchableOpacity>
         </View>
         </View>
       </View>

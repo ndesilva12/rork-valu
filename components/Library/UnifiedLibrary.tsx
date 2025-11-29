@@ -1458,9 +1458,9 @@ export default function UnifiedLibrary({
                     endorsed for {getCumulativeDaysForEntry(entry)} {getCumulativeDaysForEntry(entry) === 1 ? 'day' : 'days'}
                   </Text>
                 </View>
-                {discountPercent && discountPercent > 0 && (
+                {discountPercent !== undefined && discountPercent > 0 && (
                   <View style={[styles.discountBadge, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.discountBadgeText}>{discountPercent.toFixed(0)}%</Text>
+                    <Text style={[styles.discountBadgeText, { color: '#FFFFFF' }]}>{discountPercent.toFixed(0)}%</Text>
                   </View>
                 )}
                 {(mode === 'edit' || mode === 'view' || mode === 'preview') && (
@@ -3659,11 +3659,22 @@ export default function UnifiedLibrary({
               />
               <TouchableOpacity
                 onPress={() => setAddSearchQuery('')}
-                style={[styles.addEndorsementClearButton, { opacity: addSearchQuery.length > 0 ? 1 : 0.3 }]}
+                style={{
+                  width: 32,
+                  height: 32,
+                  minWidth: 32,
+                  minHeight: 32,
+                  borderRadius: 16,
+                  backgroundColor: '#E5E5E5',
+                  alignItems: 'center' as const,
+                  justifyContent: 'center' as const,
+                  flexShrink: 0,
+                  flexGrow: 0,
+                }}
                 activeOpacity={0.7}
-                disabled={addSearchQuery.length === 0}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <X size={Platform.OS === 'web' ? 20 : 24} color={colors.textSecondary} strokeWidth={2.5} />
+                <X size={18} color="#666666" strokeWidth={2.5} />
               </TouchableOpacity>
             </View>
 
@@ -4116,16 +4127,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   discountBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginRight: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   discountBadgeText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '700',
   },
   endorsementEntryCardContent: {
@@ -4749,13 +4760,12 @@ const styles = StyleSheet.create({
     outlineWidth: 0,
   },
   addEndorsementClearButton: {
-    width: Platform.OS === 'web' ? 32 : 44,
-    height: Platform.OS === 'web' ? 32 : 44,
-    borderRadius: Platform.OS === 'web' ? 16 : 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 8,
-    backgroundColor: 'rgba(0,0,0,0.08)',
   },
   addEndorsementResultsContainer: {
     flex: 1,
