@@ -20,14 +20,16 @@ import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { searchPlaces, PlaceSearchResult, getPlacePhotoUrl } from '@/services/firebase/placesService';
 import { submitBusinessClaim, getClaimsByUser, BusinessClaim } from '@/services/firebase/businessClaimService';
+import { createUser } from '@/services/firebase/userService';
 import { getLogoUrl } from '@/lib/logo';
 import * as Location from 'expo-location';
 import debounce from 'lodash/debounce';
 
 export default function BusinessSetupScreen() {
   const router = useRouter();
-  const { isDarkMode, clerkUser, isLoading: isProfileLoading } = useUser();
+  const { isDarkMode, clerkUser, isLoading: isProfileLoading, setAccountType, profile } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
+  const [isInitializing, setIsInitializing] = useState(true);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,6 +50,47 @@ export default function BusinessSetupScreen() {
   // Existing claims
   const [existingClaims, setExistingClaims] = useState<BusinessClaim[]>([]);
   const [isLoadingClaims, setIsLoadingClaims] = useState(true);
+
+  // Initialize business user - ensure user exists in Firebase and account type is set
+  useEffect(() => {
+    const initializeBusinessUser = async () => {
+      if (!clerkUser?.id || isProfileLoading) {
+        return;
+      }
+
+      console.log('[BusinessSetup] Initializing business user:', clerkUser.id);
+      console.log('[BusinessSetup] Current profile:', profile?.accountType);
+
+      try {
+        // Ensure user exists in Firebase with business account type
+        if (!profile?.accountType || profile.accountType !== 'business') {
+          console.log('[BusinessSetup] Setting account type to business');
+
+          // First ensure the user document exists
+          await createUser(clerkUser.id, {
+            email: clerkUser.primaryEmailAddress?.emailAddress,
+            firstName: clerkUser.firstName || undefined,
+            lastName: clerkUser.lastName || undefined,
+            fullName: clerkUser.fullName || undefined,
+            imageUrl: clerkUser.imageUrl || undefined,
+          }, {
+            accountType: 'business',
+          });
+
+          // Then set the account type in context
+          await setAccountType('business');
+          console.log('[BusinessSetup] Business user initialized');
+        } else {
+          console.log('[BusinessSetup] User already has business account type');
+        }
+      } catch (error) {
+        console.error('[BusinessSetup] Error initializing business user:', error);
+      }
+      setIsInitializing(false);
+    };
+
+    initializeBusinessUser();
+  }, [clerkUser?.id, isProfileLoading]);
 
   // Get user location on mount
   useEffect(() => {
@@ -190,8 +233,8 @@ export default function BusinessSetupScreen() {
     return null;
   };
 
-  // Show loading state while profile is loading
-  if (isProfileLoading) {
+  // Show loading state while profile is loading or initializing
+  if (isProfileLoading || (isInitializing && clerkUser)) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar
@@ -200,7 +243,9 @@ export default function BusinessSetupScreen() {
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.text }]}>Loading...</Text>
+          <Text style={[styles.loadingText, { color: colors.text }]}>
+            {isInitializing ? 'Setting up your business account...' : 'Loading...'}
+          </Text>
         </View>
       </SafeAreaView>
     );

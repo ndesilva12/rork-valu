@@ -630,7 +630,7 @@ const styles = StyleSheet.create({
   },
   taglineContainer: {
     alignItems: 'center',
-    marginTop: -60,
+    marginTop: 0,
     marginBottom: 32,
     paddingHorizontal: 8,
   },

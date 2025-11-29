@@ -10,6 +10,7 @@ import {
   Image,
   Platform,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { lightColors, darkColors } from '@/constants/colors';
@@ -186,8 +187,21 @@ export default function OnboardingScreen() {
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      console.log('[Onboarding] Redirecting to browse tab (Global section)');
-      router.replace('/(tabs)/values');
+      // Show completion popup
+      Alert.alert(
+        'Welcome to Endorse!',
+        'Endorse businesses you support and look for discounts.',
+        [
+          {
+            text: 'Got it!',
+            onPress: () => {
+              console.log('[Onboarding] Redirecting to browse tab (Global section)');
+              router.replace('/(tabs)/values');
+            },
+          },
+        ],
+        { cancelable: false }
+      );
     }
   };
 
