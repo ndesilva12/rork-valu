@@ -406,6 +406,8 @@ export default function UserProfileScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
+      {/* Web wrapper for centered content */}
+      <View style={Platform.OS === 'web' ? styles.webWrapper : styles.fullWidth}>
       {/* Sticky Header Section - Does not scroll */}
       <View style={[styles.stickyHeader, { backgroundColor: colors.background }]}>
         {/* Hero Image Container */}
@@ -655,6 +657,7 @@ export default function UserProfileScreen() {
           </View>
         </View>
       </ScrollView>
+      </View>
 
       {/* Full Screen Image Modal */}
       <Modal
@@ -694,6 +697,17 @@ export default function UserProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    alignItems: 'center',
+  },
+  webWrapper: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 768,
+    alignSelf: 'center',
+  },
+  fullWidth: {
+    flex: 1,
+    width: '100%',
   },
   stickyHeader: {
     zIndex: 10,

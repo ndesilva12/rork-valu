@@ -1824,9 +1824,9 @@ export default function UnifiedLibrary({
       return (
         <View style={styles.listContentContainer}>
           <View style={[styles.emptyEndorsementContainer, { backgroundColor: colors.backgroundSecondary }]}>
-            {/* Heart Icon with transparent background and blue outline */}
+            {/* List Icon with transparent background and blue outline */}
             <View style={[styles.emptyEndorsementIconCircle, { backgroundColor: 'transparent', borderWidth: 2, borderColor: colors.primary }]}>
-              <Heart size={48} color={colors.primary} strokeWidth={1.5} />
+              <ListIcon size={48} color={colors.primary} strokeWidth={1.5} />
             </View>
 
             {/* Title */}
@@ -2943,7 +2943,7 @@ export default function UnifiedLibrary({
       return (
         <View style={styles.emptyEndorsementContainer}>
           <View style={[styles.emptyEndorsementIconCircle, { backgroundColor: 'transparent', borderWidth: 2, borderColor: colors.primary }]}>
-            <Heart size={32} color={colors.primary} strokeWidth={2} />
+            <ListIcon size={32} color={colors.primary} strokeWidth={2} />
           </View>
           <Text style={[styles.emptyEndorsementTitle, { color: colors.text }]}>
             Build Your Endorsement List

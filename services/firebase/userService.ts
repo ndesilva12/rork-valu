@@ -436,7 +436,7 @@ export async function getAllPublicUsers(): Promise<Array<{ id: string; profile: 
         const listQuery = query(
           listsRef,
           where('userId', '==', userId),
-          where('type', '==', 'endorsement')
+          where('isEndorsed', '==', true)
         );
         const listSnapshot = await getDocs(listQuery);
         if (!listSnapshot.empty) {
