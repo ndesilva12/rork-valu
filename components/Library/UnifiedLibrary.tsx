@@ -2128,6 +2128,24 @@ export default function UnifiedLibrary({
       return undefined;
     };
 
+    // Normalize category for display (Title Case)
+    const normalizeCategory = (category: string): string => {
+      if (!category) return category;
+      // Convert to title case and replace underscores with spaces
+      return category
+        .toLowerCase()
+        .replace(/_/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    };
+
+    // Get a canonical key for category grouping (lowercase, no spaces)
+    const getCategoryKey = (category: string): string => {
+      if (!category) return '';
+      return category.toLowerCase().replace(/[_\s&]+/g, '');
+    };
+
     // Helper to check if entry is local (has location data)
     const isLocalEntry = (entry: ListEntry): boolean => {
       // Places always have location data
@@ -2142,12 +2160,16 @@ export default function UnifiedLibrary({
       ? allEntries
       : allEntries.filter(entry => entry && isLocalEntry(entry));
 
-    // Then apply category filter
+    // Then apply category filter (use normalized comparison)
     const filteredEntries = categoryFilter === 'all'
       ? localFilteredEntries
       : localFilteredEntries.filter(entry => {
           const category = getEntryCategory(entry);
-          return category && category.toLowerCase() === categoryFilter.toLowerCase();
+          if (!category) return false;
+          // Use canonical key comparison for flexible matching
+          const entryKey = getCategoryKey(category);
+          const filterKey = getCategoryKey(categoryFilter);
+          return entryKey === filterKey || entryKey.includes(filterKey) || filterKey.includes(entryKey);
         });
     const entriesToDisplay = filteredEntries;
 
@@ -2157,17 +2179,24 @@ export default function UnifiedLibrary({
     const showLocalFilter = hasLocalEntries && hasNonLocalEntries;
 
     // Get unique categories for filter buttons (based on current local filter)
-    // Count occurrences of each category and sort by count (highest first)
-    const categoryCounts = new Map<string, number>();
+    // Group similar categories together and count occurrences
+    const categoryGroups = new Map<string, { display: string; count: number }>();
     localFilteredEntries.forEach(entry => {
       const category = getEntryCategory(entry);
       if (category) {
-        categoryCounts.set(category, (categoryCounts.get(category) || 0) + 1);
+        const key = getCategoryKey(category);
+        const existing = categoryGroups.get(key);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          categoryGroups.set(key, { display: normalizeCategory(category), count: 1 });
+        }
       }
     });
-    const uniqueCategories = [...categoryCounts.entries()]
-      .sort((a, b) => b[1] - a[1]) // Sort by count descending
-      .map(([category]) => category);
+    // Sort by count descending and extract display names
+    const uniqueCategories = [...categoryGroups.entries()]
+      .sort((a, b) => b[1].count - a[1].count)
+      .map(([, value]) => value.display);
 
     // Render filter buttons
     const renderFilterButtons = () => {

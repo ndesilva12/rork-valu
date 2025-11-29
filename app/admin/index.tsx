@@ -228,11 +228,15 @@ export default function AdminDashboard() {
           </TouchableOpacity>
 
           {/* Google Places API Usage */}
-          <View style={[styles.card, styles.apiCard]}>
+          <TouchableOpacity
+            style={[styles.card, styles.apiCard]}
+            onPress={loadApiStats}
+            activeOpacity={0.7}
+          >
             <Text style={styles.cardIcon}>🗺️</Text>
             <Text style={styles.cardTitle}>Google Places API Usage</Text>
             <Text style={styles.cardDescription}>
-              Track API calls to monitor usage against free tier limits
+              Track API calls to monitor usage against free tier limits. Tap to refresh.
             </Text>
             {apiUsageStats ? (
               <View style={styles.apiStatsContainer}>
@@ -250,7 +254,7 @@ export default function AdminDashboard() {
                 </View>
                 {apiUsageStats.monthlyCalls && (
                   <View style={styles.monthlySection}>
-                    <Text style={styles.monthlyTitle}>This Month:</Text>
+                    <Text style={styles.monthlyTitle}>Monthly Breakdown:</Text>
                     {Object.entries(apiUsageStats.monthlyCalls)
                       .sort((a, b) => b[0].localeCompare(a[0]))
                       .slice(0, 3)
@@ -262,17 +266,11 @@ export default function AdminDashboard() {
                       ))}
                   </View>
                 )}
-                <TouchableOpacity
-                  style={styles.refreshButton}
-                  onPress={loadApiStats}
-                >
-                  <Text style={styles.refreshButtonText}>Refresh Stats</Text>
-                </TouchableOpacity>
               </View>
             ) : (
-              <Text style={styles.noStatsText}>No API usage data yet</Text>
+              <Text style={styles.noStatsText}>No API usage data yet. Tap to refresh.</Text>
             )}
-          </View>
+          </TouchableOpacity>
 
           {/* Database Stats */}
           <View style={[styles.card, styles.statsCard]}>

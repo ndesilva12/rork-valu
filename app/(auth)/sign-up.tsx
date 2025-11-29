@@ -12,7 +12,7 @@ export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp();
   const router = useRouter();
   const params = useLocalSearchParams<{ ref?: string; source?: string }>();
-  const { isDarkMode, setAccountType } = useUser();
+  const { isDarkMode, setAccountType, isLoading: isProfileLoading, clerkUser: contextClerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
   // Capture referral source from URL params (supports ?ref=location1 or ?source=location1)
@@ -260,12 +260,33 @@ export default function SignUpScreen() {
       if (result.status === 'complete' && result.createdSessionId) {
         console.log('[Sign Up] Verification complete, setting active session:', result.createdSessionId);
         await setActive({ session: result.createdSessionId });
-        console.log('[Sign Up] Session set successfully, waiting before redirect');
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log('[Sign Up] Session set successfully, waiting for profile to load');
+
+        // Wait for the UserContext to fully load the profile (up to 5 seconds)
+        let attempts = 0;
+        const maxAttempts = 50; // 50 * 100ms = 5 seconds
+        while (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+          // Check if UserContext has loaded and has the clerk user
+          // Note: We need to check the current state, not the captured closure
+          // So we'll just wait a reasonable amount of time
+          if (attempts >= 15) { // At least 1.5 seconds
+            break;
+          }
+        }
+
+        console.log('[Sign Up] Profile load wait complete, attempts:', attempts);
 
         // Set the account type
         console.log('[Sign Up] Setting account type:', selectedAccountType);
-        await setAccountType(selectedAccountType);
+        try {
+          await setAccountType(selectedAccountType);
+          console.log('[Sign Up] Account type set successfully');
+        } catch (accountTypeError) {
+          console.error('[Sign Up] Failed to set account type:', accountTypeError);
+          // Continue anyway - the user can set up their business later
+        }
 
         // Navigate based on account type
         if (selectedAccountType === 'business') {

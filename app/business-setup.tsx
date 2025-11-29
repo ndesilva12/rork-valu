@@ -26,7 +26,7 @@ import debounce from 'lodash/debounce';
 
 export default function BusinessSetupScreen() {
   const router = useRouter();
-  const { isDarkMode, clerkUser } = useUser();
+  const { isDarkMode, clerkUser, isLoading: isProfileLoading } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
   // Search state
@@ -189,6 +189,46 @@ export default function BusinessSetupScreen() {
     }
     return null;
   };
+
+  // Show loading state while profile is loading
+  if (isProfileLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar
+          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+          backgroundColor={colors.background}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.text }]}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // If no user after loading, show a message and retry option
+  if (!clerkUser) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar
+          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+          backgroundColor={colors.background}
+        />
+        <View style={styles.loadingContainer}>
+          <AlertCircle size={48} color={colors.textSecondary} strokeWidth={1.5} />
+          <Text style={[styles.loadingText, { color: colors.text, marginTop: 16 }]}>
+            Please sign in to claim your business
+          </Text>
+          <TouchableOpacity
+            style={[styles.retryButton, { backgroundColor: colors.primary }]}
+            onPress={() => router.replace('/(auth)/sign-in')}
+          >
+            <Text style={styles.retryButtonText}>Sign In</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -731,5 +771,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 8,
     fontStyle: 'italic',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    marginTop: 12,
+  },
+  retryButton: {
+    marginTop: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
