@@ -284,3 +284,71 @@ export const deleteClaim = async (claimId: string): Promise<void> => {
     throw error;
   }
 };
+
+/**
+ * Convert an approved claim to a full business account
+ * This creates/updates the user's profile with business info
+ */
+export const convertClaimToBusinessAccount = async (
+  claimId: string,
+  placeDetails: {
+    name: string;
+    address: string;
+    category: string;
+    phone?: string;
+    website?: string;
+    location?: { lat: number; lng: number };
+    photoUrl?: string;
+  }
+): Promise<void> => {
+  try {
+    // Get the claim
+    const claim = await getClaimById(claimId);
+    if (!claim) {
+      throw new Error('Claim not found');
+    }
+
+    if (claim.status !== 'approved') {
+      throw new Error('Claim must be approved before conversion');
+    }
+
+    // Update the user's profile with business info
+    const userRef = doc(db, 'users', claim.userId);
+    const userDoc = await getDoc(userRef);
+
+    if (!userDoc.exists()) {
+      throw new Error('User not found');
+    }
+
+    const businessInfo = {
+      name: placeDetails.name,
+      category: placeDetails.category,
+      location: placeDetails.address,
+      latitude: placeDetails.location?.lat || 0,
+      longitude: placeDetails.location?.lng || 0,
+      phone: placeDetails.phone || claim.businessPhone || '',
+      website: placeDetails.website || '',
+      logoUrl: placeDetails.photoUrl || '',
+      claimedPlaceId: claim.placeId,
+      acceptsStandDiscounts: false,
+      customerDiscountPercent: 5,
+    };
+
+    await updateDoc(userRef, {
+      userType: 'business',
+      businessInfo: businessInfo,
+      'userDetails.role': claim.businessRole || 'owner',
+    });
+
+    // Update the claim to mark it as converted
+    const claimRef = doc(db, 'businessClaims', claimId);
+    await updateDoc(claimRef, {
+      convertedToBusinessAt: Timestamp.now(),
+    });
+
+    console.log('[BusinessClaimService] Claim converted to business account:', claimId);
+  } catch (error) {
+    console.error('[BusinessClaimService] Error converting claim to business:', error);
+    throw error;
+  }
+};

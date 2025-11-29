@@ -26,8 +26,10 @@ import {
   getPendingClaims,
   approveClaim,
   rejectClaim,
+  convertClaimToBusinessAccount,
   BusinessClaim,
 } from '@/services/firebase/businessClaimService';
+import { getPlaceDetails } from '@/services/firebase/placesService';
 
 // Admin email whitelist
 const ADMIN_EMAILS = [
@@ -146,6 +148,57 @@ export default function BusinessClaimsAdmin() {
     } catch (error) {
       console.error('[BusinessClaimsAdmin] Error rejecting claim:', error);
       Alert.alert('Error', 'Failed to reject claim');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConvertToBusinessAccount = async () => {
+    if (!selectedClaim) return;
+
+    if (selectedClaim.status !== 'approved') {
+      Alert.alert('Error', 'Only approved claims can be converted to business accounts');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // Get place details to populate the business account
+      const placeDetails = await getPlaceDetails(selectedClaim.placeId);
+
+      await convertClaimToBusinessAccount(selectedClaim.id, {
+        name: selectedClaim.placeName,
+        address: selectedClaim.placeAddress,
+        category: selectedClaim.placeCategory,
+        phone: placeDetails?.phone || selectedClaim.businessPhone,
+        website: placeDetails?.website || '',
+        location: placeDetails?.location,
+        photoUrl: placeDetails?.photoReferences?.[0] || '',
+      });
+
+      // Send conversion notification email
+      if (selectedClaim.userEmail) {
+        const subject = encodeURIComponent('Your iEndorse Business Account is Ready!');
+        const body = encodeURIComponent(
+          `Hi ${selectedClaim.userName},\n\n` +
+          `Great news! Your business account for "${selectedClaim.placeName}" has been set up.\n\n` +
+          `You can now:\n` +
+          `- Manage your business profile\n` +
+          `- Set up customer discounts\n` +
+          `- Track endorsements\n` +
+          `- And more!\n\n` +
+          `Log in to iEndorse to get started.\n\n` +
+          `Best regards,\nThe iEndorse Team`
+        );
+        Linking.openURL(`mailto:${selectedClaim.userEmail}?subject=${subject}&body=${body}`);
+      }
+
+      Alert.alert('Success', 'Claim converted to business account. User can now manage their business on iEndorse.');
+      setSelectedClaim(null);
+      loadClaims();
+    } catch (error: any) {
+      console.error('[BusinessClaimsAdmin] Error converting claim:', error);
+      Alert.alert('Error', error?.message || 'Failed to convert claim to business account');
     } finally {
       setIsProcessing(false);
     }
@@ -446,6 +499,38 @@ export default function BusinessClaimsAdmin() {
                         </>
                       )}
                     </TouchableOpacity>
+                  </View>
+                )}
+
+                {/* Convert to Business Button (for approved claims) */}
+                {selectedClaim.status === 'approved' && !(selectedClaim as any).convertedToBusinessAt && (
+                  <View style={styles.modalActions}>
+                    <TouchableOpacity
+                      style={[styles.modalButton, styles.convertButton]}
+                      onPress={handleConvertToBusinessAccount}
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? (
+                        <ActivityIndicator color="#fff" size="small" />
+                      ) : (
+                        <>
+                          <Building2 size={18} color="#fff" strokeWidth={2} />
+                          <Text style={styles.convertButtonText}>Convert to Business Account</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {/* Already converted notice */}
+                {selectedClaim.status === 'approved' && (selectedClaim as any).convertedToBusinessAt && (
+                  <View style={[styles.infoCard, { marginTop: 20, backgroundColor: '#E8F5E9' }]}>
+                    <View style={styles.infoRow}>
+                      <Check size={18} color="#10B981" strokeWidth={2} />
+                      <Text style={[styles.infoRowText, { color: '#10B981', fontWeight: '600' }]}>
+                        Converted to business account
+                      </Text>
+                    </View>
                   </View>
                 )}
               </>
@@ -768,6 +853,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
   },
   approveModalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  convertButton: {
+    backgroundColor: '#007bff',
+    flex: 1,
+  },
+  convertButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
