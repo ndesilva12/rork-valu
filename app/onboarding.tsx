@@ -1,5 +1,5 @@
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Heart, Shield, Users, Building2, Globe, User, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Trophy, Search, MapPin, ChevronRight, AlertCircle, Check, LogOut } from 'lucide-react-native';
+import { Heart, Shield, Users, Building2, Globe, User, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Trophy, Search, MapPin, ChevronRight, AlertCircle, Check, LogOut, X, Sparkles } from 'lucide-react-native';
 import { useAuth } from '@clerk/clerk-expo';
 import { useState, useEffect, useCallback } from 'react';
 import {
@@ -14,6 +14,7 @@ import {
   Alert,
   TextInput,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image as ExpoImage } from 'expo-image';
@@ -179,6 +180,9 @@ export default function OnboardingScreen() {
     }));
   });
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  // Welcome modal state
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   // Update step when isBusinessUser is determined (handles late-loading params)
   useEffect(() => {
@@ -392,34 +396,15 @@ export default function OnboardingScreen() {
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Different welcome message for business vs individual users
-      const welcomeMessage = isBusinessUser
-        ? 'Set discounts in the Money tab and endorse other businesses in the List tab.'
-        : 'Endorse businesses you support and look for discounts.';
-
-      if (Platform.OS === 'web') {
-        // Use browser alert on web, then navigate
-        window.alert(`Welcome to Endorse!\n\n${welcomeMessage}`);
-        console.log('[Onboarding] Redirecting to browse tab');
-        router.replace('/(tabs)/values');
-      } else {
-        // Use native Alert on mobile
-        Alert.alert(
-          'Welcome to Endorse!',
-          welcomeMessage,
-          [
-            {
-              text: 'Got it!',
-              onPress: () => {
-                console.log('[Onboarding] Redirecting to browse tab');
-                router.replace('/(tabs)/values');
-              },
-            },
-          ],
-          { cancelable: false }
-        );
-      }
+      // Show custom welcome modal
+      setShowWelcomeModal(true);
     }
+  };
+
+  const handleWelcomeComplete = () => {
+    setShowWelcomeModal(false);
+    console.log('[Onboarding] Redirecting to browse tab');
+    router.replace('/(tabs)/values');
   };
 
   const toggleCategoryExpanded = (category: string) => {
@@ -807,6 +792,53 @@ export default function OnboardingScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Welcome Modal */}
+      <Modal
+        visible={showWelcomeModal}
+        transparent
+        animationType="fade"
+        onRequestClose={handleWelcomeComplete}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.welcomeModal, { backgroundColor: colors.background }]}>
+            {/* Close button */}
+            <TouchableOpacity
+              style={[styles.modalCloseButton, { backgroundColor: colors.backgroundSecondary }]}
+              onPress={handleWelcomeComplete}
+              activeOpacity={0.7}
+            >
+              <X size={20} color={colors.textSecondary} strokeWidth={2} />
+            </TouchableOpacity>
+
+            {/* Icon */}
+            <View style={[styles.welcomeIconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Sparkles size={40} color={colors.primary} strokeWidth={1.5} />
+            </View>
+
+            {/* Title */}
+            <Text style={[styles.welcomeTitle, { color: colors.text }]}>
+              Welcome to Endorse!
+            </Text>
+
+            {/* Message */}
+            <Text style={[styles.welcomeMessage, { color: colors.textSecondary }]}>
+              {isBusinessUser
+                ? 'Set discounts in the Money tab and endorse other businesses in the List tab.'
+                : 'Endorse businesses you support and look for discounts.'}
+            </Text>
+
+            {/* Button */}
+            <TouchableOpacity
+              style={[styles.welcomeButton, { backgroundColor: colors.primary }]}
+              onPress={handleWelcomeComplete}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.welcomeButtonText}>Let's Go!</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1151,6 +1183,68 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   continueButtonText: {
+    fontSize: 17,
+    fontWeight: '600' as const,
+  },
+  // Welcome Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  welcomeModal: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  welcomeIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  welcomeTitle: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  welcomeMessage: {
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  welcomeButton: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  welcomeButtonText: {
+    color: '#FFFFFF',
     fontSize: 17,
     fontWeight: '600' as const,
   },
