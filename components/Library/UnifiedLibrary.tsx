@@ -1150,8 +1150,8 @@ export default function UnifiedLibrary({
       // Top 5: 35% opacity
       return isDarkMode ? 'rgba(0, 170, 250, 0.35)' : 'rgba(3, 68, 102, 0.35)';
     } else if (index < 10) {
-      // 6-10: 15% opacity
-      return isDarkMode ? 'rgba(0, 170, 250, 0.15)' : 'rgba(3, 68, 102, 0.15)';
+      // 6-10: 20% opacity
+      return isDarkMode ? 'rgba(0, 170, 250, 0.20)' : 'rgba(3, 68, 102, 0.20)';
     }
     // 11+: 10% opacity
     return isDarkMode ? 'rgba(0, 170, 250, 0.10)' : 'rgba(3, 68, 102, 0.10)';
