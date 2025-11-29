@@ -2335,9 +2335,9 @@ export default function UnifiedLibrary({
       );
     };
 
-    const filteredEntries = entriesToDisplay.filter(entry => entry != null);
+    const validEntries = entriesToDisplay.filter(entry => entry != null);
     // Show all entries when reordering, otherwise respect the load count limit
-    const displayedEntries = isReordering ? filteredEntries : filteredEntries.slice(0, endorsementLoadCount);
+    const displayedEntries = isReordering ? validEntries : validEntries.slice(0, endorsementLoadCount);
 
     // Separate top 5, items 6-10, and the rest
     const top5Entries = displayedEntries.slice(0, 5);
@@ -2379,14 +2379,14 @@ export default function UnifiedLibrary({
         {renderFilterButtons()}
         <View style={styles.brandsContainer}>
           {contentWithDnd}
-          {!isReordering && endorsementLoadCount < endorsementList.entries.length && (
+          {!isReordering && endorsementLoadCount < validEntries.length && (
             <TouchableOpacity
               style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
               onPress={() => setEndorsementLoadCount(endorsementLoadCount + 25)}
               activeOpacity={0.7}
             >
               <Text style={[styles.loadMoreText, { color: colors.primary }]}>
-                Load More ({endorsementList.entries.length - endorsementLoadCount} remaining)
+                Load More ({validEntries.length - endorsementLoadCount} remaining)
               </Text>
             </TouchableOpacity>
           )}
