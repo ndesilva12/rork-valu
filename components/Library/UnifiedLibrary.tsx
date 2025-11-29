@@ -623,19 +623,25 @@ export default function UnifiedLibrary({
           logoUrl = getPlacePhotoUrl(item.photoReference);
         }
 
-        entry = {
+        // Build entry with only defined values to avoid Firestore issues
+        const placeEntry: any = {
           type: 'place',
           placeId: item.placeId,
-          placeName: item.name,
-          placeCategory: item.category,
-          placeAddress: item.address,
-          website: website,
-          photoReference: item.photoReference,
-          logoUrl: logoUrl,
-          rating: item.rating,
-          location: item.location,
-          createdAt: new Date(),
+          placeName: item.name || 'Unknown Place',
         };
+
+        // Only add optional fields if they have values
+        if (item.category) placeEntry.placeCategory = item.category;
+        if (item.address) placeEntry.placeAddress = item.address;
+        if (website) placeEntry.website = website;
+        if (item.photoReference) placeEntry.photoReference = item.photoReference;
+        if (logoUrl) placeEntry.logoUrl = logoUrl;
+        if (item.rating !== undefined && item.rating !== null) placeEntry.rating = item.rating;
+        if (item.location && item.location.lat !== undefined && item.location.lng !== undefined) {
+          placeEntry.location = { lat: item.location.lat, lng: item.location.lng };
+        }
+
+        entry = placeEntry;
       }
 
       await library.addEntry(endorsementList.id, entry);
@@ -3657,25 +3663,22 @@ export default function UnifiedLibrary({
                 autoCorrect={false}
                 underlineColorAndroid="transparent"
               />
-              <TouchableOpacity
-                onPress={() => setAddSearchQuery('')}
-                style={{
-                  width: 32,
-                  height: 32,
-                  minWidth: 32,
-                  minHeight: 32,
-                  borderRadius: 16,
-                  backgroundColor: '#E5E5E5',
-                  alignItems: 'center' as const,
-                  justifyContent: 'center' as const,
-                  flexShrink: 0,
-                  flexGrow: 0,
-                }}
-                activeOpacity={0.7}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <X size={18} color="#666666" strokeWidth={2.5} />
-              </TouchableOpacity>
+              <View style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <TouchableOpacity
+                  onPress={() => setAddSearchQuery('')}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: '#E5E5E5',
+                    alignItems: 'center' as const,
+                    justifyContent: 'center' as const,
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <X size={18} color="#666666" strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Search Results */}
