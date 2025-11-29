@@ -1,6 +1,6 @@
-import { useRouter } from 'expo-router';
-import { Heart, Shield, Users, Building2, Globe, User, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Trophy } from 'lucide-react-native';
-import { useState, useEffect } from 'react';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Heart, Shield, Users, Building2, Globe, User, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Trophy, Search, MapPin, ChevronRight, AlertCircle, Check } from 'lucide-react-native';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,21 @@ import {
   Image,
   Platform,
   StatusBar,
+  Alert,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Image as ExpoImage } from 'expo-image';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 import { Cause, CauseCategory, AlignmentType } from '@/types';
+import { searchPlaces, PlaceSearchResult, getPlacePhotoUrl } from '@/services/firebase/placesService';
+import { submitBusinessClaim, getClaimsByUser, BusinessClaim } from '@/services/firebase/businessClaimService';
+import { createUser } from '@/services/firebase/userService';
+import * as Location from 'expo-location';
+import debounce from 'lodash/debounce';
 
 // Icon mappings for common categories (with fallbacks)
 const CATEGORY_ICONS: Record<string, any> = {
@@ -28,7 +37,6 @@ const CATEGORY_ICONS: Record<string, any> = {
   person: User,
   sports: Trophy,
   lifestyle: Heart,
-  // Fallback will use Heart for unknown categories
 };
 
 // Label mappings for common categories (with dynamic fallback)
@@ -39,10 +47,10 @@ const CATEGORY_LABELS: Record<string, string> = {
   corporation: 'Corporations',
   nation: 'Places',
   nations: 'Places',
-  places: 'Places', // Handle all variations
+  places: 'Places',
   organization: 'Organizations',
   person: 'People',
-  people: 'People', // Handle both "person" and "people"
+  people: 'People',
   sports: 'Sports',
   lifestyle: 'Lifestyle',
 };
@@ -50,12 +58,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 // Normalize category names to handle case variations and synonyms
 const normalizeCategory = (category: string): string => {
   const lower = category.toLowerCase().trim();
-
-  // Handle synonyms and variations
   if (lower === 'person' || lower === 'people') return 'person';
   if (lower === 'social_issue' || lower === 'social issues') return 'social_issue';
   if (lower === 'nation' || lower === 'nations' || lower === 'places') return 'nation';
-
   return lower;
 };
 
@@ -71,20 +76,16 @@ const CATEGORY_ORDER = [
   'sports',
 ];
 
-// Helper to get icon for any category
 const getCategoryIcon = (category: string) => {
   const normalized = normalizeCategory(category);
   return CATEGORY_ICONS[normalized] || Heart;
 };
 
-// Helper to get label for any category (with auto-capitalize fallback)
 const getCategoryLabel = (category: string) => {
   const normalized = normalizeCategory(category);
   if (CATEGORY_LABELS[normalized]) return CATEGORY_LABELS[normalized];
-  // Auto-capitalize: "some_category" -> "Some Category"
   return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
-
 
 interface SelectedValue {
   id: string;
@@ -94,11 +95,42 @@ interface SelectedValue {
   description?: string;
 }
 
+type OnboardingStep = 'claim_business' | 'select_values';
+
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { addCauses, profile, isDarkMode, clerkUser, isLoading } = useUser();
+  const params = useLocalSearchParams<{ accountType?: string }>();
+  const { addCauses, profile, isDarkMode, clerkUser, isLoading, setAccountType } = useUser();
   const { values: firebaseValues } = useData();
   const colors = isDarkMode ? darkColors : lightColors;
+  const insets = useSafeAreaInsets();
+
+  // Determine if this is a business user - check query param first, then profile
+  // Query param is passed from sign-up to handle the race condition where profile isn't loaded yet
+  const isBusinessUser = params.accountType === 'business' || profile?.accountType === 'business';
+
+  console.log('[Onboarding] accountType from params:', params.accountType);
+  console.log('[Onboarding] accountType from profile:', profile?.accountType);
+  console.log('[Onboarding] isBusinessUser:', isBusinessUser);
+
+  // Step management for business users
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>(isBusinessUser ? 'claim_business' : 'select_values');
+  const [hasSubmittedClaim, setHasSubmittedClaim] = useState(false);
+  const [isCheckingClaims, setIsCheckingClaims] = useState(isBusinessUser);
+
+  // Business claim state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<PlaceSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [selectedPlace, setSelectedPlace] = useState<PlaceSearchResult | null>(null);
+  const [businessRole, setBusinessRole] = useState('');
+  const [businessPhone, setBusinessPhone] = useState('');
+  const [businessEmail, setBusinessEmail] = useState('');
+  const [verificationDetails, setVerificationDetails] = useState('');
+  const [isSubmittingClaim, setIsSubmittingClaim] = useState(false);
+
+  // Values selection state
   const [selectedValues, setSelectedValues] = useState<SelectedValue[]>(() => {
     return profile.causes.map(c => ({
       id: c.id,
@@ -109,9 +141,91 @@ export default function OnboardingScreen() {
     }));
   });
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-  const insets = useSafeAreaInsets();
 
-  // Group values by NORMALIZED category from Firebase
+  // Update step when isBusinessUser is determined (handles late-loading params)
+  useEffect(() => {
+    if (isBusinessUser && currentStep === 'select_values' && !hasSubmittedClaim) {
+      console.log('[Onboarding] Business user detected, switching to claim step');
+      setCurrentStep('claim_business');
+      setIsCheckingClaims(true);
+    }
+  }, [isBusinessUser]);
+
+  // Check if business user already has claims
+  useEffect(() => {
+    const checkExistingClaims = async () => {
+      if (!isBusinessUser || !clerkUser?.id) {
+        setIsCheckingClaims(false);
+        return;
+      }
+
+      try {
+        const claims = await getClaimsByUser(clerkUser.id);
+        if (claims.length > 0) {
+          console.log('[Onboarding] Business user already has claims, skipping to values');
+          setHasSubmittedClaim(true);
+          setCurrentStep('select_values');
+        }
+      } catch (error) {
+        console.error('[Onboarding] Error checking claims:', error);
+      } finally {
+        setIsCheckingClaims(false);
+      }
+    };
+
+    checkExistingClaims();
+  }, [isBusinessUser, clerkUser?.id]);
+
+  // Get user location for business search
+  useEffect(() => {
+    if (isBusinessUser && currentStep === 'claim_business') {
+      (async () => {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status === 'granted') {
+            const location = await Location.getCurrentPositionAsync({});
+            setUserLocation({
+              lat: location.coords.latitude,
+              lng: location.coords.longitude,
+            });
+          }
+        } catch (error) {
+          console.log('[Onboarding] Could not get location:', error);
+        }
+      })();
+    }
+  }, [isBusinessUser, currentStep]);
+
+  // Debounced search for businesses
+  const debouncedSearch = useCallback(
+    debounce(async (query: string) => {
+      if (query.length < 2) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const results = await searchPlaces(query, userLocation || undefined, 50000);
+        setSearchResults(results);
+      } catch (error) {
+        console.error('[Onboarding] Search error:', error);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300),
+    [userLocation]
+  );
+
+  useEffect(() => {
+    if (currentStep === 'claim_business') {
+      debouncedSearch(searchQuery);
+      return () => debouncedSearch.cancel();
+    }
+  }, [searchQuery, debouncedSearch, currentStep]);
+
+  // Group values by category
   const valuesByCategory = firebaseValues.reduce((acc, value) => {
     const normalizedCategory = normalizeCategory(value.category || 'other');
     if (!acc[normalizedCategory]) {
@@ -121,20 +235,16 @@ export default function OnboardingScreen() {
     return acc;
   }, {} as Record<string, typeof firebaseValues>);
 
-  // Get categories in the specified order, then add any additional categories alphabetically
   const knownCategories = CATEGORY_ORDER.filter(cat => valuesByCategory[cat]);
   const unknownCategories = Object.keys(valuesByCategory)
     .filter(cat => !CATEGORY_ORDER.includes(cat))
     .sort();
   const categories = [...knownCategories, ...unknownCategories];
 
-  // Minimum 3 values required for all account types
   const minValues = 3;
 
   useEffect(() => {
-    console.log('[Onboarding] Profile causes updated:', profile.causes.length);
     if (profile.causes.length > 0) {
-      console.log('[Onboarding] Syncing selected values from profile');
       setSelectedValues(profile.causes.map(c => ({
         id: c.id,
         name: c.name,
@@ -144,6 +254,77 @@ export default function OnboardingScreen() {
       })));
     }
   }, [profile.causes]);
+
+  const handleSelectPlace = (place: PlaceSearchResult) => {
+    setSelectedPlace(place);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
+  const getPlacePhoto = (place: PlaceSearchResult) => {
+    if (place.photoReference) {
+      return getPlacePhotoUrl(place.photoReference);
+    }
+    return null;
+  };
+
+  const handleSubmitClaim = async () => {
+    if (!selectedPlace || !clerkUser) {
+      Alert.alert('Error', 'Please select a business first');
+      return;
+    }
+
+    if (!businessRole.trim()) {
+      Alert.alert('Required', 'Please enter your role at the business');
+      return;
+    }
+
+    if (!businessEmail.trim() && !businessPhone.trim()) {
+      Alert.alert('Required', 'Please provide a business email or phone number for verification');
+      return;
+    }
+
+    setIsSubmittingClaim(true);
+    try {
+      // Ensure user exists in Firebase
+      await createUser(clerkUser.id, {
+        email: clerkUser.primaryEmailAddress?.emailAddress,
+        firstName: clerkUser.firstName || undefined,
+        lastName: clerkUser.lastName || undefined,
+        fullName: clerkUser.fullName || undefined,
+        imageUrl: clerkUser.imageUrl || undefined,
+      }, {
+        accountType: 'business',
+      });
+
+      await submitBusinessClaim({
+        userId: clerkUser.id,
+        userEmail: clerkUser.primaryEmailAddress?.emailAddress || '',
+        userName: clerkUser.fullName || clerkUser.firstName || '',
+        placeId: selectedPlace.placeId,
+        placeName: selectedPlace.name,
+        placeAddress: selectedPlace.address,
+        placeCategory: selectedPlace.category,
+        businessRole: businessRole.trim(),
+        businessPhone: businessPhone.trim(),
+        businessEmail: businessEmail.trim(),
+        verificationDetails: verificationDetails.trim(),
+      });
+
+      await setAccountType('business');
+      setHasSubmittedClaim(true);
+
+      Alert.alert(
+        'Claim Submitted!',
+        'Your business claim has been submitted for review. Now, let\'s set up your values.',
+        [{ text: 'Continue', onPress: () => setCurrentStep('select_values') }]
+      );
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Failed to submit claim. Please try again.');
+    } finally {
+      setIsSubmittingClaim(false);
+    }
+  };
 
   const toggleValue = (valueId: string, name: string, category: string, description?: string) => {
     setSelectedValues(prev => {
@@ -180,14 +361,31 @@ export default function OnboardingScreen() {
         description: v.description,
       }));
       console.log('[Onboarding] Saving causes for user:', clerkUser?.id);
-      console.log('[Onboarding] Causes to save:', JSON.stringify(causes.map(c => c.name), null, 2));
       await addCauses(causes);
       console.log('[Onboarding] addCauses completed');
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      console.log('[Onboarding] Redirecting to browse tab (Global section)');
-      router.replace('/(tabs)/values');
+      // Different welcome message for business vs individual users
+      const welcomeTitle = isBusinessUser ? 'Welcome to Endorse!' : 'Welcome to Endorse!';
+      const welcomeMessage = isBusinessUser
+        ? 'Set discounts in the Money tab and endorse other businesses in the List tab.'
+        : 'Endorse businesses you support and look for discounts.';
+
+      Alert.alert(
+        welcomeTitle,
+        welcomeMessage,
+        [
+          {
+            text: 'Got it!',
+            onPress: () => {
+              console.log('[Onboarding] Redirecting to browse tab');
+              router.replace('/(tabs)/values');
+            },
+          },
+        ],
+        { cancelable: false }
+      );
     }
   };
 
@@ -203,8 +401,236 @@ export default function OnboardingScreen() {
     });
   };
 
+  // Show loading while checking claims for business users
+  if (isCheckingClaims) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.text }]}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
+  // STEP 1: Business Claim (for business users only)
+  if (isBusinessUser && currentStep === 'claim_business') {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar
+          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+          backgroundColor={colors.background}
+        />
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 + insets.bottom }, Platform.OS === 'web' && styles.webContent]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('@/assets/images/endorseofficial.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </View>
+            <View style={[styles.stepIndicator, { backgroundColor: colors.backgroundSecondary }]}>
+              <Text style={[styles.stepText, { color: colors.primary }]}>Step 1 of 2</Text>
+            </View>
+            <Text style={[styles.title, { color: colors.text }]}>Claim Your Business</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+              Search for your business and claim ownership to manage your profile on iEndorse
+            </Text>
+          </View>
 
+          {/* Search Section */}
+          {!selectedPlace && (
+            <View style={styles.section}>
+              <View style={[styles.searchContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                <Search size={20} color={colors.textSecondary} strokeWidth={2} />
+                <TextInput
+                  style={[styles.searchInput, { color: colors.text }]}
+                  placeholder="Search for your business name..."
+                  placeholderTextColor={colors.textSecondary}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+                {isSearching && <ActivityIndicator size="small" color={colors.primary} />}
+              </View>
+
+              {/* Search Results */}
+              {searchResults.length > 0 && (
+                <View style={[styles.resultsContainer, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+                  {searchResults.map((place) => (
+                    <TouchableOpacity
+                      key={place.placeId}
+                      style={[styles.resultItem, { borderBottomColor: colors.border }]}
+                      onPress={() => handleSelectPlace(place)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.resultLogo, { backgroundColor: '#FFFFFF' }]}>
+                        {getPlacePhoto(place) ? (
+                          <ExpoImage
+                            source={{ uri: getPlacePhoto(place)! }}
+                            style={styles.resultLogoImage}
+                            contentFit="cover"
+                          />
+                        ) : (
+                          <View style={[styles.resultLogoPlaceholder, { backgroundColor: colors.primary }]}>
+                            <Text style={styles.resultLogoText}>{place.name.charAt(0)}</Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.resultInfo}>
+                        <Text style={[styles.resultName, { color: colors.text }]} numberOfLines={1}>
+                          {place.name}
+                        </Text>
+                        <Text style={[styles.resultAddress, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {place.address}
+                        </Text>
+                        <Text style={[styles.resultCategory, { color: colors.textSecondary }]}>
+                          {place.category}
+                        </Text>
+                      </View>
+                      <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && (
+                <View style={[styles.noResults, { backgroundColor: colors.backgroundSecondary }]}>
+                  <AlertCircle size={32} color={colors.textSecondary} strokeWidth={1.5} />
+                  <Text style={[styles.noResultsText, { color: colors.text }]}>
+                    No businesses found
+                  </Text>
+                  <Text style={[styles.noResultsSubtext, { color: colors.textSecondary }]}>
+                    Try a different search term
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Selected Business + Form */}
+          {selectedPlace && (
+            <>
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Selected Business</Text>
+                <View style={[styles.selectedCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.primary }]}>
+                  <View style={[styles.selectedLogo, { backgroundColor: '#FFFFFF' }]}>
+                    {getPlacePhoto(selectedPlace) ? (
+                      <ExpoImage
+                        source={{ uri: getPlacePhoto(selectedPlace)! }}
+                        style={styles.selectedLogoImage}
+                        contentFit="cover"
+                      />
+                    ) : (
+                      <View style={[styles.selectedLogoPlaceholder, { backgroundColor: colors.primary }]}>
+                        <Text style={styles.selectedLogoText}>{selectedPlace.name.charAt(0)}</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.selectedInfo}>
+                    <Text style={[styles.selectedName, { color: colors.text }]}>
+                      {selectedPlace.name}
+                    </Text>
+                    <Text style={[styles.selectedAddress, { color: colors.textSecondary }]}>
+                      {selectedPlace.address}
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setSelectedPlace(null)} style={styles.changeButton}>
+                    <Text style={[styles.changeButtonText, { color: colors.primary }]}>Change</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Verification Info</Text>
+
+                <View style={styles.formGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Your Role *</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
+                    placeholder="e.g., Owner, Manager"
+                    placeholderTextColor={colors.textSecondary}
+                    value={businessRole}
+                    onChangeText={setBusinessRole}
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Business Email</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
+                    placeholder="contact@yourbusiness.com"
+                    placeholderTextColor={colors.textSecondary}
+                    value={businessEmail}
+                    onChangeText={setBusinessEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Business Phone</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
+                    placeholder="(555) 123-4567"
+                    placeholderTextColor={colors.textSecondary}
+                    value={businessPhone}
+                    onChangeText={setBusinessPhone}
+                    keyboardType="phone-pad"
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>Additional Info (optional)</Text>
+                  <TextInput
+                    style={[styles.textArea, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }]}
+                    placeholder="Any additional verification details..."
+                    placeholderTextColor={colors.textSecondary}
+                    value={verificationDetails}
+                    onChangeText={setVerificationDetails}
+                    multiline
+                    numberOfLines={3}
+                    textAlignVertical="top"
+                  />
+                </View>
+              </View>
+            </>
+          )}
+        </ScrollView>
+
+        {/* Footer for Business Claim Step */}
+        <View style={[styles.footer, { paddingBottom: 32 + insets.bottom, backgroundColor: colors.backgroundSecondary, borderTopColor: colors.border }, Platform.OS === 'web' && styles.footerWeb]}>
+          <View style={[styles.footerContent, Platform.OS === 'web' && styles.footerContentWeb]}>
+            <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
+              {selectedPlace ? 'Ready to submit your claim' : 'Search and select your business above'}
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.continueButton,
+                { backgroundColor: selectedPlace && businessRole.trim() && (businessEmail.trim() || businessPhone.trim()) ? colors.primary : colors.neutral },
+                (!selectedPlace || !businessRole.trim() || (!businessEmail.trim() && !businessPhone.trim())) && { opacity: 0.5 }
+              ]}
+              onPress={handleSubmitClaim}
+              disabled={isSubmittingClaim || !selectedPlace || !businessRole.trim() || (!businessEmail.trim() && !businessPhone.trim())}
+              activeOpacity={0.8}
+            >
+              {isSubmittingClaim ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <Text style={[styles.continueButtonText, { color: colors.white }]}>Submit Claim & Continue</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // STEP 2: Values Selection (for all users, or step 2 for business)
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
@@ -215,11 +641,19 @@ export default function OnboardingScreen() {
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <Image
-              source={require('@/assets/images/endowide.png')}
+              source={require('@/assets/images/endorseofficial.png')}
               style={styles.logo}
               resizeMode="contain"
             />
           </View>
+          {isBusinessUser && (
+            <View style={[styles.stepIndicator, { backgroundColor: colors.backgroundSecondary }]}>
+              <View style={styles.stepComplete}>
+                <Check size={14} color={colors.success} strokeWidth={3} />
+              </View>
+              <Text style={[styles.stepText, { color: colors.primary }]}>Step 2 of 2</Text>
+            </View>
+          )}
           <Text style={[styles.title, { color: colors.text }]}>Identify Your Values</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Select a positive or negative view of at least {minValues} items you feel strongly about.
@@ -328,6 +762,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+  },
   scrollView: {
     flex: 1,
   },
@@ -354,8 +797,29 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  stepIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 16,
+    gap: 8,
+  },
+  stepText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  stepComplete: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700' as const,
     marginBottom: 12,
     textAlign: 'center',
@@ -381,7 +845,164 @@ const styles = StyleSheet.create({
   instructionBold: {
     fontWeight: '600' as const,
   },
-
+  section: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginBottom: 12,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+  },
+  resultsContainer: {
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  resultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+  },
+  resultLogo: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  resultLogoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  resultLogoPlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resultLogoText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  resultInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  resultName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    marginBottom: 2,
+  },
+  resultAddress: {
+    fontSize: 13,
+    marginBottom: 2,
+  },
+  resultCategory: {
+    fontSize: 12,
+  },
+  noResults: {
+    marginTop: 16,
+    padding: 32,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  noResultsText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    marginTop: 12,
+  },
+  noResultsSubtext: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  selectedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+  },
+  selectedLogo: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  selectedLogoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  selectedLogoPlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectedLogoText: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '700' as const,
+  },
+  selectedInfo: {
+    flex: 1,
+  },
+  selectedName: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  selectedAddress: {
+    fontSize: 13,
+  },
+  changeButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  changeButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  formGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    marginBottom: 6,
+  },
+  input: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    fontSize: 16,
+  },
+  textArea: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    fontSize: 16,
+    minHeight: 80,
+  },
   causesContainer: {
     paddingHorizontal: 24,
   },
@@ -414,42 +1035,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
   },
-  valueRow: {
-    width: '100%',
-  },
-  valueCard: {
+  showMoreButton: {
+    marginTop: 12,
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 2,
-  },
-  valueCardSupport: {},
-  valueCardAvoid: {},
-  valueContent: {
+    borderRadius: 10,
+    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 6,
   },
-  valueName: {
-    fontSize: 15,
-    fontWeight: '500' as const,
-    flex: 1,
-  },
-  valueNameSelected: {},
-  stateIndicator: {
-    marginLeft: 12,
-  },
-  stateBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  stateBadgeText: {
-    fontSize: 12,
+  showMoreText: {
+    fontSize: 14,
     fontWeight: '600' as const,
   },
   footer: {
@@ -481,24 +1079,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
   },
-  continueButtonDisabled: {},
   continueButtonText: {
     fontSize: 17,
-    fontWeight: '600' as const,
-  },
-  showMoreButton: {
-    marginTop: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  showMoreText: {
-    fontSize: 14,
     fontWeight: '600' as const,
   },
 });

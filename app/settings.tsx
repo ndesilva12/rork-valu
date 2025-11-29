@@ -16,7 +16,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Lock, Download, Shield, FileText, ExternalLink, Trash2 } from 'lucide-react-native';
+import { ChevronLeft, Lock, Download, Shield, FileText, ExternalLink, Trash2, Building2 } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser as useUserContext } from '@/contexts/UserContext';
 import { useUser, useAuth } from '@clerk/clerk-expo';
@@ -181,7 +181,7 @@ export default function SettingsScreen() {
           <ChevronLeft size={28} color={colors.text} strokeWidth={2} />
         </TouchableOpacity>
         <Image
-          source={require('@/assets/images/endowide.png')}
+          source={require('@/assets/images/endorseofficial.png')}
           style={styles.headerLogo}
           resizeMode="contain"
         />
@@ -286,6 +286,32 @@ export default function SettingsScreen() {
                   Change Password
                 </Text>
               )}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Claim Business Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Building2 size={24} color={colors.primary} strokeWidth={2} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Business
+            </Text>
+          </View>
+
+          <View style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>
+              Own a business? Claim it to manage your profile and offer discounts to customers who endorse you.
+            </Text>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+              onPress={() => router.push('/business-setup?from=settings')}
+              activeOpacity={0.7}
+            >
+              <Building2 size={20} color={colors.white} strokeWidth={2} />
+              <Text style={[styles.actionButtonText, { color: colors.white }]}>
+                Claim Your Business
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -511,6 +537,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   actionText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  cardDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    gap: 8,
+  },
+  actionButtonText: {
     fontSize: 16,
     fontWeight: '600' as const,
   },

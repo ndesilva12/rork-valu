@@ -12,7 +12,7 @@ export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp();
   const router = useRouter();
   const params = useLocalSearchParams<{ ref?: string; source?: string }>();
-  const { isDarkMode, setAccountType } = useUser();
+  const { isDarkMode, setAccountType, isLoading: isProfileLoading, clerkUser: contextClerkUser } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
   // Capture referral source from URL params (supports ?ref=location1 or ?source=location1)
@@ -134,23 +134,39 @@ export default function SignUpScreen() {
           console.log('[Sign Up] Setting active session:', result.createdSessionId);
           await setActive({ session: result.createdSessionId });
           console.log('[Sign Up] Session activated, waiting before redirect');
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 1500));
         }
-        console.log('[Sign Up] Redirecting to home (index will handle routing)');
-        router.replace('/');
+        // Try to set account type (may fail if context not ready)
+        console.log('[Sign Up] Setting account type (auto-complete):', selectedAccountType);
+        try {
+          await setAccountType(selectedAccountType);
+        } catch (e) {
+          console.error('[Sign Up] Failed to set account type:', e);
+        }
+        // Pass account type as query param to ensure onboarding knows the user type
+        console.log('[Sign Up] Redirecting to onboarding with accountType:', selectedAccountType);
+        router.replace(`/onboarding?accountType=${selectedAccountType}`);
         return;
       }
-      
+
       if (result.verifications.emailAddress.status === 'verified') {
         console.log('[Sign Up] Email already verified but status not complete');
         if (result.createdSessionId) {
           console.log('[Sign Up] Setting active session:', result.createdSessionId);
           await setActive({ session: result.createdSessionId });
           console.log('[Sign Up] Session activated, waiting before redirect');
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 1500));
         }
-        console.log('[Sign Up] Redirecting to home (index will handle routing)');
-        router.replace('/');
+        // Try to set account type (may fail if context not ready)
+        console.log('[Sign Up] Setting account type (pre-verified):', selectedAccountType);
+        try {
+          await setAccountType(selectedAccountType);
+        } catch (e) {
+          console.error('[Sign Up] Failed to set account type:', e);
+        }
+        // Pass account type as query param to ensure onboarding knows the user type
+        console.log('[Sign Up] Redirecting to onboarding with accountType:', selectedAccountType);
+        router.replace(`/onboarding?accountType=${selectedAccountType}`);
         return;
       }
       
@@ -260,21 +276,37 @@ export default function SignUpScreen() {
       if (result.status === 'complete' && result.createdSessionId) {
         console.log('[Sign Up] Verification complete, setting active session:', result.createdSessionId);
         await setActive({ session: result.createdSessionId });
-        console.log('[Sign Up] Session set successfully, waiting before redirect');
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log('[Sign Up] Session set successfully, waiting for profile to load');
+
+        // Wait for the UserContext to fully load the profile (up to 5 seconds)
+        let attempts = 0;
+        const maxAttempts = 50; // 50 * 100ms = 5 seconds
+        while (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+          // Check if UserContext has loaded and has the clerk user
+          // Note: We need to check the current state, not the captured closure
+          // So we'll just wait a reasonable amount of time
+          if (attempts >= 15) { // At least 1.5 seconds
+            break;
+          }
+        }
+
+        console.log('[Sign Up] Profile load wait complete, attempts:', attempts);
 
         // Set the account type
         console.log('[Sign Up] Setting account type:', selectedAccountType);
-        await setAccountType(selectedAccountType);
-
-        // Navigate based on account type
-        if (selectedAccountType === 'business') {
-          console.log('[Sign Up] Redirecting to business setup');
-          router.replace('/business-setup');
-        } else {
-          console.log('[Sign Up] Redirecting to onboarding');
-          router.replace('/onboarding');
+        try {
+          await setAccountType(selectedAccountType);
+          console.log('[Sign Up] Account type set successfully');
+        } catch (accountTypeError) {
+          console.error('[Sign Up] Failed to set account type:', accountTypeError);
+          // Continue anyway - the user can set up their business later
         }
+
+        // Pass account type as query param to ensure onboarding knows the user type
+        console.log('[Sign Up] Redirecting to onboarding with accountType:', selectedAccountType);
+        router.replace(`/onboarding?accountType=${selectedAccountType}`);
       } else {
         console.error('[Sign Up] Verification incomplete:', JSON.stringify(result, null, 2));
         setError('Verification incomplete. Please try again.');
@@ -313,7 +345,7 @@ export default function SignUpScreen() {
           >
             <View style={styles.logoContainer}>
               <Image
-                source={require('@/assets/images/endowide.png')}
+                source={require('@/assets/images/endorseofficial.png')}
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -358,7 +390,7 @@ export default function SignUpScreen() {
         >
           <View style={styles.logoContainer}>
             <Image
-              source={require('@/assets/images/endowide.png')}
+              source={require('@/assets/images/endorseofficial.png')}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -609,13 +641,13 @@ const styles = StyleSheet.create({
   },
   taglineContainer: {
     alignItems: 'center',
-    marginTop: -60,
+    marginTop: 0,
     marginBottom: 32,
     paddingHorizontal: 8,
   },
   taglineLine: {
     textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: 2,
   },
   taglineFirstWord: {
     fontSize: 32,

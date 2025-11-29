@@ -10,12 +10,14 @@ import {
   Alert,
   Modal,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
-import { Search, MapPin, AlertCircle, ChevronDown, Map as MapIcon, X } from 'lucide-react-native';
+import { Search, MapPin, AlertCircle, ChevronDown, Map as MapIcon, X, Percent } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { getBusinessesAcceptingDiscounts, calculateDistance, calculateAlignmentScore, normalizeScores, BusinessUser } from '@/services/firebase/businessService';
+import { getLogoUrl } from '@/lib/logo';
 import BusinessMapView from './BusinessMapView';
 
 type LocalDistanceOption = 1 | 5 | 10 | 25 | 50 | 100;
@@ -225,14 +227,69 @@ export default function BusinessesAcceptingDiscounts() {
     return requirements;
   };
 
+  // Helper to format discount tiers for display
+  const formatDiscountTiers = (businessInfo: any): { percent: number; label: string }[] => {
+    const tiers: { percent: number; label: string }[] = [];
+
+    // Base endorsement discount (tier 1)
+    const baseDiscount = businessInfo.customerDiscountPercent || businessInfo.valueCodeDiscount || 0;
+    if (baseDiscount > 0) {
+      const minDays = businessInfo.endorsementMinDays || 0;
+      const rankType = businessInfo.endorsementType || 'endorsed';
+      let label = 'Endorsement';
+      if (rankType === 'top5') label = 'Top 5';
+      else if (rankType === 'top10') label = 'Top 10';
+      if (minDays > 0) label += ` ${minDays}d+`;
+      tiers.push({ percent: baseDiscount, label });
+    }
+
+    // Tier 2 if exists
+    if (businessInfo.tier2Discount && businessInfo.tier2Discount > 0) {
+      const minDays = businessInfo.tier2MinDays || 0;
+      const rankType = businessInfo.tier2Type || 'endorsed';
+      let label = 'Tier 2';
+      if (rankType === 'top5') label = 'Top 5';
+      else if (rankType === 'top10') label = 'Top 10';
+      if (minDays > 0) label += ` ${minDays}d+`;
+      tiers.push({ percent: businessInfo.tier2Discount, label });
+    }
+
+    // Tier 3 if exists
+    if (businessInfo.tier3Discount && businessInfo.tier3Discount > 0) {
+      const minDays = businessInfo.tier3MinDays || 0;
+      const rankType = businessInfo.tier3Type || 'endorsed';
+      let label = 'Tier 3';
+      if (rankType === 'top5') label = 'Top 5';
+      else if (rankType === 'top10') label = 'Top 10';
+      if (minDays > 0) label += ` ${minDays}d+`;
+      tiers.push({ percent: businessInfo.tier3Discount, label });
+    }
+
+    // Custom discount
+    if (businessInfo.customDiscount && businessInfo.customDiscount.trim()) {
+      let label = businessInfo.customDiscount;
+      if (businessInfo.customDiscountType) {
+        if (businessInfo.customDiscountType === 'top5') label += ' (Top 5)';
+        else if (businessInfo.customDiscountType === 'top10') label += ' (Top 10)';
+      }
+      if (businessInfo.customDiscountMinDays && businessInfo.customDiscountMinDays > 0) {
+        label += ` ${businessInfo.customDiscountMinDays}d+`;
+      }
+      tiers.push({ percent: 0, label }); // 0 indicates custom (not percentage)
+    }
+
+    return tiers;
+  };
+
   const renderBusinessCard = ({ item }: { item: BusinessUser }) => {
     const { businessInfo, distance } = item;
 
-    // Get discount percentages
-    const discountPercent = businessInfo.customerDiscountPercent || 0;
-    const requirementDiscountPercent = businessInfo.valueCodeDiscount || 0;
-    const hasCustomDiscount = businessInfo.customDiscount && businessInfo.customDiscount.trim();
-    const requirements = getRequirementsSummary(businessInfo);
+    // Get logo URL
+    const logoUrl = businessInfo.logoUrl || (businessInfo.website ? getLogoUrl(businessInfo.website) : null);
+
+    // Get discount tiers
+    const discountTiers = formatDiscountTiers(businessInfo);
+    const mainDiscount = discountTiers.length > 0 ? discountTiers[0].percent : 0;
 
     return (
       <TouchableOpacity
@@ -240,51 +297,57 @@ export default function BusinessesAcceptingDiscounts() {
         activeOpacity={0.7}
         onPress={() => router.push(`/business/${item.id}`)}
       >
-        <View style={styles.businessCardContent}>
-          <View style={styles.businessInfo}>
-            <Text style={[styles.businessName, { color: colors.text }]} numberOfLines={1}>
-              {businessInfo.name}
-            </Text>
-            <Text style={[styles.businessCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-              {businessInfo.category}
-            </Text>
-            {businessInfo.location && (
-              <View style={styles.locationRow}>
-                <MapPin size={12} color={colors.textSecondary} strokeWidth={2} />
-                <Text style={[styles.locationText, { color: colors.textSecondary }]} numberOfLines={1}>
-                  {businessInfo.location}
-                  {distance !== undefined && ` • ${distance} mi`}
+        <View style={styles.businessCardRow}>
+          {/* Logo on left */}
+          <View style={[styles.businessLogo, { backgroundColor: '#FFFFFF' }]}>
+            {logoUrl ? (
+              <Image
+                source={{ uri: logoUrl }}
+                style={styles.businessLogoImage}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+              />
+            ) : (
+              <View style={[styles.businessLogoPlaceholder, { backgroundColor: colors.primary }]}>
+                <Text style={styles.businessLogoPlaceholderText}>
+                  {businessInfo.name.charAt(0).toUpperCase()}
                 </Text>
               </View>
             )}
           </View>
 
-          <View style={styles.acceptanceInfo}>
-            <Text style={[styles.discountPercentText, { color: colors.primary }]}>
-              {discountPercent.toFixed(0)}% off
+          {/* Info in middle */}
+          <View style={styles.businessInfo}>
+            <Text style={[styles.businessName, { color: colors.text }]} numberOfLines={1}>
+              {businessInfo.name}
             </Text>
-            <Text style={[styles.allUsersLabel, { color: colors.textSecondary }]}>
-              All Users
+            <Text style={[styles.businessMeta, { color: colors.textSecondary }]} numberOfLines={1}>
+              {businessInfo.location || businessInfo.category}
+              {distance !== undefined && ` • ${distance.toFixed(1)} mi`}
             </Text>
-            {hasCustomDiscount && (
-              <Text style={[styles.customDiscountBadge, { color: colors.primary }]}>
-                + Custom
-              </Text>
-            )}
+          </View>
+
+          {/* Discount badge on right */}
+          <View style={[styles.discountBadge, { backgroundColor: colors.primary }]}>
+            <Text style={styles.discountBadgeText}>
+              {mainDiscount > 0 ? `${mainDiscount}%` : 'Deal'}
+            </Text>
           </View>
         </View>
 
-        {/* Requirements row */}
-        {requirements.length > 0 && (
-          <View style={[styles.requirementsRow, { borderTopColor: colors.border }]}>
-            <Text style={[styles.requirementsText, { color: colors.textSecondary }]}>
-              Requires: {requirements.join(' • ')}
-            </Text>
-            {requirementDiscountPercent > 0 && (
-              <Text style={[styles.requirementDiscountText, { color: colors.primary }]}>
-                {requirementDiscountPercent.toFixed(0)}% off
-              </Text>
-            )}
+        {/* Discount tiers row - compact display */}
+        {discountTiers.length > 1 && (
+          <View style={[styles.tiersRow, { borderTopColor: colors.border }]}>
+            {discountTiers.map((tier, index) => (
+              <View key={index} style={styles.tierItem}>
+                <Text style={[styles.tierPercent, { color: tier.percent > 0 ? colors.primary : colors.text }]}>
+                  {tier.percent > 0 ? `${tier.percent}%` : ''}
+                </Text>
+                <Text style={[styles.tierLabel, { color: colors.textSecondary }]} numberOfLines={1}>
+                  {tier.label}
+                </Text>
+              </View>
+            ))}
           </View>
         )}
       </TouchableOpacity>
@@ -524,78 +587,82 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   listContainer: {
-    gap: 12,
+    gap: 8,
   },
   businessCard: {
     borderRadius: 12,
     borderWidth: 1,
-    padding: 16,
+    padding: 12,
   },
-  businessCardContent: {
+  businessCardRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  businessLogo: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  businessLogoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  businessLogoPlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  businessLogoPlaceholderText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700' as const,
   },
   businessInfo: {
     flex: 1,
     marginRight: 12,
   },
   businessName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600' as const,
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  businessCategory: {
-    fontSize: 14,
-    marginBottom: 4,
+  businessMeta: {
+    fontSize: 13,
   },
-  locationRow: {
-    flexDirection: 'row',
+  discountBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    minWidth: 48,
     alignItems: 'center',
-    gap: 4,
-    marginTop: 2,
   },
-  locationText: {
-    fontSize: 12,
-    flex: 1,
-  },
-  acceptanceInfo: {
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  acceptanceText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-  },
-  discountPercentText: {
+  discountBadgeText: {
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700' as const,
   },
-  allUsersLabel: {
-    fontSize: 10,
-    fontWeight: '500' as const,
-  },
-  customDiscountBadge: {
-    fontSize: 11,
-    fontWeight: '600' as const,
-  },
-  requirementsRow: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  tiersRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
     borderTopWidth: 1,
     paddingTop: 10,
     marginTop: 10,
   },
-  requirementsText: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-    flex: 1,
+  tierItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  requirementDiscountText: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    marginLeft: 12,
+  tierPercent: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  tierLabel: {
+    fontSize: 12,
   },
   emptyContainer: {
     padding: 40,

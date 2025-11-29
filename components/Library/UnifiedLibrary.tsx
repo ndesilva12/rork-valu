@@ -91,6 +91,126 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
+// ===== Custom Categories =====
+// These are the predefined categories for filtering endorsements
+const CUSTOM_CATEGORIES = [
+  { id: 'technology', label: 'Technology', color: '#3B82F6' },
+  { id: 'retail', label: 'Retail', color: '#10B981' },
+  { id: 'food_beverage', label: 'Food & Beverage', color: '#F59E0B' },
+  { id: 'finance', label: 'Finance', color: '#6366F1' },
+  { id: 'automotive', label: 'Automotive', color: '#EF4444' },
+  { id: 'entertainment', label: 'Entertainment', color: '#EC4899' },
+  { id: 'health_wellness', label: 'Health & Wellness', color: '#14B8A6' },
+  { id: 'fashion', label: 'Fashion', color: '#8B5CF6' },
+  { id: 'travel', label: 'Travel', color: '#06B6D4' },
+  { id: 'other', label: 'Other', color: '#6B7280' },
+];
+
+// Map any category string to one of our custom categories
+const mapToCustomCategory = (category: string | undefined): string => {
+  if (!category) return 'other';
+  const lower = category.toLowerCase().replace(/[_\s&]+/g, ' ').trim();
+
+  // Technology
+  if (lower.includes('tech') || lower.includes('software') || lower.includes('computer') ||
+      lower.includes('electron') || lower.includes('telecom') || lower.includes('it ') ||
+      lower.includes('internet') || lower.includes('digital') || lower.includes('mobile') ||
+      lower.includes('app') || lower.includes('cloud') || lower.includes('data')) {
+    return 'technology';
+  }
+
+  // Retail
+  if (lower.includes('retail') || lower.includes('store') || lower.includes('shop') ||
+      lower.includes('supermarket') || lower.includes('department') || lower.includes('mall') ||
+      lower.includes('grocery') || lower.includes('convenience') || lower.includes('hardware store') ||
+      lower.includes('home improvement') || lower.includes('furniture')) {
+    return 'retail';
+  }
+
+  // Food & Beverage
+  if (lower.includes('food') || lower.includes('restaurant') || lower.includes('cafe') ||
+      lower.includes('coffee') || lower.includes('bakery') || lower.includes('bar') ||
+      lower.includes('beverage') || lower.includes('pizza') || lower.includes('burger') ||
+      lower.includes('fast food') || lower.includes('dining') || lower.includes('eatery') ||
+      lower.includes('bistro') || lower.includes('grill') || lower.includes('deli') ||
+      lower.includes('ice cream') || lower.includes('donut') || lower.includes('sandwich') ||
+      lower.includes('sushi') || lower.includes('thai') || lower.includes('chinese') ||
+      lower.includes('mexican') || lower.includes('italian') || lower.includes('indian') ||
+      lower.includes('brewery') || lower.includes('winery') || lower.includes('pub')) {
+    return 'food_beverage';
+  }
+
+  // Finance
+  if (lower.includes('bank') || lower.includes('financ') || lower.includes('insurance') ||
+      lower.includes('invest') || lower.includes('credit') || lower.includes('loan') ||
+      lower.includes('mortgage') || lower.includes('accounting') || lower.includes('tax')) {
+    return 'finance';
+  }
+
+  // Automotive
+  if (lower.includes('auto') || lower.includes('car') || lower.includes('vehicle') ||
+      lower.includes('motor') || lower.includes('dealer') || lower.includes('garage') ||
+      lower.includes('tire') || lower.includes('gas station') || lower.includes('fuel') ||
+      lower.includes('parking') || lower.includes('repair') || lower.includes('mechanic')) {
+    return 'automotive';
+  }
+
+  // Entertainment
+  if (lower.includes('entertainment') || lower.includes('movie') || lower.includes('theater') ||
+      lower.includes('cinema') || lower.includes('music') || lower.includes('concert') ||
+      lower.includes('game') || lower.includes('gaming') || lower.includes('casino') ||
+      lower.includes('amusement') || lower.includes('theme park') || lower.includes('bowling') ||
+      lower.includes('arcade') || lower.includes('club') || lower.includes('night') ||
+      lower.includes('media') || lower.includes('streaming') || lower.includes('studio')) {
+    return 'entertainment';
+  }
+
+  // Health & Wellness
+  if (lower.includes('health') || lower.includes('medical') || lower.includes('hospital') ||
+      lower.includes('clinic') || lower.includes('doctor') || lower.includes('dentist') ||
+      lower.includes('pharmacy') || lower.includes('drug') || lower.includes('wellness') ||
+      lower.includes('fitness') || lower.includes('gym') || lower.includes('spa') ||
+      lower.includes('yoga') || lower.includes('therapy') || lower.includes('care') ||
+      lower.includes('vitamin') || lower.includes('supplement') || lower.includes('optical') ||
+      lower.includes('veterinar') || lower.includes('pet')) {
+    return 'health_wellness';
+  }
+
+  // Fashion
+  if (lower.includes('fashion') || lower.includes('clothing') || lower.includes('apparel') ||
+      lower.includes('shoe') || lower.includes('jewelry') || lower.includes('accessori') ||
+      lower.includes('watch') || lower.includes('cosmetic') || lower.includes('beauty') ||
+      lower.includes('salon') || lower.includes('barber') || lower.includes('hair') ||
+      lower.includes('nail') || lower.includes('boutique') || lower.includes('dress') ||
+      lower.includes('wear') || lower.includes('tailor') || lower.includes('dry clean')) {
+    return 'fashion';
+  }
+
+  // Travel
+  if (lower.includes('travel') || lower.includes('hotel') || lower.includes('motel') ||
+      lower.includes('resort') || lower.includes('airline') || lower.includes('airport') ||
+      lower.includes('flight') || lower.includes('cruise') || lower.includes('tour') ||
+      lower.includes('vacation') || lower.includes('lodging') || lower.includes('hostel') ||
+      lower.includes('rental car') || lower.includes('transportation') || lower.includes('taxi') ||
+      lower.includes('rideshare') || lower.includes('bus') || lower.includes('train')) {
+    return 'travel';
+  }
+
+  // Check if it's already a custom category
+  const customIds = CUSTOM_CATEGORIES.map(c => c.id);
+  if (customIds.includes(lower.replace(/\s/g, '_'))) {
+    return lower.replace(/\s/g, '_');
+  }
+
+  return 'other';
+};
+
+// Get the display label for a custom category
+const getCustomCategoryLabel = (categoryId: string): string => {
+  const category = CUSTOM_CATEGORIES.find(c => c.id === categoryId);
+  return category?.label || 'Other';
+};
+
 // ===== Types =====
 
 type LibrarySectionType = 'endorsement' | 'aligned' | 'unaligned' | 'alignedTop' | 'following' | 'followers' | 'local' | 'localTop';
@@ -232,6 +352,10 @@ export default function UnifiedLibrary({
   const [placesResults, setPlacesResults] = useState<PlaceSearchResult[]>([]);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const [placesSearchDebounce, setPlacesSearchDebounce] = useState<NodeJS.Timeout | null>(null);
+
+  // Endorsement list filter state
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [localFilter, setLocalFilter] = useState<'all' | 'local'>('all');
 
   // Section selection state
   // Profile views (preview/view) ALWAYS default to endorsement
@@ -589,7 +713,9 @@ export default function UnifiedLibrary({
         entry = {
           type: 'brand',
           brandId: item.id,
-          name: item.name,
+          brandName: item.name,
+          brandCategory: item.category,
+          website: item.website,
           logoUrl: item.exampleImageUrl || getLogoUrl(item.website || ''),
           createdAt: new Date(),
         };
@@ -597,7 +723,9 @@ export default function UnifiedLibrary({
         entry = {
           type: 'business',
           businessId: item.id,
-          name: item.businessInfo?.name || 'Business',
+          businessName: item.businessInfo?.name || 'Business',
+          businessCategory: item.businessInfo?.category,
+          website: item.businessInfo?.website,
           logoUrl: item.businessInfo?.logoUrl || getLogoUrl(item.businessInfo?.website || ''),
           createdAt: new Date(),
         };
@@ -623,19 +751,25 @@ export default function UnifiedLibrary({
           logoUrl = getPlacePhotoUrl(item.photoReference);
         }
 
-        entry = {
+        // Build entry with only defined values to avoid Firestore issues
+        const placeEntry: any = {
           type: 'place',
           placeId: item.placeId,
-          placeName: item.name,
-          placeCategory: item.category,
-          placeAddress: item.address,
-          website: website,
-          photoReference: item.photoReference,
-          logoUrl: logoUrl,
-          rating: item.rating,
-          location: item.location,
-          createdAt: new Date(),
+          placeName: item.name || 'Unknown Place',
         };
+
+        // Only add optional fields if they have values
+        if (item.category) placeEntry.placeCategory = item.category;
+        if (item.address) placeEntry.placeAddress = item.address;
+        if (website) placeEntry.website = website;
+        if (item.photoReference) placeEntry.photoReference = item.photoReference;
+        if (logoUrl) placeEntry.logoUrl = logoUrl;
+        if (item.rating !== undefined && item.rating !== null) placeEntry.rating = item.rating;
+        if (item.location && item.location.lat !== undefined && item.location.lng !== undefined) {
+          placeEntry.location = { lat: item.location.lat, lng: item.location.lng };
+        }
+
+        entry = placeEntry;
       }
 
       await library.addEntry(endorsementList.id, entry);
@@ -923,11 +1057,11 @@ export default function UnifiedLibrary({
   const isItemEndorsed = (entry: ListEntry): boolean => {
     if (!endorsementList?.entries) return false;
 
-    const itemId = entry.brandId || entry.businessId || entry.valueId;
+    const itemId = entry.brandId || entry.businessId || entry.valueId || (entry as any).placeId;
     if (!itemId) return false;
 
     return endorsementList.entries.filter(e => e).some(e => {
-      const endorsedId = e.brandId || e.businessId || e.valueId;
+      const endorsedId = e.brandId || e.businessId || e.valueId || (e as any).placeId;
       return endorsedId === itemId;
     });
   };
@@ -965,9 +1099,9 @@ export default function UnifiedLibrary({
 
     try {
       // Find the entry in the endorsement list
-      const itemId = entry.brandId || entry.businessId || entry.valueId;
+      const itemId = entry.brandId || entry.businessId || entry.valueId || (entry as any).placeId;
       const endorsedEntry = endorsementList.entries.filter(e => e).find(e => {
-        const endorsedId = e.brandId || e.businessId || e.valueId;
+        const endorsedId = e.brandId || e.businessId || e.valueId || (e as any).placeId;
         return endorsedId === itemId;
       });
 
@@ -1112,8 +1246,8 @@ export default function UnifiedLibrary({
     if (!selectedItemForOptions) return [];
 
     const isEndorsed = endorsementList?.entries?.some(e => {
-      const entryId = selectedItemForOptions.brandId || selectedItemForOptions.businessId || selectedItemForOptions.valueId;
-      const endorsedId = e?.brandId || e?.businessId || e?.valueId;
+      const entryId = selectedItemForOptions.brandId || selectedItemForOptions.businessId || selectedItemForOptions.valueId || (selectedItemForOptions as any).placeId;
+      const endorsedId = e?.brandId || e?.businessId || e?.valueId || (e as any)?.placeId;
       return endorsedId === entryId;
     });
 
@@ -1840,7 +1974,7 @@ export default function UnifiedLibrary({
           <View style={[styles.listProfileImageContainer, { backgroundColor: 'transparent', borderColor: colors.border }]}>
             {useAppIcon ? (
               <Image
-                source={require('@/assets/images/endorsementicon.png')}
+                source={require('@/assets/images/endorseofficialicon.png')}
                 style={styles.listProfileImage}
                 contentFit="cover"
                 transition={200}
@@ -2102,7 +2236,156 @@ export default function UnifiedLibrary({
 
     // Determine if we're in reorder mode for this list
     const isReordering = isReorderMode && reorderingListId === endorsementList.id;
-    const entriesToDisplay = isReordering ? localEntries : endorsementList.entries;
+
+    // Apply filter to entries
+    const allEntries = isReordering ? localEntries : endorsementList.entries;
+
+    // Helper to get category from entry (maps to custom categories)
+    const getEntryCategory = (entry: ListEntry): string => {
+      let rawCategory: string | undefined;
+      if (entry.type === 'brand') rawCategory = (entry as any).brandCategory;
+      else if (entry.type === 'business') rawCategory = (entry as any).businessCategory;
+      else if (entry.type === 'place') rawCategory = (entry as any).placeCategory;
+      // Map to custom category
+      return mapToCustomCategory(rawCategory);
+    };
+
+    // Get display label for category
+    const getCategoryLabel = (categoryId: string): string => {
+      return getCustomCategoryLabel(categoryId);
+    };
+
+    // Helper to check if entry is local (has location data)
+    const isLocalEntry = (entry: ListEntry): boolean => {
+      // Places always have location data
+      if (entry.type === 'place') return true;
+      // Businesses may have location
+      if (entry.type === 'business' && (entry as any).location) return true;
+      return false;
+    };
+
+    // Apply local filter first
+    const localFilteredEntries = localFilter === 'all'
+      ? allEntries
+      : allEntries.filter(entry => entry && isLocalEntry(entry));
+
+    // Then apply category filter (uses custom category IDs)
+    const filteredEntries = categoryFilter === 'all'
+      ? localFilteredEntries
+      : localFilteredEntries.filter(entry => {
+          const categoryId = getEntryCategory(entry);
+          return categoryId === categoryFilter;
+        });
+    const entriesToDisplay = filteredEntries;
+
+    // Check if there are local entries to show the local filter
+    const hasLocalEntries = allEntries.some(e => e && isLocalEntry(e));
+    const hasNonLocalEntries = allEntries.some(e => e && !isLocalEntry(e));
+    const showLocalFilter = hasLocalEntries && hasNonLocalEntries;
+
+    // Get categories that have entries (using custom category system)
+    const categoryCounts = new Map<string, number>();
+    localFilteredEntries.forEach(entry => {
+      const categoryId = getEntryCategory(entry);
+      if (categoryId) {
+        categoryCounts.set(categoryId, (categoryCounts.get(categoryId) || 0) + 1);
+      }
+    });
+
+    // Only show categories that have at least one entry, in predefined order
+    const uniqueCategories = CUSTOM_CATEGORIES
+      .filter(cat => categoryCounts.has(cat.id))
+      .map(cat => ({ id: cat.id, label: cat.label, count: categoryCounts.get(cat.id) || 0 }));
+
+    // Render filter buttons
+    const renderFilterButtons = () => {
+      if (isReordering || allEntries.length < 2) return null;
+
+      // Show category filter if there are categories to filter by
+      const showCategoryFilter = uniqueCategories.length > 1;
+
+      if (!showLocalFilter && !showCategoryFilter) return null;
+
+      return (
+        <View style={styles.filterButtonsContainer}>
+          {/* Local/All filter row + Category filters combined */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterButtonsScroll}>
+            {/* All filter */}
+            <TouchableOpacity
+              key="all"
+              style={[
+                styles.filterButton,
+                localFilter === 'all' && categoryFilter === 'all'
+                  ? { backgroundColor: colors.primary }
+                  : { backgroundColor: colors.backgroundSecondary, borderWidth: 1, borderColor: colors.border }
+              ]}
+              onPress={() => {
+                setLocalFilter('all');
+                setCategoryFilter('all');
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.filterButtonText,
+                { color: localFilter === 'all' && categoryFilter === 'all' ? '#FFFFFF' : colors.text }
+              ]}>
+                All
+              </Text>
+            </TouchableOpacity>
+
+            {/* Local filter */}
+            {showLocalFilter && (
+              <TouchableOpacity
+                key="local"
+                style={[
+                  styles.filterButton,
+                  localFilter === 'local' && categoryFilter === 'all'
+                    ? { backgroundColor: colors.primary }
+                    : { backgroundColor: colors.backgroundSecondary, borderWidth: 1, borderColor: colors.border }
+                ]}
+                onPress={() => {
+                  setLocalFilter('local');
+                  setCategoryFilter('all');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.filterButtonText,
+                  { color: localFilter === 'local' && categoryFilter === 'all' ? '#FFFFFF' : colors.text }
+                ]}>
+                  Local
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Category filters */}
+            {showCategoryFilter && uniqueCategories.map(cat => (
+              <TouchableOpacity
+                key={cat.id}
+                style={[
+                  styles.filterButton,
+                  categoryFilter === cat.id
+                    ? { backgroundColor: colors.primary }
+                    : { backgroundColor: colors.backgroundSecondary, borderWidth: 1, borderColor: colors.border }
+                ]}
+                onPress={() => {
+                  setLocalFilter('all'); // Reset local filter when selecting category
+                  setCategoryFilter(cat.id);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.filterButtonText,
+                  { color: categoryFilter === cat.id ? '#FFFFFF' : colors.text }
+                ]}>
+                  {cat.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      );
+    };
 
     // Render Save/Cancel buttons when in reorder mode
     const renderReorderControls = () => {
@@ -2191,9 +2474,9 @@ export default function UnifiedLibrary({
       );
     };
 
-    const filteredEntries = entriesToDisplay.filter(entry => entry != null);
+    const validEntries = entriesToDisplay.filter(entry => entry != null);
     // Show all entries when reordering, otherwise respect the load count limit
-    const displayedEntries = isReordering ? filteredEntries : filteredEntries.slice(0, endorsementLoadCount);
+    const displayedEntries = isReordering ? validEntries : validEntries.slice(0, endorsementLoadCount);
 
     // Separate top 5, items 6-10, and the rest
     const top5Entries = displayedEntries.slice(0, 5);
@@ -2232,16 +2515,17 @@ export default function UnifiedLibrary({
     return (
       <View style={styles.listContentContainer}>
         {renderReorderControls()}
+        {renderFilterButtons()}
         <View style={styles.brandsContainer}>
           {contentWithDnd}
-          {!isReordering && endorsementLoadCount < endorsementList.entries.length && (
+          {!isReordering && endorsementLoadCount < validEntries.length && (
             <TouchableOpacity
               style={[styles.loadMoreButton, { backgroundColor: colors.backgroundSecondary }]}
               onPress={() => setEndorsementLoadCount(endorsementLoadCount + 25)}
               activeOpacity={0.7}
             >
               <Text style={[styles.loadMoreText, { color: colors.primary }]}>
-                Load More ({endorsementList.entries.length - endorsementLoadCount} remaining)
+                Load More ({validEntries.length - endorsementLoadCount} remaining)
               </Text>
             </TouchableOpacity>
           )}
@@ -2587,7 +2871,7 @@ export default function UnifiedLibrary({
           <View style={[styles.listDetailImageContainer, { backgroundColor: 'transparent', borderColor: colors.border }]}>
             {useAppIcon ? (
               <Image
-                source={require('@/assets/images/endorsementicon.png')}
+                source={require('@/assets/images/endorseofficialicon.png')}
                 style={styles.listDetailImage}
                 contentFit="cover"
                 transition={200}
@@ -3657,25 +3941,22 @@ export default function UnifiedLibrary({
                 autoCorrect={false}
                 underlineColorAndroid="transparent"
               />
-              <TouchableOpacity
-                onPress={() => setAddSearchQuery('')}
-                style={{
-                  width: 32,
-                  height: 32,
-                  minWidth: 32,
-                  minHeight: 32,
-                  borderRadius: 16,
-                  backgroundColor: '#E5E5E5',
-                  alignItems: 'center' as const,
-                  justifyContent: 'center' as const,
-                  flexShrink: 0,
-                  flexGrow: 0,
-                }}
-                activeOpacity={0.7}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <X size={18} color="#666666" strokeWidth={2.5} />
-              </TouchableOpacity>
+              <View style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <TouchableOpacity
+                  onPress={() => setAddSearchQuery('')}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: '#E5E5E5',
+                    alignItems: 'center' as const,
+                    justifyContent: 'center' as const,
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <X size={18} color="#666666" strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Search Results */}
@@ -4455,6 +4736,24 @@ const styles = StyleSheet.create({
   reorderButtonText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  // Filter button styles
+  filterButtonsContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  filterButtonsScroll: {
+    gap: 8,
+    paddingHorizontal: 4,
+  },
+  filterButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   reorderEntryRow: {
     flexDirection: 'row',

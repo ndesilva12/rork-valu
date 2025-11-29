@@ -1545,7 +1545,7 @@ export default function SearchScreen() {
       <View style={[styles.stickyHeader, { backgroundColor: colors.background, borderBottomColor: 'rgba(0, 0, 0, 0.05)' }]}>
         <View style={styles.header}>
           <Image
-            source={require('@/assets/images/endowide.png')}
+            source={require('@/assets/images/endorseofficial.png')}
             style={styles.headerLogo}
             resizeMode="contain"
           />
@@ -1565,28 +1565,25 @@ export default function SearchScreen() {
             autoCorrect={false}
             underlineColorAndroid="transparent"
           />
-          <TouchableOpacity
-            onPress={() => {
-              setQuery('');
-              setResults([]);
-            }}
-            style={{
-              width: 32,
-              height: 32,
-              minWidth: 32,
-              minHeight: 32,
-              borderRadius: 16,
-              backgroundColor: '#E5E5E5',
-              alignItems: 'center' as const,
-              justifyContent: 'center' as const,
-              flexShrink: 0,
-              flexGrow: 0,
-            }}
-            activeOpacity={0.7}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <X size={18} color="#666666" strokeWidth={2.5} />
-          </TouchableOpacity>
+          <View style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <TouchableOpacity
+              onPress={() => {
+                setQuery('');
+                setResults([]);
+              }}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: '#E5E5E5',
+                alignItems: 'center' as const,
+                justifyContent: 'center' as const,
+              }}
+              activeOpacity={0.7}
+            >
+              <X size={18} color="#666666" strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
         </View>
         </View>
       </View>

@@ -196,7 +196,7 @@ export default function SignInScreen() {
           {/* Hero Section */}
           <View style={styles.heroSection}>
             <Image
-              source={require('@/assets/images/endowide.png')}
+              source={require('@/assets/images/endorseofficial.png')}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -259,9 +259,7 @@ export default function SignInScreen() {
                 >
                   <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>Forgot password?</Text>
                 </TouchableOpacity>
-              </View>
-              <View style={styles.linkContainer}>
-                <Text style={[styles.linkText, { color: colors.textSecondary }]}>Don&apos;t have an account? </Text>
+                <Text style={[styles.linkText, { color: colors.textSecondary }]}>  |  </Text>
                 <TouchableOpacity onPress={() => router.push('/(auth)/sign-up')}>
                   <Text style={[styles.link, { color: colors.primary }]}>Sign up</Text>
                 </TouchableOpacity>
@@ -496,13 +494,13 @@ const styles = StyleSheet.create({
   },
   taglineContainer: {
     alignItems: 'center',
-    marginTop: -35,
+    marginTop: 10,
     marginBottom: 20,
     paddingHorizontal: 8,
   },
   taglineLine: {
     textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: 2,
   },
   taglineFirstWord: {
     fontSize: 32,
@@ -574,12 +572,14 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   forgotPasswordContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 12,
   },
   forgotPasswordButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   forgotPasswordText: {
     fontSize: 15,
@@ -590,8 +590,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 16,
-    paddingVertical: 8,
+    marginTop: 6,
+    paddingVertical: 4,
     gap: 8,
   },
   learnMoreFirstWord: {
