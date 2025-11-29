@@ -129,6 +129,7 @@ function RootLayoutNav() {
         <Stack.Screen name="value/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="customer-discount" options={{ headerShown: false }} />
         <Stack.Screen name="merchant/verify" options={{ headerShown: false }} />
+        <Stack.Screen name="place/[id]" options={{ headerShown: false }} />
       </Stack>
     </LibraryProvider>
   );
