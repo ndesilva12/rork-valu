@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Building2, Search, MapPin, Check, AlertCircle, ChevronRight, Clock } from 'lucide-react-native';
 import { useState, useEffect, useCallback } from 'react';
 import {
@@ -27,6 +27,8 @@ import debounce from 'lodash/debounce';
 
 export default function BusinessSetupScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ from?: string }>();
+  const isFromSettings = params.from === 'settings';
   const { isDarkMode, clerkUser, isLoading: isProfileLoading, setAccountType, profile } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
   const [isInitializing, setIsInitializing] = useState(true);
@@ -195,14 +197,23 @@ export default function BusinessSetupScreen() {
         verificationDetails: verificationDetails.trim(),
       });
 
-      // Mark business onboarding as complete (they've submitted a claim)
-      await setAccountType('business');
-
-      Alert.alert(
-        'Claim Submitted!',
-        'Your business claim has been submitted for review. We will verify your ownership and notify you via email once approved. Now, let\'s set up your values.',
-        [{ text: 'Continue', onPress: () => router.replace('/onboarding') }]
-      );
+      // Handle differently based on where user came from
+      if (isFromSettings) {
+        // User came from settings - don't change account type yet, wait for admin approval
+        Alert.alert(
+          'Claim Submitted!',
+          'Your business claim has been submitted for review. Once approved, your account will be converted to a business account with access to discount settings and business features.',
+          [{ text: 'Done', onPress: () => router.replace('/(tabs)/profile') }]
+        );
+      } else {
+        // User came from onboarding flow - set account type to business
+        await setAccountType('business');
+        Alert.alert(
+          'Claim Submitted!',
+          'Your business claim has been submitted for review. We will verify your ownership and notify you via email once approved. Now, let\'s set up your values.',
+          [{ text: 'Continue', onPress: () => router.replace('/onboarding') }]
+        );
+      }
     } catch (error: any) {
       Alert.alert('Error', error?.message || 'Failed to submit claim. Please try again.');
     } finally {

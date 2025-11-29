@@ -351,9 +351,15 @@ export default function OnboardingScreen() {
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
+      // Different welcome message for business vs individual users
+      const welcomeTitle = isBusinessUser ? 'Welcome to Endorse!' : 'Welcome to Endorse!';
+      const welcomeMessage = isBusinessUser
+        ? 'Set discounts in the Money tab and endorse other businesses in the List tab.'
+        : 'Endorse businesses you support and look for discounts.';
+
       Alert.alert(
-        'Welcome to Endorse!',
-        'Endorse businesses you support and look for discounts.',
+        welcomeTitle,
+        welcomeMessage,
         [
           {
             text: 'Got it!',

@@ -81,26 +81,50 @@ export default function BusinessClaimsAdmin() {
 
     setIsProcessing(true);
     try {
+      // First approve the claim
       await approveClaim(
         selectedClaim.id,
         user.primaryEmailAddress.emailAddress,
         reviewNotes
       );
 
-      // Send approval email
+      // Automatically convert the account to business
+      try {
+        const placeDetails = await getPlaceDetails(selectedClaim.placeId);
+        await convertClaimToBusinessAccount(selectedClaim.id, {
+          name: selectedClaim.placeName,
+          address: selectedClaim.placeAddress,
+          category: selectedClaim.placeCategory,
+          phone: placeDetails?.phone || selectedClaim.businessPhone,
+          website: placeDetails?.website || '',
+          location: placeDetails?.location,
+          photoUrl: placeDetails?.photoReferences?.[0] || '',
+        });
+        console.log('[BusinessClaimsAdmin] Account automatically converted to business');
+      } catch (conversionError) {
+        console.error('[BusinessClaimsAdmin] Error auto-converting account:', conversionError);
+        // Continue anyway - manual conversion is still available
+      }
+
+      // Send approval email with business account confirmation
       if (selectedClaim.userEmail) {
-        const subject = encodeURIComponent('Your iEndorse Business Claim Has Been Approved!');
+        const subject = encodeURIComponent('Your iEndorse Business Account is Ready!');
         const body = encodeURIComponent(
           `Hi ${selectedClaim.userName},\n\n` +
-          `Great news! Your claim for "${selectedClaim.placeName}" has been approved.\n\n` +
-          `You can now manage your business profile on iEndorse.\n\n` +
+          `Great news! Your claim for "${selectedClaim.placeName}" has been approved and your business account is now active!\n\n` +
+          `You can now:\n` +
+          `- Manage your business profile\n` +
+          `- Set up customer discounts in the Money tab\n` +
+          `- Endorse other businesses in the List tab\n` +
+          `- Track endorsements and engagement\n\n` +
           (reviewNotes ? `Notes from our team:\n${reviewNotes}\n\n` : '') +
+          `Log in to iEndorse to get started.\n\n` +
           `Best regards,\nThe iEndorse Team`
         );
         Linking.openURL(`mailto:${selectedClaim.userEmail}?subject=${subject}&body=${body}`);
       }
 
-      Alert.alert('Success', 'Claim approved successfully');
+      Alert.alert('Success', 'Claim approved and account converted to business');
       setSelectedClaim(null);
       setReviewNotes('');
       loadClaims();

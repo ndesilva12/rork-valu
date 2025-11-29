@@ -305,7 +305,7 @@ export default function SettingsScreen() {
             </Text>
             <TouchableOpacity
               style={[styles.actionButton, { backgroundColor: colors.primary }]}
-              onPress={() => router.push('/business-setup')}
+              onPress={() => router.push('/business-setup?from=settings')}
               activeOpacity={0.7}
             >
               <Building2 size={20} color={colors.white} strokeWidth={2} />
