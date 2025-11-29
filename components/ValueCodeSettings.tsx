@@ -7,18 +7,23 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
-  useWindowDimensions,
+  ScrollView,
 } from 'react-native';
-import { Plus, Minus, ChevronDown } from 'lucide-react-native';
+import { Plus, Minus, ChevronDown, X, Trash2 } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 
 type EndorsementType = 'any' | 'top10' | 'top5';
 
+interface DiscountTier {
+  discount: number;
+  type: EndorsementType;
+  minDays: number;
+}
+
 export default function ValueCodeSettings() {
   const { isDarkMode, profile, setBusinessInfo } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
-  const { width } = useWindowDimensions();
 
   const businessInfo = profile.businessInfo || {
     name: '',
@@ -32,23 +37,48 @@ export default function ValueCodeSettings() {
     businessInfo.acceptsStandDiscounts ?? false
   );
 
-  // Discount percentage
-  const [discountPercent, setDiscountPercent] = useState(businessInfo.customerDiscountPercent || 5);
+  // Tier 1 (Base endorsement tier - required)
+  const [tier1, setTier1] = useState<DiscountTier>({
+    discount: businessInfo.customerDiscountPercent || 5,
+    type: businessInfo.endorsementType || 'any',
+    minDays: businessInfo.endorsementMinDays || 0,
+  });
+  const [showTier1TypeDropdown, setShowTier1TypeDropdown] = useState(false);
 
-  // Endorsement settings
-  const [endorsementEnabled, setEndorsementEnabled] = useState(businessInfo.endorsementEnabled || false);
-  const [endorsementType, setEndorsementType] = useState<EndorsementType>(businessInfo.endorsementType || 'any');
-  const [endorsementMinDays, setEndorsementMinDays] = useState(businessInfo.endorsementMinDays || 0);
-  const [showEndorsementTypeDropdown, setShowEndorsementTypeDropdown] = useState(false);
-
-  // Endorsement discount percentage (must be >= base discount)
-  const [endorsementDiscountPercent, setEndorsementDiscountPercent] = useState(
-    businessInfo.endorsementDiscountPercent || businessInfo.customerDiscountPercent || 5
+  // Tier 2 (optional)
+  const [tier2Enabled, setTier2Enabled] = useState(
+    businessInfo.tier2Discount && businessInfo.tier2Discount > 0
   );
+  const [tier2, setTier2] = useState<DiscountTier>({
+    discount: businessInfo.tier2Discount || 10,
+    type: businessInfo.tier2Type || 'top10',
+    minDays: businessInfo.tier2MinDays || 0,
+  });
+  const [showTier2TypeDropdown, setShowTier2TypeDropdown] = useState(false);
+
+  // Tier 3 (optional)
+  const [tier3Enabled, setTier3Enabled] = useState(
+    businessInfo.tier3Discount && businessInfo.tier3Discount > 0
+  );
+  const [tier3, setTier3] = useState<DiscountTier>({
+    discount: businessInfo.tier3Discount || 15,
+    type: businessInfo.tier3Type || 'top5',
+    minDays: businessInfo.tier3MinDays || 0,
+  });
+  const [showTier3TypeDropdown, setShowTier3TypeDropdown] = useState(false);
 
   // Custom discount
+  const [showCustomInput, setShowCustomInput] = useState(
+    !!(businessInfo.customDiscount && businessInfo.customDiscount.trim())
+  );
   const [customDiscountText, setCustomDiscountText] = useState(businessInfo.customDiscount || '');
-  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customDiscountType, setCustomDiscountType] = useState<EndorsementType>(
+    businessInfo.customDiscountType || 'any'
+  );
+  const [customDiscountMinDays, setCustomDiscountMinDays] = useState(
+    businessInfo.customDiscountMinDays || 0
+  );
+  const [showCustomTypeDropdown, setShowCustomTypeDropdown] = useState(false);
 
   const handleToggleDiscounts = async (value: boolean) => {
     setAcceptsDiscounts(value);
@@ -59,66 +89,271 @@ export default function ValueCodeSettings() {
     if (value) {
       Alert.alert(
         'Discounts Enabled',
-        'Customers can now use iEndorse to receive discounts at your business!',
+        'Customers who endorse your business can now receive discounts!',
         [{ text: 'Great!' }]
       );
     }
   };
 
-  const handleChangeDiscountPercent = async (newValue: number) => {
+  // Tier 1 handlers
+  const handleTier1DiscountChange = async (newValue: number) => {
     const clamped = Math.max(0, Math.min(50, newValue));
-    setDiscountPercent(clamped);
-    await setBusinessInfo({
-      customerDiscountPercent: clamped,
-    });
+    setTier1({ ...tier1, discount: clamped });
+    await setBusinessInfo({ customerDiscountPercent: clamped });
   };
 
-  const handleToggleEndorsement = async (value: boolean) => {
-    setEndorsementEnabled(value);
-    await setBusinessInfo({
-      endorsementEnabled: value,
-    });
+  const handleTier1TypeChange = async (type: EndorsementType) => {
+    setTier1({ ...tier1, type });
+    setShowTier1TypeDropdown(false);
+    await setBusinessInfo({ endorsementType: type });
   };
 
-  const handleChangeEndorsementType = async (type: EndorsementType) => {
-    setEndorsementType(type);
-    setShowEndorsementTypeDropdown(false);
-    await setBusinessInfo({
-      endorsementType: type,
-    });
-  };
-
-  const handleChangeEndorsementMinDays = async (newDays: number) => {
+  const handleTier1MinDaysChange = async (newDays: number) => {
     const clamped = Math.max(0, Math.min(365, newDays));
-    setEndorsementMinDays(clamped);
+    setTier1({ ...tier1, minDays: clamped });
+    await setBusinessInfo({ endorsementMinDays: clamped });
+  };
+
+  // Tier 2 handlers
+  const handleEnableTier2 = async () => {
+    setTier2Enabled(true);
     await setBusinessInfo({
-      endorsementMinDays: clamped,
+      tier2Discount: tier2.discount,
+      tier2Type: tier2.type,
+      tier2MinDays: tier2.minDays,
     });
   };
 
-  const handleChangeEndorsementDiscountPercent = async (newValue: number) => {
-    // Endorsement discount must be >= base discount
-    const clamped = Math.max(discountPercent, Math.min(50, newValue));
-    setEndorsementDiscountPercent(clamped);
+  const handleDisableTier2 = async () => {
+    setTier2Enabled(false);
     await setBusinessInfo({
-      endorsementDiscountPercent: clamped,
+      tier2Discount: 0,
+      tier2Type: null,
+      tier2MinDays: 0,
     });
   };
 
-  const handleCustomDiscountChange = async (text: string) => {
+  const handleTier2DiscountChange = async (newValue: number) => {
+    const clamped = Math.max(tier1.discount, Math.min(50, newValue));
+    setTier2({ ...tier2, discount: clamped });
+    await setBusinessInfo({ tier2Discount: clamped });
+  };
+
+  const handleTier2TypeChange = async (type: EndorsementType) => {
+    setTier2({ ...tier2, type });
+    setShowTier2TypeDropdown(false);
+    await setBusinessInfo({ tier2Type: type });
+  };
+
+  const handleTier2MinDaysChange = async (newDays: number) => {
+    const clamped = Math.max(0, Math.min(365, newDays));
+    setTier2({ ...tier2, minDays: clamped });
+    await setBusinessInfo({ tier2MinDays: clamped });
+  };
+
+  // Tier 3 handlers
+  const handleEnableTier3 = async () => {
+    setTier3Enabled(true);
+    await setBusinessInfo({
+      tier3Discount: tier3.discount,
+      tier3Type: tier3.type,
+      tier3MinDays: tier3.minDays,
+    });
+  };
+
+  const handleDisableTier3 = async () => {
+    setTier3Enabled(false);
+    await setBusinessInfo({
+      tier3Discount: 0,
+      tier3Type: null,
+      tier3MinDays: 0,
+    });
+  };
+
+  const handleTier3DiscountChange = async (newValue: number) => {
+    const minDiscount = tier2Enabled ? tier2.discount : tier1.discount;
+    const clamped = Math.max(minDiscount, Math.min(50, newValue));
+    setTier3({ ...tier3, discount: clamped });
+    await setBusinessInfo({ tier3Discount: clamped });
+  };
+
+  const handleTier3TypeChange = async (type: EndorsementType) => {
+    setTier3({ ...tier3, type });
+    setShowTier3TypeDropdown(false);
+    await setBusinessInfo({ tier3Type: type });
+  };
+
+  const handleTier3MinDaysChange = async (newDays: number) => {
+    const clamped = Math.max(0, Math.min(365, newDays));
+    setTier3({ ...tier3, minDays: clamped });
+    await setBusinessInfo({ tier3MinDays: clamped });
+  };
+
+  // Custom discount handlers
+  const handleCustomDiscountTextChange = async (text: string) => {
     setCustomDiscountText(text);
+    await setBusinessInfo({ customDiscount: text });
+  };
+
+  const handleCustomDiscountTypeChange = async (type: EndorsementType) => {
+    setCustomDiscountType(type);
+    setShowCustomTypeDropdown(false);
+    await setBusinessInfo({ customDiscountType: type });
+  };
+
+  const handleCustomDiscountMinDaysChange = async (newDays: number) => {
+    const clamped = Math.max(0, Math.min(365, newDays));
+    setCustomDiscountMinDays(clamped);
+    await setBusinessInfo({ customDiscountMinDays: clamped });
+  };
+
+  const handleClearCustomDiscount = async () => {
+    setShowCustomInput(false);
+    setCustomDiscountText('');
+    setCustomDiscountType('any');
+    setCustomDiscountMinDays(0);
     await setBusinessInfo({
-      customDiscount: text,
+      customDiscount: '',
+      customDiscountType: null,
+      customDiscountMinDays: 0,
     });
   };
 
-  const getEndorsementTypeLabel = (type: EndorsementType) => {
+  const getTypeLabel = (type: EndorsementType) => {
     switch (type) {
-      case 'any': return 'Any';
+      case 'any': return 'Any Endorsement';
       case 'top10': return 'Top 10';
       case 'top5': return 'Top 5';
     }
   };
+
+  const renderTypeDropdown = (
+    currentType: EndorsementType,
+    isOpen: boolean,
+    onToggle: () => void,
+    onChange: (type: EndorsementType) => void,
+    zIndex: number
+  ) => (
+    <View style={[styles.optionGroup, { zIndex }]}>
+      <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>Type</Text>
+      <TouchableOpacity
+        style={[styles.dropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+        onPress={onToggle}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.dropdownText, { color: colors.text }]}>
+          {getTypeLabel(currentType)}
+        </Text>
+        <ChevronDown size={16} color={colors.textSecondary} strokeWidth={2} />
+      </TouchableOpacity>
+      {isOpen && (
+        <View style={[styles.dropdownList, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+          {(['any', 'top10', 'top5'] as EndorsementType[]).map((type) => (
+            <TouchableOpacity
+              key={type}
+              style={[
+                styles.dropdownItem,
+                { borderBottomColor: colors.border },
+                currentType === type && { backgroundColor: colors.primary + '15' }
+              ]}
+              onPress={() => onChange(type)}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.dropdownItemText,
+                { color: currentType === type ? colors.primary : colors.text }
+              ]}>
+                {getTypeLabel(type)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+
+  const renderTierCard = (
+    tierNum: number,
+    tier: DiscountTier,
+    showTypeDropdown: boolean,
+    setShowTypeDropdown: (v: boolean) => void,
+    onDiscountChange: (v: number) => void,
+    onTypeChange: (t: EndorsementType) => void,
+    onMinDaysChange: (d: number) => void,
+    onRemove?: () => void,
+    isBaseTier: boolean = false
+  ) => (
+    <View style={[styles.tierCard, { backgroundColor: colors.background, borderColor: colors.border, zIndex: showTypeDropdown ? 1000 - tierNum : 1 }]}>
+      <View style={styles.tierHeader}>
+        <Text style={[styles.tierTitle, { color: colors.text }]}>
+          {isBaseTier ? 'Base Endorsement Discount' : `Tier ${tierNum}`}
+        </Text>
+        {onRemove && (
+          <TouchableOpacity onPress={onRemove} activeOpacity={0.7}>
+            <Trash2 size={18} color={colors.danger || '#EF4444'} strokeWidth={2} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Discount Percentage */}
+      <View style={styles.tierRow}>
+        <Text style={[styles.tierRowLabel, { color: colors.textSecondary }]}>Discount</Text>
+        <View style={styles.inlineCounter}>
+          <TouchableOpacity
+            style={[styles.smallButton, { borderColor: colors.border }]}
+            onPress={() => onDiscountChange(tier.discount - 0.5)}
+            activeOpacity={0.7}
+          >
+            <Minus size={16} color={colors.text} strokeWidth={2} />
+          </TouchableOpacity>
+          <Text style={[styles.counterValue, { color: colors.primary }]}>
+            {tier.discount.toFixed(1)}%
+          </Text>
+          <TouchableOpacity
+            style={[styles.smallButton, { borderColor: colors.border }]}
+            onPress={() => onDiscountChange(tier.discount + 0.5)}
+            activeOpacity={0.7}
+          >
+            <Plus size={16} color={colors.text} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Type and Min Days Row */}
+      <View style={styles.tierOptionsRow}>
+        {renderTypeDropdown(
+          tier.type,
+          showTypeDropdown,
+          () => setShowTypeDropdown(!showTypeDropdown),
+          onTypeChange,
+          100
+        )}
+
+        <View style={styles.optionGroup}>
+          <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>Min Days</Text>
+          <View style={styles.inlineCounterSmall}>
+            <TouchableOpacity
+              style={[styles.smallButtonCompact, { borderColor: colors.border }]}
+              onPress={() => onMinDaysChange(tier.minDays - 1)}
+              activeOpacity={0.7}
+            >
+              <Minus size={14} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+            <Text style={[styles.counterValueSmall, { color: colors.primary }]}>
+              {tier.minDays}
+            </Text>
+            <TouchableOpacity
+              style={[styles.smallButtonCompact, { borderColor: colors.border }]}
+              onPress={() => onMinDaysChange(tier.minDays + 1)}
+              activeOpacity={0.7}
+            >
+              <Plus size={14} color={colors.text} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
 
   return (
     <>
@@ -155,142 +390,77 @@ export default function ValueCodeSettings() {
             <>
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-              {/* ROW 1: All User Discount */}
-              <View style={[styles.discountRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <View style={styles.rowContentCentered}>
-                  <Text style={[styles.discountRowTitle, { color: colors.text }]}>All User Discount</Text>
-                  <View style={styles.inlineCounter}>
-                    <TouchableOpacity
-                      style={[styles.smallButton, { borderColor: colors.border }]}
-                      onPress={() => handleChangeDiscountPercent(discountPercent - 0.5)}
-                      activeOpacity={0.7}
-                    >
-                      <Minus size={16} color={colors.text} strokeWidth={2} />
-                    </TouchableOpacity>
-                    <Text style={[styles.counterValue, { color: colors.primary }]}>
-                      {discountPercent.toFixed(1)}%
+              {/* Info notice */}
+              <View style={[styles.noticeBox, { backgroundColor: colors.primary + '10' }]}>
+                <Text style={[styles.noticeText, { color: colors.text }]}>
+                  All discounts require customers to endorse your business. Set different discount tiers for different endorsement levels.
+                </Text>
+              </View>
+
+              {/* Tier 1 - Base Endorsement (Always shown) */}
+              {renderTierCard(
+                1,
+                tier1,
+                showTier1TypeDropdown,
+                setShowTier1TypeDropdown,
+                handleTier1DiscountChange,
+                handleTier1TypeChange,
+                handleTier1MinDaysChange,
+                undefined,
+                true
+              )}
+
+              {/* Tier 2 */}
+              {tier2Enabled ? (
+                renderTierCard(
+                  2,
+                  tier2,
+                  showTier2TypeDropdown,
+                  setShowTier2TypeDropdown,
+                  handleTier2DiscountChange,
+                  handleTier2TypeChange,
+                  handleTier2MinDaysChange,
+                  handleDisableTier2
+                )
+              ) : (
+                <TouchableOpacity
+                  style={[styles.addTierButton, { borderColor: colors.border }]}
+                  onPress={handleEnableTier2}
+                  activeOpacity={0.7}
+                >
+                  <Plus size={18} color={colors.primary} strokeWidth={2} />
+                  <Text style={[styles.addTierText, { color: colors.primary }]}>
+                    Add Tier 2 Discount
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Tier 3 (only if Tier 2 is enabled) */}
+              {tier2Enabled && (
+                tier3Enabled ? (
+                  renderTierCard(
+                    3,
+                    tier3,
+                    showTier3TypeDropdown,
+                    setShowTier3TypeDropdown,
+                    handleTier3DiscountChange,
+                    handleTier3TypeChange,
+                    handleTier3MinDaysChange,
+                    handleDisableTier3
+                  )
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.addTierButton, { borderColor: colors.border }]}
+                    onPress={handleEnableTier3}
+                    activeOpacity={0.7}
+                  >
+                    <Plus size={18} color={colors.primary} strokeWidth={2} />
+                    <Text style={[styles.addTierText, { color: colors.primary }]}>
+                      Add Tier 3 Discount
                     </Text>
-                    <TouchableOpacity
-                      style={[styles.smallButton, { borderColor: colors.border }]}
-                      onPress={() => handleChangeDiscountPercent(discountPercent + 0.5)}
-                      activeOpacity={0.7}
-                    >
-                      <Plus size={16} color={colors.text} strokeWidth={2} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-
-              {/* Requirements Section Title */}
-              <Text style={[styles.requirementsTitle, { color: colors.textSecondary }]}>
-                Requirements (optional)
-              </Text>
-
-              {/* ROW 2: Endorsement */}
-              <View style={[styles.discountRow, { backgroundColor: colors.background, borderColor: colors.border, zIndex: showEndorsementTypeDropdown ? 1000 : 1 }]}>
-                <View style={styles.rowContentSpaced}>
-                  <Text style={[styles.discountRowTitle, { color: colors.text }]}>Endorsement</Text>
-                  <Switch
-                    value={endorsementEnabled}
-                    onValueChange={handleToggleEndorsement}
-                    trackColor={{ false: '#D1D5DB', true: '#000000' }}
-                    thumbColor='#FFFFFF'
-                    ios_backgroundColor='#E5E7EB'
-                  />
-                </View>
-
-                {endorsementEnabled && (
-                  <>
-                    {/* Endorsement Discount Percentage */}
-                    <View style={[styles.endorsementDiscountRow, { borderTopColor: colors.border }]}>
-                      <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>Discount</Text>
-                      <View style={styles.inlineCounter}>
-                        <TouchableOpacity
-                          style={[styles.smallButton, { borderColor: colors.border }]}
-                          onPress={() => handleChangeEndorsementDiscountPercent(endorsementDiscountPercent - 0.5)}
-                          activeOpacity={0.7}
-                        >
-                          <Minus size={16} color={colors.text} strokeWidth={2} />
-                        </TouchableOpacity>
-                        <Text style={[styles.counterValue, { color: colors.primary }]}>
-                          {endorsementDiscountPercent.toFixed(1)}%
-                        </Text>
-                        <TouchableOpacity
-                          style={[styles.smallButton, { borderColor: colors.border }]}
-                          onPress={() => handleChangeEndorsementDiscountPercent(endorsementDiscountPercent + 0.5)}
-                          activeOpacity={0.7}
-                        >
-                          <Plus size={16} color={colors.text} strokeWidth={2} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    <View style={styles.expandedOptionsSpaced}>
-                      {/* Type Dropdown */}
-                      <View style={[styles.optionGroupCentered, { zIndex: 1000 }]}>
-                        <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>Type</Text>
-                        <TouchableOpacity
-                          style={[styles.dropdown, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                          onPress={() => setShowEndorsementTypeDropdown(!showEndorsementTypeDropdown)}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={[styles.dropdownText, { color: colors.text }]}>
-                            {getEndorsementTypeLabel(endorsementType)}
-                          </Text>
-                          <ChevronDown size={16} color={colors.textSecondary} strokeWidth={2} />
-                        </TouchableOpacity>
-                        {showEndorsementTypeDropdown && (
-                          <View style={[styles.dropdownList, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
-                            {(['any', 'top10', 'top5'] as EndorsementType[]).map((type) => (
-                              <TouchableOpacity
-                                key={type}
-                                style={[
-                                  styles.dropdownItem,
-                                  { borderBottomColor: colors.border },
-                                  endorsementType === type && { backgroundColor: colors.primary + '15' }
-                                ]}
-                                onPress={() => handleChangeEndorsementType(type)}
-                                activeOpacity={0.7}
-                              >
-                                <Text style={[
-                                  styles.dropdownItemText,
-                                  { color: endorsementType === type ? colors.primary : colors.text }
-                                ]}>
-                                  {getEndorsementTypeLabel(type)}
-                                </Text>
-                              </TouchableOpacity>
-                            ))}
-                          </View>
-                        )}
-                      </View>
-
-                      {/* Minimum Days */}
-                      <View style={styles.optionGroupCentered}>
-                        <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>Min Days</Text>
-                        <View style={styles.inlineCounterSmall}>
-                          <TouchableOpacity
-                            style={[styles.smallButtonCompact, { borderColor: colors.border }]}
-                            onPress={() => handleChangeEndorsementMinDays(endorsementMinDays - 1)}
-                            activeOpacity={0.7}
-                          >
-                            <Minus size={14} color={colors.text} strokeWidth={2} />
-                          </TouchableOpacity>
-                          <Text style={[styles.counterValueSmall, { color: colors.primary }]}>
-                            {endorsementMinDays}
-                          </Text>
-                          <TouchableOpacity
-                            style={[styles.smallButtonCompact, { borderColor: colors.border }]}
-                            onPress={() => handleChangeEndorsementMinDays(endorsementMinDays + 1)}
-                            activeOpacity={0.7}
-                          >
-                            <Plus size={14} color={colors.text} strokeWidth={2} />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    </View>
-                  </>
-                )}
-              </View>
+                  </TouchableOpacity>
+                )
+              )}
 
               {/* iEndorse Fee */}
               <View style={styles.feeRow}>
@@ -299,36 +469,75 @@ export default function ValueCodeSettings() {
                 </Text>
               </View>
 
-              {/* Custom Discount Button - at bottom */}
-              <TouchableOpacity
-                style={[styles.customDiscountButton, { borderColor: colors.border }]}
-                onPress={() => setShowCustomInput(!showCustomInput)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.customDiscountButtonText, { color: colors.primary }]}>
-                  {showCustomInput ? 'Hide Custom Discount' : 'Add Custom Discount'}
-                </Text>
-              </TouchableOpacity>
+              {/* Custom Discount Section */}
+              {showCustomInput ? (
+                <View style={[styles.customCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={styles.tierHeader}>
+                    <Text style={[styles.tierTitle, { color: colors.text }]}>Custom Discount</Text>
+                    <TouchableOpacity onPress={handleClearCustomDiscount} activeOpacity={0.7}>
+                      <Trash2 size={18} color={colors.danger || '#EF4444'} strokeWidth={2} />
+                    </TouchableOpacity>
+                  </View>
 
-              {showCustomInput && (
-                <View style={styles.customDiscountSection}>
-                  <Text style={[styles.customDiscountLabel, { color: colors.textSecondary }]}>
-                    Describe your custom discount structure
+                  <Text style={[styles.customLabel, { color: colors.textSecondary }]}>
+                    Describe your custom discount (e.g., "Free appetizer", "Buy 1 Get 1")
                   </Text>
                   <TextInput
                     style={[
-                      styles.customDiscountInput,
-                      { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }
+                      styles.customInput,
+                      { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, color: colors.text }
                     ]}
-                    placeholder="e.g., 15% off for veterans, 10% for students..."
+                    placeholder="Enter custom discount..."
                     placeholderTextColor={colors.textSecondary}
                     value={customDiscountText}
-                    onChangeText={handleCustomDiscountChange}
-                    multiline
-                    numberOfLines={4}
-                    textAlignVertical="top"
+                    onChangeText={handleCustomDiscountTextChange}
                   />
+
+                  {/* Custom discount type and days */}
+                  <View style={[styles.tierOptionsRow, { marginTop: 12, zIndex: showCustomTypeDropdown ? 1000 : 1 }]}>
+                    {renderTypeDropdown(
+                      customDiscountType,
+                      showCustomTypeDropdown,
+                      () => setShowCustomTypeDropdown(!showCustomTypeDropdown),
+                      handleCustomDiscountTypeChange,
+                      100
+                    )}
+
+                    <View style={styles.optionGroup}>
+                      <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>Min Days</Text>
+                      <View style={styles.inlineCounterSmall}>
+                        <TouchableOpacity
+                          style={[styles.smallButtonCompact, { borderColor: colors.border }]}
+                          onPress={() => handleCustomDiscountMinDaysChange(customDiscountMinDays - 1)}
+                          activeOpacity={0.7}
+                        >
+                          <Minus size={14} color={colors.text} strokeWidth={2} />
+                        </TouchableOpacity>
+                        <Text style={[styles.counterValueSmall, { color: colors.primary }]}>
+                          {customDiscountMinDays}
+                        </Text>
+                        <TouchableOpacity
+                          style={[styles.smallButtonCompact, { borderColor: colors.border }]}
+                          onPress={() => handleCustomDiscountMinDaysChange(customDiscountMinDays + 1)}
+                          activeOpacity={0.7}
+                        >
+                          <Plus size={14} color={colors.text} strokeWidth={2} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
                 </View>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.addTierButton, { borderColor: colors.border }]}
+                  onPress={() => setShowCustomInput(true)}
+                  activeOpacity={0.7}
+                >
+                  <Plus size={18} color={colors.primary} strokeWidth={2} />
+                  <Text style={[styles.addTierText, { color: colors.primary }]}>
+                    Add Custom Discount
+                  </Text>
+                </TouchableOpacity>
               )}
             </>
           )}
@@ -383,44 +592,59 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     fontWeight: '600' as const,
   },
-  // Requirements Title
-  requirementsTitle: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 12,
-    marginTop: 4,
+  noticeBox: {
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
   },
-  // Discount Rows
-  discountRow: {
+  noticeText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  // Tier Cards
+  tierCard: {
     borderRadius: 12,
     borderWidth: 1,
     padding: 16,
     marginBottom: 12,
   },
-  endorsementDiscountRow: {
+  tierHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 16,
-    marginTop: 16,
-    borderTopWidth: 1,
+    marginBottom: 16,
   },
-  rowContentCentered: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  rowContentSpaced: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  discountRowTitle: {
+  tierTitle: {
     fontSize: 16,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
   },
+  tierRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  tierRowLabel: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  tierOptionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  // Option Groups
+  optionGroup: {
+    flex: 1,
+  },
+  optionLabel: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  // Counters
   inlineCounter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -448,43 +672,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   counterValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700' as const,
-    minWidth: 70,
+    minWidth: 60,
     textAlign: 'center',
   },
   counterValueSmall: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700' as const,
-    minWidth: 40,
+    minWidth: 36,
     textAlign: 'center',
-  },
-  // Expanded Options
-  expandedOptionsSpaced: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
-  },
-  expandedOptionsCentered: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
-  },
-  optionGroupCentered: {
-    alignItems: 'center',
-  },
-  optionLabel: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    marginBottom: 6,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   // Dropdown
   dropdown: {
@@ -492,18 +689,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     borderRadius: 8,
     borderWidth: 1,
-    minWidth: 100,
   },
   dropdownText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500' as const,
   },
   dropdownList: {
     position: 'absolute',
-    top: 36,
+    top: 58,
     left: 0,
     right: 0,
     borderRadius: 8,
@@ -521,44 +717,50 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   dropdownItemText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500' as const,
+  },
+  // Add Tier Button
+  addTierButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginBottom: 12,
+  },
+  addTierText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   // Fee Row
   feeRow: {
     alignItems: 'center',
-    marginVertical: 12,
+    marginVertical: 8,
   },
   feeText: {
     fontSize: 13,
     fontWeight: '500' as const,
   },
   // Custom Discount
-  customDiscountButton: {
-    borderWidth: 1,
-    borderStyle: 'dashed',
+  customCard: {
     borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 8,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 12,
   },
-  customDiscountButtonText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-  },
-  customDiscountSection: {
-    marginTop: 16,
-  },
-  customDiscountLabel: {
-    fontSize: 14,
+  customLabel: {
+    fontSize: 13,
     marginBottom: 8,
   },
-  customDiscountInput: {
+  customInput: {
     borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
-    minHeight: 100,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     fontSize: 15,
-    textAlignVertical: 'top',
   },
 });
