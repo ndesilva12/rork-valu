@@ -73,7 +73,7 @@ import { db } from '@/firebase';
 import { reorderListEntries } from '@/services/firebase/listService';
 import { getTopBrands, getTopBusinesses } from '@/services/firebase/topRankingsService';
 import { getCumulativeDays } from '@/services/firebase/endorsementHistoryService';
-import { searchPlaces, PlaceSearchResult, getPlacePhotoUrl, formatCategory } from '@/services/firebase/placesService';
+import { searchPlaces, getPlaceDetails, PlaceSearchResult, getPlacePhotoUrl, formatCategory } from '@/services/firebase/placesService';
 import {
   DndContext,
   closestCenter,
@@ -603,14 +603,35 @@ export default function UnifiedLibrary({
         };
       } else {
         // External place from Google Places API
+        // Fetch full details to get website for logo.dev
+        let website: string | undefined;
+        let logoUrl: string | undefined;
+
+        try {
+          const placeDetails = await getPlaceDetails(item.placeId);
+          if (placeDetails?.website) {
+            website = placeDetails.website;
+            // Use logo.dev for brand logo (great for franchises like Shake Shack)
+            logoUrl = getLogoUrl(website, { size: 128 });
+          }
+        } catch (e) {
+          console.log('[UnifiedLibrary] Could not fetch place details for logo:', e);
+        }
+
+        // Fall back to Google photo if no website/logo
+        if (!logoUrl && item.photoReference) {
+          logoUrl = getPlacePhotoUrl(item.photoReference);
+        }
+
         entry = {
           type: 'place',
           placeId: item.placeId,
           placeName: item.name,
           placeCategory: item.category,
           placeAddress: item.address,
+          website: website,
           photoReference: item.photoReference,
-          logoUrl: item.photoReference ? getPlacePhotoUrl(item.photoReference) : undefined,
+          logoUrl: logoUrl,
           rating: item.rating,
           location: item.location,
           createdAt: new Date(),
@@ -1649,9 +1670,16 @@ export default function UnifiedLibrary({
           const placeName = (entry as any).placeName || (entry as any).name || 'Unknown Place';
           const placeCategory = (entry as any).placeCategory || 'Business';
           const placeAddress = (entry as any).placeAddress || '';
-          const logoUrl = (entry as any).logoUrl || (entry as any).photoReference
-            ? getPlacePhotoUrl((entry as any).photoReference)
-            : '';
+          const placeWebsite = (entry as any).website;
+          // Prefer logo.dev (from website) over Google photo
+          let logoUrl = (entry as any).logoUrl;
+          if (!logoUrl && placeWebsite) {
+            // Try logo.dev if we have a website but no stored logoUrl
+            logoUrl = getLogoUrl(placeWebsite, { size: 128 });
+          } else if (!logoUrl && (entry as any).photoReference) {
+            // Fall back to Google photo
+            logoUrl = getPlacePhotoUrl((entry as any).photoReference);
+          }
 
           // Endorsement section: render as card with position-based background
           if (isEndorsementSection && entryIndex !== undefined) {

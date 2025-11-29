@@ -33,6 +33,8 @@ import {
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { getPlaceDetails, PlaceDetails, getPlacePhotoUrl, formatCategory, formatPriceLevel } from '@/services/firebase/placesService';
+import { getLogoUrl } from '@/lib/logo';
+import { Percent, Tag } from 'lucide-react-native';
 
 export default function PlaceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -46,6 +48,10 @@ export default function PlaceDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [logoError, setLogoError] = useState(false);
+
+  // Get brand logo URL from website if available
+  const brandLogoUrl = place?.website ? getLogoUrl(place.website, { size: 200 }) : null;
 
   useEffect(() => {
     const loadPlaceDetails = async () => {
@@ -172,12 +178,25 @@ export default function PlaceDetailScreen() {
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Photos Carousel */}
+          {/* Brand Logo Section - prioritize logo.dev for franchises/chains */}
+          {brandLogoUrl && !logoError && (
+            <View style={[styles.brandLogoSection, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }]}>
+              <Image
+                source={{ uri: brandLogoUrl }}
+                style={styles.brandLogo}
+                contentFit="contain"
+                transition={200}
+                onError={() => setLogoError(true)}
+              />
+            </View>
+          )}
+
+          {/* Photos Carousel - shown below logo or as primary if no logo */}
           {place.photoReferences.length > 0 && (
             <View style={styles.photosContainer}>
               <Image
                 source={{ uri: getPlacePhotoUrl(place.photoReferences[currentPhotoIndex], 800) }}
-                style={styles.mainPhoto}
+                style={[styles.mainPhoto, brandLogoUrl && !logoError && styles.mainPhotoReduced]}
                 contentFit="cover"
                 transition={200}
               />
@@ -281,6 +300,32 @@ export default function PlaceDetailScreen() {
                 <Text style={[styles.actionButtonText, { color: colors.primary }]}>Website</Text>
               </TouchableOpacity>
             )}
+          </View>
+
+          {/* Endorsement Discounts Section */}
+          <View style={[styles.discountSection, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', borderColor: colors.border }]}>
+            <View style={styles.discountHeader}>
+              <View style={[styles.discountIconContainer, { backgroundColor: colors.primary + '20' }]}>
+                <Percent size={20} color={colors.primary} />
+              </View>
+              <View style={styles.discountTitleContainer}>
+                <Text style={[styles.discountTitle, { color: colors.text }]}>Endorsement Discounts</Text>
+                <Text style={[styles.discountSubtitle, { color: colors.textSecondary }]}>
+                  Earn discounts when you endorse this business
+                </Text>
+              </View>
+            </View>
+
+            <View style={[styles.discountNotice, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', borderColor: colors.border }]}>
+              <Tag size={16} color={colors.textSecondary} />
+              <Text style={[styles.discountNoticeText, { color: colors.textSecondary }]}>
+                This business is not on Stand yet. Discounts will be available once they join our platform.
+              </Text>
+            </View>
+
+            <Text style={[styles.discountCta, { color: colors.primary }]}>
+              Know the owner? Invite them to Stand!
+            </Text>
           </View>
 
           {/* Address */}
@@ -441,6 +486,20 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 250,
   },
+  mainPhotoReduced: {
+    height: 180,
+  },
+  brandLogoSection: {
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  brandLogo: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+  },
   photoThumbnails: {
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -600,5 +659,55 @@ const styles = StyleSheet.create({
   },
   attributionText: {
     fontSize: 12,
+  },
+  discountSection: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  discountHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
+  },
+  discountIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  discountTitleContainer: {
+    flex: 1,
+  },
+  discountTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  discountSubtitle: {
+    fontSize: 13,
+  },
+  discountNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 10,
+    marginBottom: 12,
+  },
+  discountNoticeText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  discountCta: {
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });
