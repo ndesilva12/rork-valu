@@ -4,8 +4,11 @@
  * Provides access to Google Places API for searching
  * and getting details of external businesses
  *
- * Uses client-side API calls with EXPO_PUBLIC_GOOGLE_PLACES_API_KEY
+ * Uses Google Maps JavaScript API for web (CORS-safe)
+ * Uses REST API for native platforms
  */
+
+import { Platform } from 'react-native';
 
 // Get API key from environment
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || '';
@@ -54,11 +57,51 @@ export interface PlaceDetails {
   }[];
 }
 
+// Google Maps script loading for web
+let googleMapsLoaded = false;
+let googleMapsLoadPromise: Promise<void> | null = null;
+
+const loadGoogleMapsScript = (): Promise<void> => {
+  if (Platform.OS !== 'web') {
+    return Promise.resolve();
+  }
+
+  if (googleMapsLoaded && (window as any).google?.maps?.places) {
+    return Promise.resolve();
+  }
+
+  if (googleMapsLoadPromise) {
+    return googleMapsLoadPromise;
+  }
+
+  googleMapsLoadPromise = new Promise((resolve, reject) => {
+    // Check if already loaded
+    if ((window as any).google?.maps?.places) {
+      googleMapsLoaded = true;
+      resolve();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_PLACES_API_KEY}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      googleMapsLoaded = true;
+      resolve();
+    };
+    script.onerror = () => {
+      reject(new Error('Failed to load Google Maps script'));
+    };
+    document.head.appendChild(script);
+  });
+
+  return googleMapsLoadPromise;
+};
+
 /**
  * Search for places using Google Places API
- * @param query Search query string
- * @param location Optional location to bias results
- * @param radius Search radius in meters (default 50km)
+ * Uses JavaScript API on web, REST API on native
  */
 export const searchPlaces = async (
   query: string,
@@ -74,6 +117,110 @@ export const searchPlaces = async (
     return [];
   }
 
+  // Use JavaScript API on web (handles CORS)
+  if (Platform.OS === 'web') {
+    return searchPlacesWeb(query, location, radius);
+  }
+
+  // Use REST API on native (no CORS issues)
+  return searchPlacesNative(query, location, radius);
+};
+
+/**
+ * Web implementation using Google Maps JavaScript API
+ */
+const searchPlacesWeb = async (
+  query: string,
+  location?: { lat: number; lng: number },
+  radius: number = 50000
+): Promise<PlaceSearchResult[]> => {
+  try {
+    await loadGoogleMapsScript();
+
+    const google = (window as any).google;
+    if (!google?.maps?.places) {
+      console.error('[PlacesService] Google Maps Places library not loaded');
+      return [];
+    }
+
+    return new Promise((resolve) => {
+      // Create a dummy map element (required by PlacesService)
+      let mapDiv = document.getElementById('places-service-map');
+      if (!mapDiv) {
+        mapDiv = document.createElement('div');
+        mapDiv.id = 'places-service-map';
+        mapDiv.style.display = 'none';
+        document.body.appendChild(mapDiv);
+      }
+
+      const map = new google.maps.Map(mapDiv, {
+        center: location || { lat: 37.7749, lng: -122.4194 },
+        zoom: 15,
+      });
+
+      const service = new google.maps.places.PlacesService(map);
+
+      const request: any = {
+        query: query,
+        type: 'establishment',
+      };
+
+      if (location) {
+        request.location = new google.maps.LatLng(location.lat, location.lng);
+        request.radius = radius;
+      }
+
+      service.textSearch(request, (results: any[], status: string) => {
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !results) {
+          console.log('[PlacesService] No results or error:', status);
+          resolve([]);
+          return;
+        }
+
+        const places: PlaceSearchResult[] = results.slice(0, 20).map((place: any) => ({
+          placeId: place.place_id,
+          name: place.name,
+          address: place.formatted_address || place.vicinity || '',
+          category: place.types?.[0]?.replace(/_/g, ' ') || 'Business',
+          rating: place.rating,
+          userRatingsTotal: place.user_ratings_total,
+          photoReference: place.photos?.[0]?.getUrl ? 'has_photo' : undefined,
+          // Store the photo getter for later use
+          _photoGetter: place.photos?.[0]?.getUrl,
+          location: place.geometry?.location ? {
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng(),
+          } : undefined,
+          openNow: place.opening_hours?.isOpen?.(),
+          priceLevel: place.price_level,
+        }));
+
+        // Get photo URLs for places that have photos
+        places.forEach((p: any) => {
+          if (p._photoGetter) {
+            p.photoReference = p._photoGetter({ maxWidth: 400 });
+            delete p._photoGetter;
+          }
+        });
+
+        console.log('[PlacesService] Web search completed:', places.length, 'results');
+        resolve(places);
+      });
+    });
+  } catch (error) {
+    console.error('[PlacesService] Web search error:', error);
+    return [];
+  }
+};
+
+/**
+ * Native implementation using REST API (no CORS restrictions)
+ */
+const searchPlacesNative = async (
+  query: string,
+  location?: { lat: number; lng: number },
+  radius: number = 50000
+): Promise<PlaceSearchResult[]> => {
   try {
     const baseUrl = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
     const params = new URLSearchParams({
@@ -82,7 +229,6 @@ export const searchPlaces = async (
       type: 'establishment',
     });
 
-    // Add location bias if provided
     if (location?.lat && location?.lng) {
       params.append('location', `${location.lat},${location.lng}`);
       params.append('radius', radius.toString());
@@ -96,7 +242,6 @@ export const searchPlaces = async (
       return [];
     }
 
-    // Transform results to our format
     const places: PlaceSearchResult[] = (result.results || []).slice(0, 20).map((place: any) => ({
       placeId: place.place_id,
       name: place.name,
@@ -110,17 +255,16 @@ export const searchPlaces = async (
       priceLevel: place.price_level,
     }));
 
-    console.log('[PlacesService] Search completed:', places.length, 'results');
+    console.log('[PlacesService] Native search completed:', places.length, 'results');
     return places;
   } catch (error: any) {
-    console.error('[PlacesService] Error searching places:', error);
+    console.error('[PlacesService] Native search error:', error);
     return [];
   }
 };
 
 /**
  * Get detailed information about a specific place
- * @param placeId Google Place ID
  */
 export const getPlaceDetails = async (placeId: string): Promise<PlaceDetails | null> => {
   if (!GOOGLE_PLACES_API_KEY) {
@@ -128,6 +272,106 @@ export const getPlaceDetails = async (placeId: string): Promise<PlaceDetails | n
     return null;
   }
 
+  // Use JavaScript API on web
+  if (Platform.OS === 'web') {
+    return getPlaceDetailsWeb(placeId);
+  }
+
+  // Use REST API on native
+  return getPlaceDetailsNative(placeId);
+};
+
+/**
+ * Web implementation for place details
+ */
+const getPlaceDetailsWeb = async (placeId: string): Promise<PlaceDetails | null> => {
+  try {
+    await loadGoogleMapsScript();
+
+    const google = (window as any).google;
+    if (!google?.maps?.places) {
+      console.error('[PlacesService] Google Maps Places library not loaded');
+      return null;
+    }
+
+    return new Promise((resolve) => {
+      let mapDiv = document.getElementById('places-service-map');
+      if (!mapDiv) {
+        mapDiv = document.createElement('div');
+        mapDiv.id = 'places-service-map';
+        mapDiv.style.display = 'none';
+        document.body.appendChild(mapDiv);
+      }
+
+      const map = new google.maps.Map(mapDiv, {
+        center: { lat: 0, lng: 0 },
+        zoom: 15,
+      });
+
+      const service = new google.maps.places.PlacesService(map);
+
+      service.getDetails(
+        {
+          placeId: placeId,
+          fields: [
+            'place_id', 'name', 'formatted_address', 'formatted_phone_number',
+            'website', 'url', 'rating', 'user_ratings_total', 'photos',
+            'types', 'opening_hours', 'price_level', 'reviews', 'geometry'
+          ],
+        },
+        (place: any, status: string) => {
+          if (status !== google.maps.places.PlacesServiceStatus.OK || !place) {
+            console.error('[PlacesService] Details error:', status);
+            resolve(null);
+            return;
+          }
+
+          const photoUrls = place.photos?.slice(0, 5).map((photo: any) =>
+            photo.getUrl({ maxWidth: 800 })
+          ) || [];
+
+          const details: PlaceDetails = {
+            placeId: place.place_id,
+            name: place.name,
+            address: place.formatted_address || '',
+            phone: place.formatted_phone_number,
+            website: place.website,
+            googleMapsUrl: place.url || `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
+            rating: place.rating,
+            userRatingsTotal: place.user_ratings_total,
+            category: place.types?.[0]?.replace(/_/g, ' ') || 'Business',
+            categories: place.types?.map((t: string) => t.replace(/_/g, ' ')) || [],
+            location: place.geometry?.location ? {
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng(),
+            } : undefined,
+            priceLevel: place.price_level,
+            openingHours: place.opening_hours?.weekday_text,
+            isOpenNow: place.opening_hours?.isOpen?.(),
+            photoReferences: photoUrls,
+            reviews: place.reviews?.slice(0, 5).map((r: any) => ({
+              author: r.author_name,
+              rating: r.rating,
+              text: r.text,
+              time: r.relative_time_description,
+            })) || [],
+          };
+
+          console.log('[PlacesService] Web details retrieved for:', details.name);
+          resolve(details);
+        }
+      );
+    });
+  } catch (error) {
+    console.error('[PlacesService] Web details error:', error);
+    return null;
+  }
+};
+
+/**
+ * Native implementation for place details
+ */
+const getPlaceDetailsNative = async (placeId: string): Promise<PlaceDetails | null> => {
   try {
     const baseUrl = 'https://maps.googleapis.com/maps/api/place/details/json';
     const params = new URLSearchParams({
@@ -146,7 +390,6 @@ export const getPlaceDetails = async (placeId: string): Promise<PlaceDetails | n
 
     const place = result.result;
 
-    // Transform to our format
     const details: PlaceDetails = {
       placeId: place.place_id,
       name: place.name,
@@ -171,21 +414,31 @@ export const getPlaceDetails = async (placeId: string): Promise<PlaceDetails | n
       })) || [],
     };
 
-    console.log('[PlacesService] Details retrieved for:', details.name);
+    console.log('[PlacesService] Native details retrieved for:', details.name);
     return details;
   } catch (error: any) {
-    console.error('[PlacesService] Error getting place details:', error);
+    console.error('[PlacesService] Native details error:', error);
     return null;
   }
 };
 
 /**
  * Get the URL for a place photo
- * @param photoReference Photo reference from Places API
- * @param maxWidth Maximum width in pixels
+ * On web with JS API, photoReference is already a URL
+ * On native, construct the URL from photo_reference
  */
 export const getPlacePhotoUrl = (photoReference: string, maxWidth: number = 400): string => {
-  if (!photoReference || !GOOGLE_PLACES_API_KEY) {
+  if (!photoReference) {
+    return '';
+  }
+
+  // If it's already a URL (from web JS API), return as-is
+  if (photoReference.startsWith('http')) {
+    return photoReference;
+  }
+
+  // On native, construct the URL
+  if (!GOOGLE_PLACES_API_KEY) {
     return '';
   }
   return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photo_reference=${photoReference}&key=${GOOGLE_PLACES_API_KEY}`;
