@@ -143,14 +143,9 @@ export default function SignUpScreen() {
         } catch (e) {
           console.error('[Sign Up] Failed to set account type:', e);
         }
-        // Navigate based on account type
-        if (selectedAccountType === 'business') {
-          console.log('[Sign Up] Redirecting to business setup (auto-complete)');
-          router.replace('/business-setup');
-        } else {
-          console.log('[Sign Up] Redirecting to onboarding (auto-complete)');
-          router.replace('/onboarding');
-        }
+        // All users go to onboarding (business users will see claim step first)
+        console.log('[Sign Up] Redirecting to onboarding');
+        router.replace('/onboarding');
         return;
       }
 
@@ -169,14 +164,9 @@ export default function SignUpScreen() {
         } catch (e) {
           console.error('[Sign Up] Failed to set account type:', e);
         }
-        // Navigate based on account type
-        if (selectedAccountType === 'business') {
-          console.log('[Sign Up] Redirecting to business setup (pre-verified)');
-          router.replace('/business-setup');
-        } else {
-          console.log('[Sign Up] Redirecting to onboarding (pre-verified)');
-          router.replace('/onboarding');
-        }
+        // All users go to onboarding (business users will see claim step first)
+        console.log('[Sign Up] Redirecting to onboarding');
+        router.replace('/onboarding');
         return;
       }
       
@@ -314,14 +304,9 @@ export default function SignUpScreen() {
           // Continue anyway - the user can set up their business later
         }
 
-        // Navigate based on account type
-        if (selectedAccountType === 'business') {
-          console.log('[Sign Up] Redirecting to business setup');
-          router.replace('/business-setup');
-        } else {
-          console.log('[Sign Up] Redirecting to onboarding');
-          router.replace('/onboarding');
-        }
+        // All users go to onboarding (business users will see claim step first)
+        console.log('[Sign Up] Redirecting to onboarding');
+        router.replace('/onboarding');
       } else {
         console.error('[Sign Up] Verification incomplete:', JSON.stringify(result, null, 2));
         setError('Verification incomplete. Please try again.');
