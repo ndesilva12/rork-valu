@@ -5,12 +5,14 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { darkColors, lightColors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useUser } from '@/contexts/UserContext';
+import { User, Building2 } from 'lucide-react-native';
+import { AccountType } from '@/types';
 
 export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp();
   const router = useRouter();
   const params = useLocalSearchParams<{ ref?: string; source?: string }>();
-  const { isDarkMode } = useUser();
+  const { isDarkMode, setAccountType } = useUser();
   const colors = isDarkMode ? darkColors : lightColors;
 
   // Capture referral source from URL params (supports ?ref=location1 or ?source=location1)
@@ -26,6 +28,7 @@ export default function SignUpScreen() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [showConsentModal, setShowConsentModal] = React.useState(false);
   const [consentChecked, setConsentChecked] = React.useState(false);
+  const [selectedAccountType, setSelectedAccountType] = React.useState<AccountType>('individual');
   const consentScrollRef = React.useRef<ScrollView>(null);
 
   // Scroll consent modal to top when shown
@@ -259,9 +262,19 @@ export default function SignUpScreen() {
         await setActive({ session: result.createdSessionId });
         console.log('[Sign Up] Session set successfully, waiting before redirect');
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        console.log('[Sign Up] Redirecting to home (index will handle routing)');
-        router.replace('/');
+
+        // Set the account type
+        console.log('[Sign Up] Setting account type:', selectedAccountType);
+        await setAccountType(selectedAccountType);
+
+        // Navigate based on account type
+        if (selectedAccountType === 'business') {
+          console.log('[Sign Up] Redirecting to business setup');
+          router.replace('/business-setup');
+        } else {
+          console.log('[Sign Up] Redirecting to onboarding');
+          router.replace('/onboarding');
+        }
       } else {
         console.error('[Sign Up] Verification incomplete:', JSON.stringify(result, null, 2));
         setError('Verification incomplete. Please try again.');
@@ -363,6 +376,46 @@ export default function SignUpScreen() {
               <Text style={[styles.taglineFirstWord, { color: colors.primary }]}>earn </Text>
               <Text style={[styles.taglineRest, { color: colors.text }]}>discounts for your endorsements.</Text>
             </Text>
+          </View>
+
+          {/* Account Type Toggle */}
+          <View style={styles.accountTypeContainer}>
+            <TouchableOpacity
+              style={[
+                styles.accountTypeOption,
+                {
+                  backgroundColor: selectedAccountType === 'individual' ? colors.primary + '20' : colors.backgroundSecondary,
+                  borderColor: selectedAccountType === 'individual' ? colors.primary : colors.border,
+                  borderWidth: selectedAccountType === 'individual' ? 2 : 1,
+                }
+              ]}
+              onPress={() => setSelectedAccountType('individual')}
+              activeOpacity={0.7}
+            >
+              <User size={20} color={selectedAccountType === 'individual' ? colors.primary : colors.textSecondary} strokeWidth={2} />
+              <Text style={[
+                styles.accountTypeText,
+                { color: selectedAccountType === 'individual' ? colors.primary : colors.textSecondary }
+              ]}>Individual</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.accountTypeOption,
+                {
+                  backgroundColor: selectedAccountType === 'business' ? colors.primary + '20' : colors.backgroundSecondary,
+                  borderColor: selectedAccountType === 'business' ? colors.primary : colors.border,
+                  borderWidth: selectedAccountType === 'business' ? 2 : 1,
+                }
+              ]}
+              onPress={() => setSelectedAccountType('business')}
+              activeOpacity={0.7}
+            >
+              <Building2 size={20} color={selectedAccountType === 'business' ? colors.primary : colors.textSecondary} strokeWidth={2} />
+              <Text style={[
+                styles.accountTypeText,
+                { color: selectedAccountType === 'business' ? colors.primary : colors.textSecondary }
+              ]}>Business</Text>
+            </TouchableOpacity>
           </View>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -573,6 +626,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '400',
     letterSpacing: 0.2,
+  },
+  accountTypeContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  accountTypeOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+  },
+  accountTypeText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   errorText: {
     color: '#EF4444',

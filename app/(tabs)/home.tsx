@@ -80,7 +80,6 @@ import { Picker } from '@react-native-picker/picker';
 import * as Clipboard from 'expo-clipboard';
 import MenuButton from '@/components/MenuButton';
 import ShareModal from '@/components/ShareModal';
-import WelcomeCarousel from '@/components/WelcomeCarousel';
 import { lightColors, darkColors } from '@/constants/colors';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
@@ -138,7 +137,6 @@ export default function HomeScreen() {
   const colors = isDarkMode ? darkColors : lightColors;
   const [mainView, setMainView] = useState<MainView>('myLibrary');
   const [forYouSubsection, setForYouSubsection] = useState<ForYouSubsection>('aligned');
-  const [showWelcomeCarousel, setShowWelcomeCarousel] = useState(false);
   const [userPersonalList, setUserPersonalList] = useState<UserList | null>(null);
   const [activeExplainerStep, setActiveExplainerStep] = useState<0 | 1 | 2 | 3 | 4>(0); // 0 = none, 1-4 = explainer steps
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
@@ -231,45 +229,26 @@ export default function HomeScreen() {
     setMainView('myLibrary');
   }, []);
 
-  // Check if user should see welcome carousel
+  // Set up library view for first-time users
   useEffect(() => {
     // Don't run until profile is loaded to avoid race conditions
     if (isProfileLoading) return;
 
-    // Only show carousel if hasSeenIntro is EXPLICITLY false (new users from onboarding)
-    // If it's undefined (existing users), treat as already seen
+    // Set up the library view for first-time users
     if (clerkUser && profile.causes && profile.causes.length > 0 && profile.hasSeenIntro === false) {
-      console.log('[HomeScreen] First time user, setting up aligned list view and showing carousel');
-      // FIRST set the view states to library with aligned list expanded
-      // This ensures when carousel shows (and later dismisses), we're already on the right view
+      console.log('[HomeScreen] First time user, setting up aligned list view');
       setMainView('myLibrary');
       setExpandedListId('aligned');
       setSelectedListId('aligned');
       setLibraryView('detail');
-
-      // Small delay to ensure state is set before showing carousel
-      setTimeout(() => {
-        setShowWelcomeCarousel(true);
-      }, 100);
+      markIntroAsSeen();
     } else if (clerkUser && profile.hasSeenIntro === undefined) {
       // For existing users without this flag, mark as seen immediately and ensure library view
       console.log('[HomeScreen] Existing user, marking intro as seen and ensuring library view');
       markIntroAsSeen();
-      // Make sure existing users also land on library view
       setMainView('myLibrary');
     }
   }, [clerkUser, profile.causes, profile.hasSeenIntro, markIntroAsSeen, isProfileLoading]);
-
-  const handleWelcomeComplete = async () => {
-    console.log('[HomeScreen] Welcome carousel completed, ensuring we stay on library view');
-    setShowWelcomeCarousel(false);
-    // Make absolutely sure we're on the library view with aligned list expanded
-    setMainView('myLibrary');
-    setExpandedListId('aligned');
-    setSelectedListId('aligned');
-    setLibraryView('detail');
-    await markIntroAsSeen();
-  };
 
   // Fetch brands and values from Firebase via DataContext
   const { brands, values, valuesMatrix, isLoading, error } = useData();
@@ -460,9 +439,6 @@ export default function HomeScreen() {
 
     loadPersonalList();
   }, [clerkUser?.id, clerkUser?.unsafeMetadata?.fullName, clerkUser?.firstName, clerkUser?.lastName, profile?.userDetails?.name]);
-
-  // Carousel completion is handled by handleWelcomeComplete (triggered from onboarding flow)
-  // No separate AsyncStorage check needed - carousel only shows via hasSeenIntro === false
 
   // Function to fetch user businesses
   const fetchUserBusinesses = useCallback(async () => {
@@ -2839,7 +2815,7 @@ export default function HomeScreen() {
             style={styles.headerLogo}
             resizeMode="contain"
           />
-          <MenuButton onShowExplainers={() => setShowWelcomeCarousel(true)} />
+          <MenuButton />
         </View>
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>Loading brands...</Text>
@@ -2859,7 +2835,7 @@ export default function HomeScreen() {
             style={styles.headerLogo}
             resizeMode="contain"
           />
-          <MenuButton onShowExplainers={() => setShowWelcomeCarousel(true)} />
+          <MenuButton />
         </View>
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>Error loading brands</Text>
@@ -2888,7 +2864,7 @@ export default function HomeScreen() {
               style={styles.headerLogo}
               resizeMode="contain"
             />
-            <MenuButton onShowExplainers={() => setShowWelcomeCarousel(true)} />
+            <MenuButton />
           </View>
           <View style={styles.emptyContainer}>
             <View style={[styles.emptyIconContainer, { backgroundColor: colors.neutralLight }]}>
@@ -2917,7 +2893,7 @@ export default function HomeScreen() {
             style={styles.headerLogo}
             resizeMode="contain"
           />
-          <MenuButton onShowExplainers={() => setShowWelcomeCarousel(true)} />
+          <MenuButton />
         </View>
       </View>
       <ScrollView
@@ -4814,13 +4790,6 @@ export default function HomeScreen() {
         shareUrl={shareData?.url || ''}
         title={shareData?.title || ''}
         description={shareData?.description}
-        isDarkMode={isDarkMode}
-      />
-
-      {/* Welcome Carousel - Shows only during onboarding flow */}
-      <WelcomeCarousel
-        visible={showWelcomeCarousel}
-        onComplete={handleWelcomeComplete}
         isDarkMode={isDarkMode}
       />
     </View>

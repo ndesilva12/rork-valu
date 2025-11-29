@@ -474,8 +474,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 24,
-    paddingTop: 12,
+    padding: 20,
+    paddingTop: 0,
     maxWidth: Platform.OS === 'web' ? 480 : '100%',
     width: '100%',
     alignSelf: 'center',
@@ -485,14 +485,14 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   logo: {
-    width: 260,
-    height: 260,
+    width: 200,
+    height: 200,
     tintColor: undefined,
   },
   taglineContainer: {
     alignItems: 'center',
-    marginTop: -50,
-    marginBottom: 32,
+    marginTop: -35,
+    marginBottom: 20,
     paddingHorizontal: 8,
   },
   taglineLine: {
@@ -500,17 +500,17 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   taglineFirstWord: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     letterSpacing: -0.5,
   },
   taglineRest: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '400',
     letterSpacing: 0.2,
   },
   inputContainer: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   label: {
     fontSize: 14,
@@ -581,17 +581,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 24,
-    paddingVertical: 12,
+    marginTop: 16,
+    paddingVertical: 8,
     gap: 8,
   },
   learnMoreFirstWord: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     letterSpacing: -0.5,
   },
   learnMoreRest: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '400',
     letterSpacing: 0.2,
   },
