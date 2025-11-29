@@ -933,11 +933,11 @@ export default function UnifiedLibrary({
   const isItemEndorsed = (entry: ListEntry): boolean => {
     if (!endorsementList?.entries) return false;
 
-    const itemId = entry.brandId || entry.businessId || entry.valueId;
+    const itemId = entry.brandId || entry.businessId || entry.valueId || (entry as any).placeId;
     if (!itemId) return false;
 
     return endorsementList.entries.filter(e => e).some(e => {
-      const endorsedId = e.brandId || e.businessId || e.valueId;
+      const endorsedId = e.brandId || e.businessId || e.valueId || (e as any).placeId;
       return endorsedId === itemId;
     });
   };
@@ -975,9 +975,9 @@ export default function UnifiedLibrary({
 
     try {
       // Find the entry in the endorsement list
-      const itemId = entry.brandId || entry.businessId || entry.valueId;
+      const itemId = entry.brandId || entry.businessId || entry.valueId || (entry as any).placeId;
       const endorsedEntry = endorsementList.entries.filter(e => e).find(e => {
-        const endorsedId = e.brandId || e.businessId || e.valueId;
+        const endorsedId = e.brandId || e.businessId || e.valueId || (e as any).placeId;
         return endorsedId === itemId;
       });
 
@@ -1122,8 +1122,8 @@ export default function UnifiedLibrary({
     if (!selectedItemForOptions) return [];
 
     const isEndorsed = endorsementList?.entries?.some(e => {
-      const entryId = selectedItemForOptions.brandId || selectedItemForOptions.businessId || selectedItemForOptions.valueId;
-      const endorsedId = e?.brandId || e?.businessId || e?.valueId;
+      const entryId = selectedItemForOptions.brandId || selectedItemForOptions.businessId || selectedItemForOptions.valueId || (selectedItemForOptions as any).placeId;
+      const endorsedId = e?.brandId || e?.businessId || e?.valueId || (e as any)?.placeId;
       return endorsedId === entryId;
     });
 
