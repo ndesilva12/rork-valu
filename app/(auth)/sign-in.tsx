@@ -502,15 +502,15 @@ const styles = StyleSheet.create({
   },
   taglineLine: {
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   taglineFirstWord: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: '700',
     letterSpacing: -0.5,
   },
   taglineRest: {
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: '400',
     letterSpacing: 0.2,
   },
@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   landingTagline: {
-    fontSize: 17,
+    fontSize: 20,
     fontWeight: '600',
     textAlign: 'center',
     letterSpacing: 0.5,
@@ -627,13 +627,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     letterSpacing: 1,
   },
   sectionText: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 24,
   },
   missionPoint: {
     flexDirection: 'row',
@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   missionTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     marginBottom: 6,
   },
@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
   },
   stepNumberText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
   },
   stepContent: {
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
   },
   stepText: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 24,
   },
 });
