@@ -3659,16 +3659,19 @@ export default function UnifiedLibrary({
               />
               <TouchableOpacity
                 onPress={() => setAddSearchQuery('')}
-                style={[
-                  styles.addEndorsementClearButton,
-                  {
-                    backgroundColor: addSearchQuery.length > 0 ? colors.primary : 'rgba(0,0,0,0.08)',
-                    opacity: 1
-                  }
-                ]}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: '#E5E5E5',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
                 activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <X size={20} color={addSearchQuery.length > 0 ? '#FFFFFF' : colors.textSecondary} strokeWidth={2.5} />
+                <X size={18} color="#666666" strokeWidth={2.5} />
               </TouchableOpacity>
             </View>
 
