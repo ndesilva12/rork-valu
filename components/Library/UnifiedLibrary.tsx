@@ -1440,20 +1440,13 @@ export default function UnifiedLibrary({
                 }}
                 activeOpacity={0.7}
               >
-                <View style={styles.endorsementEntryCardImageContainer}>
-                  <Image
-                    source={{ uri: logoUrl }}
-                    style={styles.endorsementEntryCardImage}
-                    contentFit="cover"
-                    transition={200}
-                    cachePolicy="memory-disk"
-                  />
-                  {discountPercent && discountPercent > 0 && (
-                    <View style={[styles.discountBadge, { backgroundColor: colors.primary }]}>
-                      <Text style={styles.discountBadgeText}>{discountPercent.toFixed(0)}%</Text>
-                    </View>
-                  )}
-                </View>
+                <Image
+                  source={{ uri: logoUrl }}
+                  style={styles.endorsementEntryCardImage}
+                  contentFit="cover"
+                  transition={200}
+                  cachePolicy="memory-disk"
+                />
                 <View style={styles.endorsementEntryCardContent}>
                   <View style={styles.endorsementEntryCardFirstLine}>
                     <Text style={[styles.endorsementEntryCardNumber, { color: colors.text }]}>{entryIndex + 1}.</Text>
@@ -1465,6 +1458,11 @@ export default function UnifiedLibrary({
                     endorsed for {getCumulativeDaysForEntry(entry)} {getCumulativeDaysForEntry(entry) === 1 ? 'day' : 'days'}
                   </Text>
                 </View>
+                {discountPercent && discountPercent > 0 && (
+                  <View style={[styles.discountBadge, { backgroundColor: colors.primary }]}>
+                    <Text style={styles.discountBadgeText}>{discountPercent.toFixed(0)}%</Text>
+                  </View>
+                )}
                 {(mode === 'edit' || mode === 'view' || mode === 'preview') && (
                   <TouchableOpacity
                     style={styles.endorsementEntryOptionsButton}
@@ -4108,11 +4106,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     minHeight: 72,
   },
-  endorsementEntryCardImageContainer: {
-    position: 'relative',
-    width: 72,
-    height: 72,
-  },
   endorsementEntryCardImage: {
     width: 72,
     height: 72,
@@ -4123,14 +4116,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   discountBadge: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    minWidth: 28,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginRight: 8,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   discountBadgeText: {
     color: '#FFFFFF',
