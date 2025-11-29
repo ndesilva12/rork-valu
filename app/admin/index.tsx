@@ -193,6 +193,18 @@ export default function AdminDashboard() {
             </Text>
           </TouchableOpacity>
 
+          {/* Reorder Endorsements */}
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => router.push('/admin/reorder-endorsements')}
+          >
+            <Text style={styles.cardIcon}>📋</Text>
+            <Text style={styles.cardTitle}>Reorder Endorsements</Text>
+            <Text style={styles.cardDescription}>
+              Reorder any user's endorsement list via drag-and-drop
+            </Text>
+          </TouchableOpacity>
+
           {/* Database Stats */}
           <View style={[styles.card, styles.statsCard]}>
             <Text style={styles.cardIcon}>📈</Text>

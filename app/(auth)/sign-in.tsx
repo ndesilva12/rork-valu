@@ -312,9 +312,9 @@ export default function SignInScreen() {
                     <View style={styles.missionPoint}>
                       <Sparkles size={18} color={colors.success} strokeWidth={2} style={styles.missionIcon} />
                       <View style={styles.missionTextContainer}>
-                        <Text style={[styles.missionTitle, { color: colors.text }]}>Decentralize Endorsement Marketing</Text>
+                        <Text style={[styles.missionTitle, { color: colors.text }]}>Decentralize Endorsements</Text>
                         <Text style={[styles.sectionText, { color: colors.textSecondary }]}>
-                          Endorsement deals are effective but require content creation and only work for huge audiences. We make endorsements as simple as a public list, reducing costs and redirecting influence from celebrity networks to real people with stronger trust. A referral from a trusted friend means more than one from a celebrity.
+                          Endorsement deals require a person that has a large audience and the ability to create content. We make endorsements as simple as a public list. This reduces the cost of creation but also widens the target from a few loosely held together celebrity networks to a much larger collection of deeply personal individual networks. A referral from a trusted friend means more than one from a celebrity. With infrastructure this seamless, businesses can compensate anyone for their endorsement by offering verifiable discounts and rewards.
                         </Text>
                       </View>
                     </View>

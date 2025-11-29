@@ -52,19 +52,14 @@ export default function Index() {
   console.log('[Index] 🔍 Checking onboarding flow... isNewUser =', isNewUser);
 
   if (isNewUser === true) {
-    // Check if account type has been selected
-    if (!profile.accountType) {
-      console.log('[Index] 🆕 NEW USER - No account type, redirecting to account-type');
-      return <Redirect href="/account-type" />;
-    }
-
     // Check if business user has set business info
     if (profile.accountType === 'business' && !profile.businessInfo) {
       console.log('[Index] 🏢 NEW BUSINESS USER - No business info, redirecting to business-setup');
       return <Redirect href="/business-setup" />;
     }
 
-    console.log('[Index] 🆕 NEW USER - Has account type, redirecting to onboarding');
+    // Account type is now set during sign-up, redirect directly to onboarding
+    console.log('[Index] 🆕 NEW USER - Redirecting to onboarding');
     return <Redirect href="/onboarding" />;
   }
 

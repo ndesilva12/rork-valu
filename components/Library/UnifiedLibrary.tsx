@@ -47,6 +47,7 @@ import {
   BookOpen,
   Compass,
   Heart,
+  Home,
 } from 'lucide-react-native';
 import { lightColors, darkColors } from '@/constants/colors';
 import { UserList, ListEntry } from '@/types/library';
@@ -1823,8 +1824,8 @@ export default function UnifiedLibrary({
       return (
         <View style={styles.listContentContainer}>
           <View style={[styles.emptyEndorsementContainer, { backgroundColor: colors.backgroundSecondary }]}>
-            {/* Heart Icon */}
-            <View style={[styles.emptyEndorsementIconCircle, { backgroundColor: `${colors.primary}20` }]}>
+            {/* Heart Icon with transparent background and blue outline */}
+            <View style={[styles.emptyEndorsementIconCircle, { backgroundColor: 'transparent', borderWidth: 2, borderColor: colors.primary }]}>
               <Heart size={48} color={colors.primary} strokeWidth={1.5} />
             </View>
 
@@ -1833,36 +1834,24 @@ export default function UnifiedLibrary({
               Build Your Endorsement List
             </Text>
 
-            {/* Steps */}
-            <View style={styles.emptyEndorsementSteps}>
-              <View style={styles.emptyEndorsementStep}>
-                <View style={[styles.emptyEndorsementStepIcon, { backgroundColor: `${colors.primary}15` }]}>
-                  <Search size={20} color={colors.primary} strokeWidth={2} />
-                </View>
-                <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
-                  <Text style={{ fontWeight: '600', color: colors.text }}>1. </Text>
-                  Search for businesses using the add button
-                </Text>
-              </View>
+            {/* Description with tab icons */}
+            <Text style={[styles.emptyEndorsementDescription, { color: colors.textSecondary }]}>
+              Add brands directly from the
+            </Text>
 
-              <View style={styles.emptyEndorsementStep}>
-                <View style={[styles.emptyEndorsementStepIcon, { backgroundColor: `${colors.primary}15` }]}>
-                  <BookOpen size={20} color={colors.primary} strokeWidth={2} />
-                </View>
-                <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
-                  <Text style={{ fontWeight: '600', color: colors.text }}>2. </Text>
-                  Browse our value-based recommendations
-                </Text>
+            {/* Tab options */}
+            <View style={styles.emptyEndorsementTabs}>
+              <View style={styles.emptyEndorsementTabItem}>
+                <Home size={18} color={colors.primary} strokeWidth={2} />
+                <Text style={[styles.emptyEndorsementTabText, { color: colors.text }]}>Home Tab</Text>
               </View>
-
-              <View style={styles.emptyEndorsementStep}>
-                <View style={[styles.emptyEndorsementStepIcon, { backgroundColor: `${colors.primary}15` }]}>
-                  <Compass size={20} color={colors.primary} strokeWidth={2} />
-                </View>
-                <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
-                  <Text style={{ fontWeight: '600', color: colors.text }}>3. </Text>
-                  Explore your friends' endorsement lists
-                </Text>
+              <View style={styles.emptyEndorsementTabItem}>
+                <BookOpen size={18} color={colors.primary} strokeWidth={2} />
+                <Text style={[styles.emptyEndorsementTabText, { color: colors.text }]}>Browse Tab</Text>
+              </View>
+              <View style={styles.emptyEndorsementTabItem}>
+                <Compass size={18} color={colors.primary} strokeWidth={2} />
+                <Text style={[styles.emptyEndorsementTabText, { color: colors.text }]}>Explore Tab</Text>
               </View>
             </View>
           </View>
@@ -2953,30 +2942,27 @@ export default function UnifiedLibrary({
       // Show helpful explainer for user's own empty endorsement list
       return (
         <View style={styles.emptyEndorsementContainer}>
-          <View style={[styles.emptyEndorsementIconCircle, { backgroundColor: colors.primary + '20' }]}>
+          <View style={[styles.emptyEndorsementIconCircle, { backgroundColor: 'transparent', borderWidth: 2, borderColor: colors.primary }]}>
             <Heart size={32} color={colors.primary} strokeWidth={2} />
           </View>
           <Text style={[styles.emptyEndorsementTitle, { color: colors.text }]}>
             Build Your Endorsement List
           </Text>
-          <View style={styles.emptyEndorsementSteps}>
-            <View style={styles.emptyEndorsementStep}>
-              <Search size={18} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
-                Search for businesses using the add button
-              </Text>
+          <Text style={[styles.emptyEndorsementDescription, { color: colors.textSecondary }]}>
+            Add brands directly from the
+          </Text>
+          <View style={styles.emptyEndorsementTabs}>
+            <View style={styles.emptyEndorsementTabItem}>
+              <Home size={18} color={colors.primary} strokeWidth={2} />
+              <Text style={[styles.emptyEndorsementTabText, { color: colors.text }]}>Home Tab</Text>
             </View>
-            <View style={styles.emptyEndorsementStep}>
+            <View style={styles.emptyEndorsementTabItem}>
               <BookOpen size={18} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
-                Browse our value-based recommendations
-              </Text>
+              <Text style={[styles.emptyEndorsementTabText, { color: colors.text }]}>Browse Tab</Text>
             </View>
-            <View style={styles.emptyEndorsementStep}>
+            <View style={styles.emptyEndorsementTabItem}>
               <Compass size={18} color={colors.primary} strokeWidth={2} />
-              <Text style={[styles.emptyEndorsementStepText, { color: colors.textSecondary }]}>
-                Explore your friends' endorsement lists
-              </Text>
+              <Text style={[styles.emptyEndorsementTabText, { color: colors.text }]}>Explore Tab</Text>
             </View>
           </View>
         </View>
@@ -4003,6 +3989,30 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 20,
   },
+  emptyEndorsementDescription: {
+    fontSize: 15,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  emptyEndorsementTabs: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  emptyEndorsementTabItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: 'rgba(74, 144, 226, 0.1)',
+  },
+  emptyEndorsementTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
   // List detail view styles
   backButton: {
     flexDirection: 'row',
@@ -4295,6 +4305,30 @@ const styles = StyleSheet.create({
   emptyEndorsementStepText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  emptyEndorsementDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  emptyEndorsementTabs: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  emptyEndorsementTabItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 16,
+    backgroundColor: 'rgba(74, 144, 226, 0.1)',
+  },
+  emptyEndorsementTabText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   loadingContainer: {
     padding: 40,

@@ -384,7 +384,7 @@ export default function SignUpScreen() {
               style={[
                 styles.accountTypeOption,
                 {
-                  backgroundColor: selectedAccountType === 'individual' ? colors.primary + '20' : colors.backgroundSecondary,
+                  backgroundColor: selectedAccountType === 'individual' ? colors.primary : colors.backgroundSecondary,
                   borderColor: selectedAccountType === 'individual' ? colors.primary : colors.border,
                   borderWidth: selectedAccountType === 'individual' ? 2 : 1,
                 }
@@ -392,17 +392,17 @@ export default function SignUpScreen() {
               onPress={() => setSelectedAccountType('individual')}
               activeOpacity={0.7}
             >
-              <User size={20} color={selectedAccountType === 'individual' ? colors.primary : colors.textSecondary} strokeWidth={2} />
+              <User size={20} color={selectedAccountType === 'individual' ? '#FFFFFF' : colors.textSecondary} strokeWidth={2} />
               <Text style={[
                 styles.accountTypeText,
-                { color: selectedAccountType === 'individual' ? colors.primary : colors.textSecondary }
+                { color: selectedAccountType === 'individual' ? '#FFFFFF' : colors.textSecondary }
               ]}>Individual</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.accountTypeOption,
                 {
-                  backgroundColor: selectedAccountType === 'business' ? colors.primary + '20' : colors.backgroundSecondary,
+                  backgroundColor: selectedAccountType === 'business' ? colors.primary : colors.backgroundSecondary,
                   borderColor: selectedAccountType === 'business' ? colors.primary : colors.border,
                   borderWidth: selectedAccountType === 'business' ? 2 : 1,
                 }
@@ -410,10 +410,10 @@ export default function SignUpScreen() {
               onPress={() => setSelectedAccountType('business')}
               activeOpacity={0.7}
             >
-              <Building2 size={20} color={selectedAccountType === 'business' ? colors.primary : colors.textSecondary} strokeWidth={2} />
+              <Building2 size={20} color={selectedAccountType === 'business' ? '#FFFFFF' : colors.textSecondary} strokeWidth={2} />
               <Text style={[
                 styles.accountTypeText,
-                { color: selectedAccountType === 'business' ? colors.primary : colors.textSecondary }
+                { color: selectedAccountType === 'business' ? '#FFFFFF' : colors.textSecondary }
               ]}>Business</Text>
             </TouchableOpacity>
           </View>
