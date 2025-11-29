@@ -4,7 +4,7 @@
  * Displays details for an external place from Google Places API
  * Shows name, address, rating, photos, hours, and reviews
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import {
   Linking,
   Platform,
   useWindowDimensions,
+  PanResponder,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -52,6 +53,20 @@ export default function PlaceDetailScreen() {
 
   // Get brand logo URL from website if available
   const brandLogoUrl = place?.website ? getLogoUrl(place.website, { size: 200 }) : null;
+
+  // Swipe to go back
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return Math.abs(gestureState.dx) > 30 && Math.abs(gestureState.dy) < 50;
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        if (gestureState.dx > 100) {
+          router.back();
+        }
+      },
+    })
+  ).current;
 
   useEffect(() => {
     const loadPlaceDetails = async () => {
@@ -163,7 +178,10 @@ export default function PlaceDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={Platform.OS === 'web' && isLargeScreen ? styles.webWrapper : styles.fullWidth}>
+      <View
+        style={Platform.OS === 'web' && isLargeScreen ? styles.webWrapper : styles.fullWidth}
+        {...panResponder.panHandlers}
+      >
         {/* Header */}
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -178,25 +196,12 @@ export default function PlaceDetailScreen() {
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Brand Logo Section - prioritize logo.dev for franchises/chains */}
-          {brandLogoUrl && !logoError && (
-            <View style={[styles.brandLogoSection, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }]}>
-              <Image
-                source={{ uri: brandLogoUrl }}
-                style={styles.brandLogo}
-                contentFit="contain"
-                transition={200}
-                onError={() => setLogoError(true)}
-              />
-            </View>
-          )}
-
-          {/* Photos Carousel - shown below logo or as primary if no logo */}
+          {/* Cover Photo */}
           {place.photoReferences.length > 0 && (
             <View style={styles.photosContainer}>
               <Image
                 source={{ uri: getPlacePhotoUrl(place.photoReferences[currentPhotoIndex], 800) }}
-                style={[styles.mainPhoto, brandLogoUrl && !logoError && styles.mainPhotoReduced]}
+                style={styles.mainPhoto}
                 contentFit="cover"
                 transition={200}
               />
@@ -227,48 +232,78 @@ export default function PlaceDetailScreen() {
             </View>
           )}
 
-          {/* Place Info */}
+          {/* Place Info with Logo on left (like brand/business pages) */}
           <View style={styles.infoSection}>
-            <Text style={[styles.placeName, { color: colors.text }]}>{place.name}</Text>
-
-            <View style={styles.categoryRow}>
-              <Text style={[styles.category, { color: colors.textSecondary }]}>
-                {place.categories.slice(0, 3).map(formatCategory).join(' · ')}
-              </Text>
-              {place.priceLevel !== undefined && (
-                <Text style={[styles.priceLevel, { color: colors.textSecondary }]}>
-                  {' · '}{formatPriceLevel(place.priceLevel)}
-                </Text>
+            <View style={styles.infoHeader}>
+              {/* Logo on left */}
+              {brandLogoUrl && !logoError ? (
+                <View style={styles.logoContainer}>
+                  <Image
+                    source={{ uri: brandLogoUrl }}
+                    style={styles.brandLogo}
+                    contentFit="contain"
+                    transition={200}
+                    onError={() => setLogoError(true)}
+                  />
+                </View>
+              ) : place.photoReferences.length > 0 ? (
+                <View style={styles.logoContainer}>
+                  <Image
+                    source={{ uri: getPlacePhotoUrl(place.photoReferences[0], 200) }}
+                    style={styles.brandLogo}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                </View>
+              ) : (
+                <View style={[styles.logoContainer, styles.logoPlaceholder, { backgroundColor: colors.border }]}>
+                  <Globe size={32} color={colors.textSecondary} />
+                </View>
               )}
-            </View>
 
-            {/* Rating */}
-            {place.rating && (
-              <View style={styles.ratingContainer}>
-                <Star size={18} color="#FFB800" fill="#FFB800" />
-                <Text style={[styles.ratingText, { color: colors.text }]}>
-                  {place.rating.toFixed(1)}
-                </Text>
-                {place.userRatingsTotal && (
-                  <Text style={[styles.ratingCount, { color: colors.textSecondary }]}>
-                    ({place.userRatingsTotal.toLocaleString()} reviews)
+              {/* Name and category on right */}
+              <View style={styles.infoHeaderText}>
+                <Text style={[styles.placeName, { color: colors.text }]}>{place.name}</Text>
+                <View style={styles.categoryRow}>
+                  <Text style={[styles.category, { color: colors.textSecondary }]}>
+                    {place.categories.slice(0, 3).map(formatCategory).join(' · ')}
                   </Text>
-                )}
-                {place.isOpenNow !== undefined && (
-                  <View style={[
-                    styles.openBadge,
-                    { backgroundColor: place.isOpenNow ? '#22C55E20' : '#EF444420' }
-                  ]}>
-                    <Text style={[
-                      styles.openBadgeText,
-                      { color: place.isOpenNow ? '#22C55E' : '#EF4444' }
-                    ]}>
-                      {place.isOpenNow ? 'Open' : 'Closed'}
+                  {place.priceLevel !== undefined && (
+                    <Text style={[styles.priceLevel, { color: colors.textSecondary }]}>
+                      {' · '}{formatPriceLevel(place.priceLevel)}
                     </Text>
+                  )}
+                </View>
+
+                {/* Rating */}
+                {place.rating && (
+                  <View style={styles.ratingContainer}>
+                    <Star size={18} color="#FFB800" fill="#FFB800" />
+                    <Text style={[styles.ratingText, { color: colors.text }]}>
+                      {place.rating.toFixed(1)}
+                    </Text>
+                    {place.userRatingsTotal && (
+                      <Text style={[styles.ratingCount, { color: colors.textSecondary }]}>
+                        ({place.userRatingsTotal.toLocaleString()} reviews)
+                      </Text>
+                    )}
+                    {place.isOpenNow !== undefined && (
+                      <View style={[
+                        styles.openBadge,
+                        { backgroundColor: place.isOpenNow ? '#22C55E20' : '#EF444420' }
+                      ]}>
+                        <Text style={[
+                          styles.openBadgeText,
+                          { color: place.isOpenNow ? '#22C55E' : '#EF4444' }
+                        ]}>
+                          {place.isOpenNow ? 'Open' : 'Closed'}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 )}
               </View>
-            )}
+            </View>
           </View>
 
           {/* Action Buttons */}
@@ -305,8 +340,8 @@ export default function PlaceDetailScreen() {
           {/* Endorsement Discounts Section */}
           <View style={[styles.discountSection, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', borderColor: colors.border }]}>
             <View style={styles.discountHeader}>
-              <View style={[styles.discountIconContainer, { backgroundColor: colors.primary + '20' }]}>
-                <Percent size={20} color={colors.primary} />
+              <View style={[styles.discountIconContainer, { backgroundColor: colors.primary }]}>
+                <Percent size={20} color="#FFFFFF" />
               </View>
               <View style={styles.discountTitleContainer}>
                 <Text style={[styles.discountTitle, { color: colors.text }]}>Endorsement Discounts</Text>
@@ -319,12 +354,12 @@ export default function PlaceDetailScreen() {
             <View style={[styles.discountNotice, { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', borderColor: colors.border }]}>
               <Tag size={16} color={colors.textSecondary} />
               <Text style={[styles.discountNoticeText, { color: colors.textSecondary }]}>
-                This business is not on Stand yet. Discounts will be available once they join our platform.
+                This business is not on Endorse yet. Discounts will be available once they join our platform.
               </Text>
             </View>
 
             <Text style={[styles.discountCta, { color: colors.primary }]}>
-              Know the owner? Invite them to Stand!
+              Know the owner? Invite them to Endorse!
             </Text>
           </View>
 
@@ -486,19 +521,38 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 250,
   },
-  mainPhotoReduced: {
-    height: 180,
+  logoContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    marginRight: 16,
+    marginTop: -40,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  brandLogoSection: {
-    padding: 24,
+  logoPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
   },
   brandLogo: {
-    width: 120,
-    height: 120,
-    borderRadius: 12,
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+  },
+  infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  infoHeaderText: {
+    flex: 1,
+    paddingTop: 4,
   },
   photoThumbnails: {
     paddingHorizontal: 12,
@@ -524,9 +578,9 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   placeName: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   categoryRow: {
     flexDirection: 'row',

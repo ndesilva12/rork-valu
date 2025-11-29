@@ -1420,6 +1420,8 @@ export default function UnifiedLibrary({
           // Use actual business logoUrl first, then entry data, fallback to generated logo from website
           const businessWebsite = fullBusiness?.businessInfo?.website || (entry as any).website || '';
           const logoUrl = fullBusiness?.businessInfo?.logoUrl || (entry as any).logoUrl || (entry as any).logo || (businessWebsite ? getLogoUrl(businessWebsite) : getLogoUrl(''));
+          // Get discount percentage if available
+          const discountPercent = fullBusiness?.businessInfo?.endorsementDiscountPercent || fullBusiness?.businessInfo?.customerDiscountPercent;
 
           // Endorsement section: render as card with position-based background
           if (isEndorsementSection && entryIndex !== undefined) {
@@ -1438,13 +1440,20 @@ export default function UnifiedLibrary({
                 }}
                 activeOpacity={0.7}
               >
-                <Image
-                  source={{ uri: logoUrl }}
-                  style={styles.endorsementEntryCardImage}
-                  contentFit="cover"
-                  transition={200}
-                  cachePolicy="memory-disk"
-                />
+                <View style={styles.endorsementEntryCardImageContainer}>
+                  <Image
+                    source={{ uri: logoUrl }}
+                    style={styles.endorsementEntryCardImage}
+                    contentFit="cover"
+                    transition={200}
+                    cachePolicy="memory-disk"
+                  />
+                  {discountPercent && discountPercent > 0 && (
+                    <View style={[styles.discountBadge, { backgroundColor: colors.primary }]}>
+                      <Text style={styles.discountBadgeText}>{discountPercent.toFixed(0)}%</Text>
+                    </View>
+                  )}
+                </View>
                 <View style={styles.endorsementEntryCardContent}>
                   <View style={styles.endorsementEntryCardFirstLine}>
                     <Text style={[styles.endorsementEntryCardNumber, { color: colors.text }]}>{entryIndex + 1}.</Text>
@@ -3650,15 +3659,14 @@ export default function UnifiedLibrary({
                 autoCorrect={false}
                 underlineColorAndroid="transparent"
               />
-              {addSearchQuery.length > 0 && (
-                <TouchableOpacity
-                  onPress={() => setAddSearchQuery('')}
-                  style={styles.addEndorsementClearButton}
-                  activeOpacity={0.7}
-                >
-                  <X size={Platform.OS === 'web' ? 20 : 24} color={colors.textSecondary} strokeWidth={2.5} />
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                onPress={() => setAddSearchQuery('')}
+                style={[styles.addEndorsementClearButton, { opacity: addSearchQuery.length > 0 ? 1 : 0.3 }]}
+                activeOpacity={0.7}
+                disabled={addSearchQuery.length === 0}
+              >
+                <X size={Platform.OS === 'web' ? 20 : 24} color={colors.textSecondary} strokeWidth={2.5} />
+              </TouchableOpacity>
             </View>
 
             {/* Search Results */}
@@ -4100,6 +4108,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     minHeight: 72,
   },
+  endorsementEntryCardImageContainer: {
+    position: 'relative',
+    width: 72,
+    height: 72,
+  },
   endorsementEntryCardImage: {
     width: 72,
     height: 72,
@@ -4107,6 +4120,22 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 12,
     borderTopRightRadius: 0,
     borderBottomRightRadius: 0,
+    backgroundColor: '#FFFFFF',
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    minWidth: 28,
+    alignItems: 'center',
+  },
+  discountBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
   endorsementEntryCardContent: {
     flex: 1,
@@ -4180,6 +4209,7 @@ const styles = StyleSheet.create({
   brandLogo: {
     width: '100%',
     height: '100%',
+    backgroundColor: '#FFFFFF',
   },
   brandCardContent: {
     flex: 1,
@@ -4734,6 +4764,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 8,
+    backgroundColor: 'rgba(0,0,0,0.08)',
   },
   addEndorsementResultsContainer: {
     flex: 1,
