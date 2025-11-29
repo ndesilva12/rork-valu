@@ -73,6 +73,7 @@ import { db } from '@/firebase';
 import { reorderListEntries } from '@/services/firebase/listService';
 import { getTopBrands, getTopBusinesses } from '@/services/firebase/topRankingsService';
 import { getCumulativeDays } from '@/services/firebase/endorsementHistoryService';
+import { searchPlaces, PlaceSearchResult, getPlacePhotoUrl, formatCategory } from '@/services/firebase/placesService';
 import {
   DndContext,
   closestCenter,
@@ -226,6 +227,11 @@ export default function UnifiedLibrary({
   const [loadingBusinesses, setLoadingBusinesses] = useState(false);
   const [addingItemId, setAddingItemId] = useState<string | null>(null);
   const [addedItemIds, setAddedItemIds] = useState<Set<string>>(new Set());
+
+  // External places search state (Google Places API)
+  const [placesResults, setPlacesResults] = useState<PlaceSearchResult[]>([]);
+  const [loadingPlaces, setLoadingPlaces] = useState(false);
+  const [placesSearchDebounce, setPlacesSearchDebounce] = useState<NodeJS.Timeout | null>(null);
 
   // Section selection state
   // Profile views (preview/view) ALWAYS default to endorsement
@@ -473,6 +479,55 @@ export default function UnifiedLibrary({
     fetchCumulativeDays();
   }, [currentUserId, endorsementList?.entries]);
 
+  // Search external places when query changes (with debounce)
+  useEffect(() => {
+    // Clear previous timeout
+    if (placesSearchDebounce) {
+      clearTimeout(placesSearchDebounce);
+    }
+
+    const query = addSearchQuery.trim();
+
+    // Only search if query is long enough
+    if (query.length < 2) {
+      setPlacesResults([]);
+      setLoadingPlaces(false);
+      return;
+    }
+
+    // Get IDs of already endorsed places
+    const entries = endorsementList?.entries || [];
+    const safeEntries = Array.isArray(entries) ? entries.filter(e => e != null && typeof e === 'object') : [];
+    const endorsedPlaceIds = new Set(
+      safeEntries
+        .filter(e => e.type === 'place')
+        .map(e => (e as any).placeId)
+        .filter(id => id != null)
+    );
+
+    // Debounce the API call
+    const timeout = setTimeout(async () => {
+      setLoadingPlaces(true);
+      try {
+        const results = await searchPlaces(query);
+        // Filter out already endorsed places
+        const filteredResults = results.filter(p => !endorsedPlaceIds.has(p.placeId));
+        setPlacesResults(filteredResults);
+      } catch (error) {
+        console.error('[UnifiedLibrary] Error searching places:', error);
+        setPlacesResults([]);
+      } finally {
+        setLoadingPlaces(false);
+      }
+    }, 500); // 500ms debounce
+
+    setPlacesSearchDebounce(timeout);
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [addSearchQuery, endorsementList?.entries]);
+
   // Search results for add endorsement modal
   const addSearchResults = useMemo(() => {
     if (!addSearchQuery.trim()) return { brands: [], businesses: [] };
@@ -517,35 +572,53 @@ export default function UnifiedLibrary({
     return { brands: matchingBrands, businesses: matchingBusinesses };
   }, [addSearchQuery, brands, allBusinesses, endorsementList]);
 
-  // Handle adding a brand or business to endorsement list
-  const handleAddToEndorsement = useCallback(async (item: any, type: 'brand' | 'business') => {
+  // Handle adding a brand, business, or place to endorsement list
+  const handleAddToEndorsement = useCallback(async (item: any, type: 'brand' | 'business' | 'place') => {
     if (!endorsementList?.id || !currentUserId) {
       Alert.alert('Error', 'Unable to add to endorsements. Please try again.');
       return;
     }
 
-    const itemId = type === 'brand' ? item.id : item.id;
+    const itemId = type === 'place' ? item.placeId : item.id;
     setAddingItemId(itemId);
 
     try {
-      const entry: Omit<ListEntry, 'id'> = type === 'brand'
-        ? {
-            type: 'brand',
-            brandId: item.id,
-            name: item.name,
-            logoUrl: item.exampleImageUrl || getLogoUrl(item.website || ''),
-            createdAt: new Date(),
-          }
-        : {
-            type: 'business',
-            businessId: item.id,
-            name: item.businessInfo?.name || 'Business',
-            logoUrl: item.businessInfo?.logoUrl || getLogoUrl(item.businessInfo?.website || ''),
-            createdAt: new Date(),
-          };
+      let entry: Omit<ListEntry, 'id'>;
+
+      if (type === 'brand') {
+        entry = {
+          type: 'brand',
+          brandId: item.id,
+          name: item.name,
+          logoUrl: item.exampleImageUrl || getLogoUrl(item.website || ''),
+          createdAt: new Date(),
+        };
+      } else if (type === 'business') {
+        entry = {
+          type: 'business',
+          businessId: item.id,
+          name: item.businessInfo?.name || 'Business',
+          logoUrl: item.businessInfo?.logoUrl || getLogoUrl(item.businessInfo?.website || ''),
+          createdAt: new Date(),
+        };
+      } else {
+        // External place from Google Places API
+        entry = {
+          type: 'place',
+          placeId: item.placeId,
+          placeName: item.name,
+          placeCategory: item.category,
+          placeAddress: item.address,
+          photoReference: item.photoReference,
+          logoUrl: item.photoReference ? getPlacePhotoUrl(item.photoReference) : undefined,
+          rating: item.rating,
+          location: item.location,
+          createdAt: new Date(),
+        };
+      }
 
       await library.addEntry(endorsementList.id, entry);
-      console.log('[UnifiedLibrary] Added', type, 'to endorsement list:', entry.name);
+      console.log('[UnifiedLibrary] Added', type, 'to endorsement list:', type === 'place' ? item.name : (entry as any).name);
       // Track this item as added
       setAddedItemIds(prev => new Set(prev).add(itemId));
       // Force reload library to ensure state is synced
@@ -560,14 +633,17 @@ export default function UnifiedLibrary({
     }
   }, [endorsementList, currentUserId, library]);
 
-  // Navigate to brand or business details
-  const handleNavigateToDetails = useCallback((item: any, type: 'brand' | 'business') => {
+  // Navigate to brand, business, or place details
+  const handleNavigateToDetails = useCallback((item: any, type: 'brand' | 'business' | 'place') => {
     setShowAddEndorsementModal(false);
     setAddSearchQuery('');
     if (type === 'brand') {
       router.push(`/brand/${item.id}`);
-    } else {
+    } else if (type === 'business') {
       router.push(`/business/${item.id}`);
+    } else {
+      // Navigate to place details page
+      router.push(`/place/${item.placeId}`);
     }
   }, [router]);
 
@@ -1563,6 +1639,136 @@ export default function UnifiedLibrary({
                   )}
                 </View>
               </View>
+            </View>
+          );
+        }
+        break;
+
+      case 'place':
+        if ('placeId' in entry) {
+          const placeName = (entry as any).placeName || (entry as any).name || 'Unknown Place';
+          const placeCategory = (entry as any).placeCategory || 'Business';
+          const placeAddress = (entry as any).placeAddress || '';
+          const logoUrl = (entry as any).logoUrl || (entry as any).photoReference
+            ? getPlacePhotoUrl((entry as any).photoReference)
+            : '';
+
+          // Endorsement section: render as card with position-based background
+          if (isEndorsementSection && entryIndex !== undefined) {
+            const cardBgColor = getEntryCardBackgroundColor(entryIndex);
+            return (
+              <TouchableOpacity
+                style={[
+                  styles.endorsementEntryCard,
+                  { backgroundColor: cardBgColor },
+                ]}
+                onPress={() => {
+                  router.push({
+                    pathname: '/place/[id]',
+                    params: { id: (entry as any).placeId },
+                  });
+                }}
+                activeOpacity={0.7}
+              >
+                {logoUrl ? (
+                  <Image
+                    source={{ uri: logoUrl }}
+                    style={styles.endorsementEntryCardImage}
+                    contentFit="cover"
+                    transition={200}
+                    cachePolicy="memory-disk"
+                  />
+                ) : (
+                  <View style={[styles.endorsementEntryCardImage, { backgroundColor: colors.border, alignItems: 'center', justifyContent: 'center' }]}>
+                    <Globe size={32} color={colors.textSecondary} />
+                  </View>
+                )}
+                <View style={styles.endorsementEntryCardContent}>
+                  <View style={styles.endorsementEntryCardFirstLine}>
+                    <Text style={[styles.endorsementEntryCardNumber, { color: colors.text }]}>{entryIndex + 1}.</Text>
+                    <Text style={[styles.endorsementEntryCardName, { color: colors.text }]} numberOfLines={1}>
+                      {placeName}
+                    </Text>
+                  </View>
+                  <Text style={[styles.endorsementEntryCardCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                    endorsed for {getCumulativeDaysForEntry(entry)} {getCumulativeDaysForEntry(entry) === 1 ? 'day' : 'days'}
+                  </Text>
+                </View>
+                {(mode === 'edit' || mode === 'view' || mode === 'preview') && (
+                  <TouchableOpacity
+                    style={styles.endorsementEntryOptionsButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleOpenActionModal(entry);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+            );
+          }
+
+          // Non-endorsement section: render original style
+          return (
+            <View>
+              <TouchableOpacity
+                style={[
+                  styles.brandCard,
+                  { backgroundColor: 'transparent' },
+                ]}
+                onPress={() => {
+                  router.push({
+                    pathname: '/place/[id]',
+                    params: { id: (entry as any).placeId },
+                  });
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.brandCardInner}>
+                  <View style={styles.brandLogoContainer}>
+                    {logoUrl ? (
+                      <Image
+                        source={{ uri: logoUrl }}
+                        style={[styles.brandLogo, { backgroundColor: '#FFFFFF' }]}
+                        contentFit="cover"
+                        transition={200}
+                        cachePolicy="memory-disk"
+                      />
+                    ) : (
+                      <View style={[styles.brandLogo, { backgroundColor: colors.border, alignItems: 'center', justifyContent: 'center' }]}>
+                        <Globe size={24} color={colors.textSecondary} />
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.brandCardContent}>
+                    <Text style={[styles.brandName, { color: colors.white }]} numberOfLines={2}>
+                      {placeName}
+                    </Text>
+                    <Text style={[styles.brandCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {formatCategory(placeCategory)}
+                    </Text>
+                  </View>
+                  <View style={styles.brandScoreContainer}>
+                    <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+                  </View>
+                  {(mode === 'edit' || mode === 'view' || mode === 'preview') && (
+                    <TouchableOpacity
+                      style={[styles.quickAddButton, { backgroundColor: colors.background }]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleOpenActionModal(entry);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={{ transform: [{ rotate: '90deg' }] }}>
+                        <MoreVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </TouchableOpacity>
             </View>
           );
         }
@@ -3440,10 +3646,10 @@ export default function UnifiedLibrary({
                 <View style={styles.addEndorsementEmptyContainer}>
                   <Search size={48} color={colors.textSecondary} strokeWidth={1.5} />
                   <Text style={[styles.addEndorsementEmptyText, { color: colors.textSecondary }]}>
-                    Start typing to search for brands and businesses
+                    Search for brands, businesses, or any local business
                   </Text>
                 </View>
-              ) : addSearchResults.brands.length === 0 && addSearchResults.businesses.length === 0 ? (
+              ) : addSearchResults.brands.length === 0 && addSearchResults.businesses.length === 0 && placesResults.length === 0 && !loadingPlaces ? (
                 <View style={styles.addEndorsementEmptyContainer}>
                   <Text style={[styles.addEndorsementEmptyText, { color: colors.textSecondary }]}>
                     No results found for "{addSearchQuery}"
@@ -3552,6 +3758,80 @@ export default function UnifiedLibrary({
                           >
                             <Text style={styles.addEndorsementTextButtonLabel}>
                               {addedItemIds.has(business.id) ? 'Added' : (addingItemId === business.id ? 'Adding...' : 'Endorse')}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* External Places Section (Google Places API) */}
+                  {loadingPlaces && (
+                    <View style={styles.addEndorsementSection}>
+                      <Text style={[styles.addEndorsementSectionTitle, { color: colors.textSecondary }]}>
+                        Searching all businesses...
+                      </Text>
+                      <View style={styles.addEndorsementLoadingContainer}>
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      </View>
+                    </View>
+                  )}
+
+                  {!loadingPlaces && placesResults.length > 0 && (
+                    <View style={styles.addEndorsementSection}>
+                      <Text style={[styles.addEndorsementSectionTitle, { color: colors.textSecondary }]}>
+                        All Businesses ({placesResults.length})
+                      </Text>
+                      {placesResults.map((place) => (
+                        <View
+                          key={place.placeId}
+                          style={styles.addEndorsementResultItem}
+                        >
+                          <TouchableOpacity
+                            style={styles.addEndorsementResultInfo}
+                            onPress={() => handleNavigateToDetails(place, 'place')}
+                            activeOpacity={0.7}
+                          >
+                            <View style={styles.addEndorsementResultLogo}>
+                              {place.photoReference ? (
+                                <Image
+                                  source={{ uri: getPlacePhotoUrl(place.photoReference) }}
+                                  style={styles.addEndorsementResultLogoImage}
+                                  contentFit="cover"
+                                  transition={200}
+                                  cachePolicy="memory-disk"
+                                />
+                              ) : (
+                                <View style={[styles.addEndorsementResultLogoImage, { backgroundColor: colors.border, alignItems: 'center', justifyContent: 'center' }]}>
+                                  <Globe size={24} color={colors.textSecondary} />
+                                </View>
+                              )}
+                            </View>
+                            <View style={styles.addEndorsementResultText}>
+                              <Text style={[styles.addEndorsementResultName, { color: colors.text }]} numberOfLines={2}>
+                                {place.name}
+                              </Text>
+                              <Text style={[styles.addEndorsementResultCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                                {formatCategory(place.category)}{place.rating ? ` · ${place.rating}★` : ''}
+                              </Text>
+                              {place.address && (
+                                <Text style={[styles.addEndorsementResultCategory, { color: colors.textSecondary, fontSize: 11 }]} numberOfLines={1}>
+                                  {place.address}
+                                </Text>
+                              )}
+                            </View>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.addEndorsementTextButton,
+                              { backgroundColor: addedItemIds.has(place.placeId) ? colors.textSecondary : (addingItemId === place.placeId ? colors.success : colors.primary) }
+                            ]}
+                            onPress={() => handleAddToEndorsement(place, 'place')}
+                            disabled={addingItemId === place.placeId || addedItemIds.has(place.placeId)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.addEndorsementTextButtonLabel}>
+                              {addedItemIds.has(place.placeId) ? 'Added' : (addingItemId === place.placeId ? 'Adding...' : 'Endorse')}
                             </Text>
                           </TouchableOpacity>
                         </View>

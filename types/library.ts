@@ -1,6 +1,6 @@
 // Library types for list management
 
-export type ListEntryType = 'brand' | 'business' | 'value' | 'link' | 'text';
+export type ListEntryType = 'brand' | 'business' | 'value' | 'link' | 'text' | 'place';
 
 export type ValueListMode = 'maxPain' | 'maxBenefit';
 
@@ -28,6 +28,23 @@ export interface BusinessListEntry extends BaseListEntry {
   logoUrl?: string;
 }
 
+// External place from Google Places API
+export interface PlaceListEntry extends BaseListEntry {
+  type: 'place';
+  placeId: string;           // Google Place ID
+  placeName: string;
+  placeCategory?: string;
+  placeAddress?: string;
+  website?: string;
+  logoUrl?: string;          // Cached photo URL
+  photoReference?: string;   // For fetching fresh photo
+  rating?: number;
+  location?: {
+    lat: number;
+    lng: number;
+  };
+}
+
 export interface ValueListEntry extends BaseListEntry {
   type: 'value';
   valueId: string;
@@ -47,7 +64,7 @@ export interface TextListEntry extends BaseListEntry {
   content: string;
 }
 
-export type ListEntry = BrandListEntry | BusinessListEntry | ValueListEntry | LinkListEntry | TextListEntry;
+export type ListEntry = BrandListEntry | BusinessListEntry | PlaceListEntry | ValueListEntry | LinkListEntry | TextListEntry;
 
 export interface UserList {
   id: string;
